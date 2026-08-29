@@ -144,6 +144,24 @@ good document, referenced by no issue, no acceptance criterion and no CI step �
 > **A spec no build breaks on is a wish.** Whatever we ship first must be enforced by CI from its first
 > commit.
 
+### ⚠️ The gate must check *gating*, not existence — and our own estate proves why
+
+The obvious implementation is "does a test name this behaviour ID?". **That is not enough, and we have a
+live counter-example measured on 2026-08-29:**
+
+| repo | `"test": "vitest run"` in `package.json` | run by `ci.yml`? |
+|---|---|---|
+| `snip-it` | yes | **yes** — `ci.yml:62` |
+| `around-the-world` | yes, **byte-identical** | **no** — the frontend job is lint + build + e2e only |
+
+Two repos scaffolded from the same template, with the same test script wired the same way, and **only one
+of them actually gates on it.** A check that greps for "is there a test script" calls both safe. ATW is
+the app that shipped to real users.
+
+> **So the coverage gate must assert that the test naming the behaviour runs in the CI job that gates the
+> merge** — not that the test exists, and not that a script exists. A test suite no workflow invokes is
+> not protection; it is dead weight that reads exactly like protection.
+
 ---
 
 ## What this process is *not*
