@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "ONE binding per noun. This is the file that replaces Cucumber's step definitions,",
+    "and the whole bet is that it grows with the app's vocabulary rather than with the spec.",
+    "Every value below is copied from snip-it frontend/e2e/editor.spec.ts on origin/dev —",
+    "nothing here is invented, so the generated tests can be diffed against the real ones.",
+    "",
+    "region:WordTrack and region:CutStatus are DELIBERATELY ABSENT. The real tests reach",
+    "that content with a bare getByText / regex because the app gives those areas no",
+    "accessible name at all. Leaving them out is the honest result: the generator refuses",
+    "and names the missing noun, instead of guessing a locator. That refusal is the spec",
+    "constraining the app, which is the property Gherkin never had."
+  ],
+
+  "page:Home":              { "route": "./" },
+  "page:Upload":            { "route": "./editor" },
+  "page:TranscriptEditor":  { "route": "./editor/:transcriptionId", "urlPattern": "/editor/[0-9a-f-]+$" },
+
+  "region:Main":            { "locator": "locator('main')" },
+
+  "button:SelectAll":         { "role": "button", "name": "Select All", "exact": true },
+  "button:RemoveFillerWords": { "role": "button", "name": "Remove filler words" },
+  "button:SendForExport":     { "role": "button", "name": "Send for export" },
+  "button:ToggleTheme":       { "role": "button", "name": "Toggle Theme" },
+  "button:Transcribe":        { "role": "button", "name": "Transcribe" },
+
+  "link:Download":            { "role": "link", "name": "Download" },
+  "heading:TranscribeAVideo": { "role": "heading", "name": "Transcribe a video" },
+
+  "field:VideoOrAudioFile":   { "label": "Video or audio file" },
+  "file:talk_mp4":            { "fixture": { "name": "talk.mp4", "mimeType": "video/mp4" } },
+
+  "transcription:Completed":  { "state": "mockApi(page)" }
+}
