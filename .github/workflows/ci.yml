@@ -1,0 +1,106 @@
+name: CI
+
+# Runs on every pull request, into any branch — so a feature -> dev merge is
+# gated by the same suite that gates a dev -> main promotion.
+#
+# Job ids are deliberately short (`backend`, `frontend`, `e2e`): the check
+# context GitHub reports is the job id, and the branch rulesets in
+# docs/rulesets/ require those exact strings. Rename a job and you must rename
+# it in the ruleset too, or the required check hangs forever.
+#
+# Public repos: ubuntu-latest runs are unlimited — keep this workflow as-is.
+# Private repos: runs count against the 2,000 free minutes/month on GitHub Free.
+# If that's a concern, delete this file or disable it in Settings → Actions → General.
+
+on:
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore ./backend
+
+      - name: Build
+        run: dotnet build ./backend --no-restore --configuration Release
+
+      # Drop this step only if the solution genuinely has no test project.
+      # `dotnet test` over a solution containing none exits 0 having asserted
+      # nothing — a green tick that means the opposite of what it looks like.
+      - name: Test
+        run: >
+          dotnet test ./backend
+          --no-build
+          --configuration Release
+          --verbosity normal
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Only Chromium — the suite pins that project, and pulling all three
+      # browsers roughly triples install time for no extra coverage.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E
+        run: npm run test:e2e
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
