@@ -7,7 +7,7 @@ status: draft
 # What Kit can leverage from the existing estate
 
 Survey of `web-template`, `around-the-world`, `snip-it`, `design-system`, `macro-metrics`, `repo-template` (all
-under `/data/repos/`) and the running prototype at `/data/brain/prototypes/kit-behaviour-ast/`. Every claim below
+in the org) and the running prototype, now vendored here at `prototypes/behaviour-ast/`. Every claim below
 is either **verified** (I read the file / ran the command) or **inferred** (labelled explicitly). Paths are
 `path:line` where that adds precision.
 
@@ -23,7 +23,7 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
   Vitest suite (10 test files, `npm run test` in `package.json`) that **does not run in CI** — only lint + build +
   e2e do. `snip-it`'s identical setup **does** gate `npm run test` in CI. This is exactly the failure mode Kit's
   coverage check is meant to make structurally impossible.
-- The Kit prototype (`/data/brain/prototypes/kit-behaviour-ast/`) is real and runs clean: `node kit.js` and
+- The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean: `node kit.js` and
   `node kit-test.js` both executed successfully during this survey (19/19 tests pass, 78% of steps generated
   against 8 behaviours), and `node compare.js` shows 25/28 generated lines exactly or near-exactly match snip-it's
   actual hand-written Playwright spec on `origin/dev`. It is a prototype answering one falsifiable question, not
@@ -48,7 +48,7 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
 | xUnit + Moq backend harness | documented in `testing-strategy.md`; not directly audited this survey | Not verified | Backend `dotnet test` runs in CI for all three .NET repos (verified in ci.yml), content not read |
 | OpenAPI → RTK Query codegen | `web-template/docs/specs/openapi-codegen.md`, `frontend/openapi-config.cjs` | Yes, as proof-of-pattern | Deterministic generator already in the stack; not itself repurposable for behaviour binding |
 | `InterfaceFromConcreteGenerator` (Roslyn) | `dotnet-libraries/src/Northstar.SourceGenerators/InterfaceFromConcreteGenerator.cs` | Yes, as proof-of-pattern | Proves incremental, deterministic C# codegen from attributes is already production-shaped in this org |
-| Kit prototype (`kit.js`) | `/data/brain/prototypes/kit-behaviour-ast/` | Yes — it IS the core | parse/resolve/generate/coverage all implemented and tested; see §5 for exact scope |
+| Kit prototype (`kit.js`) | `prototypes/behaviour-ast/` | Yes — it IS the core | parse/resolve/generate/coverage all implemented and tested; see §5 for exact scope |
 | ID-bound test coverage check | nowhere else in the estate | No precedent | Confirmed absent everywhere surveyed |
 
 ---
@@ -172,12 +172,12 @@ diffed).
   a behaviour's `provides` lines" extension, if that is ever wanted (not attempted by the prototype).
 
 `snip-it`, `macro-metrics`, `design-system`, `repo-template` were not searched for additional generators beyond
-the `ISourceGenerator|IIncrementalGenerator` grep already covering the whole `/data/repos` tree for those
+the `ISourceGenerator|IIncrementalGenerator` grep already covering every local org clone for those
 interfaces — no further matches were found.
 
 ## 5. The prototype
 
-`/data/brain/prototypes/kit-behaviour-ast/` — 5 files: `kit.js` (342 lines, core), `kit-test.js` (182 lines, own
+`prototypes/behaviour-ast/` — 5 files: `kit.js` (342 lines, core), `kit-test.js` (182 lines, own
 test suite), `compare.js` (73 lines, checks generated output against real hand-written code), `bindings.json`
 (one noun→locator binding file), `behaviours/snip-it.beh` (8 behaviours re-expressing snip-it's real e2e suite),
 `README.md`.

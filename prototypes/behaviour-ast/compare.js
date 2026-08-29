@@ -17,7 +17,10 @@ const { execFileSync } = require('child_process');
 const { parse, resolve, generate } = require('./kit');
 
 const SPEC = 'frontend/e2e/editor.spec.ts';
-const REPO = '/data/repos/snip-it';
+// A local checkout of snip-it, read at origin/dev. Defaults to a sibling clone
+// next to this repo; override with SNIPIT_REPO or argv[2].
+const REPO = process.env.SNIPIT_REPO || process.argv[2] ||
+  path.resolve(__dirname, '..', '..', '..', 'snip-it');
 
 const real = execFileSync('git', ['-C', REPO, 'show', `origin/dev:${SPEC}`], { encoding: 'utf8' });
 
