@@ -96,10 +96,18 @@ written before stage 0 exists.
 
 Listed so we notice rather than rationalise:
 
-1. **Tessl ships its core framework.** Their stated goal is exactly stage 1. They have been ~9 months in
-   closed beta; if that ends with a good product, our differentiator is gone and we should say so.
+1. **Tessl ships its core framework.** Their stated goal is exactly stage 1. They have been **~11.5 months**
+   in closed beta (since 16 Sep 2025); if that ends with a good product, our differentiator is gone and we
+   should say so.
 2. **Kiro adds automated conflict detection.** AWS has the spec artefact already; adding contradiction
-   detection is a feature for them, not a pivot.
+   detection is a feature for them, not a pivot. ⚠️ **Re-measured 2026-08-30 and this moved while nobody was
+   looking:** Kiro's GA release (17 Nov 2025) already ships property-based tests extracted from the spec to
+   check the code against it. That is spec↔**code**, not spec↔**spec**, so item 2 has not happened — but the
+   distance to it is now one axis, not two.
+2a. 🔑 **Nothing in my instrument set would ever have told us any of this.** `sweep`, `pr-health`,
+   `live-check` and `verify` all measure our own estate; every competitive claim in this pack was written
+   once and silently decayed. Eleven days was enough to make four of them wrong. **Any dateless market
+   claim in these docs should be read as expired.** [[a-moat-has-a-shelf-life]]
 3. **The notation doesn't survive a real app.** The stage 0 stop condition. Most likely failure, and the
    cheapest to discover — which is why stage 0 is first.
 4. **We stop shipping apps.** Kit's whole feedback loop is our own estate. If nothing is being built,

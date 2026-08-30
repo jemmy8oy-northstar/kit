@@ -2,18 +2,18 @@
 tags: [kit, research, competitors]
 updated: 2026-08-29
 status: draft
-confidence: low-medium — gathered entirely from web-search result summaries (snippets/paraphrase), not direct page fetches; WebFetch was unavailable this pass. Quotes are search-engine-paraphrased unless marked "direct". Single-sourced financial/valuation figures are flagged ⚠️ unverified and need re-checking before they inform any decision or external-facing material.
+confidence: medium — the original pass (2026-08-29) was gathered entirely from web-search result summaries (snippets/paraphrase), not direct page fetches. That was a self-imposed limitation, not an imposed one: curl was available and unrestricted the whole time. A verification pass on 2026-08-30 re-checked the load-bearing claims against fetched primary sources; figures corrected in that pass are marked ✅ verified 2026-08-30. Quotes are search-engine-paraphrased unless marked "direct". Claims not re-checked remain flagged ⚠️ unverified and need re-checking before they inform any decision or external-facing material.
 ---
 
-> **Method note:** everything below came from search-result summaries, not the primary pages. Treat numbers as directional. Anything flagged ⚠️ unverified came from exactly one source in the raw research and should be re-checked before you rely on it.
+> **Method note:** the original pass (2026-08-29) came from search-result summaries, not the primary pages — curl was available and unrestricted throughout, so that was a self-inflicted limitation, not an imposed one. A verification pass on 2026-08-30 re-checked the load-bearing claims against fetched primary sources; figures corrected in that pass are marked ✅ verified 2026-08-30. Anything still flagged ⚠️ unverified came from exactly one source in the raw research and should be re-checked before you rely on it.
 
 ## Read this first
 
-- The consumer app-builder lane (Lovable, Base44, Bolt.new, Replit, v0...) is enormous and extremely well funded — Lovable alone is ⚠️ unverified at a $6.6B valuation with $545M raised, and Cursor/Anysphere is ⚠️ unverified at a reported $60B acquisition by SpaceX. Kit is not competing there on capital.
+- The consumer app-builder lane (Lovable, Base44, Bolt.new, Replit, v0...) is enormous and extremely well funded — Lovable alone is ✅ verified at a $13.3B valuation with ~$945M raised in total, and Cursor/Anysphere's $60B all-stock acquisition by SpaceX is ✅ verified closed 14 August 2026. Kit is not competing there on capital.
 - The lane Kit is actually pointed at — **spec stays authoritative, cannot silently rot, and contradictions get caught automatically** — is confirmed open ground. Nobody found ships all three of: explicit persistent spec, source-of-truth status, automated contradiction detection. See "The spec-as-source lane" below.
 - Every consumer builder that was checked treats the chat log (or, for Softr/Bubble, the underlying schema) as the only memory. None surfaces "this contradicts a previous requirement, supersede?" — confirmed absence, not just unfound.
 - Two verified incidents show what the absence costs in practice: Replit's agent deleted a live production database and fabricated cover data during a code freeze (Jul 2025); Base44 had an auth bypass letting attackers self-register into someone else's private app (Jul 2025, fixed in 24h).
-- Closest prior art: AWS Kiro persists a spec but gates only on human review (no automated conflict check); Tessl states the exact problem Kit targets but its core framework is still in closed beta ~9 months in; VibeDrift auto-flags drift but has no explicit spec to check against, only inferred codebase patterns.
+- Closest prior art: AWS Kiro persists a spec but gates only on human review (no automated conflict check); Tessl states the exact problem Kit targets but its core framework is still in closed beta ~11.5 months in (closed beta from 16 September 2025); VibeDrift auto-flags drift but has no explicit spec to check against, only inferred codebase patterns.
 
 ## Comparison table
 
@@ -39,21 +39,21 @@ Pricing: Pro $25/mo, Business $50/mo, Enterprise custom; usage-metered credits o
 Persistence: no explicit spec/requirements doc found. Official guidance is to use targeted prompts, not regenerate, because "regenerating resets all your previous iterations, including the parts that worked" [kevinamayi.com] — intent lives in the chat log only.
 Testing: not found.
 Complaints: general vibe-coding critique — silent bugs, duplicate logic, incoherent architecture, maintenance pain.
-Scale: ⚠️ unverified — $200M ARR (Nov 2025) projected to $500M ARR in 2026; $6.6B valuation, $545M raised, ~250 employees [sacra.com, aifundingtracker.com].
+Scale: ✅ verified 2026-08-30 — $200M ARR (Nov 2025) → ~$500M ARR reached June 2026, tracking toward $600M; valued $13.3B on a $400M Series C announced 12 August 2026; ~$945M raised in total [sacra.com, aifundingtracker.com].
 
 ### Base44 (Wix)
 Chat-to-full-stack builder including auth+deploy, for non-technical users. Acquired by Wix for $80M cash + earnouts (Jun 2025), built by a solo founder in ~6 months [Wix press].
 Pricing: Free (25 credits), Starter $16-20/mo, Builder $40-50/mo (unlocks model choice), Pro $80-100/mo [weavai.app].
 Persistence: not found. Testing: not found.
 **Verified incident:** Wiz Research (Jul 2025) found an auth bypass — any app's public `app_id` let attackers self-register as a verified user of someone else's private app (HR systems, internal comms). Fixed in 24h; "not exploited in the wild" per Wix [Wiz/Imperva/SecurityWeek].
-Scale: ⚠️ unverified — 250k users at acquisition growing to 2M+ users, ~$100M ARR by Q1 2026.
+Scale: ✅ verified 2026-08-30 — 2M+ users and $50M ARR confirmed by November 2025, up fast from 250k users at acquisition (Jun 2025). ⚠️ unverified — the ~$100M ARR by Q1 2026 figure could not be sourced.
 
 ### Bolt.new (StackBlitz)
 Full-stack in-browser builder (WebContainers) for solo builders/agencies.
 Pricing: Free, Pro $25/mo, Teams $30/user [taskade.com].
 Persistence: not found. Testing: not found.
 Complaints: token burn dominates — "you keep paying when Bolt rewrites whole files to fix its own bugs"; reviewers estimate up to half their tokens went to errors; Trustpilot 1.4/5; "customer support is almost non-existent" [superdesign.dev, Product Hunt].
-Scale: ⚠️ unverified — $0→$40M ARR in 5 months (by Mar 2025), 1M+ sites via the Netlify partnership [dealroom.co, sacra.com].
+Scale: ✅ verified 2026-08-30 — $0→$40M ARR in 5 months (by Mar 2025), 1M+ sites via the Netlify partnership (confirmed in a Netlify press release) [dealroom.co, sacra.com].
 
 ### Replit Agent
 Full-stack build+deploy in a cloud IDE, for both technical and non-technical users.
@@ -91,7 +91,7 @@ Scale: expanded from 16 to 160+ countries; new Gemini-3-Flash autonomous agent s
 
 ### Cursor / Windsurf
 Both settled around $20/mo Pro after Windsurf's Mar 2026 overhaul (Cursor: free Hobby, $20 Pro, $200 Ultra, $40/user Team).
-Scale is the story: ⚠️ unverified — Cursor/Anysphere ~$1B ARR in 2025 growing to ~$3-4B ARR in 2026, $29.3B valuation (Jan 2026 Series D), and SpaceX reportedly agreed to acquire Anysphere for $60B in stock (Jun 2026) — reportedly the largest startup acquisition on record. Windsurf was acquired by Cognition (~$250M, Jul 2025) after its OpenAI deal collapsed.
+Scale is the story: ⚠️ unverified — Cursor/Anysphere ~$1B ARR in 2025 growing to ~$3-4B ARR in 2026, $29.3B valuation (Jan 2026 Series D). ✅ verified 2026-08-30 — SpaceX's $60B all-stock acquisition of Anysphere closed 14 August 2026 (reportedly the largest startup acquisition on record). Windsurf was acquired by Cognition (~$250M, Jul 2025) after its OpenAI deal collapsed.
 Persistence: neither does spec-persistence natively; both operate over the existing repo as ground truth.
 
 ### Devin (Cognition)
@@ -111,9 +111,9 @@ Nothing in the consumer app-builder tier maintains a persistent structured requi
 
 Four projects sit closer to the problem:
 
-1. **AWS Kiro** (GA Mar 2026) — closest among engineer tools. Generates `requirements.md` (in EARS formal notation), `design.md`, `tasks.md` as durable artefacts *before* code, and gates code generation on human approval of the spec. Genuine spec-persistence. No evidence it automatically detects contradictions between a new requirement and an approved one — the conflict check is the human review step [pingax.com, developersdigest.tech]. Inferred: spec-as-truth without automated conflict detection.
-2. **Tessl** — explicitly framed around this exact problem: agents "hallucinate APIs, break existing functionality, and forget decisions"; stated goal to "detect drift and reconcile it — bringing the spec back in line with the reality of the codebase." Most on-target vendor claim found in this research. But as of mid-2026 the core Framework is still in closed/private beta (~9 months in); only the Spec Registry (third-party library specs, not your own app's behaviour spec) is in open beta [tessl.io, codemyspec.com].
-3. **GitHub Spec Kit** — open source, 120K+ stars, Constitution→Plan→Tasks→Implement pipeline; human and agent agree the spec before code; works across 30+ agents. Community-reported "60-80% fewer rework cycles." No automated contradiction detection — a workflow/template scaffold, not a reasoning engine over the spec [marktechpost.com, letsdatascience.com].
+1. **AWS Kiro** (GA 17 November 2025) — closest among engineer tools. Generates `requirements.md` (in EARS formal notation), `design.md`, `tasks.md` as durable artefacts *before* code, and gates code generation on human approval of the spec. Genuine spec-persistence. Its GA release shipped property-based testing that extracts properties from the spec and measures whether the code matches them (spec↔code conformance) — but that is a different axis from spec↔spec contradiction detection, which it still does not do: no evidence it automatically detects contradictions between a new requirement and an approved one — the conflict check is the human review step [pingax.com, developersdigest.tech, kiro.dev/blog/general-availability]. Inferred: spec-as-truth without automated conflict detection.
+2. **Tessl** — explicitly framed around this exact problem: agents "hallucinate APIs, break existing functionality, and forget decisions"; stated goal to "detect drift and reconcile it — bringing the spec back in line with the reality of the codebase." Most on-target vendor claim found in this research. But as of mid-2026 the core Framework is still in closed/private beta (~11.5 months in, closed beta from 16 September 2025); only the Spec Registry (third-party library specs, not your own app's behaviour spec) is in open beta [tessl.io, codemyspec.com].
+3. **GitHub Spec Kit** — open source, 132k stars (✅ verified 2026-08-30), Constitution→Plan→Tasks→Implement pipeline; human and agent agree the spec before code; works across 30+ agents. Community-reported "60-80% fewer rework cycles." No automated contradiction detection — a workflow/template scaffold, not a reasoning engine over the spec [marktechpost.com, letsdatascience.com].
 4. **VibeDrift** — bolt-on scanner/MCP toolset that infers a codebase's dominant patterns and flags files deviating from that inferred contract. Closest thing to automated conflict detection found anywhere, but it infers intent statistically from existing code and holds no explicit spec, so it cannot distinguish "deliberate new requirement superseding an old one" from "drift/bug" [vibedrift.ai].
 
 **Conclusion:** nobody ships "explicit spec as source of truth + automatic contradiction detection with supersede/confirm UX." Kiro has the persistent spec but only manual review; Tessl has the ambition but hasn't shipped the core framework; VibeDrift has automated conflict-flagging but no explicit spec. Open ground.
@@ -121,7 +121,7 @@ Four projects sit closer to the problem:
 ## What this means for Kit
 
 - The differentiator to hold onto is specific: not "spec-driven" (Kiro and Spec Kit already do that) but **spec as the persisted, authoritative artefact that automatically catches contradictions with prior requirements** — nobody combines both halves.
-- Don't compete on capital or distribution in the consumer app-builder lane — Lovable/Base44/Bolt/Replit are ⚠️ unverified but plausibly billions in valuation and hundreds of millions in funding; that's not a market Kit can out-market.
+- Don't compete on capital or distribution in the consumer app-builder lane — Lovable ($13.3B valuation) and Cursor/Anysphere ($60B acquisition) are now ✅ verified (2026-08-30), and Base44/Bolt/Replit remain ⚠️ unverified but plausibly billions in valuation and hundreds of millions in funding; the capital gap is confirmed, not assumed. That's not a market Kit can out-market.
 - The professional-engineer tools (Cursor, Devin, Claude Code, Codex) are the more relevant peer set, since Kit's audience (per James's background) looks more like them — but none maintains a standing spec either, so there's no existing habit to fight against, only one to build.
 - Testing-bound-to-spec was not found as a claim anywhere in this research, on either side of the lane — if Kit does this, it may be uncontested, but that also means there's no market signal yet that users want it; worth treating as a hypothesis to validate, not a proven demand.
 - The two verified incidents (Replit's DB deletion, Base44's auth bypass) are concrete cautionary tales for pitches: they illustrate the cost of "no persisted, checkable source of truth" in terms a non-technical stakeholder can grasp.
@@ -156,6 +156,7 @@ Four projects sit closer to the problem:
 - https://www.morphllm.com/comparisons/codex-vs-claude-code
 - https://pingax.com/kiro-aws-launch-announcement/
 - https://www.developersdigest.tech/blog/aws-kiro-developer-guide-2026
+- https://kiro.dev/blog/general-availability/
 - https://tessl.io/blog/tessl-launches-spec-driven-framework-and-registry
 - https://codemyspec.com/blog/tessl-review
 - https://www.marktechpost.com/2026/05/08/meet-github-spec-kit-an-open-source-toolkit-for-spec-driven-development-with-ai-coding-agents/

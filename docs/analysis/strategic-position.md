@@ -10,19 +10,31 @@ inputs: [research/competitive-landscape.md, research/bdd-prior-art.md, claude-co
 ## Read this first
 
 1. **Half of the moat I argued for on 16 August has been commoditised since.** I said the differentiator
-   was *"the spec is the source, and it can't silently rot"*. **AWS Kiro went GA in March 2026 doing the
-   first half of that** — `requirements.md` in EARS notation, `design.md`, `tasks.md`, generated before
-   code and gated on human approval. GitHub Spec Kit has 120K+ stars doing a template version. **"Spec
-   before code" is now table stakes in the engineer tier, not a wedge.**
+   was *"the spec is the source, and it can't silently rot"*. **AWS Kiro went GA on 17 November 2025
+   doing the first half of that** — `requirements.md` in EARS notation, `design.md`, `tasks.md`, generated
+   before code and gated on human approval. GitHub Spec Kit has 132k stars doing a template version.
+   **"Spec before code" is now table stakes in the engineer tier, not a wedge.**
+1a. 🔴 **And more of it than I first reported. Kiro's GA release also shipped "property-based testing for
+   spec correctness" — it reads the spec, extracts properties, and tests the code against them.** In Kit's
+   own vocabulary that is **stage 5 (generation) plus stage 7 (the coverage gate)**, which I had been
+   treating as ours to build. Their own framing of the problem is the one I wrote in `design/process.md`:
+   *"how do you know the code actually does what you specified"*, and they name the same failure mode —
+   agents that modify tests instead of fixing code. **So three of Kit's seven stages now exist in a GA
+   product from AWS.** This is not a reason to stop; it is a reason to stop counting them as differentiators.
 2. **The second half is still open, and it is the harder half.** Nobody ships *automated contradiction
-   detection over an accumulated spec corpus*. Kiro's conflict check is a human reading a diff. Spec Kit
-   is a scaffold with no reasoning over the spec. Tessl has stated exactly this ambition and, ~9 months
-   in, still hasn't shipped its core framework. VibeDrift detects drift but infers intent statistically
-   from code, so it cannot tell a deliberate new requirement from a bug.
-3. **The consumer lane is unwinnable and we should stop looking at it.** Lovable ~$500M ARR, Base44 2M+
-   users inside Wix, Bolt $0→$40M in five months, Cursor at a reported $60B acquisition. These are not
-   competitors we out-execute; they are weather. (Figures single-sourced — see the ⚠️ flags in the
-   research doc.)
+   detection over an accumulated spec corpus*. Kiro's conflict check is a human reading a diff — and note
+   its property-based testing measures **spec↔code** conformance, a different axis from **spec↔spec**
+   contradiction, so it does not close this. Spec Kit is a scaffold with no reasoning over the spec. Tessl
+   has stated exactly this ambition and, **~11.5 months** in (closed beta from 16 September 2025), still
+   hasn't shipped its core framework. VibeDrift detects drift but infers intent statistically from code,
+   so it cannot tell a deliberate new requirement from a bug.
+3. **The consumer lane is unwinnable and we should stop looking at it.** Lovable hit **~$500M ARR in
+   June 2026** and was valued at **$13.3B** on a $400M Series C (12 Aug 2026, ~$945M raised in total);
+   Base44 passed **2M users by November 2025** inside Wix; Bolt $0→$40M in five months; and the
+   SpaceX/Anysphere (Cursor) **$60B all-stock acquisition closed on 14 August 2026**. These are not
+   competitors we out-execute; they are weather. (Re-verified 2026-08-30 against primary and near-primary
+   sources — the earlier ⚠️ single-sourced flags on these figures are cleared, and every one of them had
+   moved.)
 4. **The BDD graveyard names the three ways this dies**, and our prototype already answers two of them
    by accident. That is the most encouraging finding in the pack.
 5. **Kit pays for itself as our internal process whether or not it is ever a product.** That is the
@@ -42,18 +54,27 @@ moved into the first half of it:
 
 | | ships today | what it does about conflict |
 |---|---|---|
-| **AWS Kiro** (GA Mar 2026) | persistent `requirements.md` (EARS) → `design.md` → `tasks.md`, human gate before code | **a human reads it.** No automated contradiction detection found |
-| **GitHub Spec Kit** (120K★) | Constitution → Plan → Tasks → Implement, agent-agnostic | none — it is a workflow scaffold, not a reasoning engine |
-| **Tessl** | Spec Registry (third-party library specs) in open beta | *stated goal* is drift detect-and-reconcile. Core framework **still closed beta after ~9 months** |
+| **AWS Kiro** (GA **17 Nov 2025**) | persistent `requirements.md` (EARS) → `design.md` → `tasks.md`, human gate before code — **plus property-based tests extracted from the spec to measure spec↔code conformance** | **a human reads it.** No automated contradiction detection found |
+| **GitHub Spec Kit** (**132k★**) | Constitution → Plan → Tasks → Implement, agent-agnostic | none — it is a workflow scaffold, not a reasoning engine |
+| **Tessl** | Spec Registry (third-party library specs) in open beta | *stated goal* is drift detect-and-reconcile. Core framework **still closed beta after ~11.5 months** (since 16 Sep 2025) |
 | **VibeDrift** | scans a codebase, flags files deviating from inferred patterns | automated, but **no explicit spec** — cannot distinguish "new requirement" from "bug" |
 | **Everything consumer** (Lovable, Bolt, Base44, Replit, v0) | chat log + current code | **nothing.** Lovable's official advice is literally "don't regenerate, you'll lose the parts that worked" |
 
-So the honest read: **the artefact is no longer novel; the *reasoning over the artefact* is.** If Kit's
-pitch is "we write a spec first", we are eighteen months late to a fight with AWS and GitHub. If it is
-"your spec corpus is checked for contradictions and asks you to adjudicate", nobody has shipped that.
+So the honest read: **the artefact is no longer novel, and neither is testing the code against it; the
+*reasoning over the artefact* is.** If Kit's pitch is "we write a spec first", we are **~9 months** late
+to a fight with AWS and GitHub. If it is "we generate the tests from the spec and gate on them", Kiro
+shipped that at GA too. If it is **"your spec corpus is checked against itself for contradictions and
+asks you to adjudicate"**, nobody has shipped that.
 
-**This should update the plan, not kill it.** Tessl taking nine months and not shipping is the strongest
-available evidence that the hard part is genuinely hard — which is what a moat looks like from the inside.
+**This should update the plan, not kill it.** Tessl taking **~11.5 months** and still not shipping is the
+strongest available evidence that the hard part is genuinely hard — which is what a moat looks like from
+the inside.
+
+> ⚠️ **Method note, and the reason this section is now dated rather than assertive.** Every figure above
+> was wrong or stale eleven days after it was written, and one of them — Kiro's GA date — was wrong by
+> nine months *in the direction that flattered us*. Nothing in my instrument set re-checks a market claim;
+> `sweep`, `pr-health` and `live-check` all measure our own estate. **Treat any competitive claim here as
+> expired unless it carries a verification date.** Re-verified 2026-08-30.
 
 ## 2. The three ways this dies, from the BDD graveyard
 

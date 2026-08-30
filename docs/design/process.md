@@ -166,24 +166,44 @@ the app that shipped to real users.
 
 ## What this process is *not*
 
-- **Not "spec before code".** Kiro shipped that in March 2026 and GitHub Spec Kit has 120K stars doing a
-  template version. Writing a spec first is table stakes now; **keeping the corpus honest over time is
-  the part nobody has.**
+- **Not "spec before code", and not "tests generated from the spec" either.** Kiro shipped the first at
+  GA on **17 November 2025**, and the same release shipped the second — property-based tests extracted
+  from the spec, measuring whether the code matches it. **That is stage 5 and stage 7 above.** GitHub Spec
+  Kit has 132k stars doing a template version. Writing a spec first is table stakes now, and so is
+  generating tests from it; **keeping the corpus honest against itself over time is the part nobody has.**
+  ⚠️ So of the seven stages here, **1, 5, 6 and 7 are commodity** — the ones worth our effort are **2
+  (holes), 3 (conflict adjudication) and 4 (bind-by-noun)**. Verified 2026-08-30; see
+  `analysis/strategic-position.md`.
 - **Not a code generator.** Stage 6 is the commodity.
-- **Not a UI, yet.** Deliberately. The blueprint/rough-components idea from #68 is good and it is
-  downstream of everything above.
+- ~~**Not a UI, yet.**~~ **Superseded by James on #68, 2026-08-30:** *"the site can just start as a page to
+  view the defined and inferred behaviours and a location to discuss and add new behaviours/features/
+  assertions… for now you can manage it… let's focus on the workflows and the surface."* The surface is in
+  scope; the **AI platform behind it is not** — I am the engine for now.
 
-## Open decisions — yours, not mine
+## Decisions — ANSWERED by James on #68, 2026-08-29/30
 
-1. **Default-include or default-ask for inferences?** You said default-include. Prior art says the
-   adjudication step is the first thing skipped, and default-include makes skipping frictionless. A middle
-   option: default-include, but an un-reviewed inference is **visibly marked in the corpus** and appears
-   in a "never adjudicated" count — included, but not silently.
-2. **Where does the process run?** In-repo CLI over files in git (like Spec Kit — versioned, diffable,
-   reviewable in a PR, and it works with the agents we already use), or a hosted app with its own store?
-   **This decides the product shape.** I lean in-repo for stage 0 because it costs nothing and every part
-   of our estate already works that way — but it is an architecture call and yours under #58.
-3. **Does the corpus assume our stack?** Noun-binding to Playwright roles/names assumes a web app; the
-   coverage gate assumes our CI. Generalising costs most of the leverage we have.
-4. **Is the first target a real app of ours, or a toy?** I would argue ATW or snip-it — a toy cannot
-   demonstrate the one thing Kit is for, which is a corpus staying honest across many changes.
+All four were open when this document was written. He answered all four. Recorded here rather than left
+on the thread, because a decision that only exists in a comment is the thing this whole project exists to
+stop ([[artefacts-not-states]]).
+
+1. ✅ **Inferences: default-include, but marked unreviewed.** *"I like this default included but marked
+   unreviewed."* He took the middle option — the friction of default-include, without the silence.
+   **Implemented:** every behaviour carries a `source defined|inferred <ref>` line, and an inferred one
+   carries `review unreviewed` until adjudicated. The tool prints a never-adjudicated count, so skipping
+   the step is visible rather than free. This is the one part of prior art's three fatal failure modes we
+   had no answer for, so it needed to be a real mechanism and not a convention.
+2. ✅ **Where it runs: a light web app, not a CLI — and I manage the reasoning.** *"Now we have such a
+   strong structure I feel like a lightweight app is much more of a higher cost than cli, maybe we can go
+   with light web app… the site can just start as a page to view the defined and inferred behaviours and a
+   location to discuss and add new behaviours/features/assertions. And for now you can manage it. Then
+   later we can build it out into a system driven by some ai api."*
+   ⇒ **The corpus still lives in git** (it must — it has to be diffable and reviewable in a PR, and the
+   coverage gate has to run in CI). The web app is a **view and a discussion surface over it**, not a
+   second store. No LLM API in the build; I am the engine.
+3. ⚠️ **Does the corpus assume our stack? — still open, but now answered in practice.** Piloting on two
+   web-template apps means yes for stage 0. Worth revisiting only if Kit ever leaves our estate.
+4. ✅ **First target: `james-habits-app` and `language-vocab`.** *"Let's pilot it on the non technical apps
+   for now: habits app, vocab app."* Better than my suggestion of ATW or snip-it: both are small enough to
+   hold in one head, both are real, and — the part I had not appreciated — **both skipped the SDD pipeline's
+   spec stages entirely**, so their defined and inferred behaviours have never once been reconciled. That
+   is the exact condition Kit claims to fix, occurring naturally rather than staged.
