@@ -33,7 +33,14 @@ function parse(text, file = '<inline>') {
 
     const m = /^behaviour\s+([A-Z][A-Z0-9-]*)\s+"(.*)"$/.exec(line);
     if (m) {
-      cur = { id: m[1], title: m[2], actor: null, steps: [], unknowns: [], provides: [], at };
+      cur = {
+        id: m[1], title: m[2], actor: null, steps: [], unknowns: [], provides: [], at,
+        // Default `defined`/`approved` so a corpus written before this existed
+        // still parses. The asymmetry is deliberate: an INFERENCE has to say so,
+        // because the whole risk is an inference passing itself off as a
+        // requirement. Silence means a human wrote it.
+        source: { origin: 'defined', ref: null }, review: { state: 'approved', note: null },
+      };
       behaviours.push(cur);
       continue;
     }
@@ -43,6 +50,41 @@ function parse(text, file = '<inline>') {
     const rest = line.slice(kw.length).trim();
 
     if (kw === 'actor') { cur.actor = rest; continue; }
+
+    // ── James's #68 decision, 2026-08-30 ──────────────────────────────────
+    // "I like this default included but marked unreviewed."
+    //
+    // Prior art's third fatal failure mode is that the adjudication step is the
+    // first thing a team skips, and default-include makes skipping free. The
+    // answer is not to block on approval — it is to make the un-adjudicated
+    // count VISIBLE, so skipping is a number someone can see rather than an
+    // absence nobody can. `source` is what an approve/deny points AT six weeks
+    // later; an inference that lives only in a chat log cannot be denied.
+    if (kw === 'source') {
+      const s = /^(defined|inferred)(?:\s+(.+))?$/.exec(rest);
+      if (!s) throw new Error(`${at}: source wants "defined"|"inferred" [ref], got: ${rest}`);
+      cur.source = { origin: s[1], ref: s[2] || null };
+      // An inference is unreviewed until someone says otherwise. Writing
+      // `source inferred` and having it default to approved would reintroduce
+      // exactly the silence this mechanism exists to remove.
+      if (s[1] === 'inferred' && !cur.reviewExplicit) {
+        cur.review = { state: 'unreviewed', note: null };
+      }
+      continue;
+    }
+
+    if (kw === 'review') {
+      const r = /^(unreviewed|approved|denied)(?:\s+(.+))?$/.exec(rest);
+      if (!r) throw new Error(`${at}: review wants "unreviewed"|"approved"|"denied" [note], got: ${rest}`);
+      // A denial without a correction is a hole, not a decision — his #68 point
+      // that "on a deny a required indication of what correct behaviour actually
+      // looks like should take place". A bare denial deletes a line; a denial
+      // with a correction compounds into the corpus.
+      if (r[1] === 'denied' && !r[2]) throw new Error(`${at}: a denied behaviour must state the correction`);
+      cur.review = { state: r[1], note: r[2] || null };
+      cur.reviewExplicit = true;
+      continue;
+    }
 
     if (kw === 'provides') {
       // Where an LLM's INFERENCE is written down. It has to be an explicit,
@@ -291,15 +333,47 @@ function coverage(behaviours, testSources) {
   };
 }
 
-module.exports = { parse, parseStep, resolve, generate, coverage };
+// ─────────────────────────── 5. adjudication ───────────────────────────
+// The count that makes skipping visible. Prior art (North's own retrospective)
+// says the collaboration/adjudication step is the first thing dropped, and
+// James chose default-include — so the ONLY thing standing between that and a
+// corpus quietly full of unreviewed machine guesses is this number being
+// printed somewhere a person looks.
+//
+// It deliberately does not gate the build. An inference is not wrong; it is
+// unexamined. Failing on it would train people to approve in bulk, which is the
+// same silence with an audit trail.
+
+function adjudication(behaviours) {
+  const defined = behaviours.filter((b) => b.source.origin === 'defined');
+  const inferred = behaviours.filter((b) => b.source.origin === 'inferred');
+  return {
+    defined: defined.length,
+    inferred: inferred.length,
+    unreviewed: inferred.filter((b) => b.review.state === 'unreviewed'),
+    approved: inferred.filter((b) => b.review.state === 'approved'),
+    denied: behaviours.filter((b) => b.review.state === 'denied'),
+    // A behaviour with no traceable source is worse than an unreviewed one: it
+    // cannot be checked against anything at all.
+    untraceable: behaviours.filter((b) => !b.source.ref),
+  };
+}
+
+module.exports = { parse, parseStep, resolve, generate, coverage, adjudication };
 
 // ─────────────────────────── cli ───────────────────────────
 if (require.main === module) {
   const fs = require('fs');
   const path = require('path');
   const dir = path.join(__dirname, 'behaviours');
-  const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
-    .flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
+  // `node kit.js <name>` scopes the run to one corpus. Needed the moment there
+  // was more than one app in here: a measurement averaged over two unrelated
+  // corpora tells you about neither.
+  const only = process.argv[2];
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
+    .filter((f) => !only || f.includes(only));
+  if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
+  const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
   const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
   const { behaviours, conflicts, symbols } = resolve(all);
 
@@ -328,6 +402,17 @@ if (require.main === module) {
     }
     console.log('');
   }
+
+  const adj = adjudication(behaviours);
+  console.log('── adjudication (James, #68: "default included but marked unreviewed") ──');
+  console.log(`  defined by a human    ${adj.defined}`);
+  console.log(`  inferred by the model ${adj.inferred}`);
+  console.log(`  NEVER ADJUDICATED     ${adj.unreviewed.length}   ${adj.unreviewed.map((b) => b.id).join(', ')}`);
+  if (adj.denied.length) console.log(`  denied w/ correction  ${adj.denied.length}`);
+  if (adj.untraceable.length) {
+    console.log(`  ⚠️  UNTRACEABLE        ${adj.untraceable.length}   no source ref: ${adj.untraceable.map((b) => b.id).join(', ')}`);
+  }
+  console.log('');
 
   const steps = totals.generated + totals.contract + totals.ungenerated;
   console.log('── measured ──');
