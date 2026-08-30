@@ -239,13 +239,66 @@ t('a behaviour with no traceable ref is reported separately from an unreviewed o
   assert.deepStrictEqual(a.untraceable.map((b) => b.id), ['BEH-1']);
 });
 
+console.log('\n── displayed surface (his frontend-first answer, kit#3) ──');
+const { surface } = require('./kit');
+
+// A DEFINED behaviour is served, never serving. Without this control the report
+// would count every documented behaviour as unserved surface and read as
+// catastrophe on a healthy corpus.
+const SERVED_BY = 'behaviour BEH-UI "screen" \n  source defined docs/D.md#1\n';
+
+t('an inferred behaviour that serves a documented one is not a finding', () => {
+  const s = surface(build(SERVED_BY +
+    'behaviour BEH-API "route"\n  source inferred code.cs:X\n  serves BEH-UI\n').behaviours);
+  assert.deepStrictEqual(s.errors, []);
+  assert.deepStrictEqual(s.unserved.map((b) => b.id), []);
+  assert.deepStrictEqual(s.served.map((b) => b.id), ['BEH-API']);
+});
+
+t('an inferred behaviour serving nothing IS the finding', () => {
+  const s = surface(build(SERVED_BY +
+    'behaviour BEH-API "route"\n  source inferred code.cs:X\n').behaviours);
+  assert.deepStrictEqual(s.unserved.map((b) => b.id), ['BEH-API']);
+  assert.deepStrictEqual(s.errors, [], 'unserved is a report, not an error — it needs a human, not a fix');
+});
+
+t('a DEFINED behaviour serving nothing is not a finding (the control)', () => {
+  const s = surface(build(SERVED_BY).behaviours);
+  assert.deepStrictEqual(s.unserved.map((b) => b.id), [],
+    'a documented behaviour is served, not serving — flagging it would flood the report');
+});
+
+t('a serves link to an id that does not exist breaks the build', () => {
+  const s = surface(build('behaviour BEH-API "route"\n  source inferred code.cs:X\n  serves BEH-GHOST\n').behaviours);
+  assert.strictEqual(s.errors.length, 1);
+  assert.match(s.errors[0], /BEH-GHOST, which is not in the corpus/);
+});
+
+t('an inference serving an inference breaks the build — the chain must reach a human', () => {
+  const s = surface(build(
+    'behaviour BEH-A "one"\n  source inferred code.cs:A\n' +
+    'behaviour BEH-B "two"\n  source inferred code.cs:B\n  serves BEH-A\n').behaviours);
+  assert.ok(s.errors.some((e) => /itself inferred/.test(e)));
+});
+
+t('a defined behaviour carrying a serves line breaks the build', () => {
+  const s = surface(build(SERVED_BY +
+    'behaviour BEH-OTHER "x"\n  source defined docs/D.md#2\n  serves BEH-UI\n').behaviours);
+  assert.ok(s.errors.some((e) => /is defined, so it is served rather than serving/.test(e)));
+});
+
+t('serves wants a behaviour id, not prose', () => {
+  assert.throws(() => parse('behaviour BEH-A "a"\n  serves the today screen\n', 't.beh'), /serves wants a behaviour id/);
+});
+
 console.log('\n── the pilot corpus is real material, not a fixture ──');
 
-t('james-habits-app parses and its DESIGN-vs-code conflict is detected', () => {
+t('james-habits-app parses and its spec-vs-spec conflict is detected', () => {
   // The pilot's headline finding, pinned so it cannot silently stop being found.
-  // docs/DESIGN.md#mvp-5 says the history grid is 30 days; the shipped route
-  // takes a caller-supplied length. Two claims about one slot, found with no
-  // LLM and no embeddings — straight out of the symbol table.
+  // CORRECTED SINCE #3: this is DEFINED-vs-DEFINED, not doc-vs-code. MVP 5 fixes
+  // the window at 30; the Architecture section of the SAME document parameterises
+  // it. Both sides now assert `source defined`, and the assertion below is what
+  // stops the corpus quietly sliding back to the flattering version.
   const fs = require('fs');
   const path = require('path');
   const src = fs.readFileSync(path.join(__dirname, 'behaviours/james-habits-app.beh'), 'utf8');
@@ -255,7 +308,13 @@ t('james-habits-app parses and its DESIGN-vs-code conflict is detected', () => {
   const clash = conflicts.find((c) => c.key === 'region:CompletionGrid.days');
   assert.ok(clash, 'the 30-day-vs-caller-supplied contradiction must be detected');
   assert.deepStrictEqual(clash.held, ['30']);
-  assert.ok(clash.challengers.some((x) => x.from === 'BEH-WINDOW-INFERRED'));
+  assert.ok(clash.challengers.some((x) => x.from === 'BEH-WINDOW-API'));
+
+  const byId = new Map(behaviours.map((b) => [b.id, b]));
+  for (const id of ['BEH-WINDOW-MVP', 'BEH-WINDOW-API']) {
+    assert.strictEqual(byId.get(id).source.origin, 'defined',
+      `${id} must stay DEFINED — spec-vs-spec is the axis Kiro's spec-to-code testing does not cover`);
+  }
 
   // Every inferred behaviour must cite a real file:symbol. A corpus that cites
   // nothing looks identical to one that cites everything, right up to the moment
@@ -263,6 +322,22 @@ t('james-habits-app parses and its DESIGN-vs-code conflict is detected', () => {
   const a = adjudication(behaviours);
   assert.strictEqual(a.untraceable.length, 0, 'every pilot behaviour must cite its source');
   assert.ok(a.inferred >= 10, 'the inferred half is the whole point of the pilot');
+});
+
+t('the pilot names exactly the two behaviours nothing documented displays', () => {
+  // His frontend-first answer, measured on real material. Pinning the IDENTITIES
+  // rather than the count: a corpus that grew a third unserved behaviour would
+  // still pass a `=== 2`, and the whole value of this report is which ones.
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours/james-habits-app.beh'), 'utf8');
+  const { behaviours } = resolve(parse(src, 'james-habits-app.beh'));
+  const s = surface(behaviours);
+  assert.deepStrictEqual(s.errors, [], 'the pilot corpus must have no broken serves links');
+  assert.deepStrictEqual(s.unserved.map((b) => b.id).sort(), ['BEH-ARCHIVE-2', 'BEH-ERROR-1']);
+  // The positive control that stops "refuse everything" passing: most of the
+  // inferred half DOES serve something, so an empty `served` set is a bug.
+  assert.ok(s.served.length >= 8, `expected most inferences to serve a screen, got ${s.served.length}`);
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
