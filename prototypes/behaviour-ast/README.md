@@ -46,6 +46,34 @@ not have is a build failure rather than a passing test.
 4. **coverage** — a behaviour with no test naming its ID is a failure. The only
    part that can go red, and therefore the only part that can't be politely
    ignored.
+5. **surface** — James, [kit#3](https://github.com/jemmy8oy-northstar/kit/pull/3):
+   *"the api layer is inferred from what needs to be displayed in the ui… expose
+   only what is required to display."* So Kit has **no HTTP assertion layer**,
+   and instead an inferred behaviour says which documented one it exists for
+   (`serves BEH-X`). An inference that serves nothing documented is API surface
+   nothing displays — printed, never guessed at. A broken `serves` link exits 1.
+
+## The notation, whole
+
+```
+behaviour BEH-ID "one sentence a human would say"
+  source   defined docs/DESIGN.md#mvp-3 | inferred backend/Foo.cs:BarTest
+  review   unreviewed | approved | denied <the correction, required on a denial>
+  serves   BEH-OTHER            # inferred only; the documented behaviour this exists for
+  actor    owner
+  given / when / then <verb> <kind>:<Noun> [with ?hole]
+  provides <kind>:<Noun>.<slot> = <value>
+  contract <prose an assertion cannot honestly own>
+```
+
+Silence is asymmetric on purpose. No `source` means a human wrote it; no `review`
+on an inference means unreviewed; no `serves` on an inference is the finding, and
+no `serves` on a defined behaviour is normal — a documented behaviour is served,
+it does not serve.
+
+`node mutate.js` breaks each rule above in turn and checks the suite goes red for
+it. 11/11 killed today; a SURVIVED line means a rule the tests only appear to
+enforce.
 
 ## The two design consequences that fell out of building it
 
