@@ -35,6 +35,7 @@ function parse(text, file = '<inline>') {
     if (m) {
       cur = {
         id: m[1], title: m[2], actor: null, steps: [], unknowns: [], provides: [], serves: [], at,
+        asks: null, options: [], recommend: null, against: null, cites: [],
         // Default `defined`/`approved` so a corpus written before this existed
         // still parses. The asymmetry is deliberate: an INFERENCE has to say so,
         // because the whole risk is an inference passing itself off as a
@@ -99,6 +100,81 @@ function parse(text, file = '<inline>') {
       const s = /^([A-Z][A-Z0-9-]*)$/.exec(rest);
       if (!s) throw new Error(`${at}: serves wants a behaviour id, got: ${rest}`);
       cur.serves.push({ id: s[1], at });
+      continue;
+    }
+
+    // ── James, kit#3 (2026-08-30) ─────────────────────────────────────────
+    // "Maybe you should provide a behaviour question sheet for the habits app
+    // so that we can pilot kit this way... I can work through it with Gemini"
+    //
+    // The adjudication count (§5) says HOW MANY behaviours nobody has ruled on.
+    // It cannot say what ruling on one would even mean, and "approve or deny?"
+    // twelve times is a form nobody fills in honestly — it trains exactly the
+    // bulk-approval the count exists to prevent.
+    //
+    // So the split is: the TOOL finds where a real question exists (an inference
+    // nothing displays, a symbol two behaviours disagree about — both computed,
+    // §6 and §2), and a HUMAN authors what the question actually asks. Same
+    // reasoning as `serves`: an authored claim can be argued with, and a
+    // similarity score between a route name and a screen name cannot.
+    //
+    // `asks` also PROMOTES. Mechanism sets the floor, not the ceiling — a
+    // behaviour that looks routine to the tool can still be the one that matters
+    // (BEH-HISTORY-3 serves a screen and is still a rename decision), and
+    // writing `asks` on it says so.
+    if (kw === 'asks') {
+      const a = /^"(.*)"$/.exec(rest);
+      if (!a) throw new Error(`${at}: asks wants a quoted question, got: ${rest}`);
+      cur.asks = a[1];
+      continue;
+    }
+
+    // An option is a choice AND what changes if it is taken. The consequence is
+    // not decoration: a question whose options all change nothing is a question
+    // that should never have been asked, and writing the consequence down is
+    // what exposes it. Same discipline the decision queue enforces by demanding
+    // a default (claude-code-bot#59).
+    if (kw === 'option') {
+      const o = /^"([^"]*)"\s+"(.*)"$/.exec(rest);
+      if (!o) throw new Error(`${at}: option wants "<label>" "<what changes if taken>", got: ${rest}`);
+      cur.options.push({ label: o[1], consequence: o[2], at });
+      continue;
+    }
+
+    if (kw === 'recommend') {
+      const r = /^"([^"]*)"\s+"(.*)"$/.exec(rest);
+      if (!r) throw new Error(`${at}: recommend wants "<option label>" "<why>", got: ${rest}`);
+      cur.recommend = { label: r[1], why: r[2], at };
+      continue;
+    }
+
+    // `cites` names a behaviour that is EVIDENCE for this question rather than a
+    // question of its own. Built because the first real sheet asked the same
+    // thing twice at two different tiers: D1 asked which of `days`/`historyDays`
+    // wins, while BEH-HISTORY-3 ("the parameter is named historyDays") sat in the
+    // review table as a routine tick. Ticking it answers D1 silently, in the
+    // section explicitly labelled as the cheap one — and an assistant working
+    // top-down would do exactly that and then argue the opposite in D1.
+    //
+    // So a cited behaviour renders INSIDE the decision and is suppressed from the
+    // review list. Deliberately not automatic: two behaviours touching one symbol
+    // is not the same as one being the other's evidence, and only an author knows
+    // which. The gate below refuses a `cites` that names nothing.
+    if (kw === 'cites') {
+      if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw new Error(`${at}: cites wants a behaviour id, got: ${rest}`);
+      cur.cites.push({ id: rest, at });
+      continue;
+    }
+
+    // His claude-code-bot#82 shape, made structural: a pack carries the options,
+    // the evidence, my recommendation AND the strongest case against it. A
+    // recommendation with no counter-case is advocacy wearing a decision's
+    // clothes, and it is the half a reader most needs and I am least inclined
+    // to write — so the gate below requires it rather than trusting me.
+    if (kw === 'against') {
+      const g = /^"(.*)"$/.exec(rest);
+      if (!g) throw new Error(`${at}: against wants a quoted counter-case, got: ${rest}`);
+      cur.against = g[1];
       continue;
     }
 
@@ -426,7 +502,342 @@ function surface(behaviours) {
   };
 }
 
-module.exports = { parse, parseStep, resolve, generate, coverage, adjudication, surface };
+// ─────────────────────────── 7. the question sheet ───────────────────────────
+// James, kit#3: "provide a behaviour question sheet for the habits app... I can
+// work through it with Gemini".
+//
+// Two things this must NOT become. It must not become twelve identical "approve
+// or deny?" rows, because that is a form, and a form gets bulk-approved. And it
+// must not become my prose with a tool's name on it — if I hand-pick which
+// behaviours are interesting, the sheet measures my attention, not the corpus.
+//
+// So consequence is DETECTED, not judged. A question is a DECISION when the
+// corpus can prove both answers change something:
+//   · nothing documented displays it (§6) — either the doc is missing a screen
+//     or the surface should go, and those are opposite edits; or
+//   · two behaviours disagree about one symbol (§2) — someone must lose.
+// Everything else unreviewed is a REVIEW: cheap, one line, still counted.
+//
+// The tiers then buy different amounts of a reader's attention, which is the
+// whole point of ranking: a DECISION carries options, a recommendation and the
+// strongest case against it; a REVIEW carries the citation and stops.
+
+function questions(behaviours, conflicts = []) {
+  const byId = new Map(behaviours.map((b) => [b.id, b]));
+  const unserved = new Set(surface(behaviours).unserved.map((b) => b.id));
+  const out = [];
+
+  // Anything a question cites is that question's evidence, so it must not also
+  // appear as an independent row. Collected before either loop because the
+  // citing behaviour and the cited one are found by different passes.
+  const citedBy = new Map();
+  for (const b of behaviours) {
+    for (const c of b.cites) if (!citedBy.has(c.id)) citedBy.set(c.id, b.id);
+  }
+  const evidence = (b) => b.cites.map((c) => {
+    const t = byId.get(c.id);
+    return {
+      id: c.id,
+      title: t ? t.title : c.id,
+      ref: t ? t.source.ref : null,
+      contracts: t ? t.steps.filter((s) => s.kind === 'contract').map((s) => s.text) : [],
+    };
+  });
+
+  // Conflicts first: they are the only question here where the corpus itself
+  // says two authored statements cannot both hold.
+  for (const c of conflicts) {
+    const sides = [...c.holders, ...c.challengers.map((x) => x.from)];
+    // The question can be authored on either side — the collision belongs to
+    // the symbol, not to one of the two behaviours that walked into it.
+    const owner = sides.map((id) => byId.get(id)).find((b) => b && b.asks);
+    out.push({
+      kind: 'conflict', tier: 'decision', key: c.key,
+      title: `Two behaviours disagree about ${c.key}`,
+      // The renderer has a second reader who cannot open the repo, so each side
+      // carries its own citation and its own value rather than a bare id.
+      sides: sides.map((id) => {
+        const b = byId.get(id);
+        const ch = c.challengers.find((x) => x.from === id);
+        return { id, title: b ? b.title : id, ref: b ? b.source.ref : null, value: ch ? ch.value : c.held };
+      }),
+      held: c.held, challengers: c.challengers,
+      asks: owner ? owner.asks : null,
+      options: owner ? owner.options : [],
+      recommend: owner ? owner.recommend : null,
+      against: owner ? owner.against : null,
+      owner: owner ? owner.id : null,
+      cites: owner ? evidence(owner) : [],
+    });
+  }
+
+  for (const b of behaviours) {
+    // A defined behaviour is not up for adjudication — a human already wrote it.
+    // It can still carry a question (that is how a conflict gets one), and that
+    // question is reported above rather than here.
+    if (b.source.origin !== 'inferred' || b.review.state !== 'unreviewed') continue;
+    // Cited = already on the page, inside the question it is evidence for.
+    // Listing it again as its own row is the double-ask this field exists to
+    // remove — and the duplicate would land in the section labelled cheap.
+    if (citedBy.has(b.id)) continue;
+    const detected = unserved.has(b.id);
+    out.push({
+      kind: detected ? 'unserved' : 'review',
+      // `asks` PROMOTES a routine-looking inference to a decision. Detection is
+      // the floor: the tool cannot see that a parameter's NAME is wrong, and
+      // refusing to let a human say so would make the ranking dumber than both.
+      tier: detected || b.asks ? 'decision' : 'review',
+      key: b.id, id: b.id, title: b.title,
+      source: b.source, serves: b.serves.map((s) => s.id),
+      contracts: b.steps.filter((s) => s.kind === 'contract').map((s) => s.text),
+      asks: b.asks, options: b.options, recommend: b.recommend, against: b.against,
+      cites: evidence(b),
+    });
+  }
+
+  const rank = { decision: 0, review: 1 };
+  out.sort((a, b) => rank[a.tier] - rank[b.tier]);
+  return out;
+}
+
+// The gate. A sheet that silently ships an incomplete decision is worse than no
+// sheet: it looks worked-through. Every failure here is a thing I owe a reader
+// and did not write, so it exits 1 alongside the broken-link check.
+function questionErrors(qs) {
+  const errors = [];
+  for (const q of qs) {
+    const where = q.kind === 'conflict' ? `conflict ${q.key}` : q.id;
+    if (q.tier === 'decision' && !q.asks) {
+      errors.push(q.kind === 'conflict'
+        ? `${where}: neither side states the question — put an "asks" on one of ${q.sides.map((s) => s.id).join(' or ')}`
+        : `${where}: nothing documented displays it, so both answers change something — it needs an "asks"`);
+      continue;
+    }
+    if (!q.asks) {
+      // A pack hanging off no question is a stranded opinion.
+      if (q.options.length || q.recommend || q.against) {
+        errors.push(`${where}: has option/recommend/against but no "asks" to attach them to`);
+      }
+      continue;
+    }
+    if (q.options.length < 2) errors.push(`${where}: a question needs at least 2 options, has ${q.options.length}`);
+    // Catches the rot case: an option gets relabelled and the recommendation
+    // quietly starts pointing at nothing while still reading as a recommendation.
+    if (q.recommend && !q.options.some((o) => o.label === q.recommend.label)) {
+      errors.push(`${where}: recommends "${q.recommend.label}", which is not one of its options (${q.options.map((o) => o.label).join(', ')})`);
+    }
+    // A `cites` naming nothing is worse than a broken link in prose: the cited
+    // behaviour is SUPPRESSED from the review list, so a typo here deletes a
+    // question from the sheet and leaves no trace of it anywhere.
+    for (const c of q.cites || []) {
+      if (!c.ref) errors.push(`${where}: cites ${c.id}, which is not a behaviour in this corpus — that silently drops it from the sheet`);
+    }
+    if (q.recommend && !q.against) {
+      errors.push(`${where}: recommends without stating the strongest case against — that is advocacy, not a decision pack`);
+    }
+  }
+  return errors;
+}
+
+// ─────────────────────────── 8. rendering the sheet ──────────────────────────
+// The artefact he actually opens. He said "I can work through it with Gemini",
+// so the sheet has a second reader who has never seen this repo, cannot run
+// anything, and will confidently fill any gap it is left. That constrains it
+// harder than a document for him alone:
+//
+//   · every question carries its own evidence inline, because the assistant
+//     cannot go and look at HabitRoutes.cs:68;
+//   · the brief says what the assistant is FOR (pressure-test, not decide) and
+//     what it must not do (invent a third option, ratify the recommendation),
+//     because an assistant asked to "help decide" agrees;
+//   · every answer names the exact corpus line it becomes, so working through
+//     the sheet produces an edit rather than a conversation.
+//
+// The last one is the reason this renders from `questions()` rather than being
+// written by hand: a hand-written sheet is a snapshot that stops matching the
+// corpus the day after it is written, silently, while still reading as current.
+// A test asserts the committed sheet is byte-identical to this output.
+
+function renderSheet(app, qs, opts = {}) {
+  const rev = opts.rev || '';
+  const decisions = qs.filter((q) => q.tier === 'decision');
+  const reviews = qs.filter((q) => q.tier === 'review');
+  const L = [];
+
+  L.push(`# Behaviour question sheet — \`${app}\``);
+  L.push('');
+  L.push(`**${decisions.length} decisions · ${reviews.length} reviews.** Generated by ` +
+    `\`node kit.js sheet ${app}${rev ? ` --rev ${rev}` : ''}\`` +
+    `${rev ? `, over the app at \`${rev}\`` : ''}. Do not hand-edit — re-run it.`);
+  L.push('');
+  L.push('## What this is');
+  L.push('');
+  L.push('Kit read this app\'s `docs/DESIGN.md` and its backend test names and built one list of');
+  L.push('behaviours from both. Everything it read out of the **code** is marked unreviewed until a');
+  L.push('human rules on it, because an inference that quietly becomes a specification is the failure');
+  L.push('this whole thing exists to prevent.');
+  L.push('');
+  L.push('The two sections below are not the same job and should not take the same effort:');
+  L.push('');
+  L.push('- **Decisions** — Kit can prove both answers change something: either nothing documented');
+  L.push('  displays this surface, or two behaviours contradict each other about one value. Each one');
+  L.push('  carries the evidence, the options, my recommendation, and the strongest case against it.');
+  L.push('- **Reviews** — the code asserts this, a documented screen needs it, and it looks right.');
+  L.push('  One line each. If one is wrong, it becomes a decision.');
+  L.push('');
+  L.push('## Brief for the assistant (paste this too)');
+  L.push('');
+  L.push('> You are helping the product owner **pressure-test** these decisions, not make them. For each:');
+  L.push('> argue the case *against* the recommendation as strongly as you can; say which option you would');
+  L.push('> pick and why in one sentence; and name anything the evidence does not settle. Do not invent a');
+  L.push('> third option unless the two on offer genuinely miss the point — and if you do, say which');
+  L.push('> evidence made you. Do not agree because the recommendation sounds reasonable; it was written');
+  L.push('> by the same system that wrote the question.');
+  L.push('');
+  L.push('## How an answer comes back');
+  L.push('');
+  L.push('Each question names the corpus line it becomes. Write the answer under it in any form — the');
+  L.push('line is what I will make true in `behaviours/' + app + '.beh`, and re-running this sheet then');
+  L.push('drops the question. Nothing here is answered by silence.');
+  L.push('');
+
+  L.push('---');
+  L.push('');
+  L.push(`## Decisions — ${decisions.length}`);
+  L.push('');
+  if (!decisions.length) L.push('_None. Kit could not prove that any open question has two answers that differ._');
+
+  decisions.forEach((q, i) => {
+    const n = i + 1;
+    if (q.kind === 'conflict') {
+      L.push(`### D${n}. ${q.asks}`);
+      L.push('');
+      // Strictly what was MEASURED. An earlier draft ended this with "and one of
+      // the two has to lose" — which the first real conflict disproved: the two
+      // sides of `region:CompletionGrid.days` are reconcilable (caller-supplied
+      // DEFAULTING to 30), and the decision underneath was a parameter NAME.
+      // Kit detected a symbol collision, which is true; "someone must lose" was
+      // a verdict inferred from it, and it was wrong. The authored `asks` says
+      // what the collision means — that is the whole division of labour here.
+      L.push(`**Why this is a decision:** two behaviours state different values for \`${q.key}\`.`);
+      L.push('Both sides were read out of a document rather than out of code, so this is the spec');
+      L.push('disagreeing with itself, not the code drifting from it. Kit detects the collision; what it');
+      L.push('means is the question above.');
+      L.push('');
+      L.push('| behaviour | says `' + q.key + '` is | source |');
+      L.push('|---|---|---|');
+      for (const s of q.sides) {
+        L.push(`| \`${s.id}\` ${s.title} | \`${s.value}\` | \`${s.ref || '—'}\` |`);
+      }
+      L.push('');
+    } else {
+      L.push(`### D${n}. ${q.asks}`);
+      L.push('');
+      L.push(`**\`${q.id}\` — ${q.title}**`);
+      L.push('');
+      if (q.kind === 'unserved') {
+        L.push('**Why this is a decision:** you said the API layer is inferred from what the UI needs to');
+        L.push('display. This surface exists in the code and **no documented screen displays it**, so either');
+        L.push('the design is missing a screen or the surface should go. Those are opposite edits.');
+      } else {
+        L.push('**Why this is a decision:** it serves a documented screen, so Kit would have filed it as a');
+        L.push('routine review — it is here because a human said it is not routine.');
+      }
+      L.push('');
+      L.push(`**Evidence** — read out of \`${q.source.ref}\`:`);
+      L.push('');
+      for (const c of q.contracts) L.push(`- ${c}`);
+      if (q.serves.length) L.push(`- serves: ${q.serves.map((s) => `\`${s}\``).join(', ')}`);
+      L.push('');
+    }
+
+    // Rendered before the options: it is the half of the evidence that makes the
+    // question concrete, and it is here rather than in the review table because
+    // ticking it there would answer this question without saying so.
+    if ((q.cites || []).length) {
+      L.push('**Also on the table here** — these are part of this question, which is why they are not');
+      L.push('in the review list below:');
+      L.push('');
+      for (const c of q.cites) {
+        L.push(`- \`${c.id}\` ${c.title} — ${c.contracts.join('; ') || c.title} (\`${c.ref}\`)`);
+      }
+      L.push('');
+    }
+
+    L.push('**Options**');
+    L.push('');
+    for (const o of q.options) L.push(`- **${o.label}** — ${o.consequence}`);
+    L.push('');
+    if (q.recommend) {
+      L.push(`**I'd pick: ${q.recommend.label}.** ${q.recommend.why}`);
+      L.push('');
+      L.push(`**The strongest case against that:** ${q.against}`);
+      L.push('');
+    }
+    L.push('**Your answer** — becomes: ' + answerLine(q));
+    L.push('');
+    L.push('> ');
+    L.push('');
+  });
+
+  L.push('---');
+  L.push('');
+  L.push(`## Reviews — ${reviews.length}`);
+  L.push('');
+  if (!reviews.length) {
+    L.push('_None._');
+  } else {
+    L.push('The code asserts each of these and a documented screen needs it. Tick, or say what is wrong —');
+    L.push('a "wrong" here promotes it to a decision on the next run.');
+    L.push('');
+    L.push('| # | behaviour | what the code asserts | read out of |');
+    L.push('|---|---|---|---|');
+    reviews.forEach((q, i) => {
+      const what = q.contracts.length ? q.contracts.join('; ') : q.title;
+      L.push(`| R${i + 1} | \`${q.id}\` ${q.title} | ${what} | \`${q.source.ref}\` |`);
+    });
+    L.push('');
+    L.push('Each becomes `review approved` on that behaviour, or `review denied "<what is actually true>"`.');
+    L.push('');
+  }
+
+  L.push('---');
+  L.push('');
+  L.push('## What Kit is NOT asking you here');
+  L.push('');
+  L.push('Worth stating, because a sheet that omits its own scope reads as complete:');
+  L.push('');
+  L.push('- **The behaviours this app has documented but not built.** Kit refuses to generate a test for a');
+  L.push('  screen that does not exist and names the missing noun instead. That list is a build backlog,');
+  L.push('  not a question — it goes to zero on its own as the frontend lands.');
+  L.push('- **Anything read out of a document you wrote.** A defined behaviour is not up for adjudication');
+  L.push('  here; you already ruled on it by writing it down. It only reappears if it collides with');
+  L.push('  another defined behaviour — which is exactly what D1 is.');
+  return L.join('\n') + '\n';
+}
+
+// The line an answer becomes. Kept next to the renderer rather than inlined so
+// there is one place that knows the mapping from "he said yes" to corpus text.
+function answerLine(q) {
+  if (q.kind === 'conflict') {
+    // Deliberately does NOT prescribe which side moves. On the first real
+    // conflict the answer was neither: both `provides` lines were individually
+    // true and had to be reconciled into one statement of the default. A line
+    // that named a winner would have described an edit nobody was going to make.
+    return `the two \`provides\` lines on ${q.sides.map((s) => `\`${s.id}\``).join(' and ')} reconciled — ` +
+      'corrected, merged into one statement, or one of them removed, whichever your answer implies.';
+  }
+  if (q.kind === 'unserved') {
+    return `\`serves BEH-…\` added to \`${q.id}\` (with the screen written into \`DESIGN.md\`), ` +
+      `or \`${q.id}\` deleted along with the surface it describes.`;
+  }
+  return `\`review approved\` on \`${q.id}\`, or \`review denied "<what is actually true>"\`.`;
+}
+
+module.exports = {
+  parse, parseStep, resolve, generate, coverage, adjudication, surface,
+  questions, questionErrors, renderSheet,
+};
 
 // ─────────────────────────── cli ───────────────────────────
 if (require.main === module) {
@@ -436,13 +847,48 @@ if (require.main === module) {
   // `node kit.js <name>` scopes the run to one corpus. Needed the moment there
   // was more than one app in here: a measurement averaged over two unrelated
   // corpora tells you about neither.
-  const only = process.argv[2];
+  // `sheet` renders the artefact for a human instead of the report for me.
+  // Separate mode rather than another block of output: the sheet is a document
+  // someone opens, and a document with a coverage table stapled to the top is a
+  // document nobody finishes.
+  const sheetMode = process.argv[2] === 'sheet';
+  const argv = process.argv.slice(sheetMode ? 3 : 2);
+  // `--rev` records WHICH revision of the app the corpus was read from, which is
+  // the only provenance a reader can check. Deliberately no timestamp: the
+  // committed sheet is asserted byte-identical to this output, and a wall-clock
+  // date would make it differ every day for no reader's benefit — which is the
+  // kind of drift that gets a failing check deleted rather than fixed.
+  const revArg = argv.findIndex((a) => a === '--rev');
+  const rev = revArg >= 0 ? argv[revArg + 1] : '';
+  const only = argv.find((a) => !a.startsWith('--') && a !== rev);
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
     .filter((f) => !only || f.includes(only));
   if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
   const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
   const { behaviours, conflicts, symbols } = resolve(all);
+
+  if (sheetMode) {
+    // A sheet built from a corpus that fails its own link check would present
+    // broken claims as questions, so the gate runs first and hard.
+    const linkErrors = surface(behaviours).errors;
+    if (linkErrors.length) {
+      console.error('── broken links — refusing to render a sheet over them ──');
+      for (const e of linkErrors) console.error(`  ${e}`);
+      process.exit(1);
+    }
+    const qs = questions(behaviours, conflicts);
+    const qErrors = questionErrors(qs);
+    if (qErrors.length) {
+      console.error('── incomplete questions (exit 1) ──');
+      console.error('  A half-written decision is worse than a missing one: it looks worked through.');
+      for (const e of qErrors) console.error(`  ${e}`);
+      process.exit(1);
+    }
+    const app = (files.length === 1 ? files[0].replace(/\.beh$/, '') : only) || 'all';
+    process.stdout.write(renderSheet(app, qs, { rev }));
+    return;
+  }
 
   const nounCount = Object.keys(bindings).filter((k) => !k.startsWith('_')).length;
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
