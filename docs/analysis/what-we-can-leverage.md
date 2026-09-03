@@ -23,13 +23,14 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
   Vitest suite (10 test files, `npm run test` in `package.json`) that **does not run in CI** — only lint + build +
   e2e do. `snip-it`'s identical setup **does** gate `npm run test` in CI. This is exactly the failure mode Kit's
   coverage check is meant to make structurally impossible.
-- The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean: `node kit.js` and
-  `node kit-test.js` both executed successfully during this survey (**86/86 tests pass, 50/50 mutants killed**
-  as of 2026-09-03, 78% of steps generated against snip-it's 8 behaviours), and `node compare.js` shows 25/28 generated lines
-  exactly or near-exactly match snip-it's actual hand-written Playwright spec on `origin/dev`. It is a prototype
-  answering one falsifiable question, not a product — see gaps below for what it deliberately does not do.
-  ⚠️ This bullet said **19/19 tests** for two weeks while the suite grew to 72 — Kit's own repo drifting in
-  precisely the way Kit exists to catch. Re-measure it when you touch this file; do not copy it forward.
+- The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean — `node kit-test.js` and
+  `node mutate.js` are green, and `node compare.js` shows most generated lines matching snip-it's
+  actual hand-written Playwright spec on `origin/dev` exactly or near-exactly. It is a prototype
+  answering falsifiable questions, not a product — see gaps below for what it deliberately does not do.
+  ⚠️ **The counts that used to sit in this bullet have been removed on purpose.** It said 19/19
+  tests for two weeks while the suite grew to 72, was corrected, and then said 86 while it grew to
+  97 — Kit's own repo drifting in precisely the way Kit exists to catch, twice, including once
+  under a warning telling the next reader to re-measure. A warning is not a check. **Run the tool.**
 - The deterministic, non-LLM half of Kit's bet is already proven twice in this stack: OpenAPI → RTK Query codegen
   (frontend/backend contract sync) and a Roslyn `IIncrementalGenerator` (interface mirroring) both exist, ship,
   and are documented. Kit's "noun binding → generated test" step is architecturally the same shape as these.
@@ -179,46 +180,57 @@ interfaces — no further matches were found.
 
 ## 5. The prototype
 
-`prototypes/behaviour-ast/` — 5 files: `kit.js` (342 lines, core), `kit-test.js` (182 lines, own
-test suite), `compare.js` (73 lines, checks generated output against real hand-written code), `bindings.json`
-(one noun→locator binding file), `behaviours/snip-it.beh` (8 behaviours re-expressing snip-it's real e2e suite),
-`README.md`.
+> ⚠️ **This section used to carry file sizes, test counts and `kit.js:NN-NN` citations, and it
+> has now drifted twice** — it claimed 19 tests against a suite of 72, was corrected, then
+> claimed 86 against 97. Every line reference in it was stale too. **The numbers are gone
+> rather than re-typed**, because re-typing them only re-arms the same rot: this is a survey
+> document, and its value is the analysis, not a snapshot of `wc -l`. Anything countable is
+> printed by the commands named below, which are the only place it cannot go stale.
+>
+> This is Kit's own thesis applied to Kit's own repo: a document nothing checks will
+> eventually say something false, and it will still look authoritative when it does.
 
-**What `kit.js` implements** (all four stages, verified by reading the source):
-1. **parse** (`kit.js:24-92`) — line-based, not YAML/JSON, because James's requirement is that a human can write
-   the tree by hand. Recognises `behaviour ID "title"`, `actor`, step keywords (`given`/`when`/`then`/`contract`),
-   `provides <kind>:<Name>.<slot> = <value>`, and `?slot` holes. Unrecognised keywords and steps outside a
-   behaviour **throw**, they are not silently dropped (`:40,71`).
-2. **resolve** (`kit.js:103-160`) — builds one `Map`-based symbol table (`kind:Name.slot` → value) across the
-   *whole corpus*, not per file. A hole in one behaviour can be filled by a `provides` line in a different
-   behaviour (this is demonstrated on real material: `BEH-UP-1`'s `?fields` hole is filled by `BEH-UP-2`'s
-   `provides form:Upload.fields = VideoOrAudioFile`, `behaviours/snip-it.beh:49,74`). Conflicting `provides` for
-   the same slot are recorded as structural conflicts with both sides named (`:148-155`) — no LLM/embeddings
-   involved, "falls straight out of the symbol table."
-3. **generate** (`kit.js:167-277`) — emits Playwright test bodies per behaviour. Six verb handlers implemented:
-   `state`, `opens` (with route-param substitution from resolved symbols), `activates`, `sees`, `shows`,
-   `attaches`, `lands`, `fills`. An unbound noun or an unfilled route param is **refused** (emits
-   `// UNGENERATED: ...` and names the missing noun) rather than guessed — this is the load-bearing design claim,
-   and it is unit-tested specifically (`kit-test.js:110-131`, including a regression test for a real bug: the
-   first version silently truncated a parameterised route). `contract` steps (wire-level assertions like "POST
-   /api/cuts is sent exactly once") are deliberately never generated — kept and counted separately, not hidden,
-   so the coverage number isn't flattered by omitting the steps that fail (`kit.js:180-186`).
-4. **coverage** (`kit.js:284-292`) — a behaviour is "covered" only if some test source string contains
-   `[ITS-ID]`; behaviours with no matching test are `uncovered`, and test IDs matching no behaviour are
-   `orphanTests`. This is the only part of the pipeline meant to fail a build.
+`prototypes/behaviour-ast/` — the notation, its reader, and the tools that measure it:
+`kit.js` (core, plus a `sheet` renderer), `check.js` (the stage-0 gate, exits non-zero),
+`compare.js` (generated output vs real hand-written code), `prose-audit.js` (does the corpus
+account for a whole source document), `saturation.js` (does binding glue saturate),
+`measure-tagging.js`, `kit-test.js`, `mutate.js`, `bindings.json`, and `behaviours/` — now four
+corpora, not one.
 
-**Real output from this survey** (all three scripts executed successfully; not simulated):
-- `node kit.js`: 8 behaviours, 14 noun bindings, 28 generated lines, 6 wire contracts, 2 ungenerated (refused)
-  steps, 2 unbound nouns (`region:WordTrack`, `region:CutStatus` — deliberately absent from `bindings.json`
-  because the real app gives those regions no accessible name, per the binding file's own comment,
-  `bindings.json:8-12`), 28/36 = 78% of steps generated.
-- `node kit-test.js`: **19 passed, 0 failed.** Covers parse (5 tests), resolve/cross-behaviour symbol table
-  (4 tests), generate/refusals (8 tests — the load-bearing half, each refusal paired with a positive control per
-  the file's own stated design principle at `kit-test.js:11-13`), coverage (2 tests).
-- `node compare.js`: of 28 generated `await` lines, 22 are byte-identical to a line in snip-it's real
-  `frontend/e2e/editor.spec.ts` on `origin/dev`, 3 more match after whitespace/constant-expansion normalisation
-  (25/28 total), and 3 are genuinely absent from the hand-written suite (the two `setInputFiles` lines and the
-  `toHaveURL` regex check — printed explicitly, not buried, at the end of the run).
+**What `kit.js` implements**, by function name rather than line number, so a reader can find it
+after the next edit:
+
+1. **`parse`** — line-based, not YAML/JSON, because James's requirement is that a human can
+   write the tree by hand. Recognises `behaviour ID "title"`, `actor`, step keywords
+   (`given`/`when`/`then`/`contract`), `provides <kind>:<Name>.<slot> = <value>`, `?slot` holes,
+   and the adjudication and question-sheet keywords added since. Unrecognised keywords and steps
+   outside a behaviour **throw**; they are not silently dropped.
+2. **`resolve`** — one `Map`-based symbol table (`kind:Name.slot` → value) across the *whole
+   corpus*, not per file, so a hole in one behaviour can be filled by a `provides` line in a
+   different one. Demonstrated on real material: `BEH-UP-1`'s `?fields` hole is filled by
+   `BEH-UP-2`'s `provides form:Upload.fields = VideoOrAudioFile`. Conflicting `provides` for one
+   slot are recorded as structural conflicts with both sides named — no LLM, no embeddings; it
+   falls straight out of the symbol table.
+3. **`generate`** / **`emit`** — Playwright test bodies per behaviour, one handler per verb
+   (`state`, `opens` with route-param substitution, `activates`, `sees`, `shows`, `attaches`,
+   `lands`, `fills`). An unbound noun or an unfilled route param is **refused** — it emits
+   `// UNGENERATED:` and names the missing noun rather than guessing. That is the load-bearing
+   design claim, and it has its own tests including a regression for a real bug: the first
+   version silently truncated a parameterised route. `contract` steps are deliberately never
+   generated, and deliberately still counted, so the coverage number is not flattered by
+   dropping exactly the steps that fail.
+4. **`coverage`** / **`mapping`** — a behaviour is covered only if a test names its id, either
+   by an inline `[BEH-X]` marker or through a corpus-side mapping. Uncovered behaviours and
+   orphan test ids are both reported. This is the only part meant to fail a build, and
+   `check.js` is what gives it an exit code.
+
+**For the numbers, run the tools** — they print counts that cannot go stale:
+`node kit.js <corpus>` (behaviours, bindings, generated vs refused steps),
+`node compare.js` (generated lines vs snip-it's real `editor.spec.ts`),
+`node check.js <app> --repo <path>` (the gate: 0 / 1 / 2),
+`node saturation.js` (does binding glue saturate — and `--check` refuses if
+`docs/pilots/binding-saturation.md` has drifted from the corpora),
+`node prose-audit.js`, `node kit-test.js`, `node mutate.js`.
 
 **What it does NOT do** (verified by absence, not claimed by the README alone):
 - No parser for existing prose acceptance criteria (macro-metrics-style BDD bullets) into the `.beh` grammar —
