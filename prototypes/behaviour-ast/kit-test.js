@@ -974,18 +974,30 @@ t('the second count reads the raw text, and a step the parser drops is caught', 
   assert.ok(!dropped.has('button:C'), 'the text reader is not reading the steps it claims to');
 });
 
-t('a literal containing a colon is not counted as a noun', () => {
-  // Without the quote-stripping the cross-check fires on `shows ... "Ratio: 1.4"`
-  // and the tool refuses to measure a corpus that is entirely fine — a refusal
-  // nobody could act on is how a check gets deleted.
-  const src = 'behaviour BEH-1 "x"\nthen shows region:Main "Ratio: 1.4"';
-  const text = sat.nounsFromText(src);
-  assert.deepStrictEqual([...text], ['region:Main']);
+t('a literal containing a noun-shaped token is not counted as a noun', () => {
+  // ⚠️ The first version of this test used the literal "Ratio: 1.4" and a
+  // mutation removing the quote-stripping SURVIVED it: `Ratio` is capitalised
+  // and a space follows the colon, so the noun regex never matched inside the
+  // quotes and the rule was never what made it pass. The literal has to contain
+  // a token of the exact shape `kind:Name` for the stripping to be load-bearing.
+  const src = 'behaviour BEH-1 "x"\nthen shows region:Main "unbound noun button:Save"';
+  assert.deepStrictEqual([...sat.nounsFromText(src)], ['region:Main']);
+  // And the consequence, not just the reader: without stripping, the raw text
+  // finds button:Save, the AST correctly does not, and the tool refuses to
+  // measure a corpus that is entirely fine.
+  const dir = fixture({ 'lit.beh': SATURATING + '\n' + src });
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 0);
 });
 
-t('exit 2 when a corpus parses zero nouns — nothing to say about bindings', () => {
-  const dir = fixture({ 'empty.beh': 'behaviour BEH-1 "x"\nthen contract GET /api/x' });
-  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 2);
+t('exit 2 when ONE corpus of several parses zero nouns', () => {
+  // ⚠️ This was originally a single empty corpus, and the mutation SURVIVED: a
+  // corpus with no nouns also has no noun-bearing behaviours, so the "too small
+  // to halve" rule fired and the zero-noun rule was never what made it red. It
+  // takes a healthy corpus ALONGSIDE the empty one to leave the zero-noun rule
+  // as the only thing that can refuse ([[red-for-the-right-reason]]).
+  const empty = 'behaviour BEH-1 "x"\nthen contract GET /api/x';
+  assert.strictEqual(quiet(() => sat.main(['--dir', fixture({ 'big.beh': SATURATING })])), 0, 'the control drifted');
+  assert.strictEqual(quiet(() => sat.main(['--dir', fixture({ 'big.beh': SATURATING, 'empty.beh': empty })])), 2);
 });
 
 t('exit 2 when no corpus has enough UI behaviours to halve', () => {
