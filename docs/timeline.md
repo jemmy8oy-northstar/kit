@@ -44,6 +44,15 @@ Verified by doing it, not by reading the workflow.
 **Stop condition:** if the notation cannot express a real feature of ATW or snip-it without special
 cases, stop and redesign. Do not paper over it with syntax.
 
+> 🔴 **THIS STOP CONDITION HAS FIRED — 2026-09-03.** Fed real prose for the first time
+> (macro-metrics' 46 frontend acceptance criteria, written before any test existed), the
+> notation carries **2 whole and 24 not at all**, and the twelve missing shapes are ordinary
+> — quantifying over a collection, asserting a control's value, asserting an absence, saying
+> *"while it is loading"*. The grammar was **not** patched to fit; the shapes are named,
+> counted and left for James in `docs/pilots/macro-metrics-prose.md`. Nothing downstream is
+> blocked: `kit check` gates on behaviour *ids*, which are carried whether the behaviour
+> beneath them is rich or thin.
+
 **Why this first:** it closes the defect your own macro-metrics retro filed (*"it was left to the AI's
 discretion whether tests were written"*), and it is useful to us whether or not Kit ever becomes a
 product. It is also the cheapest way to find out whether the notation survives contact.
