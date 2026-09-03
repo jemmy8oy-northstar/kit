@@ -105,4 +105,39 @@ wrong numbers with exactly the same confidence.
 - **A puts the claim next to the test**, where whoever edits the test sees it. That
   is a real advantage and it is why this is a decision rather than a conclusion.
 
+## The gate that runs on this
+
+`node prototypes/behaviour-ast/check.js <app> --repo <path> [--via mapping|markers]`
+— **both options are implemented**, so whichever you pick, the gate already runs it.
+`mapping` (option C) is the default.
+
+```
+0  every behaviour in the corpus has a test naming it
+1  it looked, and something is wrong
+2  IT COULD NOT LOOK — no corpus, no repo, zero test files, or a reader that
+   lost tests. Deliberately not the same as "looked and was fine": a gate that
+   reads nothing and exits 0 is indistinguishable in CI from a passing one.
+```
+
+**It ships RED.** `behaviours/snip-it.tests.json` maps the six behaviours that
+have a test and deliberately omits `BEH-UP-2` and `BEH-EDIT-0`, which have none.
+`kit check snip-it` exits 1 at 6/8 today. A gate only ever observed passing has
+never been shown to discriminate.
+
+**It found real drift on its first run against a live branch.** Pointed at
+snip-it's `feat/no-server-side-storage` (PR #29, open and green), it reports 5/8
+and names why: that branch renames `send-for-export submits a cut and surfaces the
+job` → `…re-sends the video and surfaces the job`, while `BEH-CUT-1` still claims
+the old title. That is the option-C rot argument demonstrated rather than asserted
+— and it is `docs/timeline.md`'s stage-0 exit gate (*deleting a test makes CI go
+red*) verified by doing it, on a rename nobody planted.
+
+Whether the corpus or the test is what should change there is a human's call; the
+gate's job was to make it impossible to miss.
+
+⚠️ **Not yet wired into any CI.** A `.github/workflows/**` change is a platform
+change (claude-code-bot#83) — isolated PR, James's review, never a self-merge. Until
+that lands, this gate gates nothing, and saying otherwise would be the exact defect
+Kit was built to name ([[passing-is-not-gating]]).
+
 Raised on claude-code-bot#84.

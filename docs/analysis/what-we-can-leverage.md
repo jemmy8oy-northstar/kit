@@ -24,10 +24,12 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
   e2e do. `snip-it`'s identical setup **does** gate `npm run test` in CI. This is exactly the failure mode Kit's
   coverage check is meant to make structurally impossible.
 - The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean: `node kit.js` and
-  `node kit-test.js` both executed successfully during this survey (19/19 tests pass, 78% of steps generated
-  against 8 behaviours), and `node compare.js` shows 25/28 generated lines exactly or near-exactly match snip-it's
-  actual hand-written Playwright spec on `origin/dev`. It is a prototype answering one falsifiable question, not
-  a product — see gaps below for what it deliberately does not do.
+  `node kit-test.js` both executed successfully during this survey (**72/72 tests pass, 37/37 mutants killed**,
+  78% of steps generated against snip-it's 8 behaviours), and `node compare.js` shows 25/28 generated lines
+  exactly or near-exactly match snip-it's actual hand-written Playwright spec on `origin/dev`. It is a prototype
+  answering one falsifiable question, not a product — see gaps below for what it deliberately does not do.
+  ⚠️ This bullet said **19/19 tests** for two weeks while the suite grew to 72 — Kit's own repo drifting in
+  precisely the way Kit exists to catch. Re-measure it when you touch this file; do not copy it forward.
 - The deterministic, non-LLM half of Kit's bet is already proven twice in this stack: OpenAPI → RTK Query codegen
   (frontend/backend contract sync) and a Roslyn `IIncrementalGenerator` (interface mirroring) both exist, ship,
   and are documented. Kit's "noun binding → generated test" step is architecturally the same shape as these.
