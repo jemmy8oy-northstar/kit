@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit-test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -154,6 +154,33 @@ const MUTANTS = [
     'if (problems.length || drift.length) {', 'if (problems.length) {', 'prose-audit.js'],
   ['the AC extractor also swallows completed [x] criteria',
     '/^- \\[ \\]/.test(l)', '/^- \\[.\\]/.test(l)', 'prose-audit.js'],
+
+  // saturation (gap #8). The measurement argues AGAINST Kit's central bet, so
+  // every rule here is one that, removed, makes the answer more flattering:
+  // three of the five turn "no saturation" into "saturation".
+  ['behaviours with no UI step are counted, and the curve saturates for free',
+    'const bearing = behaviours.filter((b) => b.nouns.length > 0);',
+    'const bearing = behaviours;', 'saturation.js'],
+  ['the null median is not the shuffled corpus, so a trivial decline reads as evidence',
+    'const r = halfRatio(marginal(shuffled(bearing, rnd)));',
+    'const r = halfRatio(marginal(bearing));', 'saturation.js'],
+  ['ties go to the flattering side of the percentile',
+    'percentile: nullRatios.length ? (below + ties / 2) / nullRatios.length : null,',
+    'percentile: nullRatios.length ? below / nullRatios.length : null,', 'saturation.js'],
+  ['the front/back halves are swapped, so growth reads as decline',
+    'return f === 0 ? null : mean(back) / f;',
+    'return mean(back) === 0 ? null : f / mean(back);', 'saturation.js'],
+  ['the two counts may disagree without a refusal',
+    'if (r.crosscheck.onlyAst.length || r.crosscheck.onlyText.length) {',
+    'if (false) {', 'saturation.js'],
+  ['a corpus that binds nothing is measured instead of refused',
+    'if (r.nouns === 0) problems.push', 'if (false) problems.push', 'saturation.js'],
+  ['a corpus too small to halve is measured anyway',
+    'if (results.every((r) => r.bearing < 4)) {', 'if (false) {', 'saturation.js'],
+  ['a quoted literal containing a colon is read as a noun',
+    'const stripped = rest.replace(/"[^"]*"/g, \'""\');', 'const stripped = rest;', 'saturation.js'],
+  ['the write-up may drift from the corpora without going red',
+    'if (drift.length) {', 'if (false) {', 'saturation.js'],
 ];
 
 const run = () => {

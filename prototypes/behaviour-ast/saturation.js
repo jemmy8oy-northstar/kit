@@ -116,13 +116,18 @@ function shuffled(arr, rnd) {
   return a;
 }
 
-function measureCorpus(file, text) {
+// `textReader` is injectable for ONE reason: the two readers agree on every
+// corpus that kit.parse will even accept, so the disagreement branch below
+// cannot be reached from a fixture. A refusal path that has never once fired is
+// a claim, not a check — so the suite injects a lossy reader and watches it go
+// red. Nothing in production passes this argument.
+function measureCorpus(file, text, textReader = nounsFromText) {
   const parsed = kit.parse(text, file);
   const behaviours = parsed.map((b) => ({ id: b.id, steps: b.steps.length, nouns: nounsOf(b) }));
   const bearing = behaviours.filter((b) => b.nouns.length > 0);
 
   const astNouns = new Set(behaviours.flatMap((b) => b.nouns));
-  const textNouns = nounsFromText(text);
+  const textNouns = textReader(text);
   const onlyAst = [...astNouns].filter((n) => !textNouns.has(n));
   const onlyText = [...textNouns].filter((n) => !astNouns.has(n));
 
@@ -170,23 +175,24 @@ function measureCorpus(file, text) {
 function pct(x) { return x === null ? 'n/a' : (x * 100).toFixed(0) + '%'; }
 function num(x, d = 2) { return x === null ? 'n/a' : x.toFixed(d); }
 
-function main() {
-  const args = process.argv.slice(2);
-  const checkMode = args.includes('--check');
-  const only = args.find((a) => !a.startsWith('--'));
+function main(argv = [], textReader = nounsFromText) {
+  const checkMode = argv.includes('--check');
+  const dirArg = argv.indexOf('--dir');
+  const dir = dirArg >= 0 ? argv[dirArg + 1] : BEH_DIR;
+  const only = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--dir')[0];
 
-  if (!fs.existsSync(BEH_DIR)) {
-    console.error(`saturation: no behaviours directory at ${BEH_DIR} — could not look`);
-    process.exit(2);
+  if (!fs.existsSync(dir)) {
+    console.error(`saturation: no behaviours directory at ${dir} — could not look`);
+    return 2;
   }
-  const files = fs.readdirSync(BEH_DIR).filter((f) => f.endsWith('.beh'))
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
     .filter((f) => !only || f.includes(only));
   if (!files.length) {
     console.error(`saturation: no corpus matching "${only || ''}" — could not look`);
-    process.exit(2);
+    return 2;
   }
 
-  const results = files.map((f) => measureCorpus(f, fs.readFileSync(path.join(BEH_DIR, f), 'utf8')));
+  const results = files.map((f) => measureCorpus(f, fs.readFileSync(path.join(dir, f), 'utf8'), textReader));
 
   // ── refusals, before any number is printed ──
   const problems = [];
@@ -204,7 +210,7 @@ function main() {
   if (problems.length) {
     console.error('saturation: COULD NOT LOOK');
     for (const p of problems) console.error('  - ' + p);
-    process.exit(2);
+    return 2;
   }
 
   console.log('gap #8 — does binding glue saturate, or grow 1:1 with the UI?\n');
@@ -284,12 +290,7 @@ function main() {
   }
 
   const findingsPath = path.join(__dirname, '..', '..', 'docs', 'pilots', 'binding-saturation.json');
-  if (checkMode) {
-    if (!fs.existsSync(findingsPath)) {
-      console.error(`\nsaturation --check: no recorded findings at ${findingsPath} — could not look`);
-      process.exit(2);
-    }
-    const recorded = JSON.parse(fs.readFileSync(findingsPath, 'utf8'));
+  const snapshot = () => {
     const live = {};
     for (const r of results) {
       live[r.file] = {
@@ -298,6 +299,31 @@ function main() {
         nullMedian: r.nullMedian === null ? null : Number(r.nullMedian.toFixed(4)),
       };
     }
+    return live;
+  };
+
+  if (argv.includes('--record')) {
+    fs.writeFileSync(findingsPath, JSON.stringify({
+      _comment: [
+        'What saturation.js measured, so the prose in binding-saturation.md cannot age',
+        'into fiction. `node saturation.js --check` recomputes and exits 1 on any',
+        'difference. Regenerate with --record ONLY after deciding the write-up is wrong;',
+        'a re-record with no edit to the prose is the drift, not the fix.',
+      ],
+      shuffles: SHUFFLES, seed: SEED,
+      corpora: snapshot(),
+    }, null, 2) + '\n');
+    console.log(`\nsaturation --record: wrote ${path.relative(process.cwd(), findingsPath)}`);
+    return 0;
+  }
+
+  if (checkMode) {
+    if (!fs.existsSync(findingsPath)) {
+      console.error(`\nsaturation --check: no recorded findings at ${findingsPath} — could not look`);
+      return 2;
+    }
+    const recorded = JSON.parse(fs.readFileSync(findingsPath, 'utf8'));
+    const live = snapshot();
     const drift = [];
     for (const [file, want] of Object.entries(recorded.corpora)) {
       const got = live[file];
@@ -315,12 +341,13 @@ function main() {
       console.error('\nsaturation --check: THE WRITE-UP HAS DRIFTED FROM THE CORPORA');
       for (const d of drift) console.error('  - ' + d);
       console.error('\nFix docs/pilots/binding-saturation.md and .json, or explain the change.');
-      process.exit(1);
+      return 1;
     }
     console.log('\nsaturation --check: the recorded findings still match the corpora.');
   }
+  return 0;
 }
 
-if (require.main === module) main();
+if (require.main === module) process.exit(main(process.argv.slice(2)));
 
-module.exports = { nounsOf, nounsFromText, marginal, halfRatio, measureCorpus, mulberry32 };
+module.exports = { main, nounsOf, nounsFromText, marginal, halfRatio, measureCorpus, mulberry32 };
