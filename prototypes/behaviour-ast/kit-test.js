@@ -883,14 +883,27 @@ t('exit 1 when the source document has drifted from the ledger', () => {
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'bad.md')])), 1);
 });
 
-t('exit 1 when the source has GAINED an acceptance criterion nobody accounted for', () => {
+t('the COUNT of acceptance criteria is checked, not just each one that is present', () => {
+  // ⚠️ This test was originally "the source gained an AC", and a mutation of the
+  // count rule SURVIVED it: an added line also has no ledger entry, so the
+  // per-line rule made it red and the count rule was never what fired. Both
+  // directions are asserted now, and the DELETION is the one only the count can
+  // catch — every remaining line still matches, so the ledger goes on accounting
+  // for a requirement the document no longer has ([[red-for-the-right-reason]]).
   const led = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'macro-metrics-prose.ledger.json'), 'utf8'));
   const lines = [];
   for (const ac of led.acs) lines[ac.line - 1] = `- [ ] ${ac.text}`;
   for (let i = 0; i < lines.length; i++) if (lines[i] === undefined) lines[i] = '';
-  lines.push('- [ ] a brand new criterion added after the ledger was written');
-  const dir = fixture({ 'more.md': lines.join('\n') });
+  const dir = fixture({
+    'same.md': lines.join('\n'),
+    'more.md': [...lines, '- [ ] a brand new criterion added after the ledger was written'].join('\n'),
+    // One AC blanked out: line numbers of the rest are untouched, so no per-line
+    // rule can fire and only the count is left to notice.
+    'fewer.md': lines.map((l, i) => (i === led.acs[led.acs.length - 1].line - 1 ? '' : l)).join('\n'),
+  });
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'same.md')])), 0, 'the control drifted');
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'more.md')])), 1);
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'fewer.md')])), 1);
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
