@@ -425,6 +425,113 @@ function coverage(behaviours, testSources) {
   };
 }
 
+// ⚠️ WHAT THIS CAN AND CANNOT PROVE, stated here so the gate cannot quietly
+// over-claim it downstream. `testSources` are whole FILES, so a marker anywhere
+// in a file marks that behaviour covered — the largest test file in the estate
+// holds 18 tests. This proves *someone wrote the id*, not that a test asserts
+// the behaviour. True of `mapping()` below as well. `docs/design/tagging.md`.
+
+// ─────────────────────────── 4b. reading an app's tests ───────────────────────────
+// One reader, used by the gate and by `measure-tagging.js`. It existed twice for
+// about an hour and that is exactly how the two drift apart.
+//
+// A test TITLE is the string a human would recognise as naming the test. Both
+// ecosystems appear in every pilot repo, so a reader handling only one would
+// report a repo as untestable when it is merely C#.
+
+const JS_TITLE = /\b(?:test|it)(?:\.(?:only|skip|fixme))?\s*\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
+const CS_ATTR = /\[(?:Fact|Theory)[^\]]*\]/;
+const CS_DISPLAY = /DisplayName\s*=\s*"((?:\\.|[^"\\])*)"/;
+const CS_METHOD = /^\s*(?:public|internal)\s+(?:async\s+)?[\w<>,\[\]?\s]+?\s(\w+)\s*\(/;
+// Between `[Theory]` and its method sit its `[InlineData]` rows, blank lines and
+// comments — an unbounded number of them.
+const CS_SKIP = /^\s*(?:\[|\/\/|\/\*|\*|$)/;
+
+const TEST_FILE_RE = /\.(spec|test)\.(ts|tsx|js|jsx)$|Tests?\.cs$/;
+
+function testTitles(file, src) {
+  const out = [];
+  if (!file.endsWith('.cs')) {
+    let m;
+    JS_TITLE.lastIndex = 0;
+    while ((m = JS_TITLE.exec(src))) {
+      out.push({ file, line: src.slice(0, m.index).split('\n').length, raw: m[2], style: 'title' });
+    }
+    return out;
+  }
+  // xUnit: the name is the method, unless a DisplayName overrides it. Walk line
+  // by line so the [Fact] and its method stay associated.
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (!CS_ATTR.test(lines[i])) continue;
+    const display = lines[i].match(CS_DISPLAY);
+    for (let j = i + 1; j < lines.length; j++) {
+      if (CS_SKIP.test(lines[j])) continue;
+      const m = lines[j].match(CS_METHOD);
+      if (m) out.push({ file, line: j + 1, raw: display ? display[1] : m[1], style: display ? 'DisplayName' : 'method' });
+      break; // matched or not, the first non-attribute line settles it
+    }
+  }
+  return out;
+}
+
+// A second, differently-shaped count of the same thing — because the C# walk
+// PAIRS an attribute with a method and a pairing can drop one silently, while a
+// count cannot. This is not hypothetical: a fixed six-line lookahead here lost 7
+// tests across the pilot repos (language-vocab under-read by 16%) and nothing
+// said so. Returns null for JS, where `testTitles` counts occurrences directly
+// and has no pairing step to lose anything in.
+function expectedTestCount(file, src) {
+  if (!file.endsWith('.cs')) return null;
+  return (src.match(/\[(?:Fact|Theory)\b/g) || []).length;
+}
+
+// ─────────────────────────── 4c. the mapping (option C) ───────────────────────────
+// `docs/design/tagging.md`: the corpus carries behaviour → test, so an app adopts
+// Kit without a diff in its own test suite. James's call between this and markers
+// (option A); this is the default and the gate supports both.
+//
+// The obvious objection is that a mapping kept outside the app rots. The answer
+// is that it rots LOUDLY: every entry names a file and a title that must exist,
+// so a renamed or deleted test is a hard failure here rather than a silent
+// downgrade to "covered". That checkability is the whole argument for option C,
+// so it is a refusal, not a warning.
+//
+// Keyed on file + title, not title alone: snip-it has two duplicate test titles
+// and a title-only key cannot address them.
+
+function mapping(behaviours, map, titles) {
+  const index = new Map();
+  for (const t of titles) {
+    const k = `${t.file}\u0000${t.raw}`;
+    index.set(k, (index.get(k) || 0) + 1);
+  }
+  const files = new Set(titles.map((t) => t.file));
+  const ids = new Set(behaviours.map((b) => b.id));
+  const errors = [];
+  const linked = new Map();
+
+  for (const [id, entries] of Object.entries(map)) {
+    if (id.startsWith('_')) continue; // reserved for metadata
+    if (!ids.has(id)) { errors.push(`${id}: mapped to a test, but no such behaviour in the corpus`); continue; }
+    for (const e of entries) {
+      if (!files.has(e.file)) { errors.push(`${id}: names ${e.file}, which is not a test file in this app`); continue; }
+      const n = index.get(`${e.file}\u0000${e.title}`) || 0;
+      // Zero and two are different failures and deserve different words: one is
+      // a test that moved, the other is a key that cannot address what it names.
+      if (n === 0) { errors.push(`${id}: ${e.file} has no test titled "${e.title}" — renamed or deleted?`); continue; }
+      if (n > 1) { errors.push(`${id}: "${e.title}" appears ${n}× in ${e.file} — file+title cannot address it uniquely`); continue; }
+      linked.set(id, [...(linked.get(id) || []), e]);
+    }
+  }
+  return {
+    covered: behaviours.filter((b) => linked.has(b.id)),
+    uncovered: behaviours.filter((b) => !linked.has(b.id)),
+    errors,
+    linked,
+  };
+}
+
 // ─────────────────────────── 5. adjudication ───────────────────────────
 // The count that makes skipping visible. Prior art (North's own retrospective)
 // says the collaboration/adjudication step is the first thing dropped, and
@@ -837,6 +944,7 @@ function answerLine(q) {
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet,
+  testTitles, expectedTestCount, mapping, TEST_FILE_RE,
 };
 
 // ─────────────────────────── cli ───────────────────────────

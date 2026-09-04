@@ -534,5 +534,232 @@ t('the committed sheet is byte-identical to what the generator produces now', ()
     'docs/sheets/james-habits-app.md is stale — re-run `node kit.js sheet james-habits --rev james-habits-app@e75de89`');
 });
 
+console.log('\n── reading an app\'s tests ──');
+const { testTitles, expectedTestCount } = require('./kit');
+
+t('a JS spec file yields one title per test()', () => {
+  const got = testTitles('a.spec.ts', "test('alpha', () => {});\nit('beta', async () => {});\n");
+  assert.deepStrictEqual(got.map((g) => g.raw), ['alpha', 'beta']);
+});
+
+t('test.only / it.skip still count — a skipped test is a title, not an absence', () => {
+  const got = testTitles('a.spec.ts', "test.only('alpha', () => {});\nit.skip('beta', () => {});\n");
+  assert.deepStrictEqual(got.map((g) => g.raw), ['alpha', 'beta']);
+});
+
+t('a C# [Fact] yields its method name', () => {
+  const got = testTitles('T.cs', '    [Fact]\n    public void Does_A_Thing()\n    {\n    }\n');
+  assert.deepStrictEqual(got.map((g) => g.raw), ['Does_A_Thing']);
+});
+
+t('a DisplayName overrides the method name', () => {
+  const got = testTitles('T.cs', '    [Fact(DisplayName = "a nicer name")]\n    public void Does_A_Thing()\n');
+  assert.deepStrictEqual(got.map((g) => g.raw), ['a nicer name']);
+  assert.strictEqual(got[0].style, 'DisplayName');
+});
+
+// THE REGRESSION. A fixed six-line lookahead between the attribute and its
+// method lost every [Theory] with five or more cases — 7 tests across the pilot
+// repos, language-vocab under-read by 16%, silently. Eight rows here so a
+// six-line window cannot pass this by luck.
+t('a [Theory] with eight InlineData rows still finds its method', () => {
+  const src = '    [Theory]\n' +
+    '    // a comment in the middle, because they are there in real code\n' +
+    Array.from({ length: 8 }, (_, i) => `    [InlineData(${i})]\n`).join('') +
+    '\n    public void Theory_Method(int n)\n    {\n    }\n';
+  assert.deepStrictEqual(testTitles('T.cs', src).map((g) => g.raw), ['Theory_Method']);
+});
+
+t('an attribute with no method after it yields nothing rather than grabbing the next one', () => {
+  const src = '    [Fact]\n    private readonly int _notATest = 1;\n\n    [Fact]\n    public void Real_Test()\n';
+  assert.deepStrictEqual(testTitles('T.cs', src).map((g) => g.raw), ['Real_Test']);
+});
+
+t('expectedTestCount counts attributes for C# and declines for JS', () => {
+  // The point of this function is to be a DIFFERENT shape of operation from the
+  // pairing walk, so that a walk which drops one is contradicted rather than
+  // believed. It returns null for JS because JS_TITLE counts occurrences with no
+  // pairing step, so there is nothing there for a second count to catch.
+  assert.strictEqual(expectedTestCount('T.cs', '[Fact]\n[Theory]\n[InlineData(1)]\n'), 2);
+  assert.strictEqual(expectedTestCount('a.spec.ts', "test('x', () => {})"), null);
+});
+
+console.log('\n── the mapping (option C) ──');
+const { mapping } = require('./kit');
+
+const MB = parse('behaviour BEH-1 "one"\nbehaviour BEH-2 "two"', 'm.beh');
+const TITLES = [
+  { file: 'a.spec.ts', raw: 'covers one' },
+  { file: 'a.spec.ts', raw: 'covers two' },
+  { file: 'b.spec.ts', raw: 'covers one' },
+];
+
+t('a behaviour named by an existing test is covered', () => {
+  const r = mapping(MB, { 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one' }] }, TITLES);
+  assert.deepStrictEqual(r.covered.map((b) => b.id), ['BEH-1']);
+  assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-2']);
+  assert.deepStrictEqual(r.errors, []);
+});
+
+t('metadata keys beginning with _ are ignored, not treated as behaviours', () => {
+  const r = mapping(MB, { _note: 'prose', 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one' }] }, TITLES);
+  assert.deepStrictEqual(r.errors, []);
+});
+
+// The four refusals below are the entire argument for option C — a mapping that
+// cannot rot loudly is just a second place for the truth to go stale. Each is
+// paired with the positive control above, which uses the same shape and passes.
+t('REFUSES a mapping naming a file that is not a test file in the app', () => {
+  // Asserting the DIAGNOSIS, not just that something errored: without the file
+  // check this still errors, via "no test titled" — the same failure dressed as
+  // a renamed test, sending a reader to fix the wrong thing. Matching on the
+  // filename alone let a mutation of this rule survive.
+  const r = mapping(MB, { 'BEH-1': [{ file: 'gone.spec.ts', title: 'covers one' }] }, TITLES);
+  assert.strictEqual(r.errors.length, 1);
+  assert.ok(/not a test file/.test(r.errors[0]), r.errors[0]);
+  assert.ok(!/renamed or deleted/.test(r.errors[0]), 'a wrong path must not be reported as a renamed test');
+  assert.deepStrictEqual(r.covered, [], 'a broken entry must not also count as covered');
+});
+
+t('REFUSES a mapping naming a title that file does not have — the renamed-test case', () => {
+  const r = mapping(MB, { 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one, renamed' }] }, TITLES);
+  assert.strictEqual(r.errors.length, 1);
+  assert.ok(/renamed or deleted/.test(r.errors[0]), r.errors[0]);
+  assert.deepStrictEqual(r.covered, []);
+});
+
+t('REFUSES a title that is ambiguous within its file, and says why', () => {
+  // Two tests with one name in one file: file+title cannot address either. This
+  // is the measured limit of option C's key, not a hypothetical — and it must
+  // read differently from "no such title", because the fix is different.
+  const dup = [...TITLES, { file: 'a.spec.ts', raw: 'covers two' }];
+  const r = mapping(MB, { 'BEH-2': [{ file: 'a.spec.ts', title: 'covers two' }] }, dup);
+  assert.strictEqual(r.errors.length, 1);
+  assert.ok(/appears 2×/.test(r.errors[0]), r.errors[0]);
+  assert.ok(!/renamed or deleted/.test(r.errors[0]), 'ambiguity must not be reported as a missing test');
+});
+
+t('REFUSES a mapping entry for a behaviour the corpus does not have', () => {
+  // Rot in the other direction: the corpus dropped a behaviour and the mapping
+  // still claims it. Nothing else notices, because coverage only ever asks the
+  // question the other way round.
+  const r = mapping(MB, { 'BEH-9': [{ file: 'a.spec.ts', title: 'covers one' }] }, TITLES);
+  assert.strictEqual(r.errors.length, 1);
+  assert.ok(/no such behaviour/.test(r.errors[0]), r.errors[0]);
+});
+
+t('the same title in a DIFFERENT file is not ambiguous', () => {
+  // Control for the ambiguity rule: it must key on file+title, not title. If
+  // this fails, the rule is really "no duplicate titles anywhere", which would
+  // refuse a mapping that is perfectly addressable.
+  const r = mapping(MB, { 'BEH-1': [{ file: 'b.spec.ts', title: 'covers one' }] }, TITLES);
+  assert.deepStrictEqual(r.errors, []);
+  assert.deepStrictEqual(r.covered.map((b) => b.id), ['BEH-1']);
+});
+
+console.log('\n── the gate: kit check exit codes ──');
+const check = require('./check');
+
+// Fixtures are BUILT HERE, never read from /data/repos: a suite that depends on
+// a clone silently skips wherever clones do not exist — which is exactly how a
+// past change took the mutation harness's control run down without saying so.
+const os = require('os');
+const fsx = require('fs');
+const pathx = require('path');
+const fixture = (files) => {
+  const dir = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-check-'));
+  for (const [f, src] of Object.entries(files)) {
+    fsx.mkdirSync(pathx.join(dir, pathx.dirname(f)), { recursive: true });
+    fsx.writeFileSync(pathx.join(dir, f), src);
+  }
+  return dir;
+};
+const quiet = (fn) => {
+  const log = console.log, err = console.error;
+  console.log = console.error = () => {};
+  try { return fn(); } finally { console.log = log; console.error = err; }
+};
+
+t('exit 2 when there is no corpus to check — could-not-look is not green', () => {
+  const dir = fixture({ 'a.spec.ts': "test('x', () => {});" });
+  assert.strictEqual(quiet(() => check.main(['nosuchapp', '--repo', dir])), 2);
+});
+
+t('exit 2 when the repo has no test files at all', () => {
+  // The failure this exists for: a gate pointed at the wrong directory reads
+  // zero tests, finds no problems, and is indistinguishable in CI from a pass.
+  const dir = fixture({ 'README.md': 'no tests here' });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
+});
+
+t('exit 2 when the repo does not exist', () => {
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', '/no/such/path'])), 2);
+});
+
+t('exit 2 on an unknown --via, rather than silently falling back to a default', () => {
+  const dir = fixture({ 'a.spec.ts': "test('x', () => {});" });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'guess'])), 2);
+});
+
+t('exit 2 when the C# reader loses a test — a bad read is not a verdict', () => {
+  // Three [Fact]s, one of which has no method: the walk finds 2 and the count
+  // says 3. Under markers that under-read would look like MORE failures and
+  // under a mapping like fewer; either way the number is wrong, so it refuses.
+  //
+  // ⚠️ The filename must satisfy TEST_FILE_RE or the file is never collected and
+  // this exits 2 for a completely different reason — it did, as `T.cs`, and
+  // passed while measuring nothing. A mutation of the reader-loss branch
+  // survived, which is the only thing that said so.
+  const dir = fixture({
+    'MyTests.cs': '[Fact]\npublic void A()\n{\n}\n[Fact]\npublic void B()\n{\n}\n[Fact]\nprivate int notAMethod;\n',
+  });
+  assert.ok(require('./kit').TEST_FILE_RE.test('MyTests.cs'), 'fixture is not collected as a test file');
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
+});
+
+t('exit 1 when a behaviour has no test naming it — the gate can go RED', () => {
+  const dir = fixture({ 'a.spec.ts': "test('unrelated', () => {});" });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 1);
+});
+
+t('exit 0 when every behaviour is named — and it is reachable, not just theoretical', () => {
+  // The control that stops all of the above passing on a gate that only ever
+  // returns non-zero. Every id in the shipped snip-it corpus, marked.
+  const ids = resolve(parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8'), 's.beh'))
+    .behaviours.map((b) => b.id);
+  const dir = fixture({
+    'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n'),
+  });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 0);
+});
+
+t('exit 1 when a test names an id the corpus does not have', () => {
+  // Orphan in the marker direction. Paired with the control above, which uses
+  // the identical fixture shape minus the extra id.
+  const ids = resolve(parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8'), 's.beh'))
+    .behaviours.map((b) => b.id);
+  const dir = fixture({
+    'a.spec.ts': [...ids, 'BEH-GHOST'].map((id) => `test('[${id}] covers it', () => {});`).join('\n'),
+  });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 1);
+});
+
+t('the shipped snip-it mapping is RED today, and for the two behaviours it says', () => {
+  // Ships red on purpose (behaviours/snip-it.tests.json): BEH-UP-2 and BEH-EDIT-0
+  // have no test. A gate only ever observed passing has never been shown to
+  // discriminate — so this pins the failure, and turns green only when snip-it
+  // grows those two tests, which is the moment the mapping should be revisited.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8');
+  const { behaviours } = resolve(parse(src, 'snip-it.beh'));
+  const map = JSON.parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.tests.json'), 'utf8'));
+  // Titles as they stand on snip-it's dev, asserted here rather than read from a
+  // clone so this test states its own premise.
+  const titles = Object.entries(map).filter(([k]) => !k.startsWith('_'))
+    .flatMap(([, es]) => es.map((e) => ({ file: e.file, raw: e.title })));
+  const r = mapping(behaviours, map, titles);
+  assert.deepStrictEqual(r.errors, []);
+  assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-UP-2', 'BEH-EDIT-0']);
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

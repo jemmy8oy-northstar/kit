@@ -31,7 +31,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { parse, resolve } = require(path.join(__dirname, 'kit.js'));
+// The reader lives in kit.js because `check.js` needs the same one. It existed
+// twice for about an hour, which is how long it takes for two of them to drift.
+const { parse, resolve, testTitles, expectedTestCount, TEST_FILE_RE } = require(path.join(__dirname, 'kit.js'));
 
 const APPS = [
   { corpus: 'snip-it.beh', repo: '/data/repos/snip-it' },
@@ -40,9 +42,10 @@ const APPS = [
 ];
 
 const REF = 'origin/dev';
-const TEST_FILE_RE = /\.(spec|test)\.(ts|tsx|js|jsx)$|Tests?\.cs$/;
 
 // ─────────────────────────── reading the apps ───────────────────────────
+// Tests come from `git show origin/dev` rather than the working tree; the
+// reader itself is kit.js's, shared with check.js.
 
 function gitFiles(repo) {
   return execFileSync('git', ['-C', repo, 'ls-tree', '-r', '--name-only', REF], { encoding: 'utf8' })
@@ -51,49 +54,6 @@ function gitFiles(repo) {
 
 function gitShow(repo, file) {
   return execFileSync('git', ['-C', repo, 'show', `${REF}:${file}`], { encoding: 'utf8', maxBuffer: 32 << 20 });
-}
-
-// A test TITLE is the string a human would recognise as naming the test. The
-// two ecosystems spell it differently and both are in every one of these repos,
-// so a reader that handles only one would report a repo as untestable when it
-// is merely C#.
-const JS_TITLE = /\b(?:test|it)(?:\.(?:only|skip|fixme))?\s*\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
-const CS_ATTR = /\[(?:Fact|Theory)[^\]]*\]/;
-const CS_DISPLAY = /DisplayName\s*=\s*"((?:\\.|[^"\\])*)"/;
-const CS_METHOD = /^\s*(?:public|internal)\s+(?:async\s+)?[\w<>,\[\]?\s]+?\s(\w+)\s*\(/;
-// Between `[Theory]` and its method sit its `[InlineData]` rows, blank lines and
-// comments — an unbounded number of them. Skip those and stop at anything else.
-// ⚠️ This was a fixed 6-line lookahead and it silently LOST 7 tests (6 in vocab,
-// 1 in habits): every `[Theory]` with five or more cases overshot the window, so
-// the reader under-read by 16% on one app and reported it as fact. A cross-check
-// against `git grep -c '\[Fact|\[Theory'` is what found it, and it is the reason
-// the counts below are asserted against that grep rather than trusted.
-const CS_SKIP = /^\s*(?:\[|\/\/|\/\*|\*|$)/;
-
-function titlesFrom(file, src) {
-  const out = [];
-  if (file.endsWith('.cs')) {
-    // xUnit: the name is the method, unless a DisplayName overrides it. Walk
-    // line by line so the [Fact] and its method stay associated.
-    const lines = src.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (!CS_ATTR.test(lines[i])) continue;
-      const display = lines[i].match(CS_DISPLAY);
-      for (let j = i + 1; j < lines.length; j++) {
-        if (CS_SKIP.test(lines[j])) continue;
-        const m = lines[j].match(CS_METHOD);
-        if (m) out.push({ file, line: j + 1, raw: display ? display[1] : m[1], style: display ? 'DisplayName' : 'method' });
-        break; // matched or not, the first non-attribute line settles it
-      }
-    }
-    return out;
-  }
-  let m;
-  JS_TITLE.lastIndex = 0;
-  while ((m = JS_TITLE.exec(src))) {
-    out.push({ file, line: src.slice(0, m.index).split('\n').length, raw: m[2], style: 'title' });
-  }
-  return out;
 }
 
 // ─────────────────────────── the matcher (option B) ───────────────────────────
@@ -176,13 +136,13 @@ for (const app of APPS) {
   for (const f of files) {
     const src = gitShow(app.repo, f);
     const before = titles.length;
-    titles.push(...titlesFrom(f, src));
+    titles.push(...testTitles(f, src));
     titlesPerFile.push(titles.length - before);
     // Independent count, by a different method: every xUnit test is exactly one
-    // [Fact] or [Theory], however many [InlineData] rows follow. titlesFrom()
+    // [Fact] or [Theory], however many [InlineData] rows follow. testTitles()
     // has to PAIR each attribute with its method and can lose one silently; this
     // just counts, so a mismatch means the pairing walk is wrong.
-    if (f.endsWith('.cs')) expectedCs += (src.match(/\[(?:Fact|Theory)\b/g) || []).length;
+    expectedCs += expectedTestCount(f, src) || 0;
     MARKER_RE.lastIndex = 0;
     for (const m of src.matchAll(MARKER_RE)) existingMarkers.set(m[1], (existingMarkers.get(m[1]) || 0) + 1);
   }

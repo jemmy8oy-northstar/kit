@@ -23,9 +23,16 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const K = path.join(__dirname, 'kit.js');
 const T = path.join(__dirname, 'kit-test.js');
-const original = fs.readFileSync(K, 'utf8');
+// Mutants name their file; kit.js is the default because it was the only one
+// until `check.js` existed. A gate whose rules are never mutated is exactly the
+// unbacked claim this harness exists to catch, so the harness had to grow rather
+// than the gate go unmeasured.
+const SUBJECTS = { 'kit.js': null, 'check.js': null };
+for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
+const restoreAll = () => {
+  for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
+};
 
 const MUTANTS = [
   // adjudication (#68: "default included but marked unreviewed")
@@ -77,6 +84,46 @@ const MUTANTS = [
     'if (!c.ref) errors.push', 'if (false) errors.push'],
   ['cites accepts prose instead of a behaviour id',
     'if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw', 'if (false) throw'],
+
+  // reading an app's tests — the reader every number downstream rests on
+  ['the [Theory] lookahead goes back to a fixed six lines — the 16% under-read',
+    'for (let j = i + 1; j < lines.length; j++) {', 'for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {'],
+  ['[InlineData] rows are no longer skipped, so no theory finds its method',
+    'if (CS_SKIP.test(lines[j])) continue;', 'if (false) continue;'],
+  ['the walk keeps scanning past the first non-attribute line, grabbing a later method',
+    'break; // matched or not, the first non-attribute line settles it', 'continue;'],
+  ['a DisplayName is ignored and the method name reported instead',
+    'raw: display ? display[1] : m[1], style:', 'raw: m[1], style:'],
+  ['the independent count declines for C# too, so nothing cross-checks the walk',
+    "if (!file.endsWith('.cs')) return null;", 'if (true) return null;'],
+
+  // the mapping (option C) — every one of these is the mapping rotting SILENTLY,
+  // which is the single property the option is chosen for.
+  ['a mapping naming a test that no longer exists is accepted',
+    'if (n === 0) {', 'if (false) {'],
+  ['an ambiguous title is accepted as if it addressed one test',
+    'if (n > 1) {', 'if (false) {'],
+  ['duplicate titles are never counted, so ambiguity cannot be seen',
+    'index.set(k, (index.get(k) || 0) + 1);', 'index.set(k, 1);'],
+  ['a mapping entry for a behaviour the corpus dropped is accepted',
+    'if (!ids.has(id)) {', 'if (false) {'],
+  ['a mapping naming a file that is not a test file is accepted',
+    'if (!files.has(e.file)) {', 'if (false) {'],
+  ['_ metadata keys are treated as behaviour ids',
+    "if (id.startsWith('_')) continue; // reserved for metadata", 'if (false) continue;'],
+
+  // the gate itself. `could not look` collapsing into `looked and was fine` is
+  // the failure mode that makes a green CI meaningless.
+  ['a repo with zero test files reports no problems instead of refusing',
+    'if (!read.files.length) {', 'if (false) {', 'check.js'],
+  ['a reader that lost tests is trusted anyway',
+    'if (read.fatal) {', 'if (false) {', 'check.js'],
+  ['an unknown --via silently falls back to a default',
+    "if (via !== 'mapping' && via !== 'markers') {", 'if (false) {', 'check.js'],
+  ['an id named by a test but absent from the corpus is not reported',
+    'errors = result.orphanTests.map(', 'errors = [].map(', 'check.js'],
+  ['uncovered behaviours no longer affect the exit code',
+    'if (!errors.length && !result.uncovered.length) {', 'if (true) {', 'check.js'],
 ];
 
 const run = () => {
@@ -86,13 +133,15 @@ const run = () => {
 
 let killed = 0;
 const survived = [];
-for (const [name, from, to] of MUTANTS) {
+for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
+  const original = SUBJECTS[file];
   // An anchor that stopped matching is a SURVIVOR, not a skip: it means the
   // mutation silently stopped being applied and the rule stopped being measured.
+  if (original === undefined) { console.log(`  ⚠️  UNKNOWN SUBJECT ${file}  ${name}`); survived.push(name); continue; }
   if (!original.includes(from)) { console.log(`  ⚠️  ANCHOR MISSING  ${name}`); survived.push(name); continue; }
-  fs.writeFileSync(K, original.replace(from, to));
+  fs.writeFileSync(path.join(__dirname, file), original.replace(from, to));
   const fails = run();
-  fs.writeFileSync(K, original);
+  restoreAll();
   if (fails > 0) { killed++; console.log(`  killed (${fails} failing)  ${name}`); }
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
