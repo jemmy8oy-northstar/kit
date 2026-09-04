@@ -1,0 +1,228 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PILOT CORPUS — language-vocab (the second of the two apps James named on #68)
+#
+# Read at origin/dev@8228db7. Every DEFINED behaviour cites a line in
+# language-vocab's own docs/DESIGN.md; every INFERRED one cites a test method
+# that exists in the repo. As with habits, the citation is the point: a reader
+# can go and check, and the suite asserts every behaviour cites something.
+#
+# ⚠️ THIS APP IS A DIFFERENT SHAPE FROM HABITS, AND THE DIFFERENCE IS THE RESULT.
+# habits has a full backend and no frontend. vocab has NEITHER: the only route in
+# the whole backend is `GET /api/status` — none of MVP 2/3/4's drill or stats
+# endpoints exist — and the frontend is the untouched web-template scaffold. What
+# does exist is the domain: 37 tests over PinyinGrader, PoolMath, PoolService and
+# SeedLoader, and they are excellent.
+#
+# So do NOT read this corpus's coverage number as a verdict on the app. It is a
+# picture of an app that built its hardest part first and has not wired it up,
+# which is a perfectly good place to be at PR 3 of 5 — its own delivery plan says
+# so (DESIGN.md#delivery-plan: PR 1 ✅, PR 2 ✅, PR 3–5 outstanding).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ DEFINED — the product as docs/DESIGN.md states it ═══
+#
+# Every noun below is missing from the app, because the frontend is still the
+# scaffold's single Home page. The generator refuses each one and names the noun.
+# That refusal IS the "defined but not built" report, and nobody maintains it.
+
+behaviour BEH-DRILL-ZHEN "Shown a Chinese word, the learner types the English meaning"
+  source defined docs/DESIGN.md#product-shape
+  actor learner
+  when opens page:Drill
+  then sees region:HanziLarge
+  then sees region:PinyinUnderIt
+  when fills field:Answer with ?english
+  then sees region:Verdict
+
+behaviour BEH-DRILL-ENZH "Shown an English word, the learner types the pinyin"
+  source defined docs/DESIGN.md#product-shape
+  actor learner
+  when opens page:Drill
+  then sees region:EnglishPrompt
+  when fills field:Answer with ?pinyin
+  then sees region:Verdict
+
+# The line that decides what the app is FOR. Kept as a behaviour rather than a
+# contract because it is checkable at the UI: the character is on screen, and the
+# answer box does not want it.
+behaviour BEH-CHAR-1 "Chinese characters are always displayed and never required as input"
+  source defined docs/DESIGN.md#product-shape
+  actor learner
+  when opens page:Drill
+  then sees region:HanziLarge
+  contract no drill direction ever requires typing a hanzi character
+
+behaviour BEH-TONE-1 "Pinyin is displayed with tone marks and accepted three ways"
+  source defined docs/DESIGN.md#A1
+  actor learner
+  when opens page:Drill
+  then sees region:PinyinUnderIt
+  contract display uses tone marks (nǐ hǎo)
+  contract input accepts tone numbers (ni3 hao3), toneless (ni hao), or tone marks
+
+behaviour BEH-TONE-2 "Tones are graded softly — right syllables with wrong tones is 'almost'"
+  source defined docs/DESIGN.md#A2
+  actor learner
+  when opens page:Drill
+  when fills field:Answer with ?toneless
+  then sees region:Verdict
+  provides region:Verdict.states = correct, almost, wrong
+  contract an 'almost' shows the correct tones and makes the card repeat sooner
+
+behaviour BEH-NORMALISE-1 "Grading forgives everything that is not the point"
+  source defined docs/DESIGN.md#A7
+  actor learner
+  contract answers are trimmed and case-folded
+  contract an English answer matches ANY accepted gloss
+  contract pinyin accepts `v` for `ü` and ignores spacing and apostrophes
+
+behaviour BEH-AUDIO-1 "Every card can be heard in Mandarin"
+  source defined docs/DESIGN.md#A5
+  actor learner
+  when opens page:Drill
+  when activates button:PlayAudio
+  contract audio is browser SpeechSynthesis with a zh-CN voice — no API key, no network call
+
+behaviour BEH-POOL-MVP "The active pool starts at ten words and grows as they are mastered"
+  source defined docs/DESIGN.md#mvp-3
+  actor learner
+  provides pool:Active.bootstrap = first 10 by rank
+  provides pool:Active.unlockAt = 3.5
+  provides pool:Active.unlockBy = 5
+  contract sampling from the active pool is weighted towards weakness
+
+behaviour BEH-STRENGTH-MVP "A word's strength moves with the answer"
+  source defined docs/DESIGN.md#A4
+  actor learner
+  provides word:Any.strength = 0..5
+  contract full credit +1, a miss -1, an 'almost' leaves it unchanged
+
+behaviour BEH-STATS-1 "The stats page shows pool size, per-word strength and accuracy over time"
+  source defined docs/DESIGN.md#mvp-4
+  actor learner
+  when opens page:Stats
+  then sees region:PoolSize
+  then sees region:StrengthBars
+  then sees region:AccuracyOverTime
+
+behaviour BEH-CARD-1 "The card gives instant feedback and moves on with Enter"
+  source defined docs/DESIGN.md#mvp-5
+  actor learner
+  when opens page:Drill
+  when fills field:Answer with ?answer
+  then sees region:Verdict
+  contract feedback is green, amber with the correct tones, or red with the answer
+  contract Enter advances to the next card
+
+behaviour BEH-SEEDDATA-1 "HSK1 is seeded from versioned data in the repo"
+  source defined docs/DESIGN.md#mvp-1
+  actor learner
+  contract the seed is versioned JSON in-repo (hanzi, pinyin, accepted glosses, level, frequency rank)
+  contract loading it twice changes nothing
+
+
+# ═══ INFERRED — what the code actually asserts today ═══
+#
+# From the 37 backend test method names. All four suites are domain-level; there
+# is no route test anywhere in the repo, because outside `GET /api/status` there
+# are no routes. Each is `review unreviewed` per his #68 decision, and each says
+# which documented behaviour it serves — or deliberately does not.
+
+behaviour BEH-GRADE-1 "An answer is graded correct, almost, or wrong"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Grade_correct
+  review unreviewed
+  serves BEH-TONE-2
+  contract the three verdicts are exhaustive
+
+behaviour BEH-GRADE-2 "A toneless answer is reported as toneless, not merely wrong"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Toneless_answer_reports_flags
+  review unreviewed
+  serves BEH-TONE-2
+  contract the result flags that no tones were supplied, distinct from supplying wrong ones
+
+behaviour BEH-GRADE-3 "A wrong tone is reported as tones-provided-but-incorrect"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Wrong_tone_reports_tones_provided_but_incorrect
+  review unreviewed
+  serves BEH-TONE-2
+
+behaviour BEH-GRADE-4 "The grade carries the canonical form of the answer"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Result_carries_the_canonical_form
+  review unreviewed
+  serves BEH-CARD-1
+  contract the canonical form is what the amber and red feedback display
+
+behaviour BEH-STRENGTH-1 "Strength moves by one and clamps to the 0..5 band"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:NextStrength_moves_and_clamps
+  review unreviewed
+  serves BEH-STRENGTH-MVP
+
+behaviour BEH-WEIGHT-1 "Sampling weight favours weakness and never reaches zero"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:Weight_favours_weakness_and_stays_positive
+  review unreviewed
+  serves BEH-POOL-MVP
+  contract a mastered word still has a positive chance of coming up
+
+behaviour BEH-UNLOCK-1 "Unlocking fires at the threshold and not below it"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:ShouldUnlock_true_at_threshold
+  review unreviewed
+  serves BEH-POOL-MVP
+  contract out-of-band strengths are clamped before the mean is taken
+
+behaviour BEH-BOOTSTRAP-1 "The pool bootstraps to the first ten by rank, and does so once"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_creates_first_ten_by_rank
+  review unreviewed
+  serves BEH-POOL-MVP
+  contract a second bootstrap changes nothing
+  contract fewer than ten available takes all of them
+
+behaviour BEH-UNLOCK-2 "Unlocking adds the next batch by rank and stops when nothing is left"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:TryUnlock_adds_next_batch_by_rank_when_mastered
+  review unreviewed
+  serves BEH-POOL-MVP
+
+behaviour BEH-SEED-1 "Seeding is idempotent and updates changed rows in place"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_is_idempotent_second_run_changes_nothing
+  review unreviewed
+  serves BEH-SEEDDATA-1
+  contract a changed gloss updates the existing row rather than inserting a duplicate
+
+behaviour BEH-SEED-2 "The real HSK1 list is embedded and loads 150 words"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_the_real_hsk1_list_inserts_150_words
+  review unreviewed
+  serves BEH-SEEDDATA-1
+
+behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_derives_normalised_pinyin_via_the_grader
+  review unreviewed
+  serves BEH-NORMALISE-1
+  contract seed data and typed answers are normalised by the same code
+
+
+# ═══ NO `serves` LINE — surface nothing documented displays ═══
+#
+# All three are the SAME kind, and it is a kind habits did not produce: code
+# built for something docs/DESIGN.md explicitly parked under "Explicitly deferred
+# (roadmap, not v1)". That is not waste and it is not a bug — it is a bet on a
+# roadmap item, taken early, in a repo whose own delivery plan has not reached
+# the UI yet. Whether that bet is still wanted is his call, and the value here is
+# that it is now a list rather than a feeling.
+#
+# ⚠️ Do NOT read this as "delete these". habits produced two unserved behaviours
+# that needed opposite fixes; these three need a third answer again.
+
+behaviour BEH-LANG-1 "Every pool operation is scoped to one language"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_only_touches_the_requested_language
+  review unreviewed
+  contract bootstrap for one language leaves another language's pool untouched
+  contract the loader throws when the language is missing
+
+behaviour BEH-ITEMTYPE-1 "A vocabulary item has a type, defaulting to word"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_defaults_item_type_to_word
+  review unreviewed
+  contract the schema reserves a Sentence type that nothing produces or consumes
+
+behaviour BEH-DETERMINISM-1 "Selection is deterministic for a given seed"
+  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:SelectNext_is_deterministic_for_the_same_seed
+  review unreviewed
+  contract the same seed picks the same word, so the sampler is testable

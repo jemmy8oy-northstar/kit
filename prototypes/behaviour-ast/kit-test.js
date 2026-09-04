@@ -340,5 +340,38 @@ t('the pilot names exactly the two behaviours nothing documented displays', () =
   assert.ok(s.served.length >= 8, `expected most inferences to serve a screen, got ${s.served.length}`);
 });
 
+t('language-vocab is a different shape from habits, and the corpus says so', () => {
+  // The second pilot app James named on #68. Its value is the CONTRAST: habits
+  // has a full backend and no frontend; vocab has neither, only a domain. If a
+  // future change made the two corpora report the same shape, one of them would
+  // have stopped describing its app.
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours/language-vocab.beh'), 'utf8');
+  const { behaviours } = resolve(parse(src, 'language-vocab.beh'));
+  const s = surface(behaviours);
+  assert.deepStrictEqual(s.errors, []);
+  assert.strictEqual(adjudication(behaviours).untraceable.length, 0, 'every vocab behaviour must cite its source');
+
+  // All three unserved behaviours are the SAME kind here — code built for
+  // something DESIGN.md explicitly parked under "Explicitly deferred". habits
+  // produced two that needed opposite fixes; a report that collapsed either set
+  // into one recommendation would be wrong.
+  assert.deepStrictEqual(
+    s.unserved.map((b) => b.id).sort(),
+    ['BEH-DETERMINISM-1', 'BEH-ITEMTYPE-1', 'BEH-LANG-1'],
+  );
+
+  // The whole documented UI is missing, and that is the finding, not a failure of
+  // the corpus. Asserting it stops someone "fixing" the zero by inventing nouns.
+  const { generate } = require('./kit');
+  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  const { symbols } = resolve(parse(src, 'language-vocab.beh'));
+  const missing = new Set();
+  for (const b of behaviours) for (const m of generate(b, bindings, symbols).missing) missing.add(m);
+  assert.ok(missing.has('page:Drill'), 'the drill screen does not exist on origin/dev — the refusal is the report');
+  assert.ok(missing.has('page:Stats'));
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
