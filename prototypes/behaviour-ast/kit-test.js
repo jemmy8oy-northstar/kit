@@ -177,5 +177,93 @@ t('a test naming a behaviour that no longer exists is an orphan', () => {
   assert.deepStrictEqual(r.orphanTests, ['BEH-7']);
 });
 
+console.log('\n── adjudication: "default included but marked unreviewed" (James, #68) ──');
+
+const { adjudication } = require('./kit');
+
+t('an inference defaults to unreviewed WITHOUT anyone writing review', () => {
+  // The load-bearing one. He chose default-INCLUDE, so the only thing keeping a
+  // machine guess from passing as a requirement is that it arrives unreviewed
+  // by default. If this ever defaults to approved, the mechanism is decorative.
+  const [b] = parse('behaviour BEH-1 "a"\n  source inferred tests/X.cs:name');
+  assert.strictEqual(b.source.origin, 'inferred');
+  assert.strictEqual(b.review.state, 'unreviewed');
+});
+
+t('a behaviour with no source line is defined and approved — old corpora still parse', () => {
+  // The positive control for the test above: a version that marked EVERYTHING
+  // unreviewed would pass it and be useless. Silence means a human wrote it.
+  const [b] = parse('behaviour BEH-1 "a"\n  actor visitor');
+  assert.strictEqual(b.source.origin, 'defined');
+  assert.strictEqual(b.review.state, 'approved');
+});
+
+t('an explicit review survives a later source line', () => {
+  const [b] = parse('behaviour BEH-1 "a"\n  review approved\n  source inferred tests/X.cs:n');
+  assert.strictEqual(b.review.state, 'approved', 'an adjudicated inference must not revert to unreviewed');
+});
+
+t('a denial without a correction is refused', () => {
+  // His #68 point: "on a deny a required indication of what correct behaviour
+  // actually looks like should take place". A bare denial deletes a line; a
+  // denial with a correction compounds into the corpus.
+  assert.throws(() => parse('behaviour BEH-1 "a"\n  review denied'), /must state the correction/);
+  assert.doesNotThrow(() => parse('behaviour BEH-1 "a"\n  review denied streaks reset at midnight UTC'));
+});
+
+t('an unknown source origin is refused rather than silently ignored', () => {
+  assert.throws(() => parse('behaviour BEH-1 "a"\n  source guessed'), /defined.*inferred/);
+});
+
+t('the never-adjudicated count counts only unreviewed INFERENCES', () => {
+  const bs = parse([
+    'behaviour BEH-1 "human wrote this"',
+    '  source defined docs/DESIGN.md#A1',
+    'behaviour BEH-2 "model guessed this"',
+    '  source inferred tests/X.cs:a',
+    'behaviour BEH-3 "model guessed, human approved"',
+    '  source inferred tests/X.cs:b',
+    '  review approved',
+  ].join('\n'));
+  const a = adjudication(bs);
+  assert.strictEqual(a.defined, 1);
+  assert.strictEqual(a.inferred, 2);
+  assert.deepStrictEqual(a.unreviewed.map((b) => b.id), ['BEH-2']);
+  assert.deepStrictEqual(a.approved.map((b) => b.id), ['BEH-3']);
+});
+
+t('a behaviour with no traceable ref is reported separately from an unreviewed one', () => {
+  // Worse than unreviewed: an approve/deny needs something to point AT six weeks
+  // on, and a behaviour citing nothing cannot be checked against anything.
+  const a = adjudication(parse('behaviour BEH-1 "a"\nbehaviour BEH-2 "b"\n  source defined docs/D.md#x'));
+  assert.deepStrictEqual(a.untraceable.map((b) => b.id), ['BEH-1']);
+});
+
+console.log('\n── the pilot corpus is real material, not a fixture ──');
+
+t('james-habits-app parses and its DESIGN-vs-code conflict is detected', () => {
+  // The pilot's headline finding, pinned so it cannot silently stop being found.
+  // docs/DESIGN.md#mvp-5 says the history grid is 30 days; the shipped route
+  // takes a caller-supplied length. Two claims about one slot, found with no
+  // LLM and no embeddings — straight out of the symbol table.
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours/james-habits-app.beh'), 'utf8');
+  const { behaviours, conflicts } = resolve(parse(src, 'james-habits-app.beh'));
+  assert.ok(behaviours.length >= 20, `expected a real corpus, got ${behaviours.length}`);
+
+  const clash = conflicts.find((c) => c.key === 'region:CompletionGrid.days');
+  assert.ok(clash, 'the 30-day-vs-caller-supplied contradiction must be detected');
+  assert.deepStrictEqual(clash.held, ['30']);
+  assert.ok(clash.challengers.some((x) => x.from === 'BEH-WINDOW-INFERRED'));
+
+  // Every inferred behaviour must cite a real file:symbol. A corpus that cites
+  // nothing looks identical to one that cites everything, right up to the moment
+  // someone tries to check it.
+  const a = adjudication(behaviours);
+  assert.strictEqual(a.untraceable.length, 0, 'every pilot behaviour must cite its source');
+  assert.ok(a.inferred >= 10, 'the inferred half is the whole point of the pilot');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
