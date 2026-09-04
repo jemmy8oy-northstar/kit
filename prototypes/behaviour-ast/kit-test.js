@@ -906,5 +906,140 @@ t('the COUNT of acceptance criteria is checked, not just each one that is presen
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'fewer.md')])), 1);
 });
 
+console.log('\n── saturation: does binding glue grow 1:1 with the UI? (gap #8) ──');
+const sat = require('./saturation');
+
+// A corpus generator, so the cases below differ in ONE property — how the nouns
+// are distributed across behaviours — and nothing else.
+const corpus = (perBehaviour) => perBehaviour.map((nouns, i) =>
+  [`behaviour BEH-${i} "b${i}"`, ...nouns.map((n) => `when activates button:${n}`)].join('\n')).join('\n');
+const SATURATING = corpus([['A', 'B', 'C', 'D'], ['E', 'F'], ['A'], ['B'], ['C'], ['A', 'E']]);
+const ONE_TO_ONE = corpus([['A', 'B'], ['C', 'D'], ['E', 'F'], ['G', 'H'], ['I', 'J'], ['K', 'L']]);
+
+t('THE CONTROL: the statistic separates a saturating corpus from a 1:1 one', () => {
+  // Without this the whole measurement is decorative. Every other test here can
+  // pass over a statistic that returns the same number for both shapes, and the
+  // number I report on the PR would then be unfalsifiable.
+  const s = sat.measureCorpus('sat.beh', SATURATING);
+  const o = sat.measureCorpus('one.beh', ONE_TO_ONE);
+  assert.ok(s.ratio < 0.5, `saturating corpus should collapse, got ratio ${s.ratio}`);
+  assert.ok(s.percentile < 0.5, `saturating corpus should beat its own shuffles, got ${s.percentile}`);
+  assert.strictEqual(o.ratio, 1, `a 1:1 corpus has no decline, got ${o.ratio}`);
+  assert.strictEqual(o.percentile, 0.5, 'a 1:1 corpus is order-invariant, so it must sit exactly at the null median');
+});
+
+t('a behaviour with no noun reference is EXCLUDED from the curve', () => {
+  // The finding this rule produces: habits looks like it saturates after 6 of
+  // 23 behaviours. It has 8 that touch the UI at all; the other 15 are API and
+  // domain behaviours, and counting them drives the marginal to zero for a
+  // reason that has nothing to do with bindings.
+  const withInert = SATURATING + '\n' + [0, 1, 2, 3, 4, 5, 6].map((i) =>
+    `behaviour BEH-INERT-${i} "i${i}"\nthen contract GET /api/x returns 200`).join('\n');
+  const a = sat.measureCorpus('a.beh', SATURATING);
+  const b = sat.measureCorpus('b.beh', withInert);
+  assert.strictEqual(b.behaviours, a.behaviours + 7);
+  assert.strictEqual(b.inert, 7);
+  assert.deepStrictEqual(b.curve, a.curve, 'inert behaviours leaked into the marginal curve');
+});
+
+t('the null is the SHUFFLED same corpus, not a fresh random one', () => {
+  // A null drawn from anything but these exact behaviours would not isolate the
+  // coupon-collector floor, which is the only thing the percentile is for.
+  const s = sat.measureCorpus('sat.beh', SATURATING);
+  const reordered = corpus([['A'], ['B'], ['A', 'E'], ['C'], ['A', 'B', 'C', 'D'], ['E', 'F']]);
+  const r = sat.measureCorpus('r.beh', reordered);
+  assert.strictEqual(r.nouns, s.nouns, 'the reordering changed the noun set — not a reordering');
+  assert.strictEqual(r.nullMedian, s.nullMedian, 'the null must not depend on authoring order');
+  assert.ok(r.ratio > s.ratio, 'a back-loaded order must score worse than a front-loaded one');
+});
+
+t('ties are split, so the percentile does not depend on < versus <=', () => {
+  // macro-metrics lands exactly ON its own null median, where `<=` reports 71%
+  // and `<` reports 39% for identical data. Both are defensible readings of the
+  // wrong question; mid-rank is the one that is not chosen after seeing it.
+  const o = sat.measureCorpus('one.beh', ONE_TO_ONE);
+  assert.ok(o.tieShare > 0.9, 'expected an order-invariant corpus to be almost all ties');
+  assert.strictEqual(o.percentile, 0.5);
+});
+
+t('the second count reads the raw text, and a step the parser drops is caught', () => {
+  // The failure mode: a reader that silently loses steps reports a SMALLER noun
+  // set, which reads as saturation. So the cross-check has to be able to fail —
+  // asserted here by making the two disagree on purpose.
+  const src = corpus([['A', 'B'], ['C'], ['D'], ['E']]);
+  const ast = new Set(sat.measureCorpus('x.beh', src).nounSet);
+  const text = sat.nounsFromText(src);
+  assert.deepStrictEqual([...text].sort(), [...ast].sort(), 'the control disagrees before any mutation');
+  const dropped = sat.nounsFromText(src.replace('when activates button:C', '# when activates button:C'));
+  assert.ok(!dropped.has('button:C'), 'the text reader is not reading the steps it claims to');
+});
+
+t('a literal containing a noun-shaped token is not counted as a noun', () => {
+  // ⚠️ The first version of this test used the literal "Ratio: 1.4" and a
+  // mutation removing the quote-stripping SURVIVED it: `Ratio` is capitalised
+  // and a space follows the colon, so the noun regex never matched inside the
+  // quotes and the rule was never what made it pass. The literal has to contain
+  // a token of the exact shape `kind:Name` for the stripping to be load-bearing.
+  const src = 'behaviour BEH-1 "x"\nthen shows region:Main "unbound noun button:Save"';
+  assert.deepStrictEqual([...sat.nounsFromText(src)], ['region:Main']);
+  // And the consequence, not just the reader: without stripping, the raw text
+  // finds button:Save, the AST correctly does not, and the tool refuses to
+  // measure a corpus that is entirely fine.
+  const dir = fixture({ 'lit.beh': SATURATING + '\n' + src });
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 0);
+});
+
+t('exit 2 when ONE corpus of several parses zero nouns', () => {
+  // ⚠️ This was originally a single empty corpus, and the mutation SURVIVED: a
+  // corpus with no nouns also has no noun-bearing behaviours, so the "too small
+  // to halve" rule fired and the zero-noun rule was never what made it red. It
+  // takes a healthy corpus ALONGSIDE the empty one to leave the zero-noun rule
+  // as the only thing that can refuse ([[red-for-the-right-reason]]).
+  const empty = 'behaviour BEH-1 "x"\nthen contract GET /api/x';
+  assert.strictEqual(quiet(() => sat.main(['--dir', fixture({ 'big.beh': SATURATING })])), 0, 'the control drifted');
+  assert.strictEqual(quiet(() => sat.main(['--dir', fixture({ 'big.beh': SATURATING, 'empty.beh': empty })])), 2);
+});
+
+t('exit 2 when no corpus has enough UI behaviours to halve', () => {
+  const dir = fixture({ 'tiny.beh': corpus([['A'], ['B'], ['C']]) });
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 2);
+  const ok = fixture({ 'big.beh': SATURATING });
+  assert.strictEqual(quiet(() => sat.main(['--dir', ok])), 0, 'the control drifted');
+});
+
+t('exit 2 when the two counts disagree — the refusal path fires, it is not decorative', () => {
+  // The two readers agree on every corpus kit.parse will even accept, so this
+  // branch is unreachable from a fixture. That is exactly why it needs
+  // asserting: an untriggered refusal is a claim. The lossy reader stands in
+  // for the real failure — a parser that silently drops steps, which reports a
+  // SMALLER noun set and reads as saturation.
+  const dir = fixture({ 'skew.beh': SATURATING });
+  const lossy = (text) => {
+    const n = sat.nounsFromText(text);
+    n.delete('button:A');
+    return n;
+  };
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 0, 'the control drifted — it refuses before any reader is swapped');
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir], lossy)), 2);
+});
+
+t('exit 2 when pointed at a directory that does not exist', () => {
+  assert.strictEqual(quiet(() => sat.main(['--dir', '/no/such/behaviours'])), 2);
+});
+
+t('--check goes RED when the write-up drifts from the corpora', () => {
+  // The write-up quotes numbers. Nothing but this stops them ageing into
+  // fiction the way what-we-can-leverage.md quoted 19 tests against a suite of
+  // 72 — kit's own repo drifting in the way kit exists to catch.
+  assert.strictEqual(quiet(() => sat.main(['--check'])), 0, 'the recorded findings already disagree with the corpora');
+  const real = pathx.join(__dirname, 'behaviours');
+  const dir = fixture({});
+  for (const f of fsx.readdirSync(real).filter((f) => f.endsWith('.beh'))) {
+    fsx.copyFileSync(pathx.join(real, f), pathx.join(dir, f));
+  }
+  fsx.appendFileSync(pathx.join(dir, 'snip-it.beh'), '\nbehaviour BEH-DRIFT-1 "a behaviour nobody recorded"\nwhen activates button:BrandNew\n');
+  assert.strictEqual(quiet(() => sat.main(['--dir', dir, '--check'])), 1);
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
