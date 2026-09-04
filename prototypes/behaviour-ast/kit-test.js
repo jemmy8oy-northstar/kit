@@ -373,5 +373,166 @@ t('language-vocab is a different shape from habits, and the corpus says so', () 
   assert.ok(missing.has('page:Stats'));
 });
 
+console.log('\n── the question sheet (his kit#3 ask: "a behaviour question sheet... I can work through it with Gemini") ──');
+const { questions, questionErrors, renderSheet } = require('./kit');
+
+// A whole pack, so the gate tests below can remove ONE part each and show that
+// the part is what the gate catches. An unserved inference is the cheapest way
+// to get a `decision` tier without needing a conflict.
+const PACK = 'behaviour BEH-SCREEN "documented screen"\n  source defined docs/DESIGN.md#1\n  when opens page:Home\n' +
+  'behaviour BEH-LOOSE "a route nothing displays"\n  source inferred code.cs:X\n  review unreviewed\n' +
+  '  contract GET /api/thing takes a flag\n' +
+  '  asks "keep it or drop it?"\n' +
+  '  option "keep" "the design gains a screen"\n' +
+  '  option "drop" "the route and one test go"\n' +
+  '  recommend "keep" "because the capability is half-promised already"\n' +
+  '  against "it is scope on an app with no screens"\n';
+
+t('an unserved inference is a DECISION and a served one is a REVIEW', () => {
+  // The tier split is the whole ranking claim: the two sections buy different
+  // amounts of a reader's attention, so a bug that flattened them would make the
+  // sheet a form — the exact thing the adjudication count already failed to be.
+  const { behaviours, conflicts } = build(PACK +
+    'behaviour BEH-FINE "a route a screen displays"\n  source inferred code.cs:Y\n  review unreviewed\n  serves BEH-SCREEN\n');
+  const qs = questions(behaviours, conflicts);
+  assert.strictEqual(qs.find((q) => q.id === 'BEH-LOOSE').tier, 'decision');
+  // The positive control. Without it, a version that tiers EVERYTHING as a
+  // decision passes the line above and the ranking silently stops ranking.
+  assert.strictEqual(qs.find((q) => q.id === 'BEH-FINE').tier, 'review');
+});
+
+t('a human can PROMOTE a routine-looking inference by writing asks on it', () => {
+  // Mechanism sets the floor, not the ceiling: the tool cannot see that a
+  // parameter's NAME is wrong. BEH-HISTORY-3 is the real case.
+  const { behaviours, conflicts } = build(PACK +
+    'behaviour BEH-NAMED "served, but the name is wrong"\n  source inferred code.cs:Y\n  review unreviewed\n  serves BEH-SCREEN\n' +
+    '  asks "is this name right?"\n  option "a" "x"\n  option "b" "y"\n');
+  assert.strictEqual(questions(behaviours, conflicts).find((q) => q.id === 'BEH-NAMED').tier, 'decision');
+});
+
+t('an adjudicated inference drops off the sheet entirely', () => {
+  // Answering must REMOVE the question, or the sheet never shortens and working
+  // through it produces no visible progress.
+  const { behaviours, conflicts } = build(PACK.replace('review unreviewed', 'review approved'));
+  assert.strictEqual(questions(behaviours, conflicts).some((q) => q.id === 'BEH-LOOSE'), false);
+});
+
+t('a decision with no question is refused', () => {
+  const { behaviours, conflicts } = build(
+    'behaviour BEH-SCREEN "s"\n  source defined docs/DESIGN.md#1\n  when opens page:Home\n' +
+    'behaviour BEH-LOOSE "nothing displays it"\n  source inferred code.cs:X\n  review unreviewed\n');
+  const errs = questionErrors(questions(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('BEH-LOOSE') && e.includes('asks')), errs.join(' | '));
+});
+
+t('a recommendation with no counter-case is refused', () => {
+  // The half a reader most needs and I am least inclined to write, so the gate
+  // requires it rather than trusting me (his claude-code-bot#82 shape).
+  const { behaviours, conflicts } = build(PACK.replace(/^  against .*\n/m, ''));
+  const errs = questionErrors(questions(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('advocacy')), errs.join(' | '));
+});
+
+t('a recommendation pointing at no option is refused', () => {
+  // The rot case: an option gets relabelled and the recommendation quietly
+  // starts naming nothing while still reading as a recommendation.
+  const { behaviours, conflicts } = build(PACK.replace('recommend "keep"', 'recommend "kepe"'));
+  const errs = questionErrors(questions(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('not one of its options')), errs.join(' | '));
+});
+
+t('a one-option question is refused', () => {
+  const { behaviours, conflicts } = build(PACK.replace(/^  option "drop" .*\n/m, ''));
+  const errs = questionErrors(questions(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('at least 2 options')), errs.join(' | '));
+});
+
+t('a complete pack passes the gate — the control for all four refusals above', () => {
+  // Without this, a questionErrors() that returned an error unconditionally
+  // would pass every refusal test in this section.
+  const { behaviours, conflicts } = build(PACK);
+  assert.deepStrictEqual(questionErrors(questions(behaviours, conflicts)), []);
+});
+
+t('a cited behaviour moves INTO the decision and out of the review list', () => {
+  // The double-ask this field was built for. The first real sheet asked which of
+  // `days`/`historyDays` wins as D1, and separately asked him to tick
+  // "the parameter is named historyDays" as a routine review — ticking the cheap
+  // one silently answers the expensive one.
+  const src = PACK +
+    'behaviour BEH-EVIDENCE "the flag is spelled thisWay"\n  source inferred code.cs:Z\n  review unreviewed\n' +
+    '  serves BEH-SCREEN\n  contract the flag is spelled thisWay\n';
+  const before = questions(...(({ behaviours, conflicts }) => [behaviours, conflicts])(build(src)));
+  assert.strictEqual(before.find((q) => q.id === 'BEH-EVIDENCE').tier, 'review', 'control: uncited, it is its own row');
+
+  const { behaviours, conflicts } = build(src.replace('  asks "keep it or drop it?"', '  cites BEH-EVIDENCE\n  asks "keep it or drop it?"'));
+  const qs = questions(behaviours, conflicts);
+  assert.strictEqual(qs.some((q) => q.id === 'BEH-EVIDENCE'), false, 'cited: it must not also be its own row');
+  assert.deepStrictEqual(qs.find((q) => q.id === 'BEH-LOOSE').cites.map((c) => c.id), ['BEH-EVIDENCE']);
+});
+
+t('a cites naming nothing is refused, not silently dropped', () => {
+  // Worse than a broken link in prose: a typo here SUPPRESSES a behaviour from
+  // the sheet, so the question disappears leaving no trace anywhere.
+  const { behaviours, conflicts } = build(PACK.replace('  asks "keep', '  cites BEH-GHOST\n  asks "keep'));
+  const errs = questionErrors(questions(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('BEH-GHOST') && e.includes('silently drops')), errs.join(' | '));
+});
+
+t('cites wants a behaviour id, not prose', () => {
+  // Found by a SURVIVED mutant, not by design: the id check was unexercised
+  // because every test wrote a well-formed id. It is not redundant with the
+  // dangling-cites gate — this fails at PARSE with a file:line, which is where a
+  // typo is cheap, and the gate's message ("names nothing in this corpus") sends
+  // a reader looking for a missing behaviour rather than at their own syntax.
+  assert.throws(() => build(PACK.replace('  asks "keep', '  cites the naming one\n  asks "keep')), /cites wants a behaviour id/);
+});
+
+t('the habits sheet renders, and its shape is the one he was handed', () => {
+  // Against the REAL corpus, not a fixture: the sheet is an artefact he opens,
+  // and every fixture I write is one I already believe.
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours/james-habits-app.beh'), 'utf8');
+  const { behaviours, conflicts } = resolve(parse(src, 'james-habits-app.beh'));
+  const qs = questions(behaviours, conflicts);
+  assert.deepStrictEqual(questionErrors(qs), [], 'the shipped sheet must pass its own gate');
+
+  const decisions = qs.filter((q) => q.tier === 'decision');
+  // Pinned by IDENTITY, not count — a corpus that grew a different third
+  // decision would still pass a `=== 3`, and which ones is the whole value.
+  assert.deepStrictEqual(
+    decisions.map((q) => q.key).sort(),
+    ['BEH-ARCHIVE-2', 'BEH-ERROR-1', 'region:CompletionGrid.days'],
+  );
+  // BEH-HISTORY-3 is D1's evidence. If it ever reappears as its own row, the
+  // sheet is double-asking again and the second ask is in the cheap section.
+  assert.strictEqual(qs.some((q) => q.id === 'BEH-HISTORY-3'), false);
+
+  const md = renderSheet('james-habits-app', qs);
+  // The brief is what stops a helpful assistant ratifying my own recommendation.
+  assert.ok(md.includes('pressure-test'), 'the assistant brief must survive rendering');
+  assert.ok(md.includes('strongest case against'), 'every decision owes a counter-case');
+  // The second reader cannot open the repo, so evidence must be inline.
+  assert.ok(md.includes('HabitRoutes.cs:68'), 'the citation must be in the document, not just in the repo');
+});
+
+t('the committed sheet is byte-identical to what the generator produces now', () => {
+  // The failure this exists for: someone answers a question, edits the corpus,
+  // and the sheet in docs/ keeps asking it — or hand-edits the sheet and the
+  // corpus never learns. Either way the artefact reads as current while being
+  // stale, which is the exact defect the sheet was built to remove from the app.
+  // It is checkable only because the sheet carries no timestamp.
+  const fs = require('fs');
+  const path = require('path');
+  const committed = path.join(__dirname, '../../docs/sheets/james-habits-app.md');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours/james-habits-app.beh'), 'utf8');
+  const { behaviours, conflicts } = resolve(parse(src, 'james-habits-app.beh'));
+  const fresh = renderSheet('james-habits-app', questions(behaviours, conflicts),
+    { rev: 'james-habits-app@e75de89' });
+  assert.strictEqual(fs.readFileSync(committed, 'utf8'), fresh,
+    'docs/sheets/james-habits-app.md is stale — re-run `node kit.js sheet james-habits --rev james-habits-app@e75de89`');
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

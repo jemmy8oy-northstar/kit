@@ -54,6 +54,29 @@ const MUTANTS = [
     'unserved: inferred.filter((b) => !b.serves.length),', 'unserved: [],'],
   ['serves accepts prose instead of a behaviour id',
     'const s = /^([A-Z][A-Z0-9-]*)$/.exec(rest);', 'const s = [rest, rest];'],
+
+  // the question sheet (kit#3: "a behaviour question sheet... with Gemini")
+  ['everything unreviewed is tiered as a decision — the ranking stops ranking',
+    "tier: detected || b.asks ? 'decision' : 'review',", "tier: 'decision',"],
+  ['a human can no longer promote a served inference with asks',
+    "tier: detected || b.asks ? 'decision' : 'review',", "tier: detected ? 'decision' : 'review',"],
+  ['an already-adjudicated behaviour stays on the sheet forever',
+    "if (b.source.origin !== 'inferred' || b.review.state !== 'unreviewed') continue;",
+    "if (b.source.origin !== 'inferred') continue;"],
+  ['a decision may ship with no question stated',
+    "if (q.tier === 'decision' && !q.asks) {", 'if (false) {'],
+  ['a recommendation may ship with no counter-case — advocacy passes the gate',
+    'if (q.recommend && !q.against) {', 'if (false) {'],
+  ['a recommendation may name an option that does not exist',
+    'if (q.recommend && !q.options.some((o) => o.label === q.recommend.label)) {', 'if (false) {'],
+  ['a question may ship with a single option',
+    'if (q.options.length < 2) errors.push', 'if (false) errors.push'],
+  ['a cited behaviour is ALSO listed as its own review row — the double-ask returns',
+    'if (citedBy.has(b.id)) continue;', 'if (false) continue;'],
+  ['a cites naming nothing is silently dropped instead of refused',
+    'if (!c.ref) errors.push', 'if (false) errors.push'],
+  ['cites accepts prose instead of a behaviour id',
+    'if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw', 'if (false) throw'],
 ];
 
 const run = () => {
