@@ -761,5 +761,150 @@ t('the shipped snip-it mapping is RED today, and for the two behaviours it says'
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-UP-2', 'BEH-EDIT-0']);
 });
 
+console.log('\n── prose-audit: does the corpus account for the whole document? ──');
+const pa = require('./prose-audit');
+
+// One clean AC + the one behaviour it names. Every test below mutates a COPY of
+// this, so each asserts exactly one rule and the control asserts the rest hold.
+const CLEAN_BEH = resolve(parse('behaviour BEH-A "a"\n  actor v\n  when opens page:Home', 'p.beh')).behaviours;
+const CLEAN_LEDGER = () => ({
+  source: { path: 'x.md', rev: 'deadbeefdeadbeef' },
+  acs: [{ line: 1, story: 'Story 1', text: 'a thing', disposition: 'encoded', shapes: [], behaviours: ['BEH-A'], note: '' }],
+});
+
+t('a clean ledger has no problems — the control the rest of these need', () => {
+  assert.deepStrictEqual(pa.audit(CLEAN_LEDGER(), CLEAN_BEH).problems, []);
+});
+
+t('a behaviour NO acceptance criterion names is reported', () => {
+  // The rule this file exists for. Nothing else in the repo stops a corpus
+  // growing a flattering behaviour the source document never asked for, and
+  // encoding prose is precisely where that temptation lives.
+  const beh = resolve(parse('behaviour BEH-A "a"\nbehaviour BEH-INVENTED "nobody asked"', 'p.beh')).behaviours;
+  const { problems } = pa.audit(CLEAN_LEDGER(), beh);
+  assert.strictEqual(problems.length, 1, problems.join(' | '));
+  assert.match(problems[0], /BEH-INVENTED.*no acceptance criterion names it/);
+});
+
+t('a ledger entry naming a behaviour the corpus lacks is reported', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].behaviours = ['BEH-GONE'];
+  const { problems } = pa.audit(l, CLEAN_BEH);
+  assert.ok(problems.some((p) => /names BEH-GONE, which is not in the corpus/.test(p)), problems.join(' | '));
+});
+
+t('an unknown disposition is unaccounted, not silently tallied', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].disposition = 'TODO';
+  const { problems, tally } = pa.audit(l, CLEAN_BEH);
+  assert.match(problems[0], /unaccounted/);
+  assert.strictEqual(Object.keys(tally).length, 0, 'a TODO must not be counted as carried');
+});
+
+t('a shape outside the taxonomy is reported', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].disposition = 'inexpressible';
+  l.acs[0].behaviours = [];
+  l.acs[0].shapes = ['too-hard'];
+  const { problems } = pa.audit(l, CLEAN_BEH);
+  assert.ok(problems.some((p) => /"too-hard" is not in the taxonomy/.test(p)), problems.join(' | '));
+});
+
+t('"inexpressible" with no shape is refused — otherwise it means "too hard"', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].disposition = 'inexpressible';
+  l.acs[0].behaviours = [];
+  const { problems } = pa.audit(l, CLEAN_BEH);
+  assert.ok(problems.some((p) => /must name which missing shape/.test(p)), problems.join(' | '));
+});
+
+t('"partial" must name BOTH what carried it and what did not fit', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].disposition = 'partial'; // behaviours set, shapes empty
+  const { problems } = pa.audit(l, CLEAN_BEH);
+  assert.ok(problems.some((p) => /"partial" must name both/.test(p)), problems.join(' | '));
+});
+
+t('"encoded" with something left over is refused — that is a partial', () => {
+  const l = CLEAN_LEDGER();
+  l.acs[0].shapes = ['cardinality'];
+  const { problems } = pa.audit(l, CLEAN_BEH);
+  assert.ok(problems.some((p) => /"encoded" must name a behaviour and leave nothing unmet/.test(p)), problems.join(' | '));
+});
+
+t('"contract" and "refused" must name the behaviour they live on', () => {
+  for (const d of ['contract', 'refused']) {
+    const l = CLEAN_LEDGER();
+    l.acs[0].disposition = d;
+    l.acs[0].behaviours = [];
+    const { problems } = pa.audit(l, CLEAN_BEH);
+    assert.ok(problems.some((p) => p.includes(`"${d}" must name the behaviour`)), `${d}: ${problems.join(' | ')}`);
+  }
+});
+
+t('the AC extractor reads checkbox lines and their story, and nothing else', () => {
+  const acs = pa.extractAcs('## Story 3 — x\n\n- [ ] first\nsome prose\n- [x] already done\n- [ ] second\n');
+  assert.deepStrictEqual(acs.map((a) => a.text), ['first', 'second']);
+  assert.deepStrictEqual(acs.map((a) => a.line), [3, 6]);
+  assert.strictEqual(acs[0].story, 'Story 3');
+});
+
+t('the shipped ledger accounts for every AC in the shipped corpus', () => {
+  // The real artefact, not a fixture. A fixture-only suite passes over a ledger
+  // that has drifted from the corpus it describes.
+  const led = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'macro-metrics-prose.ledger.json'), 'utf8'));
+  const { behaviours } = resolve(parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/macro-metrics.beh'), 'utf8'), 'm.beh'));
+  const { problems, tally } = pa.audit(led, behaviours);
+  assert.deepStrictEqual(problems, []);
+  assert.strictEqual(led.acs.length, 46);
+  // Pins the finding, so a later edit that quietly promotes inexpressible ACs
+  // into "encoded" has to change this line and say so.
+  assert.strictEqual(tally.encoded, 2, 'fully-carried count moved');
+  assert.strictEqual(tally.inexpressible, 24, 'inexpressible count moved');
+});
+
+t('exit 2 when the --source path yields no acceptance criteria', () => {
+  const dir = fixture({ 'empty.md': '# nothing here\n\njust prose.\n' });
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'empty.md')])), 2);
+});
+
+t('exit 1 when the source document has drifted from the ledger', () => {
+  // Reconstructs the real doc's AC lines from the ledger, then edits ONE word.
+  // Without the edit this must exit 0, which the next test asserts — a drift
+  // check that fires on everything detects nothing.
+  const led = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'macro-metrics-prose.ledger.json'), 'utf8'));
+  const lines = [];
+  for (const ac of led.acs) lines[ac.line - 1] = `- [ ] ${ac.text}`;
+  for (let i = 0; i < lines.length; i++) if (lines[i] === undefined) lines[i] = '';
+  const good = lines.join('\n');
+  const bad = lines.map((l, i) => (i === led.acs[0].line - 1 ? `${l} AND ONE MORE THING` : l)).join('\n');
+  const dir = fixture({ 'good.md': good, 'bad.md': bad });
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'good.md')])), 0, 'the control drifted');
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'bad.md')])), 1);
+});
+
+t('the COUNT of acceptance criteria is checked, not just each one that is present', () => {
+  // ⚠️ This test was originally "the source gained an AC", and a mutation of the
+  // count rule SURVIVED it: an added line also has no ledger entry, so the
+  // per-line rule made it red and the count rule was never what fired. Both
+  // directions are asserted now, and the DELETION is the one only the count can
+  // catch — every remaining line still matches, so the ledger goes on accounting
+  // for a requirement the document no longer has ([[red-for-the-right-reason]]).
+  const led = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'macro-metrics-prose.ledger.json'), 'utf8'));
+  const lines = [];
+  for (const ac of led.acs) lines[ac.line - 1] = `- [ ] ${ac.text}`;
+  for (let i = 0; i < lines.length; i++) if (lines[i] === undefined) lines[i] = '';
+  const dir = fixture({
+    'same.md': lines.join('\n'),
+    'more.md': [...lines, '- [ ] a brand new criterion added after the ledger was written'].join('\n'),
+    // One AC blanked out: line numbers of the rest are untouched, so no per-line
+    // rule can fire and only the count is left to notice.
+    'fewer.md': lines.map((l, i) => (i === led.acs[led.acs.length - 1].line - 1 ? '' : l)).join('\n'),
+  });
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'same.md')])), 0, 'the control drifted');
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'more.md')])), 1);
+  assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'fewer.md')])), 1);
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
