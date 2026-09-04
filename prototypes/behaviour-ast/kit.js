@@ -34,7 +34,7 @@ function parse(text, file = '<inline>') {
     const m = /^behaviour\s+([A-Z][A-Z0-9-]*)\s+"(.*)"$/.exec(line);
     if (m) {
       cur = {
-        id: m[1], title: m[2], actor: null, steps: [], unknowns: [], provides: [], at,
+        id: m[1], title: m[2], actor: null, steps: [], unknowns: [], provides: [], serves: [], at,
         // Default `defined`/`approved` so a corpus written before this existed
         // still parses. The asymmetry is deliberate: an INFERENCE has to say so,
         // because the whole risk is an inference passing itself off as a
@@ -83,6 +83,22 @@ function parse(text, file = '<inline>') {
       if (r[1] === 'denied' && !r[2]) throw new Error(`${at}: a denied behaviour must state the correction`);
       cur.review = { state: r[1], note: r[2] || null };
       cur.reviewExplicit = true;
+      continue;
+    }
+
+    // ── James's #68 decision, kit#3 2026-08-30 ────────────────────────────
+    // "I feel like the api layer is inferred from what needs to be displayed in
+    // the ui. From the frontend first development approach. Expose only what is
+    // required to display kind of approach."
+    //
+    // So Kit does NOT grow a second assertion layer for HTTP. An API behaviour
+    // exists to make some displayed behaviour possible, and `serves` is where it
+    // says which one. The finding is the ABSENCE: an inferred behaviour that
+    // serves nothing documented is surface nothing displays.
+    if (kw === 'serves') {
+      const s = /^([A-Z][A-Z0-9-]*)$/.exec(rest);
+      if (!s) throw new Error(`${at}: serves wants a behaviour id, got: ${rest}`);
+      cur.serves.push({ id: s[1], at });
       continue;
     }
 
@@ -359,7 +375,58 @@ function adjudication(behaviours) {
   };
 }
 
-module.exports = { parse, parseStep, resolve, generate, coverage, adjudication };
+// ─────────────────────────── 6. displayed surface ───────────────────────────
+// James, kit#3 (2026-08-30): "the api layer is inferred from what needs to be
+// displayed in the ui. From the frontend first development approach. Expose only
+// what is required to display kind of approach."
+//
+// That answer closes the "should Kit assert at the API layer too?" question with
+// a NO, and it is worth more than a no: it makes a report derivable that was not
+// derivable before. If every API behaviour exists to serve a displayed one, then
+// an API behaviour serving nothing documented is either a documentation gap or
+// surface to delete — and which of the two is a human's call, not a tool's.
+//
+// The link has to be authored, not guessed. `serves BEH-X` is a claim someone
+// made and can be argued with; a similarity score between a route name and a
+// screen name is a claim nobody made and nobody can argue with.
+//
+// Deliberately asymmetric, for the same reason `source` is: silence on a DEFINED
+// behaviour is fine (a documented behaviour is served, it does not serve), but
+// silence on an INFERRED one is the finding.
+
+function surface(behaviours) {
+  const byId = new Map(behaviours.map((b) => [b.id, b]));
+  const errors = [];
+
+  for (const b of behaviours) {
+    for (const s of b.serves) {
+      const target = byId.get(s.id);
+      // A dangling link is worse than no link: it reads as adjudicated and is
+      // not. Renaming a behaviour must break the build, or the corpus rots into
+      // a set of claims about ids that no longer exist.
+      if (!target) {
+        errors.push(`${s.at}: ${b.id} serves ${s.id}, which is not in the corpus`);
+      } else if (target.source.origin !== 'defined') {
+        // An inference serving an inference documents nothing. The chain has to
+        // terminate at something a human wrote, or "serves" just moves the
+        // question one hop and looks answered.
+        errors.push(`${s.at}: ${b.id} serves ${s.id}, which is itself inferred — the chain must end at a defined behaviour`);
+      }
+      if (b.source.origin === 'defined') {
+        errors.push(`${s.at}: ${b.id} is defined, so it is served rather than serving — drop the serves line`);
+      }
+    }
+  }
+
+  const inferred = behaviours.filter((b) => b.source.origin === 'inferred');
+  return {
+    errors,
+    served: inferred.filter((b) => b.serves.length),
+    unserved: inferred.filter((b) => !b.serves.length),
+  };
+}
+
+module.exports = { parse, parseStep, resolve, generate, coverage, adjudication, surface };
 
 // ─────────────────────────── cli ───────────────────────────
 if (require.main === module) {
@@ -414,6 +481,15 @@ if (require.main === module) {
   }
   console.log('');
 
+  const surf = surface(behaviours);
+  console.log('── displayed surface (James, kit#3: "expose only what is required to display") ──');
+  console.log(`  serves a documented behaviour   ${surf.served.length}`);
+  console.log(`  NOTHING DOCUMENTED DISPLAYS IT  ${surf.unserved.length}   ${surf.unserved.map((b) => b.id).join(', ') || '—'}`);
+  if (surf.unserved.length) {
+    console.log('  ⇒ each is a documentation gap or surface to delete. Kit will not guess which.');
+  }
+  console.log('');
+
   const steps = totals.generated + totals.contract + totals.ungenerated;
   console.log('── measured ──');
   console.log(`  behaviours            ${behaviours.length}`);
@@ -423,4 +499,15 @@ if (require.main === module) {
   console.log(`  ungenerated           ${totals.ungenerated}   refused rather than guessed`);
   console.log(`  unbound nouns         ${unbound.size}   ${[...unbound].join(', ')}`);
   console.log(`  generated / total     ${totals.generated}/${steps} = ${Math.round((totals.generated / steps) * 100)}%`);
+
+  // The one thing here that GATES. Everything else above is a number a person
+  // reads; a broken `serves` link is a corpus that lies about itself, and a
+  // report nobody has to act on is the failure mode this whole prototype is
+  // arguing against.
+  if (surf.errors.length) {
+    console.log('');
+    console.log('── broken links (exit 1) ──');
+    for (const e of surf.errors) console.log(`  ${e}`);
+    process.exit(1);
+  }
 }
