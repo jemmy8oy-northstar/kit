@@ -1,0 +1,1558 @@
+{
+  "app": "james-habits-app",
+  "corpus": "prototypes/behaviour-ast/behaviours/james-habits-app.beh",
+  "behaviours": [
+    {
+      "id": "BEH-TODAY-1",
+      "title": "The day's habits are listed in order so the whole day can be logged from one screen",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees control:DateStepper",
+          "refs": [
+            {
+              "kind": "control",
+              "name": "DateStepper"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-3"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:27"
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "title": "A checkbox habit is ticked inline",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:BooleanSeeded",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "BooleanSeeded"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates checkbox:HabitRow",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitRow"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Streak",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Streak"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-3"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:34"
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "title": "A numeric habit takes a value in a number field",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:NumericSeeded",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "NumericSeeded"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills field:HabitValue with ?value",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "HabitValue"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "value"
+            }
+          ]
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Streak",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Streak"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [
+        {
+          "key": "field:HabitValue.value",
+          "value": [
+            "1"
+          ]
+        }
+      ],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-3"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:42"
+    },
+    {
+      "id": "BEH-TODAY-4",
+      "title": "Previous days can be reached with the date stepper and back-filled",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates control:DateStepperBack",
+          "refs": [
+            {
+              "kind": "control",
+              "name": "DateStepperBack"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#A2"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:50"
+    },
+    {
+      "id": "BEH-MANAGE-1",
+      "title": "Habits can be added, renamed, reordered and archived",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Manage",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Manage"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:AddHabit",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "AddHabit"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitEditor",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitEditor"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:57"
+    },
+    {
+      "id": "BEH-HISTORY-1",
+      "title": "Each habit shows a 30-day completion grid with current and longest streak",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:History",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "History"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:CompletionGrid",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "CompletionGrid"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:CurrentStreak",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "CurrentStreak"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:LongestStreak",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "LongestStreak"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-5"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:64"
+    },
+    {
+      "id": "BEH-LOOP-1",
+      "title": "The full day is loggable from one screen in under ~20 seconds",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the whole day is loggable from one screen in under ~20 seconds",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#product-shape"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:76"
+    },
+    {
+      "id": "BEH-DATE-1",
+      "title": "The client's local calendar day is stored verbatim as YYYY-MM-DD",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the server stores the client-supplied YYYY-MM-DD date without timezone conversion",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#A7"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:83"
+    },
+    {
+      "id": "BEH-SEED-1",
+      "title": "First run is not empty — a starter set of habits is seeded exactly once",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "seeding is idempotent — a second run does not duplicate the starter set",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:EnsureSeeded_creates_the_starter_set_once"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:96"
+    },
+    {
+      "id": "BEH-ORDER-1",
+      "title": "A newly created habit is appended to the end of the display order",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "POST /api/habits places the new habit last in sortOrder",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:Create_appends_to_the_end_of_the_order"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:105"
+    },
+    {
+      "id": "BEH-ARCHIVE-1",
+      "title": "An archived habit disappears from the list but stays retrievable by id",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "DELETE /api/habits/{id} archives rather than deletes",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET /api/habits omits the archived habit",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET /api/habits/{id} still returns it",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitApiTests.cs:Archive_hides_the_habit_but_keeps_it_retrievable"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:112"
+    },
+    {
+      "id": "BEH-ARCHIVE-2",
+      "title": "Archived habits can be asked for explicitly",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET /api/habits takes a flag that includes archived habits",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?",
+      "at": "james-habits-app.beh:126"
+    },
+    {
+      "id": "BEH-STREAK-1",
+      "title": "Today counts as a grace day — an unlogged today does not break the streak",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:BooleanSeeded",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "BooleanSeeded"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Streak",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Streak"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the streak counts back from today and tolerates today being unlogged",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_treats_today_as_a_grace_day_when_not_yet_done"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:137"
+    },
+    {
+      "id": "BEH-STREAK-2",
+      "title": "A streak stops at the first missed day",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the current streak ends at the first incomplete day before today",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_stops_at_the_first_gap"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:148"
+    },
+    {
+      "id": "BEH-STREAK-3",
+      "title": "Longest streak ignores duplicate and out-of-order dates",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "duplicate and unordered entry dates do not inflate the longest streak",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:LongestStreak_ignores_duplicate_and_unordered_dates"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:155"
+    },
+    {
+      "id": "BEH-ENTRY-1",
+      "title": "Logging the same habit twice on one day overwrites rather than appends",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "PUT /api/entries is an upsert keyed on (habitId, date)",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:UpsertEntry_inserts_then_overwrites_the_same_day"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:162"
+    },
+    {
+      "id": "BEH-HISTORY-2",
+      "title": "The history window length is requested by the caller, defaulting to 30",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET /api/habits/{id}/history takes a window-length parameter defaulting to 30",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#architecture-api"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:177"
+    },
+    {
+      "id": "BEH-HISTORY-3",
+      "title": "The history window parameter is named historyDays, not days",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the query parameter is `historyDays`, and `?days=` is silently ignored",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:68"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:182"
+    },
+    {
+      "id": "BEH-REORDER-1",
+      "title": "Habits can be reordered as a whole list in one call",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "PUT /api/habits/reorder rewrites every sort position",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:ReorderHabits"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:189"
+    },
+    {
+      "id": "BEH-ERROR-1",
+      "title": "An unknown habit is a 404 carrying a machine-readable error code",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET, PUT, DELETE and history for an unknown habit id all return 404",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the body is ProblemDetails and carries an error code",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "an unexpected exception is a 500 that exposes nothing",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "asks": "Nothing documented displays an error. Should DESIGN.md gain an error state the frontend renders these into, or should the machine-readable code go and a status code be the whole contract?",
+      "at": "james-habits-app.beh:203"
+    },
+    {
+      "id": "BEH-COMPLETE-1",
+      "title": "Completion is defined per habit type",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "boolean habits complete when ticked",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "numeric habits with a target complete at or above the target",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "numeric habits without a target complete when any value is entered",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#A3"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:224"
+    },
+    {
+      "id": "BEH-WINDOW-MVP",
+      "title": "The history window is 30 days",
+      "actor": "owner",
+      "steps": [],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#mvp-5"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "james-habits-app.beh:252"
+    },
+    {
+      "id": "BEH-WINDOW-API",
+      "title": "The history window is whatever the caller asks for",
+      "actor": "owner",
+      "steps": [],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/DESIGN.md#architecture-api"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": "The two sides only contradict each other on paper — the route is caller-supplied DEFAULTING to 30, which satisfies both. The real collision underneath is the NAME: DESIGN.md documents ?days=30, the route binds ?historyDays. Which one is the contract the frontend gets built against?",
+      "at": "james-habits-app.beh:257"
+    }
+  ],
+  "conflicts": [
+    {
+      "key": "region:CompletionGrid.days",
+      "held": [
+        "30"
+      ],
+      "holders": [
+        "BEH-WINDOW-MVP"
+      ],
+      "challengers": [
+        {
+          "from": "BEH-WINDOW-API",
+          "value": [
+            "caller-supplied"
+          ],
+          "at": "james-habits-app.beh:260"
+        }
+      ]
+    }
+  ],
+  "generated": [
+    {
+      "id": "BEH-TODAY-1",
+      "code": "test(\"[BEH-TODAY-1] The day's habits are listed in order so the whole day can be logged from one screen\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // UNGENERATED: then sees control:DateStepper\n});",
+      "missing": [
+        "page:Today",
+        "region:HabitList",
+        "control:DateStepper"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "code": "test(\"[BEH-TODAY-2] A checkbox habit is ticked inline\", async ({ page }) => {\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitRow\n  // UNGENERATED: then sees badge:Streak\n});",
+      "missing": [
+        "habit:BooleanSeeded",
+        "page:Today",
+        "checkbox:HabitRow",
+        "badge:Streak"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "code": "test(\"[BEH-TODAY-3] A numeric habit takes a value in a number field\", async ({ page }) => {\n  // UNGENERATED: given habit:NumericSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills field:HabitValue with ?value\n  // UNGENERATED: then sees badge:Streak\n});",
+      "missing": [
+        "habit:NumericSeeded",
+        "page:Today",
+        "badge:Streak"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-TODAY-4",
+      "code": "test(\"[BEH-TODAY-4] Previous days can be reached with the date stepper and back-filled\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates control:DateStepperBack\n  // UNGENERATED: then sees region:HabitList\n});",
+      "missing": [
+        "page:Today",
+        "control:DateStepperBack",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-MANAGE-1",
+      "code": "test(\"[BEH-MANAGE-1] Habits can be added, renamed, reordered and archived\", async ({ page }) => {\n  // UNGENERATED: when opens page:Manage\n  // UNGENERATED: then sees button:AddHabit\n  // UNGENERATED: then sees region:HabitEditor\n});",
+      "missing": [
+        "page:Manage",
+        "button:AddHabit",
+        "region:HabitEditor"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-HISTORY-1",
+      "code": "test(\"[BEH-HISTORY-1] Each habit shows a 30-day completion grid with current and longest streak\", async ({ page }) => {\n  // UNGENERATED: when opens page:History\n  // UNGENERATED: then sees region:CompletionGrid\n  // UNGENERATED: then sees badge:CurrentStreak\n  // UNGENERATED: then sees badge:LongestStreak\n});",
+      "missing": [
+        "page:History",
+        "region:CompletionGrid",
+        "badge:CurrentStreak",
+        "badge:LongestStreak"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-LOOP-1",
+      "code": "test(\"[BEH-LOOP-1] The full day is loggable from one screen in under ~20 seconds\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the whole day is loggable from one screen in under ~20 seconds\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-DATE-1",
+      "code": "test(\"[BEH-DATE-1] The client's local calendar day is stored verbatim as YYYY-MM-DD\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the server stores the client-supplied YYYY-MM-DD date without timezone conversion\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-SEED-1",
+      "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
+      "missing": [
+        "page:Today",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-ORDER-1",
+      "code": "test(\"[BEH-ORDER-1] A newly created habit is appended to the end of the display order\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): POST /api/habits places the new habit last in sortOrder\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ARCHIVE-1",
+      "code": "test(\"[BEH-ARCHIVE-1] An archived habit disappears from the list but stays retrievable by id\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): DELETE /api/habits/{id} archives rather than deletes\n  // CONTRACT (not derivable from a behaviour): GET /api/habits omits the archived habit\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id} still returns it\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ARCHIVE-2",
+      "code": "test(\"[BEH-ARCHIVE-2] Archived habits can be asked for explicitly\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET /api/habits takes a flag that includes archived habits\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-STREAK-1",
+      "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees badge:Streak\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
+      "missing": [
+        "habit:BooleanSeeded",
+        "page:Today",
+        "badge:Streak"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-STREAK-2",
+      "code": "test(\"[BEH-STREAK-2] A streak stops at the first missed day\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the current streak ends at the first incomplete day before today\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-STREAK-3",
+      "code": "test(\"[BEH-STREAK-3] Longest streak ignores duplicate and out-of-order dates\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): duplicate and unordered entry dates do not inflate the longest streak\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ENTRY-1",
+      "code": "test(\"[BEH-ENTRY-1] Logging the same habit twice on one day overwrites rather than appends\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): PUT /api/entries is an upsert keyed on (habitId, date)\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-HISTORY-2",
+      "code": "test(\"[BEH-HISTORY-2] The history window length is requested by the caller, defaulting to 30\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-HISTORY-3",
+      "code": "test(\"[BEH-HISTORY-3] The history window parameter is named historyDays, not days\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the query parameter is `historyDays`, and `?days=` is silently ignored\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-REORDER-1",
+      "code": "test(\"[BEH-REORDER-1] Habits can be reordered as a whole list in one call\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): PUT /api/habits/reorder rewrites every sort position\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ERROR-1",
+      "code": "test(\"[BEH-ERROR-1] An unknown habit is a 404 carrying a machine-readable error code\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET, PUT, DELETE and history for an unknown habit id all return 404\n  // CONTRACT (not derivable from a behaviour): the body is ProblemDetails and carries an error code\n  // CONTRACT (not derivable from a behaviour): an unexpected exception is a 500 that exposes nothing\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-COMPLETE-1",
+      "code": "test(\"[BEH-COMPLETE-1] Completion is defined per habit type\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): boolean habits complete when ticked\n  // CONTRACT (not derivable from a behaviour): numeric habits with a target complete at or above the target\n  // CONTRACT (not derivable from a behaviour): numeric habits without a target complete when any value is entered\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-WINDOW-MVP",
+      "code": "test(\"[BEH-WINDOW-MVP] The history window is 30 days\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-WINDOW-API",
+      "code": "test(\"[BEH-WINDOW-API] The history window is whatever the caller asks for\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    }
+  ],
+  "coverage": {
+    "available": false,
+    "reason": "no --repo given, so no test files were read"
+  },
+  "adjudication": {
+    "defined": 12,
+    "inferred": 11,
+    "unreviewed": [
+      "BEH-SEED-1",
+      "BEH-ORDER-1",
+      "BEH-ARCHIVE-1",
+      "BEH-ARCHIVE-2",
+      "BEH-STREAK-1",
+      "BEH-STREAK-2",
+      "BEH-STREAK-3",
+      "BEH-ENTRY-1",
+      "BEH-HISTORY-3",
+      "BEH-REORDER-1",
+      "BEH-ERROR-1"
+    ],
+    "approved": [],
+    "denied": [],
+    "untraceable": []
+  },
+  "surface": {
+    "errors": [],
+    "served": [
+      "BEH-SEED-1",
+      "BEH-ORDER-1",
+      "BEH-ARCHIVE-1",
+      "BEH-STREAK-1",
+      "BEH-STREAK-2",
+      "BEH-STREAK-3",
+      "BEH-ENTRY-1",
+      "BEH-HISTORY-3",
+      "BEH-REORDER-1"
+    ],
+    "unserved": [
+      "BEH-ARCHIVE-2",
+      "BEH-ERROR-1"
+    ]
+  },
+  "questions": [
+    {
+      "kind": "conflict",
+      "tier": "decision",
+      "key": "region:CompletionGrid.days",
+      "title": "Two behaviours disagree about region:CompletionGrid.days",
+      "sides": [
+        {
+          "id": "BEH-WINDOW-MVP",
+          "title": "The history window is 30 days",
+          "ref": "docs/DESIGN.md#mvp-5",
+          "value": [
+            "30"
+          ]
+        },
+        {
+          "id": "BEH-WINDOW-API",
+          "title": "The history window is whatever the caller asks for",
+          "ref": "docs/DESIGN.md#architecture-api",
+          "value": [
+            "caller-supplied"
+          ]
+        }
+      ],
+      "held": [
+        "30"
+      ],
+      "challengers": [
+        {
+          "from": "BEH-WINDOW-API",
+          "value": [
+            "caller-supplied"
+          ],
+          "at": "james-habits-app.beh:260"
+        }
+      ],
+      "asks": "The two sides only contradict each other on paper — the route is caller-supplied DEFAULTING to 30, which satisfies both. The real collision underneath is the NAME: DESIGN.md documents ?days=30, the route binds ?historyDays. Which one is the contract the frontend gets built against?",
+      "options": [
+        {
+          "label": "Rename the code to days",
+          "consequence": "HabitRoutes.cs:68 binds `int days = 30` and HabitApiTests.cs:182 follows. A frontend written from DESIGN.md then works. It is a breaking query-parameter change to a route, and the generated API client needs regenerating.",
+          "at": "james-habits-app.beh:263"
+        },
+        {
+          "label": "Rename the design to historyDays",
+          "consequence": "DESIGN.md:83 becomes ?historyDays=30. No code moves, no client regenerates, nothing can break. The document a human and an assistant read to build the screen gets the uglier of the two names.",
+          "at": "james-habits-app.beh:264"
+        }
+      ],
+      "recommend": {
+        "label": "Rename the code to days",
+        "why": "This is the cheapest it will ever be: the history screen is habits#13, unbuilt, so there is no consumer to break today and exactly one after it lands. And your own frontend-first rule points this way — the parameter is named by what the screen asks for, not by a handler's local variable. The response body already returns a `days` array, so ?days=7 returning seven days reads as one idea rather than two.",
+        "at": "james-habits-app.beh:265"
+      },
+      "against": "Nothing is actually broken right now: the default is 30 either way, so the only caller that gets hurt is one written from the doc that also passes the parameter, and none exists. Editing one line of prose is a strictly smaller change than editing a route, a test and a regenerated client, and it carries no chance of breaking a deploy. `historyDays` is also the more explicit name at the call site — `?days` sitting next to a `days` array in the response can read as though it filters that field rather than sizing it. And 'rename it now while it is free' is the argument that gets made immediately before the first consumer appears.",
+      "owner": "BEH-WINDOW-API",
+      "cites": [
+        {
+          "id": "BEH-HISTORY-3",
+          "title": "The history window parameter is named historyDays, not days",
+          "ref": "backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:68",
+          "contracts": [
+            "the query parameter is `historyDays`, and `?days=` is silently ignored"
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "unserved",
+      "tier": "decision",
+      "key": "BEH-ARCHIVE-2",
+      "id": "BEH-ARCHIVE-2",
+      "title": "Archived habits can be asked for explicitly",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked"
+      },
+      "serves": [],
+      "contracts": [
+        "GET /api/habits takes a flag that includes archived habits"
+      ],
+      "asks": "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?",
+      "options": [
+        {
+          "label": "Add the view",
+          "consequence": "DESIGN.md MVP 4 gains an archived view. The flag earns a documented reason to exist and the frontend gets something to build. More surface on an app whose screens are not built yet.",
+          "at": "james-habits-app.beh:132"
+        },
+        {
+          "label": "Delete the flag",
+          "consequence": "GetAll stops taking it and one backend test goes with it. Archived habits stay retrievable by id (BEH-ARCHIVE-1), so nothing is lost — but un-archiving through the UI becomes a new decision if you ever want it.",
+          "at": "james-habits-app.beh:133"
+        }
+      ],
+      "recommend": {
+        "label": "Add the view",
+        "why": "Archiving is already a one-way door in the UI: DELETE archives rather than deletes, so a habit archived by mistake is reachable from no documented screen. The flag is not spare surface — it is the missing half of a capability MVP 4 already promises.",
+        "at": "james-habits-app.beh:134"
+      },
+      "against": "MVP 4 promises archiving, not un-archiving, and none of the three screens exists yet — this adds scope to an app whose Today screen is not built. Deleting the flag costs one test, and the day you want the view you write it then against a design that states it. Keeping unused surface because it might be needed is exactly how an API grows features nobody asked for.",
+      "cites": []
+    },
+    {
+      "kind": "unserved",
+      "tier": "decision",
+      "key": "BEH-ERROR-1",
+      "id": "BEH-ERROR-1",
+      "title": "An unknown habit is a 404 carrying a machine-readable error code",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code"
+      },
+      "serves": [],
+      "contracts": [
+        "GET, PUT, DELETE and history for an unknown habit id all return 404",
+        "the body is ProblemDetails and carries an error code",
+        "an unexpected exception is a 500 that exposes nothing"
+      ],
+      "asks": "Nothing documented displays an error. Should DESIGN.md gain an error state the frontend renders these into, or should the machine-readable code go and a status code be the whole contract?",
+      "options": [
+        {
+          "label": "Document the error state",
+          "consequence": "DESIGN.md gains a row saying what each screen shows when a habit 404s and when the API 500s. The error code earns a purpose — the frontend maps code to copy. Costs a design edit now, and commits three screens that do not exist yet to per-code messages.",
+          "at": "james-habits-app.beh:211"
+        },
+        {
+          "label": "Drop the code, keep the status",
+          "consequence": "ProblemDetails stays, the bespoke code goes, and one backend test simplifies. The frontend shows one generic failure. You lose the ability to tell 'this habit was archived' apart from 'that id was never real' without adding the code back later.",
+          "at": "james-habits-app.beh:212"
+        }
+      ],
+      "recommend": {
+        "label": "Document the error state",
+        "why": "A 404 here is not an exotic path — it is a direct consequence of A5. DELETE archives rather than deletes, so any list the client is holding can name an id the backend now refuses. Undocumented means the frontend author invents the behaviour at the keyboard, which is the thing this corpus exists to stop.",
+        "at": "james-habits-app.beh:213"
+      },
+      "against": "A6 says single user, and a single user on a single device reaches that stale-id race close to never — so the case above is largely hypothetical, and it is being used to add scope to an app whose Today screen is not built. There is also a cheaper middle this question does not offer: document ONE generic error state, leave the code in the payload unconsumed, and decide per-code copy on the day a second code actually distinguishes something. Picking the full version now spends design effort on branches that may never be rendered.",
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-SEED-1",
+      "id": "BEH-SEED-1",
+      "title": "First run is not empty — a starter set of habits is seeded exactly once",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:EnsureSeeded_creates_the_starter_set_once"
+      },
+      "serves": [
+        "BEH-TODAY-1"
+      ],
+      "contracts": [
+        "seeding is idempotent — a second run does not duplicate the starter set"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-ORDER-1",
+      "id": "BEH-ORDER-1",
+      "title": "A newly created habit is appended to the end of the display order",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:Create_appends_to_the_end_of_the_order"
+      },
+      "serves": [
+        "BEH-TODAY-1"
+      ],
+      "contracts": [
+        "POST /api/habits places the new habit last in sortOrder"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-ARCHIVE-1",
+      "id": "BEH-ARCHIVE-1",
+      "title": "An archived habit disappears from the list but stays retrievable by id",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitApiTests.cs:Archive_hides_the_habit_but_keeps_it_retrievable"
+      },
+      "serves": [
+        "BEH-MANAGE-1"
+      ],
+      "contracts": [
+        "DELETE /api/habits/{id} archives rather than deletes",
+        "GET /api/habits omits the archived habit",
+        "GET /api/habits/{id} still returns it"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-STREAK-1",
+      "id": "BEH-STREAK-1",
+      "title": "Today counts as a grace day — an unlogged today does not break the streak",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_treats_today_as_a_grace_day_when_not_yet_done"
+      },
+      "serves": [
+        "BEH-TODAY-2",
+        "BEH-HISTORY-1"
+      ],
+      "contracts": [
+        "the streak counts back from today and tolerates today being unlogged"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-STREAK-2",
+      "id": "BEH-STREAK-2",
+      "title": "A streak stops at the first missed day",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_stops_at_the_first_gap"
+      },
+      "serves": [
+        "BEH-HISTORY-1"
+      ],
+      "contracts": [
+        "the current streak ends at the first incomplete day before today"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-STREAK-3",
+      "id": "BEH-STREAK-3",
+      "title": "Longest streak ignores duplicate and out-of-order dates",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:LongestStreak_ignores_duplicate_and_unordered_dates"
+      },
+      "serves": [
+        "BEH-HISTORY-1"
+      ],
+      "contracts": [
+        "duplicate and unordered entry dates do not inflate the longest streak"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-ENTRY-1",
+      "id": "BEH-ENTRY-1",
+      "title": "Logging the same habit twice on one day overwrites rather than appends",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:UpsertEntry_inserts_then_overwrites_the_same_day"
+      },
+      "serves": [
+        "BEH-TODAY-2",
+        "BEH-TODAY-4"
+      ],
+      "contracts": [
+        "PUT /api/entries is an upsert keyed on (habitId, date)"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    },
+    {
+      "kind": "review",
+      "tier": "review",
+      "key": "BEH-REORDER-1",
+      "id": "BEH-REORDER-1",
+      "title": "Habits can be reordered as a whole list in one call",
+      "source": {
+        "origin": "inferred",
+        "ref": "backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:ReorderHabits"
+      },
+      "serves": [
+        "BEH-MANAGE-1"
+      ],
+      "contracts": [
+        "PUT /api/habits/reorder rewrites every sort position"
+      ],
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": []
+    }
+  ]
+}

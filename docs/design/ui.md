@@ -117,32 +117,44 @@ option A.
 *"Coral teal looks good"*), whose `Button`, `Card`, `Badge` and `Input` cover most of what the panels
 need.
 
-⚠️ **`design-system#11` merged on 2026-09-05, and it does not solve this on its own.** Measured on
-`origin/dev` that morning, not assumed:
+🔴 **CORRECTED 2026-09-05, later the same day. The paragraph that stood here said the git-URL route
+reaches "seven raw CSS files" and that the UI was therefore identity-constrained. That is wrong, and
+it was wrong because it was reasoned from `package.json` instead of measured.** One install settles
+it:
 
-- `#11` added `"./tokens/*": "./src/tokens/*"` to `exports`, and `src/tokens` to `files`. That
-  exposes **seven raw CSS files** — `base.css`, `index.css`, `primitives.css`, `semantic.css` and
-  three themes under `themes/`. There is no JS/TS token object; it is CSS custom properties.
-- **The package is still published nowhere.** `.github/workflows` on `origin/dev` contains
-  `ci.yml` and `check-source-branch.yml` — **no publish workflow** — and `package.json` has no
-  `publishConfig`. So `npm i @jemmy8oy-northstar/design-system` cannot work; the only ways in are a
-  **git-URL dependency** or vendoring.
-- `origin/main..origin/dev` differs by **`package.json` alone**, so the token files are on both
-  branches but the `exports` map is dev-only. **A consumer pinning `main` gets the files and not the
-  export that names them** — pin `dev`, or pin a commit.
+```
+npm i github:jemmy8oy-northstar/design-system#dev      → added 4 packages in 22s
+node_modules/@jemmy8oy-northstar/design-system/dist/   → index.js, index.cjs, index.d.ts,
+                                                          design-system.css, components/*.d.ts
+exports                                                → Badge, Button, Card, Input, cn
+```
 
-⇒ **The Kit UI takes a git-URL dependency on `dev`.** That is not a workaround to regret: it costs
-one line in `package.json`, it consumes the same files a published package would, and it is the only
-option that does not re-create the duplication `#11` exists to end — snip-it still vendors 603 lines.
-**Publishing the package properly is a packaging change and therefore his** (claude-code-bot#83);
-this document does not decide it, and the UI must not be blocked on it.
+**Why it works: `package.json` declares `"prepare": "npm run build"`, and npm runs `prepare` for a
+git dependency** (installing its devDependencies to do it). `dist/` is git-ignored in the repo and
+built at install time, so a consumer gets the compiled component library and the compiled stylesheet
+— not raw tokens. The `./tokens/*` export `#11` added is a bonus door, not the only one.
+
+What remains true of the earlier measurement:
+
+- **The package is published to no registry.** `.github/workflows` on `origin/dev` is `ci.yml` and
+  `check-source-branch.yml` — no publish workflow, no `publishConfig`. That fact is now *irrelevant*
+  to this UI rather than limiting for it.
+- `origin/main..origin/dev` differs by **`package.json` alone**, so pin `dev` (or a commit), not
+  `main`: the `exports` map is dev-only.
+
+⇒ **The Kit UI takes a git-URL dependency on `dev`** — same conclusion, better reasons. It costs one
+line, it consumes the real components, and it does not re-create the duplication `#11` exists to end
+(snip-it still vendors 603 lines). **Publishing the package properly is a packaging change and
+therefore his** (claude-code-bot#83); this document does not decide it, and the UI is not blocked
+on it.
 
 ## Sequence
 
 1. **The read model** — one command emitting the whole projection as JSON. It is needed under every
    option above, so it is the option-invariant half and it can be built before either decision
    lands ([[option-invariant-half]]).
-2. The read-only UI over that projection: corpus list → behaviour detail → generated output.
+2. ✅ **Done** — the read-only UI over that projection: corpus list → behaviour detail → generated
+   output. `prototypes/behaviour-ast/ui/`. Also invariant under both open decisions.
 3. The writer, per decision 2.
 4. **Kit's own corpus rewritten in browser verbs**, at which point `kit check kit` gates a UI
    Kit generated tests for, and the self-hosting claim is real rather than argued.
