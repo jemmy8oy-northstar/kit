@@ -23,7 +23,7 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
   Vitest suite (10 test files, `npm run test` in `package.json`) that **does not run in CI** — only lint + build +
   e2e do. `snip-it`'s identical setup **does** gate `npm run test` in CI. This is exactly the failure mode Kit's
   coverage check is meant to make structurally impossible.
-- The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean — `node kit-test.js` and
+- The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean — `node kit.test.js` and
   `node mutate.js` are green, and `node compare.js` shows most generated lines matching snip-it's
   actual hand-written Playwright spec on `origin/dev` exactly or near-exactly. It is a prototype
   answering falsifiable questions, not a product — see gaps below for what it deliberately does not do.
@@ -194,7 +194,7 @@ interfaces — no further matches were found.
 `kit.js` (core, plus a `sheet` renderer), `check.js` (the stage-0 gate, exits non-zero),
 `compare.js` (generated output vs real hand-written code), `prose-audit.js` (does the corpus
 account for a whole source document), `saturation.js` (does binding glue saturate),
-`measure-tagging.js`, `kit-test.js`, `mutate.js`, `bindings.json`, and `behaviours/` — now four
+`measure-tagging.js`, `kit.test.js`, `mutate.js`, `bindings.json`, and `behaviours/` — now four
 corpora, not one.
 
 **What `kit.js` implements**, by function name rather than line number, so a reader can find it
@@ -230,7 +230,7 @@ after the next edit:
 `node check.js <app> --repo <path>` (the gate: 0 / 1 / 2),
 `node saturation.js` (does binding glue saturate — and `--check` refuses if
 `docs/pilots/binding-saturation.md` has drifted from the corpora),
-`node prose-audit.js`, `node kit-test.js`, `node mutate.js`.
+`node prose-audit.js`, `node kit.test.js`, `node mutate.js`.
 
 **What it does NOT do** (verified by absence, not claimed by the README alone):
 - No parser for existing prose acceptance criteria (macro-metrics-style BDD bullets) into the `.beh` grammar —

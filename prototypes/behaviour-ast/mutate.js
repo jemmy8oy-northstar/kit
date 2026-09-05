@@ -23,7 +23,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const T = path.join(__dirname, 'kit-test.js');
+const T = path.join(__dirname, 'kit.test.js');
 // Mutants name their file; kit.js is the default because it was the only one
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather

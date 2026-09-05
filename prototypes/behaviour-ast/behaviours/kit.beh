@@ -25,7 +25,7 @@
 # for in the first half of #89, which makes his two asks one ask.
 #
 # Every behaviour below is real, and every one is already tested in
-# `kit-test.js` — the mapping in `kit.tests.json` names which test.
+# `kit.test.js` — the mapping in `kit.tests.json` names which test.
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   actor engineer

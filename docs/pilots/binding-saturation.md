@@ -149,7 +149,7 @@ notation.
 
 ## What guards this
 
-`node prototypes/behaviour-ast/kit-test.js` — **97 tests**, 11 of them here,
+`node prototypes/behaviour-ast/kit.test.js` — **97 tests**, 11 of them here,
 including a **control** that the statistic separates a synthetic saturating
 corpus from a synthetic 1:1 one. Without that, every other test passes over a
 statistic that returns the same number for both shapes and the numbers above are
