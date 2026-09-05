@@ -1,6 +1,7 @@
 name: CI
 
-# `kit` is documentation plus a Node prototype. It has no ./backend and no
+# `kit` is documentation, a plain-Node prototype, and — since #19 — a Vite/React
+# UI under prototypes/behaviour-ast/ui. It still has no ./backend and no
 # ./frontend, so the repo-template scaffold this replaces asserted the build of
 # two directories that do not exist and failed on every pull request — a red
 # tick that meant nothing about the change under review.
@@ -78,3 +79,57 @@ jobs:
       # is not fixable by parsing — `docs/design/tagging.md`.
       - name: Stage-0 gate — every kit behaviour is named by a test
         run: node prototypes/behaviour-ast/check.js kit --repo .
+
+  # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
+  # suite quoted in a PR body but executed by no gating job is a claim, not a
+  # check — I have made that mistake before ([[passing-is-not-gating]]), so the
+  # job exists specifically to stop "20 tests" from being something only I ever
+  # observed on my own machine.
+  #
+  # Deliberately a SECOND job, not steps on `prototype`. The prototype is plain
+  # Node with no install; this needs `npm ci` and ~25s of it. Merging them would
+  # put a dependency install in front of a suite that needs none, and turn every
+  # npm-registry hiccup into a red tick on a change that never touched the UI.
+  #
+  # Job id `ui` is the check context GitHub reports. kit still has no rulesets;
+  # if one is ever added, require BOTH `prototype` and `ui` by exact string.
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototypes/behaviour-ast/ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: prototypes/behaviour-ast/ui/package-lock.json
+
+      # `@jemmy8oy-northstar/design-system` is a git-URL dependency, not a
+      # published package — it is published nowhere, and pinning `main` would
+      # get the token files without the `exports` entry naming them. npm runs
+      # its `prepare` script for a git dep, so `dist/` is BUILT at install time
+      # and the real Button/Card/Badge/Input arrive. The repo is public, so this
+      # needs no credentials: verified by running `npm ci` against an empty HOME
+      # with no ssh keys and no .npmrc, which is the shape a runner has.
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `tsc -b && vite build`. Type errors are only caught here — the Vitest
+      # run does not typecheck, so dropping this step would let a broken build
+      # merge behind a green suite.
+      - name: Build
+        run: npm run build
+
+      # Runs from the repo root's checkout on purpose: `src/test/fixtures.test.ts`
+      # requires `../../../ui.js` so the fixtures are checked against real server
+      # output rather than against themselves. A job that copied only `ui/` would
+      # fail to load that suite — measured, not assumed.
+      - name: Unit tests
+        run: npm test
