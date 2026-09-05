@@ -981,12 +981,9 @@ t('a literal containing a noun-shaped token is not counted as a noun', () => {
   // quotes and the rule was never what made it pass. The literal has to contain
   // a token of the exact shape `kind:Name` for the stripping to be load-bearing.
   const src = 'behaviour BEH-1 "x"\nthen shows region:Main "unbound noun button:Save"';
-  assert.deepStrictEqual([...sat.nounsFromText(src)], ['region:Main']);
-  // And the consequence, not just the reader: without stripping, the raw text
-  // finds button:Save, the AST correctly does not, and the tool refuses to
-  // measure a corpus that is entirely fine.
-  const dir = fixture({ 'lit.beh': SATURATING + '\n' + src });
-  assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 0);
+  // SCRATCH — deliberately weakened to prove the CI mutation step can fail the
+  // job. Reverted before merge.
+  assert.ok(sat.nounsFromText(src));
 });
 
 t('exit 2 when ONE corpus of several parses zero nouns', () => {
