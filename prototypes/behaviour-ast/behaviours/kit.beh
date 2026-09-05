@@ -98,3 +98,42 @@ behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
   when runs command:KitResolve
   then reports review:Unreviewed
   contract James's call on claude-code-bot#68 — default-include, marked
+
+# ── the read API (docs/design/ui.md) ────────────────────────────────────────
+# The first behaviours here that describe something with a NETWORK surface, and
+# the first two are security properties. A security property asserted only in a
+# comment above the code is a wish; described here it is named by a test, gated
+# by check.js, and mutated by mutate.js.
+
+behaviour BEH-UI-1 "A write verb never reaches a handler while the write decision is open"
+  actor engineer
+  given request:Write
+  when runs command:KitUi
+  then reports status:MethodNotAllowed
+  contract decision 2 in docs/design/ui.md is open — a doc saying "read-only" and a
+  contract server with no write path are different assurances, and only the second
+  contract survives someone adding a fetch() in a hurry
+
+behaviour BEH-UI-2 "The server binds the loopback interface, not every interface"
+  actor engineer
+  given option:Default
+  when runs command:KitUi
+  then reports host:Loopback
+  contract 0.0.0.0 would publish every corpus in the working tree, and the absolute
+  contract path of every repo beside it, to anything that can reach the host
+
+behaviour BEH-UI-3 "A traversal in an app name is refused rather than resolved to a path"
+  actor engineer
+  given request:Traversal
+  when runs command:KitUi
+  then reports status:NotFound
+  contract the name is looked UP in the set of corpora that exist; it is never
+  contract joined to a path, so there is nothing to traverse with
+
+behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never zero"
+  actor engineer
+  given repo:Absent
+  when runs command:KitUi
+  then reports coverage:Unavailable
+  contract project.js's rule, carried through the transport — a UI that cannot tell
+  contract "no mapping exists" from "nothing is covered" renders the second

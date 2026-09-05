@@ -1,16 +1,89 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C (docs/design/tagging.md): the corpus carries the mapping, so no test file is edited. Keyed on file + title, the same as snip-it.tests.json.",
-  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml. Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it.",
+  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml. Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. Nothing here checks the test body. That limit is C's and it is not fixable by parsing; it is stated in docs/design/tagging.md and repeated in check.js's output, because a gate quoted second-hand loses its caveats first.",
-
-  "BEH-GATE-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "exit 1 when a behaviour has no test naming it — the gate can go RED" }],
-  "BEH-GATE-2": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "exit 2 when the repo has no test files at all" }],
-  "BEH-GATE-3": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "REFUSES a mapping naming a title that file does not have — the renamed-test case" }],
-  "BEH-READ-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "exit 2 when the JS reader and the JS count disagree — the half that had no guard" }],
-  "BEH-GEN-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "an unbound noun is REFUSED, and the missing noun is named" }],
-  "BEH-GEN-2": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "an unsupplied ROUTE PARAM is refused — the real bug this caught" }],
-  "BEH-PARSE-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "an unrecognised keyword is an error, not silently dropped" }],
-  "BEH-RESOLVE-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "a hole is filled by a DIFFERENT behaviour" }],
-  "BEH-RESOLVE-2": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "two behaviours disagreeing IS a conflict, with both sides named" }],
-  "BEH-ADJ-1": [{ "file": "prototypes/behaviour-ast/kit.test.js", "title": "an inference defaults to unreviewed WITHOUT anyone writing review" }]
+  "BEH-GATE-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "exit 1 when a behaviour has no test naming it — the gate can go RED"
+    }
+  ],
+  "BEH-GATE-2": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "exit 2 when the repo has no test files at all"
+    }
+  ],
+  "BEH-GATE-3": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "REFUSES a mapping naming a title that file does not have — the renamed-test case"
+    }
+  ],
+  "BEH-READ-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "exit 2 when the JS reader and the JS count disagree — the half that had no guard"
+    }
+  ],
+  "BEH-GEN-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "an unbound noun is REFUSED, and the missing noun is named"
+    }
+  ],
+  "BEH-GEN-2": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "an unsupplied ROUTE PARAM is refused — the real bug this caught"
+    }
+  ],
+  "BEH-PARSE-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "an unrecognised keyword is an error, not silently dropped"
+    }
+  ],
+  "BEH-RESOLVE-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "a hole is filled by a DIFFERENT behaviour"
+    }
+  ],
+  "BEH-RESOLVE-2": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "two behaviours disagreeing IS a conflict, with both sides named"
+    }
+  ],
+  "BEH-ADJ-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "an inference defaults to unreviewed WITHOUT anyone writing review"
+    }
+  ],
+  "BEH-UI-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "a write verb never reaches a handler — decision 2 is open"
+    }
+  ],
+  "BEH-UI-2": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "the server binds the loopback interface and not every interface"
+    }
+  ],
+  "BEH-UI-3": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "a traversal in the app name is a 404, not a read outside the corpus dir"
+    }
+  ],
+  "BEH-UI-4": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "unavailable coverage is null in the list, never zero"
+    }
+  ]
 }

@@ -19,16 +19,24 @@ it is the thing that makes Kit self-hosting at all.
 
 ## The numbers
 
-`behaviours/kit.beh` encodes ten of Kit's real behaviours — the stage-0 gate, the exit-2
-refusal, the mapping rot check, the reader's count disagreement, the two generator refusals,
-the parser's unrecognised-keyword error, cross-behaviour hole filling, conflict reporting,
-and default-include-marked-unreviewed.
+`behaviours/kit.beh` encodes fourteen of Kit's real behaviours — the stage-0 gate, the
+exit-2 refusal, the mapping rot check, the reader's count disagreement, the two generator
+refusals, the parser's unrecognised-keyword error, cross-behaviour hole filling, conflict
+reporting, default-include-marked-unreviewed, and the read API's four (the write refusal, the
+loopback bind, the traversal refusal, and unavailable-is-not-zero).
+
+⚠️ **The four `BEH-UI-*` behaviours were added AFTER this was first written, and the number
+that matters did not move.** `ui.js` is the UI's server — it has a network surface but not a
+*browser* one, so its behaviours are `runs`/`reports` like every other Kit behaviour and
+**derived stays 0 at 14 behaviours as it was at 10**. That is the finding surviving a 40%
+larger corpus rather than being an artefact of a small one. The unlock is a browser, not more
+description.
 
 | | |
 |---|---|
-| behaviours parsed | **10 of 10**, no parse error |
-| steps | 30 |
-| prose `contract` lines | 12 |
+| behaviours parsed | **14 of 14**, no parse error |
+| steps | 42 |
+| prose `contract` lines | 21 |
 | steps **derived** from a behaviour | **0** |
 
 The notation is not the constraint. `parseStep` takes the first token as the verb and any
@@ -44,12 +52,12 @@ binding format allows — a route, a role and name, a label, and a `state` setup
 
 | | generated | ungenerated |
 |---|---|---|
-| no bindings | 0 | 30 |
-| **every noun bound** | **10** | 20 |
+| no bindings | 0 | 42 |
+| **every noun bound** | **14** | 28 |
 | of which **derived** | **0** | |
 
-Ten steps do generate under full bindings, and reporting that as zero would have been the
-convenient number rather than the true one. But all ten are `state` steps, and a `state`
+Fourteen steps do generate under full bindings, and reporting that as zero would have been the
+convenient number rather than the true one. But all fourteen are `state` steps, and a `state`
 binding is a setup string a human wrote in `bindings.json`, copied out verbatim. Nothing is
 *derived* from a behaviour. A mutation that counts `state` as derived is in `mutate.js`, and
 a positive control asserts that binding nouns **does** move the number for a browser-verb
@@ -59,9 +67,9 @@ corpus — otherwise "binding changed nothing" would be indistinguishable from a
 
 | verb | steps | in the generator? |
 |---|---|---|
-| `state` | 10 | yes |
-| `runs` | 10 | **no** |
-| `reports` | 5 | **no** |
+| `state` | 14 | yes |
+| `runs` | 14 | **no** |
+| `reports` | 9 | **no** |
 | `exits` | 4 | **no** |
 | `raises` | 1 | **no** |
 
@@ -77,7 +85,7 @@ copy is how this document would start lying about the code.)
 
 1. **The UI is the unlock, not a nicety.** Once Kit has a UI, its own behaviours become
    `opens page:Corpus`, `activates button:Check`, `shows region:Coverage` — verbs the
-   generator already emits. Kit stops being a special case and becomes the eleventh app in
+   generator already emits. Kit stops being a special case and becomes the next app in
    its own registry.
 2. **`kit check` can still gate Kit today**, because it gates on behaviour ids and a mapping,
    not on generated code. That is a separate, smaller piece of work: Kit's test file is named
@@ -91,8 +99,14 @@ copy is how this document would start lying about the code.)
 
 ## What this does not show
 
-Ten behaviours is a sample of Kit, not Kit. They were chosen because each is already tested,
-so none of them is a behaviour I invented to be expressible — but I chose them, and a
-different ten might have found a verb the generator does have. The claim that survives that
-caveat is the narrow one: **there exist central Kit behaviours the generator cannot emit, and
-the reason is the emit target, not the notation.**
+Fourteen behaviours is a sample of Kit, not Kit. They were chosen because each is already
+tested, so none of them is a behaviour I invented to be expressible — but I chose them, and a
+different fourteen might have found a verb the generator does have. The claim that survives
+that caveat is the narrow one: **there exist central Kit behaviours the generator cannot emit,
+and the reason is the emit target, not the notation.**
+
+The selection caveat is *weaker* than it was, and worth saying why. The first ten were picked
+by me, in one sitting, to make this measurement. The four `BEH-UI-*` behaviours were not:
+they describe a component that was built for its own reasons and documented afterwards, and
+they landed on the same two verbs. A second, independently-motivated sample agreeing with the
+first is not proof, but it is the kind of evidence a hand-picked sample cannot give itself.
