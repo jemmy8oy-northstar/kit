@@ -4,6 +4,7 @@ import { fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
+import Count from '../components/Count'
 import ResourceView from '../components/Resource'
 
 /** Step 1 of his loop: see the projects Kit knows about. */
@@ -55,10 +56,10 @@ function ProjectRow({ project }: { project: ProjectSummary }) {
       </h2>
       <p className="muted">{project.corpus}</p>
       <div className="badges">
-        <Badge tone="primary">{project.behaviours} behaviours</Badge>
+        <Count n={project.behaviours ?? 0} one="behaviour" tone="primary" />
         <CoverageBadge coverage={project.coverage} />
         {project.conflicts ? (
-          <Badge tone="warning">{project.conflicts} conflicts</Badge>
+          <Count n={project.conflicts} one="conflict" tone="warning" />
         ) : null}
         {project.unreviewed ? (
           <Badge tone="warning">{project.unreviewed} unreviewed</Badge>

@@ -4,6 +4,7 @@ import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Generated, ProjectDetail, Step } from '../api/types'
 import ResourceView from '../components/Resource'
+import Count from '../components/Count'
 
 /**
  * Step 2 of his loop: "iterating on the output" — the behaviour and the test
@@ -85,7 +86,7 @@ function StepLine({ step }: { step: Step }) {
       <span className="kind">{step.kind}</span> <code>{step.text}</code>
       {step.holes.length > 0 && (
         <span className="badges">
-          <Badge tone="warning">{step.holes.length} unknown</Badge>
+          <Count n={step.holes.length} one="unknown" many="unknowns" tone="warning" />
         </span>
       )}
     </>

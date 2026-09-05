@@ -90,6 +90,16 @@ a {
   grid-template-columns: 1fr;
 }
 
+/*
+ * A grid item's min-width is `auto`, so the generated test's <pre> refuses to
+ * shrink below its longest line and widens the whole page instead of scrolling
+ * inside its own box. On a phone that turns a 390px screenshot into a 1700px
+ * one. `min-width: 0` is what lets `overflow-x: auto` on the <pre> do its job.
+ */
+.split > section {
+  min-width: 0;
+}
+
 @media (min-width: 60rem) {
   .split {
     grid-template-columns: 1fr 1fr;

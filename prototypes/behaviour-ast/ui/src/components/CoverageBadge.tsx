@@ -8,6 +8,10 @@ import type { Coverage } from '../api/types'
  * app is untested when the truth is that nobody looked. The two states get
  * different words and different colours, and the reason is shown rather than
  * swallowed ([[empty-means-two-things]]).
+ *
+ * It takes either endpoint's shape — the list counts, the detail endpoint sends
+ * the behaviour ids — because a component that took only one of them rendered
+ * `BEH-HOME-1BEH-EDIT-1… covered` on the detail page for a day.
  */
 export default function CoverageBadge({ coverage }: { coverage?: Coverage }) {
   if (!coverage) {
@@ -26,10 +30,15 @@ export default function CoverageBadge({ coverage }: { coverage?: Coverage }) {
     )
   }
 
-  const total = coverage.covered + coverage.uncovered
+  const covered = count(coverage.covered)
+  const total = covered + count(coverage.uncovered)
   return (
-    <Badge tone={coverage.uncovered === 0 ? 'success' : 'warning'}>
-      {coverage.covered}/{total} covered
+    <Badge tone={covered === total ? 'success' : 'warning'}>
+      {covered}/{total} covered
     </Badge>
   )
+}
+
+function count(value: number | string[]): number {
+  return Array.isArray(value) ? value.length : value
 }

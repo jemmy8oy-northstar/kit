@@ -3,26 +3,45 @@
 // server with no spec to generate from. Keeping these types next to the
 // fetchers means one file to change if a route's payload changes.
 //
-// ⚠️ The two coverage shapes are NOT the same object. `/api/projects` reports
-// `covered: null` explicitly; `/api/projects/<app>` omits the key entirely when
-// coverage is unavailable. Both mean the same thing and neither means zero.
+// ⚠️ THE TWO COVERAGE SHAPES ARE DIFFERENT OBJECTS UNDER ONE NAME, and the
+// difference is not the one you would guess. `/api/projects` counts:
+// `{ covered: 3, uncovered: 5 }`. `/api/projects/<app>` passes project.js's raw
+// result through, so `covered` and `uncovered` are ARRAYS OF BEHAVIOUR IDS.
+//
+// Modelling both as `number` typechecks (JSON is `unknown` at the boundary) and
+// renders `BEH-HOME-1BEH-EDIT-1… covered` on the screen — which is how this was
+// found, by looking at the page rather than by the suite. Both shapes also
+// signal unavailable differently: the list sends `covered: null`, the detail
+// endpoint omits the key. Neither ever means zero.
 
-export interface CoverageAvailable {
+export interface CoverageCountsAvailable {
   available: true
   covered: number
   uncovered: number
 }
 
+export interface CoverageIdsAvailable {
+  available: true
+  covered: string[]
+  uncovered: string[]
+}
+
 export interface CoverageUnavailable {
   available: false
-  /** Present on the list endpoint, absent on the detail endpoint. Never 0. */
+  /** `null` on the list endpoint, absent on the detail endpoint. Never 0. */
   covered?: null
   uncovered?: null
   /** Why nothing could be read — this is the sentence the UI must show. */
   reason: string
 }
 
-export type Coverage = CoverageAvailable | CoverageUnavailable
+/** `/api/projects` — already counted. */
+export type SummaryCoverage = CoverageCountsAvailable | CoverageUnavailable
+
+/** `/api/projects/<app>` — the ids themselves. */
+export type DetailCoverage = CoverageIdsAvailable | CoverageUnavailable
+
+export type Coverage = SummaryCoverage | DetailCoverage
 
 /** One row of `/api/projects`. */
 export interface ProjectSummary {
@@ -36,7 +55,7 @@ export interface ProjectSummary {
   corpus?: string
   behaviours?: number
   conflicts?: number
-  coverage?: Coverage
+  coverage?: SummaryCoverage
   unreviewed?: number
 }
 
@@ -98,7 +117,7 @@ export interface ProjectDetail {
   behaviours: Behaviour[]
   conflicts: Conflict[]
   generated: Generated[]
-  coverage: Coverage
+  coverage: DetailCoverage
   adjudication: Adjudication
   surface: { errors: string[]; served: string[]; unserved: string[] }
   questions: unknown[]

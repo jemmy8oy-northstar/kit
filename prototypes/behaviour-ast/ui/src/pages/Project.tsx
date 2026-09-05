@@ -4,6 +4,7 @@ import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, ProjectDetail } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
+import Count from '../components/Count'
 import ResourceView from '../components/Resource'
 
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
@@ -30,7 +31,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       <h1>{project.app}</h1>
       <p className="muted">{project.corpus}</p>
       <div className="badges">
-        <Badge tone="primary">{project.behaviours.length} behaviours</Badge>
+        <Count n={project.behaviours.length} one="behaviour" tone="primary" />
         <CoverageBadge coverage={project.coverage} />
         <Badge tone="neutral">{project.adjudication.defined} defined</Badge>
         {project.adjudication.inferred ? (
@@ -102,7 +103,7 @@ function BehaviourRow({
       </h3>
       <div className="badges">
         <Badge tone="neutral">{behaviour.actor}</Badge>
-        <Badge tone="neutral">{behaviour.steps.length} steps</Badge>
+        <Count n={behaviour.steps.length} one="step" />
         {behaviour.source.origin === 'inferred' && <Badge tone="warning">inferred</Badge>}
         {unreviewed && <Badge tone="warning">unreviewed</Badge>}
       </div>

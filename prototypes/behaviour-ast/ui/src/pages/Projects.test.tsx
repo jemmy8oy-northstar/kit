@@ -57,6 +57,16 @@ describe('Projects', () => {
     expect(badge).toHaveAttribute('title', projectsFixture.projects[0].coverage.reason)
   })
 
+  it('pluralises its counts — "1 conflicts" reads like a bug in the tool', async () => {
+    mockFetch(projectsFixture)
+    renderProjects()
+
+    // james-habits-app has exactly one conflict in the real corpus.
+    expect(await screen.findByText('1 conflict')).toBeInTheDocument()
+    expect(screen.queryByText('1 conflicts')).not.toBeInTheDocument()
+    expect(screen.getByText('23 behaviours')).toBeInTheDocument()
+  })
+
   it('reports a corpus that will not parse as an error, not as zero behaviours', async () => {
     mockFetch({
       projects: [{ app: 'broken', error: 'broken.beh:3 — expected a verb' }],
