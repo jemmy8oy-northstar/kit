@@ -115,11 +115,27 @@ option A.
 
 **Identity is not mine to invent.** Use `@jemmy8oy-northstar/design-system` (his call, 2026-08-16:
 *"Coral teal looks good"*), whose `Button`, `Card`, `Badge` and `Input` cover most of what the panels
-need. ⚠️ **It is not published to any registry** — consumers vendor `dist/design-system.css` today,
-and `design-system#11` (open, green, unmerged) is the PR that would let a consumer import
-`src/tokens/*` directly. Until one of those lands, the Kit UI either vendors the built CSS or waits.
-**Vendoring is the wrong answer twice over** — snip-it already vendors 603 lines of it, which is the
-duplication `design-system#11` exists to end.
+need.
+
+⚠️ **`design-system#11` merged on 2026-09-05, and it does not solve this on its own.** Measured on
+`origin/dev` that morning, not assumed:
+
+- `#11` added `"./tokens/*": "./src/tokens/*"` to `exports`, and `src/tokens` to `files`. That
+  exposes **seven raw CSS files** — `base.css`, `index.css`, `primitives.css`, `semantic.css` and
+  three themes under `themes/`. There is no JS/TS token object; it is CSS custom properties.
+- **The package is still published nowhere.** `.github/workflows` on `origin/dev` contains
+  `ci.yml` and `check-source-branch.yml` — **no publish workflow** — and `package.json` has no
+  `publishConfig`. So `npm i @jemmy8oy-northstar/design-system` cannot work; the only ways in are a
+  **git-URL dependency** or vendoring.
+- `origin/main..origin/dev` differs by **`package.json` alone**, so the token files are on both
+  branches but the `exports` map is dev-only. **A consumer pinning `main` gets the files and not the
+  export that names them** — pin `dev`, or pin a commit.
+
+⇒ **The Kit UI takes a git-URL dependency on `dev`.** That is not a workaround to regret: it costs
+one line in `package.json`, it consumes the same files a published package would, and it is the only
+option that does not re-create the duplication `#11` exists to end — snip-it still vendors 603 lines.
+**Publishing the package properly is a packaging change and therefore his** (claude-code-bot#83);
+this document does not decide it, and the UI must not be blocked on it.
 
 ## Sequence
 
