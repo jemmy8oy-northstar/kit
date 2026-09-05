@@ -132,26 +132,38 @@ for (const app of APPS) {
   const titles = [];
   const existingMarkers = new Map();
   const titlesPerFile = [];
-  let expectedCs = 0;
+  // ⚠️ The ecosystem split keys on the FILENAME, not on `t.style`. It used to be
+  // `style !== 'title'`, which worked only while 'title' was the sole JS style —
+  // the moment the reader grew a second one ('each', for parameterised tests)
+  // every `it.each` in a TypeScript file was counted as a C# test and this
+  // refused a repo that was fine. A label that happens to correlate is not a
+  // discriminator.
+  //
+  // Independent count, by a different method, now for BOTH ecosystems: every
+  // xUnit test is exactly one [Fact]/[Theory] however many [InlineData] rows
+  // follow, and every JS test is one call head that survives having strings and
+  // comments stripped. `testTitles()` reaches both by position and can lose one
+  // silently; these just count, so a mismatch means the reader is wrong.
+  const expected = { cs: 0, js: 0 };
+  const got = { cs: 0, js: 0 };
   for (const f of files) {
     const src = gitShow(app.repo, f);
-    const before = titles.length;
-    titles.push(...testTitles(f, src));
-    titlesPerFile.push(titles.length - before);
-    // Independent count, by a different method: every xUnit test is exactly one
-    // [Fact] or [Theory], however many [InlineData] rows follow. testTitles()
-    // has to PAIR each attribute with its method and can lose one silently; this
-    // just counts, so a mismatch means the pairing walk is wrong.
-    expectedCs += expectedTestCount(f, src) || 0;
+    const read = testTitles(f, src);
+    titles.push(...read);
+    titlesPerFile.push(read.length);
+    const eco = f.endsWith('.cs') ? 'cs' : 'js';
+    expected[eco] += expectedTestCount(f, src) || 0;
+    got[eco] += read.length;
     MARKER_RE.lastIndex = 0;
     for (const m of src.matchAll(MARKER_RE)) existingMarkers.set(m[1], (existingMarkers.get(m[1]) || 0) + 1);
   }
 
-  const gotCs = titles.filter((t) => t.style !== 'title').length;
-  if (gotCs !== expectedCs) {
-    console.error(`REFUSING TO REPORT: ${app.corpus} — read ${gotCs} C# tests but ${expectedCs} ` +
-      `[Fact]/[Theory] attributes exist. The reader is losing tests; every number below would be wrong.`);
-    process.exit(2);
+  for (const [eco, evidence] of [['cs', '[Fact]/[Theory] attributes'], ['js', 'test declarations surviving a strip of strings and comments']]) {
+    if (got[eco] !== expected[eco]) {
+      console.error(`REFUSING TO REPORT: ${app.corpus} — read ${got[eco]} ${eco === 'cs' ? 'C#' : 'JS'} tests but ${expected[eco]} ` +
+        `${evidence} exist. The reader is losing tests; every number below would be wrong.`);
+      process.exit(2);
+    }
   }
 
   const titleTok = titles.map((t) => ({ ...t, tok: tokens(t.raw) }));

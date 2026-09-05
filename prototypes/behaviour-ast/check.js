@@ -57,7 +57,12 @@ function readTests(repo) {
     // for markers and the alarming one for a mapping, so it is a refusal.
     const want = expectedTestCount(f, src);
     if (want !== null && got.length !== want) {
-      return { fatal: `${f}: read ${got.length} tests but ${want} [Fact]/[Theory] attributes exist — the reader is losing tests` };
+      // Name the evidence the reader was contradicted by, or the message sends
+      // whoever reads it looking for xUnit attributes in a TypeScript file.
+      const evidence = f.endsWith('.cs')
+        ? `${want} [Fact]/[Theory] attribute(s) exist`
+        : `${want} test declaration(s) survive stripping strings and comments`;
+      return { fatal: `${f}: read ${got.length} test(s) but ${evidence} — the two counts disagree, so the reader is losing or inventing tests` };
     }
     titles.push(...got);
   }
