@@ -67,7 +67,7 @@ test('holes and nouns are told apart on the same line', () => {
 
 console.log('\n── resolve: the cross-behaviour symbol table ──');
 
-test('a hole is filled by another behaviour', () => {
+test('a hole is filled by a DIFFERENT behaviour', () => {
   const { behaviours } = build(
     'behaviour A "a"\n  when fills form:Upload with ?fields\n' +
     'behaviour B "b"\n  provides form:Upload.fields = Email');
