@@ -1,0 +1,696 @@
+{
+  "app": "snip-it",
+  "corpus": "prototypes/behaviour-ast/behaviours/snip-it.beh",
+  "behaviours": [
+    {
+      "id": "BEH-HOME-1",
+      "title": "The landing page renders",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Main",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Main"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:11"
+    },
+    {
+      "id": "BEH-EDIT-1",
+      "title": "The editor loads a transcript and offers its toolbar",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "transcription:Completed",
+          "refs": [
+            {
+              "kind": "transcription",
+              "name": "Completed"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:TranscriptEditor",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "TranscriptEditor"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:SelectAll",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SelectAll"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:RemoveFillerWords",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "RemoveFillerWords"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:SendForExport",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SendForExport"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:WordTrack \"transcribe\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "WordTrack"
+            },
+            {
+              "kind": "literal",
+              "name": "transcribe"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:16"
+    },
+    {
+      "id": "BEH-EDIT-2",
+      "title": "The editor can be switched to dark mode",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "transcription:Completed",
+          "refs": [
+            {
+              "kind": "transcription",
+              "name": "Completed"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:TranscriptEditor",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "TranscriptEditor"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:SelectAll",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SelectAll"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:ToggleTheme",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "ToggleTheme"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:25"
+    },
+    {
+      "id": "BEH-CUT-1",
+      "title": "Sending for export submits a cut and surfaces the finished job",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "transcription:Completed",
+          "refs": [
+            {
+              "kind": "transcription",
+              "name": "Completed"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:TranscriptEditor",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "TranscriptEditor"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:RemoveFillerWords",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "RemoveFillerWords"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:SendForExport",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SendForExport"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:CutStatus \"is complete\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "CutStatus"
+            },
+            {
+              "kind": "literal",
+              "name": "is complete"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees link:Download",
+          "refs": [
+            {
+              "kind": "link",
+              "name": "Download"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "POST /api/cuts is sent exactly once",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the body carries transcriptionJobId",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the body carries every word",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "at least one word is marked not kept",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:32"
+    },
+    {
+      "id": "BEH-UP-1",
+      "title": "Uploading a file transcribes it and opens the editor",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Upload",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Upload"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:TranscribeAVideo",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "TranscribeAVideo"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:Upload with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "Upload"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ]
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:Transcribe",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Transcribe"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:SelectAll",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SelectAll"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:TranscriptEditor",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "TranscriptEditor"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the upload is multipart/form-data",
+          "refs": [],
+          "holes": []
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the request path is /snipit/api/transcriptions",
+          "refs": [],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [
+        {
+          "key": "form:Upload.fields",
+          "value": [
+            "VideoOrAudioFile"
+          ]
+        }
+      ],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:45"
+    },
+    {
+      "id": "BEH-FILL-1",
+      "title": "Removing filler words leaves the editor interactive",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "transcription:Completed",
+          "refs": [
+            {
+              "kind": "transcription",
+              "name": "Completed"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:TranscriptEditor",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "TranscriptEditor"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:RemoveFillerWords",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "RemoveFillerWords"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:SendForExport",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SendForExport"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:56"
+    },
+    {
+      "id": "BEH-UP-2",
+      "title": "The upload form takes a single video or audio file",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Upload",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Upload"
+            }
+          ],
+          "holes": []
+        },
+        {
+          "kind": "when",
+          "verb": "attaches",
+          "text": "attaches file:talk_mp4 to field:VideoOrAudioFile",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "talk_mp4"
+            },
+            {
+              "kind": "field",
+              "name": "VideoOrAudioFile"
+            }
+          ],
+          "holes": []
+        }
+      ],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:70"
+    },
+    {
+      "id": "BEH-EDIT-0",
+      "title": "The editor addresses one transcription by id",
+      "actor": "visitor",
+      "steps": [],
+      "open": [],
+      "filled": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "asks": null,
+      "at": "snip-it.beh:79"
+    }
+  ],
+  "conflicts": [],
+  "generated": [
+    {
+      "id": "BEH-HOME-1",
+      "code": "test(\"[BEH-HOME-1] The landing page renders\", async ({ page }) => {\n  await page.goto(\"./\");\n  await expect(page.locator('main')).toBeVisible();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-EDIT-1",
+      "code": "test(\"[BEH-EDIT-1] The editor loads a transcript and offers its toolbar\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Remove filler words\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Send for export\" })).toBeVisible();\n  // UNGENERATED: then shows region:WordTrack \"transcribe\"\n});",
+      "missing": [
+        "region:WordTrack"
+      ],
+      "stats": {
+        "generated": 5,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-EDIT-2",
+      "code": "test(\"[BEH-EDIT-2] The editor can be switched to dark mode\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await page.getByRole(\"button\", { name: \"Toggle Theme\" }).click();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-CUT-1",
+      "code": "test(\"[BEH-CUT-1] Sending for export submits a cut and surfaces the finished job\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await page.getByRole(\"button\", { name: \"Send for export\" }).click();\n  // UNGENERATED: then shows region:CutStatus \"is complete\"\n  await expect(page.getByRole(\"link\", { name: \"Download\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): POST /api/cuts is sent exactly once\n  // CONTRACT (not derivable from a behaviour): the body carries transcriptionJobId\n  // CONTRACT (not derivable from a behaviour): the body carries every word\n  // CONTRACT (not derivable from a behaviour): at least one word is marked not kept\n});",
+      "missing": [
+        "region:CutStatus"
+      ],
+      "stats": {
+        "generated": 5,
+        "contract": 4,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-UP-1",
+      "code": "test(\"[BEH-UP-1] Uploading a file transcribes it and opens the editor\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await expect(page.getByRole(\"heading\", { name: \"Transcribe a video\" })).toBeVisible();\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n  await page.getByRole(\"button\", { name: \"Transcribe\" }).click();\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page).toHaveURL(new RegExp(\"/editor/[0-9a-f-]+$\"));\n  // CONTRACT (not derivable from a behaviour): the upload is multipart/form-data\n  // CONTRACT (not derivable from a behaviour): the request path is /snipit/api/transcriptions\n});",
+      "missing": [],
+      "stats": {
+        "generated": 6,
+        "contract": 2,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-FILL-1",
+      "code": "test(\"[BEH-FILL-1] Removing filler words leaves the editor interactive\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await expect(page.getByRole(\"button\", { name: \"Send for export\" })).toBeVisible();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-UP-2",
+      "code": "test(\"[BEH-UP-2] The upload form takes a single video or audio file\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n});",
+      "missing": [],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-EDIT-0",
+      "code": "test(\"[BEH-EDIT-0] The editor addresses one transcription by id\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    }
+  ],
+  "coverage": {
+    "available": false,
+    "reason": "no --repo given, so no test files were read"
+  },
+  "adjudication": {
+    "defined": 8,
+    "inferred": 0,
+    "unreviewed": [],
+    "approved": [],
+    "denied": [],
+    "untraceable": [
+      "BEH-HOME-1",
+      "BEH-EDIT-1",
+      "BEH-EDIT-2",
+      "BEH-CUT-1",
+      "BEH-UP-1",
+      "BEH-FILL-1",
+      "BEH-UP-2",
+      "BEH-EDIT-0"
+    ]
+  },
+  "surface": {
+    "errors": [],
+    "served": [],
+    "unserved": []
+  },
+  "questions": []
+}

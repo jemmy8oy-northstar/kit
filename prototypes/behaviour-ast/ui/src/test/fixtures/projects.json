@@ -1,0 +1,69 @@
+{
+  "projects": [
+    {
+      "app": "james-habits-app",
+      "corpus": "prototypes/behaviour-ast/behaviours/james-habits-app.beh",
+      "behaviours": 23,
+      "conflicts": 1,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 11
+    },
+    {
+      "app": "kit",
+      "corpus": "prototypes/behaviour-ast/behaviours/kit.beh",
+      "behaviours": 14,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "language-vocab",
+      "corpus": "prototypes/behaviour-ast/behaviours/language-vocab.beh",
+      "behaviours": 27,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 15
+    },
+    {
+      "app": "macro-metrics",
+      "corpus": "prototypes/behaviour-ast/behaviours/macro-metrics.beh",
+      "behaviours": 10,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "snip-it",
+      "corpus": "prototypes/behaviour-ast/behaviours/snip-it.beh",
+      "behaviours": 8,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    }
+  ]
+}
