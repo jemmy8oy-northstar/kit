@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -231,6 +231,25 @@ MUTANTS.push(
     'if (!NO_UI.test(fs.readFileSync(path.join(dir, f), \'utf8\'))) return true;', 'if (true) return true;', 'saturation.js'],
   ['saturation excludes the no-ui corpus SILENTLY, so the population is invisible',
     'for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);', '', 'saturation.js'],
+);
+
+// project (docs/design/ui.md). The read model's whole job is to be believed by
+// a UI that cannot check it, so every rule here is about not lying quietly.
+MUTANTS.push(
+  ['unavailable coverage becomes a ZERO-covered result, which a UI renders as an alarm',
+    "return { available: false, reason };", 'return { available: false, reason, covered: [], uncovered: [] };', 'project.js'],
+  ['a missing mapping is treated as "nothing covered" instead of "no mapping"',
+    'coverage = unavailable(`no ${app}.tests.json', 'coverage = unavailable_UNUSED(`no ${app}.tests.json', 'project.js'],
+  ['a reader that is losing tests is projected anyway',
+    'if (read.fatal) {', 'if (false) {', 'project.js'],
+  ['the over-claim caveat is dropped from the payload',
+    "proves: 'someone LINKED each covered behaviour to a test. NOT that the test asserts the behaviour.',", '', 'project.js'],
+  ['a corpus that parsed to nothing is projected instead of refused',
+    'if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };', '', 'project.js'],
+  // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
+  // project.js had that rule, a mutation removing it survived, and the reason
+  // was that `mapping()` in kit.js already skips them — the copy was dead code.
+  // The rule is mutated where it actually lives.
 );
 
 let killed = 0;

@@ -1230,5 +1230,74 @@ test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () =>
   assert.ok(!/skipping cli\.beh/.test(said), said);
 });
 
+console.log('\n── project: the read model a UI consumes (docs/design/ui.md) ──');
+const proj = require('./project.js');
+
+test('the projection carries every panel the UI needs, for a real corpus', () => {
+  const p = proj.project('snip-it');
+  assert.strictEqual(p.behaviours.length, 8);
+  for (const k of ['app', 'corpus', 'behaviours', 'conflicts', 'generated', 'coverage', 'adjudication', 'surface', 'questions']) {
+    assert.ok(k in p, `missing ${k}`);
+  }
+  assert.strictEqual(p.generated.length, 8, 'one generated test per behaviour — the output pane');
+});
+
+test('coverage UNAVAILABLE is distinguishable from coverage ZERO', () => {
+  // A UI that cannot tell "no mapping exists" from "nothing is covered" will
+  // render the second, and the second is an alarm ([[empty-means-two-things]]).
+  const p = proj.project('snip-it');
+  assert.strictEqual(p.coverage.available, false);
+  assert.ok(/no --repo/.test(p.coverage.reason), p.coverage.reason);
+  assert.ok(!('covered' in p.coverage), 'an unavailable coverage must not carry a covered list at all');
+});
+
+test('a missing mapping is unavailable, not zero-covered', () => {
+  const p = proj.project('macro-metrics', { repo: pathx.join(__dirname) });
+  assert.strictEqual(p.coverage.available, false);
+  assert.ok(/has no mapping/.test(p.coverage.reason), p.coverage.reason);
+});
+
+test('CONTROL: with a repo AND a mapping, coverage is available and real', () => {
+  const p = proj.project('kit', { repo: pathx.join(__dirname, '..', '..') });
+  assert.strictEqual(p.coverage.available, true);
+  assert.strictEqual(p.coverage.covered.length, 10);
+  assert.deepStrictEqual(p.coverage.uncovered, []);
+  assert.ok(/NOT that the test asserts/.test(p.coverage.proves), 'the caveat must travel IN the payload');
+});
+
+test('a reader losing tests makes coverage unavailable, not wrong', () => {
+  // The same refusal check.js makes. A projection built on a bad read is wrong
+  // in the same direction everywhere and silently.
+  const repo = fixture({ 'a.spec.ts': 'beforeEach(() => {}); test("shared", () => {});\ntest("n", () => {});\n' });
+  const dir = fixture({
+    'x.beh': 'behaviour BEH-1 "one"\n  when opens page:Home\n',
+    'x.tests.json': '{"BEH-1":[{"file":"a.spec.ts","title":"n"}]}',
+  });
+  const p = proj.project('x', { repo, behDir: dir });
+  assert.strictEqual(p.coverage.available, false);
+  assert.ok(/losing or inventing/.test(p.coverage.reason), p.coverage.reason);
+});
+
+test('exit 2 when there is no corpus — could-not-look is not an empty projection', () => {
+  assert.strictEqual(quiet(() => proj.main(['nosuchapp'])), 2);
+});
+
+test('exit 2 when the corpus parses to zero behaviours', () => {
+  const dir = fixture({ 'empty.beh': '# just a comment\n' });
+  assert.strictEqual(quiet(() => proj.main(['empty', '--dir', dir])), 2);
+});
+
+test('exit 2 when no app is named, rather than projecting an arbitrary one', () => {
+  assert.strictEqual(quiet(() => proj.main([])), 2);
+});
+
+test("kit's own shipped mapping projects with no errors, metadata keys and all", () => {
+  // End-to-end over the real committed mapping. `_`, `_authored` and `_honest`
+  // are skipped by `mapping()` itself; project.js briefly had its own copy of
+  // that rule and a mutation proved the copy was dead code.
+  const p = proj.project('kit', { repo: pathx.join(__dirname, '..', '..') });
+  assert.deepStrictEqual(p.coverage.errors, [], p.coverage.errors.join('; '));
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
