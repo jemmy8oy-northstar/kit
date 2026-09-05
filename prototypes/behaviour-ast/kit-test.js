@@ -575,13 +575,89 @@ t('an attribute with no method after it yields nothing rather than grabbing the 
   assert.deepStrictEqual(testTitles('T.cs', src).map((g) => g.raw), ['Real_Test']);
 });
 
-t('expectedTestCount counts attributes for C# and declines for JS', () => {
-  // The point of this function is to be a DIFFERENT shape of operation from the
-  // pairing walk, so that a walk which drops one is contradicted rather than
-  // believed. It returns null for JS because JS_TITLE counts occurrences with no
-  // pairing step, so there is nothing there for a second count to catch.
+t('expectedTestCount counts a second way for BOTH ecosystems', () => {
+  // It used to return null for JS, reasoning that a regex "counts occurrences
+  // directly and has nothing to lose". The regex lost every `it.each` test and
+  // invented one per test-shaped string literal, both silently, for as long as
+  // this declined to look. An unmeasured half is not a safe half.
   assert.strictEqual(expectedTestCount('T.cs', '[Fact]\n[Theory]\n[InlineData(1)]\n'), 2);
-  assert.strictEqual(expectedTestCount('a.spec.ts', "test('x', () => {})"), null);
+  assert.strictEqual(expectedTestCount('a.spec.ts', "test('x', () => {})"), 1);
+});
+
+t('a parameterised test is READ, not silently dropped — the real bug', () => {
+  // `it.each([...])('%s', fn)` puts the title after the table, so a regex
+  // expecting a quote straight after the paren never reaches it. Measured over
+  // 28 real JS test files in four repos: 6 tests vanished this way, and every
+  // one of the 5 disagreeing files was explained by `.each` exactly.
+  const src = "it.each([[1, 'a'], [2, 'b']])('handles %s', (n, s) => {});";
+  const got = testTitles('a.spec.ts', src);
+  assert.deepStrictEqual(got.map((t) => t.raw), ['handles %s']);
+  assert.strictEqual(got[0].style, 'each');
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+});
+
+t('a .each table containing brackets INSIDE strings does not end the group early', () => {
+  // The naive skip is a bracket counter. A table row like "]" or "(" is data,
+  // and a counter that reads it as structure stops in the middle of the table
+  // and then reads a fragment of data as the title.
+  const src = `it.each([['a)]', 1], ['b((', 2]])('closes over %s', (s, n) => {});`;
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['closes over %s']);
+});
+
+t('a .each table containing a NESTED CALL does not end the group early', () => {
+  // The sibling test above puts the brackets inside strings, so the quote-skip
+  // handles them and the depth counter is never exercised — a mutation removing
+  // the counter survived it. Real tables contain real calls.
+  const src = "it.each([[Math.max(1, 2), 'a']])('computes %s', (n, s) => {});";
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['computes %s']);
+});
+
+t('a .each tagged-template table is read too', () => {
+  const src = 'it.each`\n  a | b\n  ${1} | ${2}\n`("$a plus $b", () => {});';
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['$a plus $b']);
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+});
+
+t('a test-shaped STRING is not a test — the reason kit could not read itself', () => {
+  // Kit's own suite is the suite of a test generator, so it is full of literals
+  // like `['test("[BEH-1] a", () => {})']`. The old regex read 108 tests out of
+  // 97 real ones; 11 phantoms, every one a fixture. A gate that miscounts its
+  // own tests cannot be pointed at its own repo.
+  const src = "const fixture = ['test(\"[BEH-1] a\", () => {})'];\ntest('the real one', () => {});";
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['the real one']);
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+});
+
+t('a test-shaped line inside a COMMENT is not a test either', () => {
+  const src = "// test('not this one', () => {})\ntest('the real one', () => {});";
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['the real one']);
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+});
+
+t('a member call named .test() is not a declaration — the lookbehind', () => {
+  // `\\b` matches straight after a dot, so `SOME_RE.test(x)` counted as a test.
+  // Kit's own file has 16 of them: the second count came back 113 against 97
+  // and would have refused a file that was completely fine.
+  const src = 'const ok = TEST_FILE_RE.test(name);\ntest("real", () => {});';
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['real']);
+});
+
+t('THE CONTROL: the two counts DISAGREE when a declaration is not at a statement start', () => {
+  // The whole point of a second count is that it can contradict the first. The
+  // reader keys on position; the count keys on lexical structure after strings
+  // and comments are removed. A test declared after a semicolon on a shared
+  // line is invisible to the first and visible to the second — so the pair
+  // disagrees and check.js refuses, rather than quietly reporting one test.
+  const src = 'beforeEach(() => {}); test("shared line", () => {});';
+  assert.strictEqual(testTitles('a.spec.ts', src).length, 0);
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
+});
+
+t('nesting inside describe blocks still reads — indentation is allowed', () => {
+  const src = 'describe("g", () => {\n  it("indented", () => {});\n  await test("awaited", () => {});\n});';
+  assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['indented', 'awaited']);
+  assert.strictEqual(expectedTestCount('a.spec.ts', src), 2);
 });
 
 console.log('\n── the mapping (option C) ──');
@@ -715,6 +791,28 @@ t('exit 2 when the C# reader loses a test — a bad read is not a verdict', () =
   });
   assert.ok(require('./kit').TEST_FILE_RE.test('MyTests.cs'), 'fixture is not collected as a test file');
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
+});
+
+t('exit 2 when the JS reader and the JS count disagree — the half that had no guard', () => {
+  // The C# refusal above has existed since the vocab under-read. The JS half had
+  // NO second count, so the same class of bug (every `it.each` dropped, every
+  // test-shaped fixture string invented) went unreported for the life of the
+  // regex. This is that guard, reached through the real CLI.
+  const dir = fixture({ 'a.spec.ts': 'beforeEach(() => {}); test("shared line", () => {});\ntest("normal", () => {});\n' });
+  assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
+});
+
+t('the disagreement message names JS evidence for a JS file, not xUnit attributes', () => {
+  // It said "[Fact]/[Theory] attributes exist" for a .spec.ts, sending whoever
+  // read it looking for xUnit in a TypeScript file. The refusal was right and
+  // the reason it gave was from the other ecosystem.
+  const dir = fixture({ 'a.spec.ts': 'beforeEach(() => {}); test("shared line", () => {});\ntest("normal", () => {});\n' });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { check.main(['snip-it', '--repo', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(/test declaration\(s\) survive stripping/.test(said), `said: ${said}`);
+  assert.ok(!/\[Fact\]/.test(said), `said: ${said}`);
 });
 
 t('exit 1 when a behaviour has no test naming it — the gate can go RED', () => {

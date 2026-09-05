@@ -94,8 +94,30 @@ const MUTANTS = [
     'break; // matched or not, the first non-attribute line settles it', 'continue;'],
   ['a DisplayName is ignored and the method name reported instead',
     'raw: display ? display[1] : m[1], style:', 'raw: m[1], style:'],
-  ['the independent count declines for C# too, so nothing cross-checks the walk',
-    "if (!file.endsWith('.cs')) return null;", 'if (true) return null;'],
+  ['the independent count declines for JS again, so nothing cross-checks the reader',
+    "if (!file.endsWith('.cs')) return jsDeclarationCount(src);", "if (!file.endsWith('.cs')) return null;"],
+
+  // reading JS tests. Every one of these shipped as real behaviour for the life
+  // of the regex reader, and none of them was caught by anything, because until
+  // now the JS half had no second count to contradict it.
+  ['the reader goes back to matching quote-shaped text anywhere, not declarations',
+    'JS_DECL.lastIndex = 0;', 'JS_DECL.lastIndex = 0; JS_DECL = JS_TITLE;'],
+  ['a parameterised test loses its table skip, so its title is never reached',
+    'const past = skipGroup(src, at);', 'const past = at;'],
+  ['the group skip stops counting depth, so a bracket inside a table row ends it',
+    'else if (c === close || (open === \'(\' && c === \']\') || (open === \'[\' && c === \')\')) { depth--; if (depth === 0) return i + 1; }',
+    'else if (c === close) return i + 1;'],
+  ['quoted text inside a .each table is read as structure',
+    "if (c === '\"' || c === \"'\") { i = skipQuoted(src, i); if (i < 0) return -1; continue; }", 'if (false) { continue; }'],
+  ['the second count stops stripping strings, so a fixture literal counts as a test',
+    "if (c === '\"' || c === \"'\") {\n      const e = skipQuoted(src, i);", "if (false) {\n      const e = skipQuoted(src, i);"],
+  ['the second count stops stripping comments, so a commented-out test counts',
+    "if (c === '/' && src[i + 1] === '/') { const e = src.indexOf('\\n', i); if (e < 0) break; out += ' '; i = e - 1; continue; }", ''],
+  ['a JS count disagreement reports xUnit attributes as its evidence',
+    "const evidence = f.endsWith('.cs')", 'const evidence = true', 'check.js'],
+  ['the lookbehind goes, so every SOME_RE.test(x) counts as a test declaration',
+    '/(?<![.\\w$])(?:test|it)(?:\\.(?:only|skip|fixme|concurrent|each))?\\s*[([`]/g',
+    '/\\b(?:test|it)(?:\\.(?:only|skip|fixme|concurrent|each))?\\s*[([`]/g'],
 
   // the mapping (option C) — every one of these is the mapping rotting SILENTLY,
   // which is the single property the option is chosen for.

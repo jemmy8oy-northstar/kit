@@ -439,7 +439,35 @@ function coverage(behaviours, testSources) {
 // ecosystems appear in every pilot repo, so a reader handling only one would
 // report a repo as untestable when it is merely C#.
 
+// ⚠️ THIS REGEX WAS THE WHOLE JS READER AND IT WAS WRONG IN BOTH DIRECTIONS.
+// It is kept only as the *second* count (see jsDeclarationCount below), because
+// it is wrong in a differently-shaped way from the scanner that replaced it,
+// which is the only thing that makes a cross-check worth having.
+//
+//  · It UNDER-read every parameterised test. `it.each([...])('%s', fn)` puts the
+//    title after the table, so the `\s*\(` here never reaches a quote and the
+//    test vanished silently. Measured across 28 real JS test files in four
+//    repos: 5 files disagreed with a line count, and `.each` explained all five
+//    exactly. Under option C that surfaces as "mapping entry names a test that
+//    does not exist" — a FALSE RED pointing at the corpus instead of the reader.
+//  · It OVER-read any file containing a test-shaped string literal. Kit's own
+//    suite is the suite of a test GENERATOR, so it is full of them: 97 real
+//    declarations, 108 matches, 11 phantoms out of fixtures. That is why Kit
+//    could not be pointed at itself without lying about itself.
+//
+// Both were invisible because `expectedTestCount()` returned null for JS: the
+// C# path has refused on a count disagreement since the vocab 16% under-read,
+// and the JS path had no second count at all ([[count-it-a-second-way]]).
 const JS_TITLE = /\b(?:test|it)(?:\.(?:only|skip|fixme))?\s*\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
+
+// A test declaration begins a statement. Leading whitespace (a `describe` block)
+// and an `await`/`return` in front of it are the only things that legitimately
+// precede one; a fixture string never does, because it is preceded by the quote
+// that opens it.
+// The trailing class is `[(`] and not `\(`: `it.each` may take its table as a
+// tagged template, where no paren follows the name at all.
+const JS_DECL = /^[ \t]*(?:await\s+|return\s+)?(?:test|it)(?:\.(?:only|skip|fixme|concurrent|each))?\s*[(`]/gm;
+const JS_QUOTED = /^\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/;
 const CS_ATTR = /\[(?:Fact|Theory)[^\]]*\]/;
 const CS_DISPLAY = /DisplayName\s*=\s*"((?:\\.|[^"\\])*)"/;
 const CS_METHOD = /^\s*(?:public|internal)\s+(?:async\s+)?[\w<>,\[\]?\s]+?\s(\w+)\s*\(/;
@@ -449,13 +477,85 @@ const CS_SKIP = /^\s*(?:\[|\/\/|\/\*|\*|$)/;
 
 const TEST_FILE_RE = /\.(spec|test)\.(ts|tsx|js|jsx)$|Tests?\.cs$/;
 
+// Walk forward from `i` over one balanced bracket group, or one template
+// literal, treating quoted text as opaque. Needed because `it.each([...])` puts
+// arbitrary data — including brackets and parens inside strings — between the
+// name and the title. Returns the index just past the group, or -1 if it never
+// closes (a truncated file), which the caller must treat as "stop reading".
+function skipGroup(src, i) {
+  while (i < src.length && /\s/.test(src[i])) i++;
+  const open = src[i];
+  if (open === '`') return skipTemplate(src, i);
+  if (open !== '(' && open !== '[') return -1;
+  const close = open === '(' ? ')' : ']';
+  let depth = 0;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"' || c === "'") { i = skipQuoted(src, i); if (i < 0) return -1; continue; }
+    if (c === '`') { i = skipTemplate(src, i) - 1; if (i < 0) return -1; continue; }
+    if (c === '/' && src[i + 1] === '/') { i = src.indexOf('\n', i); if (i < 0) return src.length; continue; }
+    if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2); if (e < 0) return -1; i = e + 1; continue; }
+    if (c === open || (open === '(' && c === '[') || (open === '[' && c === '(')) depth++;
+    else if (c === close || (open === '(' && c === ']') || (open === '[' && c === ')')) { depth--; if (depth === 0) return i + 1; }
+  }
+  return -1;
+}
+
+// `i` is at the opening quote; returns the index OF the closing quote.
+function skipQuoted(src, i) {
+  const q = src[i];
+  for (let j = i + 1; j < src.length; j++) {
+    if (src[j] === '\\') { j++; continue; }
+    if (src[j] === q) return j;
+    if (q !== '`' && src[j] === '\n') return -1; // unterminated on its line
+  }
+  return -1;
+}
+
+// `i` is at the backtick; returns the index just past the closing one. `${}`
+// interpolations are skipped as balanced groups so a brace inside them cannot
+// end the literal early.
+function skipTemplate(src, i) {
+  for (let j = i + 1; j < src.length; j++) {
+    if (src[j] === '\\') { j++; continue; }
+    if (src[j] === '$' && src[j + 1] === '{') {
+      let depth = 0;
+      for (; j < src.length; j++) {
+        if (src[j] === '{') depth++;
+        else if (src[j] === '}') { depth--; if (depth === 0) break; }
+      }
+      continue;
+    }
+    if (src[j] === '`') return j + 1;
+  }
+  return -1;
+}
+
 function testTitles(file, src) {
   const out = [];
   if (!file.endsWith('.cs')) {
+    // Scan DECLARATIONS, not quote-shaped text. A declaration begins a
+    // statement; a fixture string never does. See the note on JS_TITLE.
     let m;
-    JS_TITLE.lastIndex = 0;
-    while ((m = JS_TITLE.exec(src))) {
-      out.push({ file, line: src.slice(0, m.index).split('\n').length, raw: m[2], style: 'title' });
+    JS_DECL.lastIndex = 0;
+    while ((m = JS_DECL.exec(src))) {
+      const line = src.slice(0, m.index).split('\n').length;
+      const isEach = m[0].includes('.each');
+      // For `.each`, the title sits after the table: skip the table group (or
+      // tagged template), then the title is the next call's first argument.
+      let at = m.index + m[0].length - 1; // the '(' or '`' the regex ended on
+      if (isEach) {
+        const past = skipGroup(src, at);
+        if (past < 0) break;
+        let k = past;
+        while (k < src.length && /\s/.test(src[k])) k++;
+        if (src[k] !== '(') continue; // `.each` table with no call after it
+        at = k;
+      }
+      const q = JS_QUOTED.exec(src.slice(at + 1));
+      if (!q) continue; // a computed title — counted by jsDeclarationCount, so a
+                        // disagreement will refuse rather than silently drop it
+      out.push({ file, line, raw: q[2], style: isEach ? 'each' : 'title' });
     }
     return out;
   }
@@ -479,11 +579,53 @@ function testTitles(file, src) {
 // PAIRS an attribute with a method and a pairing can drop one silently, while a
 // count cannot. This is not hypothetical: a fixed six-line lookahead here lost 7
 // tests across the pilot repos (language-vocab under-read by 16%) and nothing
-// said so. Returns null for JS, where `testTitles` counts occurrences directly
-// and has no pairing step to lose anything in.
+// said so.
+//
+// ⚠️ It used to return null for JS, on the reasoning that the JS reader "counts
+// occurrences directly and has no pairing step to lose anything in". That was
+// true of the regex and false of the problem: the regex lost every `it.each`
+// test and invented one per test-shaped string literal, both silently, for
+// exactly as long as this function declined to look. An unmeasured half is not
+// a safe half.
+//
+// The two JS mechanisms must not be the same idea twice, or agreement proves
+// nothing. `testTitles` uses POSITION (a declaration starts a statement);
+// `jsDeclarationCount` uses LEXICAL STRUCTURE (strip strings and comments, then
+// count call heads anywhere). A test written mid-line after a semicolon is
+// invisible to the first and visible to the second, so they disagree and the
+// caller refuses — which is the outcome we want, rather than a quiet undercount.
 function expectedTestCount(file, src) {
-  if (!file.endsWith('.cs')) return null;
+  if (!file.endsWith('.cs')) return jsDeclarationCount(src);
   return (src.match(/\[(?:Fact|Theory)\b/g) || []).length;
+}
+
+// ⚠️ The lookbehind is load-bearing, not defensive. `\b` matches immediately
+// after a dot, so a plain `\b(test|it)\s*\(` counts every `SOME_RE.test(x)` in
+// the file as a test declaration. Kit's own suite has 16 of them and the count
+// came back 113 against 97 real tests — a refusal on a file that was fine.
+const JS_CALL_HEAD = /(?<![.\w$])(?:test|it)(?:\.(?:only|skip|fixme|concurrent|each))?\s*[([`]/g;
+
+function jsDeclarationCount(src) {
+  let out = '';
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '"' || c === "'") {
+      const e = skipQuoted(src, i);
+      if (e < 0) { out += ' '; continue; }
+      out += ' '; i = e; continue;
+    }
+    if (c === '`') {
+      const e = skipTemplate(src, i);
+      if (e < 0) { out += ' '; continue; }
+      // Keep the backtick, blank the body: `it.each` + a tagged template table
+      // is a declaration, and JS_CALL_HEAD needs the backtick to see it.
+      out += '`'; i = e - 1; continue;
+    }
+    if (c === '/' && src[i + 1] === '/') { const e = src.indexOf('\n', i); if (e < 0) break; out += ' '; i = e - 1; continue; }
+    if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2); if (e < 0) break; out += ' '; i = e + 1; continue; }
+    out += c;
+  }
+  return (out.match(JS_CALL_HEAD) || []).length;
 }
 
 // ─────────────────────────── 4c. the mapping (option C) ───────────────────────────
@@ -944,7 +1086,7 @@ function answerLine(q) {
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet,
-  testTitles, expectedTestCount, mapping, TEST_FILE_RE,
+  testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
 };
 
 // ─────────────────────────── cli ───────────────────────────
