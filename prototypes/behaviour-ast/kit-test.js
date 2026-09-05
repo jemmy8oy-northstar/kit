@@ -1139,5 +1139,96 @@ t('--check goes RED when the write-up drifts from the corpora', () => {
   assert.strictEqual(quiet(() => sat.main(['--dir', dir, '--check'])), 1);
 });
 
+console.log('\n── self-host: can Kit describe Kit? (James, claude-code-bot#89) ──');
+const selfhost = require('./self-host.js');
+
+t('THE CONTROL: binding nouns DOES move the number, when the verbs are known', () => {
+  // Everything this tool concludes rests on "binding every noun changed
+  // nothing". That sentence is worthless unless binding can change something —
+  // otherwise the measurement is indistinguishable from a broken tally. A
+  // browser-verb corpus is the positive control ([[red-for-the-right-reason]]).
+  const m = selfhost.measure('behaviour BEH-1 "x"\n  when opens page:Home\n  when activates button:Go\n');
+  assert.strictEqual(m.unbound.generated, 0, 'the control should generate nothing unbound');
+  assert.ok(m.bound.generated > 0, 'binding every noun must be able to help, or the null result means nothing');
+  assert.ok(m.derived > 0, 'opens/activates are DERIVED steps, not copied setup strings');
+});
+
+t('the null result: for the real kit corpus, binding every noun derives nothing', () => {
+  const m = selfhost.measure(fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8'));
+  assert.strictEqual(m.unbound.generated, 0);
+  assert.strictEqual(m.derived, 0, 'no step is derived from a behaviour, however generously bound');
+  assert.ok(m.bound.generated > 0, 'and it is NOT zero-generated — the state steps do emit, which is the honest number');
+});
+
+t('a `state` step is not counted as derived — the number that flatters', () => {
+  // Under full bindings a `state` step emits the setup string a human wrote in
+  // bindings.json. Counting those as "generated" makes "10 of 42" sound like
+  // the notation nearly works. `derived` is the honest column.
+  const m = selfhost.measure('behaviour BEH-1 "x"\n  given thing:Ready\n');
+  assert.strictEqual(m.bound.generated, 1);
+  assert.strictEqual(m.derived, 0);
+});
+
+t('the generator vocabulary is READ from the generator, not re-typed', () => {
+  // A hard-coded copy is how the write-up starts lying about the code: add a
+  // verb to generate() and a list here would go on reporting the old eight.
+  const verbs = selfhost.generatorVerbs();
+  assert.ok(verbs.has('opens') && verbs.has('activates') && verbs.has('state'), [...verbs].join(','));
+  assert.ok(!verbs.has('runs'), 'runs is not a generator verb and must not appear');
+  const src = fsx.readFileSync(pathx.join(__dirname, 'kit.js'), 'utf8');
+  const cases = (src.match(/^\s*case '[a-z]+':/gm) || []).length;
+  assert.ok(verbs.size > 0 && verbs.size <= cases, `read ${verbs.size} verbs from ${cases} case labels`);
+});
+
+t('exit 2 when the corpus does not exist — could-not-look is not green', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--corpus', '/no/such/kit.beh'])), 2);
+});
+
+t('exit 2 when the corpus parses to nothing, rather than reporting a dramatic zero', () => {
+  // A run that read an empty file would print "0 derived" — the same headline
+  // as the real finding, from a completely different cause.
+  const dir = fixture({ 'empty.beh': '# only a comment\n' });
+  assert.strictEqual(quiet(() => selfhost.main(['--corpus', pathx.join(dir, 'empty.beh')])), 2);
+});
+
+t('--check goes RED when the corpus drifts from the recorded findings', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--check'])), 0, 'the recorded findings already disagree with the corpus');
+  const dir = fixture({});
+  const beh = pathx.join(dir, 'kit.beh');
+  fsx.copyFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), beh);
+  fsx.appendFileSync(beh, '\nbehaviour BEH-DRIFT-1 "nobody recorded this"\n  when runs command:New\n');
+  assert.strictEqual(quiet(() => selfhost.main(['--corpus', beh, '--check'])), 1);
+});
+
+t('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => {
+  // kit.beh's nouns are command:KitCheck and status:One. Leaving it in a study
+  // about UI binding glue is a category error; excluding it silently is worse.
+  const dir = fixture({
+    'ui.beh': SATURATING,
+    'cli.beh': '# kit:no-ui\nbehaviour BEH-C1 "x"\n  when runs command:Thing\n',
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(/skipping cli\.beh/.test(said), said);
+  assert.ok(!/cli\.beh:/.test(said.replace(/skipping cli\.beh[^\n]*/g, '')), 'the excluded corpus must not appear in the results');
+});
+
+t('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () => {
+  // Otherwise "it was skipped" could be the tool ignoring anything it dislikes.
+  const dir = fixture({
+    'ui.beh': SATURATING,
+    'cli.beh': 'behaviour BEH-C1 "x"\n  when runs command:Thing\n',
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(!/skipping cli\.beh/.test(said), said);
+});
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

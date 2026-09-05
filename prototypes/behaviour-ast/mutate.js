@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit-test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -209,6 +209,29 @@ const run = () => {
   try { execFileSync('node', [T], { encoding: 'utf8' }); return 0; }
   catch (e) { return (String(e.stdout || '').match(/FAIL/g) || []).length || 1; }
 };
+
+// self-host (#89: "how does kit look as a kit managed project"). Every rule here
+// exists to stop ONE number being read as something it is not, so a mutation
+// that survives means the write-up's headline is unguarded.
+MUTANTS.push(
+  ['a `state` step counts as derived, so "0 derived" becomes "10 generated"',
+    "const derived = bound.generated - (byVerb.get('state') || 0);", 'const derived = bound.generated;', 'self-host.js'],
+  ['the discriminating step stops binding, so the null result is trivially true',
+    'const bound = tally(generousBindings(behaviours));', 'const bound = tally({});', 'self-host.js'],
+  ['the generous binding drops `state`, which under-reports what bindings CAN do',
+    'state: `setUp(${JSON.stringify(key)})` };', '};', 'self-host.js'],
+  ['the generator vocabulary is hard-coded instead of read from generate()',
+    "return new Set([...body.slice(0, end).matchAll(/^\\s*case '([a-z]+)':/gm)].map((m) => m[1]));",
+    "return new Set(['opens', 'activates', 'sees', 'shows', 'attaches', 'lands', 'fills', 'state', 'runs']);", 'self-host.js'],
+  ['a corpus that parsed to nothing is reported instead of refused',
+    'if (m.behaviours === 0 || m.steps === 0) {', 'if (false) {', 'self-host.js'],
+  ['--check accepts drift silently',
+    'if (JSON.stringify(was) !== JSON.stringify(now)) {', 'if (false) {', 'self-host.js'],
+  ['saturation stops excluding a corpus that declares it has no UI',
+    'if (!NO_UI.test(fs.readFileSync(path.join(dir, f), \'utf8\'))) return true;', 'if (true) return true;', 'saturation.js'],
+  ['saturation excludes the no-ui corpus SILENTLY, so the population is invisible',
+    'for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);', '', 'saturation.js'],
+);
 
 let killed = 0;
 const survived = [];

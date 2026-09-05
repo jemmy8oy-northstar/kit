@@ -1,0 +1,100 @@
+# Kit, described in Kit's own notation.
+#
+# kit:no-ui
+#   Read by saturation.js, which excludes this corpus from the binding-saturation
+#   study. That study asks whether the glue binding a spec to a UI saturates as
+#   the UI grows; this corpus describes a command-line tool, so its nouns
+#   (command:KitCheck, status:One) will never be bound to a locator and it has no
+#   answer to give. The directive lives here rather than in a filename list
+#   inside saturation.js so that it travels with the file that needs it.
+#
+# James asked (claude-code-bot#89): "think about how kit looks as a kit managed
+# project". This corpus is the attempt, and the attempt is the measurement.
+#
+# ⚠️ READ THE NUMBER THIS PRODUCES CAREFULLY. `kit.js kit` will report ~0%
+# generated, and that is NOT the same finding as james-habits-app's 0%. There,
+# the app was missing nouns and Kit was working as designed. Here, every noun
+# could be bound tomorrow and the number would not move, because the generator
+# emits Playwright and Kit has no browser to point it at. The eight verbs it
+# knows — opens, activates, sees, shows, attaches, lands, fills, state — are all
+# browser verbs. A command-line tool has none of them.
+#
+# So this file is not a corpus that is waiting for bindings. It is evidence for
+# a claim: **Kit can describe itself and can generate nothing for itself**, and
+# the missing piece is not notation, it is a UI. That is the same UI James asked
+# for in the first half of #89, which makes his two asks one ask.
+#
+# Every behaviour below is real, and every one is already tested in
+# `kit-test.js` — the mapping in `kit.tests.json` names which test.
+
+behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
+  actor engineer
+  given corpus:SnipIt
+  when runs command:KitCheck
+  then exits status:One
+  contract this is stage 0's stated deliverable in docs/timeline.md
+
+behaviour BEH-GATE-2 "Could-not-look is never reported as green"
+  actor engineer
+  given repo:WithNoTests
+  when runs command:KitCheck
+  then exits status:Two
+  contract exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and
+  contract exits 0 is indistinguishable in CI from a passing one
+
+behaviour BEH-GATE-3 "A mapping naming a test that no longer exists is a hard failure"
+  actor engineer
+  given mapping:Stale
+  when runs command:KitCheck
+  then exits status:One
+  contract this checkability is the whole argument for option C over markers
+
+behaviour BEH-READ-1 "The reader refuses when its two counts disagree"
+  actor engineer
+  given file:CountsDisagree
+  when runs command:KitCheck
+  then exits status:Two
+  contract the two counts must be different MECHANISMS — position versus lexical
+  contract structure — or agreement between them proves nothing
+
+behaviour BEH-GEN-1 "An unbound noun is refused, and the missing noun is named"
+  actor engineer
+  given corpus:UnboundNoun
+  when runs command:KitGenerate
+  then reports marker:Ungenerated
+  contract no locator is ever guessed from the noun's own name
+
+behaviour BEH-GEN-2 "An unsupplied route param is refused rather than truncated"
+  actor engineer
+  given corpus:RouteParam
+  when runs command:KitGenerate
+  then reports marker:Ungenerated
+  contract emitting ./editor/ would navigate to the wrong page and look correct
+
+behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped"
+  actor engineer
+  given corpus:BadKeyword
+  when runs command:KitParse
+  then raises error:UnrecognisedKeyword
+  contract a spec language that ignores what it does not understand is how a
+  contract spec becomes descriptive
+
+behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
+  actor engineer
+  given corpus:CrossBehaviourHole
+  when runs command:KitResolve
+  then reports slot:Filled
+  contract this is the part no BDD tool has, and it needs ONE symbol table
+
+behaviour BEH-RESOLVE-2 "Two behaviours disagreeing is a conflict, with both sides named"
+  actor engineer
+  given corpus:Disagreement
+  when runs command:KitResolve
+  then reports conflict:BothSides
+
+behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
+  actor engineer
+  given corpus:Inference
+  when runs command:KitResolve
+  then reports review:Unreviewed
+  contract James's call on claude-code-bot#68 — default-include, marked

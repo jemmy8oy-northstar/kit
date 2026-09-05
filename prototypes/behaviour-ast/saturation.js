@@ -185,8 +185,27 @@ function main(argv = [], textReader = nounsFromText) {
     console.error(`saturation: no behaviours directory at ${dir} — could not look`);
     return 2;
   }
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
+  const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
     .filter((f) => !only || f.includes(only));
+
+  // This study asks whether the glue binding a SPEC to a UI saturates as the UI
+  // grows. A corpus with no UI has no answer to give and would sit in the
+  // population as a category error — kit.beh's nouns are `command:KitCheck` and
+  // `status:One`, which no locator will ever bind.
+  //
+  // The exclusion is DECLARED BY THE CORPUS, not by a filename list here. A list
+  // in this file is a thing a future corpus silently fails to be added to; a
+  // directive travels with the file that needs it. And it is announced rather
+  // than applied quietly — a population you cannot see is one you cannot check.
+  const NO_UI = /^#\s*kit:no-ui\b/m;
+  const skipped = [];
+  const files = all.filter((f) => {
+    if (!NO_UI.test(fs.readFileSync(path.join(dir, f), 'utf8'))) return true;
+    skipped.push(f);
+    return false;
+  });
+  for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);
+
   if (!files.length) {
     console.error(`saturation: no corpus matching "${only || ''}" — could not look`);
     return 2;
