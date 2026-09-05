@@ -13,6 +13,16 @@ name: CI
 # Job ids are the check context GitHub reports, and a branch ruleset requires
 # them by exact string. `kit` has no rulesets today; if one is added, require
 # `prototype` and rename it in both places or the check hangs forever.
+#
+# ⚠️ WHAT IS STILL NOT GATED HERE: `check.js`, the stage-0 coverage gate. It
+# takes `--repo <path>` to the app under test, and the only annotated corpus
+# (snip-it) lives in another repository — wiring it would pin kit's CI to
+# snip-it's HEAD, so a rename over there turns kit red. The obvious fix is for
+# kit to check ITSELF, and it cannot: `TEST_FILE_RE` does not match
+# `kit-test.js`, and titles are declared with a local `t(...)` helper that
+# `JS_TITLE` does not read. Measured, not assumed —
+# `node check.js snip-it --repo <kit>` exits 2, "cannot look: 0 test files".
+# Until that is fixed, do not describe stage 0 as enforced anywhere.
 
 on:
   pull_request:
@@ -39,3 +49,16 @@ jobs:
       # plain Node so that reading it needs nothing installed.
       - name: Behaviour-AST suite
         run: node prototypes/behaviour-ast/kit-test.js
+
+      # A green suite says the tests pass; it does not say the tests would
+      # NOTICE. `mutate.js` breaks kit.js/check.js/prose-audit.js/saturation.js
+      # one rule at a time and requires the suite to go red for each. It has
+      # been run by hand at every step and by nothing on merge, which means the
+      # one property the suite is quoted for has never been enforced by the
+      # thing that gates the branch ([[passing-is-not-gating]]).
+      #
+      # It runs the suite once per mutant, in-process, with no network and no
+      # install — ~59 mutants in a few seconds today. If that stops being true,
+      # move it to a scheduled job rather than dropping it.
+      - name: Mutation gate — the suite must notice each broken rule
+        run: node prototypes/behaviour-ast/mutate.js
