@@ -9,7 +9,16 @@
     "that content with a bare getByText / regex because the app gives those areas no",
     "accessible name at all. Leaving them out is the honest result: the generator refuses",
     "and names the missing noun, instead of guessing a locator. That refusal is the spec",
-    "constraining the app, which is the property Gherkin never had."
+    "constraining the app, which is the property Gherkin never had.",
+    "",
+    "⚠️ THE NOUN NAMESPACE IS GLOBAL ACROSS APPS, and this file is now the evidence.",
+    "snip-it's page:Home is './' and macro-metrics' home is '/macro-metrics/'. Writing",
+    "page:Home in the macro-metrics corpus therefore emits page.goto('./') — a test that",
+    "RUNS, against the wrong app, with no unbound-noun warning. The macro-metrics nouns",
+    "below are prefixed by hand to dodge that, which is not a design, it is a habit.",
+    "Measured, not assumed: prose-audit.js --demo-collision prints the emitted line.",
+    "(button:ToggleTheme is a near-miss the other way — both apps happen to label it",
+    "'Toggle Theme', so one shared binding is correct today by coincidence, not by rule.)"
   ],
 
   "page:Home":              { "route": "./" },
@@ -30,5 +39,40 @@
   "field:VideoOrAudioFile":   { "label": "Video or audio file" },
   "file:talk_mp4":            { "fixture": { "name": "talk.mp4", "mimeType": "video/mp4" } },
 
-  "transcription:Completed":  { "state": "mockApi(page)" }
+  "transcription:Completed":  { "state": "mockApi(page)" },
+
+  "_comment_macro_metrics": [
+    "macro-metrics, read off origin/main@89053e6 — nothing invented, same rule as above.",
+    "",
+    "DELIBERATELY ABSENT, each an honest refusal rather than a gap:",
+    "  link:Presets / link:Compare / link:Indicators — the AC says 'anchor links';",
+    "    StickyNav.tsx renders <button onClick={scrollIntoView}>. Binding these to the",
+    "    buttons would let the corpus absorb the divergence, which is the Gherkin failure.",
+    "  ratio:Errored, ratio:OneErrored — macro-metrics has ZERO .spec.ts files, so no",
+    "    route-mock helper exists to bind a `given` to. Refuse, do not invent one.",
+    "  button:Range1y … button:RangeMax — these have PERFECT accessible names ('1y' …",
+    "    'Max'). They are absent because NINE PresetCards each render all six, so the",
+    "    noun names 9 elements and any locator is ambiguous under Playwright strict mode.",
+    "    The notation has no cardinality; this is where that stops being a nit.",
+    "  card:<any one preset card> — PresetCard's root is role='button' with NO accessible",
+    "    name (its text is dynamic title/value), so a single card cannot be addressed."
+  ],
+
+  "page:MacroHome":            { "route": "/macro-metrics/" },
+
+  "heading:PresetRatios":      { "role": "heading", "name": "Preset Ratios" },
+  "heading:CustomComparison":  { "role": "heading", "name": "Custom Comparison" },
+  "heading:MacroIndicators":   { "role": "heading", "name": "Macro Indicators" },
+
+  "region:Presets":            { "locator": "locator('#presets')" },
+  "region:Compare":            { "locator": "locator('#compare')" },
+  "region:Indicators":         { "locator": "locator('#indicators')" },
+
+  "combobox:Numerator":        { "role": "combobox", "name": "Numerator" },
+  "combobox:Denominator":      { "role": "combobox", "name": "Denominator" },
+  "option:Gold":               { "role": "option", "name": "Gold", "exact": true },
+  "option:UsCpi":              { "role": "option", "name": "US CPI" },
+
+  "button:Swap":               { "role": "button", "name": "Swap" },
+  "button:TryAgain":           { "role": "button", "name": "Try again" }
 }

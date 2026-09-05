@@ -96,6 +96,7 @@ behaviour BEH-DATE-1 "The client's local calendar day is stored verbatim as YYYY
 behaviour BEH-SEED-1 "First run is not empty — a starter set of habits is seeded exactly once"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:EnsureSeeded_creates_the_starter_set_once
   review unreviewed
+  serves BEH-TODAY-1
   actor owner
   when opens page:Today
   then sees region:HabitList
@@ -104,26 +105,40 @@ behaviour BEH-SEED-1 "First run is not empty — a starter set of habits is seed
 behaviour BEH-ORDER-1 "A newly created habit is appended to the end of the display order"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:Create_appends_to_the_end_of_the_order
   review unreviewed
+  serves BEH-TODAY-1
   actor owner
   contract POST /api/habits places the new habit last in sortOrder
 
 behaviour BEH-ARCHIVE-1 "An archived habit disappears from the list but stays retrievable by id"
   source inferred backend/Balenthiran.Habits.Tests/HabitApiTests.cs:Archive_hides_the_habit_but_keeps_it_retrievable
   review unreviewed
+  serves BEH-MANAGE-1
   actor owner
   contract DELETE /api/habits/{id} archives rather than deletes
   contract GET /api/habits omits the archived habit
   contract GET /api/habits/{id} still returns it
 
+# NO `serves` LINE, ON PURPOSE — and this is the whole point of his frontend-first
+# answer. MVP 4 is "add/edit/archive habits"; nothing in DESIGN.md describes a
+# screen that ever SHOWS an archived habit. So `?includeArchived=true` exists to
+# satisfy no display. Either the Manage screen needs an "archived" view that the
+# design forgot to state, or the flag should go. Kit will not pick.
 behaviour BEH-ARCHIVE-2 "Archived habits can be asked for explicitly"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked
   review unreviewed
   actor owner
   contract GET /api/habits takes a flag that includes archived habits
+  asks "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?"
+  option "Add the view" "DESIGN.md MVP 4 gains an archived view. The flag earns a documented reason to exist and the frontend gets something to build. More surface on an app whose screens are not built yet."
+  option "Delete the flag" "GetAll stops taking it and one backend test goes with it. Archived habits stay retrievable by id (BEH-ARCHIVE-1), so nothing is lost — but un-archiving through the UI becomes a new decision if you ever want it."
+  recommend "Add the view" "Archiving is already a one-way door in the UI: DELETE archives rather than deletes, so a habit archived by mistake is reachable from no documented screen. The flag is not spare surface — it is the missing half of a capability MVP 4 already promises."
+  against "MVP 4 promises archiving, not un-archiving, and none of the three screens exists yet — this adds scope to an app whose Today screen is not built. Deleting the flag costs one test, and the day you want the view you write it then against a design that states it. Keeping unused surface because it might be needed is exactly how an API grows features nobody asked for."
 
 behaviour BEH-STREAK-1 "Today counts as a grace day — an unlogged today does not break the streak"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_treats_today_as_a_grace_day_when_not_yet_done
   review unreviewed
+  serves BEH-TODAY-2
+  serves BEH-HISTORY-1
   actor owner
   given habit:BooleanSeeded
   when opens page:Today
@@ -133,33 +148,58 @@ behaviour BEH-STREAK-1 "Today counts as a grace day — an unlogged today does n
 behaviour BEH-STREAK-2 "A streak stops at the first missed day"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_stops_at_the_first_gap
   review unreviewed
+  serves BEH-HISTORY-1
   actor owner
   contract the current streak ends at the first incomplete day before today
 
 behaviour BEH-STREAK-3 "Longest streak ignores duplicate and out-of-order dates"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:LongestStreak_ignores_duplicate_and_unordered_dates
   review unreviewed
+  serves BEH-HISTORY-1
   actor owner
   contract duplicate and unordered entry dates do not inflate the longest streak
 
 behaviour BEH-ENTRY-1 "Logging the same habit twice on one day overwrites rather than appends"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:UpsertEntry_inserts_then_overwrites_the_same_day
   review unreviewed
+  serves BEH-TODAY-2
+  serves BEH-TODAY-4
   actor owner
   contract PUT /api/entries is an upsert keyed on (habitId, date)
 
-behaviour BEH-HISTORY-2 "The history window length is requested by the caller, not fixed at 30"
-  source inferred backend/Balenthiran.Habits.Tests/HabitApiTests.cs:History_returns_a_grid_of_the_requested_length
-  review unreviewed
+# CORRECTED SINCE #3. This was filed as an inference that contradicted the doc.
+# It is neither: DESIGN.md's Architecture section documents the parameter, so the
+# behaviour is DEFINED — and what the code and the doc actually disagree about is
+# the parameter's NAME. The doc says `?days=30`; HabitRoutes.cs:68 binds
+# `int historyDays = 30`. A frontend written from the design document would send
+# `?days=7`, get no error, and silently render 30 days. Nothing in the repo
+# catches that: the backend test calls the handler, not the query string.
+behaviour BEH-HISTORY-2 "The history window length is requested by the caller, defaulting to 30"
+  source defined docs/DESIGN.md#architecture-api
   actor owner
-  contract GET /api/habits/{id}/history takes a days parameter
+  contract GET /api/habits/{id}/history takes a window-length parameter defaulting to 30
+
+behaviour BEH-HISTORY-3 "The history window parameter is named historyDays, not days"
+  source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:68
+  review unreviewed
+  serves BEH-HISTORY-1
+  actor owner
+  contract the query parameter is `historyDays`, and `?days=` is silently ignored
 
 behaviour BEH-REORDER-1 "Habits can be reordered as a whole list in one call"
   source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:ReorderHabits
   review unreviewed
+  serves BEH-MANAGE-1
   actor owner
   contract PUT /api/habits/reorder rewrites every sort position
 
+# NO `serves` LINE either, and it is a DIFFERENT case from BEH-ARCHIVE-2 — the
+# report says "nothing documented displays it" and stops there deliberately,
+# because the two need opposite answers. This is inherited web-template
+# behaviour, not habits surface: it is real and worth keeping, and what is
+# missing is a documented error state on the Today screen for the frontend to
+# render it into. Two behaviours can share a finding and not share a fix; a tool
+# that collapsed them into one recommendation would be wrong half the time.
 behaviour BEH-ERROR-1 "An unknown habit is a 404 carrying a machine-readable error code"
   source inferred backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code
   review unreviewed
@@ -167,6 +207,11 @@ behaviour BEH-ERROR-1 "An unknown habit is a 404 carrying a machine-readable err
   contract GET, PUT, DELETE and history for an unknown habit id all return 404
   contract the body is ProblemDetails and carries an error code
   contract an unexpected exception is a 500 that exposes nothing
+  asks "Nothing documented displays an error. Should DESIGN.md gain an error state the frontend renders these into, or should the machine-readable code go and a status code be the whole contract?"
+  option "Document the error state" "DESIGN.md gains a row saying what each screen shows when a habit 404s and when the API 500s. The error code earns a purpose — the frontend maps code to copy. Costs a design edit now, and commits three screens that do not exist yet to per-code messages."
+  option "Drop the code, keep the status" "ProblemDetails stays, the bespoke code goes, and one backend test simplifies. The frontend shows one generic failure. You lose the ability to tell 'this habit was archived' apart from 'that id was never real' without adding the code back later."
+  recommend "Document the error state" "A 404 here is not an exotic path — it is a direct consequence of A5. DELETE archives rather than deletes, so any list the client is holding can name an id the backend now refuses. Undocumented means the frontend author invents the behaviour at the keyboard, which is the thing this corpus exists to stop."
+  against "A6 says single user, and a single user on a single device reaches that stale-id race close to never — so the case above is largely hypothetical, and it is being used to add scope to an app whose Today screen is not built. There is also a cheaper middle this question does not offer: document ONE generic error state, leave the code in the payload unconsumed, and decide per-code copy on the day a second code actually distinguishes something. Picking the full version now spends design effort on branches that may never be rendered."
 
 
 # ═══ THE UNKNOWNS MECHANISM, ON REAL MATERIAL ═══
@@ -185,24 +230,37 @@ behaviour BEH-COMPLETE-1 "Completion is defined per habit type"
   contract numeric habits without a target complete when any value is entered
 
 # ─────────────────────────────────────────────────────────────────────────────
-# A DELIBERATE CONFLICT, LEFT IN.
+# A DELIBERATE CONFLICT, LEFT IN — AND CORRECTED SINCE #3.
 #
-# docs/DESIGN.md#mvp-5 says the history grid is "30-day". The shipped route takes
-# a caller-supplied `days` parameter (BEH-HISTORY-2, from
-# History_returns_a_grid_of_the_requested_length). Those are two different
-# claims about the same slot, and the corpus should SAY so rather than quietly
-# prefer one. This is the structural-conflict case James described as "this
-# conflicts with a previous behaviour, supersede?" — it needs no LLM; it falls
-# out of the symbol table as a Map collision with both sides named.
+# #3 reported this as doc-vs-code: "DESIGN.md promises a 30-day grid, the shipped
+# route takes a caller-supplied window". Checked line by line, that is WRONG in
+# the direction that made it sound better. The route is
+# `int historyDays = 30` (HabitRoutes.cs:68) — caller-supplied with a default of
+# 30, which satisfies "30-day grid" — and DESIGN.md's own Architecture section
+# already documents `GET /api/habits/{id}/history?days=30`.
+#
+# So both sides are DEFINED, in the same document, three sections apart: MVP 5
+# fixes the window, Architecture parameterises it. That is a smaller drama and a
+# better finding, because spec-vs-spec is the one axis Kiro's spec-to-property
+# testing does not cover — it measures spec against code.
+#
+# Kit's job here is to name the collision, not to resolve it. A default of 30 may
+# be exactly what he meant; it may also be how a "30-day grid" quietly becomes a
+# 7-day one. Both sides are printed; the choice is his.
 # ─────────────────────────────────────────────────────────────────────────────
 
-behaviour BEH-WINDOW-DEFINED "The history window is 30 days"
+behaviour BEH-WINDOW-MVP "The history window is 30 days"
   source defined docs/DESIGN.md#mvp-5
   actor owner
   provides region:CompletionGrid.days = 30
 
-behaviour BEH-WINDOW-INFERRED "The history window is whatever the caller asks for"
-  source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:GetHabitHistory
-  review unreviewed
+behaviour BEH-WINDOW-API "The history window is whatever the caller asks for"
+  source defined docs/DESIGN.md#architecture-api
   actor owner
   provides region:CompletionGrid.days = caller-supplied
+  cites BEH-HISTORY-3
+  asks "The two sides only contradict each other on paper — the route is caller-supplied DEFAULTING to 30, which satisfies both. The real collision underneath is the NAME: DESIGN.md documents ?days=30, the route binds ?historyDays. Which one is the contract the frontend gets built against?"
+  option "Rename the code to days" "HabitRoutes.cs:68 binds `int days = 30` and HabitApiTests.cs:182 follows. A frontend written from DESIGN.md then works. It is a breaking query-parameter change to a route, and the generated API client needs regenerating."
+  option "Rename the design to historyDays" "DESIGN.md:83 becomes ?historyDays=30. No code moves, no client regenerates, nothing can break. The document a human and an assistant read to build the screen gets the uglier of the two names."
+  recommend "Rename the code to days" "This is the cheapest it will ever be: the history screen is habits#13, unbuilt, so there is no consumer to break today and exactly one after it lands. And your own frontend-first rule points this way — the parameter is named by what the screen asks for, not by a handler's local variable. The response body already returns a `days` array, so ?days=7 returning seven days reads as one idea rather than two."
+  against "Nothing is actually broken right now: the default is 30 either way, so the only caller that gets hurt is one written from the doc that also passes the parameter, and none exists. Editing one line of prose is a strictly smaller change than editing a route, a test and a regenerated client, and it carries no chance of breaking a deploy. `historyDays` is also the more explicit name at the call site — `?days` sitting next to a `days` array in the response can read as though it filters that field rather than sizing it. And 'rename it now while it is free' is the argument that gets made immediately before the first consumer appears."
