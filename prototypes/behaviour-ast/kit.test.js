@@ -16,9 +16,22 @@ const assert = require('assert');
 const { parse, resolve, generate } = require('./kit');
 
 let pass = 0, fail = 0;
+
+// Async tests go through the SAME helper, deliberately. `ui.js` needs a real
+// listening socket to be tested at all, and a separate `atest(...)` would be
+// invisible to `testTitles` — the reader keys on `test(`/`it(` — so every async
+// test would vanish from the count, `check.js` would see a mapping naming a
+// title it cannot find, and the stage-0 gate would go red for a reason that has
+// nothing to do with the change. One helper, one name, one reader.
+const pending = [];
 const test = (name, fn) => {
-  try { fn(); pass++; console.log(`  ok   ${name}`); }
-  catch (e) { fail++; console.log(`  FAIL ${name}\n       ${e.message}`); }
+  const ok = () => { pass++; console.log(`  ok   ${name}`); };
+  const no = (e) => { fail++; console.log(`  FAIL ${name}\n       ${e.message}`); };
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') { pending.push(result.then(ok, no)); return; }
+    ok();
+  } catch (e) { no(e); }
 };
 
 const BIND = {
@@ -750,10 +763,35 @@ const fixture = (files) => {
   }
   return dir;
 };
+// Async-aware, and therefore re-entrancy-aware. Two things, learned in that
+// order:
+//
+//   1. An `fn` returning a promise must stay silenced until it SETTLES. A plain
+//      try/finally restores the moment the promise is handed back, which is
+//      before the function has written anything.
+//   2. Once (1) is true, two async `quiet` calls OVERLAP — the second starts
+//      while the first is still pending. A version that saves `console.log` on
+//      entry then saves the first one's STUB, and restoring it silences the
+//      suite permanently. The symptom is not a failure: the run simply stops
+//      printing, ends at exit 0, and the tally never appears.
+//
+// So the real console is captured once and the depth counter decides when to
+// put it back.
+const REAL_LOG = console.log;
+const REAL_ERR = console.error;
+let quietDepth = 0;
 const quiet = (fn) => {
-  const log = console.log, err = console.error;
+  const restore = () => {
+    if (--quietDepth === 0) { console.log = REAL_LOG; console.error = REAL_ERR; }
+  };
+  quietDepth++;
   console.log = console.error = () => {};
-  try { return fn(); } finally { console.log = log; console.error = err; }
+  try {
+    const result = fn();
+    if (result && typeof result.then === 'function') return result.finally(restore);
+    restore();
+    return result;
+  } catch (e) { restore(); throw e; }
 };
 
 test('exit 2 when there is no corpus to check — could-not-look is not green', () => {
@@ -1260,7 +1298,12 @@ test('a missing mapping is unavailable, not zero-covered', () => {
 test('CONTROL: with a repo AND a mapping, coverage is available and real', () => {
   const p = proj.project('kit', { repo: pathx.join(__dirname, '..', '..') });
   assert.strictEqual(p.coverage.available, true);
-  assert.strictEqual(p.coverage.covered.length, 10);
+  // Against the corpus's own size rather than a literal. A literal here was 10,
+  // and adding four behaviours to kit.beh failed this control for a reason that
+  // had nothing to do with the rule it guards. `> 0` keeps it from passing
+  // vacuously on an empty read, which is the thing the literal was really for.
+  assert.ok(p.coverage.covered.length > 0);
+  assert.strictEqual(p.coverage.covered.length, p.behaviours.length);
   assert.deepStrictEqual(p.coverage.uncovered, []);
   assert.ok(/NOT that the test asserts/.test(p.coverage.proves), 'the caveat must travel IN the payload');
 });
@@ -1299,5 +1342,147 @@ test("kit's own shipped mapping projects with no errors, metadata keys and all",
   assert.deepStrictEqual(p.coverage.errors, [], p.coverage.errors.join('; '));
 });
 
-console.log(`\n${pass} passed, ${fail} failed\n`);
-process.exit(fail ? 1 : 0);
+console.log('\n── ui (the read API) ──');
+
+const ui = require('./ui.js');
+
+// A fixture corpus directory, so the routing tests do not depend on which
+// corpora happen to be committed.
+const uiDir = fixture({
+  'alpha.beh': 'behaviour BEH-A "alpha does a thing"\n  actor engineer\n  when opens page:Home\n',
+  'beta.beh': 'behaviour BEH-B "beta does another"\n  actor engineer\n  when opens page:Home\n',
+});
+
+test('lists every corpus in the directory, and only those', () => {
+  assert.deepStrictEqual(ui.corpora(uiDir), ['alpha', 'beta']);
+});
+
+test('a write verb never reaches a handler — decision 2 is open', () => {
+  // Not "does not write" — cannot. A doc saying the UI is read-only and a
+  // server that refuses every write verb are different assurances.
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    const r = ui.route(method, '/api/projects', { dir: uiDir });
+    assert.strictEqual(r.status, 405, `${method} was not refused`);
+    assert.match(r.body.reason, /decision 2/);
+  }
+});
+
+test('GET is not refused — the control for the rule above', () => {
+  // Without this, a server that refused EVERYTHING would pass the test above.
+  assert.strictEqual(ui.route('GET', '/api/projects', { dir: uiDir }).status, 200);
+});
+
+test('a traversal in the app name is a 404, not a read outside the corpus dir', () => {
+  // Two different refusals, and both matter. A raw `../` never matches the
+  // route pattern at all; a PERCENT-ENCODED one does — it is a single path
+  // segment — so it reaches the name check and has to be refused there. Testing
+  // only the first would leave the case that actually needs the rule uncovered.
+  for (const name of ['../../etc/passwd', '..']) {
+    const r = ui.route('GET', `/api/projects/${name}`, { dir: uiDir });
+    assert.strictEqual(r.status, 404, `${name} was not refused`);
+  }
+
+  const encoded = ui.route('GET', '/api/projects/%2e%2e%2f%2e%2e%2fetc%2fpasswd', { dir: uiDir });
+  assert.strictEqual(encoded.status, 404);
+  assert.strictEqual(encoded.body.error, 'no-such-project');
+});
+
+test('a real app name is served — the control for the traversal rule', () => {
+  const r = ui.route('GET', '/api/projects/alpha', { dir: uiDir });
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.behaviours[0].id, 'BEH-A');
+});
+
+test('unavailable coverage is null in the list, never zero', () => {
+  // project.js's rule, carried through the summary. A UI that cannot tell "no
+  // mapping exists" from "nothing is covered" renders the second, and the
+  // second is an alarm.
+  const r = ui.route('GET', '/api/projects', { dir: uiDir });
+  const alpha = r.body.projects.find((p) => p.app === 'alpha');
+  assert.strictEqual(alpha.coverage.available, false);
+  assert.strictEqual(alpha.coverage.covered, null);
+  assert.ok(alpha.coverage.reason, 'an unavailable coverage must say why');
+});
+
+test('available coverage reports a number — the control for null-not-zero', () => {
+  // kit's own corpus against kit's own repo: a mapping exists, so `covered` is
+  // a count. Without this, a summary that reported null unconditionally would
+  // pass the test above.
+  const s = ui.summary('kit', { dir: pathx.join(__dirname, 'behaviours'), repos: null });
+  const withRepo = ui.summary('kit', {
+    dir: pathx.join(__dirname, 'behaviours'),
+    repos: pathx.join(__dirname, '..', '..', '..'),
+  });
+  assert.strictEqual(s.coverage.available, false, 'no repos dir must be unavailable');
+  assert.strictEqual(withRepo.coverage.available, true, 'kit beside its own repo must be available');
+  assert.ok(withRepo.coverage.covered > 0);
+});
+
+test('a corpus that will not parse is reported as an error, not as zero behaviours', () => {
+  const broken = fixture({ 'broken.beh': 'when opens page:Home\n' });
+  const r = ui.route('GET', '/api/projects', { dir: broken });
+  assert.strictEqual(r.body.projects.length, 1);
+  assert.ok(r.body.projects[0].error, 'a broken corpus must carry an error');
+  assert.strictEqual(r.body.projects[0].behaviours, undefined);
+});
+
+test('an unknown route is a 404 naming the path, not an empty 200', () => {
+  const r = ui.route('GET', '/api/nope', { dir: uiDir });
+  assert.strictEqual(r.status, 404);
+  assert.match(r.body.reason, /\/api\/nope/);
+});
+
+test('main exits 2 when there are no corpora, rather than serving an empty list', async () => {
+  const empty = fixture({ 'notes.md': 'no corpora here\n' });
+  assert.strictEqual(await quiet(() => ui.main(['--dir', empty])), 2);
+});
+
+test('main exits 2 on a port that is not a port', async () => {
+  assert.strictEqual(await quiet(() => ui.main(['--dir', uiDir, '--port', 'banana'])), 2);
+});
+
+// ── the delivery, over a real socket ────────────────────────────────────────
+// The tests above drive `route()`, which is a function. A handler returning the
+// right object and a server delivering it are different claims, and only the
+// second is what a browser meets ([[test-the-delivery-not-just-the-value]]).
+
+const get = (port, path) => new Promise((resolve, reject) => {
+  require('http').get({ host: '127.0.0.1', port, path }, (res) => {
+    let body = '';
+    res.on('data', (c) => { body += c; });
+    res.on('end', () => resolve({ status: res.statusCode, body }));
+  }).on('error', reject);
+});
+
+test('a real listening server answers /api/projects with the corpus list', async () => {
+  const server = await ui.serve({ dir: uiDir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await get(port, '/api/projects');
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(
+      JSON.parse(res.body).projects.map((p) => p.app),
+      ['alpha', 'beta'],
+    );
+  } finally {
+    server.close();
+  }
+});
+
+test('the server binds the loopback interface and not every interface', async () => {
+  // The default is a decision: 0.0.0.0 would publish every corpus in the tree,
+  // and the absolute path of every repo beside it, to anything reaching the
+  // host. Asserted on the socket rather than on the argument, because the
+  // argument is what a refactor drops.
+  const server = await ui.serve({ dir: uiDir, port: 0 });
+  try {
+    assert.strictEqual(server.address().address, '127.0.0.1');
+  } finally {
+    server.close();
+  }
+});
+
+Promise.all(pending).then(() => {
+  console.log(`\n${pass} passed, ${fail} failed\n`);
+  process.exit(fail ? 1 : 0);
+});

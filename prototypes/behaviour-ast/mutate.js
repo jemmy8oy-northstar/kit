@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -250,6 +250,23 @@ MUTANTS.push(
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.
   // The rule is mutated where it actually lives.
+);
+
+// ui (docs/design/ui.md). Two of these four are security properties, and a
+// security property that is only asserted in a comment is a wish. The other two
+// are the read model's honesty rules surviving the trip through the transport.
+MUTANTS.push(
+  ['a write verb reaches a handler while decision 2 is still open',
+    "if (method !== 'GET') {", 'if (false) {', 'ui.js'],
+  ['the server binds every interface, publishing every corpus on the network',
+    "const host = opts.host ?? DEFAULT_HOST;", "const host = opts.host ?? '0.0.0.0';", 'ui.js'],
+  ['an app name is joined to a path instead of looked up, so ../ traverses',
+    'if (!known.includes(app)) {', 'if (false) {', 'ui.js'],
+  ['the list reports unavailable coverage as zero covered',
+    ': { available: false, covered: null, uncovered: null, reason: cov.reason },',
+    ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
+  ['a corpus that will not parse is listed as an app with no behaviours',
+    'if (p.fatal) {', 'if (false) {', 'ui.js'],
 );
 
 let killed = 0;
