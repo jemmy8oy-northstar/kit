@@ -128,7 +128,7 @@ the contradiction and the gap measurement are all true under either option.
 
 ```
 node prototypes/behaviour-ast/kit.js james-habits    # the numbers above
-node prototypes/behaviour-ast/kit-test.js            # 27 passed
+node prototypes/behaviour-ast/kit.test.js            # 27 passed
 ```
 
 The suite pins the contradiction, so it cannot silently stop being found; it also asserts every pilot

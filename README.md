@@ -35,7 +35,7 @@ falsifiable question: *can a behaviour tree generate a runnable test with no han
 
 ```
 node prototypes/behaviour-ast/kit.js        # generated tests + measurements
-node prototypes/behaviour-ast/kit-test.js   # 19 tests
+node prototypes/behaviour-ast/kit.test.js   # 19 tests
 ```
 
 Measured against snip-it's real `editor.spec.ts`: **8 behaviours → 28 generated lines, 22 byte-identical

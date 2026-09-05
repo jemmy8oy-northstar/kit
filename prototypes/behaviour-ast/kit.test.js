@@ -16,7 +16,7 @@ const assert = require('assert');
 const { parse, resolve, generate } = require('./kit');
 
 let pass = 0, fail = 0;
-const t = (name, fn) => {
+const test = (name, fn) => {
   try { fn(); pass++; console.log(`  ok   ${name}`); }
   catch (e) { fail++; console.log(`  FAIL ${name}\n       ${e.message}`); }
 };
@@ -38,28 +38,28 @@ const gen = (src, bindings = BIND) => {
 
 console.log('\n── parse ──');
 
-t('reads an id and a title', () => {
+test('reads an id and a title', () => {
   const [b] = parse('behaviour BEH-1 "does a thing"');
   assert.strictEqual(b.id, 'BEH-1');
   assert.strictEqual(b.title, 'does a thing');
 });
 
-t('a step outside a behaviour is an error, not silently dropped', () => {
+test('a step outside a behaviour is an error, not silently dropped', () => {
   assert.throws(() => parse('when opens page:Home'), /outside a behaviour/);
 });
 
-t('an unrecognised keyword is an error, not silently dropped', () => {
+test('an unrecognised keyword is an error, not silently dropped', () => {
   // A spec language that ignores what it does not understand is how a spec
   // becomes descriptive: the author believes a line is enforced and it is not.
   assert.throws(() => parse('behaviour B "t"\n  wibble page:Home'), /unrecognised keyword/);
 });
 
-t('a bare noun with no verb parses as a state precondition', () => {
+test('a bare noun with no verb parses as a state precondition', () => {
   const [b] = parse('behaviour B "t"\n  given transcription:Completed');
   assert.strictEqual(b.steps[0].verb, 'state');
 });
 
-t('holes and nouns are told apart on the same line', () => {
+test('holes and nouns are told apart on the same line', () => {
   const [b] = parse('behaviour B "t"\n  when fills form:Upload with ?fields');
   assert.deepStrictEqual(b.steps[0].holes.map((h) => h.slot), ['fields']);
   assert.deepStrictEqual(b.steps[0].refs.map((r) => `${r.kind}:${r.name}`), ['form:Upload']);
@@ -67,7 +67,7 @@ t('holes and nouns are told apart on the same line', () => {
 
 console.log('\n── resolve: the cross-behaviour symbol table ──');
 
-t('a hole is filled by a DIFFERENT behaviour', () => {
+test('a hole is filled by a DIFFERENT behaviour', () => {
   const { behaviours } = build(
     'behaviour A "a"\n  when fills form:Upload with ?fields\n' +
     'behaviour B "b"\n  provides form:Upload.fields = Email');
@@ -75,13 +75,13 @@ t('a hole is filled by a DIFFERENT behaviour', () => {
   assert.strictEqual(behaviours[0].open.length, 0);
 });
 
-t('an unfilled hole stays OPEN rather than being quietly dropped', () => {
+test('an unfilled hole stays OPEN rather than being quietly dropped', () => {
   const { behaviours } = build('behaviour A "a"\n  when fills form:Upload with ?fields');
   assert.strictEqual(behaviours[0].filled.length, 0);
   assert.strictEqual(behaviours[0].open[0].key, 'form:Upload.fields');
 });
 
-t('two behaviours agreeing is agreement, not a conflict', () => {
+test('two behaviours agreeing is agreement, not a conflict', () => {
   const { conflicts, symbols } = build(
     'behaviour A "a"\n  provides form:U.fields = Email\n' +
     'behaviour B "b"\n  provides form:U.fields = Email');
@@ -89,7 +89,7 @@ t('two behaviours agreeing is agreement, not a conflict', () => {
   assert.deepStrictEqual(symbols.get('form:U.fields').contributors, ['A', 'B']);
 });
 
-t('two behaviours disagreeing IS a conflict, with both sides named', () => {
+test('two behaviours disagreeing IS a conflict, with both sides named', () => {
   const { conflicts } = build(
     'behaviour A "a"\n  provides form:U.fields = Email\n' +
     'behaviour B "b"\n  provides form:U.fields = Phone');
@@ -100,21 +100,21 @@ t('two behaviours disagreeing IS a conflict, with both sides named', () => {
 
 console.log('\n── generate: the refusals, which are the design claim ──');
 
-t('CONTROL: a fully bound behaviour generates', () => {
+test('CONTROL: a fully bound behaviour generates', () => {
   const [{ code, stats }] = gen('behaviour A "a"\n  when opens page:Home\n  when activates button:Go');
   assert.match(code, /page\.goto\("\.\/"\)/);
   assert.match(code, /getByRole\("button", \{ name: "Go" \}\)\.click\(\)/);
   assert.strictEqual(stats.ungenerated, 0);
 });
 
-t('an unbound noun is REFUSED, and the missing noun is named', () => {
+test('an unbound noun is REFUSED, and the missing noun is named', () => {
   const [{ code, missing, stats }] = gen('behaviour A "a"\n  when activates button:Nope');
   assert.match(code, /UNGENERATED/);
   assert.deepStrictEqual(missing, ['button:Nope']);
   assert.strictEqual(stats.ungenerated, 1);
 });
 
-t('an unbound noun never produces a guessed locator', () => {
+test('an unbound noun never produces a guessed locator', () => {
   // The failure being prevented: emitting getByRole('button', {name: 'Nope'})
   // from the noun's own name would produce a test that runs and asserts nothing
   // about the app the spec describes.
@@ -122,7 +122,7 @@ t('an unbound noun never produces a guessed locator', () => {
   assert.ok(!/getByRole/.test(code), `guessed a locator: ${code}`);
 });
 
-t('an unsupplied ROUTE PARAM is refused — the real bug this caught', () => {
+test('an unsupplied ROUTE PARAM is refused — the real bug this caught', () => {
   // First version stripped `:id` and emitted `./editor/`: a test that runs,
   // navigates to the wrong page, and looks correct in review.
   const [{ code }] = gen('behaviour A "a"\n  when opens page:Editor');
@@ -130,14 +130,14 @@ t('an unsupplied ROUTE PARAM is refused — the real bug this caught', () => {
   assert.ok(!/goto/.test(code), `emitted a truncated route: ${code}`);
 });
 
-t('CONTROL: the same route generates once the param is provided', () => {
+test('CONTROL: the same route generates once the param is provided', () => {
   const [a] = gen(
     'behaviour A "a"\n  when opens page:Editor\n' +
     'behaviour B "b"\n  provides page:Editor.id = abc');
   assert.match(a.code, /page\.goto\("\.\/editor\/abc"\)/);
 });
 
-t('a hole filled from elsewhere actually GENERATES, not just reports', () => {
+test('a hole filled from elsewhere actually GENERATES, not just reports', () => {
   // Reporting the fill without using it would make the whole mechanism
   // decorative — it would look resolved and emit nothing.
   const [a] = gen(
@@ -146,7 +146,7 @@ t('a hole filled from elsewhere actually GENERATES, not just reports', () => {
   assert.match(a.code, /getByLabel\("Email"\)/);
 });
 
-t('a wire contract is never generated, and never uncounted', () => {
+test('a wire contract is never generated, and never uncounted', () => {
   const [{ code, stats }] = gen('behaviour A "a"\n  contract POST /api/x is sent once');
   assert.match(code, /CONTRACT \(not derivable/);
   assert.strictEqual(stats.contract, 1);
@@ -154,7 +154,7 @@ t('a wire contract is never generated, and never uncounted', () => {
   assert.strictEqual(stats.ungenerated, 0);
 });
 
-t('the test name carries the behaviour id, which is what coverage greps for', () => {
+test('the test name carries the behaviour id, which is what coverage greps for', () => {
   const [{ code }] = gen('behaviour BEH-9 "a"');
   assert.match(code, /\[BEH-9\]/);
 });
@@ -163,14 +163,14 @@ console.log('\n── coverage: the only part that can go red ──');
 
 const { coverage } = require('./kit');
 
-t('a behaviour no test names is uncovered', () => {
+test('a behaviour no test names is uncovered', () => {
   const bs = parse('behaviour BEH-1 "a"\nbehaviour BEH-2 "b"');
   const r = coverage(bs, ['test("[BEH-1] a", () => {})']);
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-2']);
   assert.deepStrictEqual(r.covered.map((b) => b.id), ['BEH-1']);
 });
 
-t('a test naming a behaviour that no longer exists is an orphan', () => {
+test('a test naming a behaviour that no longer exists is an orphan', () => {
   // The other direction of rot: the behaviour was deleted or renamed and the
   // test kept passing, still claiming to cover it.
   const r = coverage(parse('behaviour BEH-1 "a"'), ['test("[BEH-7] gone", () => {})']);
@@ -181,7 +181,7 @@ console.log('\n── adjudication: "default included but marked unreviewed" (Ja
 
 const { adjudication } = require('./kit');
 
-t('an inference defaults to unreviewed WITHOUT anyone writing review', () => {
+test('an inference defaults to unreviewed WITHOUT anyone writing review', () => {
   // The load-bearing one. He chose default-INCLUDE, so the only thing keeping a
   // machine guess from passing as a requirement is that it arrives unreviewed
   // by default. If this ever defaults to approved, the mechanism is decorative.
@@ -190,7 +190,7 @@ t('an inference defaults to unreviewed WITHOUT anyone writing review', () => {
   assert.strictEqual(b.review.state, 'unreviewed');
 });
 
-t('a behaviour with no source line is defined and approved — old corpora still parse', () => {
+test('a behaviour with no source line is defined and approved — old corpora still parse', () => {
   // The positive control for the test above: a version that marked EVERYTHING
   // unreviewed would pass it and be useless. Silence means a human wrote it.
   const [b] = parse('behaviour BEH-1 "a"\n  actor visitor');
@@ -198,12 +198,12 @@ t('a behaviour with no source line is defined and approved — old corpora still
   assert.strictEqual(b.review.state, 'approved');
 });
 
-t('an explicit review survives a later source line', () => {
+test('an explicit review survives a later source line', () => {
   const [b] = parse('behaviour BEH-1 "a"\n  review approved\n  source inferred tests/X.cs:n');
   assert.strictEqual(b.review.state, 'approved', 'an adjudicated inference must not revert to unreviewed');
 });
 
-t('a denial without a correction is refused', () => {
+test('a denial without a correction is refused', () => {
   // His #68 point: "on a deny a required indication of what correct behaviour
   // actually looks like should take place". A bare denial deletes a line; a
   // denial with a correction compounds into the corpus.
@@ -211,11 +211,11 @@ t('a denial without a correction is refused', () => {
   assert.doesNotThrow(() => parse('behaviour BEH-1 "a"\n  review denied streaks reset at midnight UTC'));
 });
 
-t('an unknown source origin is refused rather than silently ignored', () => {
+test('an unknown source origin is refused rather than silently ignored', () => {
   assert.throws(() => parse('behaviour BEH-1 "a"\n  source guessed'), /defined.*inferred/);
 });
 
-t('the never-adjudicated count counts only unreviewed INFERENCES', () => {
+test('the never-adjudicated count counts only unreviewed INFERENCES', () => {
   const bs = parse([
     'behaviour BEH-1 "human wrote this"',
     '  source defined docs/DESIGN.md#A1',
@@ -232,7 +232,7 @@ t('the never-adjudicated count counts only unreviewed INFERENCES', () => {
   assert.deepStrictEqual(a.approved.map((b) => b.id), ['BEH-3']);
 });
 
-t('a behaviour with no traceable ref is reported separately from an unreviewed one', () => {
+test('a behaviour with no traceable ref is reported separately from an unreviewed one', () => {
   // Worse than unreviewed: an approve/deny needs something to point AT six weeks
   // on, and a behaviour citing nothing cannot be checked against anything.
   const a = adjudication(parse('behaviour BEH-1 "a"\nbehaviour BEH-2 "b"\n  source defined docs/D.md#x'));
@@ -247,7 +247,7 @@ const { surface } = require('./kit');
 // catastrophe on a healthy corpus.
 const SERVED_BY = 'behaviour BEH-UI "screen" \n  source defined docs/D.md#1\n';
 
-t('an inferred behaviour that serves a documented one is not a finding', () => {
+test('an inferred behaviour that serves a documented one is not a finding', () => {
   const s = surface(build(SERVED_BY +
     'behaviour BEH-API "route"\n  source inferred code.cs:X\n  serves BEH-UI\n').behaviours);
   assert.deepStrictEqual(s.errors, []);
@@ -255,45 +255,45 @@ t('an inferred behaviour that serves a documented one is not a finding', () => {
   assert.deepStrictEqual(s.served.map((b) => b.id), ['BEH-API']);
 });
 
-t('an inferred behaviour serving nothing IS the finding', () => {
+test('an inferred behaviour serving nothing IS the finding', () => {
   const s = surface(build(SERVED_BY +
     'behaviour BEH-API "route"\n  source inferred code.cs:X\n').behaviours);
   assert.deepStrictEqual(s.unserved.map((b) => b.id), ['BEH-API']);
   assert.deepStrictEqual(s.errors, [], 'unserved is a report, not an error — it needs a human, not a fix');
 });
 
-t('a DEFINED behaviour serving nothing is not a finding (the control)', () => {
+test('a DEFINED behaviour serving nothing is not a finding (the control)', () => {
   const s = surface(build(SERVED_BY).behaviours);
   assert.deepStrictEqual(s.unserved.map((b) => b.id), [],
     'a documented behaviour is served, not serving — flagging it would flood the report');
 });
 
-t('a serves link to an id that does not exist breaks the build', () => {
+test('a serves link to an id that does not exist breaks the build', () => {
   const s = surface(build('behaviour BEH-API "route"\n  source inferred code.cs:X\n  serves BEH-GHOST\n').behaviours);
   assert.strictEqual(s.errors.length, 1);
   assert.match(s.errors[0], /BEH-GHOST, which is not in the corpus/);
 });
 
-t('an inference serving an inference breaks the build — the chain must reach a human', () => {
+test('an inference serving an inference breaks the build — the chain must reach a human', () => {
   const s = surface(build(
     'behaviour BEH-A "one"\n  source inferred code.cs:A\n' +
     'behaviour BEH-B "two"\n  source inferred code.cs:B\n  serves BEH-A\n').behaviours);
   assert.ok(s.errors.some((e) => /itself inferred/.test(e)));
 });
 
-t('a defined behaviour carrying a serves line breaks the build', () => {
+test('a defined behaviour carrying a serves line breaks the build', () => {
   const s = surface(build(SERVED_BY +
     'behaviour BEH-OTHER "x"\n  source defined docs/D.md#2\n  serves BEH-UI\n').behaviours);
   assert.ok(s.errors.some((e) => /is defined, so it is served rather than serving/.test(e)));
 });
 
-t('serves wants a behaviour id, not prose', () => {
+test('serves wants a behaviour id, not prose', () => {
   assert.throws(() => parse('behaviour BEH-A "a"\n  serves the today screen\n', 't.beh'), /serves wants a behaviour id/);
 });
 
 console.log('\n── the pilot corpus is real material, not a fixture ──');
 
-t('james-habits-app parses and its spec-vs-spec conflict is detected', () => {
+test('james-habits-app parses and its spec-vs-spec conflict is detected', () => {
   // The pilot's headline finding, pinned so it cannot silently stop being found.
   // CORRECTED SINCE #3: this is DEFINED-vs-DEFINED, not doc-vs-code. MVP 5 fixes
   // the window at 30; the Architecture section of the SAME document parameterises
@@ -324,7 +324,7 @@ t('james-habits-app parses and its spec-vs-spec conflict is detected', () => {
   assert.ok(a.inferred >= 10, 'the inferred half is the whole point of the pilot');
 });
 
-t('the pilot names exactly the two behaviours nothing documented displays', () => {
+test('the pilot names exactly the two behaviours nothing documented displays', () => {
   // His frontend-first answer, measured on real material. Pinning the IDENTITIES
   // rather than the count: a corpus that grew a third unserved behaviour would
   // still pass a `=== 2`, and the whole value of this report is which ones.
@@ -340,7 +340,7 @@ t('the pilot names exactly the two behaviours nothing documented displays', () =
   assert.ok(s.served.length >= 8, `expected most inferences to serve a screen, got ${s.served.length}`);
 });
 
-t('language-vocab is a different shape from habits, and the corpus says so', () => {
+test('language-vocab is a different shape from habits, and the corpus says so', () => {
   // The second pilot app James named on #68. Its value is the CONTRAST: habits
   // has a full backend and no frontend; vocab has neither, only a domain. If a
   // future change made the two corpora report the same shape, one of them would
@@ -388,7 +388,7 @@ const PACK = 'behaviour BEH-SCREEN "documented screen"\n  source defined docs/DE
   '  recommend "keep" "because the capability is half-promised already"\n' +
   '  against "it is scope on an app with no screens"\n';
 
-t('an unserved inference is a DECISION and a served one is a REVIEW', () => {
+test('an unserved inference is a DECISION and a served one is a REVIEW', () => {
   // The tier split is the whole ranking claim: the two sections buy different
   // amounts of a reader's attention, so a bug that flattened them would make the
   // sheet a form — the exact thing the adjudication count already failed to be.
@@ -401,7 +401,7 @@ t('an unserved inference is a DECISION and a served one is a REVIEW', () => {
   assert.strictEqual(qs.find((q) => q.id === 'BEH-FINE').tier, 'review');
 });
 
-t('a human can PROMOTE a routine-looking inference by writing asks on it', () => {
+test('a human can PROMOTE a routine-looking inference by writing asks on it', () => {
   // Mechanism sets the floor, not the ceiling: the tool cannot see that a
   // parameter's NAME is wrong. BEH-HISTORY-3 is the real case.
   const { behaviours, conflicts } = build(PACK +
@@ -410,14 +410,14 @@ t('a human can PROMOTE a routine-looking inference by writing asks on it', () =>
   assert.strictEqual(questions(behaviours, conflicts).find((q) => q.id === 'BEH-NAMED').tier, 'decision');
 });
 
-t('an adjudicated inference drops off the sheet entirely', () => {
+test('an adjudicated inference drops off the sheet entirely', () => {
   // Answering must REMOVE the question, or the sheet never shortens and working
   // through it produces no visible progress.
   const { behaviours, conflicts } = build(PACK.replace('review unreviewed', 'review approved'));
   assert.strictEqual(questions(behaviours, conflicts).some((q) => q.id === 'BEH-LOOSE'), false);
 });
 
-t('a decision with no question is refused', () => {
+test('a decision with no question is refused', () => {
   const { behaviours, conflicts } = build(
     'behaviour BEH-SCREEN "s"\n  source defined docs/DESIGN.md#1\n  when opens page:Home\n' +
     'behaviour BEH-LOOSE "nothing displays it"\n  source inferred code.cs:X\n  review unreviewed\n');
@@ -425,7 +425,7 @@ t('a decision with no question is refused', () => {
   assert.ok(errs.some((e) => e.includes('BEH-LOOSE') && e.includes('asks')), errs.join(' | '));
 });
 
-t('a recommendation with no counter-case is refused', () => {
+test('a recommendation with no counter-case is refused', () => {
   // The half a reader most needs and I am least inclined to write, so the gate
   // requires it rather than trusting me (his claude-code-bot#82 shape).
   const { behaviours, conflicts } = build(PACK.replace(/^  against .*\n/m, ''));
@@ -433,7 +433,7 @@ t('a recommendation with no counter-case is refused', () => {
   assert.ok(errs.some((e) => e.includes('advocacy')), errs.join(' | '));
 });
 
-t('a recommendation pointing at no option is refused', () => {
+test('a recommendation pointing at no option is refused', () => {
   // The rot case: an option gets relabelled and the recommendation quietly
   // starts naming nothing while still reading as a recommendation.
   const { behaviours, conflicts } = build(PACK.replace('recommend "keep"', 'recommend "kepe"'));
@@ -441,20 +441,20 @@ t('a recommendation pointing at no option is refused', () => {
   assert.ok(errs.some((e) => e.includes('not one of its options')), errs.join(' | '));
 });
 
-t('a one-option question is refused', () => {
+test('a one-option question is refused', () => {
   const { behaviours, conflicts } = build(PACK.replace(/^  option "drop" .*\n/m, ''));
   const errs = questionErrors(questions(behaviours, conflicts));
   assert.ok(errs.some((e) => e.includes('at least 2 options')), errs.join(' | '));
 });
 
-t('a complete pack passes the gate — the control for all four refusals above', () => {
+test('a complete pack passes the gate — the control for all four refusals above', () => {
   // Without this, a questionErrors() that returned an error unconditionally
   // would pass every refusal test in this section.
   const { behaviours, conflicts } = build(PACK);
   assert.deepStrictEqual(questionErrors(questions(behaviours, conflicts)), []);
 });
 
-t('a cited behaviour moves INTO the decision and out of the review list', () => {
+test('a cited behaviour moves INTO the decision and out of the review list', () => {
   // The double-ask this field was built for. The first real sheet asked which of
   // `days`/`historyDays` wins as D1, and separately asked him to tick
   // "the parameter is named historyDays" as a routine review — ticking the cheap
@@ -471,7 +471,7 @@ t('a cited behaviour moves INTO the decision and out of the review list', () => 
   assert.deepStrictEqual(qs.find((q) => q.id === 'BEH-LOOSE').cites.map((c) => c.id), ['BEH-EVIDENCE']);
 });
 
-t('a cites naming nothing is refused, not silently dropped', () => {
+test('a cites naming nothing is refused, not silently dropped', () => {
   // Worse than a broken link in prose: a typo here SUPPRESSES a behaviour from
   // the sheet, so the question disappears leaving no trace anywhere.
   const { behaviours, conflicts } = build(PACK.replace('  asks "keep', '  cites BEH-GHOST\n  asks "keep'));
@@ -479,7 +479,7 @@ t('a cites naming nothing is refused, not silently dropped', () => {
   assert.ok(errs.some((e) => e.includes('BEH-GHOST') && e.includes('silently drops')), errs.join(' | '));
 });
 
-t('cites wants a behaviour id, not prose', () => {
+test('cites wants a behaviour id, not prose', () => {
   // Found by a SURVIVED mutant, not by design: the id check was unexercised
   // because every test wrote a well-formed id. It is not redundant with the
   // dangling-cites gate — this fails at PARSE with a file:line, which is where a
@@ -488,7 +488,7 @@ t('cites wants a behaviour id, not prose', () => {
   assert.throws(() => build(PACK.replace('  asks "keep', '  cites the naming one\n  asks "keep')), /cites wants a behaviour id/);
 });
 
-t('the habits sheet renders, and its shape is the one he was handed', () => {
+test('the habits sheet renders, and its shape is the one he was handed', () => {
   // Against the REAL corpus, not a fixture: the sheet is an artefact he opens,
   // and every fixture I write is one I already believe.
   const fs = require('fs');
@@ -517,7 +517,7 @@ t('the habits sheet renders, and its shape is the one he was handed', () => {
   assert.ok(md.includes('HabitRoutes.cs:68'), 'the citation must be in the document, not just in the repo');
 });
 
-t('the committed sheet is byte-identical to what the generator produces now', () => {
+test('the committed sheet is byte-identical to what the generator produces now', () => {
   // The failure this exists for: someone answers a question, edits the corpus,
   // and the sheet in docs/ keeps asking it — or hand-edits the sheet and the
   // corpus never learns. Either way the artefact reads as current while being
@@ -537,22 +537,22 @@ t('the committed sheet is byte-identical to what the generator produces now', ()
 console.log('\n── reading an app\'s tests ──');
 const { testTitles, expectedTestCount } = require('./kit');
 
-t('a JS spec file yields one title per test()', () => {
+test('a JS spec file yields one title per test()', () => {
   const got = testTitles('a.spec.ts', "test('alpha', () => {});\nit('beta', async () => {});\n");
   assert.deepStrictEqual(got.map((g) => g.raw), ['alpha', 'beta']);
 });
 
-t('test.only / it.skip still count — a skipped test is a title, not an absence', () => {
+test('test.only / it.skip still count — a skipped test is a title, not an absence', () => {
   const got = testTitles('a.spec.ts', "test.only('alpha', () => {});\nit.skip('beta', () => {});\n");
   assert.deepStrictEqual(got.map((g) => g.raw), ['alpha', 'beta']);
 });
 
-t('a C# [Fact] yields its method name', () => {
+test('a C# [Fact] yields its method name', () => {
   const got = testTitles('T.cs', '    [Fact]\n    public void Does_A_Thing()\n    {\n    }\n');
   assert.deepStrictEqual(got.map((g) => g.raw), ['Does_A_Thing']);
 });
 
-t('a DisplayName overrides the method name', () => {
+test('a DisplayName overrides the method name', () => {
   const got = testTitles('T.cs', '    [Fact(DisplayName = "a nicer name")]\n    public void Does_A_Thing()\n');
   assert.deepStrictEqual(got.map((g) => g.raw), ['a nicer name']);
   assert.strictEqual(got[0].style, 'DisplayName');
@@ -562,7 +562,7 @@ t('a DisplayName overrides the method name', () => {
 // method lost every [Theory] with five or more cases — 7 tests across the pilot
 // repos, language-vocab under-read by 16%, silently. Eight rows here so a
 // six-line window cannot pass this by luck.
-t('a [Theory] with eight InlineData rows still finds its method', () => {
+test('a [Theory] with eight InlineData rows still finds its method', () => {
   const src = '    [Theory]\n' +
     '    // a comment in the middle, because they are there in real code\n' +
     Array.from({ length: 8 }, (_, i) => `    [InlineData(${i})]\n`).join('') +
@@ -570,12 +570,12 @@ t('a [Theory] with eight InlineData rows still finds its method', () => {
   assert.deepStrictEqual(testTitles('T.cs', src).map((g) => g.raw), ['Theory_Method']);
 });
 
-t('an attribute with no method after it yields nothing rather than grabbing the next one', () => {
+test('an attribute with no method after it yields nothing rather than grabbing the next one', () => {
   const src = '    [Fact]\n    private readonly int _notATest = 1;\n\n    [Fact]\n    public void Real_Test()\n';
   assert.deepStrictEqual(testTitles('T.cs', src).map((g) => g.raw), ['Real_Test']);
 });
 
-t('expectedTestCount counts a second way for BOTH ecosystems', () => {
+test('expectedTestCount counts a second way for BOTH ecosystems', () => {
   // It used to return null for JS, reasoning that a regex "counts occurrences
   // directly and has nothing to lose". The regex lost every `it.each` test and
   // invented one per test-shaped string literal, both silently, for as long as
@@ -584,7 +584,7 @@ t('expectedTestCount counts a second way for BOTH ecosystems', () => {
   assert.strictEqual(expectedTestCount('a.spec.ts', "test('x', () => {})"), 1);
 });
 
-t('a parameterised test is READ, not silently dropped — the real bug', () => {
+test('a parameterised test is READ, not silently dropped — the real bug', () => {
   // `it.each([...])('%s', fn)` puts the title after the table, so a regex
   // expecting a quote straight after the paren never reaches it. Measured over
   // 28 real JS test files in four repos: 6 tests vanished this way, and every
@@ -596,7 +596,7 @@ t('a parameterised test is READ, not silently dropped — the real bug', () => {
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
 });
 
-t('a .each table containing brackets INSIDE strings does not end the group early', () => {
+test('a .each table containing brackets INSIDE strings does not end the group early', () => {
   // The naive skip is a bracket counter. A table row like "]" or "(" is data,
   // and a counter that reads it as structure stops in the middle of the table
   // and then reads a fragment of data as the title.
@@ -604,7 +604,7 @@ t('a .each table containing brackets INSIDE strings does not end the group early
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['closes over %s']);
 });
 
-t('a .each table containing a NESTED CALL does not end the group early', () => {
+test('a .each table containing a NESTED CALL does not end the group early', () => {
   // The sibling test above puts the brackets inside strings, so the quote-skip
   // handles them and the depth counter is never exercised — a mutation removing
   // the counter survived it. Real tables contain real calls.
@@ -612,13 +612,13 @@ t('a .each table containing a NESTED CALL does not end the group early', () => {
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['computes %s']);
 });
 
-t('a .each tagged-template table is read too', () => {
+test('a .each tagged-template table is read too', () => {
   const src = 'it.each`\n  a | b\n  ${1} | ${2}\n`("$a plus $b", () => {});';
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['$a plus $b']);
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
 });
 
-t('a test-shaped STRING is not a test — the reason kit could not read itself', () => {
+test('a test-shaped STRING is not a test — the reason kit could not read itself', () => {
   // Kit's own suite is the suite of a test generator, so it is full of literals
   // like `['test("[BEH-1] a", () => {})']`. The old regex read 108 tests out of
   // 97 real ones; 11 phantoms, every one a fixture. A gate that miscounts its
@@ -628,13 +628,13 @@ t('a test-shaped STRING is not a test — the reason kit could not read itself',
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
 });
 
-t('a test-shaped line inside a COMMENT is not a test either', () => {
+test('a test-shaped line inside a COMMENT is not a test either', () => {
   const src = "// test('not this one', () => {})\ntest('the real one', () => {});";
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['the real one']);
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
 });
 
-t('a member call named .test() is not a declaration — the lookbehind', () => {
+test('a member call named .test() is not a declaration — the lookbehind', () => {
   // `\\b` matches straight after a dot, so `SOME_RE.test(x)` counted as a test.
   // Kit's own file has 16 of them: the second count came back 113 against 97
   // and would have refused a file that was completely fine.
@@ -643,7 +643,7 @@ t('a member call named .test() is not a declaration — the lookbehind', () => {
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['real']);
 });
 
-t('THE CONTROL: the two counts DISAGREE when a declaration is not at a statement start', () => {
+test('THE CONTROL: the two counts DISAGREE when a declaration is not at a statement start', () => {
   // The whole point of a second count is that it can contradict the first. The
   // reader keys on position; the count keys on lexical structure after strings
   // and comments are removed. A test declared after a semicolon on a shared
@@ -654,7 +654,7 @@ t('THE CONTROL: the two counts DISAGREE when a declaration is not at a statement
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 1);
 });
 
-t('nesting inside describe blocks still reads — indentation is allowed', () => {
+test('nesting inside describe blocks still reads — indentation is allowed', () => {
   const src = 'describe("g", () => {\n  it("indented", () => {});\n  await test("awaited", () => {});\n});';
   assert.deepStrictEqual(testTitles('a.spec.ts', src).map((t) => t.raw), ['indented', 'awaited']);
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 2);
@@ -670,14 +670,14 @@ const TITLES = [
   { file: 'b.spec.ts', raw: 'covers one' },
 ];
 
-t('a behaviour named by an existing test is covered', () => {
+test('a behaviour named by an existing test is covered', () => {
   const r = mapping(MB, { 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one' }] }, TITLES);
   assert.deepStrictEqual(r.covered.map((b) => b.id), ['BEH-1']);
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-2']);
   assert.deepStrictEqual(r.errors, []);
 });
 
-t('metadata keys beginning with _ are ignored, not treated as behaviours', () => {
+test('metadata keys beginning with _ are ignored, not treated as behaviours', () => {
   const r = mapping(MB, { _note: 'prose', 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one' }] }, TITLES);
   assert.deepStrictEqual(r.errors, []);
 });
@@ -685,7 +685,7 @@ t('metadata keys beginning with _ are ignored, not treated as behaviours', () =>
 // The four refusals below are the entire argument for option C — a mapping that
 // cannot rot loudly is just a second place for the truth to go stale. Each is
 // paired with the positive control above, which uses the same shape and passes.
-t('REFUSES a mapping naming a file that is not a test file in the app', () => {
+test('REFUSES a mapping naming a file that is not a test file in the app', () => {
   // Asserting the DIAGNOSIS, not just that something errored: without the file
   // check this still errors, via "no test titled" — the same failure dressed as
   // a renamed test, sending a reader to fix the wrong thing. Matching on the
@@ -697,14 +697,14 @@ t('REFUSES a mapping naming a file that is not a test file in the app', () => {
   assert.deepStrictEqual(r.covered, [], 'a broken entry must not also count as covered');
 });
 
-t('REFUSES a mapping naming a title that file does not have — the renamed-test case', () => {
+test('REFUSES a mapping naming a title that file does not have — the renamed-test case', () => {
   const r = mapping(MB, { 'BEH-1': [{ file: 'a.spec.ts', title: 'covers one, renamed' }] }, TITLES);
   assert.strictEqual(r.errors.length, 1);
   assert.ok(/renamed or deleted/.test(r.errors[0]), r.errors[0]);
   assert.deepStrictEqual(r.covered, []);
 });
 
-t('REFUSES a title that is ambiguous within its file, and says why', () => {
+test('REFUSES a title that is ambiguous within its file, and says why', () => {
   // Two tests with one name in one file: file+title cannot address either. This
   // is the measured limit of option C's key, not a hypothetical — and it must
   // read differently from "no such title", because the fix is different.
@@ -715,7 +715,7 @@ t('REFUSES a title that is ambiguous within its file, and says why', () => {
   assert.ok(!/renamed or deleted/.test(r.errors[0]), 'ambiguity must not be reported as a missing test');
 });
 
-t('REFUSES a mapping entry for a behaviour the corpus does not have', () => {
+test('REFUSES a mapping entry for a behaviour the corpus does not have', () => {
   // Rot in the other direction: the corpus dropped a behaviour and the mapping
   // still claims it. Nothing else notices, because coverage only ever asks the
   // question the other way round.
@@ -724,7 +724,7 @@ t('REFUSES a mapping entry for a behaviour the corpus does not have', () => {
   assert.ok(/no such behaviour/.test(r.errors[0]), r.errors[0]);
 });
 
-t('the same title in a DIFFERENT file is not ambiguous', () => {
+test('the same title in a DIFFERENT file is not ambiguous', () => {
   // Control for the ambiguity rule: it must key on file+title, not title. If
   // this fails, the rule is really "no duplicate titles anywhere", which would
   // refuse a mapping that is perfectly addressable.
@@ -756,28 +756,28 @@ const quiet = (fn) => {
   try { return fn(); } finally { console.log = log; console.error = err; }
 };
 
-t('exit 2 when there is no corpus to check — could-not-look is not green', () => {
+test('exit 2 when there is no corpus to check — could-not-look is not green', () => {
   const dir = fixture({ 'a.spec.ts': "test('x', () => {});" });
   assert.strictEqual(quiet(() => check.main(['nosuchapp', '--repo', dir])), 2);
 });
 
-t('exit 2 when the repo has no test files at all', () => {
+test('exit 2 when the repo has no test files at all', () => {
   // The failure this exists for: a gate pointed at the wrong directory reads
   // zero tests, finds no problems, and is indistinguishable in CI from a pass.
   const dir = fixture({ 'README.md': 'no tests here' });
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
 });
 
-t('exit 2 when the repo does not exist', () => {
+test('exit 2 when the repo does not exist', () => {
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', '/no/such/path'])), 2);
 });
 
-t('exit 2 on an unknown --via, rather than silently falling back to a default', () => {
+test('exit 2 on an unknown --via, rather than silently falling back to a default', () => {
   const dir = fixture({ 'a.spec.ts': "test('x', () => {});" });
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'guess'])), 2);
 });
 
-t('exit 2 when the C# reader loses a test — a bad read is not a verdict', () => {
+test('exit 2 when the C# reader loses a test — a bad read is not a verdict', () => {
   // Three [Fact]s, one of which has no method: the walk finds 2 and the count
   // says 3. Under markers that under-read would look like MORE failures and
   // under a mapping like fewer; either way the number is wrong, so it refuses.
@@ -793,7 +793,7 @@ t('exit 2 when the C# reader loses a test — a bad read is not a verdict', () =
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
 });
 
-t('exit 2 when the JS reader and the JS count disagree — the half that had no guard', () => {
+test('exit 2 when the JS reader and the JS count disagree — the half that had no guard', () => {
   // The C# refusal above has existed since the vocab under-read. The JS half had
   // NO second count, so the same class of bug (every `it.each` dropped, every
   // test-shaped fixture string invented) went unreported for the life of the
@@ -802,7 +802,7 @@ t('exit 2 when the JS reader and the JS count disagree — the half that had no 
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir])), 2);
 });
 
-t('the disagreement message names JS evidence for a JS file, not xUnit attributes', () => {
+test('the disagreement message names JS evidence for a JS file, not xUnit attributes', () => {
   // It said "[Fact]/[Theory] attributes exist" for a .spec.ts, sending whoever
   // read it looking for xUnit in a TypeScript file. The refusal was right and
   // the reason it gave was from the other ecosystem.
@@ -815,12 +815,12 @@ t('the disagreement message names JS evidence for a JS file, not xUnit attribute
   assert.ok(!/\[Fact\]/.test(said), `said: ${said}`);
 });
 
-t('exit 1 when a behaviour has no test naming it — the gate can go RED', () => {
+test('exit 1 when a behaviour has no test naming it — the gate can go RED', () => {
   const dir = fixture({ 'a.spec.ts': "test('unrelated', () => {});" });
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 1);
 });
 
-t('exit 0 when every behaviour is named — and it is reachable, not just theoretical', () => {
+test('exit 0 when every behaviour is named — and it is reachable, not just theoretical', () => {
   // The control that stops all of the above passing on a gate that only ever
   // returns non-zero. Every id in the shipped snip-it corpus, marked.
   const ids = resolve(parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8'), 's.beh'))
@@ -831,7 +831,7 @@ t('exit 0 when every behaviour is named — and it is reachable, not just theore
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 0);
 });
 
-t('exit 1 when a test names an id the corpus does not have', () => {
+test('exit 1 when a test names an id the corpus does not have', () => {
   // Orphan in the marker direction. Paired with the control above, which uses
   // the identical fixture shape minus the extra id.
   const ids = resolve(parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8'), 's.beh'))
@@ -842,7 +842,7 @@ t('exit 1 when a test names an id the corpus does not have', () => {
   assert.strictEqual(quiet(() => check.main(['snip-it', '--repo', dir, '--via', 'markers'])), 1);
 });
 
-t('the shipped snip-it mapping is RED today, and for the two behaviours it says', () => {
+test('the shipped snip-it mapping is RED today, and for the two behaviours it says', () => {
   // Ships red on purpose (behaviours/snip-it.tests.json): BEH-UP-2 and BEH-EDIT-0
   // have no test. A gate only ever observed passing has never been shown to
   // discriminate — so this pins the failure, and turns green only when snip-it
@@ -870,11 +870,11 @@ const CLEAN_LEDGER = () => ({
   acs: [{ line: 1, story: 'Story 1', text: 'a thing', disposition: 'encoded', shapes: [], behaviours: ['BEH-A'], note: '' }],
 });
 
-t('a clean ledger has no problems — the control the rest of these need', () => {
+test('a clean ledger has no problems — the control the rest of these need', () => {
   assert.deepStrictEqual(pa.audit(CLEAN_LEDGER(), CLEAN_BEH).problems, []);
 });
 
-t('a behaviour NO acceptance criterion names is reported', () => {
+test('a behaviour NO acceptance criterion names is reported', () => {
   // The rule this file exists for. Nothing else in the repo stops a corpus
   // growing a flattering behaviour the source document never asked for, and
   // encoding prose is precisely where that temptation lives.
@@ -884,14 +884,14 @@ t('a behaviour NO acceptance criterion names is reported', () => {
   assert.match(problems[0], /BEH-INVENTED.*no acceptance criterion names it/);
 });
 
-t('a ledger entry naming a behaviour the corpus lacks is reported', () => {
+test('a ledger entry naming a behaviour the corpus lacks is reported', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].behaviours = ['BEH-GONE'];
   const { problems } = pa.audit(l, CLEAN_BEH);
   assert.ok(problems.some((p) => /names BEH-GONE, which is not in the corpus/.test(p)), problems.join(' | '));
 });
 
-t('an unknown disposition is unaccounted, not silently tallied', () => {
+test('an unknown disposition is unaccounted, not silently tallied', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].disposition = 'TODO';
   const { problems, tally } = pa.audit(l, CLEAN_BEH);
@@ -899,7 +899,7 @@ t('an unknown disposition is unaccounted, not silently tallied', () => {
   assert.strictEqual(Object.keys(tally).length, 0, 'a TODO must not be counted as carried');
 });
 
-t('a shape outside the taxonomy is reported', () => {
+test('a shape outside the taxonomy is reported', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].disposition = 'inexpressible';
   l.acs[0].behaviours = [];
@@ -908,7 +908,7 @@ t('a shape outside the taxonomy is reported', () => {
   assert.ok(problems.some((p) => /"too-hard" is not in the taxonomy/.test(p)), problems.join(' | '));
 });
 
-t('"inexpressible" with no shape is refused — otherwise it means "too hard"', () => {
+test('"inexpressible" with no shape is refused — otherwise it means "too hard"', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].disposition = 'inexpressible';
   l.acs[0].behaviours = [];
@@ -916,21 +916,21 @@ t('"inexpressible" with no shape is refused — otherwise it means "too hard"', 
   assert.ok(problems.some((p) => /must name which missing shape/.test(p)), problems.join(' | '));
 });
 
-t('"partial" must name BOTH what carried it and what did not fit', () => {
+test('"partial" must name BOTH what carried it and what did not fit', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].disposition = 'partial'; // behaviours set, shapes empty
   const { problems } = pa.audit(l, CLEAN_BEH);
   assert.ok(problems.some((p) => /"partial" must name both/.test(p)), problems.join(' | '));
 });
 
-t('"encoded" with something left over is refused — that is a partial', () => {
+test('"encoded" with something left over is refused — that is a partial', () => {
   const l = CLEAN_LEDGER();
   l.acs[0].shapes = ['cardinality'];
   const { problems } = pa.audit(l, CLEAN_BEH);
   assert.ok(problems.some((p) => /"encoded" must name a behaviour and leave nothing unmet/.test(p)), problems.join(' | '));
 });
 
-t('"contract" and "refused" must name the behaviour they live on', () => {
+test('"contract" and "refused" must name the behaviour they live on', () => {
   for (const d of ['contract', 'refused']) {
     const l = CLEAN_LEDGER();
     l.acs[0].disposition = d;
@@ -940,14 +940,14 @@ t('"contract" and "refused" must name the behaviour they live on', () => {
   }
 });
 
-t('the AC extractor reads checkbox lines and their story, and nothing else', () => {
+test('the AC extractor reads checkbox lines and their story, and nothing else', () => {
   const acs = pa.extractAcs('## Story 3 — x\n\n- [ ] first\nsome prose\n- [x] already done\n- [ ] second\n');
   assert.deepStrictEqual(acs.map((a) => a.text), ['first', 'second']);
   assert.deepStrictEqual(acs.map((a) => a.line), [3, 6]);
   assert.strictEqual(acs[0].story, 'Story 3');
 });
 
-t('the shipped ledger accounts for every AC in the shipped corpus', () => {
+test('the shipped ledger accounts for every AC in the shipped corpus', () => {
   // The real artefact, not a fixture. A fixture-only suite passes over a ledger
   // that has drifted from the corpus it describes.
   const led = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'macro-metrics-prose.ledger.json'), 'utf8'));
@@ -961,12 +961,12 @@ t('the shipped ledger accounts for every AC in the shipped corpus', () => {
   assert.strictEqual(tally.inexpressible, 24, 'inexpressible count moved');
 });
 
-t('exit 2 when the --source path yields no acceptance criteria', () => {
+test('exit 2 when the --source path yields no acceptance criteria', () => {
   const dir = fixture({ 'empty.md': '# nothing here\n\njust prose.\n' });
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'empty.md')])), 2);
 });
 
-t('exit 1 when the source document has drifted from the ledger', () => {
+test('exit 1 when the source document has drifted from the ledger', () => {
   // Reconstructs the real doc's AC lines from the ledger, then edits ONE word.
   // Without the edit this must exit 0, which the next test asserts — a drift
   // check that fires on everything detects nothing.
@@ -981,7 +981,7 @@ t('exit 1 when the source document has drifted from the ledger', () => {
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'bad.md')])), 1);
 });
 
-t('the COUNT of acceptance criteria is checked, not just each one that is present', () => {
+test('the COUNT of acceptance criteria is checked, not just each one that is present', () => {
   // ⚠️ This test was originally "the source gained an AC", and a mutation of the
   // count rule SURVIVED it: an added line also has no ledger entry, so the
   // per-line rule made it red and the count rule was never what fired. Both
@@ -1014,7 +1014,7 @@ const corpus = (perBehaviour) => perBehaviour.map((nouns, i) =>
 const SATURATING = corpus([['A', 'B', 'C', 'D'], ['E', 'F'], ['A'], ['B'], ['C'], ['A', 'E']]);
 const ONE_TO_ONE = corpus([['A', 'B'], ['C', 'D'], ['E', 'F'], ['G', 'H'], ['I', 'J'], ['K', 'L']]);
 
-t('THE CONTROL: the statistic separates a saturating corpus from a 1:1 one', () => {
+test('THE CONTROL: the statistic separates a saturating corpus from a 1:1 one', () => {
   // Without this the whole measurement is decorative. Every other test here can
   // pass over a statistic that returns the same number for both shapes, and the
   // number I report on the PR would then be unfalsifiable.
@@ -1026,7 +1026,7 @@ t('THE CONTROL: the statistic separates a saturating corpus from a 1:1 one', () 
   assert.strictEqual(o.percentile, 0.5, 'a 1:1 corpus is order-invariant, so it must sit exactly at the null median');
 });
 
-t('a behaviour with no noun reference is EXCLUDED from the curve', () => {
+test('a behaviour with no noun reference is EXCLUDED from the curve', () => {
   // The finding this rule produces: habits looks like it saturates after 6 of
   // 23 behaviours. It has 8 that touch the UI at all; the other 15 are API and
   // domain behaviours, and counting them drives the marginal to zero for a
@@ -1040,7 +1040,7 @@ t('a behaviour with no noun reference is EXCLUDED from the curve', () => {
   assert.deepStrictEqual(b.curve, a.curve, 'inert behaviours leaked into the marginal curve');
 });
 
-t('the null is the SHUFFLED same corpus, not a fresh random one', () => {
+test('the null is the SHUFFLED same corpus, not a fresh random one', () => {
   // A null drawn from anything but these exact behaviours would not isolate the
   // coupon-collector floor, which is the only thing the percentile is for.
   const s = sat.measureCorpus('sat.beh', SATURATING);
@@ -1051,7 +1051,7 @@ t('the null is the SHUFFLED same corpus, not a fresh random one', () => {
   assert.ok(r.ratio > s.ratio, 'a back-loaded order must score worse than a front-loaded one');
 });
 
-t('ties are split, so the percentile does not depend on < versus <=', () => {
+test('ties are split, so the percentile does not depend on < versus <=', () => {
   // macro-metrics lands exactly ON its own null median, where `<=` reports 71%
   // and `<` reports 39% for identical data. Both are defensible readings of the
   // wrong question; mid-rank is the one that is not chosen after seeing it.
@@ -1060,7 +1060,7 @@ t('ties are split, so the percentile does not depend on < versus <=', () => {
   assert.strictEqual(o.percentile, 0.5);
 });
 
-t('the second count reads the raw text, and a step the parser drops is caught', () => {
+test('the second count reads the raw text, and a step the parser drops is caught', () => {
   // The failure mode: a reader that silently loses steps reports a SMALLER noun
   // set, which reads as saturation. So the cross-check has to be able to fail —
   // asserted here by making the two disagree on purpose.
@@ -1072,7 +1072,7 @@ t('the second count reads the raw text, and a step the parser drops is caught', 
   assert.ok(!dropped.has('button:C'), 'the text reader is not reading the steps it claims to');
 });
 
-t('a literal containing a noun-shaped token is not counted as a noun', () => {
+test('a literal containing a noun-shaped token is not counted as a noun', () => {
   // ⚠️ The first version of this test used the literal "Ratio: 1.4" and a
   // mutation removing the quote-stripping SURVIVED it: `Ratio` is capitalised
   // and a space follows the colon, so the noun regex never matched inside the
@@ -1087,7 +1087,7 @@ t('a literal containing a noun-shaped token is not counted as a noun', () => {
   assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 0);
 });
 
-t('exit 2 when ONE corpus of several parses zero nouns', () => {
+test('exit 2 when ONE corpus of several parses zero nouns', () => {
   // ⚠️ This was originally a single empty corpus, and the mutation SURVIVED: a
   // corpus with no nouns also has no noun-bearing behaviours, so the "too small
   // to halve" rule fired and the zero-noun rule was never what made it red. It
@@ -1098,14 +1098,14 @@ t('exit 2 when ONE corpus of several parses zero nouns', () => {
   assert.strictEqual(quiet(() => sat.main(['--dir', fixture({ 'big.beh': SATURATING, 'empty.beh': empty })])), 2);
 });
 
-t('exit 2 when no corpus has enough UI behaviours to halve', () => {
+test('exit 2 when no corpus has enough UI behaviours to halve', () => {
   const dir = fixture({ 'tiny.beh': corpus([['A'], ['B'], ['C']]) });
   assert.strictEqual(quiet(() => sat.main(['--dir', dir])), 2);
   const ok = fixture({ 'big.beh': SATURATING });
   assert.strictEqual(quiet(() => sat.main(['--dir', ok])), 0, 'the control drifted');
 });
 
-t('exit 2 when the two counts disagree — the refusal path fires, it is not decorative', () => {
+test('exit 2 when the two counts disagree — the refusal path fires, it is not decorative', () => {
   // The two readers agree on every corpus kit.parse will even accept, so this
   // branch is unreachable from a fixture. That is exactly why it needs
   // asserting: an untriggered refusal is a claim. The lossy reader stands in
@@ -1121,11 +1121,11 @@ t('exit 2 when the two counts disagree — the refusal path fires, it is not dec
   assert.strictEqual(quiet(() => sat.main(['--dir', dir], lossy)), 2);
 });
 
-t('exit 2 when pointed at a directory that does not exist', () => {
+test('exit 2 when pointed at a directory that does not exist', () => {
   assert.strictEqual(quiet(() => sat.main(['--dir', '/no/such/behaviours'])), 2);
 });
 
-t('--check goes RED when the write-up drifts from the corpora', () => {
+test('--check goes RED when the write-up drifts from the corpora', () => {
   // The write-up quotes numbers. Nothing but this stops them ageing into
   // fiction the way what-we-can-leverage.md quoted 19 tests against a suite of
   // 72 — kit's own repo drifting in the way kit exists to catch.
@@ -1142,7 +1142,7 @@ t('--check goes RED when the write-up drifts from the corpora', () => {
 console.log('\n── self-host: can Kit describe Kit? (James, claude-code-bot#89) ──');
 const selfhost = require('./self-host.js');
 
-t('THE CONTROL: binding nouns DOES move the number, when the verbs are known', () => {
+test('THE CONTROL: binding nouns DOES move the number, when the verbs are known', () => {
   // Everything this tool concludes rests on "binding every noun changed
   // nothing". That sentence is worthless unless binding can change something —
   // otherwise the measurement is indistinguishable from a broken tally. A
@@ -1153,14 +1153,14 @@ t('THE CONTROL: binding nouns DOES move the number, when the verbs are known', (
   assert.ok(m.derived > 0, 'opens/activates are DERIVED steps, not copied setup strings');
 });
 
-t('the null result: for the real kit corpus, binding every noun derives nothing', () => {
+test('the null result: for the real kit corpus, binding every noun derives nothing', () => {
   const m = selfhost.measure(fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8'));
   assert.strictEqual(m.unbound.generated, 0);
   assert.strictEqual(m.derived, 0, 'no step is derived from a behaviour, however generously bound');
   assert.ok(m.bound.generated > 0, 'and it is NOT zero-generated — the state steps do emit, which is the honest number');
 });
 
-t('a `state` step is not counted as derived — the number that flatters', () => {
+test('a `state` step is not counted as derived — the number that flatters', () => {
   // Under full bindings a `state` step emits the setup string a human wrote in
   // bindings.json. Counting those as "generated" makes "10 of 42" sound like
   // the notation nearly works. `derived` is the honest column.
@@ -1169,7 +1169,7 @@ t('a `state` step is not counted as derived — the number that flatters', () =>
   assert.strictEqual(m.derived, 0);
 });
 
-t('the generator vocabulary is READ from the generator, not re-typed', () => {
+test('the generator vocabulary is READ from the generator, not re-typed', () => {
   // A hard-coded copy is how the write-up starts lying about the code: add a
   // verb to generate() and a list here would go on reporting the old eight.
   const verbs = selfhost.generatorVerbs();
@@ -1180,18 +1180,18 @@ t('the generator vocabulary is READ from the generator, not re-typed', () => {
   assert.ok(verbs.size > 0 && verbs.size <= cases, `read ${verbs.size} verbs from ${cases} case labels`);
 });
 
-t('exit 2 when the corpus does not exist — could-not-look is not green', () => {
+test('exit 2 when the corpus does not exist — could-not-look is not green', () => {
   assert.strictEqual(quiet(() => selfhost.main(['--corpus', '/no/such/kit.beh'])), 2);
 });
 
-t('exit 2 when the corpus parses to nothing, rather than reporting a dramatic zero', () => {
+test('exit 2 when the corpus parses to nothing, rather than reporting a dramatic zero', () => {
   // A run that read an empty file would print "0 derived" — the same headline
   // as the real finding, from a completely different cause.
   const dir = fixture({ 'empty.beh': '# only a comment\n' });
   assert.strictEqual(quiet(() => selfhost.main(['--corpus', pathx.join(dir, 'empty.beh')])), 2);
 });
 
-t('--check goes RED when the corpus drifts from the recorded findings', () => {
+test('--check goes RED when the corpus drifts from the recorded findings', () => {
   assert.strictEqual(quiet(() => selfhost.main(['--check'])), 0, 'the recorded findings already disagree with the corpus');
   const dir = fixture({});
   const beh = pathx.join(dir, 'kit.beh');
@@ -1200,7 +1200,7 @@ t('--check goes RED when the corpus drifts from the recorded findings', () => {
   assert.strictEqual(quiet(() => selfhost.main(['--corpus', beh, '--check'])), 1);
 });
 
-t('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => {
+test('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => {
   // kit.beh's nouns are command:KitCheck and status:One. Leaving it in a study
   // about UI binding glue is a category error; excluding it silently is worse.
   const dir = fixture({
@@ -1217,7 +1217,7 @@ t('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => 
   assert.ok(!/cli\.beh:/.test(said.replace(/skipping cli\.beh[^\n]*/g, '')), 'the excluded corpus must not appear in the results');
 });
 
-t('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () => {
+test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () => {
   // Otherwise "it was skipped" could be the tool ignoring anything it dislikes.
   const dir = fixture({
     'ui.beh': SATURATING,

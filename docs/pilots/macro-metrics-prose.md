@@ -181,4 +181,4 @@ either way, so this is not in the decision queue.
 
 *Reproduce: `node prose-audit.js --source <macro-metrics>/docs/user-stories-frontend.md`
 · `node kit.js macro-metrics` · `node prose-audit.js --demo-collision`.
-86 tests, 50/50 mutants — `node kit-test.js`, `node mutate.js`.*
+86 tests, 50/50 mutants — `node kit.test.js`, `node mutate.js`.*
