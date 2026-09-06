@@ -1594,6 +1594,201 @@ test('the server binds the loopback interface and not every interface', async ()
   }
 });
 
+// ══════════════ the required surface (requires.js, claude-code-bot#92) ══════════════
+//
+// These live HERE rather than in a requires.test.js of their own, and that is a
+// direct consequence of the previous trial: mutate.js runs `kit.test.js` alone,
+// so any rule whose only assertion sits in another file is UNMUTATED — it reports
+// the same "0 survived" as a killed mutant. A separate suite would have looked
+// tidier and been invisible to the harness.
+
+const R = require('./requires');
+
+const rqBeh = (body) => {
+  const bs = parse(`behaviour BEH-R-1 "r"\n  source defined r\n  actor u\n${body}`);
+  const { symbols } = resolve(bs);
+  return { bs, symbols };
+};
+const rqGen = (body, bindings) => {
+  const { bs, symbols } = rqBeh(body);
+  return generate(bs[0], bindings, symbols);
+};
+
+// ── the coupling test: the table is not trusted, it is checked against emit() ──
+//
+// requires.js's requirement table is a hand-copy of the switch in emit(). A
+// hand-copy that drifts is worse than no table, because it would state the app's
+// obligations confidently and wrongly — the exact failure this project argues
+// against. So every verb is run through the REAL generator twice: once with a
+// binding the predicate calls satisfying, once with one it calls insufficient.
+// If emit() changes and requires.js does not, this goes red.
+//
+// The `insufficient` binding is always a PRESENT key with the needed field
+// missing, never an absent key — an absent key already refuses for the old
+// reason, so testing that would prove nothing about this file.
+const COUPLED = [
+  { verb: 'state',     step: '  given thing:Ready',                          ok: { 'thing:Ready': { state: 'seed(page)' } },        thin: { 'thing:Ready': { note: 'no state' } } },
+  { verb: 'opens',     step: '  when opens page:P',                          ok: { 'page:P': { route: './p' } },                    thin: { 'page:P': { urlPattern: '/p$' } } },
+  { verb: 'lands',     step: '  then lands on page:P',                       ok: { 'page:P': { urlPattern: '/p$' } },               thin: { 'page:P': { route: './p' } } },
+  { verb: 'activates', step: '  when activates button:B',                    ok: { 'button:B': { role: 'button', name: 'B' } },     thin: { 'button:B': { note: 'no locator' } } },
+  { verb: 'sees',      step: '  then sees region:X',                         ok: { 'region:X': { locator: "locator('main')" } },    thin: { 'region:X': { note: 'no locator' } } },
+  { verb: 'shows',     step: '  then shows region:X "hi"',                   ok: { 'region:X': { locator: "locator('main')" } },    thin: { 'region:X': { note: 'no locator' } } },
+  {
+    verb: 'attaches', step: '  when attaches file:F to field:D',
+    ok:   { 'file:F': { fixture: { name: 'a.mp4', mimeType: 'video/mp4' } }, 'field:D': { label: 'File' } },
+    thin: { 'file:F': { note: 'no fixture' },                                'field:D': { label: 'File' } },
+  },
+];
+
+for (const c of COUPLED) {
+  test(`requires: the table agrees with emit() for \`${c.verb}\` — satisfied binding generates`, () => {
+    const g = rqGen(c.step, c.ok);
+    assert.strictEqual(g.stats.ungenerated, 0, `emit() refused a binding requires.js calls satisfying:\n${g.code}`);
+    const { bs } = rqBeh(c.step);
+    const rep = R.requirements(bs, c.ok);
+    assert.strictEqual(rep.insufficient.length, 0, 'requires.js called a generatable binding insufficient');
+    assert.strictEqual(rep.missing.length, 0, 'requires.js called a present binding missing');
+  });
+
+  test(`requires: the table agrees with emit() for \`${c.verb}\` — thin binding refuses`, () => {
+    const g = rqGen(c.step, c.thin);
+    assert.strictEqual(g.stats.generated, 0, `emit() GENERATED from a binding requires.js calls too thin — a false green:\n${g.code}`);
+    const { bs } = rqBeh(c.step);
+    const rep = R.requirements(bs, c.thin);
+    assert.ok(rep.insufficient.length > 0, 'requires.js called a non-generatable binding satisfied');
+  });
+}
+
+test('requires: `fills` needs a label specifically, not any locator', () => {
+  // The one case where the same noun kind owes different things to different
+  // verbs. `attaches` reaches its field through loc(); `fills` only ever emits
+  // getByLabel(). A role-and-name field is addressable and still unusable here.
+  const body = '  when fills form:F with ?fields\n  provides form:F.fields = Item\n';
+  const roleOnly = { 'field:Item': { role: 'textbox', name: 'Item' } };
+  assert.strictEqual(rqGen(body, roleOnly).stats.generated, 0, 'getByLabel(undefined) is not a test');
+  const { bs } = rqBeh(body);
+  assert.ok(R.requirements(bs, roleOnly).insufficient.length > 0);
+  // Positive control, so a version refusing every `fills` passes neither test.
+  assert.ok(rqGen(body, { 'field:Item': { label: 'Item' } }).stats.generated > 0);
+});
+
+test('requires: every verb emit() handles has a row in the requirement table', () => {
+  // The drift this cannot otherwise catch: someone adds a `case` to emit() and
+  // requires.js silently reports no obligation for it, so the contract omits a
+  // surface the app genuinely needs. Read from the source, because the switch is
+  // the only place that list exists.
+  const fs = require('fs'), path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'kit.js'), 'utf8');
+  const emitBody = src.slice(src.indexOf('function emit('));
+  const cases = [...emitBody.slice(0, emitBody.indexOf('\n}')).matchAll(/^\s*case '([a-z]+)':/gm)].map((m) => m[1]);
+  assert.ok(cases.length >= 8, `read only ${cases.length} verbs out of emit() — the reader has stopped matching`);
+  for (const v of cases) {
+    assert.ok(Object.prototype.hasOwnProperty.call(R.VERBS, v), `emit() handles \`${v}\` and requires.js has no row for it`);
+  }
+  for (const v of Object.keys(R.VERBS)) {
+    assert.ok(cases.includes(v), `requires.js has a row for \`${v}\` and emit() does not handle it`);
+  }
+});
+
+// ── the three defects this file was written from, each pinned ──
+
+test('requires: a page reached by both `opens` and `lands` owes BOTH keys', () => {
+  // The defect in miniature. page:Home is bound, reports NO missing noun, counts
+  // as 1/1 bound — and still refuses, because `lands` wants `urlPattern` and
+  // `opens` wants `route`. Nothing in Kit said so before requires.js.
+  const body = '  when opens page:Home\n  then lands on page:Home\n';
+  const routeOnly = { 'page:Home': { route: './' } };
+  const g = rqGen(body, routeOnly);
+  assert.strictEqual(g.stats.generated, 1);
+  assert.strictEqual(g.stats.ungenerated, 1);
+  assert.deepStrictEqual(g.missing, [], 'the old diagnostic reports nothing here — that is the bug');
+
+  const { bs } = rqBeh(body);
+  assert.strictEqual(boundNouns(bs, routeOnly).bound, 1, 'boundNouns counts key presence, so it says fully bound');
+  const rep = R.requirements(bs, routeOnly);
+  assert.strictEqual(rep.insufficient.length, 1, 'requires.js is the only thing that can see this');
+  assert.deepStrictEqual(rep.nouns[0].needs.filter((n) => !n.met).map((n) => n.id), ['urlPattern']);
+  assert.deepStrictEqual(rep.nouns[0].needs.filter((n) => n.met).map((n) => n.id), ['route']);
+});
+
+test('requires: reasonsFor names the missing key rather than just "unbound"', () => {
+  const { bs } = rqBeh('  then lands on page:Home\n');
+  const [why] = R.reasonsFor(bs[0].steps[0], { 'page:Home': { route: './' } });
+  assert.strictEqual(why.noun, 'page:Home');
+  assert.strictEqual(why.need, 'urlPattern');
+  assert.match(why.why, /binding exists but has no/);
+  // And it must still distinguish the genuinely absent case, or it has merely
+  // renamed one message.
+  const [absent] = R.reasonsFor(bs[0].steps[0], {});
+  assert.strictEqual(absent.why, 'no binding');
+});
+
+test('requires: `attaches` refuses a thin binding instead of emitting page.null (regression)', () => {
+  // Before this change kit.js emitted, and COUNTED AS GENERATED:
+  //     await page.null.setInputFiles(undefined);
+  // A line that throws the moment it runs, contributing to the headline
+  // percentage. A false green is strictly worse than the refusal the design is
+  // built on, and no corpus caught it because all five were built backwards.
+  const thin = { 'file:F': { note: 'exists, no fixture' }, 'field:D': { note: 'exists, no locator' } };
+  const g = rqGen('  when attaches file:F to field:D', thin);
+  assert.strictEqual(g.stats.generated, 0);
+  assert.strictEqual(g.stats.ungenerated, 1);
+  assert.doesNotMatch(g.code, /page\.null|undefined/, 'generated a line that cannot run');
+});
+
+test('requires: a field named only by a `provides` value is still a required surface', () => {
+  // trial-lend's field:DueDate appears in no step, only inside
+  // `provides form:NewLoan.fields = ItemName, Borrower, DueDate`. boundNouns()
+  // walks step refs, so every existing measurement is blind to it while the app
+  // must genuinely have it.
+  const { bs } = rqBeh('  when fills form:F with ?fields\n  provides form:F.fields = Seen, OnlyProvided\n');
+  const nouns = R.requirements(bs, {}).nouns.map((n) => n.noun);
+  assert.ok(nouns.includes('field:OnlyProvided'));
+  assert.ok(!boundNouns(bs, {}).referenced.has('field:OnlyProvided'), 'if boundNouns ever sees it, this note is stale');
+});
+
+test('requires: a `form:` noun is not an obligation on the app', () => {
+  // The same measurement wrong in the other direction. emit()'s `fills` case
+  // never looks up `bindings["form:X"]` — it reads the resolved field names — so
+  // a form noun can NEVER be bound, yet boundNouns() counts it in the
+  // denominator. Any corpus using a form is therefore capped below 100% bound by
+  // a noun no binding could ever satisfy.
+  const { bs } = rqBeh('  when fills form:F with ?fields\n  provides form:F.fields = Item\n');
+  assert.ok(boundNouns(bs, {}).referenced.has('form:F'), 'boundNouns counts the form');
+  assert.ok(!R.requirements(bs, {}).nouns.some((n) => n.noun === 'form:F'), 'requires.js does not');
+});
+
+// ── controls: the report must be able to say "nothing needed" ──
+
+test('requires: a fully satisfied corpus reports no requirements outstanding', () => {
+  // Without this, a version that called everything unsatisfied would pass every
+  // test above.
+  const body = '  when opens page:P\n  then sees button:B\n';
+  const rep = R.requirements(rqBeh(body).bs, { 'page:P': { route: './p' }, 'button:B': { role: 'button', name: 'B' } });
+  assert.strictEqual(rep.missing.length, 0);
+  assert.strictEqual(rep.insufficient.length, 0);
+  assert.strictEqual(rep.satisfied.length, 2);
+  assert.match(R.render('x', rep), /Every noun this corpus references is satisfied/);
+});
+
+test('requires: the real corpora are unchanged by the emit() fixes', () => {
+  // The fixes tighten two verbs, so they COULD have moved published numbers.
+  // Measured rather than assumed: snip-it is the only corpus using attaches or
+  // fills, and its bindings carry both keys, so nothing it generates changes.
+  const fs = require('fs'), path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'behaviours', 'snip-it.beh'), 'utf8');
+  const bs = parse(src);
+  const { symbols } = resolve(bs);
+  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  let generated = 0, ungenerated = 0;
+  for (const b of bs) {
+    const g = generate(b, bindings, symbols);
+    generated += g.stats.generated; ungenerated += g.stats.ungenerated;
+  }
+  assert.strictEqual(generated, 28, 'snip-it generated line count moved');
+  assert.strictEqual(ungenerated, 2, 'snip-it ungenerated count moved');
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);
