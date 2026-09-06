@@ -664,7 +664,7 @@ function mapping(behaviours, map, titles) {
   const index = new Map();
   for (const t of titles) {
     const k = `${t.file}\u0000${t.raw}`;
-    index.set(k, 1);
+    index.set(k, (index.get(k) || 0) + 1);
   }
   const files = new Set(titles.map((t) => t.file));
   const ids = new Set(behaviours.map((b) => b.id));
