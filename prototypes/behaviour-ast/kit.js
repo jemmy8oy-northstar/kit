@@ -1083,9 +1083,34 @@ function answerLine(q) {
   return `\`review approved\` on \`${q.id}\`, or \`review denied "<what is actually true>"\`.`;
 }
 
+// The nouns a behaviour names. Lives here, in the module that owns the AST,
+// because two copies of this rule are two things free to drift — saturation.js
+// imports it rather than re-deriving it.
+function nounsOf(behaviour) {
+  const out = [];
+  for (const step of behaviour.steps || []) {
+    for (const ref of step.refs || []) {
+      if (ref.kind === 'literal') continue;
+      out.push(`${ref.kind}:${ref.name}`);
+    }
+  }
+  return out;
+}
+
+// How many of THIS corpus's nouns bindings.json actually binds. bindings.json is
+// a global file shared by every app, so counting its keys — which is what the
+// report used to do — answered the same number for every corpus, including one
+// that binds none of them (claude-code-bot#92).
+function boundNouns(behaviours, bindings) {
+  const referenced = new Set();
+  for (const b of behaviours) for (const n of nounsOf(b)) referenced.add(n);
+  const bound = [...referenced].filter((n) => Object.prototype.hasOwnProperty.call(bindings, n));
+  return { referenced, bound: bound.length };
+}
+
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
-  questions, questionErrors, renderSheet,
+  questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
 };
 
@@ -1140,7 +1165,7 @@ if (require.main === module) {
     return;
   }
 
-  const nounCount = Object.keys(bindings).filter((k) => !k.startsWith('_')).length;
+  const { referenced, bound: boundCount } = boundNouns(behaviours, bindings);
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
   const unbound = new Set();
 
@@ -1189,7 +1214,7 @@ if (require.main === module) {
   const steps = totals.generated + totals.contract + totals.ungenerated;
   console.log('── measured ──');
   console.log(`  behaviours            ${behaviours.length}`);
-  console.log(`  noun bindings         ${nounCount}   (Cucumber would need one step definition per step phrasing)`);
+  console.log(`  nouns bound           ${boundCount}/${referenced.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
   console.log(`  generated lines       ${totals.generated}`);
   console.log(`  wire contracts        ${totals.contract}   not expressible as a behaviour — something else must own these`);
   console.log(`  ungenerated           ${totals.ungenerated}   refused rather than guessed`);

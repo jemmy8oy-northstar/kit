@@ -227,8 +227,22 @@ MUTANTS.push(
     'if (m.behaviours === 0 || m.steps === 0) {', 'if (false) {', 'self-host.js'],
   ['--check accepts drift silently',
     'if (JSON.stringify(was) !== JSON.stringify(now)) {', 'if (false) {', 'self-host.js'],
+  // The original defect, reinstated: count the whole global bindings file
+  // instead of this corpus's nouns. Every app then reports the same number and
+  // a corpus binding nothing reports the same headline as one binding all.
+  ['the bound-noun count goes back to counting the global bindings file',
+    'const bound = [...referenced].filter((n) => Object.prototype.hasOwnProperty.call(bindings, n));',
+    'const bound = Object.keys(bindings);', 'kit.js'],
+  ['the referenced-noun set counts repeats, so a noun named twice inflates the denominator',
+    'for (const b of behaviours) for (const n of nounsOf(b)) referenced.add(n);',
+    'const _all = []; for (const b of behaviours) for (const n of nounsOf(b)) _all.push(n); referenced.add = Set.prototype.add; _all.forEach((n) => Set.prototype.add.call(referenced, n + Math.random()));',
+    'kit.js'],
   ['saturation stops excluding a corpus that declares it has no UI',
-    'if (!NO_UI.test(fs.readFileSync(path.join(dir, f), \'utf8\'))) return true;', 'if (true) return true;', 'saturation.js'],
+    'if (NO_UI.test(text)) { skipped.push(f); return false; }', '', 'saturation.js'],
+  ['saturation stops excluding a corpus for an app that does not exist',
+    'if (NOT_REAL.test(text)) { excluded.push(f); return false; }', '', 'saturation.js'],
+  ['a not-a-real-app corpus is excluded SILENTLY, so an invented app leaves the population invisibly',
+    'for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);', '', 'saturation.js'],
   ['saturation excludes the no-ui corpus SILENTLY, so the population is invisible',
     'for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);', '', 'saturation.js'],
 );
@@ -246,6 +260,12 @@ MUTANTS.push(
     "proves: 'someone LINKED each covered behaviour to a test. NOT that the test asserts the behaviour.',", '', 'project.js'],
   ['a corpus that parsed to nothing is projected instead of refused',
     'if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };', '', 'project.js'],
+  ['a trial corpus is projected as a real app, so the UI shows an invented app as a project',
+    'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: false,', 'project.js'],
+  ['notReal goes undefined rather than false, so "absent" and "real" become the same reading',
+    'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: undefined,', 'project.js'],
+  ['the list endpoint drops notReal, so the marker never reaches the UI',
+    'notReal: p.notReal,', '', 'ui.js'],
   // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.

@@ -1,6 +1,7 @@
 {
   "app": "james-habits-app",
   "corpus": "prototypes/behaviour-ast/behaviours/james-habits-app.beh",
+  "notReal": false,
   "behaviours": [
     {
       "id": "BEH-TODAY-1",

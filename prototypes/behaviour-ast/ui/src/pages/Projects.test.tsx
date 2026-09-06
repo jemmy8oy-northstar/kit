@@ -36,6 +36,30 @@ describe('Projects', () => {
     }
   })
 
+  it('marks a trial corpus, so an invented app is not shown as a project', async () => {
+    // The fixture carries exactly one notReal corpus. It must appear in the
+    // list (hiding it would make the list lie about what Kit reads) AND be
+    // distinguishable, because 0% against a real app and 0% against an app that
+    // does not exist mean opposite things (claude-code-bot#92).
+    mockFetch(projectsFixture)
+    renderProjects()
+
+    const trials = projectsFixture.projects.filter((p) => p.notReal)
+    expect(trials).toHaveLength(1)
+    expect(await screen.findByRole('link', { name: trials[0].app })).toBeInTheDocument()
+    expect(screen.getAllByText(/trial — no app/)).toHaveLength(1)
+  })
+
+  it('CONTROL: a real corpus carries no trial marker', async () => {
+    // Otherwise the badge could be rendering on every row and the test above
+    // would still pass on the count alone.
+    mockFetch({ projects: projectsFixture.projects.filter((p) => !p.notReal) })
+    renderProjects()
+
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByText(/trial — no app/)).not.toBeInTheDocument()
+  })
+
   it('renders unavailable coverage as "not measured" and never as a zero', async () => {
     // The load-bearing assertion of this whole page. Every fixture project has
     // coverage.available === false, which is what the real API sends when it

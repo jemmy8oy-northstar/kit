@@ -121,6 +121,12 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   return {
     app,
     corpus: path.relative(path.join(__dirname, '..', '..'), corpusPath),
+    // A corpus can describe an app that does not exist (a trial, cc-bot#92).
+    // The UI is a viewer, so it SHOWS these — hiding one would make the list
+    // lie about what corpora exist — but it must not present an invented app
+    // as indistinguishable from a shipped one. Read from the corpus, same
+    // directive saturation.js excludes on; declared in one place.
+    notReal: /^#\s*kit:not-a-real-app\b/m.test(src),
     behaviours: behaviours.map((b) => ({
       id: b.id,
       title: b.title,
