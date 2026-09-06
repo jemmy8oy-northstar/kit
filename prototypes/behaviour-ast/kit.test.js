@@ -1255,6 +1255,87 @@ test('saturation EXCLUDES a corpus that declares it has no UI, and says so', () 
   assert.ok(!/cli\.beh:/.test(said.replace(/skipping cli\.beh[^\n]*/g, '')), 'the excluded corpus must not appear in the results');
 });
 
+const { boundNouns } = require('./kit');
+
+test('the bound-noun count is scoped to THIS corpus, not to the whole bindings file', () => {
+  // The bug this replaces: the report counted Object.keys(bindings), a global
+  // file, so every app printed the same number — and a corpus that binds NOTHING
+  // printed the same headline as one that binds everything (claude-code-bot#92).
+  const behaviours = parse('behaviour BEH-1 "x"\n  when opens page:Upload\n  then sees link:Download\n');
+  const bindings = {
+    'page:Upload': { route: './editor' },
+    'link:Download': { role: 'link', name: 'Download' },
+    'button:Unrelated': { role: 'button', name: 'Not in this corpus' },
+    'page:Elsewhere': { route: './elsewhere' },
+  };
+  const { referenced, bound } = boundNouns(behaviours, bindings);
+  assert.strictEqual(referenced.size, 2, 'only the nouns this corpus names');
+  assert.strictEqual(bound, 2);
+  assert.ok(bound < Object.keys(bindings).length, 'the global file is bigger — that difference is the bug');
+});
+
+test('a corpus that binds NOTHING reports zero, not the size of bindings.json', () => {
+  // The forward case: an app that does not exist yet has no locators to copy,
+  // so every noun is unbound. This must not read as "27 nouns bound".
+  const behaviours = parse('behaviour BEH-1 "x"\n  when opens page:DoesNotExist\n');
+  const { referenced, bound } = boundNouns(behaviours, { 'page:Upload': { route: './editor' } });
+  assert.strictEqual(referenced.size, 1);
+  assert.strictEqual(bound, 0);
+});
+
+test('a noun named by two behaviours is counted once, not twice', () => {
+  const behaviours = parse(
+    'behaviour BEH-1 "x"\n  when opens page:Upload\n\nbehaviour BEH-2 "y"\n  when opens page:Upload\n');
+  const { referenced, bound } = boundNouns(behaviours, { 'page:Upload': { route: './editor' } });
+  assert.strictEqual(referenced.size, 1, 'a set of nouns, not a tally of references');
+  assert.strictEqual(bound, 1);
+});
+
+test('saturation EXCLUDES a corpus that declares the app does not exist, and says so', () => {
+  // A different axis from kit:no-ui — this corpus is FULL of UI nouns, so the
+  // no-ui directive would not catch it. Cross-app noun reuse measured over an
+  // app I invented measures my own naming habits (claude-code-bot#92).
+  const dir = fixture({
+    'ui.beh': SATURATING,
+    'trial.beh': '# kit:not-a-real-app\n' + SATURATING,
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(/skipping trial\.beh/.test(said), said);
+  assert.ok(/not-a-real-app/.test(said), 'the reason must name the directive, not just the file');
+  assert.ok(!/trial\.beh:/.test(said.replace(/skipping trial\.beh[^\n]*/g, '')), 'the excluded corpus must not appear in the results');
+});
+
+test('CONTROL: the same corpus WITHOUT the not-a-real-app directive is not excluded', () => {
+  // Otherwise the exclusion could be the tool dropping any corpus it dislikes,
+  // and the study's population would shrink for reasons nobody declared.
+  const dir = fixture({ 'ui.beh': SATURATING, 'trial.beh': SATURATING });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(!/skipping trial\.beh/.test(said), said);
+});
+
+test('the two exclusion directives are independent, not one rule spelled twice', () => {
+  // A corpus can be both (a CLI trial), and the reason reported must be the
+  // existence one — a study over real apps excludes it even if it had a UI.
+  const dir = fixture({
+    'ui.beh': SATURATING,
+    'both.beh': '# kit:no-ui\n# kit:not-a-real-app\nbehaviour BEH-B1 "x"\n  when runs command:Thing\n',
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(/not-a-real-app/.test(said), said);
+  assert.ok(!/skipping both\.beh: declares "# kit:no-ui"/.test(said), 'must report the existence reason, not the UI one');
+});
+
 test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () => {
   // Otherwise "it was skipped" could be the tool ignoring anything it dislikes.
   const dir = fixture({

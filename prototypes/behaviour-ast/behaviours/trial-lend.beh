@@ -1,0 +1,126 @@
+# kit:not-a-real-app
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# TRIAL CORPUS — "Lend"  (an app that DOES NOT EXIST)
+#
+# The directive above keeps this corpus out of any study whose population is
+# real apps — binding saturation (gap #8) above all, whose cross-app noun-reuse
+# figure would otherwise include an app I invented myself. It is NOT the same as
+# `kit:no-ui`: this corpus is full of UI nouns. The axis is existence.
+#
+# James, claude-code-bot#92 (2026-09-06): "You could also make up some trial
+# projects to progress it."
+#
+# Every other corpus in this directory was reverse-engineered from shipped
+# software. This one is written the way the product claims a corpus is written:
+# from a user's stated intent, BEFORE any code exists. The brief it traces to is
+# docs/trials/lend-brief.md — no repo, no routes, no source tree, and therefore
+# no locators available to copy into bindings.json.
+#
+# THE POINT OF THIS FILE IS THE MEASUREMENT, NOT THE APP. Running kit.js against
+# it answers "what does Kit do when pointed forwards", which nothing has asked
+# before. See docs/trials/lend-forward-run.md for what it actually did.
+#
+# Every behaviour here is `source defined` and traces to a line of the brief.
+# Nothing is inferred, because inference is the stage that does not exist yet
+# (there is no LLM step in the build) — so an `inferred` line here would be me
+# hand-writing something and labelling it as a machine's work.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ The daily loop — "open one page and see what is currently out" ═══
+
+behaviour BEH-SHELF-1 "The shelf lists everything currently lent out and who has it"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  when opens page:Shelf
+  then sees region:LoanList
+  then sees column:Borrower
+
+behaviour BEH-SHELF-2 "An empty shelf says so rather than showing a blank page"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  given shelf:Empty
+  when opens page:Shelf
+  then sees region:EmptyState
+
+behaviour BEH-SHELF-3 "Overdue loans are visibly marked"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  given loan:Overdue
+  when opens page:Shelf
+  then sees badge:Overdue
+
+
+# ═══ Recording a loan — "record a new loan in a few seconds" ═══
+
+behaviour BEH-LEND-1 "A new loan is recorded from the shelf"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  when opens page:Shelf
+  when activates button:LendSomething
+  then lands on page:NewLoan
+  then sees field:ItemName
+  then sees field:Borrower
+
+behaviour BEH-LEND-2 "Recording a loan puts it on the shelf"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  when opens page:NewLoan
+  when fills form:NewLoan with ?fields
+  when activates button:ConfirmLoan
+  then lands on page:Shelf
+  then sees region:LoanList
+
+behaviour BEH-LEND-3 "The loan form takes an item, a borrower and a due date"
+  source defined docs/trials/lend-brief.md#holes
+  actor owner
+  when opens page:NewLoan
+  provides form:NewLoan.fields = ItemName, Borrower, DueDate
+
+
+# ═══ Returning — "mark it returned and it leaves the list" ═══
+
+behaviour BEH-RETURN-1 "A loan is marked returned from the shelf"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  given loan:Outstanding
+  when opens page:Shelf
+  when activates button:MarkReturned
+  then sees region:LoanList
+
+# ⚠️ NEGATION — one of the twelve shapes docs/pilots/macro-metrics-prose.md
+# named as missing. The brief says the item "leaves the list". The notation has
+# `then sees`, and no `then does not see`. Written below as the nearest thing
+# the grammar permits, which asserts something WEAKER than the brief:
+behaviour BEH-RETURN-2 "A returned loan is no longer on the shelf"
+  source defined docs/trials/lend-brief.md#brief
+  actor owner
+  given loan:JustReturned
+  when opens page:Shelf
+  then sees region:EmptyState
+
+
+# ═══ The shapes the notation cannot state — recorded, not smuggled in ═══
+#
+# These four are NOT written as behaviours above, because writing them would
+# mean inventing grammar mid-trial. They are the trial's actual finding. Each is
+# a real requirement from the brief that a reader would expect the corpus to
+# hold, and the corpus cannot hold it:
+#
+#   ORDERING     "worst offenders at the top" — the brief's own words. There is
+#                no `then ... in order of ...`. A generated test can open the
+#                page and see the list; it cannot see that the list is sorted.
+#
+#   TIMING       a loan becomes overdue when its due date passes. `given
+#                loan:Overdue` names a fixture STATE, which smuggles the rule
+#                into bindings.json where no reviewer will read it as a rule.
+#                The transition itself is unstateable.
+#
+#   CARDINALITY  one row per loan; a borrower holding three items is three rows.
+#                Already named as the blocker on macro-metrics' nine preset
+#                cards. Still absent, and here it is a domain rule rather than a
+#                locator nit.
+#
+#   NEGATION     see BEH-RETURN-2 above — the only one of the four I could write
+#                at all, and only by asserting a different, weaker fact.

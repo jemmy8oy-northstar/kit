@@ -52,16 +52,10 @@ function mulberry32(a) {
   };
 }
 
-function nounsOf(behaviour) {
-  const out = [];
-  for (const step of behaviour.steps) {
-    for (const ref of step.refs || []) {
-      if (ref.kind === 'literal') continue;
-      out.push(`${ref.kind}:${ref.name}`);
-    }
-  }
-  return out;
-}
+// Moved into kit.js, which owns the AST. Re-exported here so this file's public
+// surface is unchanged and the cross-check below still has two INDEPENDENT
+// shapes — nounsOf reads the AST, nounsFromText re-reads the raw file.
+const nounsOf = kit.nounsOf;
 
 // The second shape. Deliberately NOT a second pass over the AST: it reads the
 // raw file and only trusts lines that open with a step keyword, so a parser
@@ -198,13 +192,28 @@ function main(argv = [], textReader = nounsFromText) {
   // directive travels with the file that needs it. And it is announced rather
   // than applied quietly — a population you cannot see is one you cannot check.
   const NO_UI = /^#\s*kit:no-ui\b/m;
+
+  // The SECOND exclusion axis, and it is not the same one. `kit:no-ui` asks
+  // "does this corpus describe a UI"; this asks "does the app it describes
+  // EXIST". A trial corpus written forwards (claude-code-bot#92) has plenty of
+  // UI nouns, so `kit:no-ui` would not catch it — and it must not join this
+  // study, because cross-app noun reuse over a corpus I invented measures my
+  // own naming habits, not two teams independently converging.
+  //
+  // Found the way these things should be found: adding a trial corpus turned
+  // `--check` RED, because the recorded findings are over the four real apps.
+  // Same principle as above — declared by the corpus, never a filename list here.
+  const NOT_REAL = /^#\s*kit:not-a-real-app\b/m;
   const skipped = [];
+  const excluded = [];
   const files = all.filter((f) => {
-    if (!NO_UI.test(fs.readFileSync(path.join(dir, f), 'utf8'))) return true;
-    skipped.push(f);
-    return false;
+    const text = fs.readFileSync(path.join(dir, f), 'utf8');
+    if (NOT_REAL.test(text)) { excluded.push(f); return false; }
+    if (NO_UI.test(text)) { skipped.push(f); return false; }
+    return true;
   });
   for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);
+  for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);
 
   if (!files.length) {
     console.error(`saturation: no corpus matching "${only || ''}" — could not look`);
