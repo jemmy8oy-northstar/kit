@@ -563,7 +563,7 @@ function testTitles(file, src) {
       // tagged template), then the title is the next call's first argument.
       let at = m.index + m[0].length - 1; // the '(' or '`' the regex ended on
       if (isEach) {
-        const past = at;
+        const past = skipGroup(src, at);
         if (past < 0) break;
         let k = past;
         while (k < src.length && /\s/.test(src[k])) k++;
@@ -664,7 +664,7 @@ function mapping(behaviours, map, titles) {
   const index = new Map();
   for (const t of titles) {
     const k = `${t.file}\u0000${t.raw}`;
-    index.set(k, (index.get(k) || 0) + 1);
+    index.set(k, 1);
   }
   const files = new Set(titles.map((t) => t.file));
   const ids = new Set(behaviours.map((b) => b.id));

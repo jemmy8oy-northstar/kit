@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -304,6 +304,31 @@ MUTANTS.push(
     ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
   ['a corpus that will not parse is listed as an app with no behaviours',
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
+);
+
+// converge (claude-code-bot#92). Its whole output is a claim about how far two
+// specifications of one product disagree, and every failure mode here makes that
+// claim FLATTERING rather than merely wrong — which is the direction that gets
+// quoted.
+MUTANTS.push(
+  ['loose() stems and synonymises, so two names for one control score as agreement',
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '');",
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);", 'converge.js'],
+  ['loose() stops flattening kind, so one noun named twice reads as two disagreements',
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '');",
+    'return noun;', 'converge.js'],
+  ['an empty comparison reports perfect agreement instead of "nothing to compare"',
+    'return union.size === 0 ? null :', 'return union.size === 0 ? { inter: 0, union: 0, ratio: 1 } :', 'converge.js'],
+  ['the shared nouns are counted but never named, so the score cannot be checked',
+    'shared: [...a.nouns].filter((n) => b.nouns.has(n)).sort(),', 'shared: [],', 'converge.js'],
+  ['total disagreement prints an empty section rather than saying so',
+    "L.push(r.shared.length ? '  AGREED ON:' : '  AGREED ON: nothing — not one noun in common');",
+    "if (r.shared.length) L.push('  AGREED ON:');", 'converge.js'],
+  ['a corpus that will not load is measured as zero agreement instead of refused',
+    'if (bad.length) {', 'if (false) {', 'converge.js'],
+  ['onlyA is computed strictly, so a kind-only difference is reported as a unique noun',
+    'onlyA: [...a.nouns].filter((n) => !b.byLoose.has(loose(n))).sort(),',
+    'onlyA: [...a.nouns].filter((n) => !b.nouns.has(n)).sort(),', 'converge.js'],
 );
 
 let killed = 0;

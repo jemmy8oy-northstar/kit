@@ -1,0 +1,168 @@
+# kit:duplicate-corpus james-habits-app
+#
+# ⚠️ The brief handed to the writer of this file told it to add
+# `# kit:not-a-real-app` as well. That directive is FALSE here — james-habits-app
+# exists and ships — and it was removed by hand after the fact. Recorded rather
+# than quietly deleted: I wrote the wrong instruction, the writer followed it
+# correctly, and a corpus asserting something untrue about the world is the exact
+# failure this project argues against. The honest exclusion is the line above.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# TRIAL CORPUS — "James Habits App", written FORWARDS from the brief alone
+#
+# Written 2026-09-06, from docs/trials/habits-brief.md ONLY — no other file for
+# this app was read (see the isolation note on claude-code-bot#92: "give a go
+# building them from scratch based off my descriptions and comments"). The
+# brief is James's opening ideation post plus his one follow-up comment on
+# james-habits-app#1. Nothing else about that app informed this file.
+#
+# Every behaviour below is `source defined`, never `inferred` — there is no
+# LLM inference step in this build, so an `inferred` line would be me
+# hand-writing something and mislabelling it as a machine's work. Two anchors
+# are used, both my own best-effort slugs of the brief's two headings (the
+# brief has no per-bullet anchors, so behaviours drawing on the ideation list
+# and the "keep it simple" follow-up share one anchor each):
+#   #issue-1-app-idea-opening-post-jemmy8oy-2026-07-05   — the ideation post
+#   #issue-1-comment-jemmy8oy-2026-07-05t120531z         — "keep simple... at
+#                                                           the core just
+#                                                           looking to track
+#                                                           my habits"
+#
+# HONEST NOTE ON WHAT WAS HARD TO EXPRESS (see full findings in my report, this
+# is the short version for anyone reading just this file):
+#   - No verb asserts a control's ON/OFF state — `sees checkbox:X` proves the
+#     control is present, not whether it is ticked. "Ticked it" and "reopened
+#     already-ticked" end up asserting the identical fact.
+#   - "Exercised - auto ticked by running" is a computed rule triggered by a
+#     DIFFERENT noun's action. The notation has no way to state the RULE, only
+#     a UI action plus a UI side-effect, same shape as trial-lend's TIMING gap.
+#   - Every `when` in this notation is a user action. "Maybe some reminders?"
+#     would be the app acting on its own (a clock, not a click) — a
+#     structurally different kind of `when` that was never needed here because
+#     it got cut, but is worth naming.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ Choosing what to track — "so i can taylor it to the exact ways that i
+#     like to do things" means habits are user-defined, not a fixed list ═══
+
+behaviour BEH-SETUP-1 "James opens habit setup to add something new to track"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:ManageHabits
+  when activates button:AddHabit
+  then lands on page:NewHabit
+  then sees field:HabitName
+
+behaviour BEH-SETUP-2 "Saving a new habit adds it to today's list"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:NewHabit
+  when fills form:NewHabit with ?fields
+  when activates button:SaveHabit
+  then lands on page:Today
+  then sees region:HabitList
+
+behaviour BEH-SETUP-3 "A new habit needs nothing more than a name to be saved"
+  source defined docs/trials/habits-brief.md#issue-1-comment-jemmy8oy-2026-07-05t120531z
+  actor owner
+  when opens page:NewHabit
+  provides form:NewHabit.fields = HabitName
+
+
+# ═══ The daily loop — "just a simple app to track my habits this year" ═══
+
+behaviour BEH-TODAY-1 "Today's page lists everything currently being tracked"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:Today
+  then sees region:HabitList
+
+behaviour BEH-TODAY-2 "Before any habit is added, today's page says there is nothing to track yet"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  given habits:None
+  when opens page:Today
+  then sees region:EmptyState
+
+behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  given habit:Pending
+  when opens page:Today
+  when activates checkbox:HabitDone
+  then sees checkbox:HabitDone
+  contract logging a habit is one tap, with no form or confirmation step in between
+
+behaviour BEH-TODAY-4 "A habit ticked off earlier today still shows as done when the page is reopened"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  given habit:LoggedToday
+  when opens page:Today
+  then sees checkbox:HabitDone
+
+behaviour BEH-TODAY-5 "Habits like sleeping hours or drinks drunk are logged as a number, not a tick"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:Today
+  when fills form:LogValue with ?fields
+  when activates button:SaveValue
+  then sees field:HabitValue
+
+behaviour BEH-TODAY-6 "Each row in today's list shows the habit's own name"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:Today
+  then sees field:HabitName
+
+
+# ═══ A habit that logs another — "Exercised - auto ticked by running" ═══
+
+behaviour BEH-DERIVE-1 "Logging a run also marks Exercised as done, without ticking it directly"
+  source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  actor owner
+  when opens page:Today
+  when activates checkbox:Ran
+  then shows badge:AutoTicked "Auto"
+
+
+# ═══ The shapes the notation cannot state — recorded, not smuggled in ═══
+#
+# Each is a real requirement or near-requirement from the brief that a reader
+# would expect this corpus to hold, and it cannot, without either inventing
+# grammar or weakening the assertion below what the brief actually says:
+#
+#   BOOLEAN STATE   `sees checkbox:HabitDone` proves the control exists, not
+#                    whether it is currently ticked. BEH-TODAY-3 ("just
+#                    ticked") and BEH-TODAY-4 ("already ticked, reopened
+#                    later") assert the IDENTICAL fact even though the human
+#                    sentences describe different moments. For an app whose
+#                    entire point is a done/not-done state, this is the
+#                    biggest single gap found in this trial.
+#
+#   DERIVED RULES    "Exercised - auto ticked by running" is a rule relating
+#                    two nouns (ticking Ran changes Exercised), not a fact
+#                    about one screen. BEH-DERIVE-1 can only assert the
+#                    visible SIDE EFFECT (a badge appears) after the trigger
+#                    action; it cannot state the rule itself ("Exercised.done
+#                    = Ran.done OR Exercised ticked directly"). Same shape as
+#                    trial-lend's TIMING finding (a transition smuggled into a
+#                    given-fixture or an after-the-fact badge, not stated as a
+#                    rule a reviewer would read as a rule).
+#
+#   SYSTEM-INITIATED EVENTS   every `when` in this notation is something an
+#                    actor does. "Maybe some reminders?" and any notification,
+#                    daily reset, or scheduled rollover the brief gestures at
+#                    would need a `when` with no actor behind it — a clock,
+#                    not a click. Not attempted here (reminders were cut as
+#                    non-core — see report), but it is a different SHAPE of
+#                    when, not just a missing noun.
+#
+#   QUANTITATIVE COMPARISON   "Goals? Progress bars? On track etc" (cut as
+#                    non-core) would need the app to assert an arithmetic
+#                    relationship ("5 of 7 days this week" being "on track").
+#                    The notation could only show the rendered literal text of
+#                    the result (`shows label:X "5/7"`), never the comparison
+#                    that produced it — not attempted, since the feature
+#                    itself was cut, but the same shape as DERIVED RULES above.
+# ─────────────────────────────────────────────────────────────────────────────

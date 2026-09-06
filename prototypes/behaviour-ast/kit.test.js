@@ -1863,6 +1863,122 @@ test('requires: the real corpora are unchanged by the emit() fixes', () => {
   assert.strictEqual(ungenerated, 2, 'snip-it ungenerated count moved');
 });
 
+// ══════════════ noun convergence (converge.js, claude-code-bot#92) ══════════════
+
+const CV = require('./converge');
+
+const cvDir = () => fixture({
+  'a.beh': 'behaviour BEH-A1 "x"\n  when opens page:Today\n  when activates checkbox:HabitDone\n',
+  'b.beh': 'behaviour BEH-B1 "x"\n  when opens page:Today\n  when activates checkbox:HabitItem\n',
+  'same.beh': 'behaviour BEH-S1 "x"\n  when opens page:Today\n  when activates checkbox:HabitDone\n',
+  'kindonly.beh': 'behaviour BEH-K1 "x"\n  when opens screen:Today\n  when activates checkbox:HabitDone\n',
+  'empty.beh': '# only a comment\n',
+});
+
+test('converge: a corpus compared with an identical one is total agreement — the CONTROL', () => {
+  // Without this, a tool that reported low agreement unconditionally would pass
+  // every "they disagreed" assertion below and be measuring nothing.
+  const dir = cvDir();
+  const a = CV.load('a', { dir }), s = CV.load('same', { dir });
+  const r = CV.compare(a, s);
+  assert.strictEqual(r.strict.ratio, 1);
+  assert.deepStrictEqual(r.onlyA, []);
+  assert.deepStrictEqual(r.onlyB, []);
+});
+
+test('converge: two names for one control is a disagreement, not a near-miss', () => {
+  // The finding this tool was built to make sayable. `checkbox:HabitDone` and
+  // `checkbox:HabitItem` are the same control described twice; Kit binds by
+  // noun, so they are two bindings and nothing anywhere says they collide.
+  const dir = cvDir();
+  const r = CV.compare(CV.load('a', { dir }), CV.load('b', { dir }));
+  assert.strictEqual(r.shared.length, 1, 'only the page is shared');
+  assert.deepStrictEqual(r.shared, ['page:Today']);
+  assert.ok(r.onlyA.includes('checkbox:HabitDone'));
+  assert.ok(r.onlyB.includes('checkbox:HabitItem'));
+  // And loose matching must NOT rescue it — if it did, the headline claim that
+  // the divergence survives normalisation would be false.
+  assert.strictEqual(r.loose.ratio, r.strict.ratio);
+});
+
+test('converge: the loose score forgives kind and case, and says which nouns collided', () => {
+  // The other direction, and the one that keeps the loose score honest as an
+  // OPTIMISTIC bound: `page:Today` vs `screen:Today` really is one thing named
+  // twice, so a normaliser that could not see it would understate agreement.
+  const dir = cvDir();
+  const r = CV.compare(CV.load('a', { dir }), CV.load('kindonly', { dir }));
+  assert.ok(r.loose.ratio > r.strict.ratio, 'ignoring kind must forgive something here');
+  assert.deepStrictEqual(r.kindMismatch, [['page:Today', 'screen:Today']]);
+  assert.ok(!r.onlyA.includes('page:Today'), 'a loose match must not also be reported as unique to A');
+});
+
+test('converge: loose() flattens kind, case and separators — and stops there', () => {
+  assert.strictEqual(CV.loose('button:LogToday'), 'logtoday');
+  assert.strictEqual(CV.loose('control:log-today'), 'logtoday');
+  assert.strictEqual(CV.loose('Button:LOG_TODAY'), 'logtoday');
+  // The line it must not cross. Deciding these two mean the same control is a
+  // semantic judgement, and faking it here would let the tool report agreement
+  // that the generator will not honour — two bindings either way.
+  assert.notStrictEqual(CV.loose('button:LogToday'), CV.loose('button:MarkDone'));
+});
+
+test('converge: nothing to compare is null, never a ratio', () => {
+  // 0-of-0 must not render as 0% ("they agreed on nothing") or 100% ("perfect
+  // agreement"). Both are readings of a measurement that did not happen.
+  assert.strictEqual(CV.jaccard(new Set(), new Set()), null);
+  assert.strictEqual(CV.jaccard(new Set(['x']), new Set()).ratio, 0);
+});
+
+test('converge: total disagreement SAYS so rather than printing an empty section', () => {
+  const dir = fixture({
+    'p.beh': 'behaviour BEH-P "x"\n  when opens page:One\n',
+    'q.beh': 'behaviour BEH-Q "x"\n  when opens page:Two\n',
+  });
+  const r = CV.compare(CV.load('p', { dir }), CV.load('q', { dir }));
+  assert.deepStrictEqual(r.shared, []);
+  const out = CV.render([], [{ a: 'p', b: 'q', r }]);
+  assert.match(out, /AGREED ON: nothing — not one noun in common/,
+    'an empty section reports the most important finding by absence, which reads as an oversight');
+});
+
+test('converge: a corpus it cannot read is could-not-look, not zero agreement', () => {
+  const dir = cvDir();
+  assert.match(CV.load('nope', { dir }).fatal, /no corpus/);
+  assert.match(CV.load('empty', { dir }).fatal, /zero behaviours/);
+});
+
+test('converge: main REFUSES on an unreadable corpus rather than comparing around it', () => {
+  // Found by a surviving mutant, not by design: the test above proves `load()`
+  // reports the fault, and `main()` deleting its own refusal SURVIVED, because
+  // nothing here had ever run main. A fault detected and then walked past is
+  // worse than one never detected — it produces a confident number
+  // ([[an-uncaught-mutation-is-a-finding]]).
+  let said = '';
+  const err = console.error, w = process.stderr.write.bind(process.stderr);
+  process.stderr.write = (s) => { said += s; return true; };
+  console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try {
+    code = CV.main(['node', 'converge.js', 'snip-it', 'definitely-not-a-corpus']);
+  } catch (e) {
+    code = `threw: ${e.message}`;
+  } finally { process.stderr.write = w; console.error = err; }
+  assert.strictEqual(code, 2, `expected could-not-look, got ${code}`);
+  assert.match(said, /no corpus/);
+});
+
+test('converge: it is a measurement and not a gate — no threshold, no exit 1', () => {
+  // Deliberate: what counts as enough agreement is a product judgement about how
+  // much reconciliation a user should do, and a number invented here would
+  // answer it quietly. Read from source, because "there is no threshold" is a
+  // property of the file, not of any one run.
+  const fs = require('fs'), path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'converge.js'), 'utf8');
+  const returns = [...src.matchAll(/^\s*return (\d);/gm)].map((m) => m[1]);
+  assert.ok(!returns.includes('1'), `converge.js returns 1 somewhere — it has grown a gate: ${returns}`);
+  assert.ok(returns.includes('2'), 'it must still be able to say it could not look');
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);
