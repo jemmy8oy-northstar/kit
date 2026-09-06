@@ -34,6 +34,36 @@ const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
 };
 
+// ⚠️ THIS TOOL EDITS THE WORKING TREE. For the duration of a run, the files on
+// disk are deliberately wrong, and anything else reading the tree in that window
+// reads a mutant — `git add -A` during a background run committed
+// `index.set(k, 1)` into a pushed branch (claude-code-bot#92). It was invisible
+// locally, because restoreAll() had already put the correct line back by the
+// time anyone looked; only the CI runner ever saw it.
+//
+// So the window announces itself where the danger actually shows up: an
+// untracked marker at the repo root, which `git status` prints as `??` right
+// next to the files you were about to stage. Untracked and root-level on
+// purpose — inside the prototype directory it would be one more line in a
+// listing nobody reads, and tracked it would be a file to clean up.
+const MARKER = path.join(__dirname, '..', '..', 'MUTATION-IN-PROGRESS');
+const dropMarker = () => { try { fs.unlinkSync(MARKER); } catch { /* already gone */ } };
+fs.writeFileSync(MARKER, [
+  'mutate.js is running and the working tree is deliberately WRONG.',
+  '',
+  'Do not commit, stage, or read prototypes/behaviour-ast/*.js while this file',
+  'exists — you will capture a mutant. It is removed when the run ends.',
+  '',
+  `started ${new Date().toISOString()} by pid ${process.pid}`,
+  '',
+].join('\n'));
+// Every exit path, including the ones that skip the end of the script: a marker
+// left behind after a crash is a false alarm, but a marker missing during a run
+// is the failure it exists to prevent, so both are handled rather than assumed.
+process.on('exit', dropMarker);
+process.on('SIGINT', () => { restoreAll(); dropMarker(); process.exit(130); });
+process.on('SIGTERM', () => { restoreAll(); dropMarker(); process.exit(143); });
+
 const MUTANTS = [
   // adjudication (#68: "default included but marked unreviewed")
   ['inference defaults to approved, not unreviewed',
