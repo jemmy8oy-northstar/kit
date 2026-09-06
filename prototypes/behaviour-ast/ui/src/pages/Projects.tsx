@@ -66,6 +66,19 @@ function ProjectRow({ project }: { project: ProjectSummary }) {
             trial — no app
           </Badge>
         ) : null}
+        {/* Same reasoning, different axis. This corpus describes an app that
+            DOES exist and is already in the list under its own corpus, so
+            `notReal` is false of it and would be a lie. Without a marker the
+            trial and its subject read as two equal projects. Neutral for the
+            same reason: a fact about the corpus, not an alarm. */}
+        {project.duplicateOf ? (
+          <Badge
+            tone="neutral"
+            title={`A second corpus for ${project.duplicateOf}, written forwards from a brief — not a separate project`}
+          >
+            trial — spec for {project.duplicateOf}
+          </Badge>
+        ) : null}
         <Count n={project.behaviours ?? 0} one="behaviour" tone="primary" />
         <CoverageBadge coverage={project.coverage} />
         {project.conflicts ? (

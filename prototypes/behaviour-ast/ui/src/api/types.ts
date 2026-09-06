@@ -59,6 +59,16 @@ export interface ProjectSummary {
    * because 0% against a real app and 0% against nothing mean opposite things.
    */
   notReal?: boolean
+  /**
+   * The app this corpus is a second description of, when it declares
+   * `# kit:duplicate-corpus <app>` — a spec written forwards from a brief for
+   * software that DOES exist (claude-code-bot#92). `notReal` is false of these,
+   * so it cannot carry them, and without a marker of their own the list would
+   * show a trial and the project it was written against as two equal projects.
+   * Names the app rather than being a boolean, because "which one is the real
+   * project" is the only question a reader has on seeing it.
+   */
+  duplicateOf?: string | null
   behaviours?: number
   conflicts?: number
   coverage?: SummaryCoverage
