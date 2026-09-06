@@ -1336,6 +1336,65 @@ test('the two exclusion directives are independent, not one rule spelled twice',
   assert.ok(!/skipping both\.beh: declares "# kit:no-ui"/.test(said), 'must report the existence reason, not the UI one');
 });
 
+test('saturation EXCLUDES a second corpus for an app already in the study, and names the app', () => {
+  // The THIRD axis. A forward trial written from a brief for an app that DOES
+  // exist (cc-bot#92) is neither no-ui nor not-a-real-app — both directives
+  // would be FALSE of it — and it still must not join a study that counts apps.
+  const dir = fixture({
+    'james-habits-app.beh': SATURATING,
+    'trial-habits-a.beh': '# kit:duplicate-corpus james-habits-app\n' + SATURATING,
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(/skipping trial-habits-a\.beh/.test(said), said);
+  assert.ok(/duplicate-corpus james-habits-app/.test(said), 'the reason must name WHICH app is doubled, or the reader cannot check it');
+  // And the app it duplicates must still be IN the study — excluding both would
+  // silently drop a real app, which is the failure this whole axis guards.
+  assert.match(said, /^\s*james-habits-app\s+\d+/m, 'the duplicated app itself must still be measured');
+});
+
+test('CONTROL: the same corpus WITHOUT the duplicate directive is not excluded', () => {
+  const dir = fixture({ 'james-habits-app.beh': SATURATING, 'trial-habits-a.beh': SATURATING });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(!/skipping trial-habits-a\.beh/.test(said), said);
+});
+
+test('a duplicate corpus is never SILENTLY excluded — the population stays visible', () => {
+  // Same rule the other two axes carry. An exclusion nobody announces is a
+  // population nobody can check, and gap #8's numbers are quoted externally.
+  const dir = fixture({
+    'james-habits-app.beh': SATURATING,
+    'trial-habits-a.beh': '# kit:duplicate-corpus james-habits-app\n' + SATURATING,
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(/skipping/.test(said), 'excluded without a word about it');
+});
+
+test('the duplicate marker names the app in the project payload, and is null when absent', () => {
+  // `null`, not undefined: "not a duplicate" and "this reader has stopped
+  // reporting duplicates" must not be the same reading. `notReal` already
+  // carries a mutant for exactly that confusion.
+  const dir = fixture({
+    'plain.beh': 'behaviour BEH-P "x"\n  when opens page:Home\n',
+    'dup.beh': '# kit:duplicate-corpus plain\nbehaviour BEH-D "x"\n  when opens page:Home\n',
+  });
+  // Required locally: `proj` is declared further down this file, so the module
+  // const is still in its temporal dead zone when this test body runs.
+  const P = require('./project');
+  assert.strictEqual(P.project('dup', { behDir: dir }).duplicateOf, 'plain');
+  assert.strictEqual(P.project('plain', { behDir: dir }).duplicateOf, null);
+});
+
 test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () => {
   // Otherwise "it was skipped" could be the tool ignoring anything it dislikes.
   const dir = fixture({
@@ -1514,6 +1573,21 @@ test('the list carries the trial marker through to the UI, with a real corpus as
   const rows = ui.route('GET', '/api/projects', { dir }).body.projects;
   assert.strictEqual(rows.find((p) => p.app === 'trial').notReal, true);
   assert.strictEqual(rows.find((p) => p.app === 'alpha').notReal, false, 'CONTROL');
+});
+
+test('the list carries the duplicate marker, naming the app, with a real corpus as control', () => {
+  // Same reasoning as the test above, for the third exclusion axis. A trial
+  // corpus written forwards for an app that DOES exist is not `notReal`, so
+  // that marker cannot carry it, and without this one the UI would list the
+  // trial and its subject as two indistinguishable projects.
+  const dir = fixture({
+    'alpha.beh': 'behaviour BEH-A "alpha does a thing"\n  actor engineer\n  when opens page:Home\n',
+    'trial-alpha.beh': '# kit:duplicate-corpus alpha\nbehaviour BEH-T "a trial does a thing"\n  actor engineer\n  when opens page:Home\n',
+  });
+  const rows = ui.route('GET', '/api/projects', { dir }).body.projects;
+  assert.strictEqual(rows.find((p) => p.app === 'trial-alpha').duplicateOf, 'alpha',
+    'the marker must name the app, not merely flag a duplicate');
+  assert.strictEqual(rows.find((p) => p.app === 'alpha').duplicateOf, null, 'CONTROL');
 });
 
 test('available coverage reports a number — the control for null-not-zero', () => {

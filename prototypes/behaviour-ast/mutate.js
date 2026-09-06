@@ -245,6 +245,16 @@ MUTANTS.push(
     'for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);', '', 'saturation.js'],
   ['saturation excludes the no-ui corpus SILENTLY, so the population is invisible',
     'for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);', '', 'saturation.js'],
+  ['saturation stops excluding a SECOND corpus for an app already in the study, doubling its weight',
+    'if (dup) { duplicates.push([f, dup[1]]); return false; }', '', 'saturation.js'],
+  ['a duplicate corpus is excluded SILENTLY, so one app counts twice with nothing said',
+    'for (const [f, of] of duplicates) console.log(`  (skipping ${f}: declares "# kit:duplicate-corpus ${of}" — a second corpus for an app already in this study would weight ${of} twice while looking like independent evidence)`);', '', 'saturation.js'],
+  // The one that would be easy to get subtly wrong: excluding the duplicate is
+  // only right if the app it duplicates STAYS. A rule that dropped both would
+  // silently shrink the population by a real app and still look like a working
+  // exclusion — every "is it skipped" assertion above would still pass.
+  ['the duplicate exclusion drops the ORIGINAL app too, silently shrinking the study',
+    'const dup = DUPLICATE.exec(text);', 'const dup = DUPLICATE.exec(text) || /^behaviour/m.exec(text);', 'saturation.js'],
 );
 
 // project (docs/design/ui.md). The read model's whole job is to be believed by
@@ -266,6 +276,13 @@ MUTANTS.push(
     'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: undefined,', 'project.js'],
   ['the list endpoint drops notReal, so the marker never reaches the UI',
     'notReal: p.notReal,', '', 'ui.js'],
+  ['a duplicate corpus is projected with no marker, so a trial and its subject list as two equal projects',
+    "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],", 'duplicateOf: null,', 'project.js'],
+  ['duplicateOf names nothing, so the reader cannot tell WHICH app is doubled',
+    "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],",
+    "duplicateOf: /^#\\s*kit:duplicate-corpus\\b/m.test(src) ? true : null,", 'project.js'],
+  ['the list endpoint drops duplicateOf, so the marker never reaches the UI',
+    'duplicateOf: p.duplicateOf,', '', 'ui.js'],
   // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.

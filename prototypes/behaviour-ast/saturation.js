@@ -204,16 +204,38 @@ function main(argv = [], textReader = nounsFromText) {
   // `--check` RED, because the recorded findings are over the four real apps.
   // Same principle as above — declared by the corpus, never a filename list here.
   const NOT_REAL = /^#\s*kit:not-a-real-app\b/m;
+
+  // The THIRD axis, and the reason it cannot be either of the two above. A corpus
+  // written forwards from a brief for an app that DOES exist (cc-bot#92: "branch
+  // off the initial commit … build them from scratch based off my descriptions")
+  // describes a UI, and describes shipped software — so `kit:no-ui` and
+  // `kit:not-a-real-app` are both FALSE of it, and writing either would be a lie
+  // in a file whose whole purpose is not lying about what is known.
+  //
+  // It still must not join this study. Cross-app noun reuse counts APPS, and two
+  // corpora for james-habits-app would weight that one app twice while looking
+  // like independent evidence — the "shuffling the same corpus" control in
+  // docs/pilots/binding-saturation.md exists precisely because that comparison is
+  // the easy one to fool yourself with.
+  //
+  // ⚠️ The exclusion is deliberately unconditional rather than "keep the first
+  // one seen": which of two corpora for the same app is the canonical one is a
+  // judgement, and a tool that picked silently would make it invisibly.
+  const DUPLICATE = /^#\s*kit:duplicate-corpus\s+(\S+)/m;
   const skipped = [];
   const excluded = [];
+  const duplicates = [];
   const files = all.filter((f) => {
     const text = fs.readFileSync(path.join(dir, f), 'utf8');
+    const dup = DUPLICATE.exec(text);
+    if (dup) { duplicates.push([f, dup[1]]); return false; }
     if (NOT_REAL.test(text)) { excluded.push(f); return false; }
     if (NO_UI.test(text)) { skipped.push(f); return false; }
     return true;
   });
   for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);
   for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);
+  for (const [f, of] of duplicates) console.log(`  (skipping ${f}: declares "# kit:duplicate-corpus ${of}" — a second corpus for an app already in this study would weight ${of} twice while looking like independent evidence)`);
 
   if (!files.length) {
     console.error(`saturation: no corpus matching "${only || ''}" — could not look`);

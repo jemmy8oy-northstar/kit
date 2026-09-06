@@ -563,7 +563,7 @@ function testTitles(file, src) {
       // tagged template), then the title is the next call's first argument.
       let at = m.index + m[0].length - 1; // the '(' or '`' the regex ended on
       if (isEach) {
-        const past = skipGroup(src, at);
+        const past = at;
         if (past < 0) break;
         let k = past;
         while (k < src.length && /\s/.test(src[k])) k++;

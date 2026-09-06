@@ -127,6 +127,14 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
     // as indistinguishable from a shipped one. Read from the corpus, same
     // directive saturation.js excludes on; declared in one place.
     notReal: /^#\s*kit:not-a-real-app\b/m.test(src),
+    // A corpus can also describe an app that DOES exist and is already listed
+    // under another corpus (cc-bot#92's forward trials). `notReal` is false of
+    // it and would be a lie; but the list must still not show two entries that
+    // both look like the project itself. Names the app it duplicates rather than
+    // being a bare boolean, because "which one is the real project" is the only
+    // question a reader has on seeing it. `null`, never undefined — absent and
+    // not-a-duplicate must read differently.
+    duplicateOf: (/^#\s*kit:duplicate-corpus\s+(\S+)/m.exec(src) || [null, null])[1],
     behaviours: behaviours.map((b) => ({
       id: b.id,
       title: b.title,
