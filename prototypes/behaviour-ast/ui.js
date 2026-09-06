@@ -99,6 +99,10 @@ function summary(app, opts) {
     app,
     corpus: p.corpus,
     notReal: p.notReal,
+    // Carried for the same reason as `notReal` and killed by the same mutant: a
+    // marker the API drops never reaches the UI, so the list would show a trial
+    // corpus and the project it was written against as two equal projects.
+    duplicateOf: p.duplicateOf,
     behaviours: p.behaviours.length,
     conflicts: p.conflicts.length,
     // Rule 4. `covered` is null — not 0 — when there was nothing to read.

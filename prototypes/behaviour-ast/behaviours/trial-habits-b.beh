@@ -1,0 +1,206 @@
+# kit:duplicate-corpus james-habits-app
+#
+# ⚠️ The brief handed to the writer of this file told it to add
+# `# kit:not-a-real-app` as well. That directive is FALSE here — james-habits-app
+# exists and ships — and it was removed by hand after the fact. Recorded rather
+# than quietly deleted: I wrote the wrong instruction, the writer followed it
+# correctly, and a corpus asserting something untrue about the world is the exact
+# failure this project argues against. The honest exclusion is the line above.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# TRIAL CORPUS B — "James's habit tracker", written FORWARDS from the brief only
+#
+# Written 2026-09-06, from docs/trials/habits-brief.md ALONE — no other file in
+# this repo, no shipped james-habits-app source, no other .beh corpus for this
+# app, no bindings.json. This is an independent second answer to the same brief
+# trial-habits-a.beh is answering; the two were not compared while being written.
+#
+# Every behaviour below is `source defined docs/trials/habits-brief.md#<anchor>`.
+# Nothing is `inferred` — there is no LLM step in this build yet, so an
+# `inferred` line here would be me hand-writing something and mislabelling it as
+# a machine's work. Two anchors are used, both descriptive rather than exact
+# GitHub heading slugs (the brief's two real sections are the issue-opening post
+# and James's one follow-up comment):
+#   #opening-post — the ideation list + "James Habits App Dashboard" section
+#   #comment      — "Keep simple for a first implementation... at the core just
+#                    looking to track my habits"
+#
+# WHAT WAS HARD TO EXPRESS, briefly (full detail in the trial report):
+#   - the brief's one explicit RULE ("Exercised - auto ticked by running") is a
+#     cross-noun causal dependency. The grammar has given/when/then over ONE
+#     noun's own steps; there is no way to assert that activating one checkbox
+#     changes a DIFFERENT noun's state. Written as a `contract` instead — prose
+#     the generated test cannot honestly claim to prove.
+#   - "Sleeping hours, take inspiration from the apple wheel" names a specific
+#     visual encoding (a filled ring showing a quantity against a target). `then
+#     sees region:SleepRing` can assert the region exists; it cannot assert that
+#     it renders as a ring, or that the fill reflects the number entered.
+#   - untick / toggle-off is not stated anywhere in the brief but is the natural
+#     other half of "checkbox" as a control; the notation has no `then does not
+#     see`/`then <verb> not <kind>` shape to state it even if I wanted to
+#     (trial-lend.beh names the same NEGATION gap independently).
+#   - "this year" / day-boundary timing (when does "today" roll over) is a
+#     TIMING rule, same class trial-lend already names for a due date: the
+#     notation states fixture STATE via `given`, never the transition rule.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ The daily loop — "at the core just looking to track my habits" (#comment) ═══
+
+behaviour BEH-TODAY-1 "Opening the app shows today's habits to track"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  then sees region:HabitList
+
+behaviour BEH-TODAY-2 "Each habit in today's list is shown as something to tick off"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  then sees checkbox:HabitItem
+
+behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  given habit:NotDone
+  when opens page:Today
+  when activates checkbox:HabitItem
+  then sees badge:Done
+
+
+# ═══ Habits whose brief entry names a shape different from a plain checkbox ═══
+#
+# checkbox:HabitItem above stands in for the many same-shaped positive habits
+# the brief lists once each with no further detail (ate fruit today, been
+# outside, seen friend, side hustle, press ups / upper body workout, stretch,
+# drawing, learning/hobby, gift giving). Writing one near-identical behaviour
+# per habit name would specify breadth, not the core loop — the thing #49 and
+# "keep simple for a first implementation" both argue against. The four below
+# are named individually because each is the brief stating something ABOUT that
+# habit beyond "it exists": two similarly-named items that are actually
+# distinct, an explicit "checkbox" callout, and the one explicit cross-habit
+# rule.
+
+behaviour BEH-MEALS-1 "Veg with lunch and veg with dinner are two separate habits, not one"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  then sees checkbox:VegLunch
+  then sees checkbox:VegDinner
+
+behaviour BEH-BREAKFAST-1 "Eating breakfast is tracked as a plain checkbox"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  then sees checkbox:AteBreakfast
+
+behaviour BEH-RUN-1 "Logging a run also ticks off the exercised habit"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  given habit:NotDone
+  when opens page:Today
+  when activates checkbox:Ran
+  then sees badge:Done
+  contract activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are "Exercised - auto ticked by running"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule
+
+
+# ═══ Habits that are a quantity, not a tick ═══
+
+behaviour BEH-SLEEP-1 "Sleep is a logged quantity shown like an activity ring, not a checkbox"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  then sees region:SleepRing
+  contract the brief says "take inspiration from the apple wheel" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered
+
+behaviour BEH-SLEEP-2 "Sleep hours are entered for the day"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  when fills form:SleepHours with ?fields
+  then sees region:SleepRing
+
+behaviour BEH-SLEEP-3 "The sleep form takes a single hours value"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  provides form:SleepHours.fields = Hours
+
+behaviour BEH-DRINKS-1 "Drinks are entered as a count for the day, not a single tick"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  when fills form:DrinksCount with ?fields
+  then sees field:Count
+
+behaviour BEH-DRINKS-2 "The drinks form takes a single count value"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  provides form:DrinksCount.fields = Count
+
+
+# ═══ Tracking means more than today — reviewing past days ═══
+#
+# The brief hedges calendar/notes/photos with "maybe" throughout — those are
+# cut below as not-first-implementation. But "track my habits" without any way
+# to see a past day is not tracking, it is a same-day to-do list; some minimal
+# review surface is the part of "calendar maybe?" I judged NOT optional. I kept
+# it to a plain list rather than his calendar idea — the richer rendering is
+# separable from the underlying capability and is exactly the kind of
+# presentation richness "keep simple" argues against for v1.
+
+behaviour BEH-HISTORY-1 "Past days are reachable from today and listed"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:Today
+  when activates button:ViewHistory
+  then lands on page:History
+  then sees region:PastDaysList
+
+behaviour BEH-HISTORY-2 "Opening a past day shows which habits were done that day"
+  source defined docs/trials/habits-brief.md#opening-post
+  actor owner
+  when opens page:History
+  when activates row:PastDay
+  then sees region:HabitList
+
+
+# ═══ Cut as not-a-first-implementation — recorded, not silently dropped ═══
+#
+# Everything below is in the brief but excluded from this corpus, and why:
+#
+#   HABIT CATALOGUE BREADTH  — 12 of the 16 ideation-list habits (veg/fruit/
+#     outside/seen-friend/side-hustle/press-ups/stretch/drawing/learning/gift-
+#     giving) are folded into the generic checkbox:HabitItem noun above rather
+#     than each getting a named behaviour. James: "obviously lots of ideas here
+#     so would need to prioritise" — the LIST is the brainstorm, not the spec.
+#
+#   "Eating - healthy fats" (olive oil / nuts / avocado / seeds / greek
+#     yogurt) and "Running meals" (chicken and rice / salmon rice bowl / pasta
+#     / stir fry) — cut entirely, not even folded into HabitItem. Ambiguous
+#     whether these are MORE habits to tick (e.g. "ate olive oil today") or
+#     personal reference notes on what to eat / cook, closer to a shopping or
+#     recipe list than a completed action. Unlike every item in the main list,
+#     these don't read as a thing you DID today. Left out rather than guessed.
+#
+#   NOTES + CALENDAR + PHOTOS ON ACTIVITIES — "would be good to have... maybe?"
+#     — his own hedge. Cut; BEH-HISTORY-1/2 cover the minimal "see a past day"
+#     need without notes, rich calendar rendering, or photo attachment.
+#
+#   WORD OF THE MONTH — "Word of the month? E.g. greatness, peace" — a single
+#     hedged idea with no stated relationship to the daily habit loop. Cut.
+#
+#   REMINDERS / GOALS / PROGRESS BARS / "ON TRACK" — "Maybe some reminders?
+#     Goals? Progress bars? On track etc" — three hedged, undetailed ideas in
+#     one sentence. Cut; also unstateable here (see TIMING/quantity-comparison
+#     gap in the report) even if in scope.
+#
+#   REGISTER-INTEREST PAGE + YOUTUBE VIDEO ("Confirm User Interest") — a
+#     validation/marketing checklist item ("Put together a page explaining the
+#     product, allow user sign ups... gauge interest"), not a behaviour of the
+#     habit-tracking app itself. Treated as a separate artefact from the app
+#     under test. Flagged as an ambiguity, not a confident exclusion.
+#
+#   "habitlink" — named once as inspiration with zero detail carried over; not
+#     actionable as a behaviour.

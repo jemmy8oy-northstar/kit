@@ -28,11 +28,41 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
 };
+
+// ⚠️ THIS TOOL EDITS THE WORKING TREE. For the duration of a run, the files on
+// disk are deliberately wrong, and anything else reading the tree in that window
+// reads a mutant — `git add -A` during a background run committed
+// `index.set(k, 1)` into a pushed branch (claude-code-bot#92). It was invisible
+// locally, because restoreAll() had already put the correct line back by the
+// time anyone looked; only the CI runner ever saw it.
+//
+// So the window announces itself where the danger actually shows up: an
+// untracked marker at the repo root, which `git status` prints as `??` right
+// next to the files you were about to stage. Untracked and root-level on
+// purpose — inside the prototype directory it would be one more line in a
+// listing nobody reads, and tracked it would be a file to clean up.
+const MARKER = path.join(__dirname, '..', '..', 'MUTATION-IN-PROGRESS');
+const dropMarker = () => { try { fs.unlinkSync(MARKER); } catch { /* already gone */ } };
+fs.writeFileSync(MARKER, [
+  'mutate.js is running and the working tree is deliberately WRONG.',
+  '',
+  'Do not commit, stage, or read prototypes/behaviour-ast/*.js while this file',
+  'exists — you will capture a mutant. It is removed when the run ends.',
+  '',
+  `started ${new Date().toISOString()} by pid ${process.pid}`,
+  '',
+].join('\n'));
+// Every exit path, including the ones that skip the end of the script: a marker
+// left behind after a crash is a false alarm, but a marker missing during a run
+// is the failure it exists to prevent, so both are handled rather than assumed.
+process.on('exit', dropMarker);
+process.on('SIGINT', () => { restoreAll(); dropMarker(); process.exit(130); });
+process.on('SIGTERM', () => { restoreAll(); dropMarker(); process.exit(143); });
 
 const MUTANTS = [
   // adjudication (#68: "default included but marked unreviewed")
@@ -245,6 +275,16 @@ MUTANTS.push(
     'for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);', '', 'saturation.js'],
   ['saturation excludes the no-ui corpus SILENTLY, so the population is invisible',
     'for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);', '', 'saturation.js'],
+  ['saturation stops excluding a SECOND corpus for an app already in the study, doubling its weight',
+    'if (dup) { duplicates.push([f, dup[1]]); return false; }', '', 'saturation.js'],
+  ['a duplicate corpus is excluded SILENTLY, so one app counts twice with nothing said',
+    'for (const [f, of] of duplicates) console.log(`  (skipping ${f}: declares "# kit:duplicate-corpus ${of}" — a second corpus for an app already in this study would weight ${of} twice while looking like independent evidence)`);', '', 'saturation.js'],
+  // The one that would be easy to get subtly wrong: excluding the duplicate is
+  // only right if the app it duplicates STAYS. A rule that dropped both would
+  // silently shrink the population by a real app and still look like a working
+  // exclusion — every "is it skipped" assertion above would still pass.
+  ['the duplicate exclusion drops the ORIGINAL app too, silently shrinking the study',
+    'const dup = DUPLICATE.exec(text);', 'const dup = DUPLICATE.exec(text) || /^behaviour/m.exec(text);', 'saturation.js'],
 );
 
 // project (docs/design/ui.md). The read model's whole job is to be believed by
@@ -266,6 +306,13 @@ MUTANTS.push(
     'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: undefined,', 'project.js'],
   ['the list endpoint drops notReal, so the marker never reaches the UI',
     'notReal: p.notReal,', '', 'ui.js'],
+  ['a duplicate corpus is projected with no marker, so a trial and its subject list as two equal projects',
+    "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],", 'duplicateOf: null,', 'project.js'],
+  ['duplicateOf names nothing, so the reader cannot tell WHICH app is doubled',
+    "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],",
+    "duplicateOf: /^#\\s*kit:duplicate-corpus\\b/m.test(src) ? true : null,", 'project.js'],
+  ['the list endpoint drops duplicateOf, so the marker never reaches the UI',
+    'duplicateOf: p.duplicateOf,', '', 'ui.js'],
   // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.
@@ -287,6 +334,31 @@ MUTANTS.push(
     ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
   ['a corpus that will not parse is listed as an app with no behaviours',
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
+);
+
+// converge (claude-code-bot#92). Its whole output is a claim about how far two
+// specifications of one product disagree, and every failure mode here makes that
+// claim FLATTERING rather than merely wrong — which is the direction that gets
+// quoted.
+MUTANTS.push(
+  ['loose() stems and synonymises, so two names for one control score as agreement',
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '');",
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);", 'converge.js'],
+  ['loose() stops flattening kind, so one noun named twice reads as two disagreements',
+    "return noun.slice(noun.indexOf(':') + 1).toLowerCase().replace(/[^a-z0-9]/g, '');",
+    'return noun;', 'converge.js'],
+  ['an empty comparison reports perfect agreement instead of "nothing to compare"',
+    'return union.size === 0 ? null :', 'return union.size === 0 ? { inter: 0, union: 0, ratio: 1 } :', 'converge.js'],
+  ['the shared nouns are counted but never named, so the score cannot be checked',
+    'shared: [...a.nouns].filter((n) => b.nouns.has(n)).sort(),', 'shared: [],', 'converge.js'],
+  ['total disagreement prints an empty section rather than saying so',
+    "L.push(r.shared.length ? '  AGREED ON:' : '  AGREED ON: nothing — not one noun in common');",
+    "if (r.shared.length) L.push('  AGREED ON:');", 'converge.js'],
+  ['a corpus that will not load is measured as zero agreement instead of refused',
+    'if (bad.length) {', 'if (false) {', 'converge.js'],
+  ['onlyA is computed strictly, so a kind-only difference is reported as a unique noun',
+    'onlyA: [...a.nouns].filter((n) => !b.byLoose.has(loose(n))).sort(),',
+    'onlyA: [...a.nouns].filter((n) => !b.nouns.has(n)).sort(),', 'converge.js'],
 );
 
 let killed = 0;

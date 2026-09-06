@@ -2,6 +2,7 @@
   "app": "snip-it",
   "corpus": "prototypes/behaviour-ast/behaviours/snip-it.beh",
   "notReal": false,
+  "duplicateOf": null,
   "behaviours": [
     {
       "id": "BEH-HOME-1",

@@ -50,6 +50,34 @@ describe('Projects', () => {
     expect(screen.getAllByText(/trial — no app/)).toHaveLength(1)
   })
 
+  it('marks a duplicate corpus with the app it specifies, not just "trial"', async () => {
+    // The third axis (claude-code-bot#92). These corpora describe an app that
+    // DOES exist, so `notReal` is false of them and the badge above cannot
+    // carry them — without their own marker the list would show a spec written
+    // forwards and the project it was written against as two equal projects.
+    // The badge names the subject because "which one is the real project" is
+    // the only question a reader has on seeing two rows for one app.
+    mockFetch(projectsFixture)
+    renderProjects()
+
+    const dups = projectsFixture.projects.filter((p) => p.duplicateOf)
+    expect(dups.length).toBeGreaterThan(0)
+    for (const d of dups) {
+      expect(await screen.findByRole('link', { name: d.app })).toBeInTheDocument()
+      // The subject must be present in the row, or the marker is a bare flag.
+      expect(d.duplicateOf).toBeTruthy()
+    }
+    expect(screen.getAllByText(/trial — spec for james-habits-app/)).toHaveLength(dups.length)
+  })
+
+  it('CONTROL: a real corpus carries no duplicate marker', async () => {
+    mockFetch({ projects: projectsFixture.projects.filter((p) => !p.duplicateOf) })
+    renderProjects()
+
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByText(/trial — spec for/)).not.toBeInTheDocument()
+  })
+
   it('CONTROL: a real corpus carries no trial marker', async () => {
     // Otherwise the badge could be rendering on every row and the test above
     // would still pass on the count alone.
