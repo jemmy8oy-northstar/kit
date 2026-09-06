@@ -383,7 +383,18 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       const file = bind(nouns.find((n) => n.kind === 'file'));
       const field = bind(nouns.find((n) => n.kind === 'field'));
       if (!file || !field) return null;
-      return [`await page.${loc(field)}.setInputFiles(${JSON.stringify(file.fixture)});`];
+      // A binding EXISTING is not the same as it carrying what this verb needs,
+      // and this branch used to conflate them: a file binding with no `fixture`
+      // and a field binding with no locator emitted
+      //     await page.null.setInputFiles(undefined);
+      // which is counted as GENERATED, contributes to the headline percentage,
+      // and throws the moment it runs. That is a false green — strictly worse
+      // than the refusal this design is built on — and it survived because every
+      // corpus was reverse-engineered from an app that already had both keys
+      // (claude-code-bot#92, requires.js). Refuse instead; requires.js says why.
+      const l = loc(field);
+      if (!l || !file.fixture) return null;
+      return [`await page.${l}.setInputFiles(${JSON.stringify(file.fixture)});`];
     }
     case 'lands': {
       const b = bind(nouns[0]);
@@ -398,6 +409,13 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       for (const f of fields) {
         const fb = bindings[`field:${f}`];
         if (!fb) return null;
+        // Same false green as `attaches`: without a label BOTH branches below
+        // emit `getByLabel(undefined)`, which is generated, counted, and unable
+        // to run. Note this verb needs a LABEL specifically, not addressability
+        // in general — it only ever emits getByLabel — which is why requires.js
+        // gives a `field:` noun a different obligation under `fills` than under
+        // `attaches`. The requirement belongs to the verb, not to the kind.
+        if (!fb.label) return null;
         const fixture = Object.entries(bindings).find(([k, v]) => k.startsWith('file:') && v.fixture);
         lines.push(fb.label && fixture
           ? `await page.getByLabel(${JSON.stringify(fb.label)}).setInputFiles(${JSON.stringify(fixture[1].fixture)});`
