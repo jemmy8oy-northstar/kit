@@ -3,6 +3,7 @@
     {
       "app": "james-habits-app",
       "corpus": "prototypes/behaviour-ast/behaviours/james-habits-app.beh",
+      "notReal": false,
       "behaviours": 23,
       "conflicts": 1,
       "coverage": {
@@ -16,6 +17,7 @@
     {
       "app": "kit",
       "corpus": "prototypes/behaviour-ast/behaviours/kit.beh",
+      "notReal": false,
       "behaviours": 14,
       "conflicts": 0,
       "coverage": {
@@ -29,6 +31,7 @@
     {
       "app": "language-vocab",
       "corpus": "prototypes/behaviour-ast/behaviours/language-vocab.beh",
+      "notReal": false,
       "behaviours": 27,
       "conflicts": 0,
       "coverage": {
@@ -42,6 +45,7 @@
     {
       "app": "macro-metrics",
       "corpus": "prototypes/behaviour-ast/behaviours/macro-metrics.beh",
+      "notReal": false,
       "behaviours": 10,
       "conflicts": 0,
       "coverage": {
@@ -55,6 +59,21 @@
     {
       "app": "snip-it",
       "corpus": "prototypes/behaviour-ast/behaviours/snip-it.beh",
+      "notReal": false,
+      "behaviours": 8,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "trial-lend",
+      "corpus": "prototypes/behaviour-ast/behaviours/trial-lend.beh",
+      "notReal": true,
       "behaviours": 8,
       "conflicts": 0,
       "coverage": {

@@ -56,6 +56,16 @@ function ProjectRow({ project }: { project: ProjectSummary }) {
       </h2>
       <p className="muted">{project.corpus}</p>
       <div className="badges">
+        {/* A trial corpus describes an app that does not exist. It belongs in
+            the list — hiding it would make the list lie about what corpora Kit
+            reads — but a 0% score against a real app and a 0% score against
+            nothing mean opposite things, so the row has to say which. `neutral`
+            because this is a fact about the corpus, not an alarm. */}
+        {project.notReal ? (
+          <Badge tone="neutral" title="This corpus describes an app that does not exist — a trial, not a project">
+            trial — no app
+          </Badge>
+        ) : null}
         <Count n={project.behaviours ?? 0} one="behaviour" tone="primary" />
         <CoverageBadge coverage={project.coverage} />
         {project.conflicts ? (

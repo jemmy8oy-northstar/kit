@@ -260,6 +260,12 @@ MUTANTS.push(
     "proves: 'someone LINKED each covered behaviour to a test. NOT that the test asserts the behaviour.',", '', 'project.js'],
   ['a corpus that parsed to nothing is projected instead of refused',
     'if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };', '', 'project.js'],
+  ['a trial corpus is projected as a real app, so the UI shows an invented app as a project',
+    'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: false,', 'project.js'],
+  ['notReal goes undefined rather than false, so "absent" and "real" become the same reading',
+    'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: undefined,', 'project.js'],
+  ['the list endpoint drops notReal, so the marker never reaches the UI',
+    'notReal: p.notReal,', '', 'ui.js'],
   // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.

@@ -142,12 +142,42 @@ nobody is told what would satisfy it.
 That is a **product decision about what Kit is**, so it is James's. Logged here,
 not built.
 
+## Finding 5 — the UI would have shown an invented app as a project 🔴 FIXED
+
+The same contamination, a third time and in a third population: the UI's fixture
+test turned red because `ui.js`'s project list is checked against its captured
+output, and the trial corpus joined the list.
+
+**Here the population was right and the presentation was wrong.** The UI is a
+viewer — hiding a corpus would make the list lie about what Kit reads — so the
+trial *should* appear. But an app scoring 0% because it is unbuilt and an app
+scoring 0% because it does not exist mean opposite things, and the row said
+neither.
+
+**Fixed** — `notReal` is carried from the corpus through `project.js` and the
+list endpoint, and the row renders a neutral `trial — no app` badge. `notReal`
+is always a boolean, never absent, so `!p.notReal` cannot be true for two
+different reasons.
+
+🔑 **And a mutant survived on the way, which is the more useful half.** Dropping
+`notReal: p.notReal` from `ui.js` killed nothing, because `mutate.js` runs
+`kit.test.js` alone — so **any rule whose only assertion lives in the UI's vitest
+suite is unmutated**. The rule is now asserted in the Node suite too, where the
+harness can see it. That boundary is worth remembering beyond this PR: the two
+suites are gated together in CI but only one is mutation-tested.
+
 ## What this says about the trial method
 
-Worth keeping: three of the four findings came from *friction*, not from
-analysis. The global count and the population contamination were both invisible
-from the backwards direction and both surfaced within minutes of running
-forwards. A fifth pilot app would not have found either.
+Worth keeping: four of the five findings came from *friction*, not from analysis.
+The global count and all three population problems were invisible from the
+backwards direction and surfaced within minutes of running forwards. A fifth
+pilot app would not have found any of them.
+
+The pattern underneath them is one thing said three times: **the corpus directory
+is an implicit population for every measurement that reads it** — the saturation
+study, the UI's project list, and the fixture capture. Adding one file changed
+all three, and only two of them were wrong to change. "Which populations does
+this corpus belong to" had no answer anywhere before this run.
 
 Worth watching: an invented corpus can be written to succeed. This one was
 written to a brief fixed *before* the corpus, and deliberately over a domain

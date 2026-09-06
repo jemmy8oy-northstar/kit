@@ -98,6 +98,7 @@ function summary(app, opts) {
   return {
     app,
     corpus: p.corpus,
+    notReal: p.notReal,
     behaviours: p.behaviours.length,
     conflicts: p.conflicts.length,
     // Rule 4. `covered` is null — not 0 — when there was nothing to read.

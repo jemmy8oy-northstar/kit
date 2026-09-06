@@ -1361,6 +1361,23 @@ test('the projection carries every panel the UI needs, for a real corpus', () =>
   assert.strictEqual(p.generated.length, 8, 'one generated test per behaviour — the output pane');
 });
 
+test('a trial corpus is projected as notReal, and a real one is not', () => {
+  // The UI is a viewer, so it must SHOW a trial corpus — hiding one would make
+  // the list lie about what corpora Kit reads. But 0% against a real app and 0%
+  // against an app that does not exist mean opposite things, so the projection
+  // has to carry which (claude-code-bot#92).
+  assert.strictEqual(proj.project('trial-lend').notReal, true);
+  assert.strictEqual(proj.project('snip-it').notReal, false, 'CONTROL: a real corpus is not marked');
+});
+
+test('notReal is false, never undefined, so a UI cannot read "absent" as "real"', () => {
+  // An optional boolean that is sometimes missing makes `!p.notReal` true for
+  // two different reasons ([[empty-means-two-things]]).
+  for (const app of ['snip-it', 'kit', 'trial-lend']) {
+    assert.strictEqual(typeof proj.project(app).notReal, 'boolean', app);
+  }
+});
+
 test('coverage UNAVAILABLE is distinguishable from coverage ZERO', () => {
   // A UI that cannot tell "no mapping exists" from "nothing is covered" will
   // render the second, and the second is an alarm ([[empty-means-two-things]]).
@@ -1483,6 +1500,20 @@ test('unavailable coverage is null in the list, never zero', () => {
   assert.strictEqual(alpha.coverage.available, false);
   assert.strictEqual(alpha.coverage.covered, null);
   assert.ok(alpha.coverage.reason, 'an unavailable coverage must say why');
+});
+
+test('the list carries the trial marker through to the UI, with a real corpus as control', () => {
+  // Asserted HERE, in the Node suite, and not only in the UI's vitest suite:
+  // mutate.js runs kit.test.js alone, so a rule whose only assertion lives in
+  // vitest is unmutated. Dropping `notReal: p.notReal` from ui.js SURVIVED
+  // until this test existed ([[an-uncaught-mutation-is-a-finding]]).
+  const dir = fixture({
+    'alpha.beh': 'behaviour BEH-A "alpha does a thing"\n  actor engineer\n  when opens page:Home\n',
+    'trial.beh': '# kit:not-a-real-app\nbehaviour BEH-T "a trial does a thing"\n  actor engineer\n  when opens page:Home\n',
+  });
+  const rows = ui.route('GET', '/api/projects', { dir }).body.projects;
+  assert.strictEqual(rows.find((p) => p.app === 'trial').notReal, true);
+  assert.strictEqual(rows.find((p) => p.app === 'alpha').notReal, false, 'CONTROL');
 });
 
 test('available coverage reports a number — the control for null-not-zero', () => {

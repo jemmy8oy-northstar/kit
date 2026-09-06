@@ -53,6 +53,12 @@ export interface ProjectSummary {
    */
   error?: string
   corpus?: string
+  /**
+   * True when the corpus declares `# kit:not-a-real-app` — it describes an app
+   * that does not exist (a trial). The list still shows it; the row marks it,
+   * because 0% against a real app and 0% against nothing mean opposite things.
+   */
+  notReal?: boolean
   behaviours?: number
   conflicts?: number
   coverage?: SummaryCoverage
