@@ -1,22 +1,28 @@
 #!/usr/bin/env node
 'use strict';
 //
-// ui — the read API the Kit UI runs on
-// ────────────────────────────────────
-// `docs/design/ui.md` leaves two decisions with James (where the UI runs, and
-// whether it writes the corpus), acting 2026-09-08. This file is the half that
-// is true under EVERY option of both ([[option-invariant-half]]):
+// ui — the API the Kit UI runs on
+// ───────────────────────────────
+// `docs/design/ui.md` left two decisions with James, acting 2026-09-08. Both
+// dates passed in silence, so **his silence is the decision** (the rule the
+// decision queue makes, claude-code-bot#59):
 //
-//   · decision 1, local vs deployed — the transport is the same server either
-//     way; only where it is started and what fronts it differ;
-//   · decision 2, propose vs write — every option needs exactly this read
-//     surface first, and none of them changes its shape.
+//   · decision 1 — **it is a local developer tool.** A deployed one needs a
+//     GitHub App token in the cluster, an auth story and a clone layer, all of
+//     which are platform-and-secrets work that is never mine.
+//   · decision 2 — **it writes the corpus file, and never touches git.** He
+//     reviews the change as an ordinary working-tree diff and commits it.
+//
+// The two decisions are not independent, and the code says so: a write path is
+// only reachable when the server is bound to a loopback address (rule 2 below).
 //
 //   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>]
 //
-//   GET /api/projects        every corpus, with enough to render a list
-//   GET /api/projects/<app>  project.js's full projection for one app
-//   GET /api/health          { ok: true } — for a live-check, later
+//   GET  /api/projects        every corpus, with enough to render a list
+//   GET  /api/projects/<app>  project.js's full projection for one app
+//   GET  /api/health          { ok: true } — for a live-check, later
+//   POST /api/projects/<app>/behaviours/<id>/steps   { step }
+//   POST /api/projects/<app>/behaviours             { id, title, actor, steps }
 //
 // Adds no analysis. Like project.js, if you find yourself computing something
 // here it belongs in kit.js, where the suite and the mutation harness can see
@@ -29,11 +35,15 @@
 // This is a developer's instrument; `--host` exists for the deployed option,
 // where something else is doing the authenticating.
 //
-// ── 2. It cannot write. Not "does not" — cannot ──────────────────────────────
-// Decision 2 is open, so the honest state of the code is that no verb other
-// than GET reaches a handler at all. A doc saying "the UI does not write yet"
-// and a server that returns 405 for every write are different assurances, and
-// only the second survives someone adding a fetch() in a hurry.
+// ── 2. It can write, but only from loopback ─────────────────────────────────
+// Decision 2 landed, so the 405-for-every-verb rule this file used to carry is
+// gone. What replaces it is narrower and load-bearing: **a write handler is
+// unreachable unless `--host` is a loopback address.** Decision 1 said local
+// tool; combining "reachable from the network" with "edits files in the working
+// tree" is an unauthenticated remote write, and it would arrive not as a
+// decision but as someone passing `--host 0.0.0.0` to see the UI from a phone.
+// The read surface still binds loopback by default (rule 1); this rule is what
+// stops the two defaults being undone one flag at a time.
 //
 // ── 3. An app name is matched against the corpus listing, never joined ───────
 // `/api/projects/../../etc/passwd` must be a 404. The name is looked UP in the
@@ -48,10 +58,30 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const proj = require('./project.js');
+const writer = require('./writer.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 const DEFAULT_PORT = 4321;
 const DEFAULT_HOST = '127.0.0.1';
+
+// A request body big enough to be a mistake or an attack, and far bigger than
+// any behaviour anyone will type. Enforced while READING, not after: a limit
+// checked on a fully-buffered body is not a limit.
+const MAX_BODY = 64 * 1024;
+
+/**
+ * Is this host a loopback address?
+ *
+ * An allowlist of exact spellings, not a pattern. `127.0.0.1` is the one anybody
+ * types, but `127.x.y.z` is all loopback, so the range is matched — and nothing
+ * else is. A substring or `startsWith` test here would accept `127.0.0.1.evil`
+ * and a regexp without anchors would accept anything containing it.
+ */
+function isLoopback(host) {
+  if (host === 'localhost' || host === '::1' || host === '[::1]') return true;
+  return /^127\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(String(host))
+    && String(host).split('.').slice(1).every((n) => Number(n) >= 0 && Number(n) <= 255);
+}
 
 /** Every corpus in behaviours/, by app name. The only source of valid names. */
 function corpora(dir = BEH_DIR) {
@@ -131,17 +161,16 @@ function projectOf(app, opts) {
  * object and a server that delivers it are different claims
  * ([[test-the-delivery-not-just-the-value]]).
  */
-function route(method, pathname, opts = {}) {
-  const json = (status, body) => ({ status, contentType: 'application/json', body });
+function route(method, pathname, opts = {}, body = null) {
+  const json = (status, b) => ({ status, contentType: 'application/json', body: b });
 
-  // Rule 2. Checked before anything is parsed, so there is no path at all from
-  // a write verb to a handler.
+  if (method === 'POST') return write(pathname, opts, body, json);
+
   if (method !== 'GET') {
     return json(405, {
-      error: 'read-only',
-      reason: 'Whether the UI writes the corpus is an open decision (docs/design/ui.md, decision 2). '
-        + 'Until it is made, this server has no write path.',
-      allow: 'GET',
+      error: 'method-not-allowed',
+      reason: `this server serves GET and POST; ${method} reaches no handler`,
+      allow: 'GET, POST',
     });
   }
 
@@ -183,6 +212,112 @@ function route(method, pathname, opts = {}) {
   return json(404, { error: 'no-such-route', reason: `nothing is served at ${pathname}` });
 }
 
+/**
+ * The write half. Everything decision 2 turned on lives here.
+ *
+ * Separated from `route` for the same reason the router is separated from the
+ * server: the rules below are the ones worth being able to state and test one at
+ * a time. Note the ORDER — the loopback refusal comes before the body is looked
+ * at, so a remote caller cannot even learn whether an app or a behaviour exists.
+ */
+function write(pathname, opts, body, json) {
+  // Rule 2. Decision 1 said local tool; a write path reachable from the network
+  // is the deployed option arriving through a flag rather than through him.
+  if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
+    return json(403, {
+      error: 'not-loopback',
+      reason: `writes are served only to loopback; this server is bound to ${opts.host}. `
+        + 'docs/design/ui.md decision 1: Kit\'s UI is a local developer tool, and an '
+        + 'unauthenticated write API on a routable interface is not that.',
+    });
+  }
+
+  const m = /^\/api\/projects\/([^/]+)\/behaviours(?:\/([^/]+)\/steps)?$/.exec(pathname);
+  if (!m) return json(404, { error: 'no-such-route', reason: `nothing accepts a POST at ${pathname}` });
+
+  let app;
+  try {
+    app = decodeURIComponent(m[1]);
+  } catch {
+    return json(400, { error: 'bad-request', reason: 'the app name is not valid percent-encoding' });
+  }
+
+  // Rule 3, unchanged for writes: the name is looked UP, never joined. `corpusPath`
+  // resolves it against the directory listing for exactly this reason, so a
+  // traversal has nothing to traverse with.
+  const file = writer.corpusPath(app, opts.dir || BEH_DIR);
+  if (!file) {
+    return json(404, { error: 'no-such-project', reason: `no corpus named '${app}'`, known: corpora(opts.dir) });
+  }
+
+  if (!body || typeof body !== 'object') {
+    return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
+  }
+
+  const text = fs.readFileSync(file, 'utf8');
+  const id = m[2] ? decodeURIComponent(m[2]) : body.id;
+  const result = m[2]
+    ? writer.addStep(text, id, body.step)
+    : writer.addBehaviour(text, id, body.title, { actor: body.actor, steps: body.steps, source: body.source, ref: body.ref });
+
+  if (!result.ok) {
+    // 409, not 500. Every refusal in writer.js is a statement about the request
+    // — the behaviour is not there, the step will not parse, the edit would
+    // change a neighbour. A 500 would say the server broke, and send whoever
+    // reads it looking in the wrong place ([[the-message-names-the-layer]]).
+    return json(409, { error: result.error, reason: result.reason, known: result.known });
+  }
+
+  writer.commitToDisk(file, result);
+
+  // The response says what was NOT done, every time. Decision 2's whole content
+  // is the second half of this sentence, and a caller that assumes a commit
+  // finds out here rather than when the branch turns out to be empty.
+  return json(200, {
+    ok: true,
+    app,
+    behaviour: id,
+    file: path.relative(process.cwd(), file),
+    committed: false,
+    note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+  });
+}
+
+/**
+ * CORS headers, as a function of the request's Origin.
+ *
+ * The old rule here was `access-control-allow-origin: *`, and it was defensible
+ * while the server could not write: it bought a Vite dev server on another port
+ * and gave away nothing but a read of local corpora. It is not defensible now.
+ * `*` plus a write route means **any web page the developer happens to have open
+ * can edit files in their working tree**, because the browser will send the
+ * request on that page's behalf.
+ *
+ * So: a loopback origin is reflected, and every other origin gets no CORS header
+ * at all — the browser then refuses the response, which is the correct outcome.
+ * Reflected rather than `*` because `*` cannot be combined with the preflight
+ * this write route triggers, and an allowlist that names ports would break the
+ * moment Vite picks a different one.
+ */
+function cors(origin) {
+  if (!origin) return {};
+  let host;
+  try {
+    host = new URL(origin).hostname;
+  } catch {
+    return {};
+  }
+  if (!isLoopback(host)) return {};
+  return {
+    'access-control-allow-origin': origin,
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'content-type',
+    // Two different origins get two different answers, and a cache that forgets
+    // that serves one of them the other's headers.
+    vary: 'Origin',
+  };
+}
+
 function serve(opts = {}) {
   // `?? ` and not `||`: port 0 is a REQUEST for an ephemeral port, and `||`
   // silently turns it into 4321 — which the suite met as two tests fighting
@@ -194,15 +329,44 @@ function serve(opts = {}) {
     // `new URL` needs a base; the host header is untrusted input and is only
     // ever used to satisfy the parser, never read back out.
     const { pathname } = new URL(req.url, 'http://localhost');
-    const result = route(req.method, pathname, opts);
-    res.writeHead(result.status, {
-      'content-type': result.contentType,
-      // A read API for local tooling. No credentials are involved, and a
-      // permissive CORS header on a loopback-bound read-only server buys a
-      // Vite dev server on another port at no cost worth naming.
-      'access-control-allow-origin': '*',
+
+    const send = (result) => {
+      res.writeHead(result.status, { 'content-type': result.contentType, ...cors(req.headers.origin) });
+      res.end(JSON.stringify(result.body));
+    };
+
+    // A preflight is answered by the same allowlist that answers the request, so
+    // the two can never disagree — an ACAO that permits an origin a preflight
+    // refuses is a bug that only shows up in a browser.
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, cors(req.headers.origin));
+      return res.end();
+    }
+
+    if (req.method !== 'POST') return send(route(req.method, pathname, opts));
+
+    let size = 0;
+    const chunks = [];
+    req.on('data', (c) => {
+      size += c.length;
+      // Enforced while reading: past the limit nothing more is BUFFERED, so a
+      // large body cannot grow this process's memory. The remaining bytes are
+      // still drained rather than the socket destroyed, because destroying the
+      // request aborts the response with it and the caller gets a hang-up
+      // instead of the sentence explaining what happened.
+      if (size > MAX_BODY) { chunks.length = 0; return; }
+      chunks.push(c);
     });
-    res.end(JSON.stringify(result.body));
+    req.on('end', () => {
+      if (size > MAX_BODY) return send({ status: 413, contentType: 'application/json', body: { error: 'too-large', reason: `a request body over ${MAX_BODY} bytes is not a behaviour` } });
+      let body;
+      try {
+        body = JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null');
+      } catch (e) {
+        return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
+      }
+      send(route('POST', pathname, opts, body));
+    });
   });
 
   return new Promise((resolve, reject) => {
@@ -249,11 +413,13 @@ async function main(argv) {
   console.log(`kit ui  http://${opts.host}:${opts.port}`);
   console.log(`  ${apps.length} corpora: ${apps.join(', ')}`);
   console.log(`  repos: ${opts.repos || '(none — coverage will report unavailable, not zero)'}`);
-  console.log('  read-only: decision 2 in docs/design/ui.md is open');
+  console.log(isLoopback(opts.host)
+    ? '  writes: ON — edits land in the working tree and are NEVER committed'
+    : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
   return 0;
 }
 
-module.exports = { route, serve, corpora, repoFor, summary, parseArgs, main };
+module.exports = { route, write, serve, cors, isLoopback, corpora, repoFor, summary, parseArgs, main, MAX_BODY };
 
 if (require.main === module) {
   main(process.argv.slice(2)).then((code) => {

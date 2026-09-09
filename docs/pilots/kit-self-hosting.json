@@ -5,23 +5,23 @@
     "any difference. Re-record ONLY after deciding the write-up is wrong — a",
     "re-record with no edit to the prose is the drift, not the fix."
   ],
-  "behaviours": 14,
-  "steps": 42,
-  "contracts": 21,
+  "behaviours": 20,
+  "steps": 60,
+  "contracts": 36,
   "verbs": [
     {
       "verb": "state",
-      "steps": 14,
+      "steps": 20,
       "known": true
     },
     {
       "verb": "runs",
-      "steps": 14,
+      "steps": 20,
       "known": false
     },
     {
       "verb": "reports",
-      "steps": 9,
+      "steps": 13,
       "known": false
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "verb": "raises",
-      "steps": 1,
+      "steps": 3,
       "known": false
     }
   ],
@@ -47,11 +47,11 @@
   ],
   "unbound": {
     "generated": 0,
-    "ungenerated": 42
+    "ungenerated": 60
   },
   "bound": {
-    "generated": 14,
-    "ungenerated": 28
+    "generated": 20,
+    "ungenerated": 40
   },
   "derived": 0
 }

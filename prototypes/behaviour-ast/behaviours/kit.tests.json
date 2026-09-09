@@ -65,7 +65,7 @@
   "BEH-UI-1": [
     {
       "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a write verb never reaches a handler — decision 2 is open"
+      "title": "POST and GET are the whole surface — every other verb reaches no handler"
     }
   ],
   "BEH-UI-2": [
@@ -84,6 +84,58 @@
     {
       "file": "prototypes/behaviour-ast/kit.test.js",
       "title": "unavailable coverage is null in the list, never zero"
+    }
+  ],
+  "BEH-WRITE-1": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "writer: every comment in the corpus survives an edit, byte for byte"
+    },
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "writer: a step lands at the end of its own block, not after the blank line"
+    }
+  ],
+  "BEH-WRITE-2": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "writer: an edit that would not parse is refused, and the text is unchanged"
+    }
+  ],
+  "BEH-WRITE-3": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "writer: an edit that changes a NEIGHBOURING behaviour is refused"
+    }
+  ],
+  "BEH-WRITE-4": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "writer: it contains no path to git at all — decision 2, checked not promised"
+    },
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "a POST appends a step to the real file on disk, and says it did not commit"
+    }
+  ],
+  "BEH-WRITE-5": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "the write path is refused when the server is not bound to loopback"
+    },
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "isLoopback accepts the loopback range and nothing that merely looks like it"
+    }
+  ],
+  "BEH-WRITE-6": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "a cross-origin POST from a hostile page gets no CORS header from the socket"
+    },
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "CORS: a loopback origin is reflected, and any other origin gets no header"
     }
   ]
 }

@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -334,6 +334,45 @@ MUTANTS.push(
     ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
   ['a corpus that will not parse is listed as an app with no behaviours',
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
+);
+
+// writer + the write path (docs/design/ui.md decision 2, lapsed 2026-09-08).
+//
+// Every mutant here makes the writer LOSE something quietly — a comment, a
+// neighbouring behaviour, the loopback refusal, the sentence saying nothing was
+// committed. That is the only direction worth mutating: a writer that fails
+// loudly is a bug someone fixes, and a writer that succeeds wrongly edits the
+// file everything else in Kit measures against.
+MUTANTS.push(
+  ['a block ends at the next header, so an appended step lands past the blank line',
+    "if (line.trim() && !line.trim().startsWith('#')) end = i;", 'end = i;', 'writer.js'],
+  ['an edit that will not parse is written anyway',
+    "return { ok: false, error: 'would-not-parse', reason: e.message };",
+    'return { ok: true, text: after };', 'writer.js'],
+  ['a change to a NEIGHBOURING behaviour is accepted',
+    'if (shape(n) !== shape(b))', 'if (false)', 'writer.js'],
+  ['a behaviour DELETED by the edit is accepted',
+    'if (!n) return', 'if (false) return', 'writer.js'],
+  ['shape() ignores steps, so a neighbour losing a step compares as unchanged',
+    "steps: b.steps.map((s) => [s.kind, s.verb, s.noun, s.text].join('|')),", 'steps: [],', 'writer.js'],
+  ['a behaviour written by a machine defaults to `defined`, spending the silence a human owns',
+    "opts.source || 'inferred'", "opts.source || 'defined'", 'writer.js'],
+  ['a duplicate behaviour id is appended, so one id names two behaviours',
+    'if (ids(text).includes(id)) {', 'if (false) {', 'writer.js'],
+  ['a step containing a newline is spliced in as two lines',
+    'if (/\\n/.test(String(line)))', 'if (false)', 'writer.js'],
+  ['the write path is served on a routable interface — an unauthenticated remote write',
+    'if (!isLoopback(opts.host ?? DEFAULT_HOST)) {', 'if (false) {', 'ui.js'],
+  ['isLoopback loses its start anchor, so a hostile name ENDING in a loopback address passes',
+    'return /^127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))',
+    'return /127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))', 'ui.js'],
+  ['CORS goes back to `*`, so any page the developer has open can write to the tree',
+    'if (!isLoopback(host)) return {};',
+    "if (!isLoopback(host)) return { 'access-control-allow-origin': '*' };", 'ui.js'],
+  ['the response claims the edit was committed',
+    'committed: false,', 'committed: true,', 'ui.js'],
+  ['an oversized body is parsed instead of refused',
+    'if (size > MAX_BODY) return send({ status: 413,', 'if (false) return send({ status: 413,', 'ui.js'],
 );
 
 // converge (claude-code-bot#92). Its whole output is a claim about how far two

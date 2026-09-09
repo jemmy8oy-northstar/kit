@@ -1514,13 +1514,14 @@ test('lists every corpus in the directory, and only those', () => {
   assert.deepStrictEqual(ui.corpora(uiDir), ['alpha', 'beta']);
 });
 
-test('a write verb never reaches a handler — decision 2 is open', () => {
-  // Not "does not write" — cannot. A doc saying the UI is read-only and a
-  // server that refuses every write verb are different assurances.
-  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+test('POST and GET are the whole surface — every other verb reaches no handler', () => {
+  // Decision 2 landed, so POST now has a handler. PUT/PATCH/DELETE deliberately
+  // do not: there is one write shape (append), and a route that accepts a verb
+  // it has no meaning for is a 405 waiting to be discovered as a 500.
+  for (const method of ['PUT', 'PATCH', 'DELETE']) {
     const r = ui.route(method, '/api/projects', { dir: uiDir });
     assert.strictEqual(r.status, 405, `${method} was not refused`);
-    assert.match(r.body.reason, /decision 2/);
+    assert.match(r.body.allow, /GET, POST/);
   }
 });
 
@@ -1666,6 +1667,237 @@ test('the server binds the loopback interface and not every interface', async ()
   } finally {
     server.close();
   }
+});
+
+// ══════════════ the corpus writer (writer.js, claude-code-bot#59 / kit#16) ══════════════
+//
+// Decision 2 in docs/design/ui.md lapsed on 2026-09-08 and its stated default is
+// now the decision: **write the file, never touch git.** These assert the four
+// rules writer.js's header claims, and every one of them has a mutant.
+//
+// The corpus used below is a REAL one — `behaviours/snip-it.beh`, read from disk
+// and edited in memory. A fixture I write here would carry exactly the comments
+// I remembered to put in it, and the rule under test is about the comments a
+// person actually wrote ([[test-the-reader-against-the-artefact]]).
+
+const W = require('./writer');
+const REAL_CORPUS = fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'snip-it.beh'), 'utf8');
+
+test('writer: a step lands at the end of its own block, not after the blank line', () => {
+  const r = W.addStep(REAL_CORPUS, 'BEH-EDIT-1', 'then sees button:Save');
+  assert.ok(r.ok, r.reason);
+  const lines = r.text.split('\n');
+  const start = lines.findIndex((l) => l.startsWith('behaviour BEH-EDIT-1 '));
+  const next = lines.findIndex((l, i) => i > start && l.startsWith('behaviour '));
+  const added = lines.indexOf('  then sees button:Save');
+  assert.ok(added > start && added < next, `landed at ${added}, block is ${start}..${next}`);
+  // The one that matters: it is the LAST content line, so the blank separating
+  // the blocks is still a blank.
+  assert.strictEqual(lines[added + 1].trim(), '', 'the block separator was consumed');
+});
+
+test('writer: every comment in the corpus survives an edit, byte for byte', () => {
+  // The reason this file exists rather than a parse/serialise round-trip.
+  // snip-it.beh opens with nine lines of caveat that parse() does not keep, and
+  // a writer that dropped them would look correct in every AST comparison.
+  const r = W.addStep(REAL_CORPUS, 'BEH-CUT-1', 'then sees button:Save');
+  assert.ok(r.ok, r.reason);
+  const comments = (t) => t.split('\n').filter((l) => l.trim().startsWith('#'));
+  assert.deepStrictEqual(comments(r.text), comments(REAL_CORPUS));
+  assert.ok(comments(REAL_CORPUS).length >= 8, 'the fixture must actually have comments to lose');
+});
+
+test('writer: an edit that would not parse is refused, and the text is unchanged', () => {
+  for (const bad of ['wibble sees button:Save', 'source nonsense', 'option "only-a-label"']) {
+    const r = W.addStep(REAL_CORPUS, 'BEH-EDIT-1', bad);
+    assert.strictEqual(r.ok, false, `${bad} was accepted`);
+    assert.strictEqual(r.error, 'would-not-parse');
+    assert.strictEqual(r.text, undefined, 'a refusal must not hand back text to write');
+  }
+});
+
+test('writer: an edit that changes a NEIGHBOURING behaviour is refused', () => {
+  // Rule 3, and the only way to test it is to hand `validate` an "after" that a
+  // correct addStep would never produce — an off-by-one splice is exactly this.
+  const lines = REAL_CORPUS.split('\n');
+  const victim = lines.findIndex((l) => l.startsWith('behaviour BEH-EDIT-2 '));
+  lines.splice(victim + 2, 0, '  then sees button:Save');
+  const r = W.validate(REAL_CORPUS, lines.join('\n'), 'BEH-EDIT-1');
+  assert.strictEqual(r.ok, false, 'a step landing in the next behaviour was accepted');
+  assert.strictEqual(r.error, 'collateral-change');
+  assert.match(r.reason, /BEH-EDIT-2/);
+});
+
+test('writer: an edit that DELETES a behaviour is refused', () => {
+  // The other half of rule 3, and a different failure from a neighbour changing:
+  // a splice whose range is too long removes a whole block, and what is left
+  // parses perfectly. Nothing else in Kit would notice the behaviour was gone —
+  // the coverage number would simply be over a smaller set.
+  const lines = REAL_CORPUS.split('\n');
+  const victim = lines.findIndex((l) => l.startsWith('behaviour BEH-EDIT-2 '));
+  const next = lines.findIndex((l, i) => i > victim && l.startsWith('behaviour '));
+  lines.splice(victim, next - victim);
+  const r = W.validate(REAL_CORPUS, lines.join('\n'), 'BEH-EDIT-1');
+  assert.strictEqual(r.ok, false, 'a deleted behaviour was accepted');
+  assert.match(r.reason, /BEH-EDIT-2 disappeared/);
+});
+
+test('writer: a correct edit is NOT reported as collateral — the control', () => {
+  // Without this, a rule 3 that rejected everything would pass the test above.
+  assert.strictEqual(W.addStep(REAL_CORPUS, 'BEH-EDIT-1', 'then sees button:Save').ok, true);
+});
+
+test('writer: an unknown behaviour id is refused and names what does exist', () => {
+  const r = W.addStep(REAL_CORPUS, 'BEH-NOPE', 'then sees button:Save');
+  assert.strictEqual(r.error, 'no-such-behaviour');
+  assert.ok(r.known.includes('BEH-EDIT-1'), 'a refusal must say what the ids actually are');
+});
+
+test('writer: a new behaviour defaults to `inferred`, which parse() marks unreviewed', () => {
+  // His #68 call, carried into the one place that can silently spend it. A UI
+  // writes on a machine's behalf; silence in a corpus means a human wrote it.
+  const r = W.addBehaviour(REAL_CORPUS, 'BEH-NEW-1', 'a new thing', { actor: 'visitor', steps: ['when opens page:Home'] });
+  assert.ok(r.ok, r.reason);
+  const b = parse(r.text).find((x) => x.id === 'BEH-NEW-1');
+  assert.strictEqual(b.source.origin, 'inferred');
+  assert.strictEqual(b.review.state, 'unreviewed');
+});
+
+test('writer: a duplicate id, a bad id and a quoted title are all refused', () => {
+  assert.strictEqual(W.addBehaviour(REAL_CORPUS, 'BEH-EDIT-1', 't').error, 'duplicate-id');
+  assert.strictEqual(W.addBehaviour(REAL_CORPUS, 'beh-lower', 't').error, 'bad-id');
+  assert.strictEqual(W.addBehaviour(REAL_CORPUS, 'BEH-NEW-2', 'he said "hi"').error, 'bad-title');
+});
+
+test('writer: a multi-line step is refused rather than spliced in as two', () => {
+  const r = W.addStep(REAL_CORPUS, 'BEH-EDIT-1', 'then sees button:Save\n  then sees button:Cancel');
+  assert.strictEqual(r.error, 'multiline-step');
+});
+
+test('writer: appending twice produces the same shape as appending once, twice', () => {
+  // A trailing-newline bug shows up here and nowhere else: the second edit is
+  // the first one that meets the file the writer itself produced.
+  const one = W.addBehaviour(REAL_CORPUS, 'BEH-N1', 'one');
+  assert.ok(one.ok, one.reason);
+  const two = W.addBehaviour(one.text, 'BEH-N2', 'two');
+  assert.ok(two.ok, two.reason);
+  assert.strictEqual(two.text.match(/\n\n\nbehaviour/g), null, 'a blank line accumulated between edits');
+  assert.strictEqual(parse(two.text).length, parse(REAL_CORPUS).length + 2);
+});
+
+test('writer: it contains no path to git at all — decision 2, checked not promised', () => {
+  // A property of the file, not of any run. Read from source for the same reason
+  // converge.js's "there is no threshold" test does: the claim is that this
+  // cannot commit, and only the absence of the machinery proves it.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'writer.js'), 'utf8');
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  assert.strictEqual(/child_process|execFile|execSync|\bspawn\b/.test(code), false, 'writer.js can shell out');
+  assert.strictEqual(/require\(['"]child_process/.test(code), false);
+});
+
+// ── the write path over the transport ───────────────────────────────────────
+
+const post = (port, path, body, origin) => new Promise((resolve, reject) => {
+  const data = Buffer.from(JSON.stringify(body));
+  const req = require('http').request({
+    host: '127.0.0.1', port, path, method: 'POST',
+    headers: { 'content-type': 'application/json', 'content-length': data.length, ...(origin ? { origin } : {}) },
+  }, (res) => {
+    let b = '';
+    res.on('data', (c) => { b += c; });
+    res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: b }));
+  });
+  req.on('error', reject);
+  req.end(data);
+});
+
+// Its own directory, written to on purpose. `uiDir` is shared by the read tests
+// above and a write into it would make them depend on the order they run in.
+const wDir = () => fixture({
+  'gamma.beh': '# a comment that must survive\nbehaviour BEH-G "gamma"\n  actor engineer\n  when opens page:Home\n',
+});
+
+test('a POST appends a step to the real file on disk, and says it did not commit', async () => {
+  const dir = wDir();
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'then sees region:Main' });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(JSON.parse(res.body).committed, false, 'the response must state that nothing was committed');
+    const after = fsx.readFileSync(pathx.join(dir, 'gamma.beh'), 'utf8');
+    assert.match(after, /then sees region:Main/);
+    assert.match(after, /# a comment that must survive/);
+  } finally { server.close(); }
+});
+
+test('a POST that writes a step Kit cannot parse is a 409 and leaves the file alone', async () => {
+  const dir = wDir();
+  const before = fsx.readFileSync(pathx.join(dir, 'gamma.beh'), 'utf8');
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'wibble region:Main' });
+    assert.strictEqual(res.status, 409, 'a refused edit is a statement about the request, not a server fault');
+    assert.strictEqual(fsx.readFileSync(pathx.join(dir, 'gamma.beh'), 'utf8'), before);
+  } finally { server.close(); }
+});
+
+test('the write path is refused when the server is not bound to loopback', () => {
+  // The two decisions are coupled: local tool (1) is what makes an
+  // unauthenticated writer (2) acceptable, so the code refuses the combination
+  // rather than trusting whoever passes --host.
+  const r = ui.route('POST', '/api/projects/alpha/behaviours/BEH-A/steps', { dir: uiDir, host: '0.0.0.0' }, { step: 'then sees region:Main' });
+  assert.strictEqual(r.status, 403);
+  assert.strictEqual(r.error, undefined);
+  assert.strictEqual(r.body.error, 'not-loopback');
+});
+
+test('the loopback refusal comes BEFORE the corpus is looked up', () => {
+  // A remote caller must not be able to learn which apps exist by watching 404
+  // and 403 differ. Same request, unknown app: still 403, not 404.
+  const r = ui.route('POST', '/api/projects/definitely-not-an-app/behaviours/BEH-A/steps', { dir: uiDir, host: '10.0.0.5' }, {});
+  assert.strictEqual(r.body.error, 'not-loopback');
+});
+
+test('isLoopback accepts the loopback range and nothing that merely looks like it', () => {
+  for (const ok of ['127.0.0.1', '127.1.2.3', 'localhost', '::1']) assert.ok(ui.isLoopback(ok), ok);
+  for (const no of ['0.0.0.0', '10.0.0.5', '127.0.0.1.evil.com', 'x127.0.0.1', '::ffff:127.0.0.1', '1270.0.1']) {
+    assert.strictEqual(ui.isLoopback(no), false, `${no} was treated as loopback`);
+  }
+});
+
+test('CORS: a loopback origin is reflected, and any other origin gets no header', () => {
+  // `*` was defensible while the server could not write. With a write route it
+  // means any page the developer has open can edit their working tree.
+  assert.strictEqual(ui.cors('http://localhost:5173')['access-control-allow-origin'], 'http://localhost:5173');
+  assert.strictEqual(ui.cors('http://127.0.0.1:5173')['access-control-allow-origin'], 'http://127.0.0.1:5173');
+  for (const evil of ['https://evil.com', 'http://127.0.0.1.evil.com', 'not a url']) {
+    assert.strictEqual(ui.cors(evil)['access-control-allow-origin'], undefined, `${evil} was allowed`);
+  }
+  assert.strictEqual(ui.cors('http://localhost:5173').vary, 'Origin');
+});
+
+test('a cross-origin POST from a hostile page gets no CORS header from the socket', async () => {
+  // The header, on a real response, from a real origin — the value tested above
+  // has to survive the trip through serve() to mean anything.
+  const dir = wDir();
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'then sees region:Main' }, 'https://evil.com');
+    assert.strictEqual(res.headers['access-control-allow-origin'], undefined);
+  } finally { server.close(); }
+});
+
+test('a body over the limit is refused rather than buffered', async () => {
+  const dir = wDir();
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'x'.repeat(ui.MAX_BODY + 1) });
+    assert.strictEqual(res.status, 413);
+  } finally { server.close(); }
 });
 
 // ══════════════ the required surface (requires.js, claude-code-bot#92) ══════════════
