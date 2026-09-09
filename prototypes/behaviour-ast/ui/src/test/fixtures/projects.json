@@ -20,7 +20,7 @@
       "corpus": "prototypes/behaviour-ast/behaviours/kit.beh",
       "notReal": false,
       "duplicateOf": null,
-      "behaviours": 14,
+      "behaviours": 20,
       "conflicts": 0,
       "coverage": {
         "available": false,

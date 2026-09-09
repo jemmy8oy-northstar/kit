@@ -14,6 +14,32 @@ he stays silent** — see the queue at the bottom._
 
 ---
 
+## 🔴 BOTH DECISIONS LANDED, 2026-09-08, BY LAPSE
+
+Neither question was answered by the acting date, and the decision queue's whole promise is that
+**silence becomes a decision rather than a blockage** (claude-code-bot#59). So, recorded here rather
+than left to be re-derived from a queue entry:
+
+| | question | **decision** | how |
+|---|---|---|---|
+| 1 | local tool or deployed app? | **local developer tool** — `node ui.js` → loopback | default, unanswered by 2026-09-08 |
+| 2 | does it write the corpus? | **write the file, never touch git** (option B) | default, unanswered by 2026-09-08 |
+
+⚠️ **Re-measured before acting, not just re-quoted** ([[re-measure-a-lapsed-default]]). Nothing in
+the three days since changed either answer: a deployed UI still needs a GitHub App token in the
+cluster, an auth story and a clone layer, all of which are secrets-and-platform work that is never
+mine and could not be built in this window regardless. What the re-measure *did* find is that the
+two decisions are **not independent**, which the original write-up treated them as being: option B's
+writer is unauthenticated, so it is only safe under decision 1's answer. The code now refuses the
+combination rather than trusting a flag — `ui.js` serves a write route **only when bound to a
+loopback address**, and the CORS header stopped being `*` on the same reasoning.
+
+**Neither is irreversible and both can be revisited on a word from him.** Option C (write *and*
+commit) can still be added without rework; that was the reason to default to B rather than an
+argument against C.
+
+---
+
 ## Why the UI is not cosmetic
 
 `docs/pilots/kit-self-hosting.md` measured the second half of his ask. Kit can describe itself
@@ -155,7 +181,39 @@ on it.
    lands ([[option-invariant-half]]).
 2. ✅ **Done** — the read-only UI over that projection: corpus list → behaviour detail → generated
    output. `prototypes/behaviour-ast/ui/`. Also invariant under both open decisions.
-3. The writer, per decision 2.
+3. ✅ **Done** — the writer, per decision 2: `prototypes/behaviour-ast/writer.js` plus the two POST
+   routes in `ui.js`. It is a **splice into one behaviour block**, never a re-serialisation, and a
+   test asserts every comment in the real `snip-it.beh` survives an edit byte for byte. It refuses
+   an edit that will not parse, refuses one that would change a *neighbouring* behaviour, and
+   contains no path to `child_process` at all — asserted from its own source, because "it cannot
+   commit" is a property of the file rather than of any one run.
+   🔑 **It was proved on Kit's own corpus:** the six `BEH-WRITE-*` behaviours in
+   `behaviours/kit.beh` were written by `writer.js`, not by hand. Doing that found the one gap a
+   read of the code would not have — the HTTP surface takes `source` in the body and the CLI could
+   not say it, so a human at a terminal could only write behaviours marked as a machine's
+   inference. `--source` exists because of that.
+
+   🔴 **The first version of this shipped a CSRF hole, and the code's own comment said it had not.**
+   `ui.js` reasoned that refusing a hostile page the `access-control-allow-origin` header closed the
+   "a page the developer has open edits their working tree" vector. It does not. A POST with
+   `content-type: text/plain` is a CORS **simple request**: the browser sends it with no preflight
+   and withholds only the *response*. For a write, the request is the damage — the corpus is already
+   edited by the time the browser refuses to show the reply. `<form method=POST enctype="text/plain">`
+   does it with no JavaScript at all.
+
+   **A probe found it, not a re-reading.** A sonnet security lens reviewing the same file the same
+   hour concluded the vector *was* closed, reasoning — as the comment did — that a JSON body forces a
+   preflight. It does, but the server never checked the content-type, and the attacker is the one who
+   picks it. Two careful readings agreed with each other and were both wrong; a twelve-line script
+   that sent the request settled it in one run [[reproduce-before-you-repair]].
+
+   Fixed by the rule that actually governs a write: **a POST carrying an `Origin` this server would
+   not itself serve is refused, before the body is looked at.** No `Origin` means a non-browser caller
+   (curl, the CLI, the suite) and is allowed. Three tests pin it and **each asserts the file on disk,
+   not the status code** — a 403 that still wrote is the precise failure being guarded against, and
+   the pre-existing test asserted only the header, which is why the hole was invisible to a green
+   suite. Two mutants cover it; the CORS mutant's description was corrected, since it claimed to
+   remove a protection CORS never provided.
 4. **Kit's own corpus rewritten in browser verbs**, at which point `kit check kit` gates a UI
    Kit generated tests for, and the self-hosting claim is real rather than argued.
 

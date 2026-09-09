@@ -105,14 +105,15 @@ behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
 # comment above the code is a wish; described here it is named by a test, gated
 # by check.js, and mutated by mutate.js.
 
-behaviour BEH-UI-1 "A write verb never reaches a handler while the write decision is open"
+behaviour BEH-UI-1 "A verb the server has no meaning for reaches no handler"
   actor engineer
-  given request:Write
+  given request:Unsupported
   when runs command:KitUi
   then reports status:MethodNotAllowed
-  contract decision 2 in docs/design/ui.md is open — a doc saying "read-only" and a
-  contract server with no write path are different assurances, and only the second
-  contract survives someone adding a fetch() in a hurry
+  contract decision 2 landed on 2026-09-08, so POST now has a handler and this
+  contract behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have
+  contract one meaning each that nobody has decided, and a route accepting a verb it
+  contract cannot serve is a 405 waiting to be discovered as a 500
 
 behaviour BEH-UI-2 "The server binds the loopback interface, not every interface"
   actor engineer
@@ -137,3 +138,65 @@ behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never z
   then reports coverage:Unavailable
   contract project.js's rule, carried through the transport — a UI that cannot tell
   contract "no mapping exists" from "nothing is covered" renders the second
+
+# ── the corpus writer (writer.js) ───────────────────────────────────────────
+# Decision 2 in docs/design/ui.md lapsed 2026-09-08 and its default became the
+# decision: write the file, never touch git. These are the rules that decision
+# rests on, and they are the first behaviours here describing something that
+# CHANGES a file rather than reading one.
+
+behaviour BEH-WRITE-1 "An edit splices one block, so every comment in the corpus survives"
+  actor engineer
+  source defined
+  given corpus:WithComments
+  when runs command:KitWrite
+  then reports comment:Preserved
+  contract a round-trip through parse() would delete every comment in the file, and
+  contract snip-it.beh's nine opening lines are the caveat everything else rests on
+
+behaviour BEH-WRITE-2 "An edit that would not parse never reaches the disk"
+  actor engineer
+  source defined
+  given step:Malformed
+  when runs command:KitWrite
+  then raises error:WouldNotParse
+  contract the corpus is the source of truth for everything else Kit says, so a
+  contract writer that can corrupt it is worse than one that cannot write at all
+
+behaviour BEH-WRITE-3 "An edit that would change a neighbouring behaviour is refused"
+  actor engineer
+  source defined
+  given splice:OffByOne
+  when runs command:KitWrite
+  then raises error:CollateralChange
+  contract a step landing in the next behaviour parses perfectly and is silently
+  contract wrong — the worst failure a writer can have
+
+behaviour BEH-WRITE-4 "The writer never touches git, and the file proves it rather than promising it"
+  actor engineer
+  source defined
+  given decision:LapsedDefault
+  when runs command:KitWrite
+  then reports commit:None
+  contract a bot that commits to a spec repo cannot be un-added after the first
+  contract surprise, so the absence of child_process is asserted from source
+
+behaviour BEH-WRITE-5 "A write route is unreachable unless the server is bound to loopback"
+  actor engineer
+  source defined
+  given host:Routable
+  when runs command:KitUi
+  then reports status:Forbidden
+  contract decision 1 said local tool; combining reachable-from-the-network with
+  contract edits-files-in-the-working-tree is an unauthenticated remote write, and
+  contract it would arrive as a --host flag rather than as a decision of his
+
+behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write through the browser"
+  actor engineer
+  source defined
+  given origin:Hostile
+  when runs command:KitUi
+  then reports header:Absent
+  contract access-control-allow-origin: * was defensible while the server could
+  contract not write; with a write route it means any page the developer has open
+  contract can edit their working tree
