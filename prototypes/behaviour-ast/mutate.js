@@ -323,7 +323,7 @@ MUTANTS.push(
 // security property that is only asserted in a comment is a wish. The other two
 // are the read model's honesty rules surviving the trip through the transport.
 MUTANTS.push(
-  ['a write verb reaches a handler while decision 2 is still open',
+  ['a verb the server has no meaning for reaches a handler anyway',
     "if (method !== 'GET') {", 'if (false) {', 'ui.js'],
   ['the server binds every interface, publishing every corpus on the network',
     "const host = opts.host ?? DEFAULT_HOST;", "const host = opts.host ?? '0.0.0.0';", 'ui.js'],
@@ -344,6 +344,9 @@ MUTANTS.push(
 // loudly is a bug someone fixes, and a writer that succeeds wrongly edits the
 // file everything else in Kit measures against.
 MUTANTS.push(
+  ['the edit drops the corpus comments — the failure mode this whole file exists to prevent',
+    "const lines = text.split('\\n'); // the whole file, comments and blanks included",
+    "const lines = text.split('\\n').filter((l) => !l.trim().startsWith('#'));", 'writer.js'],
   ['a block ends at the next header, so an appended step lands past the blank line',
     "if (line.trim() && !line.trim().startsWith('#')) end = i;", 'end = i;', 'writer.js'],
   ['an edit that will not parse is written anyway',

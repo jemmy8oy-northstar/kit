@@ -185,7 +185,7 @@ function addStep(text, id, line) {
   const b = block(text, id);
   if (!b) return { ok: false, error: 'no-such-behaviour', reason: `no behaviour ${id} in this corpus`, known: ids(text) };
 
-  const lines = text.split('\n');
+  const lines = text.split('\n'); // the whole file, comments and blanks included
   lines.splice(b.end + 1, 0, INDENT + step);
   return validate(text, lines.join('\n'), id);
 }
