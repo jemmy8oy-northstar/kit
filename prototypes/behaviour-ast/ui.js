@@ -45,6 +45,16 @@
 // The read surface still binds loopback by default (rule 1); this rule is what
 // stops the two defaults being undone one flag at a time.
 //
+// ── 4. A write carrying a cross-origin `Origin` is refused ──────────────────
+// Rule 2 answers "who can reach the socket". It does NOT answer "who caused the
+// request", and on loopback those differ: a hostile page open in the developer's
+// own browser reaches the socket *as the developer*. CORS does not close this —
+// a `text/plain` POST is a simple request, sent with no preflight, and refusing
+// the attacker the *response* does not un-write the file. Measured with a probe,
+// not reasoned about. So writes refuse any request carrying an `Origin` this
+// server would not itself serve; no Origin means a non-browser caller and is
+// fine.
+//
 // ── 3. An app name is matched against the corpus listing, never joined ───────
 // `/api/projects/../../etc/passwd` must be a 404. The name is looked UP in the
 // set of corpora that exist; it is never used to build a path.
@@ -161,10 +171,10 @@ function projectOf(app, opts) {
  * object and a server that delivers it are different claims
  * ([[test-the-delivery-not-just-the-value]]).
  */
-function route(method, pathname, opts = {}, body = null) {
+function route(method, pathname, opts = {}, body = null, origin = null) {
   const json = (status, b) => ({ status, contentType: 'application/json', body: b });
 
-  if (method === 'POST') return write(pathname, opts, body, json);
+  if (method === 'POST') return write(pathname, opts, body, json, origin);
 
   if (method !== 'GET') {
     return json(405, {
@@ -220,7 +230,35 @@ function route(method, pathname, opts = {}, body = null) {
  * a time. Note the ORDER — the loopback refusal comes before the body is looked
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
-function write(pathname, opts, body, json) {
+function write(pathname, opts, body, json, origin = null) {
+  // Rule 4, and it is checked FIRST because it is the only one that defends
+  // against a caller who is not the developer.
+  //
+  // The CORS rule below (`cors()`) was written believing it closed the
+  // "hostile page open in the developer's browser" vector. It does not, and a
+  // probe proved it rather than a reading of it: a POST with
+  // `content-type: text/plain` is a CORS **simple request**, so the browser
+  // sends it with NO preflight and only withholds the *response*. Withholding
+  // the response does not un-write the file — the corpus was already edited.
+  // `<form method=POST enctype="text/plain">` does the same with no JS at all.
+  //
+  // So the check that actually holds is the Origin header, which browsers
+  // attach to every cross-origin POST and which page script cannot forge. A
+  // request with no Origin at all is a non-browser caller — curl, the CLI, the
+  // suite — and is allowed; that is the normal case, not a hole.
+  if (origin !== null && origin !== undefined) {
+    let host = null;
+    try { host = new URL(origin).hostname; } catch { host = null; }
+    if (!host || !isLoopback(host)) {
+      return json(403, {
+        error: 'cross-origin-write',
+        reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
+          + 'Kit\'s UI is a local developer tool; a page on another origin editing your working '
+          + 'tree is CSRF, not a feature.',
+      });
+    }
+  }
+
   // Rule 2. Decision 1 said local tool; a write path reachable from the network
   // is the deployed option arriving through a flag rather than through him.
   if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
@@ -289,15 +327,19 @@ function write(pathname, opts, body, json) {
  * The old rule here was `access-control-allow-origin: *`, and it was defensible
  * while the server could not write: it bought a Vite dev server on another port
  * and gave away nothing but a read of local corpora. It is not defensible now.
- * `*` plus a write route means **any web page the developer happens to have open
- * can edit files in their working tree**, because the browser will send the
- * request on that page's behalf.
  *
- * So: a loopback origin is reflected, and every other origin gets no CORS header
- * at all — the browser then refuses the response, which is the correct outcome.
- * Reflected rather than `*` because `*` cannot be combined with the preflight
- * this write route triggers, and an allowlist that names ports would break the
- * moment Vite picks a different one.
+ * ⚠️ **This function does NOT stop a cross-origin write, and an earlier version
+ * of this comment claimed it did.** Withholding the CORS header stops the
+ * attacking page READING the reply; it does not stop the request arriving, and
+ * for a write the request IS the damage. A `content-type: text/plain` POST is a
+ * CORS simple request that never triggers a preflight at all. The rule that
+ * actually defends the write is the Origin check at the top of `write()`; this
+ * one governs who may read a *reply*, which is all it ever did.
+ *
+ * A loopback origin is reflected, and every other origin gets no CORS header.
+ * Reflected rather than `*` because `*` cannot be combined with the preflight a
+ * JSON write triggers, and an allowlist naming ports breaks the moment Vite
+ * picks a different one.
  */
 function cors(origin) {
   if (!origin) return {};
@@ -365,7 +407,7 @@ function serve(opts = {}) {
       } catch (e) {
         return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
       }
-      send(route('POST', pathname, opts, body));
+      send(route('POST', pathname, opts, body, req.headers.origin ?? null));
     });
   });
 

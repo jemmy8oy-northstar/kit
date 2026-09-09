@@ -369,9 +369,21 @@ MUTANTS.push(
   ['isLoopback loses its start anchor, so a hostile name ENDING in a loopback address passes',
     'return /^127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))',
     'return /127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))', 'ui.js'],
-  ['CORS goes back to `*`, so any page the developer has open can write to the tree',
+  // ⚠️ This mutant's description USED to read "…so any page the developer has
+  // open can write to the tree". That was false, and believing it is what left
+  // the hole below open for a day: CORS never governed whether the write landed,
+  // only who could read the reply. The description now says what the mutant
+  // actually does, because a mutant is also a claim about the rule it removes.
+  ['CORS goes back to `*`, so any page can READ a local corpus off the socket',
     'if (!isLoopback(host)) return {};',
     "if (!isLoopback(host)) return { 'access-control-allow-origin': '*' };", 'ui.js'],
+  // The rule that does govern the write. A cross-origin `text/plain` POST is a
+  // CORS simple request — no preflight — so without this check the edit lands
+  // and only the attacker's view of the *response* is blocked.
+  ['the cross-origin write guard is gone — a hostile page can edit the corpus',
+    'if (origin !== null && origin !== undefined) {', 'if (false) {', 'ui.js'],
+  ['the cross-origin guard accepts any origin it can parse a hostname out of',
+    'if (!host || !isLoopback(host)) {', 'if (!host) {', 'ui.js'],
   ['the response claims the edit was committed',
     'committed: false,', 'committed: true,', 'ui.js'],
   ['an oversized body is parsed instead of refused',

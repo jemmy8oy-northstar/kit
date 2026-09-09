@@ -1797,11 +1797,15 @@ test('writer: it contains no path to git at all — decision 2, checked not prom
 
 // ── the write path over the transport ───────────────────────────────────────
 
-const post = (port, path, body, origin) => new Promise((resolve, reject) => {
+// `contentType` is a parameter and not a constant because the attacker picks it,
+// not us. Hardcoding `application/json` here is what hid the cross-origin write
+// below: it is the ONE content-type that forces a preflight, so a suite that can
+// only speak it can only ever test the case that was already safe.
+const post = (port, path, body, origin, contentType = 'application/json') => new Promise((resolve, reject) => {
   const data = Buffer.from(JSON.stringify(body));
   const req = require('http').request({
     host: '127.0.0.1', port, path, method: 'POST',
-    headers: { 'content-type': 'application/json', 'content-length': data.length, ...(origin ? { origin } : {}) },
+    headers: { 'content-type': contentType, 'content-length': data.length, ...(origin ? { origin } : {}) },
   }, (res) => {
     let b = '';
     res.on('data', (c) => { b += c; });
@@ -1887,6 +1891,77 @@ test('a cross-origin POST from a hostile page gets no CORS header from the socke
     const { port } = server.address();
     const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'then sees region:Main' }, 'https://evil.com');
     assert.strictEqual(res.headers['access-control-allow-origin'], undefined);
+  } finally { server.close(); }
+});
+
+// ── the cross-origin write, which the CORS rule above does NOT stop ──────────
+//
+// The test above asserts a hostile origin gets no CORS header, and that is true
+// and worthless on its own: withholding the header stops the attacker READING
+// the reply, and for a write the request itself is the damage. These three pin
+// the rule that actually defends it — the Origin check in `ui.write()`.
+//
+// Every one of them asserts the FILE, not the status code. A 403 that still
+// wrote is the exact failure being guarded against, and a status-only assertion
+// passes over it.
+
+test('a cross-origin text/plain POST — no preflight — does not reach the corpus', async () => {
+  // `text/plain` is a CORS *simple* content-type, so a browser sends this with
+  // no preflight at all; `<form enctype="text/plain">` sends it with no JS.
+  // This is the shape that actually got through, measured before it was fixed.
+  const fs = require('fs');
+  const path = require('path');
+  const dir = wDir();
+  const before = fs.readFileSync(path.join(dir, 'gamma.beh'), 'utf8');
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours',
+      { id: 'BEH-EVIL', title: 'written by a page on another origin' },
+      'https://evil.example', 'text/plain;charset=UTF-8');
+    assert.strictEqual(res.status, 403);
+    assert.match(JSON.parse(res.body).error, /cross-origin-write/);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'gamma.beh'), 'utf8'), before,
+      'the corpus was edited by a cross-origin request');
+  } finally { server.close(); }
+});
+
+test('a cross-origin JSON POST is refused too, by the same rule', async () => {
+  const fs = require('fs');
+  const path = require('path');
+  const dir = wDir();
+  const before = fs.readFileSync(path.join(dir, 'gamma.beh'), 'utf8');
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps',
+      { step: 'then sees region:Main' }, 'https://evil.example');
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(fs.readFileSync(path.join(dir, 'gamma.beh'), 'utf8'), before);
+  } finally { server.close(); }
+});
+
+test('the UI\'s own origin still writes, and a CLI sending no Origin still writes', async () => {
+  // The other half: a guard that refuses everything is not a guard, it is an
+  // outage. The Vite dev server on another loopback port is the real caller.
+  const fs = require('fs');
+  const path = require('path');
+  const dir = wDir();
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const fromUi = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps',
+      { step: 'then sees region:Main' }, 'http://localhost:5173');
+    assert.strictEqual(fromUi.status, 200);
+
+    // No Origin header at all — curl, the suite, writer.js's CLI.
+    const fromCli = await post(port, '/api/projects/gamma/behaviours/BEH-G/steps',
+      { step: 'then sees region:Footer' });
+    assert.strictEqual(fromCli.status, 200);
+
+    const text = fs.readFileSync(path.join(dir, 'gamma.beh'), 'utf8');
+    assert.match(text, /region:Main/);
+    assert.match(text, /region:Footer/);
   } finally { server.close(); }
 });
 
