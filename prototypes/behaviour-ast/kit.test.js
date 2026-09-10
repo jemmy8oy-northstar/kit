@@ -2357,6 +2357,39 @@ test('contract: the paths in the fixture are the ones the CLIENT builds, charact
   }
 });
 
+test('nothing still advertises the UI as read-only, now that it writes', () => {
+  // Found by looking at a screenshot, which is not a method. The header said
+  // "read-only — the UI cannot write the corpus" for a whole PR after the write
+  // routes shipped, and so did two READMEs: all three were TRUE when written and
+  // none of them had any reason to be re-read.
+  //
+  // The invariant is capability-vs-claim, not a word: while ui.js has a POST
+  // handler, no document or banner may say it has none. That is why this is
+  // conditional on the code rather than a grep for a phrase — if decision 2 were
+  // ever reversed, the claim becomes true again and this test stops firing
+  // instead of demanding the claim be deleted.
+  const uiSrc = fsx.readFileSync(pathx.join(__dirname, 'ui.js'), 'utf8');
+  const canWrite = /function write\(/.test(uiSrc) && /writer\.addStep|writer\.addBehaviour/.test(uiSrc);
+  if (!canWrite) return; // the claim would be true; nothing to enforce
+
+  const claims = [
+    ['README.md', pathx.join(__dirname, '..', '..', 'README.md')],
+    ['ui/README.md', pathx.join(__dirname, 'ui', 'README.md')],
+    ['ui/src/App.tsx', pathx.join(__dirname, 'ui', 'src', 'App.tsx')],
+  ];
+  for (const [name, file] of claims) {
+    const text = fsx.readFileSync(file, 'utf8')
+      // A comment explaining that the banner USED to say this is not the banner
+      // saying it. Without this the fix for the finding trips its own check.
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^\s*(\/\/|#).*$/gm, ' ');
+    assert.strictEqual(/\bread-only\b/i.test(text), false,
+      `${name} still calls the UI read-only, but ui.js has write handlers`);
+    assert.strictEqual(/cannot write/i.test(text), false,
+      `${name} still says the UI cannot write, but ui.js has write handlers`);
+  }
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

@@ -1,8 +1,13 @@
-# The Kit UI — read-only
+# The Kit UI
 
-Step 2 of the sequence in [`docs/design/ui.md`](../../../docs/design/ui.md): a
-frontend over `ui.js`'s read API. Corpus list → behaviour detail → the test Kit
-generates from it.
+The loop James described on
+[claude-code-bot#89](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/89), all four
+verbs of it: corpus list → behaviour detail → the test Kit generates from it →
+**a form that writes a new step or a new behaviour back into the `.beh` file**.
+
+Adding a step re-reads the project, so the regenerated test is what you are
+looking at when you decide what to assert next. That is the whole point of the
+two panes being on one screen.
 
 ```sh
 node prototypes/behaviour-ast/ui.js --repos /data/repos   # the read API, :4321
@@ -15,14 +20,28 @@ npm --prefix prototypes/behaviour-ast/ui run dev          # the UI, :5173
 
 ## What it deliberately does not do
 
-**It cannot write.** Decision 2 in the design doc — whether the UI edits the
-corpus, and how far the edit goes — is James's and is open. `ui.js` returns 405
-for every verb but GET, so there is no path from this app to a `.beh` file even
-if someone adds a `fetch` in a hurry.
+**It does not commit.** Decision 2 landed on its stated default: the write stops
+at the working tree. Kit edits `behaviours/<app>.beh` and there is no path from
+here to git — `writer.js` has a test asserting it cannot even `require`
+`child_process`. Every successful write says which file changed and that nothing
+was committed, because a boundary you cannot watch hold is not a guarantee.
+
+**It does not know the grammar.** The step field takes the line exactly as it is
+typed into the corpus. A verb dropdown and a noun picker here would be a *second*
+definition of what a step is; `writer.js` refuses to hold one, validating instead
+by re-parsing the whole file with `kit.js`. One grammar, in one place. A picker
+can be added over a working loop later; a second grammar cannot be removed from
+one.
+
+**It does not let a machine claim a human wrote something.** A behaviour added
+here is `source inferred`, which `parse()` marks `unreviewed`, and the form
+offers no way to change that (James, claude-code-bot#68: *"I like this default
+included but marked unreviewed"*). Silence in a corpus means a person wrote it,
+and a writer must not be able to spend that.
 
 **It sets no `base`.** web-template's template pins `base: '/your-app-name/'`
-because it deploys under a sub-path. Decision 1 — local tool or deployed app —
-is also open, and a sub-path in a config file would be answering it.
+because it deploys under a sub-path. Decision 1 landed on **local tool**, so
+there is no sub-path to pin.
 
 **`ui.js` does not serve this bundle.** In development, Vite proxies `/api` to
 the read API. Serving the built assets from `ui.js` is a small change and is

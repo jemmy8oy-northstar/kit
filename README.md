@@ -42,13 +42,15 @@ falsifiable question: *can a behaviour tree generate a runnable test with no han
 
 ```
 node prototypes/behaviour-ast/kit.js        # generated tests + measurements
-node prototypes/behaviour-ast/kit.test.js   # 139 tests
-node prototypes/behaviour-ast/ui.js         # the read API the UI runs on
+node prototypes/behaviour-ast/kit.test.js   # 214 tests
+node prototypes/behaviour-ast/ui.js         # the API the UI runs on
 ```
 
-The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — read-only, because
-whether Kit may *write* a corpus is an open decision at the foot of
-[`docs/design/ui.md`](docs/design/ui.md).
+The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
+shows the test Kit generates from each behaviour, and **writes new steps and behaviours back into
+the `.beh` file**. It never commits: both decisions at the foot of
+[`docs/design/ui.md`](docs/design/ui.md) landed on their stated defaults, so it is a local tool
+whose edits you review as an ordinary working-tree diff.
 
 Measured against snip-it's real `editor.spec.ts`: **8 behaviours → 28 generated lines, 22 byte-identical
 to lines a person actually wrote**, 3 more present but reflowed. 6 wire contracts are **refused and still
