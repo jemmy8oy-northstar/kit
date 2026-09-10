@@ -277,6 +277,55 @@ describe('adjudicating an inference', () => {
     expect(await screen.findByText(/EnsureSeeded_creates_the_starter_set_once/)).toBeInTheDocument()
   })
 
+  it('keeps the write confirmation on screen when the re-read actually takes a tick', async () => {
+    // 🔴 This is the one test in this file whose stub is DELAYED, and the delay
+    // is the whole test. Every other stub here resolves inside the same React
+    // batch, so the `loading` state never commits, the page never unmounts, and
+    // the bug this guards against is invisible.
+    //
+    // With a real network round-trip it is not: `reload()` put the resource back
+    // to `loading`, ResourceView swapped the page for a spinner, the form
+    // unmounted, and its `useWrite` state went with it — so the note saying
+    // which file was written and that Kit did NOT commit it was destroyed by the
+    // very reload the write triggered. Decision 2's guarantee is only a
+    // guarantee if he can watch it hold. Found by running the real server in a
+    // real browser, not here ([[green-suite-over-a-mock]]).
+    const responses = [
+      { ok: true, status: 200, body: habits },
+      wrote,
+      { ok: true, status: 200, body: habits },
+    ]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        await new Promise((r) => setTimeout(r, 0)) // a real tick, so `loading` commits
+        const next = responses.shift()
+        if (!next) throw new Error('unscripted fetch')
+        return { ok: next.ok, status: next.status, statusText: 'x', json: async () => next.body }
+      }),
+    )
+
+    render(
+      <MemoryRouter initialEntries={['/projects/james-habits-app/behaviours/BEH-SEED-1']}>
+        <Routes>
+          <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+
+    const note = await screen.findByRole('status')
+    expect(note).toHaveTextContent('behaviours/snip-it.beh')
+    expect(note).toHaveTextContent(/Not committed/)
+
+    // And it is still there after the re-read has landed — the failure was that
+    // it appeared and was then thrown away, which an assertion racing the
+    // reload could pass over.
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.getByRole('status')).toBeInTheDocument()
+  })
+
   it('offers the control on a human-written behaviour too, and says a human wrote it', async () => {
     // `defined` behaviours are approved by default with no line saying so, and
     // `denied` counts across ALL behaviours in kit.js — so denying one is

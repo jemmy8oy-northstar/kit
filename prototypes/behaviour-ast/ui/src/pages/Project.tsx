@@ -206,7 +206,14 @@ function QuestionSheet({ app, questions }: { app: string; questions: Question[] 
                     </Link>{' '}
                     {q.title}
                   </h4>
-                  {q.source?.ref && <p className="muted">inferred from {q.source.ref}</p>}
+                  {/* In a <code>, which is not decoration: a source ref is one
+                      unbroken token and as plain text it pushes the card wider
+                      than a phone, clipping the title beside it. */}
+                  {q.source?.ref && (
+                    <p className="muted">
+                      inferred from <code>{q.source.ref}</code>
+                    </p>
+                  )}
                 </Card>
               </li>
             ))}
