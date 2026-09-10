@@ -2538,6 +2538,36 @@ test('nothing still advertises the UI as read-only, now that it writes', () => {
   }
 });
 
+test('nothing still says ui.js cannot serve the bundle, now that it does', () => {
+  // The second instance of the same shelf-life defect, and it is here because
+  // the first one cost a PR to notice. `ui/README.md` carried a whole paragraph
+  // saying **"`ui.js` does not serve this bundle"** with the reason it did not,
+  // and that paragraph was TRUE for as long as it was there. Nothing in the
+  // suite, the sweep or the mutation harness has any reason to re-read a true
+  // sentence ([[a-capability-claim-has-a-shelf-life]]).
+  //
+  // Conditional on the code, exactly like the check above: it fires only while
+  // ui.js actually has a bundle handler, so reversing the decision retires the
+  // check rather than demanding a true sentence be deleted.
+  const uiSrc = fsx.readFileSync(pathx.join(__dirname, 'ui.js'), 'utf8');
+  const canServe = /function bundle\(/.test(uiSrc) && /DIST_DIR/.test(uiSrc);
+  if (!canServe) return; // the claim would be true; nothing to enforce
+
+  const claims = [
+    ['README.md', pathx.join(__dirname, '..', '..', 'README.md')],
+    ['ui/README.md', pathx.join(__dirname, 'ui', 'README.md')],
+    ['docs/design/ui.md', pathx.join(__dirname, '..', '..', 'docs', 'design', 'ui.md')],
+  ];
+  for (const [name, file] of claims) {
+    if (!fsx.existsSync(file)) continue;
+    const text = fsx.readFileSync(file, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^\s*(\/\/|#).*$/gm, ' ');
+    assert.strictEqual(/(ui\.js|it)\s+does not serve (this|the) bundle/i.test(text), false,
+      `${name} still says ui.js does not serve the bundle, but ui.js has a bundle handler`);
+  }
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

@@ -336,6 +336,35 @@ MUTANTS.push(
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
 );
 
+// ui, serving the built bundle (rules 5–7). Every mutant here makes the server
+// answer 200 with the app shell for something that is not there. That is the
+// direction worth mutating because it is the direction nothing notices: a shell
+// served for a missing asset renders a blank page, and a shell served for
+// /api/nope is a JSON parse error three layers from the cause. It is also the
+// shape of a live outage this org has already had — every unmatched path on
+// balenthiran.co.uk answered 200 with the portfolio SPA for the life of the
+// site, so the status code could not tell an app apart from its absence.
+MUTANTS.push(
+  ['the SPA fallback swallows a missing FILE, so a dead asset renders a blank page instead of a 404',
+    'if (path.extname(p)) {', 'if (false) {', 'ui.js'],
+  ['/api falls back to the shell, so a broken fetch is handed HTML instead of its error',
+    "if (!/^\\/api(\\/|$)/.test(pathname)) {", 'if (true) {', 'ui.js'],
+  ['the asset name is trusted instead of looked up in the listing — rule 5 undone',
+    "return filesIn(path.join(distDir, 'assets')).includes(asset[1])", 'return true', 'ui.js'],
+  ['the `..` refusal goes, leaving only the lookup to hold rule 5',
+    "if (p.split('/').includes('..')) {", 'if (false) {', 'ui.js'],
+  ['a bundle that was never built is treated as present, so the 503 becomes a crash',
+    'if (!fs.existsSync(index)) {', 'if (false) {', 'ui.js'],
+  ['the shell is cached like a hashed asset, so a rebuild leaves a cached page asking for deleted files',
+    "return html(200, fs.readFileSync(index), 'no-store');",
+    "return html(200, fs.readFileSync(index), 'public, max-age=31536000, immutable');", 'ui.js'],
+  ['the cache-control the router computed is dropped on the way out — invisible to every test of `route()` alone',
+    "if (result.cacheControl) headers['cache-control'] = result.cacheControl;", '', 'ui.js'],
+  ['every bundled file is served as a download, so the browser refuses to execute the module',
+    "return CONTENT_TYPES[path.extname(name).toLowerCase()] || 'application/octet-stream';",
+    "return 'application/octet-stream';", 'ui.js'],
+);
+
 // writer + the write path (docs/design/ui.md decision 2, lapsed 2026-09-08).
 //
 // Every mutant here makes the writer LOSE something quietly — a comment, a
