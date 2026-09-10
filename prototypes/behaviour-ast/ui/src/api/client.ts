@@ -1,4 +1,6 @@
-import type { NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, WriteResult } from './types'
+import type {
+  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, WriteResult,
+} from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
 // empty result. An empty list and a server that is not running look identical
@@ -122,6 +124,20 @@ export function setReview(
     `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/review`,
     { state, note },
   )
+}
+
+/**
+ * Bind a noun — stage 4, and the only write here whose file is not this app's
+ * corpus.
+ *
+ * `app` is still in the path and is not decoration: `bindings.json` is one flat
+ * map over every corpus, so the server answers with `sharedWith` — the OTHER
+ * corpora that reference this noun and will now generate against this binding —
+ * and it cannot work out which corpora are "other" without being told which one
+ * you are in.
+ */
+export function addBinding(app: string, noun: string, binding: Binding): Promise<BindResult> {
+  return post<BindResult>(`/api/projects/${encodeURIComponent(app)}/bindings`, { noun, binding })
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {

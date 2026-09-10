@@ -31,14 +31,89 @@ describe('BehaviourPage', () => {
     expect(screen.getByText(/page\.goto/)).toBeInTheDocument()
   })
 
-  it('names the unbound nouns that turned steps into comments', async () => {
+  it('names the unbound nouns that turned steps into comments, and what each one owes', async () => {
     // BEH-TODAY-1 generates nothing but comments because three nouns are
     // unbound. "0 generated" alone would look like a Kit failure; the nouns are
     // what tell you it is the app that is missing, not the tool.
+    //
+    // Naming them was all this page did for four slices, and it is a dead end:
+    // the requirement is the actionable half, and `requires.js` has been able
+    // to state it since kit#22 with nothing reading it. `opens` needs a route
+    // and `sees` needs addressability — DIFFERENT keys, which is the finding
+    // requires.js exists for, so the page must not collapse them into "unbound".
     renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
 
-    expect(await screen.findByText(/Unbound nouns:/)).toHaveTextContent('page:Today')
+    expect(await screen.findByRole('heading', { name: /Bind\s*page:Today/ })).toBeInTheDocument()
     expect(screen.getByText(/UNGENERATED: when opens page:Today/)).toBeInTheDocument()
+    expect(screen.getByText(/a route that serves this page/)).toBeInTheDocument()
+    // `getAllBy`, because more than one noun on this behaviour owes it — which
+    // is the point: the requirement belongs to the VERB, so two nouns reached
+    // by `sees` owe the same thing while `page:Today`, reached by `opens`,
+    // owes something else entirely.
+    expect(screen.getAllByText(/addressable from a test/).length).toBeGreaterThan(1)
+  })
+
+  it('offers a form per unbound noun, not one form for all of them', async () => {
+    // A single "bind something" box would make the user retype the noun that
+    // the page is already showing them — and the noun is exactly the thing
+    // that must not be retyped, because a typo silently creates a binding
+    // nothing references rather than an error.
+    renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
+
+    const binds = await screen.findAllByRole('button', { name: 'Bind' })
+    expect(binds.length).toBeGreaterThan(1)
+    for (const b of binds) expect(b).toBeDisabled()
+  })
+
+  it('orders the bind forms the way the steps name them, not alphabetically', async () => {
+    // `requires.js` returns nouns sorted by name, and the panel sits directly
+    // under a generated test whose refusals are in STEP order. Alphabetical
+    // here makes the reader match the two lists up by name — which is exactly
+    // the work having them on one screen is supposed to save. Seen in a 390px
+    // screenshot, and invisible whenever the two orders happen to agree, so
+    // the fixture chosen is one where they do NOT: the steps run
+    // region:HabitList then control:DateStepper, and sorted by name that
+    // reverses.
+    renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
+
+    const headings = (await screen.findAllByRole('heading', { name: /^Bind/ }))
+      .map((h) => h.textContent ?? '')
+    const at = (noun: string) => headings.findIndex((h) => h.includes(noun))
+
+    expect(at('page:Today')).toBe(0)
+    expect(at('region:HabitList')).toBeLessThan(at('control:DateStepper'))
+    // The control: sorted by name, DateStepper would come first — so the
+    // assertion above is measuring the ordering and not just any ordering.
+    const alphabetical = [...headings].sort()
+    expect(headings).not.toEqual(alphabetical)
+  })
+
+  it('says which OTHER corpora a binding would reach, before the click', async () => {
+    // `bindings.json` is one flat map over every corpus, and its own comment
+    // calls the convention that avoids collisions "still a habit rather than a
+    // design". This is that habit becoming a mechanism — and it has to be on
+    // the form, not only in the response, because after the write the decision
+    // has already been made.
+    renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
+
+    await screen.findAllByRole('button', { name: 'Bind' })
+    // Every noun on this behaviour is shared, because `trial-habits-a` and
+    // `trial-habits-b` are the same app described twice (cc-bot#92's forward
+    // trials) — so the assertion is over the whole set rather than over the
+    // first match, and it names the noun each caution belongs to.
+    const cautions = screen.getAllByText(/The noun namespace is global/)
+    expect(cautions.length).toBeGreaterThan(0)
+    for (const c of cautions) expect(c).toHaveTextContent(/trial-habits-[ab]/)
+    expect(cautions.some((c) => c.textContent?.includes('page:Today'))).toBe(true)
+  })
+
+  it('CONTROL: a noun no other corpus uses gets no sharing caution', async () => {
+    // Without this, a component that printed the caution unconditionally would
+    // pass the test above and be telling every binding it collides.
+    renderAt(snipIt, 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByText('The landing page renders')
+    expect(screen.queryByText(/The noun namespace is global/)).not.toBeInTheDocument()
   })
 
   it('distinguishes "no test was generated" from an empty one', async () => {

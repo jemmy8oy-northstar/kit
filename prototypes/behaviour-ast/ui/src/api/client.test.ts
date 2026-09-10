@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError, addBehaviour, addStep, setReview } from './client'
+import { ApiError, addBehaviour, addBinding, addStep, setReview } from './client'
 import contract from '../test/fixtures/write-contract.json'
 import type { ReviewState } from './types'
 
@@ -36,6 +36,10 @@ function invoke(req: (typeof contract.requests)[number]) {
     // turns that into an explicit `null` in the body — which the contract
     // asserts, so the two spellings cannot drift apart.
     return setReview(app, id, state, note ?? null)
+  }
+  if (fn === 'addBinding') {
+    const [app, noun, binding] = args as [string, string, Record<string, unknown>]
+    return addBinding(app, noun, binding)
   }
   if (fn === 'addBehaviour') {
     const [app, behaviour] = args as [string, Parameters<typeof addBehaviour>[1]]

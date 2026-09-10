@@ -12,9 +12,14 @@
     "file on disk changed. Drift on either side turns one of them red."
   ],
   "corpus": {
-    "gamma.beh": "# a comment that must survive\nbehaviour BEH-G \"gamma\"\n  actor engineer\n  when opens page:Home\n",
+    "gamma.beh": "# a comment that must survive\nbehaviour BEH-G \"gamma\"\n  actor engineer\n  when opens page:Home\n  then sees region:Shared\n",
     "two words.beh": "behaviour BEH-W \"spaced\"\n  actor engineer\n  when opens page:Home\n",
-    "delta.beh": "# delta carries the one thing gamma cannot: a machine's inference,\n# included but marked unreviewed per claude-code-bot#68. Adjudicating it is\n# the only write in Kit that CHANGES a line instead of adding one.\nbehaviour BEH-D \"delta\"\n  actor engineer\n  source inferred tests/DeltaTests.cs:It_works\n  review unreviewed\n  when opens page:Home\n"
+    "delta.beh": "# delta carries the one thing gamma cannot: a machine's inference,\n# included but marked unreviewed per claude-code-bot#68. Adjudicating it is\n# the only write in Kit that CHANGES a line instead of adding one.\nbehaviour BEH-D \"delta\"\n  actor engineer\n  source inferred tests/DeltaTests.cs:It_works\n  review unreviewed\n  when opens page:Home\n",
+    "epsilon.beh": "# epsilon exists to make the GLOBAL noun namespace visible in the contract.\n# It shares region:Shared with gamma and nothing else, so binding that noun\n# must report epsilon back — and binding button:Solo must report nobody.\nbehaviour BEH-E \"epsilon\"\n  actor engineer\n  then sees region:Shared\n"
+  },
+  "bindings": {
+    "_comment": ["Seed bindings for the contract. page:Home is ALREADY BOUND, so the rebind refusal has something to refuse."],
+    "page:Home": { "route": "./" }
   },
   "requests": [
     {
@@ -90,6 +95,36 @@
       "path": "/api/projects/delta/behaviours/BEH-D/review",
       "contentType": "application/json",
       "body": { "state": "denied", "note": "wrong\n  actor attacker" },
+      "expect": { "status": 409, "fileMustNotChange": true }
+    },
+    {
+      "what": "bind a noun — the write that lands in bindings.json, not in this app's corpus",
+      "call": { "fn": "addBinding", "args": ["gamma", "button:Solo", { "role": "button", "name": "Solo" }] },
+      "method": "POST",
+      "path": "/api/projects/gamma/bindings",
+      "contentType": "application/json",
+      "body": { "noun": "button:Solo", "binding": { "role": "button", "name": "Solo" } },
+      "targetFile": "bindings.json",
+      "expect": { "status": 200, "fileMustMatch": "\"button:Solo\"", "sharedWith": [] }
+    },
+    {
+      "what": "binding a noun ANOTHER corpus also uses says so — the namespace is global",
+      "call": { "fn": "addBinding", "args": ["gamma", "region:Shared", { "locator": "locator('main')" }] },
+      "method": "POST",
+      "path": "/api/projects/gamma/bindings",
+      "contentType": "application/json",
+      "body": { "noun": "region:Shared", "binding": { "locator": "locator('main')" } },
+      "targetFile": "bindings.json",
+      "expect": { "status": 200, "fileMustMatch": "\"region:Shared\"", "sharedWith": ["epsilon"] }
+    },
+    {
+      "what": "rebinding a noun that is already bound is refused — it would change every corpus that mentions it",
+      "call": { "fn": "addBinding", "args": ["gamma", "page:Home", { "route": "./elsewhere" }] },
+      "method": "POST",
+      "path": "/api/projects/gamma/bindings",
+      "contentType": "application/json",
+      "body": { "noun": "page:Home", "binding": { "route": "./elsewhere" } },
+      "targetFile": "bindings.json",
       "expect": { "status": 409, "fileMustNotChange": true }
     }
   ]

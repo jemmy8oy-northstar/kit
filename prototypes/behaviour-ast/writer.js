@@ -18,6 +18,7 @@
 //   node writer.js <app> add-behaviour <BEH-ID> "<title>"   [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "approved"          [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "denied <correction>"
+//   node writer.js <app> bind <kind:Noun> '<json>'           [--bindings <file>]
 //
 // ── 1. A surgical edit of one block, never a re-serialisation ────────────────
 // A corpus is a hand-authored document whose comments carry its most important
@@ -50,9 +51,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { parse } = require('./kit.js');
+const { parse, parseStep, nounsOf } = require('./kit.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
+const BINDINGS_FILE = path.join(__dirname, 'bindings.json');
 
 /** The indentation every corpus uses for a step line under its behaviour header. */
 const INDENT = '  ';
@@ -330,6 +332,261 @@ function setReview(text, id, state, note = null) {
   return validate(text, lines.join('\n'), id);
 }
 
+// ─────────────────────────── bindings ───────────────────────────
+// Everything above edits a `.beh` document. This edits `bindings.json`, and the
+// difference in technique is not a style choice: a corpus is a hand-authored
+// document whose COMMENTS carry its caveats, so it is spliced line by line and
+// never re-serialised (rule 1). JSON has no comments to lose. `bindings.json`
+// keeps its prose in real `_comment*` KEYS precisely so a round-trip preserves
+// it, so the safe thing here is the opposite of the safe thing there: parse,
+// mutate the object, re-stringify.
+//
+// ── Why a binding is worth a write path at all ──────────────────────────────
+// Stage 4 of `docs/design/process.md` — bind by noun, not by step — is the
+// design's own answer to what killed Cucumber, and it is the only verb of the
+// loop with no way to do it from the browser. Measured on 2026-09-10 across all
+// nine corpora: **129 of 172 nouns (75%) have no binding**. The behaviour page
+// already shows you which ones, under the note "these are why the steps above
+// became comments", and then leaves you to go and hand-edit a JSON file. This
+// closes that.
+//
+// ── 🔴 THE NOUN NAMESPACE IS GLOBAL, and the file itself calls that a habit ──
+// `bindings.json` is one flat map over every corpus, and its own `_comment_kit_ui`
+// block says:
+//
+//     "Every noun is prefixed `Kit*` because THE NOUN NAMESPACE IS GLOBAL. An
+//      unprefixed page:Home here would inherit snip-it's './' and emit a test
+//      that runs against the wrong app with no unbound-noun warning. Still a
+//      habit rather than a design."
+//
+// A habit is enough while binding means opening the file and reading that
+// paragraph. It stops being enough the moment binding is a form with a button,
+// which is what this function makes it — so the hazard has to become a
+// mechanism. `sharedWith()` below is that mechanism.
+//
+// It REPORTS rather than REFUSES, and that is deliberate. Measured across the
+// nine corpora, 7 noun names are used by more than one corpus and **6 of the 7
+// are james-habits-app described three ways** (the app plus its two trial
+// corpora), where sharing one binding is correct and is the point of binding by
+// noun. Only `region:EmptyState` (trial-habits-a and trial-lend) is a genuine
+// cross-APP collision. A blanket refusal would break the correct majority to
+// stop the minority; naming the other corpora lets the human tell which one they
+// are in. Refusing to guess is Kit's rule for the EMITTER, where the alternative
+// is a false green — here the alternative is a true fact on screen.
+
+/**
+ * Is this string exactly one noun, by the PARSER's definition of a noun?
+ *
+ * ⚠️ Not a regex here, and the first draft was one. It read
+ * `/^[a-z][a-z0-9]*:[A-Za-z][A-Za-z0-9_]*$/`, which disagreed with `kit.js` in
+ * both directions — it allowed a digit in the kind, which the parser does not,
+ * and required the name to start with a letter, which the parser does not
+ * either, so it would have rejected the real, shipped binding `file:talk_mp4`
+ * had that name begun with its digit. This is precisely the drift `addStep`'s
+ * comment says the writer must not have: **there is one definition of the
+ * grammar and it lives in the parser.** Asking `parseStep` costs a function
+ * call and cannot disagree with the file it is about to write.
+ *
+ * The equality at the end is what does the real work: `parseStep` scans for
+ * nouns anywhere in a line, so `button:Sa ve` finds `button:Sa` and `xx
+ * button:Save` finds `button:Save`. Requiring the ref to spell the WHOLE input
+ * back is what makes "contains a noun" into "is a noun".
+ */
+function isNoun(s) {
+  if (typeof s !== 'string') return false;
+  const t = s.trim();
+  if (!t) return false;
+  const { refs, holes } = parseStep(t, 'noun-check');
+  if (holes.length !== 0 || refs.length !== 1) return false;
+  const [ref] = refs;
+  if (ref.kind === 'literal') return false;
+  return `${ref.kind}:${ref.name}` === t;
+}
+
+/** A `_comment` key is prose for the reader, not a binding. Never treated as one. */
+function isComment(key) {
+  return key.startsWith('_comment');
+}
+
+/**
+ * Which OTHER corpora reference this noun name.
+ *
+ * `corpora` is `{ app: [nounKey, ...] }` — already-extracted names, not parsed
+ * behaviours. That shape is the point: **the caller owns the population.**
+ * Kit has two legitimate answers to "which nouns does this corpus reference"
+ * and they differ — `kit.js`'s `nounsOf()` walks step refs, while
+ * `requires.js` also counts a `field:` named only in a `provides` value, which
+ * `nounsOf()` cannot see and which is documented there as invisible to every
+ * other measurement. Choosing one inside this function would silently pick a
+ * population for a caller that had already picked a different one, and the
+ * failure mode is the quiet direction: a collision that exists and is not
+ * reported. Passing names in also means this is testable with two literals and
+ * does no IO.
+ *
+ * Returns app names, sorted, excluding `self`. Empty means the noun belongs to
+ * one corpus alone *in the population it was given*.
+ */
+function sharedWith(noun, corpora, self) {
+  const out = [];
+  for (const [app, nouns] of Object.entries(corpora)) {
+    if (app === self) continue;
+    if (nouns.includes(noun)) out.push(app);
+  }
+  return out.sort();
+}
+
+/**
+ * Add one binding. Refuses to overwrite an existing one, and refuses to change
+ * any other.
+ *
+ * Overwriting is refused rather than supported because the two operations have
+ * different consequences and only one of them is safe to reach by clicking. A
+ * new binding turns a refusal into a generated step — visible, and wrong in a
+ * way the generated test shows you. RE-binding silently changes what every
+ * behaviour in every corpus that mentions the noun already generates, including
+ * ones the person at the form has never opened. That is the collateral change
+ * rule 3 exists to catch, one file over, and it deserves the same answer:
+ * refuse, and say what is already there.
+ *
+ * `value` is the binding object — `{role, name}`, `{route}`, `{label}`,
+ * `{locator}`, `{state}`, `{fixture}`, `{urlPattern}`. It is NOT validated
+ * against what the verbs need here; `requires.js` already computes that per
+ * noun and is the one definition of it, the same way rule 2 defers the grammar
+ * to `kit.js`'s parser rather than restating it. What IS checked here is that
+ * the value is a JSON object that survives a round-trip, because that is a
+ * property of this file's write and of nothing else.
+ */
+function addBinding(text, noun, value, opts = {}) {
+  let bindings;
+  try {
+    bindings = JSON.parse(text);
+  } catch (e) {
+    return { ok: false, error: 'bindings-already-invalid', reason: `bindings.json did not parse before this edit: ${e.message}` };
+  }
+  if (bindings === null || typeof bindings !== 'object' || Array.isArray(bindings)) {
+    return { ok: false, error: 'bindings-already-invalid', reason: 'bindings.json is not a JSON object' };
+  }
+
+  const key = String(noun ?? '').trim();
+  if (!isNoun(key)) {
+    return { ok: false, error: 'bad-noun', reason: `a noun is <kind>:<Name>, lowercase kind and a capitalised name, got: ${noun}` };
+  }
+  // ⚠️ There is deliberately no `isComment(key)` guard here, and there WAS one.
+  // A mutant that deleted it survived, which is the honest report that it was
+  // unreachable: `_comment_kit_ui` has no colon, so `isNoun` has already
+  // refused it as bad-noun. A second refusal that can never fire is a rule
+  // nothing tests and everyone believes ([[an-uncaught-mutation-is-a-finding]]).
+  // `isComment` is still exported — READING the file needs it, to tell prose
+  // from bindings — it just has no job on the write path.
+  if (Object.prototype.hasOwnProperty.call(bindings, key)) {
+    return {
+      ok: false, error: 'already-bound',
+      reason: `${key} is already bound to ${JSON.stringify(bindings[key])} — rebinding changes every corpus that mentions it, so it is not a click`,
+      current: bindings[key],
+    };
+  }
+
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return { ok: false, error: 'bad-binding', reason: 'a binding is a JSON object, e.g. {"role":"button","name":"Add habit"}' };
+  }
+  const keys = Object.keys(value);
+  if (keys.length === 0) {
+    return { ok: false, error: 'bad-binding', reason: 'an empty binding binds nothing — it would satisfy no verb and still count as bound' };
+  }
+
+  // A value that does not survive JSON is the one corruption this function can
+  // cause that nothing downstream would report: `undefined` and a function both
+  // vanish on stringify, leaving a key present with less in it than the caller
+  // passed. `bound` is what boundNouns() measures, so a silently-emptied binding
+  // reads as progress. Compare the round-trip rather than trusting the input.
+  const after = { ...bindings, [key]: value };
+  let serialised;
+  try {
+    serialised = `${JSON.stringify(after, null, 2)}\n`;
+  } catch (e) {
+    return { ok: false, error: 'bad-binding', reason: `this binding cannot be written as JSON: ${e.message}` };
+  }
+  const reread = JSON.parse(serialised);
+  // ⚠️ Compared against the caller's OWN key list, not against
+  // `JSON.stringify(value)`. The first draft did the latter and was inert: for
+  // `{role: undefined}` both sides stringify to `{}`, so the check compared the
+  // damage to itself and passed. `Object.keys` sees `role` before stringify
+  // deletes it, which is the only vantage point from which the loss is visible
+  // at all. Caught by running it, not by reading it.
+  const survived = Object.keys(reread[key]);
+  const lost = keys.filter((k) => !survived.includes(k));
+  if (lost.length) {
+    return {
+      ok: false, error: 'bad-binding',
+      reason: `${lost.join(', ')} would not survive being written as JSON — the binding would land with less in it than you gave, and still count as bound`,
+    };
+  }
+
+  // The rule 3 equivalent. One key appeared, the target; nothing else moved.
+  // Written as a comparison rather than trusted from the spread above, for the
+  // same reason rule 3 is: the check is cheap and the failure it catches is
+  // silent, corpus-wide and only visible in a generated test nobody re-reads.
+  for (const k of Object.keys(bindings)) {
+    if (JSON.stringify(reread[k]) !== JSON.stringify(bindings[k])) {
+      return { ok: false, error: 'collateral-change', reason: `${k} changed, and only ${key} was meant to` };
+    }
+  }
+  for (const k of Object.keys(reread)) {
+    if (k !== key && !Object.prototype.hasOwnProperty.call(bindings, k)) {
+      return { ok: false, error: 'collateral-change', reason: `${k} appeared, and only ${key} was meant to` };
+    }
+  }
+
+  const corpora = opts.corpora || {};
+  return {
+    ok: true,
+    text: serialised,
+    noun: key,
+    // Always present, always an array. A caller that forgets to render it shows
+    // nothing rather than crashing, and a caller that renders it gets the empty
+    // case for free — the difference between "no other corpus uses this name"
+    // and "I did not check" is exactly what this field exists to carry.
+    sharedWith: sharedWith(key, corpora, opts.app),
+  };
+}
+
+/**
+ * Every corpus in `dir` as `{ app: [nounKey, ...] }` — the input `sharedWith`
+ * wants, read off disk.
+ *
+ * Uses `kit.js`'s `nounsOf()`, i.e. **the step-reference population**, and that
+ * choice is deliberate rather than default: it is the same population
+ * `boundNouns()` counts and the same one `generate()`'s `missing` set comes
+ * from, so the nouns a bind form offers and the corpora it warns about are
+ * measured the same way. The known cost is `requires.js`'s finding — a `field:`
+ * named only in a `provides` value is invisible to `nounsOf()`, so a collision
+ * on such a field is under-reported here. Under-report rather than disagree
+ * with the list on screen; the fuller population is available by passing
+ * `requires.js`'s nouns in directly.
+ *
+ * A corpus that does not parse is SKIPPED, not fatal. This runs to decorate a
+ * write to a different file, and one broken corpus elsewhere in the directory
+ * must not be able to block binding a noun — but it does mean the answer is
+ * incomplete, so it is reported rather than swallowed.
+ */
+function corpusNouns(dir = BEH_DIR, onSkip = null) {
+  const out = {};
+  if (!fs.existsSync(dir)) return out;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.beh')) continue;
+    const app = file.slice(0, -'.beh'.length);
+    try {
+      const behaviours = parse(fs.readFileSync(path.join(dir, file), 'utf8'), file);
+      const names = new Set();
+      for (const b of behaviours) for (const n of nounsOf(b)) names.add(n);
+      out[app] = [...names].sort();
+    } catch (e) {
+      if (onSkip) onSkip(app, e);
+    }
+  }
+  return out;
+}
+
 /** Resolve an app name to its corpus path. The name is looked up, never joined blindly. */
 function corpusPath(app, dir = BEH_DIR) {
   if (!fs.existsSync(dir)) return null;
@@ -350,9 +607,10 @@ function commitToDisk(file, result) {
 }
 
 function parseArgs(argv) {
-  const opts = { dir: BEH_DIR, source: null, actor: null, rest: [] };
+  const opts = { dir: BEH_DIR, bindings: BINDINGS_FILE, source: null, actor: null, rest: [] };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--dir') { opts.dir = argv[i + 1]; i++; }
+    else if (argv[i] === '--bindings') { opts.bindings = argv[i + 1]; i++; }
     // `--source defined` exists because using this tool on Kit's own corpus
     // found it missing. The HTTP surface takes `source` in the body and the CLI
     // could not say it, so a human at a terminal could only write behaviours
@@ -366,14 +624,50 @@ function parseArgs(argv) {
 }
 
 function main(argv) {
-  const { dir, source, actor, rest } = parseArgs(argv);
+  const { dir, bindings: bindingsFile, source, actor, rest } = parseArgs(argv);
   const [app, verb, id, arg] = rest;
 
   if (!app || !verb) {
     console.error('usage: writer.js <app> add-step <BEH-ID> "<step>" | <app> add-behaviour <BEH-ID> "<title>" '
-      + '| <app> review <BEH-ID> "approved" | <app> review <BEH-ID> "denied <correction>"');
+      + '| <app> review <BEH-ID> "approved" | <app> review <BEH-ID> "denied <correction>" '
+      + '| <app> bind <kind:Noun> \'{"role":"button","name":"..."}\'');
     return 2;
   }
+
+  // `bind` writes a DIFFERENT file from every other verb — one global
+  // bindings.json rather than this app's corpus — so it takes its own path out
+  // before the corpus is resolved. `app` is still required and still meaningful:
+  // it is what `sharedWith` excludes, i.e. the corpus you are claiming to be in.
+  if (verb === 'bind') {
+    if (!fs.existsSync(bindingsFile)) {
+      console.error(`writer: no bindings file at ${bindingsFile}`);
+      return 2;
+    }
+    let value;
+    try {
+      value = JSON.parse(String(arg ?? ''));
+    } catch (e) {
+      console.error(`writer: refused — bad-binding: the value is not JSON (${e.message})`);
+      return 1;
+    }
+    const text = fs.readFileSync(bindingsFile, 'utf8');
+    const result = addBinding(text, id, value, { corpora: corpusNouns(dir), app });
+    if (!result.ok) {
+      console.error(`writer: refused — ${result.error}: ${result.reason}`);
+      return 1;
+    }
+    commitToDisk(bindingsFile, result);
+    console.log(`writer: ${path.relative(process.cwd(), bindingsFile)} updated — the change is in your working tree and NOT committed`);
+    // Printed on stdout beside the success, not buried in a log: the whole
+    // reason this line exists is that the person who just clicked bind is the
+    // one who can tell whether sharing it with those corpora is what they meant.
+    if (result.sharedWith.length) {
+      console.log(`writer: ⚠️  the noun namespace is GLOBAL — ${result.noun} is also referenced by ${result.sharedWith.join(', ')}, `
+        + 'which now generate against this binding too');
+    }
+    return 0;
+  }
+
   const file = corpusPath(app, dir);
   if (!file) {
     console.error(`writer: no corpus named '${app}' in ${dir}`);
@@ -412,6 +706,10 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { block, ids, addStep, addBehaviour, setReview, validate, shape, corpusPath, commitToDisk, parseArgs, main, INDENT };
+module.exports = {
+  block, ids, addStep, addBehaviour, setReview, validate, shape,
+  addBinding, sharedWith, corpusNouns, isComment, isNoun,
+  corpusPath, commitToDisk, parseArgs, main, INDENT, BINDINGS_FILE,
+};
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

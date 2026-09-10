@@ -1556,5 +1556,713 @@
       "against": null,
       "cites": []
     }
-  ]
+  ],
+  "requires": {
+    "nouns": [
+      {
+        "noun": "badge:CurrentStreak",
+        "kind": "badge",
+        "name": "CurrentStreak",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "badge:LongestStreak",
+        "kind": "badge",
+        "name": "LongestStreak",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "badge:Streak",
+        "kind": "badge",
+        "name": "Streak",
+        "usedBy": [
+          "BEH-STREAK-1",
+          "BEH-TODAY-2",
+          "BEH-TODAY-3"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "button:AddHabit",
+        "kind": "button",
+        "name": "AddHabit",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a"
+        ]
+      },
+      {
+        "noun": "checkbox:HabitRow",
+        "kind": "checkbox",
+        "name": "HabitRow",
+        "usedBy": [
+          "BEH-TODAY-2"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "activates"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "control:DateStepper",
+        "kind": "control",
+        "name": "DateStepper",
+        "usedBy": [
+          "BEH-TODAY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "control:DateStepperBack",
+        "kind": "control",
+        "name": "DateStepperBack",
+        "usedBy": [
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "activates"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "habit:BooleanSeeded",
+        "kind": "habit",
+        "name": "BooleanSeeded",
+        "usedBy": [
+          "BEH-STREAK-1",
+          "BEH-TODAY-2"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "state",
+            "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+            "verbs": [
+              "state"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "habit:NumericSeeded",
+        "kind": "habit",
+        "name": "NumericSeeded",
+        "usedBy": [
+          "BEH-TODAY-3"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "state",
+            "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+            "verbs": [
+              "state"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "page:History",
+        "kind": "page",
+        "name": "History",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-b"
+        ]
+      },
+      {
+        "noun": "page:Manage",
+        "kind": "page",
+        "name": "Manage",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "page:Today",
+        "kind": "page",
+        "name": "Today",
+        "usedBy": [
+          "BEH-SEED-1",
+          "BEH-STREAK-1",
+          "BEH-TODAY-1",
+          "BEH-TODAY-2",
+          "BEH-TODAY-3",
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a",
+          "trial-habits-b"
+        ]
+      },
+      {
+        "noun": "region:CompletionGrid",
+        "kind": "region",
+        "name": "CompletionGrid",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "region:HabitEditor",
+        "kind": "region",
+        "name": "HabitEditor",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "region:HabitList",
+        "kind": "region",
+        "name": "HabitList",
+        "usedBy": [
+          "BEH-SEED-1",
+          "BEH-TODAY-1",
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a",
+          "trial-habits-b"
+        ]
+      }
+    ],
+    "missing": [
+      {
+        "noun": "badge:CurrentStreak",
+        "kind": "badge",
+        "name": "CurrentStreak",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "badge:LongestStreak",
+        "kind": "badge",
+        "name": "LongestStreak",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "badge:Streak",
+        "kind": "badge",
+        "name": "Streak",
+        "usedBy": [
+          "BEH-STREAK-1",
+          "BEH-TODAY-2",
+          "BEH-TODAY-3"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "button:AddHabit",
+        "kind": "button",
+        "name": "AddHabit",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a"
+        ]
+      },
+      {
+        "noun": "checkbox:HabitRow",
+        "kind": "checkbox",
+        "name": "HabitRow",
+        "usedBy": [
+          "BEH-TODAY-2"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "activates"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "control:DateStepper",
+        "kind": "control",
+        "name": "DateStepper",
+        "usedBy": [
+          "BEH-TODAY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "control:DateStepperBack",
+        "kind": "control",
+        "name": "DateStepperBack",
+        "usedBy": [
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "activates"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "habit:BooleanSeeded",
+        "kind": "habit",
+        "name": "BooleanSeeded",
+        "usedBy": [
+          "BEH-STREAK-1",
+          "BEH-TODAY-2"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "state",
+            "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+            "verbs": [
+              "state"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "habit:NumericSeeded",
+        "kind": "habit",
+        "name": "NumericSeeded",
+        "usedBy": [
+          "BEH-TODAY-3"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "state",
+            "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+            "verbs": [
+              "state"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "page:History",
+        "kind": "page",
+        "name": "History",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-b"
+        ]
+      },
+      {
+        "noun": "page:Manage",
+        "kind": "page",
+        "name": "Manage",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "page:Today",
+        "kind": "page",
+        "name": "Today",
+        "usedBy": [
+          "BEH-SEED-1",
+          "BEH-STREAK-1",
+          "BEH-TODAY-1",
+          "BEH-TODAY-2",
+          "BEH-TODAY-3",
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "route",
+            "surface": "a route that serves this page",
+            "verbs": [
+              "opens"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a",
+          "trial-habits-b"
+        ]
+      },
+      {
+        "noun": "region:CompletionGrid",
+        "kind": "region",
+        "name": "CompletionGrid",
+        "usedBy": [
+          "BEH-HISTORY-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "region:HabitEditor",
+        "kind": "region",
+        "name": "HabitEditor",
+        "usedBy": [
+          "BEH-MANAGE-1"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": []
+      },
+      {
+        "noun": "region:HabitList",
+        "kind": "region",
+        "name": "HabitList",
+        "usedBy": [
+          "BEH-SEED-1",
+          "BEH-TODAY-1",
+          "BEH-TODAY-4"
+        ],
+        "bound": false,
+        "satisfied": false,
+        "needs": [
+          {
+            "id": "addressable",
+            "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+            "verbs": [
+              "sees"
+            ],
+            "met": false
+          }
+        ],
+        "binding": null,
+        "sharedWith": [
+          "trial-habits-a",
+          "trial-habits-b"
+        ]
+      }
+    ],
+    "insufficient": [],
+    "satisfied": []
+  }
 }

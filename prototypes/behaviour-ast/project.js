@@ -9,7 +9,7 @@
 // and neither changes its shape, so it can be built before either lands
 // ([[option-invariant-half]]).
 //
-//   node project.js <app> [--repo <path>] [--pretty]
+//   node project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]
 //
 // It adds no analysis. Every field below is an existing kit.js export, renamed
 // only where the export's name would be meaningless outside kit.js. If you find
@@ -24,6 +24,8 @@
 const fs = require('fs');
 const path = require('path');
 const kit = require('./kit.js');
+const requires = require('./requires.js');
+const writer = require('./writer.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 
@@ -61,7 +63,7 @@ function readTests(repo) {
   return { files: out, titles, sources };
 }
 
-function project(app, { repo = null, behDir = BEH_DIR } = {}) {
+function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {}) {
   const corpusPath = path.join(behDir, `${app}.beh`);
   if (!fs.existsSync(corpusPath)) return { fatal: `no corpus at ${corpusPath}` };
 
@@ -69,7 +71,21 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   const { behaviours, conflicts, symbols } = kit.resolve(kit.parse(src, `${app}.beh`));
   if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };
 
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  // 🔴 A PARAMETER, not `__dirname`, and this is a defect running the server
+  // found that the suite could not.
+  //
+  // `ui.js` gained `--bindings` so a demo or a harness could exercise the bind
+  // route without writing into the repo it is measuring. The WRITE honoured it
+  // and this READ did not, so a bind reported success, changed the file on
+  // disk, and the page re-read the *other* bindings file and showed the same
+  // refusal — the loop's whole payoff, silently absent. Every test passed
+  // throughout: the node suite asserts the file on disk after a write and
+  // never re-reads the projection, and the frontend suite reads a fixture.
+  //
+  // Kept as an explicit null-defaulting parameter rather than a mutable module
+  // constant so the two paths are impossible to configure apart again — `ui.js`
+  // passes the same value to both.
+  const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));
 
   // The output pane: one generated test per behaviour, with what it could not
   // bind. This is the half of his loop that is "iterating on the output".
@@ -118,6 +134,37 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   const surf = kit.surface(behaviours);
   const qs = kit.questions(behaviours, conflicts);
 
+  // ── what each noun OWES, and who else would feel it being bound ───────────
+  // `requires.js` (kit#22) has always computed this and nothing in the UI has
+  // ever read it, so the behaviour page could say "these are why the steps
+  // above became comments" and not say what any of them needed. That is the
+  // whole distance between showing a refusal and being able to act on one.
+  //
+  // Two populations kept apart because collapsing them is the defect
+  // requires.js was written to expose: `missing` has no binding at all, while
+  // `insufficient` HAS one that does not carry what the verb needs — the
+  // second is invisible to `boundNouns()`, which counts the key.
+  //
+  // `sharedWith` is attached here rather than in requires.js because it is a
+  // property of the WRITE, not of the requirement: it answers "if I bind this,
+  // what else changes", and the answer only exists because bindings.json is one
+  // flat map over every corpus. Computed once for the directory, not per noun.
+  const req = requires.requirements(behaviours, bindings);
+  const corpusNouns = writer.corpusNouns(behDir);
+  const withShared = (n) => ({
+    noun: n.noun,
+    kind: n.kind,
+    name: n.name,
+    usedBy: n.usedBy,
+    bound: n.bound,
+    satisfied: n.satisfied,
+    needs: n.needs,
+    binding: n.bound ? bindings[n.noun] : null,
+    // Always an array. A UI reading `.length` must not have to distinguish
+    // "nothing collides" from "nobody looked" ([[empty-means-two-things]]).
+    sharedWith: writer.sharedWith(n.noun, corpusNouns, app),
+  });
+
   return {
     app,
     corpus: path.relative(path.join(__dirname, '..', '..'), corpusPath),
@@ -160,20 +207,28 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
     },
     surface: { errors: surf.errors, served: surf.served.map((b) => b.id), unserved: surf.unserved.map((b) => b.id) },
     questions: qs,
+    requires: {
+      nouns: req.nouns.map(withShared),
+      missing: req.missing.map(withShared),
+      insufficient: req.insufficient.map(withShared),
+      satisfied: req.satisfied.map((n) => n.noun),
+    },
   };
 }
 
 function main(argv) {
   const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--dir');
   if (!app) {
-    console.error('usage: project.js <app> [--repo <path>] [--pretty]');
+    console.error('usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]');
     return 2;
   }
   const ri = argv.indexOf('--repo');
   const di = argv.indexOf('--dir');
+  const bi = argv.indexOf('--bindings');
   const out = project(app, {
     repo: ri >= 0 ? argv[ri + 1] : null,
     behDir: di >= 0 ? argv[di + 1] : BEH_DIR,
+    bindingsFile: bi >= 0 ? argv[bi + 1] : null,
   });
   if (out.fatal) {
     console.error(`project: ${out.fatal} — could not look`);

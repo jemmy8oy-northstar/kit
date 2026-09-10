@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { ApiError } from '../api/client'
-import type { WriteResult } from '../api/types'
+import type { AnyWriteResult } from '../api/types'
 
 export type WriteState =
   | { state: 'idle' }
   | { state: 'saving' }
   | { state: 'refused'; message: string }
-  | { state: 'wrote'; result: WriteResult }
+  | { state: 'wrote'; result: AnyWriteResult }
 
 /**
  * One write, and the four things it can be doing.
@@ -25,7 +25,7 @@ export type WriteState =
 export function useWrite(onWrote: () => void) {
   const [write, setWrite] = useState<WriteState>({ state: 'idle' })
 
-  async function run(send: () => Promise<WriteResult>) {
+  async function run(send: () => Promise<AnyWriteResult>) {
     setWrite({ state: 'saving' })
     try {
       const result = await send()

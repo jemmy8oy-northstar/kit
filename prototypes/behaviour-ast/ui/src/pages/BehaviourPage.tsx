@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addStep, fetchProject, setReview } from '../api/client'
+import { addBinding, addStep, fetchProject, setReview } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Generated, ProjectDetail, Step } from '../api/types'
+import type { Behaviour, Generated, NounRequirement, ProjectDetail, Step } from '../api/types'
 import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
@@ -91,7 +91,12 @@ function Detail({
 
         <section>
           <h2>Generated test</h2>
-          <GeneratedPane generated={generated} />
+          <GeneratedPane
+            generated={generated}
+            project={project}
+            behaviour={behaviour}
+            onWrote={onWrote}
+          />
         </section>
       </div>
     </>
@@ -271,13 +276,44 @@ function StepLine({ step }: { step: Step }) {
   )
 }
 
-function GeneratedPane({ generated }: { generated?: Generated }) {
+function GeneratedPane({
+  generated,
+  project,
+  behaviour,
+  onWrote,
+}: {
+  generated?: Generated
+  project: ProjectDetail
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const behaviourId = behaviour.id
   // Nothing generated at all and "Kit generated an empty test" are different
   // facts; only the first is worth acting on and it is the one the read API
   // signals by omitting the entry.
   if (!generated) {
     return <p role="alert">Kit generated nothing for this behaviour.</p>
   }
+
+  // Only the nouns THIS behaviour uses. The projection carries the whole
+  // corpus's requirements, and listing all of them here would put another
+  // behaviour's unbound noun under a generated test it has nothing to do with.
+  //
+  // Ordered by where the noun first appears in the BEHAVIOUR, not
+  // alphabetically as `requires.js` returns them. The panel's whole claim is
+  // "here is the refusal you are looking at, and here is how to fix it" — a
+  // list that runs DateStepper, HabitList against a test that refused
+  // HabitList, DateStepper makes the reader match them up by name, which is
+  // the work the layout exists to save. Seen in a 390px screenshot; it is not
+  // visible while the two lists happen to agree.
+  const order = orderOf(behaviour)
+  const mine = (ns: NounRequirement[]) =>
+    ns
+      .filter((n) => n.usedBy.includes(behaviourId))
+      .slice()
+      .sort((a, b) => rank(order, a.noun) - rank(order, b.noun))
+  const missing = mine(project.requires.missing)
+  const insufficient = mine(project.requires.insufficient)
 
   return (
     <>
@@ -291,16 +327,225 @@ function GeneratedPane({ generated }: { generated?: Generated }) {
         ) : null}
       </div>
 
-      {generated.missing.length > 0 && (
-        <p className="muted">
-          Unbound nouns: {generated.missing.join(', ')} — these are why the steps
-          above became comments.
-        </p>
-      )}
-
       <pre>
         <code>{generated.code}</code>
       </pre>
+
+      {missing.map((n) => (
+        <BindForm key={n.noun} app={project.app} noun={n} onWrote={onWrote} />
+      ))}
+      {insufficient.map((n) => (
+        <InsufficientBinding key={n.noun} noun={n} />
+      ))}
     </>
+  )
+}
+
+/**
+ * The nouns this behaviour references, in the order its steps name them.
+ *
+ * Built from `refs` rather than from the step text, so it agrees with what the
+ * generator actually bound — `kit.js`'s `nounsOf()` walks the same field.
+ * Literals are excluded because they are not nouns and cannot be bound.
+ */
+function orderOf(behaviour: Behaviour): string[] {
+  const seen: string[] = []
+  for (const step of behaviour.steps) {
+    for (const ref of step.refs) {
+      if (ref.kind === 'literal') continue
+      const key = `${ref.kind}:${ref.name}`
+      if (!seen.includes(key)) seen.push(key)
+    }
+  }
+  return seen
+}
+
+/**
+ * Where a noun sits in that order.
+ *
+ * A noun the list does not contain sorts LAST rather than first, which is what
+ * `indexOf`'s -1 would do. That case is real: `requires.js` counts a `field:`
+ * named only in a `provides` value on another behaviour, and no step here
+ * references it — so it belongs after the ones you can see, not above them.
+ */
+function rank(order: string[], noun: string): number {
+  const i = order.indexOf(noun)
+  return i === -1 ? Number.MAX_SAFE_INTEGER : i
+}
+
+/**
+ * An example value for one requirement — a HINT on the input, and nothing else.
+ *
+ * Deliberately not a schema and not a validator. `emit()` in kit.js is the only
+ * definition of which keys mean what, and `requires.js`'s predicate table is
+ * the only definition of which a verb needs; a third opinion in the frontend
+ * would drift from both, silently, in the direction of looking helpful. The
+ * worst this table can do when it falls behind is show a stale example beside
+ * a correct sentence — the server still refuses anything the corpus cannot use.
+ */
+const EXAMPLE: Record<string, string> = {
+  addressable: '{"role": "button", "name": "Add habit"}',
+  label: '{"label": "Habit name"}',
+  route: '{"route": "./today"}',
+  urlPattern: '{"urlPattern": "/today$"}',
+  state: '{"state": "mockApi(page)"}',
+  fixture: '{"fixture": {"name": "talk.mp4", "mimeType": "video/mp4"}}',
+}
+
+/**
+ * Stage 4, made clickable: bind the noun that caused the refusal you are
+ * looking at.
+ *
+ * ── Why this is the missing half of his loop ────────────────────────────────
+ * The pane above has always been able to say *"Unbound nouns: button:AddHabit —
+ * these are why the steps above became comments"* and then leave you to open a
+ * JSON file. Measured across all nine corpora, 129 of 172 nouns (75%) are
+ * unbound, so that dead end is the common case rather than the edge one. Bind
+ * it here and the page re-reads, so the very next thing on screen is the same
+ * behaviour with a real Playwright line where the comment was. That re-read is
+ * the loop, the same way it is for a written step.
+ *
+ * ── One JSON input, for the reason AddStepForm gives ────────────────────────
+ * A form with a Role field and a Name field would be a second definition of
+ * what a binding is, and it would fall behind `emit()` the first time a verb
+ * learns a new key. What the screen offers instead is `requires.js`'s own
+ * sentence for each unmet requirement — the sentence is generated from the
+ * predicate that will actually be applied, so it cannot drift from it — plus
+ * an example. If typing JSON turns out to be the friction, a picker can be
+ * added over a working loop; a second grammar cannot be removed from one.
+ *
+ * ── 🔴 The sharing warning is BEFORE the click, not after ────────────────────
+ * `bindings.json` is one flat map over every corpus, and its own comment calls
+ * the `Kit*` prefixing convention that avoids collisions "still a habit rather
+ * than a design". A habit is enough while binding means opening the file and
+ * reading that paragraph; it is not enough once binding is a button. So the
+ * corpora that would also generate against this binding are named here, while
+ * there is still a decision to make, and named again in the response.
+ */
+function BindForm({
+  app,
+  noun,
+  onWrote,
+}: {
+  app: string
+  noun: NounRequirement
+  onWrote: () => void
+}) {
+  const unmet = noun.needs.filter((n) => !n.met)
+  const [json, setJson] = useState('')
+  const { write, run } = useWrite(onWrote)
+  const inputId = `bind-${noun.noun}`
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(json)
+    } catch (err) {
+      // Parsed here only so the message can say *what is wrong with the text*.
+      // The refusal that matters — is this a binding the corpus can use — stays
+      // on the server, and this cannot pass anything the server would not also
+      // check ([[the-message-names-the-layer]]).
+      await run(async () => {
+        throw new Error(`That is not JSON: ${(err as Error).message}`)
+      })
+      return
+    }
+    await run(async () => {
+      const result = await addBinding(app, noun.noun, parsed as Record<string, unknown>)
+      setJson('')
+      return result
+    })
+  }
+
+  return (
+    <form onSubmit={submit} className="write">
+      <h3>
+        Bind <code>{noun.noun}</code>
+      </h3>
+      <p className="muted">
+        Unbound, so {noun.usedBy.length === 1 ? 'the step' : 'the steps'} using it
+        became {noun.usedBy.length === 1 ? 'a comment' : 'comments'}. It needs:
+      </p>
+      <ul className="needs">
+        {unmet.map((need) => (
+          <li key={need.id}>
+            <strong>{need.id}</strong> — {need.surface}{' '}
+            <span className="muted">(wanted by {need.verbs.join(', ')})</span>
+          </li>
+        ))}
+      </ul>
+
+      {/*
+        No `role="alert"`. This is static content of a form that has just
+        rendered, not something that appeared in response to an action — an
+        assertive live region here would interrupt a screen reader on every
+        page load, and it would also make "the corpus refused my edit" and
+        "here is a caution about a decision you have not taken yet" the same
+        role, which is what a page announces urgently.
+      */}
+      {noun.sharedWith.length > 0 && (
+        <p className="caution">
+          The noun namespace is global: <code>{noun.noun}</code> is also used by{' '}
+          {noun.sharedWith.join(', ')}, which will generate against this binding too.
+        </p>
+      )}
+
+      <label htmlFor={inputId}>Binding</label>
+      <Input
+        id={inputId}
+        placeholder={EXAMPLE[unmet[0]?.id] ?? '{"role": "button", "name": "…"}'}
+        value={json}
+        onChange={(e) => setJson(e.target.value)}
+        invalid={write.state === 'refused'}
+      />
+      <Button type="submit" disabled={write.state === 'saving' || json.trim() === ''}>
+        {write.state === 'saving' ? 'Writing…' : 'Bind'}
+      </Button>
+      <WriteFeedback write={write} />
+    </form>
+  )
+}
+
+/**
+ * A noun that IS bound and still refuses — the population nothing else can
+ * explain.
+ *
+ * `boundNouns()` counts the key, so this noun is "bound" to every other
+ * measurement in Kit while satisfying no verb: the exact false green
+ * `requires.js` was written to expose. A page that only listed unbound nouns
+ * would show a refusal here with no cause at all.
+ *
+ * No form, deliberately. Fixing this means CHANGING an existing binding, and
+ * `writer.addBinding` refuses that on purpose — a rebind silently alters what
+ * every corpus mentioning the noun already generates, including ones nobody at
+ * this screen has opened. So this states the diagnosis and sends you to the
+ * file, which is the honest affordance for an edit that is not a click.
+ */
+function InsufficientBinding({ noun }: { noun: NounRequirement }) {
+  const unmet = noun.needs.filter((n) => !n.met)
+  return (
+    <Card elevation="flat">
+      <h3>
+        <code>{noun.noun}</code> is bound and still refuses
+      </h3>
+      {/* Static diagnosis, same reasoning as BindForm's caution — not a live region. */}
+      <p className="caution">
+        Its binding is <code>{JSON.stringify(noun.binding)}</code>, which does not carry
+        what {unmet.length === 1 ? 'this verb needs' : 'these verbs need'}:
+      </p>
+      <ul className="needs">
+        {unmet.map((need) => (
+          <li key={need.id}>
+            <strong>{need.id}</strong> — {need.surface}{' '}
+            <span className="muted">(wanted by {need.verbs.join(', ')})</span>
+          </li>
+        ))}
+      </ul>
+      <p className="muted">
+        Kit will not rebind a noun from here: changing an existing binding changes every
+        corpus that mentions it. Edit <code>bindings.json</code> and review the diff.
+      </p>
+    </Card>
   )
 }

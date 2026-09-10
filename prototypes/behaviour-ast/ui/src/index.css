@@ -69,6 +69,29 @@ a {
   margin: 0 0 var(--space-4);
 }
 
+/*
+ * A caution about a decision not yet taken — distinct from `role="alert"`,
+ * which is reserved for a refusal that just happened. The global noun
+ * namespace means binding here changes what other corpora generate, and that
+ * has to be readable BEFORE the click; after it, the decision is made.
+ */
+.caution {
+  color: var(--color-warning);
+  background: var(--color-warning-subtle);
+  border-radius: var(--radius-surface);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  margin: var(--space-2) 0;
+}
+
+/* What a noun owes the app, one requirement per line. */
+.needs {
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
 .badges {
   display: flex;
   flex-wrap: wrap;

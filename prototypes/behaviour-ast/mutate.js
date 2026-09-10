@@ -478,6 +478,69 @@ MUTANTS.push(
     'onlyA: [...a.nouns].filter((n) => !b.nouns.has(n)).sort(),', 'converge.js'],
 );
 
+// binding a noun (stage 4). Every rule here guards a failure that is SILENT:
+// a binding written with less in it than you gave, a rebind that changes every
+// corpus at once, a collision report that quietly says "nothing". None of them
+// throws, and all of them read as success on screen — which is why they are
+// mutated rather than trusted to the tests that were written beside them.
+MUTANTS.push(
+  // The guard that was inert in its first draft. Reinstating the original
+  // spelling is the point: `JSON.stringify(value)` compares the damage to
+  // itself, so this mutant restores a check that passes while doing nothing.
+  // ⚠️ The first spelling of this mutant SURVIVED, and the mutant was wrong,
+  // not the code: it replaced `Object.keys(reread[key])` with
+  // `Object.keys(JSON.parse(JSON.stringify(value)))`, which strips `undefined`
+  // exactly the same way — an equivalent mutant, which is unkillable by
+  // construction. The real historical defect was a stringify-to-stringify
+  // COMPARISON, so that is what gets reinstated here.
+  ['the round-trip guard compares stringify to stringify, so an emptied binding passes',
+    'const survived = Object.keys(reread[key]);\n  const lost = keys.filter((k) => !survived.includes(k));\n  if (lost.length) {',
+    'const lost = JSON.stringify(reread[key]) !== JSON.stringify(value) ? keys : [];\n  if (lost.length) {', 'writer.js'],
+  ['a binding is written even when a key would be deleted by JSON.stringify',
+    'if (lost.length) {', 'if (false) {', 'writer.js'],
+  ['rebinding is allowed, so one click changes every corpus that mentions the noun',
+    'if (Object.prototype.hasOwnProperty.call(bindings, key)) {', 'if (false) {', 'writer.js'],
+  ['an empty binding is accepted — it satisfies no verb and still counts as bound',
+    'if (keys.length === 0) {', 'if (false) {', 'writer.js'],
+  ['the noun check goes back to a regex that disagrees with the parser',
+    'function isNoun(s) {',
+    'function isNoun(s) { return /^[a-z][a-z0-9]*:[A-Za-z][A-Za-z0-9_]*$/.test(String(s).trim()); } function _isNounUnused(s) {',
+    'writer.js'],
+  // ⚠️ Mutating the CHECK survived, and correctly: `{ ...bindings, [key]: value }`
+  // cannot lose a key, so the collateral loop is unfalsifiable as written and
+  // the mutant was equivalent. What the check is FOR is a future construction
+  // that does lose one — so the damage is mutated instead of the guard, and
+  // the guard is what has to notice.
+  ['adding a binding drops the ones already there',
+    'const after = { ...bindings, [key]: value };', 'const after = { [key]: value };', 'writer.js'],
+  // sharedWith: the mechanism replacing the habit bindings.json's own comment
+  // describes. Both directions, because a function that always reports nothing
+  // and one that always reports everything are equally useless and only one of
+  // them looks broken.
+  ['sharedWith always reports nothing, so the global namespace is silent again',
+    'if (nouns.includes(noun)) out.push(app);', '', 'writer.js'],
+  ['sharedWith includes the corpus you are already in',
+    "if (app === self) continue;", '', 'writer.js'],
+  ['a corpus that will not parse is silently dropped with no report',
+    'if (onSkip) onSkip(app, e);', '', 'writer.js'],
+  // The defect running the server found: the write honoured --bindings and the
+  // read did not, so the page re-read a different file and showed the same
+  // refusal after a successful bind.
+  ['the projection ignores --bindings, so the re-read after a write sees the wrong file',
+    "const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));",
+    "const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));", 'project.js'],
+  ['ui.js stops passing the bindings file to the read, re-opening the same split',
+    'bindingsFile: opts.bindings || null,', 'bindingsFile: null,', 'ui.js'],
+  ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',
+    'insufficient: req.insufficient.map(withShared),', 'insufficient: [],', 'project.js'],
+  ['the bind route is gone, so a POST to it falls through to the behaviours matcher',
+    'if (bm) return postBinding(bm, body, opts, json);', '', 'ui.js'],
+  ['the bind response drops sharedWith, so the namespace warning never reaches the screen',
+    'sharedWith: result.sharedWith,', 'sharedWith: [],', 'ui.js'],
+  ['a bind names an app that has no corpus, so sharedWith compares against nothing',
+    'if (!writer.corpusPath(app, dir)) {', 'if (false) {', 'ui.js'],
+);
+
 let killed = 0;
 const survived = [];
 for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
