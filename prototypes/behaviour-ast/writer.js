@@ -16,6 +16,8 @@
 //
 //   node writer.js <app> add-step <BEH-ID> "<kind> <rest>"  [--dir <behaviours>]
 //   node writer.js <app> add-behaviour <BEH-ID> "<title>"   [--dir <behaviours>]
+//   node writer.js <app> review <BEH-ID> "approved"          [--dir <behaviours>]
+//   node writer.js <app> review <BEH-ID> "denied <correction>"
 //
 // ── 1. A surgical edit of one block, never a re-serialisation ────────────────
 // A corpus is a hand-authored document whose comments carry its most important
@@ -236,6 +238,98 @@ function addBehaviour(text, id, title, opts = {}) {
   return validate(text, after, id);
 }
 
+/**
+ * Set the review state of an existing behaviour — approve an inference, or deny
+ * it with the correction.
+ *
+ * ── The first function here that CHANGES a line rather than adding one ───────
+ * `addStep` and `addBehaviour` are both append-only, and that is why neither had
+ * to think about what it was overwriting. Adjudication cannot be an append: a
+ * behaviour already carries `review unreviewed`, and adding a second `review`
+ * line leaves the file saying two things. `parse()` would take the last one and
+ * be right to, but the corpus is a document a person reads, and a document that
+ * contradicts itself has already lost the argument the state was recording.
+ *
+ * ── Why this is executing his decision rather than making one ────────────────
+ * The vocabulary is not invented here. `review approved` / `review denied <what
+ * is actually true>` is James's #68 call, it is what `parse()` has always
+ * accepted, and it is the literal line every generated question sheet ends by
+ * telling a human to type (`kit.js`'s `todo()`). Twenty-six inferences across
+ * two corpora are sitting at `unreviewed` because typing it means opening the
+ * file by hand. This makes the sentence clickable; it does not change what the
+ * sentence is.
+ *
+ * ── 🔴 The newline refusal is a security guard, not tidiness ─────────────────
+ * `validate()`'s rule 3 exempts the TARGET behaviour — it must, or no edit could
+ * ever change anything. So free text that reaches the target's block is the one
+ * place in this file where a caller's string is not policed by the collateral
+ * rule. A note of `wrong\n  actor attacker` would splice a second line into the
+ * target and rule 3 would wave it through, because the target is the one
+ * behaviour it does not compare. `addStep` refuses newlines for the neater
+ * reason that its counts assume one line; here the same refusal is load-bearing.
+ * (A note that opened a whole new `behaviour` block IS caught — rule 3 sees it
+ * appear — which is exactly the trap: the dangerous half is the half that stays
+ * inside the target.)
+ *
+ * State and note are otherwise NOT re-validated here. `kit.js` already refuses a
+ * state outside the three, and already refuses a denial with no correction —
+ * "a denied behaviour must state the correction", his #68 point that a bare
+ * denial deletes a line where a denial with a correction compounds into the
+ * corpus. Restating either would be a second definition free to drift from the
+ * parser, the mistake `addStep` documents itself for avoiding. The refusal
+ * arrives from `validate()` carrying the parser's own sentence, which is the one
+ * worth putting on screen.
+ */
+function setReview(text, id, state, note = null) {
+  const st = String(state ?? '').trim();
+  const nt = note === null || note === undefined ? '' : String(note).trim();
+
+  if (!st) return { ok: false, error: 'empty-review', reason: 'a review needs a state: unreviewed, approved or denied' };
+  // Checked on the RAW arguments, before trimming can hide an interior newline.
+  if (/\n/.test(String(state ?? '')) || /\n/.test(String(note ?? ''))) {
+    return { ok: false, error: 'multiline-review', reason: 'a review is one line; a state or a note cannot contain a newline' };
+  }
+
+  const b = block(text, id);
+  if (!b) return { ok: false, error: 'no-such-behaviour', reason: `no behaviour ${id} in this corpus`, known: ids(text) };
+
+  const lines = text.split('\n');
+  const line = INDENT + (nt ? `review ${st} ${nt}` : `review ${st}`);
+
+  // The keyword test is the parser's own: `kit.js` reads a line's first
+  // whitespace-delimited token and nothing else, so matching on it here cannot
+  // disagree with what the file will mean once written.
+  let at = -1;
+  for (let i = b.start + 1; i <= b.end; i++) {
+    if (lines[i].trim().split(/\s+/)[0] === 'review') { at = i; break; }
+  }
+
+  if (at !== -1) {
+    lines[at] = line;
+  } else {
+    // No explicit review line — the state was `parse()`'s default. Put the new
+    // one directly under `source`, which is where every corpus that writes both
+    // already puts it, and where it reads as a comment on the source rather than
+    // as a stray line among the steps. Failing that, under `actor`; failing
+    // that, the header, which is the only anchor certainly inside the block.
+    //
+    // Position is cosmetic to the parser and not to the reader, and the reader
+    // is who a corpus is for: every one of these files orders its preamble
+    // `actor` → `source` → `review` before the first step, so an edit that
+    // landed `review` above `actor` would be correct and still look like
+    // something went wrong.
+    let anchor = b.start;
+    for (let i = b.start + 1; i <= b.end; i++) {
+      const kw = lines[i].trim().split(/\s+/)[0];
+      if (kw === 'actor') anchor = i;
+      if (kw === 'source') { anchor = i; break; }
+    }
+    lines.splice(anchor + 1, 0, line);
+  }
+
+  return validate(text, lines.join('\n'), id);
+}
+
 /** Resolve an app name to its corpus path. The name is looked up, never joined blindly. */
 function corpusPath(app, dir = BEH_DIR) {
   if (!fs.existsSync(dir)) return null;
@@ -276,7 +370,8 @@ function main(argv) {
   const [app, verb, id, arg] = rest;
 
   if (!app || !verb) {
-    console.error('usage: writer.js <app> add-step <BEH-ID> "<step>" | <app> add-behaviour <BEH-ID> "<title>"');
+    console.error('usage: writer.js <app> add-step <BEH-ID> "<step>" | <app> add-behaviour <BEH-ID> "<title>" '
+      + '| <app> review <BEH-ID> "approved" | <app> review <BEH-ID> "denied <correction>"');
     return 2;
   }
   const file = corpusPath(app, dir);
@@ -289,7 +384,17 @@ function main(argv) {
   let result;
   if (verb === 'add-step') result = addStep(text, id, arg);
   else if (verb === 'add-behaviour') result = addBehaviour(text, id, arg, { source, actor });
-  else {
+  else if (verb === 'review') {
+    // One argument, split at the first space, so a denial and its correction
+    // arrive as the single quoted string a shell makes easy — and so the CLI
+    // types the same sentence the corpus stores rather than a flag spelling of
+    // it that only exists here.
+    const value = String(arg ?? '').trim();
+    const sp = value.indexOf(' ');
+    result = sp === -1
+      ? setReview(text, id, value, null)
+      : setReview(text, id, value.slice(0, sp), value.slice(sp + 1));
+  } else {
     console.error(`writer: unknown verb '${verb}'`);
     return 2;
   }
@@ -307,6 +412,6 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { block, ids, addStep, addBehaviour, validate, shape, corpusPath, commitToDisk, parseArgs, main, INDENT };
+module.exports = { block, ids, addStep, addBehaviour, setReview, validate, shape, corpusPath, commitToDisk, parseArgs, main, INDENT };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

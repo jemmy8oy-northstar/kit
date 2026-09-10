@@ -13,7 +13,8 @@
   ],
   "corpus": {
     "gamma.beh": "# a comment that must survive\nbehaviour BEH-G \"gamma\"\n  actor engineer\n  when opens page:Home\n",
-    "two words.beh": "behaviour BEH-W \"spaced\"\n  actor engineer\n  when opens page:Home\n"
+    "two words.beh": "behaviour BEH-W \"spaced\"\n  actor engineer\n  when opens page:Home\n",
+    "delta.beh": "# delta carries the one thing gamma cannot: a machine's inference,\n# included but marked unreviewed per claude-code-bot#68. Adjudicating it is\n# the only write in Kit that CHANGES a line instead of adding one.\nbehaviour BEH-D \"delta\"\n  actor engineer\n  source inferred tests/DeltaTests.cs:It_works\n  review unreviewed\n  when opens page:Home\n"
   },
   "requests": [
     {
@@ -53,6 +54,42 @@
       "path": "/api/projects/gamma/behaviours/BEH-G/steps",
       "contentType": "application/json",
       "body": { "step": "wibble region:Main" },
+      "expect": { "status": 409, "fileMustNotChange": true }
+    },
+    {
+      "what": "approve an inference — the review line is REPLACED, not appended beside the old one",
+      "call": { "fn": "setReview", "args": ["delta", "BEH-D", "approved"] },
+      "method": "POST",
+      "path": "/api/projects/delta/behaviours/BEH-D/review",
+      "contentType": "application/json",
+      "body": { "state": "approved", "note": null },
+      "expect": { "status": 200, "fileMustMatch": "review approved", "fileMustNotMatch": "review unreviewed" }
+    },
+    {
+      "what": "deny it instead, with the correction his #68 requires",
+      "call": { "fn": "setReview", "args": ["delta", "BEH-D", "denied", "the page is Dashboard, not Home"] },
+      "method": "POST",
+      "path": "/api/projects/delta/behaviours/BEH-D/review",
+      "contentType": "application/json",
+      "body": { "state": "denied", "note": "the page is Dashboard, not Home" },
+      "expect": { "status": 200, "fileMustMatch": "review denied the page is Dashboard, not Home" }
+    },
+    {
+      "what": "a bare denial is refused by the parser's own rule — a denial with no correction deletes a line",
+      "call": { "fn": "setReview", "args": ["delta", "BEH-D", "denied"] },
+      "method": "POST",
+      "path": "/api/projects/delta/behaviours/BEH-D/review",
+      "contentType": "application/json",
+      "body": { "state": "denied", "note": null },
+      "expect": { "status": 409, "fileMustNotChange": true }
+    },
+    {
+      "what": "a note carrying a newline could splice a line into the TARGET, which rule 3 exempts",
+      "call": { "fn": "setReview", "args": ["delta", "BEH-D", "denied", "wrong\n  actor attacker"] },
+      "method": "POST",
+      "path": "/api/projects/delta/behaviours/BEH-D/review",
+      "contentType": "application/json",
+      "body": { "state": "denied", "note": "wrong\n  actor attacker" },
       "expect": { "status": 409, "fileMustNotChange": true }
     }
   ]

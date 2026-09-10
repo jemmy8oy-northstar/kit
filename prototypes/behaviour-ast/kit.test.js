@@ -1933,6 +1933,121 @@ test('writer: appending twice produces the same shape as appending once, twice',
   assert.strictEqual(parse(two.text).length, parse(REAL_CORPUS).length + 2);
 });
 
+// ── adjudication: the first write that CHANGES a line (his #68, kit#16) ─────
+//
+// `language-vocab.beh` rather than snip-it's corpus, because this is the only
+// writer function whose subject has to already exist: fifteen of its behaviours
+// carry `source inferred` + `review unreviewed`, written by a real pass over a
+// real repo. A fixture would carry the review line I remembered to put in it,
+// and the interesting case is the behaviour that has one already.
+
+const VOCAB_CORPUS = fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'language-vocab.beh'), 'utf8');
+
+test('writer: the corpus this section reads really does hold unreviewed inferences', () => {
+  // The population, asserted before anything loops over it. Every test below is
+  // vacuous if the corpus stops carrying one, and a vacuous test passes.
+  const unreviewed = parse(VOCAB_CORPUS).filter((b) => b.source.origin === 'inferred' && b.review.state === 'unreviewed');
+  assert.ok(unreviewed.length >= 5, `only ${unreviewed.length} unreviewed inferences to adjudicate`);
+  assert.ok(VOCAB_CORPUS.includes('  review unreviewed'), 'the corpus states the review line explicitly');
+});
+
+test('writer: approving REPLACES the review line rather than adding a second one', () => {
+  // The failure this exists to stop is not a parse error — `parse()` takes the
+  // last `review` line and would report `approved` quite happily. It is a corpus
+  // that says two things to the person reading it.
+  const r = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approved');
+  assert.ok(r.ok, r.reason);
+  const b = parse(r.text).find((x) => x.id === 'BEH-GRADE-1');
+  assert.strictEqual(b.review.state, 'approved');
+  assert.strictEqual(b.review.note, null);
+  const lines = r.text.split('\n');
+  const start = lines.findIndex((l) => l.startsWith('behaviour BEH-GRADE-1 '));
+  const next = lines.findIndex((l, i) => i > start && l.startsWith('behaviour '));
+  const reviews = lines.slice(start, next).filter((l) => l.trim().split(/\s+/)[0] === 'review');
+  assert.strictEqual(reviews.length, 1, `the block carries ${reviews.length} review lines`);
+  assert.strictEqual(r.text.split('\n').length, VOCAB_CORPUS.split('\n').length, 'the file grew or shrank');
+});
+
+test('writer: a denial carries the correction into the corpus', () => {
+  const r = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'denied', 'the grader returns four verdicts, not three');
+  assert.ok(r.ok, r.reason);
+  const b = parse(r.text).find((x) => x.id === 'BEH-GRADE-1');
+  assert.strictEqual(b.review.state, 'denied');
+  assert.strictEqual(b.review.note, 'the grader returns four verdicts, not three');
+});
+
+test('writer: a denial with no correction is refused, in the parser\'s own words', () => {
+  // His #68 point: a bare denial deletes a line, a denial with a correction
+  // compounds into the corpus. The rule lives in `parse()` and is NOT restated
+  // in writer.js — this asserts that the sentence survives the trip, because the
+  // sentence is what reaches the screen.
+  const r = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'denied');
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error, 'would-not-parse');
+  assert.match(r.reason, /must state the correction/);
+  assert.strictEqual(r.text, undefined, 'a refusal must not hand back text to write');
+});
+
+test('writer: a newline in the note is refused — rule 3 exempts the TARGET', () => {
+  // 🔴 The one hole free text could reach. `validate()` compares every behaviour
+  // EXCEPT the one being edited, so a note of `wrong\n  actor attacker` splices a
+  // line into the target that nothing downstream would question. A note that
+  // opens a new `behaviour` block IS caught by rule 3 — which is the trap, since
+  // the caught case is the loud one and the uncaught case is the quiet one.
+  const inside = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'denied', 'wrong\n  actor attacker');
+  assert.strictEqual(inside.error, 'multiline-review');
+  const outside = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'denied', 'wrong\nbehaviour BEH-EVIL "evil"');
+  assert.strictEqual(outside.error, 'multiline-review');
+  // And the state, by the same argument — it is concatenated into the same line.
+  assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approved\n  actor attacker').error, 'multiline-review');
+});
+
+test('writer: a state outside the three is refused, and the vocabulary is not restated here', () => {
+  assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approvedd').error, 'would-not-parse');
+  assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', '').error, 'empty-review');
+  assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-NOPE', 'approved').error, 'no-such-behaviour');
+  // The vocabulary lives in `parse()` and must not be duplicated in writer.js,
+  // or the two are free to drift and only one of them is the file's meaning.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'writer.js'), 'utf8');
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  assert.strictEqual(/unreviewed\|approved\|denied/.test(code), false,
+    'writer.js has grown its own copy of the review vocabulary');
+});
+
+test('writer: a behaviour with NO review line gets one, under source, and neighbours are untouched', () => {
+  // `parse()` defaults a `defined` behaviour to approved without any line saying
+  // so, so this is the insert path rather than the replace path.
+  const defined = parse(VOCAB_CORPUS).find((b) => b.source.origin === 'defined');
+  assert.ok(defined, 'the corpus has no defined behaviour to deny');
+  const r = W.setReview(VOCAB_CORPUS, defined.id, 'denied', 'this was never the desired behaviour');
+  assert.ok(r.ok, r.reason);
+  const after = parse(r.text);
+  assert.strictEqual(after.find((b) => b.id === defined.id).review.state, 'denied');
+  assert.strictEqual(after.length, parse(VOCAB_CORPUS).length, 'the behaviour count changed');
+  // Rule 3 already refuses collateral change; this asserts the count of lines it
+  // added, which rule 3 cannot see because the target is the exempt one.
+  assert.strictEqual(r.text.split('\n').length, VOCAB_CORPUS.split('\n').length + 1);
+});
+
+test('writer: adjudicating twice ends at the second answer, not at two answers', () => {
+  const once = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approved');
+  assert.ok(once.ok, once.reason);
+  const twice = W.setReview(once.text, 'BEH-GRADE-1', 'denied', 'changed my mind');
+  assert.ok(twice.ok, twice.reason);
+  const b = parse(twice.text).find((x) => x.id === 'BEH-GRADE-1');
+  assert.strictEqual(b.review.state, 'denied');
+  assert.strictEqual(twice.text.split('\n').length, VOCAB_CORPUS.split('\n').length,
+    'a second adjudication grew the file');
+});
+
+test('writer: every comment survives an adjudication too', () => {
+  const r = W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approved');
+  assert.ok(r.ok, r.reason);
+  const comments = (t) => t.split('\n').filter((l) => l.trim().startsWith('#'));
+  assert.deepStrictEqual(comments(r.text), comments(VOCAB_CORPUS));
+  assert.ok(comments(VOCAB_CORPUS).length >= 8, 'the corpus must actually have comments to lose');
+});
+
 test('writer: it contains no path to git at all — decision 2, checked not promised', () => {
   // A property of the file, not of any run. Read from source for the same reason
   // converge.js's "there is no threshold" test does: the claim is that this
@@ -2457,6 +2572,7 @@ test('the write contract fixture is not empty, and covers both routes', () => {
   assert.ok(CONTRACT.requests.length >= 4, `only ${CONTRACT.requests.length} contract requests`);
   const paths = CONTRACT.requests.map((r) => r.path);
   assert.ok(paths.some((p) => /\/steps$/.test(p)), 'no add-step request in the contract');
+  assert.ok(paths.some((p) => /\/review$/.test(p)), 'no review request in the contract');
   assert.ok(paths.some((p) => /\/behaviours$/.test(p)), 'no add-behaviour request in the contract');
   assert.ok(paths.some((p) => /%20/.test(p)), 'nothing in the contract exercises a percent-encoded name');
   assert.ok(CONTRACT.requests.some((r) => r.expect.status === 409), 'the contract only covers the happy path');
@@ -2485,6 +2601,14 @@ for (const req of CONTRACT.requests) {
       } else {
         assert.ok(after.includes(req.expect.fileMustMatch),
           `the corpus does not contain ${req.expect.fileMustMatch}`);
+        // The absence half, and it is the whole point of the review route: an
+        // approval that APPENDED `review approved` would satisfy the line above
+        // while leaving `review unreviewed` in the file, and the corpus would
+        // then say two things about the same behaviour.
+        if (req.expect.fileMustNotMatch) {
+          assert.ok(!after.includes(req.expect.fileMustNotMatch),
+            `the corpus still contains ${req.expect.fileMustNotMatch}`);
+        }
         assert.strictEqual(JSON.parse(res.body).committed, false);
       }
     } finally { server.close(); }
@@ -2496,12 +2620,20 @@ test('contract: the paths in the fixture are the ones the CLIENT builds, charact
   // here it is re-derived from the same arguments, so a hand-edited fixture path
   // cannot make both suites agree on something the client would never send. This
   // is the assertion that catches a red test being "fixed" by editing the pin.
+  const built = {
+    addStep: (app, id) => `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps`,
+    setReview: (app, id) => `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/review`,
+    addBehaviour: (app) => `/api/projects/${encodeURIComponent(app)}/behaviours`,
+  };
   for (const req of CONTRACT.requests) {
     const [app, id] = req.call.args;
-    const expected = req.call.fn === 'addStep'
-      ? `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps`
-      : `/api/projects/${encodeURIComponent(app)}/behaviours`;
-    assert.strictEqual(req.path, expected, `${req.what}: the fixture path is not what the client builds`);
+    // Looked up, never defaulted: a `fn` this table does not know about would
+    // otherwise fall through to the `addBehaviour` spelling and quietly assert
+    // the wrong path — the same "empty means two things" failure the read side
+    // records against itself.
+    const build = built[req.call.fn];
+    assert.ok(build, `the contract calls ${req.call.fn}, which this test does not know how to build a path for`);
+    assert.strictEqual(req.path, build(app, id), `${req.what}: the fixture path is not what the client builds`);
   }
 });
 
