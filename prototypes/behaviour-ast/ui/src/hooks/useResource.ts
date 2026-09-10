@@ -12,6 +12,29 @@ export type Resource<T> =
   | { state: 'ready'; value: T }
 
 export function useResource<T>(load: () => Promise<T>, deps: unknown[]): Resource<T> {
+  return useReloadableResource(load, deps).resource
+}
+
+/**
+ * The same three states, plus a way to ask for them again.
+ *
+ * A write is only half of his loop; the other half is seeing the *generated
+ * output* change because of it. Kit derives the test from the corpus on every
+ * read, so re-fetching after a write is what makes the edit visible — without
+ * it the page would show his new step next to the test that predates it, which
+ * is worse than showing nothing, because it looks like the generator ignored
+ * him.
+ */
+export function useReloadableResource<T>(
+  load: () => Promise<T>,
+  deps: unknown[],
+): { resource: Resource<T>; reload: () => void } {
+  const [nonce, setNonce] = useState(0)
+  const resource = useLoad(load, [...deps, nonce])
+  return { resource, reload: () => setNonce((n) => n + 1) }
+}
+
+function useLoad<T>(load: () => Promise<T>, deps: unknown[]): Resource<T> {
   const [resource, setResource] = useState<Resource<T>>({ state: 'loading' })
 
   useEffect(() => {
