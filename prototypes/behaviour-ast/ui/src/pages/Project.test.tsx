@@ -72,3 +72,76 @@ describe('Project', () => {
     expect(flags).toHaveLength(habits.adjudication.unreviewed.length)
   })
 })
+
+// ── the question sheet, which ui.js has always sent and this UI ignored ──────
+
+describe('the question sheet', () => {
+  it('the fixture carries both tiers, or everything below is vacuous', () => {
+    const tiers = habits.questions.map((q) => q.tier)
+    expect(tiers).toContain('decision')
+    expect(tiers).toContain('review')
+  })
+
+  it('renders the decision pack Kit already built — the ask, both options, the recommendation', async () => {
+    // This is the most considered artefact Kit produces and the UI was
+    // discarding it: `questions` was typed `unknown[]` and read by nothing.
+    renderApp(habits, 'james-habits-app')
+
+    // Scoped to the one card. There are three decision-tier questions in this
+    // fixture and each renders its own recommendation, so an unscoped query for
+    // "recommended" matches every one of them and asserts nothing about this
+    // conflict.
+    const card = (await screen.findByText(/Two behaviours disagree about/)).closest('div')!
+
+    expect(within(card).getByText(/Which one is the contract the frontend gets built against/)).toBeInTheDocument()
+
+    // Both options, each with the consequence that makes it a choice rather
+    // than a preference.
+    const items = within(card).getAllByRole('listitem').map((li) => li.textContent ?? '')
+    expect(items.some((t) => /Rename the design to historyDays/.test(t))).toBe(true)
+    expect(within(card).getByText(/No code moves, no client regenerates/)).toBeInTheDocument()
+
+    // The recommended label appears TWICE inside this card on purpose — once as
+    // an option and once as the recommendation — so an exact count is the
+    // assertion, not a nuisance to work around.
+    expect(within(card).getAllByText(/Rename the code to days/)).toHaveLength(2)
+    expect(within(card).getByText('recommended')).toBeInTheDocument()
+    expect(within(card).getByText(/^Against:/)).toBeInTheDocument()
+  })
+
+  it('offers NO control on a conflict, and says why', async () => {
+    // Kit has no syntax for "BEH-A supersedes BEH-B" — no keyword, no writer
+    // function. A resolve button here would mean inventing the grammar it wrote
+    // into, which is a change to the corpus language and James's call. The page
+    // must say that rather than look unfinished.
+    renderApp(habits, 'james-habits-app')
+
+    const card = (await screen.findByText(/Two behaviours disagree about/)).closest('div')!
+    expect(within(card).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(card).getByText(/no syntax for recording a resolution/)).toBeInTheDocument()
+  })
+
+  it('links every never-adjudicated inference to the page where it can be answered', async () => {
+    renderApp(habits, 'james-habits-app')
+
+    const reviews = habits.questions.filter((q) => q.tier === 'review')
+    const queue = (await screen.findByRole('heading', { name: 'Never adjudicated' })).parentElement!
+    for (const q of reviews) {
+      expect(within(queue).getByRole('link', { name: q.id! })).toHaveAttribute(
+        'href',
+        `/projects/james-habits-app/behaviours/${q.id}`,
+      )
+    }
+  })
+
+  it('shows no sheet at all when there is nothing to ask', async () => {
+    // snip-it's corpus is entirely `defined` and conflict-free. An empty heading
+    // over an empty list reads as "the sheet is broken"; the absence of a
+    // question is not a thing to render.
+    expect(snipIt.questions).toHaveLength(0)
+    renderApp(snipIt, 'snip-it')
+
+    await screen.findByRole('heading', { name: 'snip-it', level: 1 })
+    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+  })
+})

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api/client'
 
 /**
@@ -30,16 +30,47 @@ export function useReloadableResource<T>(
   deps: unknown[],
 ): { resource: Resource<T>; reload: () => void } {
   const [nonce, setNonce] = useState(0)
-  const resource = useLoad(load, [...deps, nonce])
+  // `deps` is passed twice on purpose: once as part of what triggers a re-load,
+  // and once as the identity of WHICH resource is being loaded. `useLoad` needs
+  // both to tell "load the next project" from "load this project again".
+  const resource = useLoad(load, [...deps, nonce], deps)
   return { resource, reload: () => setNonce((n) => n + 1) }
 }
 
-function useLoad<T>(load: () => Promise<T>, deps: unknown[]): Resource<T> {
+/**
+ * ⚠️ **`identity` is what stops a reload blanking the page, and that is not
+ * cosmetic — it is why the write confirmation exists at all.**
+ *
+ * Every write ends by calling `reload()`. Without this, the re-fetch put the
+ * resource back to `loading`, `ResourceView` swapped the page for a spinner,
+ * and every form on it UNMOUNTED — taking its `useWrite` state with it. The
+ * form remounted `idle`, so the note saying *which file was written and that
+ * Kit did not commit it* was destroyed by the very reload the write triggered.
+ * Decision 2's guarantee is only a guarantee to him if he can watch it hold,
+ * and he never could.
+ *
+ * 🔑 **The suite could not see this and stayed green through it.** A stubbed
+ * `fetch` resolves inside the same batch, so React never commits the `loading`
+ * render and nothing unmounts. It took running the real server in a real
+ * browser — the failure needs a network round-trip to exist at all
+ * ([[green-suite-over-a-mock]]). The test added beside this delays its stub by
+ * a tick for exactly that reason.
+ *
+ * A *navigation* still shows `loading`: holding the previous project's
+ * behaviours on screen under a new project's heading would be the read-side
+ * version of the same lie.
+ */
+function useLoad<T>(load: () => Promise<T>, deps: unknown[], identity?: unknown[]): Resource<T> {
   const [resource, setResource] = useState<Resource<T>>({ state: 'loading' })
+  const lastIdentity = useRef<string | null>(null)
 
   useEffect(() => {
     let live = true
-    setResource({ state: 'loading' })
+    const key = identity === undefined ? null : JSON.stringify(identity)
+    const isReload = key !== null && key === lastIdentity.current
+    lastIdentity.current = key
+
+    setResource((prev) => (isReload && prev.state === 'ready' ? prev : { state: 'loading' }))
 
     load()
       .then((value) => {

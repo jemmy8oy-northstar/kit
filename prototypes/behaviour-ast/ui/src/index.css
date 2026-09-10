@@ -122,6 +122,21 @@ a {
 code {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+  /*
+   * Inline code is a source reference far more often than it is a word, and a
+   * source reference is one long unbroken token —
+   * `backend/…/HabitServiceTests.cs:EnsureSeeded_creates_the_starter_set_once`
+   * has no space in it at all. Without this it pushes the page wider than the
+   * viewport and the provenance an adjudication rests on runs off the right
+   * edge of a phone. Found in a 390px screenshot, which is the only place it is
+   * visible. `pre` is excluded below: a generated test is meant to scroll, not
+   * to reflow.
+   */
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  overflow-wrap: normal;
 }
 
 pre {

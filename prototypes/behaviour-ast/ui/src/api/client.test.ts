@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError, addBehaviour, addStep } from './client'
+import { ApiError, addBehaviour, addStep, setReview } from './client'
 import contract from '../test/fixtures/write-contract.json'
+import type { ReviewState } from './types'
 
 type Recorded = { url: string; init: RequestInit }
 
@@ -29,8 +30,21 @@ function invoke(req: (typeof contract.requests)[number]) {
     const [app, id, step] = args as [string, string, string]
     return addStep(app, id, step)
   }
-  const [app, behaviour] = args as [string, Parameters<typeof addBehaviour>[1]]
-  return addBehaviour(app, behaviour)
+  if (fn === 'setReview') {
+    const [app, id, state, note] = args as [string, string, ReviewState, string | undefined]
+    // `note` is absent from the fixture args for an approval, and the client
+    // turns that into an explicit `null` in the body — which the contract
+    // asserts, so the two spellings cannot drift apart.
+    return setReview(app, id, state, note ?? null)
+  }
+  if (fn === 'addBehaviour') {
+    const [app, behaviour] = args as [string, Parameters<typeof addBehaviour>[1]]
+    return addBehaviour(app, behaviour)
+  }
+  // Named, never defaulted. This used to fall through to `addBehaviour`, so a
+  // fixture naming a function nobody had written here would have been tested
+  // against the wrong client call and passed.
+  throw new Error(`the contract calls ${fn}, which this test does not know how to invoke`)
 }
 
 describe('the write contract, from the client side', () => {

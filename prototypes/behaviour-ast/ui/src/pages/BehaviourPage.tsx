@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addStep, fetchProject } from '../api/client'
+import { addStep, fetchProject, setReview } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Generated, ProjectDetail, Step } from '../api/types'
+import type { Behaviour, Generated, ProjectDetail, Step } from '../api/types'
 import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
@@ -74,6 +74,8 @@ function Detail({
       </div>
       <p className="muted">{behaviour.at}</p>
 
+      <AdjudicateForm app={project.app} behaviour={behaviour} onWrote={onWrote} />
+
       <div className="split">
         <section>
           <h2>Behaviour</h2>
@@ -141,6 +143,99 @@ function AddStepForm({ app, id, onWrote }: { app: string; id: string; onWrote: (
       </Button>
       <WriteFeedback write={write} />
     </form>
+  )
+}
+
+/**
+ * His step 4, and the verb the UI has never had: **"what the desired behaviour
+ * really is"**.
+ *
+ * ── Why this control is on THIS page and not on the queue ────────────────────
+ * The project page lists what is unreviewed and links here. It would be two
+ * clicks cheaper to put Approve on that list, and that is exactly the mechanism
+ * his claude-code-bot#68 decision exists to prevent: *"I like this default
+ * included but marked unreviewed"* is a guard against inferences passing
+ * themselves off as requirements, and a queue with a row of Approve buttons is
+ * how a guard becomes a formality. You cannot honestly approve a behaviour you
+ * are not looking at — so the control sits where the steps and the generated
+ * test are already on screen, which is the evidence the answer depends on.
+ *
+ * ── Deny needs the correction, and the button says so ────────────────────────
+ * `parse()` refuses `review denied` with nothing after it — his #68 point that a
+ * bare denial deletes a line where a denial with a correction compounds into the
+ * corpus. The disabled button here is an AFFORDANCE, not the rule: the rule is
+ * on the server, where it is one sentence in one place, and if these two ever
+ * disagree the server wins and its refusal is what appears below.
+ */
+function AdjudicateForm({
+  app,
+  behaviour,
+  onWrote,
+}: {
+  app: string
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const [note, setNote] = useState('')
+  const { write, run } = useWrite(onWrote)
+
+  async function adjudicate(state: 'approved' | 'denied') {
+    await run(async () => {
+      const result = await setReview(app, behaviour.id, state, state === 'denied' ? note.trim() : null)
+      setNote('')
+      return result
+    })
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <section className="write">
+      <h3>Adjudication</h3>
+      <p className="muted">
+        {behaviour.source.origin === 'inferred' ? (
+          <>
+            Kit inferred this from{' '}
+            <code>{behaviour.source.ref ?? 'somewhere it could not name'}</code>. It is{' '}
+            <strong>{behaviour.review.state}</strong>.
+          </>
+        ) : (
+          <>
+            A human wrote this — silence in a corpus means `defined`. It is{' '}
+            <strong>{behaviour.review.state}</strong>.
+          </>
+        )}
+      </p>
+      {behaviour.review.note && (
+        <p className="muted">Recorded correction: {behaviour.review.note}</p>
+      )}
+
+      <label htmlFor="deny-note">Correction (required to deny)</label>
+      <Input
+        id="deny-note"
+        // The placeholder is the question a denial answers. "Reason" would
+        // invite "wrong", which deletes a line; the corpus wants the thing that
+        // is actually true, because that is what compounds.
+        placeholder="what is actually true instead"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        invalid={write.state === 'refused'}
+      />
+      <div className="badges">
+        <Button type="button" onClick={() => adjudicate('approved')} disabled={saving}>
+          {saving ? 'Writing…' : 'Approve'}
+        </Button>
+        <Button
+          type="button"
+          variant="danger"
+          onClick={() => adjudicate('denied')}
+          disabled={saving || note.trim() === ''}
+        >
+          {saving ? 'Writing…' : 'Deny'}
+        </Button>
+      </div>
+      <WriteFeedback write={write} />
+    </section>
   )
 }
 

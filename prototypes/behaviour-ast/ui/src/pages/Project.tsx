@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import { addBehaviour, fetchProject } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Conflict, ProjectDetail } from '../api/types'
+import type { Behaviour, Conflict, ProjectDetail, Question } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
@@ -56,6 +56,8 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
           </ul>
         </section>
       )}
+
+      <QuestionSheet app={project.app} questions={project.questions} />
 
       <section>
         <h2>Behaviours</h2>
@@ -144,6 +146,123 @@ function NewBehaviourForm({ app, onWrote }: { app: string; onWrote: () => void }
       </Button>
       <WriteFeedback write={write} />
     </form>
+  )
+}
+
+/**
+ * The question sheet, on the screen at last.
+ *
+ * `kit.js` has always built this — `questions()` + `renderSheet()` — and
+ * `docs/design/ui.md` promised it as "the sheet, made clickable". `ui.js` has
+ * been sending it in every project payload since the read model shipped; this UI
+ * typed it `unknown[]` and rendered none of it. The material it was throwing
+ * away is the most considered thing Kit produces: the question, both options
+ * with their consequences, and a recommendation with its reasoning.
+ *
+ * ⚠️ **The two tiers do NOT get the same treatment, and the asymmetry is the
+ * point.** A `review` entry is answered in a vocabulary that already exists, so
+ * the queue links to where it can be answered. A `decision` entry — two
+ * behaviours disagreeing — has no answer Kit can record: there is no `supersede`
+ * keyword in the corpus grammar, no writer function for one, and adding either
+ * is a change to the LANGUAGE rather than a feature on top of it. So a conflict
+ * shows everything the sheet knows and offers no button. Rendering a resolution
+ * control here would mean inventing the syntax it wrote into, which is his call
+ * and not a gap to quietly fill.
+ */
+function QuestionSheet({ app, questions }: { app: string; questions: Question[] }) {
+  if (!questions.length) return null
+
+  const decisions = questions.filter((q) => q.tier === 'decision')
+  const reviews = questions.filter((q) => q.tier === 'review')
+
+  return (
+    <section>
+      <h2>Question sheet</h2>
+      <div className="badges">
+        <Count n={decisions.length} one="decision" tone="warning" />
+        <Count n={reviews.length} one="review" />
+      </div>
+
+      {decisions.map((q) => (
+        <DecisionCard key={q.key} question={q} />
+      ))}
+
+      {reviews.length > 0 && (
+        <>
+          <h3>Never adjudicated</h3>
+          <p className="muted">
+            Kit inferred each of these from code and marked it unreviewed. Open one to approve it,
+            or to deny it with what is actually true — the corpus is what gets edited.
+          </p>
+          <ul className="cards">
+            {reviews.map((q) => (
+              <li key={q.key}>
+                <Card interactive>
+                  <h4>
+                    <Link
+                      to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(q.id ?? q.key)}`}
+                    >
+                      {q.id ?? q.key}
+                    </Link>{' '}
+                    {q.title}
+                  </h4>
+                  {/* In a <code>, which is not decoration: a source ref is one
+                      unbroken token and as plain text it pushes the card wider
+                      than a phone, clipping the title beside it. */}
+                  {q.source?.ref && (
+                    <p className="muted">
+                      inferred from <code>{q.source.ref}</code>
+                    </p>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  )
+}
+
+function DecisionCard({ question }: { question: Question }) {
+  return (
+    <Card elevation="flat">
+      <h3>{question.title}</h3>
+      {question.sides && (
+        <ul>
+          {question.sides.map((s) => (
+            <li key={s.id}>
+              <strong>{s.id}</strong> — {s.title}: <code>{s.value.join(', ')}</code>{' '}
+              {s.ref && <span className="muted">({s.ref})</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {question.asks && <p>{question.asks}</p>}
+      {question.options.length > 0 && (
+        <ol>
+          {question.options.map((o) => (
+            <li key={o.label}>
+              <strong>{o.label}</strong> — {o.consequence}
+            </li>
+          ))}
+        </ol>
+      )}
+      {question.recommend && (
+        <p>
+          <Badge tone="primary">recommended</Badge> {question.recommend.label} —{' '}
+          {question.recommend.why}
+        </p>
+      )}
+      {/* The argument AGAINST the recommendation, kept next to it rather than
+          folded away: a recommendation shown without its own counter-case is how
+          a suggestion becomes a decision nobody made. */}
+      {question.against && <p className="muted">Against: {question.against}</p>}
+      <p className="muted">
+        Kit has no syntax for recording a resolution to this, so there is nothing to click. It is a
+        change to the corpus language, and that is James's call.
+      </p>
+    </Card>
   )
 }
 

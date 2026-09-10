@@ -22,6 +22,7 @@
 //   GET  /api/projects/<app>  project.js's full projection for one app
 //   GET  /api/health          { ok: true } — for a live-check, later
 //   POST /api/projects/<app>/behaviours/<id>/steps   { step }
+//   POST /api/projects/<app>/behaviours/<id>/review  { state, note }
 //   POST /api/projects/<app>/behaviours             { id, title, actor, steps }
 //   GET  everything else      the built UI out of `ui/dist` (rules 5–7)
 //
@@ -456,7 +457,12 @@ function write(pathname, opts, body, json, origin = null) {
     });
   }
 
-  const m = /^\/api\/projects\/([^/]+)\/behaviours(?:\/([^/]+)\/steps)?$/.exec(pathname);
+  // Three writes, one shape: `/behaviours` creates, `/behaviours/<id>/steps`
+  // appends, `/behaviours/<id>/review` adjudicates. The verb is the last
+  // segment rather than a field in the body, so the route a request took is
+  // visible in a log and in the contract fixture — a body field would make all
+  // three the same line in both.
+  const m = /^\/api\/projects\/([^/]+)\/behaviours(?:\/([^/]+)\/(steps|review))?$/.exec(pathname);
   if (!m) return json(404, { error: 'no-such-route', reason: `nothing accepts a POST at ${pathname}` });
 
   let app;
@@ -480,9 +486,21 @@ function write(pathname, opts, body, json, origin = null) {
 
   const text = fs.readFileSync(file, 'utf8');
   const id = m[2] ? decodeURIComponent(m[2]) : body.id;
-  const result = m[2]
-    ? writer.addStep(text, id, body.step)
-    : writer.addBehaviour(text, id, body.title, { actor: body.actor, steps: body.steps, source: body.source, ref: body.ref });
+
+  let result;
+  if (m[3] === 'review') {
+    // His #68 mechanism, finally reachable from the browser it was designed
+    // for: an inference is included but marked unreviewed, and the count of
+    // un-adjudicated ones is meant to be VISIBLE so that skipping the step is a
+    // number someone can see. It has been visible and un-actable since the UI
+    // existed — 26 inferences across two corpora sit at `unreviewed` because
+    // approving one meant opening the file by hand.
+    result = writer.setReview(text, id, body.state, body.note);
+  } else if (m[2]) {
+    result = writer.addStep(text, id, body.step);
+  } else {
+    result = writer.addBehaviour(text, id, body.title, { actor: body.actor, steps: body.steps, source: body.source, ref: body.ref });
+  }
 
   if (!result.ok) {
     // 409, not 500. Every refusal in writer.js is a statement about the request
