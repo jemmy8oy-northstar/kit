@@ -188,7 +188,76 @@ export interface ProjectDetail {
   adjudication: Adjudication
   surface: { errors: string[]; served: string[]; unserved: string[] }
   questions: Question[]
+  requires: Requires
 }
+
+/**
+ * One key a binding must carry, and whether it does.
+ *
+ * `surface` is a sentence, not a code — it is the thing a person reads to know
+ * what to type, and it comes from `requires.js` rather than being written again
+ * here. A second copy in the frontend would be a second definition of the
+ * grammar, which is the drift `writer.js` records against itself.
+ */
+export interface Need {
+  id: string
+  surface: string
+  /** The verbs that asked for it. A noun owes `route` *because* something opens it. */
+  verbs: string[]
+  met: boolean
+}
+
+/** What one noun owes the app, and who else feels it being bound. */
+export interface NounRequirement {
+  noun: string
+  kind: string
+  name: string
+  /** The behaviour ids that reference it. */
+  usedBy: string[]
+  /** Is there a binding at all — what `boundNouns()` counts. */
+  bound: boolean
+  /** Does that binding carry what every verb needs — what actually decides generation. */
+  satisfied: boolean
+  needs: Need[]
+  binding: Binding | null
+  /**
+   * The OTHER corpora that reference this same noun name.
+   *
+   * `bindings.json` is one flat map over every corpus, so binding a noun here
+   * changes what these generate too. Always an array: "nothing collides" and
+   * "nobody looked" must not both arrive as `undefined`.
+   */
+  sharedWith: string[]
+}
+
+/**
+ * Stage 4 of `docs/design/process.md`, projected.
+ *
+ * `missing` and `insufficient` are deliberately separate populations, because
+ * collapsing them is the defect `requires.js` was written to expose: a binding
+ * that EXISTS and carries nothing the verb needs is counted as bound by every
+ * other measurement, and is the case a screen has no other way to explain.
+ */
+export interface Requires {
+  nouns: NounRequirement[]
+  /** No binding at all. */
+  missing: NounRequirement[]
+  /** A binding exists and satisfies no verb. */
+  insufficient: NounRequirement[]
+  /** Generatable — noun keys only, since there is nothing left to say about them. */
+  satisfied: string[]
+}
+
+/**
+ * A binding value, as `bindings.json` stores it and `emit()` reads it.
+ *
+ * Left open rather than a union of the six known shapes. `emit()` is the only
+ * definition of which keys mean what, and a closed type here would have to be
+ * edited in lockstep with it — the frontend would then be a second, quietly
+ * drifting grammar. `requires.js` already tells the screen which keys THIS noun
+ * owes, which is the question the form actually has.
+ */
+export type Binding = Record<string, unknown>
 
 /** The body `POST /api/projects/<app>/behaviours` takes. */
 export interface NewBehaviour {
@@ -215,3 +284,38 @@ export interface WriteResult {
   committed: false
   note: string
 }
+
+/**
+ * What `POST /api/projects/<app>/bindings` returns.
+ *
+ * Not a `WriteResult`: it names a `noun` rather than a `behaviour`, and it
+ * carries the two facts no corpus write has. `sharedWith` is the moment the
+ * global namespace stops being a habit — the person who just clicked is the
+ * only one who can say whether sharing this noun with those corpora is what
+ * they meant, and this is when they are looking.
+ */
+export interface BindResult {
+  ok: true
+  app: string
+  noun: string
+  file: string
+  committed: false
+  note: string
+  sharedWith: string[]
+  /**
+   * Corpora that would not parse, so `sharedWith` is an INCOMPLETE answer.
+   * Silence here would turn "could not look" into "nothing collides".
+   */
+  unreadableCorpora: string[]
+}
+
+/**
+ * Any successful write, whatever it wrote.
+ *
+ * A union rather than a common base with `subject: string`, because the two
+ * results genuinely differ in more than a name — a bind carries `sharedWith`
+ * and a corpus write cannot — and flattening them would let a component render
+ * a bind without its namespace warning and still typecheck. Narrow on `'noun'
+ * in result` where the difference matters.
+ */
+export type AnyWriteResult = WriteResult | BindResult
