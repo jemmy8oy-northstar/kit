@@ -2027,6 +2027,22 @@ test('writer: a behaviour with NO review line gets one, under source, and neighb
   // Rule 3 already refuses collateral change; this asserts the count of lines it
   // added, which rule 3 cannot see because the target is the exempt one.
   assert.strictEqual(r.text.split('\n').length, VOCAB_CORPUS.split('\n').length + 1);
+
+  // WHERE it landed, and this is not decoration. The parser does not care, so
+  // nothing else in the system can ever notice a `review` line sitting above the
+  // `actor` it belongs under — a mutation survived here until this assertion
+  // existed, which is the definition of a rule with no test
+  // ([[an-uncaught-mutation-is-a-finding]]). Every corpus orders its preamble
+  // actor → source → review, and the corpus is a document for a person.
+  const lines = r.text.split('\n');
+  const start = lines.findIndex((l) => l.startsWith(`behaviour ${defined.id} `));
+  const kwAt = (kw) => lines.findIndex((l, i) => i > start && l.trim().split(/\s+/)[0] === kw);
+  const reviewAt = kwAt('review');
+  const sourceAt = kwAt('source');
+  const actorAt = kwAt('actor');
+  assert.ok(reviewAt > start, 'the review line is not inside the block');
+  if (sourceAt !== -1) assert.strictEqual(reviewAt, sourceAt + 1, 'the review line is not directly under source');
+  else if (actorAt !== -1) assert.ok(reviewAt > actorAt, 'the review line landed above actor');
 });
 
 test('writer: adjudicating twice ends at the second answer, not at two answers', () => {

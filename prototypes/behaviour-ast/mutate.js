@@ -393,6 +393,22 @@ MUTANTS.push(
     'if (ids(text).includes(id)) {', 'if (false) {', 'writer.js'],
   ['a step containing a newline is spliced in as two lines',
     'if (/\\n/.test(String(line)))', 'if (false)', 'writer.js'],
+  // ── setReview: the first writer that CHANGES a line ───────────────────────
+  // Both of these were verified by hand before being written down here, and
+  // both were red for the right reason: the first reddens three tests across
+  // the unit and the transport layer, the second reddens two. A mutant that
+  // only ever passes has never shown it discriminates anything.
+  ['an adjudication is APPENDED, so the corpus keeps saying `review unreviewed` as well',
+    'lines[at] = line;', 'lines.splice(at + 1, 0, line);', 'writer.js'],
+  ['a newline in the review note is spliced into the TARGET, which rule 3 exempts from comparison',
+    "if (/\\n/.test(String(state ?? '')) || /\\n/.test(String(note ?? ''))) {", 'if (false) {', 'writer.js'],
+  ['the review line lands above `actor`/`source` instead of under them',
+    'lines.splice(anchor + 1, 0, line);', 'lines.splice(b.start + 1, 0, line);', 'writer.js'],
+  ['setReview ignores the note entirely, so a denial silently loses its correction',
+    'const line = INDENT + (nt ? `review ${st} ${nt}` : `review ${st}`);',
+    'const line = INDENT + `review ${st}`;', 'writer.js'],
+  ['the review route falls through to addStep, so adjudicating appends a step instead',
+    "if (m[3] === 'review') {", 'if (false) {', 'ui.js'],
   ['the write path is served on a routable interface — an unauthenticated remote write',
     'if (!isLoopback(opts.host ?? DEFAULT_HOST)) {', 'if (false) {', 'ui.js'],
   ['isLoopback loses its start anchor, so a hostile name ENDING in a loopback address passes',
