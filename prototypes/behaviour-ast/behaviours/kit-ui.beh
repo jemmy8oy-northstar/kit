@@ -1,5 +1,17 @@
 # Kit's UI, described in Kit's own notation — the other half of kit.beh.
 #
+# kit:self-authored
+#   Read by saturation.js, which excludes this corpus from the binding-saturation
+#   study. None of its other three axes is true here: this describes a UI, for
+#   software that exists, and no other corpus in that study describes this app.
+#   The disqualifying property is different — the app, this corpus and its
+#   bindings share ONE author, written in one sitting with the bindings already
+#   in mind. The measurement caught it before the argument did: every other
+#   corpus scores 59–76% against the shuffled null and this one scored 10%, the
+#   only one that looks like it saturates faster than chance. That is the author,
+#   not the app. The study's claim is an independence claim, so this corpus
+#   cannot be evidence for it — which says nothing about the corpus itself.
+#
 # ── Why this is a SECOND corpus and not more of kit.beh ──────────────────────
 # `kit.beh` declares `# kit:no-ui` and its 0% is not a gap, it is EVIDENCE: Kit
 # the command-line tool needs `runs`, `exits`, `reports`, `raises`, and the
@@ -36,15 +48,21 @@
 #
 # Every accessible name below was READ OFF THE RUNNING APP, not invented — the
 # same rule bindings.json holds itself to.
+#
+# ⚠️ Ids here are NOT `BEH-UI-*`, deliberately. `kit.beh` already uses that
+# prefix for four behaviours of the ui.js SERVER — the loopback bind, the
+# traversal refusal, the method-not-allowed handler. Same spelling, different
+# subject, and one file away from each other. Ids are corpus-scoped so nothing
+# would have broken; a reader would simply have been wrong.
 
-behaviour BEH-UI-LIST-1 "Every corpus Kit can read is listed as a project"
+behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
   actor engineer
   when opens page:KitProjects
   then sees heading:KitProjectsTitle
   then sees region:KitMain
   contract a corpus that will not parse is listed AS an error, not as zero behaviours
 
-behaviour BEH-UI-PROJECT-1 "A project shows the question sheet Kit built for it"
+behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   actor engineer
   provides page:KitProject.app = james-habits-app
   when opens page:KitProject
@@ -52,7 +70,7 @@ behaviour BEH-UI-PROJECT-1 "A project shows the question sheet Kit built for it"
   then sees heading:KitNeverAdjudicated
   then sees button:KitAddBehaviour
 
-behaviour BEH-UI-BEH-1 "A behaviour and the test Kit generates from it are on one screen"
+behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   actor engineer
   provides page:KitBehaviour.app = james-habits-app
   provides page:KitBehaviour.id = BEH-SEED-1
@@ -62,7 +80,7 @@ behaviour BEH-UI-BEH-1 "A behaviour and the test Kit generates from it are on on
   contract the two are side by side, not on separate screens — the output must be in view
   contract the test is regenerated on every read, never cached
 
-behaviour BEH-UI-ADJ-1 "An inference can be adjudicated from the browser"
+behaviour BEH-ADJ-1 "An inference can be adjudicated from the browser"
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAdjudication
@@ -72,7 +90,7 @@ behaviour BEH-UI-ADJ-1 "An inference can be adjudicated from the browser"
   contract the existing `review unreviewed` line is REPLACED, not joined by a second
   contract nothing is committed to git
 
-behaviour BEH-UI-ADJ-2 "Denying an inference asks for the correction it must carry"
+behaviour BEH-ADJ-2 "Denying an inference asks for the correction it must carry"
   actor engineer
   when opens page:KitBehaviour
   then sees button:KitDeny
@@ -81,7 +99,7 @@ behaviour BEH-UI-ADJ-2 "Denying an inference asks for the correction it must car
   contract Deny is disabled while the correction is empty
   contract a denial with no correction is refused by the parser, and its sentence reaches the screen
 
-behaviour BEH-UI-STEP-1 "A step can be added while the generated test is in view"
+behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAddAStep

@@ -222,20 +222,46 @@ function main(argv = [], textReader = nounsFromText) {
   // one seen": which of two corpora for the same app is the canonical one is a
   // judgement, and a tool that picked silently would make it invisibly.
   const DUPLICATE = /^#\s*kit:duplicate-corpus\s+(\S+)/m;
+
+  // The FOURTH axis, and none of the three above is true of the corpus that
+  // forced it. `behaviours/kit-ui.beh` describes a UI (so not `no-ui`), for
+  // software that exists and was running when it was written (so not
+  // `not-a-real-app`), and no other corpus in this study describes that app
+  // (so not `duplicate-corpus`). By every declared rule it belonged here.
+  //
+  // It does not, and the number said so before the argument did: every other
+  // corpus sits at percentile 59–76% against the shuffled null, and this one
+  // came in at 10% — the only corpus that appears to saturate FASTER than
+  // chance. The reason is not a property of the app. **The same author wrote
+  // the app, the corpus and the bindings, in one sitting, with the bindings
+  // already in mind.** Nouns arrive in a tidy declining order because they were
+  // authored that way, and cross-app reuse over such a corpus measures one
+  // person's naming habits — the exact objection already written into the
+  // `not-a-real-app` comment above, arriving by a route that directive cannot
+  // see.
+  //
+  // ⚠️ This exclusion is about EVIDENCE, not about quality. `kit-ui.beh` is a
+  // real corpus that generates real passing tests; it is simply not independent
+  // evidence about whether glue saturates, and this study's whole claim is an
+  // independence claim. Declared by the corpus, never a filename list here.
+  const SELF_AUTHORED = /^#\s*kit:self-authored\b/m;
   const skipped = [];
   const excluded = [];
   const duplicates = [];
+  const selfAuthored = [];
   const files = all.filter((f) => {
     const text = fs.readFileSync(path.join(dir, f), 'utf8');
     const dup = DUPLICATE.exec(text);
     if (dup) { duplicates.push([f, dup[1]]); return false; }
     if (NOT_REAL.test(text)) { excluded.push(f); return false; }
+    if (SELF_AUTHORED.test(text)) { selfAuthored.push(f); return false; }
     if (NO_UI.test(text)) { skipped.push(f); return false; }
     return true;
   });
   for (const f of skipped) console.log(`  (skipping ${f}: declares "# kit:no-ui" — it describes no UI, so binding saturation has no meaning for it)`);
   for (const f of excluded) console.log(`  (skipping ${f}: declares "# kit:not-a-real-app" — a corpus for software that does not exist cannot evidence how real apps reuse nouns)`);
   for (const [f, of] of duplicates) console.log(`  (skipping ${f}: declares "# kit:duplicate-corpus ${of}" — a second corpus for an app already in this study would weight ${of} twice while looking like independent evidence)`);
+  for (const f of selfAuthored) console.log(`  (skipping ${f}: declares "# kit:self-authored" — the app, the corpus and the bindings share one author, so its noun order measures that author, not the app)`);
 
   if (!files.length) {
     console.error(`saturation: no corpus matching "${only || ''}" — could not look`);
