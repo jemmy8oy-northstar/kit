@@ -24,6 +24,19 @@
 # the missing piece is not notation, it is a UI. That is the same UI James asked
 # for in the first half of #89, which makes his two asks one ask.
 #
+# ── ✅ THAT PREDICTION HAS NOW BEEN TESTED, AND IT HELD ─────────────────────
+# The UI shipped (#24 → #26 → #27 → #28) and `behaviours/kit-ui.beh` describes
+# it. Kit derives **20 Playwright steps** for that corpus where this one still
+# derives 0, and **5 of the 6 generated tests PASS against the running app**.
+# So the number here is genuinely about the verbs and not about this file's
+# authoring — the same author, same notation and same generator produce runnable
+# tests the moment the subject has a browser.
+#
+# ⚠️ **THIS FILE'S 0 IS STILL THE FINDING AND MUST NOT BE "FIXED".** Do not add
+# browser behaviours here to make the number move. The 0 is what makes the
+# contrast measurable, and kit-ui.beh exists so that nobody has to.
+# Full account: docs/pilots/kit-self-hosting.md.
+#
 # Every behaviour below is real, and every one is already tested in
 # `kit.test.js` — the mapping in `kit.tests.json` names which test.
 

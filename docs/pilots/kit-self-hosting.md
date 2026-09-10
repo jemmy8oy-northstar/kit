@@ -110,3 +110,72 @@ by me, in one sitting, to make this measurement. The four `BEH-UI-*` behaviours 
 they describe a component that was built for its own reasons and documented afterwards, and
 they landed on the same two verbs. A second, independently-motivated sample agreeing with the
 first is not proof, but it is the kind of evidence a hand-picked sample cannot give itself.
+
+---
+
+# ✅ The prediction, tested (2026-09-10)
+
+Everything above was written on 2026-09-05, before the UI existed, and it ends on a
+prediction rather than a result: *"the UI is not a nicer front end for Kit, it is the thing
+that makes Kit self-hosting at all."*
+
+The UI shipped — kit#16 → #24 → #26 → #27 → #28 — so the prediction is now checkable, and
+`behaviours/kit-ui.beh` is the check.
+
+## The result
+
+| corpus | subject | derived steps | generated tests that PASS |
+|---|---|---|---|
+| `kit.beh` | Kit the CLI | **0** | — nothing to run |
+| `kit-ui.beh` | Kit the browser surface | **20** | **5 of 6** |
+
+**The prediction held.** Same author, same notation, same generator, same bindings file — and
+the moment the subject has a browser, the derived count goes from 0 to 20 and the emitted
+Playwright runs against the real app. The 0 above was never about the notation.
+
+🔑 **The generated tests were EXECUTED, not inspected.** As far as I can find, this is the
+first time Kit's output has been run rather than read or diffed against a hand-written suite:
+nothing in this repo wires the generator to a runner, and the head-to-head in
+`binding-saturation.md` is a comparison of *glue counts*, not of results. A generated test
+nobody ran is a claim, not evidence.
+
+🔑 **The cross-behaviour hole-filling earned itself here.** Only `BEH-PAIR-1` names the app
+and behaviour it opens (`provides page:KitBehaviour.app`/`.id`). `BEH-ADJ-1`, `BEH-ADJ-2`
+and `BEH-STEP-1` say only `when opens page:KitBehaviour` — and all three emitted the full
+concrete route, resolved from a *different behaviour's* provides. That is the mechanism the
+design has always claimed, and this is the first time it produced running code.
+
+## 🔴 The one failure is the interesting half
+
+`BEH-ADJ-2` says the corpus fills the correction field before clicking Deny. The generator
+**correctly refuses** to derive that step — its `fills` verb works off the `?fields`
+unknowns mechanism, not a literal — and emits:
+
+```
+// UNGENERATED: when fills field:KitCorrection with "…"
+await page.getByRole("button", { name: "Deny" }).click();
+```
+
+**The refusal becomes a comment and the test runs on regardless.** Deny is disabled precisely
+because the fill never happened, so the test fails on a click timeout — a failure that reads
+like an application bug and is nothing of the kind. The cause is three lines above it, in a
+comment, which no test runner will ever show you.
+
+So the refusal is honest at the point of generation and lost at the point of execution. Kit
+knows the test is incomplete and emits an artefact that does not. Whether the emitter should
+`test.fixme()` the whole test, `throw` at the refused line, or keep today's behaviour is a
+change to what Kit emits for **every** corpus, so it is not folded in here.
+
+⚠️ **The confound, stated plainly:** the same author wrote the app, this corpus and its
+bindings, in one sitting. That is fatal to any *independence* claim, which is why
+`kit-ui.beh` declares `# kit:self-authored` and `saturation.js` excludes it from the
+binding-saturation study. It is **not** fatal to the question asked here — whether the
+generator can emit a runnable test for a browser surface — because that question is about the
+generator, and the answer is checkable by running it. Whether two authors would choose the
+same nouns is kit#23, still open.
+
+## What changed in the registry
+
+Kit is now **two apps in its own registry**: `kit` (the CLI, derives 0, and that 0 is the
+evidence — do not "fix" it) and `kit-ui` (the browser surface, derives 20). Kit stopped being
+a special case in the tool it is.

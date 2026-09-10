@@ -1374,6 +1374,52 @@ test('saturation EXCLUDES a second corpus for an app already in the study, and n
   assert.match(said, /^\s*james-habits-app\s+\d+/m, 'the duplicated app itself must still be measured');
 });
 
+test('saturation EXCLUDES a corpus whose app and bindings share its author', () => {
+  // The FOURTH axis, and all three of the others are FALSE of the corpus that
+  // forced it: `kit-ui.beh` describes a UI, for software that exists and was
+  // running while it was written, and no other corpus in the study describes
+  // that app. The disqualifying property is that one author wrote the app, the
+  // corpus and the bindings in one sitting — so its noun order measures the
+  // author. Found by the number, not the argument: it scored 10% against the
+  // shuffled null where every real corpus scores 59–76%.
+  const dir = fixture({
+    'ui.beh': SATURATING,
+    'kit-ui.beh': '# kit:self-authored\n' + SATURATING,
+  });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(/skipping kit-ui\.beh/.test(said), said);
+  assert.ok(/self-authored/.test(said), 'the reason must be announced — a population you cannot see is one you cannot check');
+  assert.ok(!/^\s*kit-ui\s+\d+/m.test(said), 'the excluded corpus must not appear in the results');
+});
+
+test('CONTROL: the same corpus WITHOUT the self-authored directive IS measured', () => {
+  // Without this, a directive that matched nothing would look identical to one
+  // that excluded correctly — the shelf-life failure from kit#27, where a check
+  // was green because its matcher hit no text at all.
+  const dir = fixture({ 'ui.beh': SATURATING, 'kit-ui.beh': SATURATING });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  try { sat.main(['--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.ok(!/skipping kit-ui\.beh/.test(said), 'nothing declared it, so nothing may exclude it');
+  assert.match(said, /^\s*kit-ui\s+\d+/m, said);
+});
+
+test('the real kit-ui.beh really does declare it, or the exclusion above is theatre', () => {
+  // The population, asserted against the artefact rather than against a fixture.
+  // The two tests above prove the MECHANISM; this proves it is switched on for
+  // the corpus that needed it ([[test-the-reader-against-the-artefact]]).
+  const real = fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit-ui.beh'), 'utf8');
+  assert.match(real, /^#\s*kit:self-authored\b/m);
+  assert.ok(!/^#\s*kit:no-ui\b/m.test(real), 'kit-ui.beh DOES describe a UI — that directive would be a lie');
+  assert.ok(!/^#\s*kit:not-a-real-app\b/m.test(real), 'the Kit UI exists and was running when this was written');
+});
+
 test('CONTROL: the same corpus WITHOUT the duplicate directive is not excluded', () => {
   const dir = fixture({ 'james-habits-app.beh': SATURATING, 'trial-habits-a.beh': SATURATING });
   let said = '';
