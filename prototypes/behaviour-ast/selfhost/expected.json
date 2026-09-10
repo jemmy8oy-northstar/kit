@@ -1,0 +1,16 @@
+{
+  "_": [
+    "Written by `node selfhost/run.js --playwright <bin> --record`. The table in",
+    "docs/pilots/kit-self-hosting.md quotes these numbers; --check re-runs the tests",
+    "and exits 1 on any difference. Re-record ONLY after deciding the write-up is",
+    "wrong — a re-record with no edit to the prose is the drift, not the fix."
+  ],
+  "tests": 6,
+  "derived": 20,
+  "ungenerated": 1,
+  "passed": 5,
+  "failed": 1,
+  "failing": [
+    "[BEH-ADJ-2] Denying an inference asks for the correction it must carry"
+  ]
+}

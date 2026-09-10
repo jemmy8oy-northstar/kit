@@ -1471,6 +1471,142 @@ test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () =>
   assert.ok(!/skipping cli\.beh/.test(said), said);
 });
 
+section('selfhost/run: Kit\'s output, EXECUTED — the half of it a browser is not needed for');
+const selfrun = require('./selfhost/run.js');
+
+// The doc's `kit-ui` table quotes four numbers and a browser is needed for only
+// two of them. The other two — how many tests Kit generates and how many steps
+// it DERIVES — are a pure function of the corpus, the bindings and the
+// generator, so they belong in the gated suite rather than in a manual run.
+// `self-host.js --check` already gates the kit.beh table this way; the kit-ui
+// table shipped with nothing gating it at all.
+
+test('the recorded kit-ui numbers still come out of the real corpus', () => {
+  const want = JSON.parse(fsx.readFileSync(selfrun.EXPECTED, 'utf8'));
+  const { stats } = selfrun.emitSpec();
+  assert.strictEqual(stats.tests, want.tests, 'a test per behaviour');
+  assert.strictEqual(stats.derived, want.derived, 'derived steps');
+  assert.strictEqual(stats.ungenerated, want.ungenerated, 'refused steps');
+});
+
+test('and all 20 of them are DERIVED, not `state` strings copied out of bindings.json', () => {
+  // The distinction that made kit.beh's headline honest: `state` generates a
+  // setup string a human wrote, so counting it as derived is how "0 derived"
+  // would have become "14 generated". kit-ui's number needs the same audit, or
+  // the two rows of the doc's table are not measuring the same thing.
+  const { stats } = selfrun.emitSpec();
+  assert.strictEqual(stats.state, 0, 'kit-ui.beh has no state steps, so generated === derived here');
+  assert.strictEqual(stats.derived, stats.generated);
+});
+
+test('THE FINDING, pinned: the refusal is a comment, and the next line acts as if it happened', () => {
+  // BEH-ADJ-2 fills a correction before clicking Deny. The generator correctly
+  // refuses to derive the fill — and emits the refusal as a COMMENT, so the
+  // test runs straight on into a click on a button that is disabled *because
+  // the fill never happened*. It fails like an application bug.
+  //
+  // Whether the emitter should test.fixme(), throw at the refused line, or keep
+  // today's behaviour changes what Kit emits for EVERY corpus, so it is not
+  // decided here. This test is the half that is true under all three options:
+  // whatever he picks, the suite has to be able to SEE a refused step sitting
+  // above an action that depends on it. Today it can, and it goes red the
+  // moment that changes — which is the point of writing it before the decision
+  // rather than after.
+  const { source } = selfrun.emitSpec();
+  const refused = selfrun.refusals(source);
+  assert.strictEqual(refused.length, 1, 'exactly one refusal in this corpus');
+  assert.match(refused[0].step, /fills field:KitCorrection/, 'and it is the fill, not something else');
+  assert.match(refused[0].next, /^await page\.getByRole\("button", \{ name: "Deny" \}\)\.click\(\)/,
+    'the line after the refusal is the click that depends on it — this adjacency IS the defect');
+});
+
+test('the refusal is inert at runtime, which is exactly why it is lost', () => {
+  // The positive half of the same fact: nothing in the emitted artefact makes a
+  // runner stop. A reader sees the refusal; a runner cannot.
+  const { source } = selfrun.emitSpec();
+  const line = source.split('\n').find((l) => l.includes('UNGENERATED'));
+  assert.match(line.trim(), /^\/\//, 'a comment, so no runner will ever surface it');
+  assert.ok(!/test\.fixme|test\.skip|throw new/.test(source), 'nothing in the spec halts on the refused step');
+});
+
+test('the harness REFUSES rather than skipping when it has no Playwright', async () => {
+  // Exit 2 is "could not look", and it is not the same as 0. A measurement tool
+  // that silently succeeded on a machine with no browser would report a clean
+  // bill of health for a run that never happened
+  // ([[clean-bill-is-never-rechecked]]).
+  assert.strictEqual(selfrun.resolvePlaywright([], {}), null);
+  assert.strictEqual(selfrun.resolvePlaywright(['--playwright', '/no/such/bin'], {}), null,
+    'a path that does not exist is not a Playwright');
+  const said = [];
+  const err = console.error;
+  console.error = (...a) => said.push(a.join(' '));
+  let code;
+  try { code = await selfrun.main([]); } finally { console.error = err; }
+  assert.strictEqual(code, 2, 'could not look, not fine');
+  assert.ok(said.join('\n').includes('PLAYWRIGHT_BIN'), 'and it says how to fix it');
+});
+
+test('an unreadable tally is could-not-look too, not zero failures', () => {
+  // The reporter's output is parsed with a regex, and a regex that matches
+  // nothing would otherwise read as "0 failed" — a broken run presenting as a
+  // green one. This is the parse, tested against the real reporter's wording.
+  assert.deepStrictEqual(selfrun.parseResults('  5 passed, 1 failed\n'), { passed: 5, failed: 1, failing: [] });
+  assert.deepStrictEqual(selfrun.parseResults('Error: No tests found'), { passed: 0, failed: 0, failing: [] });
+  const real = '  1 failed\n    specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry \n\n  5 passed (17.8s)\n';
+  const got = selfrun.parseResults(real);
+  assert.strictEqual(got.passed, 5);
+  assert.strictEqual(got.failed, 1);
+  assert.deepStrictEqual(got.failing, ['[BEH-ADJ-2] Denying an inference asks for the correction it must carry']);
+});
+
+test('derived SUBTRACTS state steps — over a corpus that actually has one', () => {
+  // kit-ui.beh has no `state` steps, so the subtraction that makes this number
+  // honest is dead code as far as the real corpus is concerned, and a mutant
+  // deleting it would survive. Drive it over a fixture that has one instead:
+  // this is the exact distinction that stopped kit.beh's "0 derived" from being
+  // published as "14 generated".
+  const dir = fixture({
+    's.beh': 'behaviour BEH-S "one"\n  given state cart:Full\n  when opens page:Home\n',
+    'b.json': JSON.stringify({ 'cart:Full': { state: 'seed()' }, 'page:Home': { route: '/' } }),
+  });
+  const { stats } = selfrun.emitSpec(pathx.join(dir, 's.beh'), pathx.join(dir, 'b.json'));
+  assert.strictEqual(stats.state, 1, 'the fixture must actually contain a state step');
+  assert.strictEqual(stats.generated, 2, 'both steps generate');
+  assert.strictEqual(stats.derived, 1, 'but only the `opens` is DERIVED — the state step is a copied string');
+});
+
+test('an unreadable run and a drifted run are separate answers, and neither is "fine"', () => {
+  // Both of these guards live downstream of a spawned browser in main(), which
+  // is why they are functions: inline, the only way to reach them is a full
+  // Playwright run, and a guard that can only be reached by the slow path is
+  // one nobody ever proves.
+  assert.strictEqual(selfrun.unreadable({ passed: 0, failed: 0 }), true, 'no tally at all is could-not-look');
+  assert.strictEqual(selfrun.unreadable({ passed: 0, failed: 6 }), false, 'six failures is a READ run that failed');
+  assert.strictEqual(selfrun.unreadable({ passed: 5, failed: 1 }), false);
+  assert.strictEqual(selfrun.drifted({ passed: 5 }, { passed: 5 }), false);
+  assert.strictEqual(selfrun.drifted({ passed: 5 }, { passed: 6 }), true, 'one more pass is drift, not an improvement to wave through');
+  assert.strictEqual(selfrun.drifted({ failing: ['a'] }, { failing: ['b'] }), true,
+    'the same tally with a DIFFERENT test failing is drift — that is the case a count alone misses');
+});
+
+test('the write-up quotes the numbers the harness records — with the markdown stripped', () => {
+  // kit#27's shelf-life check was green because a BACKTICK sat where its
+  // matcher expected a space. Strip the emphasis before matching, never match
+  // through it ([[test-the-reader-against-the-artefact]]).
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  // ⚠️ The character class is built from a STRING, not written as a regex
+  // literal, and that is not a style choice — see the jsDeclarationCount test
+  // below. A backtick inside a regex literal blinds this repo's own test
+  // reader to everything after it. Writing it the obvious way is what found
+  // that.
+  const plain = doc.replace(new RegExp('[*`_]', 'g'), '');
+  const want = JSON.parse(fsx.readFileSync(selfrun.EXPECTED, 'utf8'));
+  assert.ok(plain.includes(`| ${want.derived} |`) || plain.includes(`| ${want.derived}  `),
+    `the doc's table must quote ${want.derived} derived steps`);
+  assert.ok(plain.includes(`${want.passed} of ${want.tests}`),
+    `the doc must quote "${want.passed} of ${want.tests}" — the harness records ${want.passed}/${want.tests}`);
+});
+
 section('project: the read model a UI consumes (docs/design/ui.md)');
 const proj = require('./project.js');
 
@@ -1538,6 +1674,46 @@ test('a reader losing tests makes coverage unavailable, not wrong', () => {
   });
   const p = proj.project('x', { repo, behDir: dir });
   assert.strictEqual(p.coverage.available, false);
+  assert.ok(/losing or inventing/.test(p.coverage.reason), p.coverage.reason);
+});
+
+test('A BACKTICK INSIDE A REGEX LITERAL BLINDS THE INDEPENDENT COUNT, and the fail-safe holds', () => {
+  // Found by accident, and it cost this suite three red tests. `jsDeclarationCount`
+  // strips strings, template literals and comments before counting call heads,
+  // and it has no idea what a REGEX LITERAL is — nothing in JS can tell `/` as
+  // division from `/` as a regex without parsing properly. So a regex whose
+  // body contains a backtick reads as a template-literal opener, and the
+  // scanner swallows everything up to the next backtick in the file. Writing
+  // `doc.replace(/[*\`_]/g, '')` in this very file lost 60 declarations and
+  // took kit's own coverage measurement offline.
+  //
+  // 🔑 THE POINT OF THIS TEST IS THAT THE FAIL-SAFE WORKED. An under-read makes
+  // the two counts DISAGREE, and disagreement is reported as `available: false`
+  // — never as a smaller coverage percentage. That is the difference between a
+  // measurement that stops and one that quietly lies, and it is the property
+  // worth pinning ([[empty-means-two-things]]). Do not "fix" the scanner into
+  // guessing at regex literals to make this test go away.
+  // ⚠️ TWO backticks, and the second one is the whole mechanism. An
+  // UNTERMINATED backtick is handled safely — skipTemplate returns -1 and the
+  // scanner shrugs and carries on — so a one-backtick fixture passes while
+  // proving nothing, which is what my first attempt at this test did. The
+  // damage needs a LATER backtick for the phantom template to close on, and a
+  // real test file is full of them.
+  const withBacktick = "test('a', () => {});\nconst r = /[*`_]/g;\ntest('b', () => {});\nconst s = `x`;\ntest('c', () => {});\n";
+  const withoutIt = "test('a', () => {});\nconst r = new RegExp('[*`_]', 'g');\ntest('b', () => {});\nconst s = `x`;\ntest('c', () => {});\n";
+  const { jsDeclarationCount } = require('./kit');
+  assert.strictEqual(jsDeclarationCount(withoutIt), 3, 'the control: all three are seen');
+  assert.ok(jsDeclarationCount(withBacktick) < 3, 'the regex literal hides the tests after it');
+
+  // And the consequence, end to end: the disagreement must surface as
+  // could-not-look, not as a number.
+  const repo = fixture({ 'a.spec.ts': withBacktick });
+  const dir = fixture({
+    'y.beh': 'behaviour BEH-1 "one"\n  when opens page:Home\n',
+    'y.tests.json': '{"BEH-1":[{"file":"a.spec.ts","title":"a"}]}',
+  });
+  const p = proj.project('y', { repo, behDir: dir });
+  assert.strictEqual(p.coverage.available, false, 'a blinded read must not report a coverage number');
   assert.ok(/losing or inventing/.test(p.coverage.reason), p.coverage.reason);
 });
 

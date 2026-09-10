@@ -28,7 +28,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -267,6 +267,20 @@ MUTANTS.push(
     'for (const b of behaviours) for (const n of nounsOf(b)) referenced.add(n);',
     'const _all = []; for (const b of behaviours) for (const n of nounsOf(b)) _all.push(n); referenced.add = Set.prototype.add; _all.forEach((n) => Set.prototype.add.call(referenced, n + Math.random()));',
     'kit.js'],
+  // selfhost/run.js — the harness that executes Kit's own output. Every mutant
+  // here is reachable WITHOUT a browser, on purpose: the parts that need one
+  // are gated by `--check`, which is a manual run, so anything only a browser
+  // could catch would be a mutant nobody ever kills.
+  ['derived stops subtracting `state` steps, so a copied setup string counts as generated code',
+    'stats.derived = stats.generated - stats.state;', 'stats.derived = stats.generated;', 'selfhost/run.js'],
+  ['a --playwright path that does not exist is accepted, so the refusal becomes a crash later',
+    'return fs.existsSync(bin) ? bin : null;', 'return bin;', 'selfhost/run.js'],
+  ['an unreadable run reports as zero failures — a clean bill of health for a run that never happened',
+    'return got.passed === 0 && got.failed === 0;', 'return false;', 'selfhost/run.js'],
+  ['--check accepts drift silently, so the write-up and the run can part company',
+    'return JSON.stringify(want) !== JSON.stringify(now);', 'return false;', 'selfhost/run.js'],
+  ['the line after a refusal is not recorded, so the adjacency THAT IS THE FINDING cannot be asserted',
+    "if (m) out.push({ step: m[1], next: (lines[i + 1] || '').trim() });", "if (m) out.push({ step: m[1], next: '' });", 'selfhost/run.js'],
   ['saturation stops excluding a corpus that declares it has no UI',
     'if (NO_UI.test(text)) { skipped.push(f); return false; }', '', 'saturation.js'],
   ['saturation stops excluding a corpus for an app that does not exist',
