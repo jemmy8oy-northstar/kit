@@ -116,6 +116,22 @@ function waitForServer(port, tries = 100) {
   });
 }
 
+// Two one-line predicates, pulled out of main() so they can be tested and
+// mutated. Inline, they sit downstream of a spawned browser, which means the
+// only way to exercise them is a full Playwright run — so in practice they
+// would never be exercised at all, and a guard nobody can reach is decoration
+// ([[an-error-path-that-never-fired-is-untested]]).
+
+// Zero of each means the reporter said nothing this tool understood. Reading
+// that as "0 failed" turns an unreadable run into a clean bill of health.
+function unreadable(got) {
+  return got.passed === 0 && got.failed === 0;
+}
+
+function drifted(want, now) {
+  return JSON.stringify(want) !== JSON.stringify(now);
+}
+
 function parseResults(output) {
   const passed = /(\d+) passed/.exec(output);
   const failed = /(\d+) failed/.exec(output);
@@ -212,9 +228,7 @@ async function main(argv = []) {
     }
 
     const got = parseResults(output);
-    // Zero of each means the reporter said nothing we understood. Reporting that
-    // as "0 failed" would turn an unreadable run into a clean bill of health.
-    if (got.passed === 0 && got.failed === 0) {
+    if (unreadable(got)) {
       console.error('selfhost: could not read a pass/fail tally out of the run — could not look');
       return 2;
     }
@@ -224,7 +238,7 @@ async function main(argv = []) {
       const want = JSON.parse(fs.readFileSync(EXPECTED, 'utf8'));
       delete want._;
       const now = { tests: spec.stats.tests, derived: spec.stats.derived, ungenerated: spec.stats.ungenerated, passed: got.passed, failed: got.failed, failing: got.failing };
-      if (JSON.stringify(want) !== JSON.stringify(now)) {
+      if (drifted(want, now)) {
         console.error('\nselfhost --check: the run no longer says what the write-up claims.');
         console.error(`  recorded: ${JSON.stringify(want)}`);
         console.error(`  now:      ${JSON.stringify(now)}`);
@@ -254,6 +268,6 @@ async function main(argv = []) {
   return code;
 }
 
-module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, main, SUBJECT, EXPECTED };
+module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, unreadable, drifted, main, SUBJECT, EXPECTED };
 
 if (require.main === module) main(process.argv.slice(2)).then((c) => process.exit(c));

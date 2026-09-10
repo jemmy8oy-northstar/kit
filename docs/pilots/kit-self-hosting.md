@@ -179,3 +179,31 @@ same nouns is kit#23, still open.
 Kit is now **two apps in its own registry**: `kit` (the CLI, derives 0, and that 0 is the
 evidence — do not "fix" it) and `kit-ui` (the browser surface, derives 20). Kit stopped being
 a special case in the tool it is.
+
+## How to re-run it — because the first run could not be
+
+⚠️ **The 5-of-6 above was first produced by a harness outside this repository**, in a scratch
+directory with a `node_modules` symlink borrowed from another project. Every number in it was
+true and **not one of them was checkable by anyone else** — which fails this document's own
+standard, three sections up: *a generated test nobody ran is a claim, not evidence*. A run
+nobody can repeat is a claim too.
+
+The harness is now `prototypes/behaviour-ast/selfhost/run.js`. It copies the corpus to a temp
+directory (the generated tests **write** to the corpus they came from), starts `ui.js` itself,
+waits for `/api/projects` rather than for the process, and runs the emitted spec:
+
+```
+npm --prefix prototypes/behaviour-ast/ui ci && npm --prefix prototypes/behaviour-ast/ui run build
+node prototypes/behaviour-ast/selfhost/run.js --playwright <bin> [--browsers <dir>] --check
+```
+
+`--check` re-runs the tests and exits 1 if the outcome has drifted from
+`selfhost/expected.json`; exit 2 is **could not look**, which is deliberately not 0.
+
+**Kit does not depend on `@playwright/test`, on purpose** — adding it is a packaging change and
+therefore James's call ([claude-code-bot#83](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/83)).
+So the binary is named on the command line, and its absence refuses rather than skipping. That
+also means **`--check` is a manual gate, not a CI one.** The half that does not need a browser —
+6 tests, 20 derived steps, 1 refusal, and the refused step sitting directly above the click that
+depends on it — is asserted in `kit.test.js`, which CI runs. Before this, the `kit-ui` table was
+gated by nothing at all while the `kit.beh` table above it was gated by `self-host.js --check`.
