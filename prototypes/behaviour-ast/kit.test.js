@@ -2296,6 +2296,227 @@ test('writer: it contains no path to git at all — decision 2, checked not prom
   assert.strictEqual(/require\(['"]child_process/.test(code), false);
 });
 
+// ── binding: the write that reaches every corpus at once (stage 4) ─────────
+//
+// `docs/design/process.md` calls bind-by-noun "the most important decision in
+// the design, and the fix for the thing that killed Cucumber", and it was the
+// only verb of the loop with no write path. Measured across all nine corpora on
+// 2026-09-10: 129 of 172 nouns (75%) unbound.
+//
+// The population is asserted first, because every test below is about a file
+// that could stop having the property they are written against.
+
+section('binding: the one write that is not scoped to one corpus');
+
+const { parseStep } = require('./kit');
+const BINDINGS_TEXT = fsx.readFileSync(pathx.join(__dirname, 'bindings.json'), 'utf8');
+
+test('binding: the real bindings.json is one FLAT map shared by every corpus', () => {
+  // The premise the whole `sharedWith` mechanism rests on. If bindings ever
+  // became per-app, the collision hazard disappears and these tests become
+  // theatre — so the shape is asserted rather than assumed.
+  const b = JSON.parse(BINDINGS_TEXT);
+  const real = Object.keys(b).filter((k) => !W.isComment(k));
+  assert.ok(real.length >= 20, `only ${real.length} bindings to reason about`);
+  for (const k of real) {
+    assert.ok(W.isNoun(k), `${k} is not a <kind>:<Name> noun, so the map is not keyed by noun`);
+    assert.strictEqual(typeof b[k], 'object', `${k} is not an object`);
+  }
+});
+
+test('binding: the noun namespace really is global, and one collision is cross-APP', () => {
+  // The measurement the mechanism exists for, re-run rather than quoted. Six of
+  // the seven shared names are james-habits-app described three ways, where
+  // sharing IS the point of binding by noun; `region:EmptyState` spans two
+  // genuinely different apps. If this ever reports zero, `sharedWith` is
+  // guarding nothing and should be reconsidered, not left in place looking busy.
+  const corpora = W.corpusNouns();
+  assert.ok(Object.keys(corpora).length >= 5, 'not enough corpora to collide');
+  const counts = new Map();
+  for (const nouns of Object.values(corpora)) {
+    for (const n of nouns) counts.set(n, (counts.get(n) || 0) + 1);
+  }
+  const shared = [...counts.entries()].filter(([, c]) => c > 1).map(([n]) => n);
+  assert.ok(shared.length >= 1, 'no noun name is used by two corpora');
+  assert.ok(
+    W.sharedWith('region:EmptyState', corpora, 'trial-habits-a').includes('trial-lend'),
+    'region:EmptyState no longer spans two different apps — re-measure before trusting this section',
+  );
+});
+
+test('binding: sharedWith names the OTHER corpora and never the one you are in', () => {
+  const corpora = { a: ['button:Save', 'page:Home'], b: ['button:Save'], c: ['page:Other'] };
+  assert.deepStrictEqual(W.sharedWith('button:Save', corpora, 'a'), ['b']);
+  assert.deepStrictEqual(W.sharedWith('button:Save', corpora, 'b'), ['a']);
+  assert.deepStrictEqual(W.sharedWith('page:Home', corpora, 'a'), []);
+  // No `self` at all is a legitimate caller — a CLI run that named no app —
+  // and must list every corpus rather than silently excluding none of them.
+  assert.deepStrictEqual(W.sharedWith('button:Save', corpora, undefined), ['a', 'b']);
+});
+
+test('binding: a new noun is added and every existing binding is untouched', () => {
+  const corpora = W.corpusNouns();
+  const before = JSON.parse(BINDINGS_TEXT);
+  const r = W.addBinding(BINDINGS_TEXT, 'button:BrandNewThing', { role: 'button', name: 'Brand new' }, { corpora, app: 'kit-ui' });
+  assert.ok(r.ok, r.reason);
+  const after = JSON.parse(r.text);
+  assert.deepStrictEqual(after['button:BrandNewThing'], { role: 'button', name: 'Brand new' });
+  for (const k of Object.keys(before)) {
+    assert.deepStrictEqual(after[k], before[k], `${k} changed`);
+  }
+  assert.strictEqual(Object.keys(after).length, Object.keys(before).length + 1);
+  // The prose in the file is the reason a JSON round-trip is safe here at all.
+  assert.ok(Object.keys(after).some((k) => W.isComment(k)), 'the _comment keys were lost');
+});
+
+test('binding: the warning fires on the real cross-app collision, and is silent otherwise', () => {
+  const corpora = W.corpusNouns();
+  const clash = W.addBinding(BINDINGS_TEXT, 'region:EmptyState', { role: 'region', name: 'Nothing yet' }, { corpora, app: 'trial-habits-a' });
+  assert.ok(clash.ok, clash.reason);
+  assert.deepStrictEqual(clash.sharedWith, ['trial-lend']);
+
+  const clean = W.addBinding(BINDINGS_TEXT, 'button:SomethingNobodyElseUses', { role: 'button', name: 'x' }, { corpora, app: 'kit-ui' });
+  assert.ok(clean.ok, clean.reason);
+  assert.deepStrictEqual(clean.sharedWith, [], 'a warning fired for a noun no other corpus references');
+});
+
+test('binding: sharedWith is always an array, even when the caller passes no corpora', () => {
+  // The empty case, spelled out. A caller that renders `sharedWith.length` must
+  // not have to know whether the field is there — and "I did not check" and
+  // "nothing collides" must not both arrive as undefined.
+  const r = W.addBinding(BINDINGS_TEXT, 'button:NoCorporaGiven', { role: 'button', name: 'x' });
+  assert.ok(r.ok, r.reason);
+  assert.deepStrictEqual(r.sharedWith, []);
+});
+
+test('binding: rebinding an existing noun is REFUSED, and the refusal shows what is there', () => {
+  // Not a validation nicety. A new binding turns a refusal into a generated
+  // step you can see; a rebind silently changes what every corpus mentioning
+  // the noun already generates, including ones the clicker never opened.
+  const r = W.addBinding(BINDINGS_TEXT, 'page:Home', { route: './somewhere-else' }, { corpora: W.corpusNouns(), app: 'snip-it' });
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error, 'already-bound');
+  assert.deepStrictEqual(r.current, { route: './' });
+});
+
+test('binding: a _comment key cannot be written as a binding', () => {
+  const r = W.addBinding(BINDINGS_TEXT, '_comment_evil', { role: 'button' });
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error, 'bad-noun');
+});
+
+test('binding: a malformed noun is refused before anything is written', () => {
+  for (const bad of ['NotANoun', 'Button:Save', 'button:', ':Save', 'button:Sa ve', 'x button:Save', 'button:Save extra', '', null, 42]) {
+    const r = W.addBinding(BINDINGS_TEXT, bad, { role: 'button', name: 'x' });
+    assert.strictEqual(r.ok, false, `${JSON.stringify(bad)} was accepted as a noun`);
+    assert.strictEqual(r.error, 'bad-noun', `${JSON.stringify(bad)}`);
+  }
+});
+
+test('binding: the noun check is the PARSER\'s, not a second grammar beside it', () => {
+  // The first draft of this was a hand-written regex and it disagreed with
+  // `kit.js` in both directions — it banned a digit-led name, which would have
+  // rejected a sibling of the real shipped binding `file:talk_mp4`, and allowed
+  // a digit in the kind, which the parser never accepts. So the property under
+  // test is agreement, checked against the parser rather than against my idea
+  // of the grammar.
+  const viaParser = (s) => {
+    const { refs, holes } = parseStep(s, 'x');
+    return holes.length === 0 && refs.length === 1 && refs[0].kind !== 'literal'
+      && `${refs[0].kind}:${refs[0].name}` === s;
+  };
+  for (const s of ['button:Save', 'file:talk_mp4', 'field:x2', 'page:Home', 'button2:Save', 'Button:Save', 'button:Sa ve', 'notanoun', '"literal"']) {
+    assert.strictEqual(W.isNoun(s), viaParser(s), `disagreed with the parser about ${JSON.stringify(s)}`);
+  }
+  // And the lowercase name the first draft would have rejected is genuinely
+  // accepted — the case that made the drift matter rather than merely exist.
+  assert.strictEqual(W.isNoun('button:save'), true);
+  assert.strictEqual(W.addBinding('{}', 'file:talk_mp4', { fixture: { name: 'talk.mp4' } }).ok, true);
+});
+
+test('binding: a value that is not a non-empty object is refused', () => {
+  for (const bad of [null, 'button', 42, [], [1, 2], {}]) {
+    const r = W.addBinding(BINDINGS_TEXT, 'button:Whatever', bad);
+    assert.strictEqual(r.ok, false, `${JSON.stringify(bad)} was accepted as a binding`);
+    assert.strictEqual(r.error, 'bad-binding');
+  }
+});
+
+test('binding: 🔴 a key that JSON.stringify would DELETE is refused, not silently emptied', () => {
+  // The guard that was inert in its first draft, and the reason it is written
+  // against `Object.keys(value)` rather than against `JSON.stringify(value)`:
+  // for `{role: undefined}` both sides stringify to `{}`, so the check compared
+  // the damage to itself and passed. This is the mutation that matters —
+  // `boundNouns()` counts the KEY, so an emptied binding reads as progress
+  // while satisfying no verb.
+  for (const bad of [{ role: undefined }, { role: 'button', name: undefined }, { role: () => 'x' }]) {
+    const r = W.addBinding(BINDINGS_TEXT, 'button:Whatever', bad);
+    assert.strictEqual(r.ok, false, `${Object.keys(bad).join(',')} was accepted`);
+    assert.strictEqual(r.error, 'bad-binding');
+    assert.match(r.reason, /would not survive/);
+  }
+  // The control: the same shapes with real values go through, so the test above
+  // is measuring the loss and not just the key names.
+  assert.strictEqual(W.addBinding(BINDINGS_TEXT, 'button:Whatever', { role: 'button', name: 'x' }).ok, true);
+});
+
+test('binding: a bindings file that was already broken says so, and blames the file', () => {
+  const r = W.addBinding('{ not json', 'button:X', { role: 'button', name: 'x' });
+  assert.strictEqual(r.error, 'bindings-already-invalid');
+  assert.match(r.reason, /did not parse before this edit/);
+  // An array parses as JSON and is not a map of nouns.
+  assert.strictEqual(W.addBinding('[]', 'button:X', { role: 'button', name: 'x' }).error, 'bindings-already-invalid');
+});
+
+test('binding: what it writes is what the emitter reads — a refusal becomes a real step', () => {
+  // The seam that matters, driven end to end rather than asserted on the JSON.
+  // Before: the step cannot generate and the noun is in `missing`. After: the
+  // same behaviour, the same generator, and a real Playwright line. Nothing
+  // here restates the binding format — `emit()` is the only definition of it,
+  // and this is the test that would go red if the two ever disagreed.
+  const behaviours = parse('behaviour BEH-B1 "bind me"\n  actor engineer\n  then sees button:UnboundOnPurpose\n', 'b.beh');
+  const empty = {};
+  const before = generate(behaviours[0], empty);
+  assert.deepStrictEqual(before.missing, ['button:UnboundOnPurpose']);
+  assert.match(before.code, /\/\/ UNGENERATED: then sees button:UnboundOnPurpose/);
+
+  const r = W.addBinding('{}', 'button:UnboundOnPurpose', { role: 'button', name: 'Unbound on purpose' });
+  assert.ok(r.ok, r.reason);
+  const after = generate(behaviours[0], JSON.parse(r.text));
+  assert.deepStrictEqual(after.missing, []);
+  assert.match(after.code, /getByRole\("button", \{ name: "Unbound on purpose" \}\)/);
+  assert.doesNotMatch(after.code, /UNGENERATED/);
+});
+
+test('binding: appending twice produces a file the writer can read back', () => {
+  // The same property `addBehaviour` is tested for: the second edit is the
+  // first one that meets the file this function itself produced.
+  const one = W.addBinding('{}', 'button:One', { role: 'button', name: 'One' });
+  assert.ok(one.ok, one.reason);
+  const two = W.addBinding(one.text, 'button:Two', { role: 'button', name: 'Two' });
+  assert.ok(two.ok, two.reason);
+  assert.deepStrictEqual(JSON.parse(two.text), {
+    'button:One': { role: 'button', name: 'One' },
+    'button:Two': { role: 'button', name: 'Two' },
+  });
+  assert.ok(two.text.endsWith('\n'), 'the file lost its trailing newline');
+});
+
+test('binding: corpusNouns skips a corpus that will not parse rather than throwing', () => {
+  // One broken corpus elsewhere in the directory must not be able to block
+  // binding a noun — but the caller is told, because the answer is now
+  // incomplete and a silent gap in a collision check is the quiet direction.
+  const dir = fixture({
+    'good.beh': 'behaviour BEH-G "g"\n  actor engineer\n  then sees button:Save\n',
+    'broken.beh': 'this is not a corpus at all\n',
+  });
+  const skipped = [];
+  const nouns = W.corpusNouns(dir, (app) => skipped.push(app));
+  assert.deepStrictEqual(nouns.good, ['button:Save']);
+  assert.deepStrictEqual(skipped, ['broken']);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(nouns, 'broken'), false);
+});
+
 // ── the write path over the transport ───────────────────────────────────────
 
 // `contentType` is a parameter and not a constant because the attacker picks it,
