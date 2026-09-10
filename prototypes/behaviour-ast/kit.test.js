@@ -17,6 +17,25 @@ const { parse, resolve, generate } = require('./kit');
 
 let pass = 0, fail = 0;
 
+// The real console, captured at module load — before anything can have replaced
+// it — and used by the RUNNER for everything it prints. `quiet()` below stubs
+// `console.log` to silence the code under test, and that stub is global while
+// async tests are pending, so module-scope code running in the same window is
+// silenced too.
+//
+// That is not a theoretical hazard. It swallowed a section header and eight
+// `ok` lines from this file's own output, and the run still ended
+// `223 passed, 0 failed` — the tally survives because it prints once the depth
+// counter is back to zero. A FAIL would have been counted and NOT NAMED, which
+// is the worst of the three possible outcomes: a red run you cannot read.
+// The rule is one line long — **the runner never prints through the global it
+// lets tests replace.**
+const REAL_LOG = console.log;
+const REAL_ERR = console.error;
+
+/** A section heading in the run's output. Goes through REAL_LOG, see above. */
+const section = (name) => REAL_LOG(`\n── ${name} ──`);
+
 // Async tests go through the SAME helper, deliberately. `ui.js` needs a real
 // listening socket to be tested at all, and a separate `atest(...)` would be
 // invisible to `testTitles` — the reader keys on `test(`/`it(` — so every async
@@ -25,8 +44,8 @@ let pass = 0, fail = 0;
 // nothing to do with the change. One helper, one name, one reader.
 const pending = [];
 const test = (name, fn) => {
-  const ok = () => { pass++; console.log(`  ok   ${name}`); };
-  const no = (e) => { fail++; console.log(`  FAIL ${name}\n       ${e.message}`); };
+  const ok = () => { pass++; REAL_LOG(`  ok   ${name}`); };
+  const no = (e) => { fail++; REAL_LOG(`  FAIL ${name}\n       ${e.message}`); };
   try {
     const result = fn();
     if (result && typeof result.then === 'function') { pending.push(result.then(ok, no)); return; }
@@ -49,7 +68,7 @@ const gen = (src, bindings = BIND) => {
   return behaviours.map((b) => generate(b, bindings, symbols));
 };
 
-console.log('\n── parse ──');
+section('parse');
 
 test('reads an id and a title', () => {
   const [b] = parse('behaviour BEH-1 "does a thing"');
@@ -78,7 +97,7 @@ test('holes and nouns are told apart on the same line', () => {
   assert.deepStrictEqual(b.steps[0].refs.map((r) => `${r.kind}:${r.name}`), ['form:Upload']);
 });
 
-console.log('\n── resolve: the cross-behaviour symbol table ──');
+section('resolve: the cross-behaviour symbol table');
 
 test('a hole is filled by a DIFFERENT behaviour', () => {
   const { behaviours } = build(
@@ -111,7 +130,7 @@ test('two behaviours disagreeing IS a conflict, with both sides named', () => {
   assert.strictEqual(conflicts[0].challengers[0].from, 'B');
 });
 
-console.log('\n── generate: the refusals, which are the design claim ──');
+section('generate: the refusals, which are the design claim');
 
 test('CONTROL: a fully bound behaviour generates', () => {
   const [{ code, stats }] = gen('behaviour A "a"\n  when opens page:Home\n  when activates button:Go');
@@ -172,7 +191,7 @@ test('the test name carries the behaviour id, which is what coverage greps for',
   assert.match(code, /\[BEH-9\]/);
 });
 
-console.log('\n── coverage: the only part that can go red ──');
+section('coverage: the only part that can go red');
 
 const { coverage } = require('./kit');
 
@@ -190,7 +209,7 @@ test('a test naming a behaviour that no longer exists is an orphan', () => {
   assert.deepStrictEqual(r.orphanTests, ['BEH-7']);
 });
 
-console.log('\n── adjudication: "default included but marked unreviewed" (James, #68) ──');
+section('adjudication: "default included but marked unreviewed" (James, #68)');
 
 const { adjudication } = require('./kit');
 
@@ -252,7 +271,7 @@ test('a behaviour with no traceable ref is reported separately from an unreviewe
   assert.deepStrictEqual(a.untraceable.map((b) => b.id), ['BEH-1']);
 });
 
-console.log('\n── displayed surface (his frontend-first answer, kit#3) ──');
+section('displayed surface (his frontend-first answer, kit#3)');
 const { surface } = require('./kit');
 
 // A DEFINED behaviour is served, never serving. Without this control the report
@@ -304,7 +323,7 @@ test('serves wants a behaviour id, not prose', () => {
   assert.throws(() => parse('behaviour BEH-A "a"\n  serves the today screen\n', 't.beh'), /serves wants a behaviour id/);
 });
 
-console.log('\n── the pilot corpus is real material, not a fixture ──');
+section('the pilot corpus is real material, not a fixture');
 
 test('james-habits-app parses and its spec-vs-spec conflict is detected', () => {
   // The pilot's headline finding, pinned so it cannot silently stop being found.
@@ -386,7 +405,7 @@ test('language-vocab is a different shape from habits, and the corpus says so', 
   assert.ok(missing.has('page:Stats'));
 });
 
-console.log('\n── the question sheet (his kit#3 ask: "a behaviour question sheet... I can work through it with Gemini") ──');
+section('the question sheet (his kit#3 ask: "a behaviour question sheet... I can work through it with Gemini")');
 const { questions, questionErrors, renderSheet } = require('./kit');
 
 // A whole pack, so the gate tests below can remove ONE part each and show that
@@ -547,7 +566,7 @@ test('the committed sheet is byte-identical to what the generator produces now',
     'docs/sheets/james-habits-app.md is stale — re-run `node kit.js sheet james-habits --rev james-habits-app@e75de89`');
 });
 
-console.log('\n── reading an app\'s tests ──');
+section('reading an app\'s tests');
 const { testTitles, expectedTestCount } = require('./kit');
 
 test('a JS spec file yields one title per test()', () => {
@@ -673,7 +692,7 @@ test('nesting inside describe blocks still reads — indentation is allowed', ()
   assert.strictEqual(expectedTestCount('a.spec.ts', src), 2);
 });
 
-console.log('\n── the mapping (option C) ──');
+section('the mapping (option C)');
 const { mapping } = require('./kit');
 
 const MB = parse('behaviour BEH-1 "one"\nbehaviour BEH-2 "two"', 'm.beh');
@@ -746,7 +765,7 @@ test('the same title in a DIFFERENT file is not ambiguous', () => {
   assert.deepStrictEqual(r.covered.map((b) => b.id), ['BEH-1']);
 });
 
-console.log('\n── the gate: kit check exit codes ──');
+section('the gate: kit check exit codes');
 const check = require('./check');
 
 // Fixtures are BUILT HERE, never read from /data/repos: a suite that depends on
@@ -777,8 +796,6 @@ const fixture = (files) => {
 //
 // So the real console is captured once and the depth counter decides when to
 // put it back.
-const REAL_LOG = console.log;
-const REAL_ERR = console.error;
 let quietDepth = 0;
 const quiet = (fn) => {
   const restore = () => {
@@ -897,7 +914,7 @@ test('the shipped snip-it mapping is RED today, and for the two behaviours it sa
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-UP-2', 'BEH-EDIT-0']);
 });
 
-console.log('\n── prose-audit: does the corpus account for the whole document? ──');
+section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 
 // One clean AC + the one behaviour it names. Every test below mutates a COPY of
@@ -1042,7 +1059,7 @@ test('the COUNT of acceptance criteria is checked, not just each one that is pre
   assert.strictEqual(quiet(() => pa.main(['--source', pathx.join(dir, 'fewer.md')])), 1);
 });
 
-console.log('\n── saturation: does binding glue grow 1:1 with the UI? (gap #8) ──');
+section('saturation: does binding glue grow 1:1 with the UI? (gap #8)');
 const sat = require('./saturation');
 
 // A corpus generator, so the cases below differ in ONE property — how the nouns
@@ -1177,7 +1194,7 @@ test('--check goes RED when the write-up drifts from the corpora', () => {
   assert.strictEqual(quiet(() => sat.main(['--dir', dir, '--check'])), 1);
 });
 
-console.log('\n── self-host: can Kit describe Kit? (James, claude-code-bot#89) ──');
+section('self-host: can Kit describe Kit? (James, claude-code-bot#89)');
 const selfhost = require('./self-host.js');
 
 test('THE CONTROL: binding nouns DOES move the number, when the verbs are known', () => {
@@ -1408,7 +1425,7 @@ test('CONTROL: the same CLI corpus WITHOUT the directive is not excluded', () =>
   assert.ok(!/skipping cli\.beh/.test(said), said);
 });
 
-console.log('\n── project: the read model a UI consumes (docs/design/ui.md) ──');
+section('project: the read model a UI consumes (docs/design/ui.md)');
 const proj = require('./project.js');
 
 test('the projection carries every panel the UI needs, for a real corpus', () => {
@@ -1499,7 +1516,7 @@ test("kit's own shipped mapping projects with no errors, metadata keys and all",
   assert.deepStrictEqual(p.coverage.errors, [], p.coverage.errors.join('; '));
 });
 
-console.log('\n── ui (the read API) ──');
+section('ui (the read API)');
 
 const ui = require('./ui.js');
 
@@ -1664,6 +1681,137 @@ test('the server binds the loopback interface and not every interface', async ()
   const server = await ui.serve({ dir: uiDir, port: 0 });
   try {
     assert.strictEqual(server.address().address, '127.0.0.1');
+  } finally {
+    server.close();
+  }
+});
+
+section('ui (serving the built bundle: rules 5, 6, 7)');
+
+// A fixture bundle, not the real `ui/dist`. `dist/` is gitignored, so on a
+// runner there is nothing there at all — a suite that read the real one would be
+// green here and skip silently in CI, which is the failure mode these very rules
+// are about ([[empty-means-two-things]]).
+//
+// The names mirror what Vite actually emits: one content-hashed asset per type,
+// an unhashed root file, and a sub-directory under assets that must NOT be
+// servable.
+const distDir = fixture({
+  'index.html': '<!doctype html><div id="root"></div><script src="/assets/index-abc123.js"></script>',
+  'assets/index-abc123.js': 'console.log("bundle")',
+  'assets/index-def456.css': ':root{}',
+  'assets/nested/secret.js': 'never served',
+  'favicon.svg': '<svg/>',
+});
+const NO_DIST = pathx.join(distDir, 'not-built');
+
+test('an asset is served only when its name is in the bundle listing, never by joining', () => {
+  // The refusal and its control. `ui/README.md` gave "it means joining a path to
+  // serve a file" as the reason this file served no HTML; rule 5 is the answer,
+  // and it is the same answer rule 3 already gives for app names.
+  const ok = ui.route('GET', '/assets/index-abc123.js', { dist: distDir });
+  assert.strictEqual(ok.status, 200, 'CONTROL: a real asset must be served');
+  assert.strictEqual(ok.contentType, 'text/javascript; charset=utf-8');
+
+  assert.strictEqual(ui.route('GET', '/assets/index-nope.js', { dist: distDir }).status, 404);
+});
+
+test('a directory under assets is not servable, so a lookup cannot resolve to an EISDIR', () => {
+  // `filesIn` filters to files. Without that the name IS in the listing, the
+  // read throws, and the caller meets a 500 that says nothing about the bundle.
+  assert.strictEqual(ui.route('GET', '/assets/nested', { dist: distDir }).status, 404);
+});
+
+test('a traversal in a bundle path reaches no file outside dist, encoded or not', () => {
+  // Same pair as the app-name traversal test: a raw `../` never matches the
+  // route patterns, an encoded one is a single segment and does reach the check.
+  for (const p of ['/assets/../../../etc/passwd', '/../package.json']) {
+    assert.strictEqual(ui.route('GET', p, { dist: distDir }).status, 404, `${p} was not refused`);
+  }
+  const encoded = ui.route('GET', '/assets/%2e%2e%2f%2e%2e%2findex.html', { dist: distDir });
+  assert.strictEqual(encoded.status, 404);
+  assert.strictEqual(encoded.body.error, 'no-such-file');
+});
+
+test('a path that NAMES A FILE and is not in the bundle is a 404, not the shell', () => {
+  // Rule 6, and it is the rule with a track record. Every unmatched path on
+  // balenthiran.co.uk answered 200 with the portfolio's SPA for the life of the
+  // site, which is why a status code there could prove an app was up when the
+  // app did not exist ([[green-over-the-clients-question]]).
+  const missing = ui.route('GET', '/missing.png', { dist: distDir });
+  assert.strictEqual(missing.status, 404);
+  assert.strictEqual(missing.contentType, 'application/json');
+
+  // CONTROL, and it is the half that makes the rule narrow rather than a ban:
+  // an extensionless path IS a client route and must reach the shell, because
+  // App.tsx uses BrowserRouter and reloading on a project page goes through here.
+  const deep = ui.route('GET', '/projects/snip-it', { dist: distDir });
+  assert.strictEqual(deep.status, 200);
+  assert.match(deep.contentType, /^text\/html/);
+  assert.match(String(deep.raw), /id="root"/);
+});
+
+test('/api answers JSON to the end, including its 404 — it never falls back to the shell', () => {
+  // Rule 6's second half. A fetch that has gone wrong must be told so; handing
+  // it HTML moves the error three layers away, to a JSON parse
+  // ([[the-message-names-the-layer]]). Asserted WITH a bundle present, because
+  // without one every answer is a 503 and the test would pass for free.
+  const r = ui.route('GET', '/api/nope', { dir: uiDir, dist: distDir });
+  assert.strictEqual(r.status, 404);
+  assert.strictEqual(r.contentType, 'application/json');
+  assert.strictEqual(r.body.error, 'no-such-route');
+});
+
+test('a bundle that was never built is a 503 naming the build command, not a 404', () => {
+  // Rule 7, which is rule 4 one layer out: "nobody has built it" and "you typed
+  // the wrong URL" are two states, and a 404 renders the second.
+  const r = ui.route('GET', '/', { dist: NO_DIST });
+  assert.strictEqual(r.status, 503);
+  assert.match(String(r.raw), /npm --prefix prototypes\/behaviour-ast\/ui run build/,
+    'the 503 must carry the command, not merely say it is missing');
+  assert.ok(String(r.raw).includes(ui.BUILD_CMD), 'and it must be THE command, not a second spelling of it');
+});
+
+test('the API keeps answering while the bundle is absent — they are two states, not one', () => {
+  // The sentence rule 7's page makes ("the API is running and answering") has to
+  // be true, or it is a lie printed by the server itself.
+  const r = ui.route('GET', '/api/projects', { dir: uiDir, dist: NO_DIST });
+  assert.strictEqual(r.status, 200);
+  assert.deepStrictEqual(r.body.projects.map((p) => p.app), ['alpha', 'beta']);
+});
+
+// ── the bundle, over a real socket ──────────────────────────────────────────
+// `route()` returning the right object and the server delivering it are still
+// different claims, and for static files there is one more: the headers. A
+// cache-control returned by the router and dropped by `send` is invisible to
+// every test above and presents as a blank page after a rebuild.
+
+const getFull = (port, path) => new Promise((resolve, reject) => {
+  require('http').get({ host: '127.0.0.1', port, path }, (res) => {
+    let body = '';
+    res.on('data', (c) => { body += c; });
+    res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+  }).on('error', reject);
+});
+
+test('a real listening server delivers the shell as HTML, and the hashed asset immutably', async () => {
+  const server = await ui.serve({ dir: uiDir, dist: distDir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+
+    const shell = await getFull(port, '/');
+    assert.strictEqual(shell.status, 200);
+    assert.match(shell.headers['content-type'], /^text\/html/);
+    assert.match(shell.body, /id="root"/);
+    // The shell is the only unhashed file that NAMES the hashed ones, so a
+    // cached copy outlives a rebuild and asks for assets that no longer exist.
+    assert.strictEqual(shell.headers['cache-control'], 'no-store');
+
+    const asset = await getFull(port, '/assets/index-abc123.js');
+    assert.strictEqual(asset.status, 200);
+    assert.strictEqual(asset.body, 'console.log("bundle")');
+    assert.match(asset.headers['cache-control'], /immutable/,
+      'a content-hashed name can be cached forever, and that is the point of hashing it');
   } finally {
     server.close();
   }
