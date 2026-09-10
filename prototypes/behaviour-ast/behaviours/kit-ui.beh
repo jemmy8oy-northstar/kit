@@ -1,0 +1,89 @@
+# Kit's UI, described in Kit's own notation — the other half of kit.beh.
+#
+# ── Why this is a SECOND corpus and not more of kit.beh ──────────────────────
+# `kit.beh` declares `# kit:no-ui` and its 0% is not a gap, it is EVIDENCE: Kit
+# the command-line tool needs `runs`, `exits`, `reports`, `raises`, and the
+# generator's whole vocabulary is browser verbs. Adding browser behaviours to
+# that file would dilute the one measurement that makes the point.
+#
+# So Kit is two apps in its own registry, and only one of them has a UI.
+#
+# ── What this file is FOR ────────────────────────────────────────────────────
+# kit.beh's header states a falsifiable claim: *"this file is not a corpus that
+# is waiting for bindings… the missing piece is not notation, it is a UI. That
+# is the same UI James asked for in the first half of #89."*
+#
+# That UI now exists (kit#16 → #24 → #26 → #27 → #28). This corpus is the test
+# of the claim: if it was right, a browser corpus of Kit's own surface should
+# derive real Playwright, and Kit stops being a special case in its own
+# registry. If it was wrong, this file says so at the same cost.
+#
+# ⚠️ **THE CONFOUND, STATED FIRST.** I built this UI, so a corpus I write about
+# it measures recall as much as description — the same objection that made
+# kit#23 use two isolated agents. It does NOT undermine the question being asked
+# here, which is whether the GENERATOR can emit a runnable test for a browser
+# surface, not whether two authors would pick the same nouns. That second
+# question is kit#23's and is still open. Read the derived count as evidence
+# about the generator, never about the notation's learnability.
+#
+# ── Nouns are prefixed `Kit*`, and that is not style ─────────────────────────
+# bindings.json's own warning: THE NOUN NAMESPACE IS GLOBAL ACROSS APPS. An
+# unprefixed `page:Home` here would silently reuse snip-it's binding and emit
+# `page.goto('./')` — a test that RUNS, against the wrong app, with no
+# unbound-noun warning. Prefixing is a habit rather than a design, and that is
+# still true; it is written down here so the next corpus does not learn it the
+# hard way.
+#
+# Every accessible name below was READ OFF THE RUNNING APP, not invented — the
+# same rule bindings.json holds itself to.
+
+behaviour BEH-UI-LIST-1 "Every corpus Kit can read is listed as a project"
+  actor engineer
+  when opens page:KitProjects
+  then sees heading:KitProjectsTitle
+  then sees region:KitMain
+  contract a corpus that will not parse is listed AS an error, not as zero behaviours
+
+behaviour BEH-UI-PROJECT-1 "A project shows the question sheet Kit built for it"
+  actor engineer
+  provides page:KitProject.app = james-habits-app
+  when opens page:KitProject
+  then sees heading:KitQuestionSheet
+  then sees heading:KitNeverAdjudicated
+  then sees button:KitAddBehaviour
+
+behaviour BEH-UI-BEH-1 "A behaviour and the test Kit generates from it are on one screen"
+  actor engineer
+  provides page:KitBehaviour.app = james-habits-app
+  provides page:KitBehaviour.id = BEH-SEED-1
+  when opens page:KitBehaviour
+  then sees heading:KitBehaviourSteps
+  then sees heading:KitGeneratedTest
+  contract the two are side by side, not on separate screens — the output must be in view
+  contract the test is regenerated on every read, never cached
+
+behaviour BEH-UI-ADJ-1 "An inference can be adjudicated from the browser"
+  actor engineer
+  when opens page:KitBehaviour
+  then sees heading:KitAdjudication
+  then sees button:KitApprove
+  when activates button:KitApprove
+  contract the corpus file on disk gains `review approved` for this behaviour
+  contract the existing `review unreviewed` line is REPLACED, not joined by a second
+  contract nothing is committed to git
+
+behaviour BEH-UI-ADJ-2 "Denying an inference asks for the correction it must carry"
+  actor engineer
+  when opens page:KitBehaviour
+  then sees button:KitDeny
+  when fills field:KitCorrection with "the starter set is re-seeded whenever the list is empty"
+  when activates button:KitDeny
+  contract Deny is disabled while the correction is empty
+  contract a denial with no correction is refused by the parser, and its sentence reaches the screen
+
+behaviour BEH-UI-STEP-1 "A step can be added while the generated test is in view"
+  actor engineer
+  when opens page:KitBehaviour
+  then sees heading:KitAddAStep
+  then sees button:KitAddStep
+  contract the page re-reads after the write, so the REGENERATED test is what is on screen
