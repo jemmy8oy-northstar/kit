@@ -126,6 +126,57 @@ export interface Adjudication {
   untraceable: string[]
 }
 
+/** The three states `parse()` accepts on a `review` line, and nothing else. */
+export type ReviewState = 'unreviewed' | 'approved' | 'denied'
+
+/**
+ * One entry of the question sheet `kit.js` already builds, which `ui.js` has
+ * always sent and this UI typed as `unknown[]` and never rendered.
+ *
+ * Two tiers, and the difference decides what the screen may offer:
+ *
+ * - **`review`** — an inference nobody has adjudicated. The answer is a
+ *   vocabulary that already exists (`review approved` / `review denied <what is
+ *   actually true>`), so the UI can write it.
+ * - **`decision`** — two behaviours disagree, or an inference serves nothing.
+ *   Kit has no syntax for recording "BEH-A supersedes BEH-B"; there is no
+ *   keyword and no writer function, and inventing one would be a change to the
+ *   corpus LANGUAGE. So these render with everything the sheet knows — the
+ *   question, the options and their consequences, the recommendation — and no
+ *   button. Showing the pack is new; deciding its grammar is not mine.
+ */
+export interface QuestionOption {
+  label: string
+  consequence: string
+  at?: string
+}
+
+export interface QuestionSide {
+  id: string
+  title: string
+  ref: string | null
+  value: string[]
+}
+
+export interface Question {
+  kind: string
+  tier: 'decision' | 'review'
+  key: string
+  title: string
+  /** Present on `review`-tier entries: the behaviour being adjudicated. */
+  id?: string
+  source?: { origin: string; ref: string | null }
+  serves?: string[]
+  contracts?: string[]
+  asks: string | null
+  options: QuestionOption[]
+  recommend: { label: string; why: string } | null
+  against: string | null
+  /** Present on a conflict: the behaviours on each side of it. */
+  sides?: QuestionSide[]
+  owner?: string | null
+}
+
 /** `/api/projects/<app>`. */
 export interface ProjectDetail {
   app: string
@@ -136,7 +187,7 @@ export interface ProjectDetail {
   coverage: DetailCoverage
   adjudication: Adjudication
   surface: { errors: string[]; served: string[]; unserved: string[] }
-  questions: unknown[]
+  questions: Question[]
 }
 
 /** The body `POST /api/projects/<app>/behaviours` takes. */

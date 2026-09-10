@@ -190,3 +190,100 @@ describe('adding a step from the page that shows the output', () => {
     expect(calls).toHaveLength(1)
   })
 })
+
+// ── his step 4: "what the desired behaviour really is" ──────────────────────
+
+const typeCorrection = (text: string) =>
+  fireEvent.change(screen.getByLabelText(/Correction/), { target: { value: text } })
+
+describe('adjudicating an inference', () => {
+  it('the fixture really does carry an unreviewed inference to adjudicate', () => {
+    // The population, before anything renders it. Every test below is vacuous if
+    // the behaviour it opens stops being an unreviewed inference, and a vacuous
+    // test passes.
+    const b = habits.behaviours.find((x) => x.id === 'BEH-SEED-1')!
+    expect(b.source.origin).toBe('inferred')
+    expect(b.review.state).toBe('unreviewed')
+  })
+
+  it('approves it, then re-reads so the corpus on screen is the corpus on disk', async () => {
+    const second = structuredClone(habits)
+    second.behaviours.find((b) => b.id === 'BEH-SEED-1')!.review.state = 'approved'
+
+    const calls = renderScripted(
+      [{ ok: true, status: 200, body: habits }, wrote, { ok: true, status: 200, body: second }],
+      'james-habits-app',
+      'BEH-SEED-1',
+    )
+
+    await screen.findByRole('button', { name: 'Approve' })
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(calls.map((c) => c.init?.method ?? 'GET')).toEqual(['GET', 'POST', 'GET'])
+    expect(calls[1].url).toBe('/api/projects/james-habits-app/behaviours/BEH-SEED-1/review')
+    // `note: null` explicitly, not an omitted key — the client and the contract
+    // fixture agree on the spelling, and the server distinguishes the two.
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({ state: 'approved', note: null })
+  })
+
+  it('will not deny without the correction, and sends it when there is one', async () => {
+    // His #68 rule: a bare denial deletes a line, a denial with a correction
+    // compounds into the corpus. The disabled button is the affordance; the
+    // server's refusal is the rule.
+    const calls = renderScripted(
+      [{ ok: true, status: 200, body: habits }, wrote, { ok: true, status: 200, body: habits }],
+      'james-habits-app',
+      'BEH-SEED-1',
+    )
+
+    await screen.findByRole('button', { name: 'Deny' })
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeDisabled()
+    expect(calls).toHaveLength(1)
+
+    typeCorrection('the starter set is seeded on every login, not once')
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Deny' }))
+
+    await screen.findByRole('status')
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({
+      state: 'denied',
+      note: 'the starter set is seeded on every login, not once',
+    })
+  })
+
+  it('shows the corpus’s own refusal rather than reporting a write that did not happen', async () => {
+    renderScripted(
+      [
+        { ok: true, status: 200, body: habits },
+        { ok: false, status: 409, body: { error: 'would-not-parse', reason: 'a denied behaviour must state the correction' } },
+      ],
+      'james-habits-app',
+      'BEH-SEED-1',
+    )
+
+    await screen.findByRole('button', { name: 'Approve' })
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('a denied behaviour must state the correction')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('says where the inference came from, so the answer rests on something', async () => {
+    // An approve/deny with no visible provenance is a coin toss. `source.ref` is
+    // the line of code Kit read, and it is the whole reason `source` exists.
+    renderAt(habits, 'james-habits-app', 'BEH-SEED-1')
+
+    expect(await screen.findByText(/EnsureSeeded_creates_the_starter_set_once/)).toBeInTheDocument()
+  })
+
+  it('offers the control on a human-written behaviour too, and says a human wrote it', async () => {
+    // `defined` behaviours are approved by default with no line saying so, and
+    // `denied` counts across ALL behaviours in kit.js — so denying one is
+    // meaningful and must not be hidden. What changes is the sentence above it.
+    renderAt(snipIt, 'snip-it', 'BEH-HOME-1')
+
+    expect(await screen.findByText(/A human wrote this/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled()
+  })
+})

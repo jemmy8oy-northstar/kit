@@ -1,4 +1,4 @@
-import type { NewBehaviour, ProjectDetail, ProjectSummary, WriteResult } from './types'
+import type { NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, WriteResult } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
 // empty result. An empty list and a server that is not running look identical
@@ -100,6 +100,28 @@ export function addStep(app: string, id: string, step: string): Promise<WriteRes
 
 export function addBehaviour(app: string, behaviour: NewBehaviour): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(app)}/behaviours`, behaviour)
+}
+
+/**
+ * Adjudicate a behaviour — the fourth verb of his loop, "what the desired
+ * behaviour really is".
+ *
+ * `note` is always sent, `null` included. A denial without a correction is
+ * refused by `parse()` and must be, but the refusal belongs on the server: this
+ * client omitting the key on an empty note would make "he typed nothing" and
+ * "the field was not on the form" the same request, and only the first is a
+ * mistake worth a sentence.
+ */
+export function setReview(
+  app: string,
+  id: string,
+  state: ReviewState,
+  note: string | null = null,
+): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/review`,
+    { state, note },
+  )
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {
