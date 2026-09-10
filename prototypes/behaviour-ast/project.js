@@ -24,6 +24,8 @@
 const fs = require('fs');
 const path = require('path');
 const kit = require('./kit.js');
+const requires = require('./requires.js');
+const writer = require('./writer.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 
@@ -118,6 +120,37 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   const surf = kit.surface(behaviours);
   const qs = kit.questions(behaviours, conflicts);
 
+  // ── what each noun OWES, and who else would feel it being bound ───────────
+  // `requires.js` (kit#22) has always computed this and nothing in the UI has
+  // ever read it, so the behaviour page could say "these are why the steps
+  // above became comments" and not say what any of them needed. That is the
+  // whole distance between showing a refusal and being able to act on one.
+  //
+  // Two populations kept apart because collapsing them is the defect
+  // requires.js was written to expose: `missing` has no binding at all, while
+  // `insufficient` HAS one that does not carry what the verb needs — the
+  // second is invisible to `boundNouns()`, which counts the key.
+  //
+  // `sharedWith` is attached here rather than in requires.js because it is a
+  // property of the WRITE, not of the requirement: it answers "if I bind this,
+  // what else changes", and the answer only exists because bindings.json is one
+  // flat map over every corpus. Computed once for the directory, not per noun.
+  const req = requires.requirements(behaviours, bindings);
+  const corpusNouns = writer.corpusNouns(behDir);
+  const withShared = (n) => ({
+    noun: n.noun,
+    kind: n.kind,
+    name: n.name,
+    usedBy: n.usedBy,
+    bound: n.bound,
+    satisfied: n.satisfied,
+    needs: n.needs,
+    binding: n.bound ? bindings[n.noun] : null,
+    // Always an array. A UI reading `.length` must not have to distinguish
+    // "nothing collides" from "nobody looked" ([[empty-means-two-things]]).
+    sharedWith: writer.sharedWith(n.noun, corpusNouns, app),
+  });
+
   return {
     app,
     corpus: path.relative(path.join(__dirname, '..', '..'), corpusPath),
@@ -160,6 +193,12 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
     },
     surface: { errors: surf.errors, served: surf.served.map((b) => b.id), unserved: surf.unserved.map((b) => b.id) },
     questions: qs,
+    requires: {
+      nouns: req.nouns.map(withShared),
+      missing: req.missing.map(withShared),
+      insufficient: req.insufficient.map(withShared),
+      satisfied: req.satisfied.map((n) => n.noun),
+    },
   };
 }
 

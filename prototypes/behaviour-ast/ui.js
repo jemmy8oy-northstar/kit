@@ -24,6 +24,7 @@
 //   POST /api/projects/<app>/behaviours/<id>/steps   { step }
 //   POST /api/projects/<app>/behaviours/<id>/review  { state, note }
 //   POST /api/projects/<app>/behaviours             { id, title, actor, steps }
+//   POST /api/projects/<app>/bindings               { noun, binding }
 //   GET  everything else      the built UI out of `ui/dist` (rules 5–7)
 //
 // Adds no analysis. Like project.js, if you find yourself computing something
@@ -457,6 +458,20 @@ function write(pathname, opts, body, json, origin = null) {
     });
   }
 
+  // ── the one write that is not scoped to this corpus ──────────────────────
+  // `/api/projects/<app>/bindings` writes `bindings.json`, which is ONE FLAT
+  // MAP over every corpus — so unlike the three routes below, the file this
+  // touches is not the app's own.
+  //
+  // It is still routed under the app, and that is not an inconsistency. The app
+  // is what `sharedWith` excludes: "which OTHER corpora reference this noun"
+  // has no answer without knowing which one you are in. Routing it at
+  // `/api/bindings` would have to take the app in the body to say the same
+  // thing, and would read as if the write were global in a way the three below
+  // are not — which is true of the FILE and false of the request.
+  const bm = /^\/api\/projects\/([^/]+)\/bindings$/.exec(pathname);
+  if (bm) return postBinding(bm, body, opts, json);
+
   // Three writes, one shape: `/behaviours` creates, `/behaviours/<id>/steps`
   // appends, `/behaviours/<id>/review` adjudicates. The verb is the last
   // segment rather than a field in the body, so the route a request took is
@@ -522,6 +537,73 @@ function write(pathname, opts, body, json, origin = null) {
     file: path.relative(process.cwd(), file),
     committed: false,
     note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+  });
+}
+
+/**
+ * `POST /api/projects/<app>/bindings` — bind one noun.
+ *
+ * Split out rather than folded into the chain above because it is the one write
+ * whose target file is not derived from the app, and inlining it would put a
+ * second `readFileSync` of a different file inside a function whose next three
+ * branches all share one. Every gate it needs — loopback, Origin, method — has
+ * already run in the caller; this is only what is different.
+ *
+ * Body: `{ "noun": "button:AddHabit", "binding": { "role": "button", "name": "Add habit" } }`
+ */
+function postBinding(match, body, opts, json) {
+  let app;
+  try {
+    app = decodeURIComponent(match[1]);
+  } catch {
+    return json(400, { error: 'bad-request', reason: 'the app name is not valid percent-encoding' });
+  }
+  const dir = opts.dir || BEH_DIR;
+  // The app must EXIST even though its corpus is not what gets written. The
+  // name is looked up in the directory listing, never joined — rule 3 — and an
+  // unknown app here means `sharedWith` would silently compare against nothing
+  // and report no collisions, which is the quiet wrong answer rather than a
+  // loud one.
+  if (!writer.corpusPath(app, dir)) {
+    return json(404, { error: 'no-such-project', reason: `no corpus named '${app}'`, known: corpora(dir) });
+  }
+
+  if (!body || typeof body !== 'object') {
+    return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
+  }
+
+  const file = opts.bindings || writer.BINDINGS_FILE;
+  if (!fs.existsSync(file)) {
+    return json(500, { error: 'no-bindings-file', reason: `there is no bindings file at ${path.relative(process.cwd(), file)}` });
+  }
+
+  const skipped = [];
+  const result = writer.addBinding(fs.readFileSync(file, 'utf8'), body.noun, body.binding, {
+    corpora: writer.corpusNouns(dir, (a) => skipped.push(a)),
+    app,
+  });
+  if (!result.ok) {
+    return json(409, { error: result.error, reason: result.reason, current: result.current });
+  }
+
+  writer.commitToDisk(file, result);
+  return json(200, {
+    ok: true,
+    app,
+    noun: result.noun,
+    file: path.relative(process.cwd(), file),
+    committed: false,
+    note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+    // 🔴 The namespace fact, in the response rather than only in a log. The
+    // person who just clicked bind is the only one who can tell whether
+    // sharing this noun with those corpora is what they meant, and this is the
+    // moment they are looking.
+    sharedWith: result.sharedWith,
+    // A corpus that would not parse was skipped, so `sharedWith` is an
+    // INCOMPLETE answer and says so. Silence here would turn "could not look"
+    // into "nothing collides" — the two readings this codebase keeps apart
+    // everywhere else ([[empty-means-two-things]]).
+    unreadableCorpora: skipped,
   });
 }
 

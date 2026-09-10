@@ -1613,10 +1613,70 @@ const proj = require('./project.js');
 test('the projection carries every panel the UI needs, for a real corpus', () => {
   const p = proj.project('snip-it');
   assert.strictEqual(p.behaviours.length, 8);
-  for (const k of ['app', 'corpus', 'behaviours', 'conflicts', 'generated', 'coverage', 'adjudication', 'surface', 'questions']) {
+  for (const k of ['app', 'corpus', 'behaviours', 'conflicts', 'generated', 'coverage', 'adjudication', 'surface', 'questions', 'requires']) {
     assert.ok(k in p, `missing ${k}`);
   }
   assert.strictEqual(p.generated.length, 8, 'one generated test per behaviour — the output pane');
+});
+
+test('the projection says what each noun OWES, not just that it is missing', () => {
+  // `requires.js` shipped in kit#22 and nothing in the UI read it, so the
+  // behaviour page could name the nouns that caused a refusal and not say what
+  // any of them needed. A noun in `missing` with an empty `needs` would be the
+  // same dead end one field further in.
+  const p = proj.project('james-habits-app');
+  assert.ok(p.requires.missing.length >= 5, `only ${p.requires.missing.length} unbound nouns to describe`);
+  for (const n of p.requires.missing) {
+    assert.strictEqual(n.bound, false, `${n.noun} is in missing and claims to be bound`);
+    assert.ok(n.needs.length >= 1, `${n.noun} owes nothing, so the form would have nothing to ask for`);
+    for (const need of n.needs) {
+      assert.strictEqual(typeof need.surface, 'string');
+      assert.ok(need.surface.length > 0, `${n.noun}'s ${need.id} has no sentence a human could act on`);
+      assert.ok(need.verbs.length >= 1, `${n.noun}'s ${need.id} names no verb that wanted it`);
+      assert.strictEqual(need.met, false, `${n.noun} is unbound and yet ${need.id} is met`);
+    }
+  }
+});
+
+test('the projection keeps missing and insufficient apart', () => {
+  // The distinction requires.js exists to make, carried through to the payload
+  // rather than collapsed into "unbound". `bound` is what boundNouns() counts —
+  // a binding that exists and satisfies no verb is invisible to it, and is the
+  // case the behaviour page has no other way to explain.
+  const p = proj.project('james-habits-app');
+  const missing = new Set(p.requires.missing.map((n) => n.noun));
+  const insufficient = new Set(p.requires.insufficient.map((n) => n.noun));
+  for (const n of insufficient) assert.strictEqual(missing.has(n), false, `${n} is in both populations`);
+  for (const n of p.requires.insufficient) {
+    assert.strictEqual(n.bound, true, `${n.noun} is insufficient without being bound`);
+    assert.strictEqual(n.satisfied, false);
+    assert.notStrictEqual(n.binding, null, 'an insufficient noun must show the binding that fell short');
+  }
+  // Every noun lands in exactly one of the three.
+  const total = p.requires.missing.length + p.requires.insufficient.length + p.requires.satisfied.length;
+  assert.strictEqual(total, p.requires.nouns.length);
+});
+
+test('the projection says who ELSE feels a binding, because the namespace is global', () => {
+  // The write-side hazard, surfaced on the read side so the form can show it
+  // BEFORE the click rather than the CLI reporting it after.
+  const p = proj.project('james-habits-app');
+  const addHabit = p.requires.nouns.find((n) => n.noun === 'button:AddHabit');
+  assert.ok(addHabit, 'button:AddHabit left the corpus — re-measure before trusting this test');
+  assert.ok(addHabit.sharedWith.includes('trial-habits-a'), 'a noun two corpora reference reported no sharing');
+  assert.strictEqual(addHabit.sharedWith.includes('james-habits-app'), false, 'a corpus was told it shares with itself');
+  // And the empty case is an array, not absent.
+  for (const n of p.requires.nouns) assert.ok(Array.isArray(n.sharedWith), `${n.noun}.sharedWith is not an array`);
+});
+
+test('CONTROL: a fully-bound corpus reports nothing missing, so the tests above discriminate', () => {
+  // kit-ui is the one corpus every noun of which is bound — it is what made the
+  // 5-of-6 execution possible. If this ever reports missing nouns, the checks
+  // above are passing for the wrong reason.
+  const p = proj.project('kit-ui');
+  assert.deepStrictEqual(p.requires.missing.map((n) => n.noun), []);
+  assert.deepStrictEqual(p.requires.insufficient.map((n) => n.noun), []);
+  assert.ok(p.requires.satisfied.length >= 10, `only ${p.requires.satisfied.length} satisfied nouns`);
 });
 
 test('a trial corpus is projected as notReal, and a real one is not', () => {
@@ -3034,7 +3094,16 @@ test('the write contract fixture is not empty, and covers both routes', () => {
   assert.ok(paths.some((p) => /\/review$/.test(p)), 'no review request in the contract');
   assert.ok(paths.some((p) => /\/behaviours$/.test(p)), 'no add-behaviour request in the contract');
   assert.ok(paths.some((p) => /%20/.test(p)), 'nothing in the contract exercises a percent-encoded name');
+  assert.ok(paths.some((p) => /\/bindings$/.test(p)), 'no bind request in the contract');
   assert.ok(CONTRACT.requests.some((r) => r.expect.status === 409), 'the contract only covers the happy path');
+  // The bind route's whole reason for existing beside the other three is that
+  // it writes a DIFFERENT file, so the fixture has to declare one — and the
+  // sharing report has to be exercised in both directions or the empty case is
+  // never distinguished from an unimplemented one.
+  const binds = CONTRACT.requests.filter((r) => /\/bindings$/.test(r.path));
+  assert.ok(binds.every((r) => r.targetFile === 'bindings.json'), 'a bind request does not declare its target file');
+  assert.ok(binds.some((r) => (r.expect.sharedWith || []).length > 0), 'nothing in the contract binds a shared noun');
+  assert.ok(binds.some((r) => r.expect.sharedWith && r.expect.sharedWith.length === 0), 'nothing in the contract binds an unshared noun');
 });
 
 for (const req of CONTRACT.requests) {
@@ -3042,9 +3111,18 @@ for (const req of CONTRACT.requests) {
     // A fresh corpus per request: these write, and a shared directory would make
     // them depend on the order they run in.
     const dir = fixture(CONTRACT.corpus);
-    const target = pathx.join(dir, `${req.call.args[0]}.beh`);
+    // `bindings.json` lives beside the corpora in the fixture only; in the real
+    // tree it sits one level up, which is exactly why `serve` takes its path
+    // rather than deriving it — a test that had to write into the repo's own
+    // bindings file could not be run twice.
+    const bindings = pathx.join(dir, 'bindings.json');
+    fsx.writeFileSync(bindings, `${JSON.stringify(CONTRACT.bindings, null, 2)}\n`);
+
+    const target = req.targetFile
+      ? pathx.join(dir, req.targetFile)
+      : pathx.join(dir, `${req.call.args[0]}.beh`);
     const before = fsx.readFileSync(target, 'utf8');
-    const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+    const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
     try {
       const { port } = server.address();
       const res = await post(port, req.path, req.body, null, req.contentType);
@@ -3069,6 +3147,14 @@ for (const req of CONTRACT.requests) {
             `the corpus still contains ${req.expect.fileMustNotMatch}`);
         }
         assert.strictEqual(JSON.parse(res.body).committed, false);
+        // The namespace report, asserted from the fixture rather than from what
+        // the server happened to send. `sharedWith` is the mechanism replacing
+        // the habit `bindings.json`'s own comment describes, so a response that
+        // stopped carrying it — or carried the wrong corpora — must go red here
+        // and not merely look tidier.
+        if (req.expect.sharedWith) {
+          assert.deepStrictEqual(JSON.parse(res.body).sharedWith, req.expect.sharedWith);
+        }
       }
     } finally { server.close(); }
   });
@@ -3083,6 +3169,7 @@ test('contract: the paths in the fixture are the ones the CLIENT builds, charact
     addStep: (app, id) => `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps`,
     setReview: (app, id) => `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/review`,
     addBehaviour: (app) => `/api/projects/${encodeURIComponent(app)}/behaviours`,
+    addBinding: (app) => `/api/projects/${encodeURIComponent(app)}/bindings`,
   };
   for (const req of CONTRACT.requests) {
     const [app, id] = req.call.args;
