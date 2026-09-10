@@ -94,7 +94,7 @@ function Detail({
           <GeneratedPane
             generated={generated}
             project={project}
-            behaviourId={behaviour.id}
+            behaviour={behaviour}
             onWrote={onWrote}
           />
         </section>
@@ -279,14 +279,15 @@ function StepLine({ step }: { step: Step }) {
 function GeneratedPane({
   generated,
   project,
-  behaviourId,
+  behaviour,
   onWrote,
 }: {
   generated?: Generated
   project: ProjectDetail
-  behaviourId: string
+  behaviour: Behaviour
   onWrote: () => void
 }) {
+  const behaviourId = behaviour.id
   // Nothing generated at all and "Kit generated an empty test" are different
   // facts; only the first is worth acting on and it is the one the read API
   // signals by omitting the entry.
@@ -297,7 +298,20 @@ function GeneratedPane({
   // Only the nouns THIS behaviour uses. The projection carries the whole
   // corpus's requirements, and listing all of them here would put another
   // behaviour's unbound noun under a generated test it has nothing to do with.
-  const mine = (ns: NounRequirement[]) => ns.filter((n) => n.usedBy.includes(behaviourId))
+  //
+  // Ordered by where the noun first appears in the BEHAVIOUR, not
+  // alphabetically as `requires.js` returns them. The panel's whole claim is
+  // "here is the refusal you are looking at, and here is how to fix it" — a
+  // list that runs DateStepper, HabitList against a test that refused
+  // HabitList, DateStepper makes the reader match them up by name, which is
+  // the work the layout exists to save. Seen in a 390px screenshot; it is not
+  // visible while the two lists happen to agree.
+  const order = orderOf(behaviour)
+  const mine = (ns: NounRequirement[]) =>
+    ns
+      .filter((n) => n.usedBy.includes(behaviourId))
+      .slice()
+      .sort((a, b) => rank(order, a.noun) - rank(order, b.noun))
   const missing = mine(project.requires.missing)
   const insufficient = mine(project.requires.insufficient)
 
@@ -325,6 +339,38 @@ function GeneratedPane({
       ))}
     </>
   )
+}
+
+/**
+ * The nouns this behaviour references, in the order its steps name them.
+ *
+ * Built from `refs` rather than from the step text, so it agrees with what the
+ * generator actually bound — `kit.js`'s `nounsOf()` walks the same field.
+ * Literals are excluded because they are not nouns and cannot be bound.
+ */
+function orderOf(behaviour: Behaviour): string[] {
+  const seen: string[] = []
+  for (const step of behaviour.steps) {
+    for (const ref of step.refs) {
+      if (ref.kind === 'literal') continue
+      const key = `${ref.kind}:${ref.name}`
+      if (!seen.includes(key)) seen.push(key)
+    }
+  }
+  return seen
+}
+
+/**
+ * Where a noun sits in that order.
+ *
+ * A noun the list does not contain sorts LAST rather than first, which is what
+ * `indexOf`'s -1 would do. That case is real: `requires.js` counts a `field:`
+ * named only in a `provides` value on another behaviour, and no step here
+ * references it — so it belongs after the ones you can see, not above them.
+ */
+function rank(order: string[], noun: string): number {
+  const i = order.indexOf(noun)
+  return i === -1 ? Number.MAX_SAFE_INTEGER : i
 }
 
 /**

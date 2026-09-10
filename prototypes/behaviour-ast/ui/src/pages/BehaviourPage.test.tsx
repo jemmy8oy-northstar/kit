@@ -65,6 +65,29 @@ describe('BehaviourPage', () => {
     for (const b of binds) expect(b).toBeDisabled()
   })
 
+  it('orders the bind forms the way the steps name them, not alphabetically', async () => {
+    // `requires.js` returns nouns sorted by name, and the panel sits directly
+    // under a generated test whose refusals are in STEP order. Alphabetical
+    // here makes the reader match the two lists up by name — which is exactly
+    // the work having them on one screen is supposed to save. Seen in a 390px
+    // screenshot, and invisible whenever the two orders happen to agree, so
+    // the fixture chosen is one where they do NOT: the steps run
+    // region:HabitList then control:DateStepper, and sorted by name that
+    // reverses.
+    renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
+
+    const headings = (await screen.findAllByRole('heading', { name: /^Bind/ }))
+      .map((h) => h.textContent ?? '')
+    const at = (noun: string) => headings.findIndex((h) => h.includes(noun))
+
+    expect(at('page:Today')).toBe(0)
+    expect(at('region:HabitList')).toBeLessThan(at('control:DateStepper'))
+    // The control: sorted by name, DateStepper would come first — so the
+    // assertion above is measuring the ordering and not just any ordering.
+    const alphabetical = [...headings].sort()
+    expect(headings).not.toEqual(alphabetical)
+  })
+
   it('says which OTHER corpora a binding would reach, before the click', async () => {
     // `bindings.json` is one flat map over every corpus, and its own comment
     // calls the convention that avoids collisions "still a habit rather than a
