@@ -2562,8 +2562,22 @@ test('nothing still says ui.js cannot serve the bundle, now that it does', () =>
     if (!fsx.existsSync(file)) continue;
     const text = fsx.readFileSync(file, 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ')
-      .replace(/^\s*(\/\/|#).*$/gm, ' ');
-    assert.strictEqual(/(ui\.js|it)\s+does not serve (this|the) bundle/i.test(text), false,
+      .replace(/^\s*(\/\/|#).*$/gm, ' ')
+      // ⚠️ Markdown, stripped before matching, and this line is the whole reason
+      // the check works. The first version matched `ui\.js\s+does not serve` and
+      // the sentence it was written to catch is **`ui.js` does not serve this
+      // bundle** — a backtick sits between the name and the space, so the probe
+      // that put the claim back scored a clean pass. A check that has only ever
+      // been green has not been shown to discriminate
+      // ([[ship-the-check-while-its-red]]).
+      .replace(/[`*_]/g, '')
+      .replace(/\s+/g, ' ');
+
+    // Present tense only. This README now *describes* the old claim — "this
+    // section used to say ui.js did NOT serve the bundle" — and a check that
+    // could not tell a retraction from the thing retracted would forbid the
+    // sentence that fixes it.
+    assert.strictEqual(/\b(does not|doesn't|cannot|can not|can't|will not|won't) serve (this|the) bundle/i.test(text), false,
       `${name} still says ui.js does not serve the bundle, but ui.js has a bundle handler`);
   }
 });
