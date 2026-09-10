@@ -10,13 +10,25 @@ looking at when you decide what to assert next. That is the whole point of the
 two panes being on one screen.
 
 ```sh
-node prototypes/behaviour-ast/ui.js --repos /data/repos   # the read API, :4321
-npm --prefix prototypes/behaviour-ast/ui install
-npm --prefix prototypes/behaviour-ast/ui run dev          # the UI, :5173
+npm --prefix prototypes/behaviour-ast/ui ci                # once
+npm --prefix prototypes/behaviour-ast/ui run build         # once, and after any UI change
+node prototypes/behaviour-ast/ui.js --repos /data/repos    # http://127.0.0.1:4321
 ```
+
+**One process, one port, one URL.** `ui.js` serves the API *and* the built
+bundle out of `ui/dist`. If you have not built it, the page says so and prints
+the command — the API keeps answering meanwhile, because "the bundle is not
+built" and "the server is broken" are two states.
 
 `--repos` is what makes coverage available; without it every project reports
 **not measured**, which is not the same as zero and is not rendered as zero.
+
+While iterating on the UI *itself*, run Vite instead of rebuilding on every
+save — it proxies `/api` to the server above:
+
+```sh
+npm --prefix prototypes/behaviour-ast/ui run dev          # :5173, hot reload
+```
 
 ## What it deliberately does not do
 
@@ -43,11 +55,20 @@ and a writer must not be able to spend that.
 because it deploys under a sub-path. Decision 1 landed on **local tool**, so
 there is no sub-path to pin.
 
-**`ui.js` does not serve this bundle.** In development, Vite proxies `/api` to
-the read API. Serving the built assets from `ui.js` is a small change and is
-needed under either option in decision 1, but it means joining a path to serve a
-file, and `ui.js` has a rule against joining paths that is worth keeping intact
-until there is a reason to touch it.
+**It does not join a path to serve a file.** This section used to say `ui.js`
+did not serve the bundle at all, and gave that as the reason: serving files
+means joining a request path to a directory, and `ui.js` has a rule against
+that. The reason was right and the conclusion was not — the rule already had an
+answer. App names are **looked up** in the corpus listing rather than joined,
+and bundled files are now looked up the same way, in `readdirSync` of
+`ui/dist/assets`. No request path is ever joined to a directory, and the SPA
+fallback serves one constant file.
+
+**It does not answer 200 for something that is not there.** A path that names a
+file and is not in the bundle is a 404, and `/api/…` never falls back to the
+shell. An unmatched path answering 200 with the app shell is how a status check
+stops being able to fail — every unmatched path on balenthiran.co.uk did
+exactly that for the life of the site.
 
 ## Identity
 

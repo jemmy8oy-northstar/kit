@@ -23,6 +23,7 @@
 //   GET  /api/health          { ok: true } — for a live-check, later
 //   POST /api/projects/<app>/behaviours/<id>/steps   { step }
 //   POST /api/projects/<app>/behaviours             { id, title, actor, steps }
+//   GET  everything else      the built UI out of `ui/dist` (rules 5–7)
 //
 // Adds no analysis. Like project.js, if you find yourself computing something
 // here it belongs in kit.js, where the suite and the mutation harness can see
@@ -63,6 +64,36 @@
 // project.js's rule, carried through the list endpoint. A UI that cannot tell
 // "no mapping exists" from "nothing is covered" renders the second, and the
 // second is an alarm ([[empty-means-two-things]]).
+//
+// ── 5. The bundle is served by LOOKUP, never by joining ─────────────────────
+// This file used to serve no HTML at all, and `ui/README.md` gave the reason:
+// serving files means joining a request path to a directory, and rule 3 exists
+// to stop exactly that. The reason has not stopped being true — so the same
+// answer is used. `/assets/<name>` matches `<name>` against `readdirSync` of
+// `ui/dist/assets`; a root path matches against `readdirSync` of `ui/dist`.
+// Nothing else under `dist` is reachable and **no request path is ever joined
+// to a directory**. The fallback below serves one constant file.
+//
+// Why it matters that the API alone was not enough: `npm run dev` beside
+// `node ui.js` is fine for me and wrong for a tool James opens. Two processes
+// and two ports is not "manage my projects by the spec" (claude-code-bot#89).
+//
+// ── 6. A path that NAMES A FILE and is not there is a 404, never the shell ──
+// The SPA fallback is what makes client-side routing work, and it is also how
+// "every unmatched path answers 200 with the app shell" becomes a check that
+// cannot fail — a status code then proves an app is up when the thing asked
+// for does not exist ([[green-over-the-clients-question]]; the portfolio did
+// this for the life of the site). So the fallback is deliberately narrow: a
+// path with a file extension that is not in the listing is a **404**, and
+// `/api/...` never falls back at all — it stays JSON, so a UI whose fetch has
+// gone wrong is told so rather than handed HTML that will not parse.
+//
+// ── 7. A bundle that was never built is reported as that ────────────────────
+// Rule 4's shape, one layer out. `ui/dist` is gitignored, so a fresh clone has
+// no bundle and the honest answer is neither a 404 (which reads as "wrong URL")
+// nor a blank page (which reads as "broken"). It is a 503 naming the command
+// that builds it. The API keeps serving throughout: the read model working and
+// the bundle being absent are two different states.
 
 const fs = require('fs');
 const http = require('http');
@@ -71,8 +102,36 @@ const proj = require('./project.js');
 const writer = require('./writer.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
+const DIST_DIR = path.join(__dirname, 'ui', 'dist');
 const DEFAULT_PORT = 4321;
 const DEFAULT_HOST = '127.0.0.1';
+
+// Printed by rule 7's 503 and by `main`, so the sentence a person reads is the
+// sentence a person can paste. Relative to the repository root, which is where
+// every other command in the README is run from.
+const BUILD_CMD = 'npm --prefix prototypes/behaviour-ast/ui ci'
+  + ' && npm --prefix prototypes/behaviour-ast/ui run build';
+
+// Only the extensions Vite actually emits, plus the fonts and images a UI grows
+// into. An unknown extension gets `application/octet-stream`: the file is in the
+// bundle listing or it is not served at all (rule 5), so an unmapped type is a
+// download rather than a hole.
+const CONTENT_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
+};
 
 // A request body big enough to be a mistake or an attack, and far bigger than
 // any behaviour anyone will type. Enforced while READING, not after: a limit
@@ -163,6 +222,125 @@ function projectOf(app, opts) {
 }
 
 /**
+ * The names of the files directly inside a directory — the only source of
+ * servable names (rule 5), exactly as `corpora()` is the only source of valid
+ * app names.
+ *
+ * Directories are filtered out, so `/assets/<a-subdirectory>` cannot resolve to
+ * something `fs.readFileSync` then fails on with an EISDIR the caller reads as a
+ * 500. A missing directory is an empty list, not a throw: rule 7 reports the
+ * absent bundle once, at the top, rather than every helper having an opinion.
+ */
+function filesIn(dir) {
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isFile())
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
+/** The declared type for a file name, or a download. See CONTENT_TYPES. */
+function contentTypeFor(name) {
+  return CONTENT_TYPES[path.extname(name).toLowerCase()] || 'application/octet-stream';
+}
+
+/**
+ * Rules 5–7: the built UI, served out of `ui/dist`.
+ *
+ * Returns the same shape the JSON routes return, plus `raw` — the bytes to send
+ * — so `serve()` has one send path and cannot serve a file as JSON by omission.
+ * `readFileSync` and not a stream on purpose: this is a local tool serving a
+ * bundle of a few hundred KB to one browser, and a stream here would buy nothing
+ * but a second error path to get wrong.
+ */
+function bundle(pathname, distDir = DIST_DIR) {
+  const html = (status, body, cache) => ({
+    status,
+    contentType: 'text/html; charset=utf-8',
+    cacheControl: cache,
+    raw: body,
+  });
+
+  const index = path.join(distDir, 'index.html');
+
+  // Rule 7, checked first: with no bundle every answer below would be a 404,
+  // and "you typed the wrong URL" is the wrong sentence for "nobody has built
+  // it yet". The API is unaffected — this branch is only reached for non-/api
+  // paths.
+  if (!fs.existsSync(index)) {
+    return html(503, '<!doctype html><html><head><meta charset="utf-8">'
+      + '<title>Kit UI — not built</title></head><body>'
+      + '<h1>The Kit UI has not been built</h1>'
+      // Relative to cwd, like the write response's `file`. Not cosmetic: this
+      // page is screenshotted into public PRs, and an absolute path names the
+      // filesystem of whatever host is running it. It also reads better — the
+      // path a person can act on is the one relative to where they typed the
+      // command.
+      + `<p>The API is running and answering. The bundle is not in <code>${path.relative(process.cwd(), distDir) || distDir}</code>,`
+      + ' which is gitignored, so a fresh clone has to build it once:</p>'
+      + `<pre>${BUILD_CMD}</pre>`
+      + '<p>Then reload this page. While iterating on the UI itself, run'
+      + ' <code>npm --prefix prototypes/behaviour-ast/ui run dev</code> instead —'
+      + ' it proxies <code>/api</code> here and reloads on save.</p>'
+      + '</body></html>', 'no-store');
+  }
+
+  // Decoded once and then only ever compared, never joined — the same order as
+  // rule 3, so an encoded traversal is matched as the string it decodes to.
+  let p;
+  try {
+    p = decodeURIComponent(pathname);
+  } catch {
+    return { status: 400, contentType: 'application/json', body: { error: 'bad-request', reason: 'the path is not valid percent-encoding' } };
+  }
+
+  // Belt to rule 5's braces. The lookup below is what makes traversal
+  // impossible — a name either is in the listing or is not served — but a
+  // reader should not have to reconstruct that argument to believe it, and a
+  // future edit that reaches for `path.join` finds this refusal already here.
+  if (p.split('/').includes('..')) {
+    return { status: 404, contentType: 'application/json', body: { error: 'no-such-file', reason: 'a path segment of `..` names nothing in the bundle' } };
+  }
+
+  const send = (dir, name, cache) => ({
+    status: 200,
+    contentType: contentTypeFor(name),
+    cacheControl: cache,
+    raw: fs.readFileSync(path.join(dir, name)),
+  });
+
+  const asset = /^\/assets\/([^/]+)$/.exec(p);
+  if (asset) {
+    // Vite content-hashes every name in here, so a name that resolves can be
+    // cached forever and a name that does not is gone for good — a 404, never
+    // the shell (rule 6). A stale index.html pointing at a deleted hash is the
+    // one failure this pair has to make legible.
+    return filesIn(path.join(distDir, 'assets')).includes(asset[1])
+      ? send(path.join(distDir, 'assets'), asset[1], 'public, max-age=31536000, immutable')
+      : { status: 404, contentType: 'application/json', body: { error: 'no-such-asset', reason: `no bundled asset named '${asset[1]}' — the page asking for it was built against a different bundle` } };
+  }
+
+  const root = /^\/([^/]+)$/.exec(p);
+  if (root && filesIn(distDir).includes(root[1])) {
+    // favicon.svg and friends. Unhashed, so never cached: rebuilding the bundle
+    // has to be able to change them.
+    return send(distDir, root[1], 'no-store');
+  }
+
+  // Rule 6. Anything that names a file and got this far is not in the bundle.
+  if (path.extname(p)) {
+    return { status: 404, contentType: 'application/json', body: { error: 'no-such-file', reason: `nothing named ${p} is in the bundle` } };
+  }
+
+  // The shell. `no-store` because it is the only unhashed file that names the
+  // hashed ones: a cached copy survives a rebuild and asks for assets that were
+  // deleted, which presents as a blank page with a console nobody is reading.
+  return html(200, fs.readFileSync(index), 'no-store');
+}
+
+/**
  * The router, as a pure function of method and path.
  *
  * Separated from the server on purpose so the rules above are testable without
@@ -182,6 +360,14 @@ function route(method, pathname, opts = {}, body = null, origin = null) {
       reason: `this server serves GET and POST; ${method} reaches no handler`,
       allow: 'GET, POST',
     });
+  }
+
+  // Rule 6's second half. Everything under /api answers JSON to the end,
+  // including its 404 — falling back to the shell here would hand a broken
+  // fetch a page of HTML and report it as a parse error three layers away
+  // ([[the-message-names-the-layer]]).
+  if (!/^\/api(\/|$)/.test(pathname)) {
+    return bundle(pathname, opts.dist ?? DIST_DIR);
   }
 
   if (pathname === '/api/health') {
@@ -373,8 +559,14 @@ function serve(opts = {}) {
     const { pathname } = new URL(req.url, 'http://localhost');
 
     const send = (result) => {
-      res.writeHead(result.status, { 'content-type': result.contentType, ...cors(req.headers.origin) });
-      res.end(JSON.stringify(result.body));
+      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin) };
+      if (result.cacheControl) headers['cache-control'] = result.cacheControl;
+      res.writeHead(result.status, headers);
+      // `raw` is set only by `bundle()`, and its presence is what distinguishes
+      // bytes from a payload. Checked with `!== undefined` rather than for
+      // truthiness: an empty file is a legitimate asset, and `||` would serve it
+      // as the string "undefined" wearing its content-type.
+      res.end(result.raw !== undefined ? result.raw : JSON.stringify(result.body));
     };
 
     // A preflight is answered by the same allowlist that answers the request, so
@@ -458,10 +650,19 @@ async function main(argv) {
   console.log(isLoopback(opts.host)
     ? '  writes: ON — edits land in the working tree and are NEVER committed'
     : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+  // Said at startup and not only by the 503, because the person who needs to
+  // read it is looking at this terminal, not at the browser tab they have not
+  // opened yet.
+  console.log(fs.existsSync(path.join(opts.dist ?? DIST_DIR, 'index.html'))
+    ? '  ui: serving the built bundle — open the URL above, nothing else to run'
+    : `  ui: NOT BUILT — the API answers, the page will not. Build it once:\n      ${BUILD_CMD}`);
   return 0;
 }
 
-module.exports = { route, write, serve, cors, isLoopback, corpora, repoFor, summary, parseArgs, main, MAX_BODY };
+module.exports = {
+  route, write, serve, cors, isLoopback, corpora, repoFor, summary, parseArgs, main,
+  bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
+};
 
 if (require.main === module) {
   main(process.argv.slice(2)).then((code) => {
