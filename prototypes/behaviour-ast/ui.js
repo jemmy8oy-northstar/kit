@@ -16,7 +16,7 @@
 // The two decisions are not independent, and the code says so: a write path is
 // only reachable when the server is bound to a loopback address (rule 2 below).
 //
-//   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>]
+//   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>] [--bindings <file>]
 //
 //   GET  /api/projects        every corpus, with enough to render a list
 //   GET  /api/projects/<app>  project.js's full projection for one app
@@ -217,7 +217,15 @@ function summary(app, opts) {
 /** project.js names its corpus directory `behDir`; this is the only place that spelling leaks. */
 function projectOf(app, opts) {
   try {
-    return proj.project(app, { behDir: opts.dir || BEH_DIR, repo: repoFor(app, opts.repos) });
+    // `bindingsFile` passed from the SAME `opts` the write path reads, so the
+    // two can never point at different files. They could when `--bindings`
+    // first shipped: the write honoured it, this read did not, and a bind
+    // succeeded while the page went on showing the refusal.
+    return proj.project(app, {
+      behDir: opts.dir || BEH_DIR,
+      bindingsFile: opts.bindings || null,
+      repo: repoFor(app, opts.repos),
+    });
   } catch (e) {
     return { fatal: e.message };
   }
@@ -710,13 +718,19 @@ function serve(opts = {}) {
 }
 
 function parseArgs(argv) {
-  const opts = { dir: BEH_DIR, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
+  const opts = { dir: BEH_DIR, bindings: null, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
   for (let i = 0; i < argv.length; i++) {
     const next = argv[i + 1];
     if (argv[i] === '--port') { opts.port = Number(next); i++; }
     else if (argv[i] === '--host') { opts.host = next; i++; }
     else if (argv[i] === '--repos') { opts.repos = next; i++; }
     else if (argv[i] === '--dir') { opts.dir = next; i++; }
+    // `--bindings` for the same reason `selfhost/run.js` copies the corpus
+    // before running Kit's own generated tests: the bind route WRITES, so a
+    // demo or a harness pointed at the repo's own bindings.json dirties the
+    // working tree of the thing it is measuring. Null means the real file,
+    // which is the right default for the tool he actually opens.
+    else if (argv[i] === '--bindings') { opts.bindings = next; i++; }
   }
   return opts;
 }

@@ -9,7 +9,7 @@
 // and neither changes its shape, so it can be built before either lands
 // ([[option-invariant-half]]).
 //
-//   node project.js <app> [--repo <path>] [--pretty]
+//   node project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]
 //
 // It adds no analysis. Every field below is an existing kit.js export, renamed
 // only where the export's name would be meaningless outside kit.js. If you find
@@ -63,7 +63,7 @@ function readTests(repo) {
   return { files: out, titles, sources };
 }
 
-function project(app, { repo = null, behDir = BEH_DIR } = {}) {
+function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {}) {
   const corpusPath = path.join(behDir, `${app}.beh`);
   if (!fs.existsSync(corpusPath)) return { fatal: `no corpus at ${corpusPath}` };
 
@@ -71,7 +71,21 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   const { behaviours, conflicts, symbols } = kit.resolve(kit.parse(src, `${app}.beh`));
   if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };
 
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  // 🔴 A PARAMETER, not `__dirname`, and this is a defect running the server
+  // found that the suite could not.
+  //
+  // `ui.js` gained `--bindings` so a demo or a harness could exercise the bind
+  // route without writing into the repo it is measuring. The WRITE honoured it
+  // and this READ did not, so a bind reported success, changed the file on
+  // disk, and the page re-read the *other* bindings file and showed the same
+  // refusal — the loop's whole payoff, silently absent. Every test passed
+  // throughout: the node suite asserts the file on disk after a write and
+  // never re-reads the projection, and the frontend suite reads a fixture.
+  //
+  // Kept as an explicit null-defaulting parameter rather than a mutable module
+  // constant so the two paths are impossible to configure apart again — `ui.js`
+  // passes the same value to both.
+  const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));
 
   // The output pane: one generated test per behaviour, with what it could not
   // bind. This is the half of his loop that is "iterating on the output".
@@ -205,14 +219,16 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
 function main(argv) {
   const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--dir');
   if (!app) {
-    console.error('usage: project.js <app> [--repo <path>] [--pretty]');
+    console.error('usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]');
     return 2;
   }
   const ri = argv.indexOf('--repo');
   const di = argv.indexOf('--dir');
+  const bi = argv.indexOf('--bindings');
   const out = project(app, {
     repo: ri >= 0 ? argv[ri + 1] : null,
     behDir: di >= 0 ? argv[di + 1] : BEH_DIR,
+    bindingsFile: bi >= 0 ? argv[bi + 1] : null,
   });
   if (out.fatal) {
     console.error(`project: ${out.fatal} — could not look`);

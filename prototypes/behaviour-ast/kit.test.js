@@ -3160,6 +3160,48 @@ for (const req of CONTRACT.requests) {
   });
 }
 
+test('🔴 a bind and the RE-READ that follows it use the same bindings file', async () => {
+  // The defect running the server found and that every green test missed.
+  //
+  // `--bindings` shipped so a demo could exercise the write without dirtying
+  // the repo it measures. The WRITE honoured it and `project.js` read
+  // `__dirname/bindings.json` regardless, so the POST returned 200, the file
+  // on disk changed, and the page re-read the OTHER file and showed the same
+  // refusal. The loop's entire payoff — bind it and watch the comment become a
+  // test — was silently absent.
+  //
+  // Nothing above could see it: the contract tests assert the FILE after a
+  // write and never re-read the projection, and the frontend suite reads a
+  // fixture. So this test is deliberately shaped as the loop rather than as
+  // the write: refusal → bind → re-read → assertion.
+  const dir = fixture({
+    'zeta.beh': 'behaviour BEH-Z "zeta"\n  actor engineer\n  then sees button:Ping\n',
+  });
+  const bindings = pathx.join(dir, 'bindings.json');
+  fsx.writeFileSync(bindings, '{}\n');
+
+  const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+
+    const before = ui.route('GET', '/api/projects/zeta', { dir, bindings }).body;
+    assert.deepStrictEqual(before.generated[0].missing, ['button:Ping'], 'the noun was not unbound to begin with');
+    assert.match(before.generated[0].code, /UNGENERATED/);
+
+    const res = await post(port, '/api/projects/zeta/bindings',
+      { noun: 'button:Ping', binding: { role: 'button', name: 'Ping' } });
+    assert.strictEqual(res.status, 200, res.body);
+
+    // The re-read, through the same route the browser calls after a write.
+    const after = ui.route('GET', '/api/projects/zeta', { dir, bindings }).body;
+    assert.deepStrictEqual(after.generated[0].missing, [],
+      'the page re-read a DIFFERENT bindings file from the one the write landed in');
+    assert.match(after.generated[0].code, /getByRole\("button", \{ name: "Ping" \}\)/);
+    assert.doesNotMatch(after.generated[0].code, /UNGENERATED/);
+    assert.deepStrictEqual(after.requires.missing, []);
+  } finally { server.close(); }
+});
+
 test('contract: the paths in the fixture are the ones the CLIENT builds, character for character', () => {
   // The frontend asserts this from its side by running `encodeURIComponent`;
   // here it is re-derived from the same arguments, so a hand-edited fixture path
