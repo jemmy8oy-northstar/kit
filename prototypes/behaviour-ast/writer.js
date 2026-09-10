@@ -471,9 +471,13 @@ function addBinding(text, noun, value, opts = {}) {
   if (!isNoun(key)) {
     return { ok: false, error: 'bad-noun', reason: `a noun is <kind>:<Name>, lowercase kind and a capitalised name, got: ${noun}` };
   }
-  if (isComment(key)) {
-    return { ok: false, error: 'bad-noun', reason: '_comment keys are prose for the reader, not bindings' };
-  }
+  // ⚠️ There is deliberately no `isComment(key)` guard here, and there WAS one.
+  // A mutant that deleted it survived, which is the honest report that it was
+  // unreachable: `_comment_kit_ui` has no colon, so `isNoun` has already
+  // refused it as bad-noun. A second refusal that can never fire is a rule
+  // nothing tests and everyone believes ([[an-uncaught-mutation-is-a-finding]]).
+  // `isComment` is still exported — READING the file needs it, to tell prose
+  // from bindings — it just has no job on the write path.
   if (Object.prototype.hasOwnProperty.call(bindings, key)) {
     return {
       ok: false, error: 'already-bound',

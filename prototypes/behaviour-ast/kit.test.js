@@ -1669,6 +1669,43 @@ test('the projection says who ELSE feels a binding, because the namespace is glo
   for (const n of p.requires.nouns) assert.ok(Array.isArray(n.sharedWith), `${n.noun}.sharedWith is not an array`);
 });
 
+test('🔴 a binding that EXISTS and satisfies no verb is reported as insufficient', () => {
+  // Every test above ran against the shipped corpora, and a mutant that
+  // replaced `insufficient` with `[]` SURVIVED all of them — because not one
+  // real corpus currently has an insufficient noun. All nine were
+  // reverse-engineered from apps that already shipped, so every binding was
+  // written with the verb in front of the author, which is requires.js's own
+  // explanation for why nothing had ever caught this class.
+  //
+  // So the case is CONSTRUCTED, and it is the exact one requires.js exists
+  // for: `opens` needs `route` and `lands` needs `urlPattern`, and a page
+  // bound with only `route` is counted BOUND by boundNouns(), reports no
+  // missing noun, and still refuses the `lands` step.
+  const dir = fixture({
+    'eta.beh': 'behaviour BEH-E "eta"\n  actor engineer\n  when opens page:Shelf\n  then lands page:Shelf\n',
+  });
+  const bindings = pathx.join(dir, 'bindings.json');
+  fsx.writeFileSync(bindings, `${JSON.stringify({ 'page:Shelf': { route: './shelf' } }, null, 2)}\n`);
+
+  const p = proj.project('eta', { behDir: dir, bindingsFile: bindings });
+  assert.deepStrictEqual(p.requires.missing.map((n) => n.noun), [], 'it is bound, so it is not missing');
+  assert.deepStrictEqual(p.requires.insufficient.map((n) => n.noun), ['page:Shelf']);
+
+  const [shelf] = p.requires.insufficient;
+  assert.strictEqual(shelf.bound, true);
+  assert.strictEqual(shelf.satisfied, false);
+  assert.deepStrictEqual(shelf.binding, { route: './shelf' }, 'the screen must show the binding that fell short');
+  assert.deepStrictEqual(shelf.needs.filter((n) => n.met).map((n) => n.id), ['route']);
+  assert.deepStrictEqual(shelf.needs.filter((n) => !n.met).map((n) => n.id), ['urlPattern']);
+
+  // And the generator agrees, which is what makes this a real state and not a
+  // report about one: the `opens` step generates and the `lands` step does not.
+  const g = p.generated[0];
+  assert.match(g.code, /page\.goto\("\.\/shelf"\)/);
+  assert.match(g.code, /UNGENERATED: then lands page:Shelf/);
+  assert.deepStrictEqual(g.missing, [], 'boundNouns-style "missing" cannot see this, which is the point');
+});
+
 test('CONTROL: a fully-bound corpus reports nothing missing, so the tests above discriminate', () => {
   // kit-ui is the one corpus every noun of which is bound — it is what made the
   // 5-of-6 execution possible. If this ever reports missing nouns, the checks
@@ -2459,10 +2496,22 @@ test('binding: rebinding an existing noun is REFUSED, and the refusal shows what
   assert.deepStrictEqual(r.current, { route: './' });
 });
 
-test('binding: a _comment key cannot be written as a binding', () => {
-  const r = W.addBinding(BINDINGS_TEXT, '_comment_evil', { role: 'button' });
-  assert.strictEqual(r.ok, false);
-  assert.strictEqual(r.error, 'bad-noun');
+test('binding: a _comment key cannot be written as a binding — by the NOUN grammar', () => {
+  // The error code is the interesting half. `addBinding` used to carry an
+  // explicit `isComment` refusal and a mutant deleting it SURVIVED: a
+  // `_comment*` key has no colon, so `isNoun` refuses it first and the second
+  // check could never fire. The guard was removed rather than left in place
+  // looking load-bearing, and `bad-noun` — not some `bad-comment` code — is
+  // what records that the grammar is what stops it.
+  for (const k of ['_comment', '_comment_kit_ui', '_comment_macro_metrics']) {
+    const r = W.addBinding(BINDINGS_TEXT, k, { role: 'button' });
+    assert.strictEqual(r.ok, false, `${k} was accepted`);
+    assert.strictEqual(r.error, 'bad-noun', k);
+  }
+  // And the reader-side helper still knows one when it sees one, which is what
+  // it is for now that it has no job on the write path.
+  assert.strictEqual(W.isComment('_comment_kit_ui'), true);
+  assert.strictEqual(W.isComment('button:Save'), false);
 });
 
 test('binding: a malformed noun is refused before anything is written', () => {
@@ -3199,6 +3248,29 @@ test('🔴 a bind and the RE-READ that follows it use the same bindings file', a
     assert.match(after.generated[0].code, /getByRole\("button", \{ name: "Ping" \}\)/);
     assert.doesNotMatch(after.generated[0].code, /UNGENERATED/);
     assert.deepStrictEqual(after.requires.missing, []);
+  } finally { server.close(); }
+});
+
+test('binding to an app with no corpus is a 404, not a write against nothing', async () => {
+  // A mutant removing this check SURVIVED, so nothing was exercising it. It is
+  // not a tidiness rule: `sharedWith` excludes the app you name, and an app
+  // that does not exist excludes nothing and matches nothing — so the write
+  // would succeed and report "no other corpus uses this noun" without having
+  // looked at a corpus at all. The quiet wrong answer, not a loud one.
+  const dir = fixture({ 'theta.beh': 'behaviour BEH-T "theta"\n  actor engineer\n  then sees button:Go\n' });
+  const bindings = pathx.join(dir, 'bindings.json');
+  fsx.writeFileSync(bindings, '{}\n');
+  const before = fsx.readFileSync(bindings, 'utf8');
+
+  const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const res = await post(port, '/api/projects/nosuchapp/bindings',
+      { noun: 'button:Go', binding: { role: 'button', name: 'Go' } });
+    assert.strictEqual(res.status, 404, res.body);
+    assert.strictEqual(JSON.parse(res.body).error, 'no-such-project');
+    assert.ok(JSON.parse(res.body).known.includes('theta'), 'the refusal must say what does exist');
+    assert.strictEqual(fsx.readFileSync(bindings, 'utf8'), before, 'a refused bind wrote to the file');
   } finally { server.close(); }
 });
 
