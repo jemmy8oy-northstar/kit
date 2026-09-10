@@ -2286,6 +2286,77 @@ test('converge: it is a measurement and not a gate — no threshold, no exit 1',
   assert.ok(returns.includes('2'), 'it must still be able to say it could not look');
 });
 
+// ── the write contract, from the server side ────────────────────────────────
+//
+// The other half of the pin in `ui/src/test/fixtures/write-contract.json`. The
+// frontend suite stubs `fetch`, so it can only ever prove the client emits the
+// paths and bodies IT believes in; this half takes the same literals out of the
+// same file and drives them into a real `ui.js` over a real socket, then asserts
+// the corpus on disk.
+//
+// Neither suite alone can see the two disagreeing. A client that built
+// `/behaviour/BEH-G/steps` (singular) would keep the frontend green over its own
+// stub and keep this file green over its own hand-typed path — the seam is
+// exactly where a green suite proves the mock.
+
+const CONTRACT = JSON.parse(fsx.readFileSync(
+  pathx.join(__dirname, 'ui', 'src', 'test', 'fixtures', 'write-contract.json'), 'utf8'));
+
+test('the write contract fixture is not empty, and covers both routes', () => {
+  // A loop over an empty list passes, silently and forever. The fixture is the
+  // shared artefact both suites read, so the population it declares is itself
+  // worth asserting.
+  assert.ok(CONTRACT.requests.length >= 4, `only ${CONTRACT.requests.length} contract requests`);
+  const paths = CONTRACT.requests.map((r) => r.path);
+  assert.ok(paths.some((p) => /\/steps$/.test(p)), 'no add-step request in the contract');
+  assert.ok(paths.some((p) => /\/behaviours$/.test(p)), 'no add-behaviour request in the contract');
+  assert.ok(paths.some((p) => /%20/.test(p)), 'nothing in the contract exercises a percent-encoded name');
+  assert.ok(CONTRACT.requests.some((r) => r.expect.status === 409), 'the contract only covers the happy path');
+});
+
+for (const req of CONTRACT.requests) {
+  test(`contract: ${req.method} ${req.path} — ${req.what}`, async () => {
+    // A fresh corpus per request: these write, and a shared directory would make
+    // them depend on the order they run in.
+    const dir = fixture(CONTRACT.corpus);
+    const target = pathx.join(dir, `${req.call.args[0]}.beh`);
+    const before = fsx.readFileSync(target, 'utf8');
+    const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+    try {
+      const { port } = server.address();
+      const res = await post(port, req.path, req.body, null, req.contentType);
+      assert.strictEqual(res.status, req.expect.status,
+        `${req.path} answered ${res.status}: ${res.body}`);
+
+      const after = fsx.readFileSync(target, 'utf8');
+      if (req.expect.fileMustNotChange) {
+        // The FILE, not the status. A 409 that still wrote is the failure being
+        // guarded against, and a status-only assertion passes straight over it.
+        assert.strictEqual(after, before, 'a refused edit changed the corpus');
+        assert.ok(JSON.parse(res.body).reason, 'a refusal must carry a sentence, not just a code');
+      } else {
+        assert.ok(after.includes(req.expect.fileMustMatch),
+          `the corpus does not contain ${req.expect.fileMustMatch}`);
+        assert.strictEqual(JSON.parse(res.body).committed, false);
+      }
+    } finally { server.close(); }
+  });
+}
+
+test('contract: the paths in the fixture are the ones the CLIENT builds, character for character', () => {
+  // The frontend asserts this from its side by running `encodeURIComponent`;
+  // here it is re-derived from the same arguments, so a hand-edited fixture path
+  // cannot make both suites agree on something the client would never send. This
+  // is the assertion that catches a red test being "fixed" by editing the pin.
+  for (const req of CONTRACT.requests) {
+    const [app, id] = req.call.args;
+    const expected = req.call.fn === 'addStep'
+      ? `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps`
+      : `/api/projects/${encodeURIComponent(app)}/behaviours`;
+    assert.strictEqual(req.path, expected, `${req.what}: the fixture path is not what the client builds`);
+  }
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

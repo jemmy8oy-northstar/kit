@@ -138,3 +138,29 @@ export interface ProjectDetail {
   surface: { errors: string[]; served: string[]; unserved: string[] }
   questions: unknown[]
 }
+
+/** The body `POST /api/projects/<app>/behaviours` takes. */
+export interface NewBehaviour {
+  id: string
+  title: string
+  actor?: string
+  steps?: string[]
+}
+
+/**
+ * What both write routes return.
+ *
+ * `committed` is always `false` and is sent on every write on purpose — decision
+ * 2 in `docs/design/ui.md` stops at the working tree, and a caller that assumes
+ * otherwise should find out here rather than when the branch turns out empty.
+ * The UI renders it for the same reason: the boundary is only a guarantee to him
+ * if he can see it holding.
+ */
+export interface WriteResult {
+  ok: true
+  app: string
+  behaviour: string
+  file: string
+  committed: false
+  note: string
+}

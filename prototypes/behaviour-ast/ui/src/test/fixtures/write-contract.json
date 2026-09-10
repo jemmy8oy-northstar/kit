@@ -1,0 +1,59 @@
+{
+  "why": [
+    "The seam between the browser client and ui.js, pinned from BOTH sides against these literals.",
+    "",
+    "The frontend suite stubs fetch and the node suite drives a real socket, so neither can",
+    "see the two disagreeing: the client could build /api/projects/x/behaviour/ID/steps",
+    "(singular) and both suites would stay green — one over its own stub, the other over its",
+    "own hand-typed path. A green suite over a mock proves the mock.",
+    "",
+    "So the paths and bodies below are written down ONCE. client.test.ts asserts the client",
+    "emits exactly these; kit.test.js feeds exactly these to a running ui.js and asserts the",
+    "file on disk changed. Drift on either side turns one of them red."
+  ],
+  "corpus": {
+    "gamma.beh": "# a comment that must survive\nbehaviour BEH-G \"gamma\"\n  actor engineer\n  when opens page:Home\n",
+    "two words.beh": "behaviour BEH-W \"spaced\"\n  actor engineer\n  when opens page:Home\n"
+  },
+  "requests": [
+    {
+      "what": "add one step to a behaviour that exists",
+      "call": { "fn": "addStep", "args": ["gamma", "BEH-G", "then sees region:Main"] },
+      "method": "POST",
+      "path": "/api/projects/gamma/behaviours/BEH-G/steps",
+      "contentType": "application/json",
+      "body": { "step": "then sees region:Main" },
+      "expect": { "status": 200, "fileMustMatch": "then sees region:Main" }
+    },
+    {
+      "what": "add a whole new behaviour, actor included",
+      "call": {
+        "fn": "addBehaviour",
+        "args": ["gamma", { "id": "BEH-NEW", "title": "the cut is downloadable", "actor": "editor" }]
+      },
+      "method": "POST",
+      "path": "/api/projects/gamma/behaviours",
+      "contentType": "application/json",
+      "body": { "id": "BEH-NEW", "title": "the cut is downloadable", "actor": "editor" },
+      "expect": { "status": 200, "fileMustMatch": "behaviour BEH-NEW \"the cut is downloadable\"" }
+    },
+    {
+      "what": "an app name that has to survive the URL, and a behaviour id that does too",
+      "call": { "fn": "addStep", "args": ["two words", "BEH-W", "then sees region:Main"] },
+      "method": "POST",
+      "path": "/api/projects/two%20words/behaviours/BEH-W/steps",
+      "contentType": "application/json",
+      "body": { "step": "then sees region:Main" },
+      "expect": { "status": 200, "fileMustMatch": "then sees region:Main" }
+    },
+    {
+      "what": "a step the grammar refuses — the corpus must be untouched and the reason must travel",
+      "call": { "fn": "addStep", "args": ["gamma", "BEH-G", "wibble region:Main"] },
+      "method": "POST",
+      "path": "/api/projects/gamma/behaviours/BEH-G/steps",
+      "contentType": "application/json",
+      "body": { "step": "wibble region:Main" },
+      "expect": { "status": 409, "fileMustNotChange": true }
+    }
+  ]
+}

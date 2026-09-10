@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import BehaviourPage from './BehaviourPage'
 import habits from '../test/fixtures/project-james-habits-app.json'
@@ -53,5 +53,140 @@ describe('BehaviourPage', () => {
 
     expect(await screen.findByText('No such behaviour')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('BEH-NOPE-9')
+  })
+})
+
+// ── the write loop: his step 3, on the page where the output is in view ──────
+
+/**
+ * A scripted fetch: each call takes the next response off the queue, so a test
+ * can say "the read, then the write, then the read again" and assert the order.
+ *
+ * A single stubbed response cannot express the thing being tested here — that
+ * the page RE-READS after a write — because a re-read would hand back the same
+ * body and look identical to never having happened.
+ */
+function scripted(responses: { ok: boolean; status: number; body: unknown }[]) {
+  const calls: { url: string; init?: RequestInit }[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init })
+      const next = responses.shift()
+      if (!next) throw new Error(`unscripted fetch: ${url}`)
+      return { ok: next.ok, status: next.status, statusText: 'x', json: async () => next.body }
+    }),
+  )
+  return calls
+}
+
+const wrote = {
+  ok: true,
+  status: 200,
+  body: {
+    ok: true,
+    app: 'snip-it',
+    behaviour: 'BEH-HOME-1',
+    file: 'behaviours/snip-it.beh',
+    committed: false,
+    note: 'written to the working tree',
+  },
+}
+
+function renderScripted(
+  responses: { ok: boolean; status: number; body: unknown }[],
+  app: string,
+  id: string,
+) {
+  const calls = scripted(responses)
+  render(
+    <MemoryRouter initialEntries={[`/projects/${app}/behaviours/${id}`]}>
+      <Routes>
+        <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+  return calls
+}
+
+const typeStep = (text: string) =>
+  fireEvent.change(screen.getByLabelText('Step'), { target: { value: text } })
+
+describe('adding a step from the page that shows the output', () => {
+  it('POSTs the line as typed, then re-reads so the regenerated test is what you see', async () => {
+    // The re-read IS the loop. Kit derives the test from the corpus on every
+    // read, so without it the page shows his new step beside the test that
+    // predates it — which looks like the generator ignored him, and is worse
+    // than showing nothing at all.
+    const second = structuredClone(snipIt)
+    second.generated[0].code = 'test("[BEH-HOME-1] regenerated after the write", () => {})'
+
+    const calls = renderScripted(
+      [{ ok: true, status: 200, body: snipIt }, wrote, { ok: true, status: 200, body: second }],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    await screen.findByRole('heading', { name: 'The landing page renders', level: 1 })
+    typeStep('then sees button:Save')
+    fireEvent.click(screen.getByRole('button', { name: 'Add step' }))
+
+    expect(await screen.findByText(/regenerated after the write/)).toBeInTheDocument()
+
+    // Three calls in this order: the read, the write carrying the typed line,
+    // and the read that followed it.
+    expect(calls.map((c) => c.init?.method ?? 'GET')).toEqual(['GET', 'POST', 'GET'])
+    expect(calls[1].url).toBe('/api/projects/snip-it/behaviours/BEH-HOME-1/steps')
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({ step: 'then sees button:Save' })
+  })
+
+  it('says which file was written, and that Kit did not commit it', async () => {
+    // Decision 2's boundary is only a guarantee to him if he can watch it hold.
+    renderScripted(
+      [{ ok: true, status: 200, body: snipIt }, wrote, { ok: true, status: 200, body: snipIt }],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    await screen.findByRole('heading', { name: 'The landing page renders', level: 1 })
+    typeStep('then sees button:Save')
+    fireEvent.click(screen.getByRole('button', { name: 'Add step' }))
+
+    const note = await screen.findByRole('status')
+    expect(note).toHaveTextContent('behaviours/snip-it.beh')
+    expect(note).toHaveTextContent(/Not committed/)
+  })
+
+  it('shows the corpus’s own refusal, and keeps what he typed so he can fix it', async () => {
+    // A refused edit is the most useful thing the write path produces: the
+    // sentence names what is wrong with the line. Clearing the input on refusal
+    // would make him retype it to find out.
+    renderScripted(
+      [
+        { ok: true, status: 200, body: snipIt },
+        { ok: false, status: 409, body: { error: 'bad-step', reason: 'kit.js cannot parse: wibble region:Main' } },
+      ],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    await screen.findByRole('heading', { name: 'The landing page renders', level: 1 })
+    typeStep('wibble region:Main')
+    fireEvent.click(screen.getByRole('button', { name: 'Add step' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('kit.js cannot parse: wibble region:Main')
+    expect(screen.getByLabelText('Step')).toHaveValue('wibble region:Main')
+    // And no success note beside the failure — the two states must not co-exist.
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('will not send a blank step at all', async () => {
+    // The server refuses it too, and that refusal is the real guard. This only
+    // keeps a pointless round-trip out of the loop.
+    const calls = renderScripted([{ ok: true, status: 200, body: snipIt }], 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByRole('heading', { name: 'The landing page renders', level: 1 })
+    expect(screen.getByRole('button', { name: 'Add step' })).toBeDisabled()
+    expect(calls).toHaveLength(1)
   })
 })

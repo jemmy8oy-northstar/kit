@@ -1,19 +1,26 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, Card } from '@jemmy8oy-northstar/design-system'
-import { fetchProject } from '../api/client'
-import { useResource } from '../hooks/useResource'
+import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
+import { addStep, fetchProject } from '../api/client'
+import { useReloadableResource } from '../hooks/useResource'
 import type { Generated, ProjectDetail, Step } from '../api/types'
 import ResourceView from '../components/Resource'
 import Count from '../components/Count'
+import WriteResultNote from '../components/WriteResultNote'
+import { useWrite } from '../components/useWrite'
 
 /**
- * Step 2 of his loop: "iterating on the output" — the behaviour and the test
- * Kit generates from it, side by side, so the two can be compared without
- * running anything.
+ * Steps 2 and 3 of his loop, on one page, which is the point: "iterating on the
+ * output" is the behaviour and its generated test side by side, and "creating
+ * new assertions based on what I see" is being able to add a step *while looking
+ * at them* and watch the test change.
+ *
+ * Separating those two into different screens would break the loop he described
+ * — the whole value is that the output is in view when you decide what to assert.
  */
 export default function BehaviourPage() {
   const { app = '', id = '' } = useParams()
-  const project = useResource(() => fetchProject(app), [app])
+  const { resource, reload } = useReloadableResource(() => fetchProject(app), [app])
 
   return (
     <>
@@ -21,14 +28,22 @@ export default function BehaviourPage() {
         <Link to="/">Projects</Link> / <Link to={`/projects/${encodeURIComponent(app)}`}>{app}</Link> / {id}
       </p>
 
-      <ResourceView resource={project}>
-        {(value) => <Detail project={value} id={id} />}
+      <ResourceView resource={resource}>
+        {(value) => <Detail project={value} id={id} onWrote={reload} />}
       </ResourceView>
     </>
   )
 }
 
-function Detail({ project, id }: { project: ProjectDetail; id: string }) {
+function Detail({
+  project,
+  id,
+  onWrote,
+}: {
+  project: ProjectDetail
+  id: string
+  onWrote: () => void
+}) {
   const behaviour = project.behaviours.find((b) => b.id === id)
 
   // A behaviour id that is not in the corpus is a wrong URL, not an empty
@@ -69,6 +84,7 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
               </li>
             ))}
           </ol>
+          <AddStepForm app={project.app} id={behaviour.id} onWrote={onWrote} />
         </section>
 
         <section>
@@ -78,6 +94,73 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
       </div>
     </>
   )
+}
+
+/**
+ * His step 3, at the smallest useful size: one line of corpus, appended to the
+ * behaviour already on screen.
+ *
+ * The input takes the step **as it is typed into the corpus** (`then sees
+ * button:Save`) rather than offering a verb dropdown and a noun picker. That is
+ * deliberate and it is the cheaper thing to be wrong about: a form that knew the
+ * grammar would be a second definition of what a step is, and `writer.js`
+ * already refuses to hold one — it validates by re-parsing the whole file with
+ * `kit.js`, so there is exactly one grammar in the system. A picker here would
+ * drift from it silently. If typing turns out to be the friction, the picker can
+ * be added over a working loop; a second grammar cannot be removed from one.
+ */
+function AddStepForm({ app, id, onWrote }: { app: string; id: string; onWrote: () => void }) {
+  const [line, setLine] = useState('')
+  const { write, run } = useWrite(onWrote)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    await run(async () => {
+      const result = await addStep(app, id, line)
+      setLine('')
+      return result
+    })
+  }
+
+  return (
+    <form onSubmit={submit} className="write">
+      <h3>Add a step</h3>
+      <label htmlFor="new-step">Step</label>
+      <Input
+        id="new-step"
+        // The placeholder is a real step from a real corpus rather than
+        // `<verb> <noun>`: the grammar is learnable from one example and not
+        // from a schema.
+        placeholder="then sees button:Save"
+        value={line}
+        onChange={(e) => setLine(e.target.value)}
+        invalid={write.state === 'refused'}
+      />
+      <Button type="submit" disabled={write.state === 'saving' || line.trim() === ''}>
+        {write.state === 'saving' ? 'Writing…' : 'Add step'}
+      </Button>
+      <WriteFeedback write={write} />
+    </form>
+  )
+}
+
+/**
+ * Shared by both forms so a refusal cannot be reported one way here and another
+ * way there — the message from the corpus is the same message wherever the edit
+ * came from.
+ */
+export function WriteFeedback({ write }: { write: ReturnType<typeof useWrite>['write'] }) {
+  if (write.state === 'refused') {
+    return (
+      <Card elevation="flat">
+        <p role="alert">{write.message}</p>
+      </Card>
+    )
+  }
+  if (write.state === 'wrote') {
+    return <WriteResultNote result={write.result} />
+  }
+  return null
 }
 
 function StepLine({ step }: { step: Step }) {
