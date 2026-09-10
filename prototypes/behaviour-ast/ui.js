@@ -273,7 +273,12 @@ function bundle(pathname, distDir = DIST_DIR) {
     return html(503, '<!doctype html><html><head><meta charset="utf-8">'
       + '<title>Kit UI — not built</title></head><body>'
       + '<h1>The Kit UI has not been built</h1>'
-      + `<p>The API is running and answering. The bundle is not in <code>${distDir}</code>,`
+      // Relative to cwd, like the write response's `file`. Not cosmetic: this
+      // page is screenshotted into public PRs, and an absolute path names the
+      // filesystem of whatever host is running it. It also reads better — the
+      // path a person can act on is the one relative to where they typed the
+      // command.
+      + `<p>The API is running and answering. The bundle is not in <code>${path.relative(process.cwd(), distDir) || distDir}</code>,`
       + ' which is gitignored, so a fresh clone has to build it once:</p>'
       + `<pre>${BUILD_CMD}</pre>`
       + '<p>Then reload this page. While iterating on the UI itself, run'
