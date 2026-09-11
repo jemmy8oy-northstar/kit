@@ -3804,6 +3804,435 @@ test('git-store: the commit message describes the edit and names the app', () =>
   assert.strictEqual(gitStore.message('bind page:Home', null), 'kit: bind page:Home');
 });
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// auth.js — one password, so a write can be accepted from somewhere that is not
+// loopback (kit#46, executing James's choice on kit#44).
+//
+// The tests that matter most here are the REFUSALS. A lock that opens for the
+// right password is the easy half and the half a demo shows; the half that has
+// to hold is every route by which someone without it gets in. So each "works"
+// test below has a sibling asserting the same path stays shut.
+// ─────────────────────────────────────────────────────────────────────────────
+const auth = require('./auth.js');
+
+test('auth: a password that is unset, empty or only spaces is NOT a lock', () => {
+  assert.strictEqual(auth.enabled({}), false, 'unset');
+  assert.strictEqual(auth.enabled({ password: '' }), false, 'empty');
+  assert.strictEqual(auth.enabled({ password: '   ' }), false, 'whitespace');
+  assert.strictEqual(auth.enabled({ password: null }), false, 'null');
+  assert.strictEqual(auth.enabled({ password: 'hunter2' }), true);
+});
+
+// The inversion this guards against is specific: if the empty string counted as
+// a password, a Kubernetes secret that exists but is empty would mean every
+// caller sending no password at all authenticated successfully.
+test('auth: an empty configured password cannot be matched by an empty attempt', () => {
+  assert.strictEqual(auth.secretsMatch('', ''), true, 'the primitive compares them equal');
+  assert.strictEqual(auth.enabled({ password: '' }), false,
+    'but enabled() refuses to call it a lock, which is what keeps the route shut');
+});
+
+test('auth: secretsMatch is true only for identical strings, whatever the lengths', () => {
+  assert.strictEqual(auth.secretsMatch('correct horse', 'correct horse'), true);
+  assert.strictEqual(auth.secretsMatch('correct horse', 'correct hors'), false, 'prefix');
+  assert.strictEqual(auth.secretsMatch('a', 'a much longer secret entirely'), false, 'length differs');
+  assert.strictEqual(auth.secretsMatch('x', undefined), false, 'undefined');
+  assert.strictEqual(auth.secretsMatch(null, null), false, 'two non-strings are not a match');
+  assert.strictEqual(auth.secretsMatch('x', 0), false, 'number');
+});
+
+test('auth: cookies parse out of the shapes a real browser sends', () => {
+  assert.deepStrictEqual(auth.parseCookies(''), {});
+  assert.deepStrictEqual(auth.parseCookies(null), {});
+  assert.deepStrictEqual(auth.parseCookies('kit_session=abc'), { kit_session: 'abc' });
+  assert.deepStrictEqual(auth.parseCookies('a=1; kit_session=abc; b=2'), { a: '1', kit_session: 'abc', b: '2' });
+  assert.deepStrictEqual(auth.parseCookies('kit_session=abc;'), { kit_session: 'abc' }, 'trailing semicolon');
+  // A base64 value ends in an equals sign and split would truncate it to
+  // something that never matches a stored token — a sign-in that appears to
+  // work and then does not.
+  assert.deepStrictEqual(auth.parseCookies('t=YWJj=='), { t: 'YWJj==' }, 'value containing equals');
+  assert.deepStrictEqual(auth.parseCookies('=novalue'), {}, 'a nameless cookie is skipped');
+  assert.deepStrictEqual(auth.parseCookies('garbage'), {}, 'no equals at all');
+});
+
+test('auth: a session is valid until it is destroyed, and an unknown token never is', () => {
+  const s = auth.sessions();
+  const token = s.create();
+  assert.strictEqual(s.valid(token), true);
+  assert.strictEqual(s.valid('not-a-token'), false);
+  assert.strictEqual(s.valid(''), false);
+  assert.strictEqual(s.valid(undefined), false);
+  s.destroy(token);
+  assert.strictEqual(s.valid(token), false, 'signing out ends it');
+});
+
+test('auth: two sessions never collide, and tokens are long enough not to be guessed', () => {
+  const s = auth.sessions();
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) seen.add(s.create());
+  assert.strictEqual(seen.size, 200, 'every token distinct');
+  for (const t of seen) assert.strictEqual(t.length, 64, '32 random bytes as hex');
+});
+
+test('auth: a session expires on its own, without anyone signing out', () => {
+  let clock = 1000;
+  const s = auth.sessions(() => clock);
+  const token = s.create();
+  assert.strictEqual(s.valid(token), true);
+  clock += auth.TTL_MS - 1;
+  assert.strictEqual(s.valid(token), true, 'still inside the window');
+  clock += 2;
+  assert.strictEqual(s.valid(token), false, 'past it');
+  assert.strictEqual(s.size, 0, 'and it is swept, so the map cannot grow forever');
+});
+
+test('auth: the cookie carries the flags that make it useless to another site', () => {
+  const h = auth.cookieHeader('tok', {});
+  assert.match(h, /^kit_session=tok/);
+  assert.match(h, /HttpOnly/, 'page script must not be able to read it');
+  assert.match(h, /SameSite=Strict/, 'the second CSRF defence, holding without a preflight');
+  assert.match(h, /Path=\//);
+  assert.match(h, /Max-Age=604800/);
+  assert.ok(!/Secure/.test(h), 'plain http locally: a Secure cookie would never come back');
+  assert.match(auth.cookieHeader('tok', { secure: true }), /Secure/, 'deployed behind TLS it must be set');
+});
+
+test('auth: clearing the cookie expires it immediately', () => {
+  const h = auth.clearCookieHeader({});
+  assert.match(h, /^kit_session=;/);
+  assert.match(h, /Max-Age=0/);
+});
+
+test('auth: signedIn fails CLOSED when there is no store at all', () => {
+  assert.strictEqual(auth.signedIn(null, 'kit_session=anything'), false);
+  assert.strictEqual(auth.signedIn(undefined, 'kit_session=anything'), false);
+  assert.strictEqual(auth.signedIn({}, 'kit_session=anything'), false, 'an object that is not a store');
+});
+
+test('auth: the throttle allows a few wrong guesses, then refuses for a growing wait', () => {
+  let clock = 0;
+  const t = auth.throttle(() => clock);
+  for (let i = 0; i < auth.FREE_ATTEMPTS - 1; i++) {
+    t.fail();
+    assert.strictEqual(t.retryAfterMs(), 0, 'still inside the free allowance');
+  }
+  t.fail();
+  assert.strictEqual(t.retryAfterMs(), auth.COOLDOWN_BASE_MS,
+    'the FREE_ATTEMPTS-th failure closes the door, so exactly that many were free');
+  clock += auth.COOLDOWN_BASE_MS;
+  assert.strictEqual(t.retryAfterMs(), 0, 'and it lapses on its own');
+  t.fail();
+  assert.strictEqual(t.retryAfterMs(), auth.COOLDOWN_BASE_MS * 2, 'the next doubles');
+});
+
+// Unbounded doubling reaches Infinity and locks the owner out permanently,
+// which turns a throttle into a denial of service against the person it
+// protects.
+test('auth: the cooldown is capped rather than doubling forever', () => {
+  let clock = 0;
+  const t = auth.throttle(() => clock);
+  for (let i = 0; i < 200; i++) t.fail();
+  const wait = t.retryAfterMs();
+  assert.ok(Number.isFinite(wait), 'never Infinity');
+  assert.strictEqual(wait, auth.COOLDOWN_MAX_MS);
+});
+
+test('auth: a correct password clears the record, so a typo is not held against you', () => {
+  let clock = 0;
+  const t = auth.throttle(() => clock);
+  for (let i = 0; i < 20; i++) t.fail();
+  assert.ok(t.retryAfterMs() > 0);
+  t.succeed();
+  assert.strictEqual(t.retryAfterMs(), 0);
+  assert.strictEqual(t.failures, 0);
+});
+
+// ── the gate itself, through ui.route ────────────────────────────────────────
+
+const LOCKED = (extra = {}) => ({
+  dir: uiDir, password: 'hunter2', sessions: auth.sessions(), throttle: auth.throttle(), ...extra,
+});
+const signIn = (opts, password = 'hunter2') =>
+  ui.route('POST', '/api/session', opts, { password }, null, null);
+const cookieFrom = (res) => (res.setCookie || '').split(';')[0];
+
+test('gate: with NO password the loopback rule is exactly what it was', () => {
+  const open = { dir: uiDir };
+  const noRoute = ui.write('/api/session', open, {}, (s, b) => ({ status: s, body: b }), null, null);
+  assert.strictEqual(noRoute.status, 404, 'there is no sign-in route on a Kit without a password');
+  const remote = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps',
+    { dir: uiDir, host: '0.0.0.0' }, { step: 'then sees region:Main' });
+  assert.strictEqual(remote.status, 403);
+  assert.strictEqual(remote.body.error, 'not-loopback', 'the old rule, untouched');
+});
+
+test('gate: with a password, a write carrying no session is 401', () => {
+  const res = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps', LOCKED(), { step: 'then sees region:Main' });
+  assert.strictEqual(res.status, 401);
+  assert.strictEqual(res.body.error, 'not-signed-in');
+});
+
+// 🔴 The hole kit#44 measured, asserted directly. The old gate asked where the
+// SERVER was bound, so a proxy in front of a loopback Kit opened every write.
+// A password must not have a loopback bypass hiding underneath it.
+test('gate: a password has NO loopback bypass — local and unsigned is still 401', () => {
+  const res = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps',
+    LOCKED({ host: '127.0.0.1' }), { step: 'then sees region:Main' });
+  assert.strictEqual(res.status, 401, 'being local does not substitute for signing in');
+  assert.strictEqual(res.body.error, 'not-signed-in');
+});
+
+test('gate: the wrong password is refused and says nothing about which part was wrong', () => {
+  const opts = LOCKED();
+  const wrong = signIn(opts, 'hunter3');
+  assert.strictEqual(wrong.status, 401);
+  assert.strictEqual(wrong.body.error, 'bad-password');
+  assert.ok(!wrong.setCookie, 'and mints nothing');
+  const missing = ui.route('POST', '/api/session', opts, {}, null, null);
+  assert.strictEqual(missing.body.error, 'bad-password',
+    'a missing password reads identically to a wrong one');
+  const notAString = ui.route('POST', '/api/session', opts,
+    { password: { toString: () => 'hunter2' } }, null, null);
+  assert.strictEqual(notAString.status, 401,
+    'an object that stringifies to the password is not the password');
+});
+
+test('gate: the right password mints a session, and that session can write', () => {
+  const opts = LOCKED();
+  const res = signIn(opts);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.body.signedIn, true);
+  assert.ok(res.setCookie, 'a cookie is set');
+  const token = cookieFrom(res).split('=')[1];
+  assert.ok(!JSON.stringify(res.body).includes(token),
+    'the token is NOT in the body — HttpOnly is worthless if page script is handed it too');
+
+  const writable = fixture({ 'gamma.beh': 'behaviour BEH-G "gamma"\n  actor engineer\n  when opens page:Home\n' });
+  const wrote = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps',
+    { ...opts, dir: writable }, { step: 'then sees region:Main' }, null, cookieFrom(res));
+  assert.strictEqual(wrote.status, 200, JSON.stringify(wrote.body));
+});
+
+test('gate: a forged or stale cookie does not write', () => {
+  const opts = LOCKED();
+  signIn(opts);
+  for (const forged of ['kit_session=deadbeef', 'kit_session=', 'other=x', '']) {
+    const res = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps', opts,
+      { step: 'then sees region:Main' }, null, forged);
+    assert.strictEqual(res.status, 401, 'a cookie that no store minted must not authenticate');
+  }
+});
+
+test('gate: signing out ends the session and clears the cookie', () => {
+  const opts = LOCKED();
+  const cookie = cookieFrom(signIn(opts));
+  const out = ui.route('POST', '/api/session/end', opts, null, null, cookie);
+  assert.strictEqual(out.status, 200);
+  assert.strictEqual(out.body.signedIn, false);
+  assert.match(out.setCookie, /Max-Age=0/);
+  const after = ui.route('POST', '/api/projects/gamma/behaviours/BEH-G/steps', opts,
+    { step: 'then sees region:Main' }, null, cookie);
+  assert.strictEqual(after.status, 401, 'the token is dead server-side, not merely forgotten by the browser');
+});
+
+// Signing out twice, or after a restart wiped the store, must still leave the
+// browser without a cookie — otherwise the page believes it is signed in and
+// every write 401s with no route back to the form.
+test('gate: signing out with no session still clears the cookie', () => {
+  const out = ui.route('POST', '/api/session/end', LOCKED(), null, null, 'kit_session=never-existed');
+  assert.strictEqual(out.status, 200);
+  assert.match(out.setCookie, /Max-Age=0/);
+});
+
+test('gate: GET /api/session tells the page which of the three states it is in', () => {
+  const open = ui.route('GET', '/api/session', { dir: uiDir });
+  assert.deepStrictEqual(open.body, { required: false, signedIn: true },
+    'no lock: nothing to sign in to, so nothing is withheld');
+
+  const opts = LOCKED();
+  const out = ui.route('GET', '/api/session', opts, null, null, null);
+  assert.deepStrictEqual(out.body, { required: true, signedIn: false });
+  const cookie = cookieFrom(signIn(opts));
+  const inn = ui.route('GET', '/api/session', opts, null, null, cookie);
+  assert.deepStrictEqual(inn.body, { required: true, signedIn: true });
+});
+
+test('gate: too many wrong guesses stops the guessing', () => {
+  const opts = LOCKED();
+  for (let i = 0; i < auth.FREE_ATTEMPTS - 1; i++) {
+    assert.strictEqual(signIn(opts, 'nope').status, 401, 'a free attempt is evaluated, not refused');
+  }
+  assert.strictEqual(signIn(opts, 'nope').status, 401, 'the last free one is still answered on its merits');
+  const blocked = signIn(opts, 'nope');
+  assert.strictEqual(blocked.status, 429);
+  assert.ok(blocked.body.retryAfterSeconds > 0);
+  // And the correct password is refused too while blocked — otherwise the
+  // throttle is only an inconvenience to someone who already knows it.
+  assert.strictEqual(signIn(opts, 'hunter2').status, 429);
+});
+
+// ── which origins may write ─────────────────────────────────────────────────
+
+test('origin: loopback is always allowed, with or without a public origin', () => {
+  for (const o of ['http://127.0.0.1:4321', 'http://localhost:5173']) {
+    assert.strictEqual(ui.originAllowed(o, {}), true, o);
+  }
+});
+
+test('origin: a deployment accepts exactly its own origin', () => {
+  const opts = { publicOrigin: 'https://balenthiran.co.uk' };
+  assert.strictEqual(ui.originAllowed('https://balenthiran.co.uk', opts), true);
+  assert.strictEqual(ui.originAllowed('https://balenthiran.co.uk:443', opts), true,
+    'the default port is the same origin');
+});
+
+// 🔴 The classic way this check is written wrong. A suffix or substring test
+// accepts every one of these.
+test('origin: a lookalike host is refused', () => {
+  const opts = { publicOrigin: 'https://balenthiran.co.uk' };
+  const lookalikes = [
+    'https://balenthiran.co.uk.evil.com',
+    'https://evil-balenthiran.co.uk',
+    'https://evil.com',
+    'http://balenthiran.co.uk',
+    'https://balenthiran.co.uk:8443',
+    'https://sub.balenthiran.co.uk',
+    'null',
+    'not a url at all',
+  ];
+  for (const evil of lookalikes) {
+    assert.strictEqual(ui.originAllowed(evil, opts), false, 'a lookalike origin must NOT be allowed');
+  }
+});
+
+test('origin: with no public origin configured, only loopback writes', () => {
+  assert.strictEqual(ui.originAllowed('https://balenthiran.co.uk', {}), false);
+});
+
+test('origin: a cross-origin write is refused BEFORE the password is even looked at', () => {
+  const opts = LOCKED();
+  const res = ui.route('POST', '/api/session', opts, { password: 'hunter2' }, 'https://evil.com', null);
+  assert.strictEqual(res.status, 403);
+  assert.strictEqual(res.body.error, 'cross-origin-write',
+    'otherwise any page on the internet could run a guessing loop through his browser');
+  assert.ok(!res.setCookie);
+});
+
+test('origin: the deployed page itself signs in and writes', () => {
+  const opts = LOCKED({ publicOrigin: 'https://balenthiran.co.uk', secure: true });
+  const res = ui.route('POST', '/api/session', opts, { password: 'hunter2' },
+    'https://balenthiran.co.uk', null);
+  assert.strictEqual(res.status, 200, JSON.stringify(res.body));
+  assert.match(res.setCookie, /Secure/, 'behind TLS the cookie must be Secure');
+});
+
+test('config: the password comes from the environment, never from a flag', () => {
+  const fromEnv = ui.parseArgs([], { KIT_PASSWORD: 'hunter2' });
+  assert.strictEqual(fromEnv.password, 'hunter2');
+  assert.strictEqual(ui.parseArgs([], {}).password, undefined, 'unset means no lock');
+  // A flag would put the password in ps, in shell history and in the pod spec.
+  const asFlag = ui.parseArgs(['--password', 'hunter2'], {});
+  assert.strictEqual(asFlag.password, undefined, 'there is deliberately no --password flag');
+});
+
+test('config: Secure is derived from the public origin, so the two cannot disagree', () => {
+  assert.strictEqual(ui.parseArgs([], { KIT_PUBLIC_ORIGIN: 'https://balenthiran.co.uk' }).secure, true);
+  assert.strictEqual(ui.parseArgs([], { KIT_PUBLIC_ORIGIN: 'http://localhost:4321' }).secure, false);
+  assert.strictEqual(ui.parseArgs([], {}).secure, false);
+  const flag = ui.parseArgs(['--public-origin', 'https://balenthiran.co.uk'], {});
+  assert.strictEqual(flag.publicOrigin, 'https://balenthiran.co.uk');
+  assert.strictEqual(flag.secure, true, 'the flag sets it too, or a test would drift from the deployment');
+});
+
+
+// ── the same lock, over a real socket ────────────────────────────────────────
+// The tests above drive `route`, which returns an object. Whether the SERVER
+// turns that object into a `set-cookie` header a browser will honour, and reads
+// the `cookie` header back off the wire, is a second claim
+// ([[test-the-delivery-not-just-the-value]]) — and it is the claim that failed
+// for the git write-back until it was driven end to end.
+
+const postC = (port, path, body, { cookie = null, origin = null } = {}) => new Promise((resolve, reject) => {
+  const data = Buffer.from(JSON.stringify(body));
+  const req = require('http').request({
+    host: '127.0.0.1', port, path, method: 'POST',
+    headers: {
+      'content-type': 'application/json', 'content-length': data.length,
+      ...(cookie ? { cookie } : {}), ...(origin ? { origin } : {}),
+    },
+  }, (res) => {
+    let b = '';
+    res.on('data', (c) => { b += c; });
+    res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: b }));
+  });
+  req.on('error', reject);
+  req.end(data);
+});
+
+test('a real locked server refuses, then signs in, then writes — and sign-out kills the token', async () => {
+  const dir = fixture({ 'gamma.beh': 'behaviour BEH-G "gamma"\n  actor engineer\n  when opens page:Home\n' });
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1', password: 'hunter2' });
+  try {
+    const { port } = server.address();
+    const step = { step: 'then sees region:Main' };
+
+    const shut = await postC(port, '/api/projects/gamma/behaviours/BEH-G/steps', step);
+    assert.strictEqual(shut.status, 401, 'no session, no write');
+
+    const inn = await postC(port, '/api/session', { password: 'hunter2' });
+    assert.strictEqual(inn.status, 200);
+    const setCookie = String(inn.headers['set-cookie']);
+    assert.match(setCookie, /HttpOnly/, 'the socket must deliver the flags, not just the value');
+    assert.match(setCookie, /SameSite=Strict/);
+    const token = /kit_session=([a-f0-9]+)/.exec(setCookie);
+    assert.ok(token, 'a token came back on the wire');
+    const cookie = `kit_session=${token[1]}`;
+
+    const wrote = await postC(port, '/api/projects/gamma/behaviours/BEH-G/steps', step, { cookie });
+    assert.strictEqual(wrote.status, 200, wrote.body);
+    assert.match(fsx.readFileSync(pathx.join(dir, 'gamma.beh'), 'utf8'), /then sees region:Main/,
+      'and the corpus on disk actually changed');
+
+    // 🔴 Signing out must end it SERVER-side. A route that only cleared the
+    // browser's cookie would leave a live token anyone holding it could reuse,
+    // and the difference is invisible from a browser — which is exactly how a
+    // first hand-probe of this got the wrong answer, by signing out one session
+    // and replaying a different one.
+    await postC(port, '/api/session/end', null, { cookie });
+    const dead = await postC(port, '/api/projects/gamma/behaviours/BEH-G/steps', step, { cookie });
+    assert.strictEqual(dead.status, 401, 'the token is dead on the server, not merely forgotten');
+  } finally { server.close(); }
+});
+
+test('a real locked server refuses a hostile origin even with a valid session', async () => {
+  const dir = fixture({ 'gamma.beh': 'behaviour BEH-G "gamma"\n  actor engineer\n  when opens page:Home\n' });
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1', password: 'hunter2' });
+  try {
+    const { port } = server.address();
+    const inn = await postC(port, '/api/session', { password: 'hunter2' });
+    const cookie = `kit_session=${/kit_session=([a-f0-9]+)/.exec(String(inn.headers['set-cookie']))[1]}`;
+    const res = await postC(port, '/api/projects/gamma/behaviours/BEH-G/steps',
+      { step: 'then sees region:Evil' }, { cookie, origin: 'https://evil.com' });
+    assert.strictEqual(res.status, 403, 'a stolen-cookie CSRF still fails the origin rule');
+    assert.ok(!/region:Evil/.test(fsx.readFileSync(pathx.join(dir, 'gamma.beh'), 'utf8')),
+      'and nothing reached the corpus');
+  } finally { server.close(); }
+});
+
+// The configuration that must not have changed at all: his laptop.
+test('a real UNLOCKED server is exactly what it was — no sign-in, writes straight through', async () => {
+  const dir = fixture({ 'gamma.beh': 'behaviour BEH-G "gamma"\n  actor engineer\n  when opens page:Home\n' });
+  const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    const wrote = await postC(port, '/api/projects/gamma/behaviours/BEH-G/steps', { step: 'then sees region:Main' });
+    assert.strictEqual(wrote.status, 200, 'no cookie, no sign-in, and it still writes');
+    const none = await postC(port, '/api/session', { password: 'anything' });
+    assert.strictEqual(none.status, 404, 'and there is no sign-in route to find');
+  } finally { server.close(); }
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

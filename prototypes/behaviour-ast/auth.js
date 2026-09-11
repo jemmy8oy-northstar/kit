@@ -229,11 +229,16 @@ function throttle(now = () => Date.now()) {
     },
     fail() {
       failures += 1;
-      if (failures > FREE_ATTEMPTS) {
-        const over = failures - FREE_ATTEMPTS;
-        // `2 ** (over - 1)` and capped: unbounded doubling reaches values that
-        // overflow to Infinity and lock the door permanently, which turns a
-        // throttle into a denial of service against its own owner.
+      // `>=`, so FREE_ATTEMPTS means exactly what it says: that many attempts
+      // are free and the NEXT one is refused. Written `>` first, which gave one
+      // more guess than the constant advertises — a small thing, except that
+      // the number in the name is the only description of this behaviour anyone
+      // will read.
+      if (failures >= FREE_ATTEMPTS) {
+        const over = failures - FREE_ATTEMPTS + 1;
+        // Capped: unbounded doubling reaches values that overflow to Infinity
+        // and lock the door permanently, which turns a throttle into a denial
+        // of service against its own owner.
         const wait = Math.min(COOLDOWN_BASE_MS * 2 ** (over - 1), COOLDOWN_MAX_MS);
         blockedUntil = now() + wait;
       }
