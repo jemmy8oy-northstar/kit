@@ -62,9 +62,10 @@ never re-litigated.** That is Kit.
 falsifiable question: *can a behaviour tree generate a runnable test with no hand-written glue?*
 
 ```
+node start.js                               # the UI — install, build, serve
 node prototypes/behaviour-ast/kit.js        # generated tests + measurements
-node prototypes/behaviour-ast/kit.test.js   # 214 tests
-node prototypes/behaviour-ast/ui.js         # the API the UI runs on
+node prototypes/behaviour-ast/kit.test.js   # the suite
+node prototypes/behaviour-ast/ui.js         # the API alone, already built
 ```
 
 The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
@@ -85,5 +86,9 @@ rulesets, the secrets the Docker build needs — is kept verbatim at
 
 ## Status
 
-Planning. Nothing here is a commitment. The open decisions are at the foot of
-[`docs/design/process.md`](docs/design/process.md) and they are James's, not the bot's.
+The prototype runs and the UI is usable locally — `node start.js` above. Being deployed so it is
+reachable without a checkout ([#41](https://github.com/jemmy8oy-northstar/kit/issues/41)); until
+that lands, Kit is a local tool.
+
+Nothing here is a commitment, and the open decisions are still at the foot of
+[`docs/design/process.md`](docs/design/process.md) — they are James's, not the bot's.
