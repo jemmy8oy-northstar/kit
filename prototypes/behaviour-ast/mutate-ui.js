@@ -133,12 +133,119 @@ const run = () => {
 // test that queries it go red, which looks like a kill and proves nothing
 // except that the element was findable. Those are excluded on purpose.
 const MUTANTS = [
-  ['CONTROL-KILL: an unmeasured project renders "0/0 covered" instead of "not measured"',
+  // ── unavailable is never zero ──────────────────────────────────────────────
+  // ui.js's rule 4, carried onto the screen. "Nobody looked" and "nothing is
+  // covered" are different sentences and the second is a lie about the app.
+  ['an unmeasured project renders "0/0 covered", so "nobody looked" reads as "nothing is tested"',
     'if (!coverage.available) {', 'if (false) {', 'src/components/CoverageBadge.tsx'],
-  ['CONTROL-UNKNOWN: a count of one is pluralised — "1 conflicts"',
+  ['a project reporting no coverage field at all is rendered as a count instead of "not measured"',
+    'if (!coverage) {', 'if (false) {', 'src/components/CoverageBadge.tsx'],
+  ['a partly-covered project gets the green badge, so the warning colour never appears',
+    "tone={covered === total ? 'success' : 'warning'}", "tone={'success'}", 'src/components/CoverageBadge.tsx'],
+  ['the badge stops counting the uncovered, so every project reads as fully covered',
+    'const total = covered + count(coverage.uncovered)', 'const total = covered', 'src/components/CoverageBadge.tsx'],
+  ['the detail endpoint\'s id array is concatenated instead of counted — "BEH-HOME-1BEH-EDIT-1 covered"',
+    'return Array.isArray(value) ? value.length : value', 'return value as number', 'src/components/CoverageBadge.tsx'],
+  ['a count of one is pluralised — "1 conflicts", from the tool whose pitch is that it noticed',
     '{n} {n === 1 ? one : (many ?? `${one}s`)}', '{n} {many ?? `${one}s`}', 'src/components/Count.tsx'],
-  ['CONTROL-INVALID: deliberate syntax error, must report INVALID and not a kill',
-    'export default function Count({', 'export default function Count({{', 'src/components/Count.tsx'],
+
+  // ── the reload that must not blank the page ────────────────────────────────
+  // The bug a real browser found and the mocked suite could not: every write
+  // ends in reload(), and a reload that returns to `loading` unmounts the form
+  // -- destroying the note saying which file was written and that Kit did not
+  // commit it. Decision 2's guarantee is only a guarantee if he can watch it hold.
+  ['a write\'s reload blanks the page, unmounting the form and destroying the note saying what was written',
+    "setResource((prev) => (isReload && prev.state === 'ready' ? prev : { state: 'loading' }))",
+    "setResource({ state: 'loading' })", 'src/hooks/useResource.ts'],
+  ['a NAVIGATION is treated as a reload, so the previous project\'s behaviours sit under the new project\'s heading',
+    'const isReload = key !== null && key === lastIdentity.current', 'const isReload = true', 'src/hooks/useResource.ts'],
+  ['navigating away mid-request writes the old app\'s data into the new app\'s page',
+    '      live = false', '', 'src/hooks/useResource.ts'],
+  ['a request that resolves after you navigate away still overwrites the page',
+    'if (live) setResource({ state: \'ready\', value })', "setResource({ state: 'ready', value })", 'src/hooks/useResource.ts'],
+  ['a failed load renders as an empty page rather than the reason it failed',
+    "setResource({ state: 'error', message })", "setResource({ state: 'ready', value: [] as T })", 'src/hooks/useResource.ts'],
+
+  // ── a failed write must never look like a successful one ───────────────────
+  ['a refused write is shown as success, so he believes a corpus edit landed that did not',
+    "setWrite({ state: 'refused', message })", "setWrite({ state: 'wrote', result: {} as AnyWriteResult })", 'src/components/useWrite.ts'],
+  ['a refused write silently returns the form to idle, with no sentence saying why the corpus refused it',
+    "setWrite({ state: 'refused', message })", "setWrite({ state: 'idle' })", 'src/components/useWrite.ts'],
+  ['the project is not re-read after a write, so his new step appears beside the test that predates it',
+    '      onWrote()', '', 'src/components/useWrite.ts'],
+  ['onWrote runs even when the write threw, re-reading the corpus as if the edit had landed',
+    '      setWrite({ state: \'wrote\', result })\n      onWrote()',
+    "      setWrite({ state: 'wrote', result })", 'src/components/useWrite.ts'],
+
+  // ── the refusal sentence IS the feature ────────────────────────────────────
+  // writer.js's four refusals are statements about the request ("a step is one
+  // line", "that id is already taken"). Each tells him how to fix what he typed,
+  // so a page that renders them as a status code throws the guidance away.
+  ['a writer.js refusal reaches the screen as "Conflict" instead of the sentence saying why',
+    '      reason = parsed.reason ?? parsed.error ?? reason', '', 'src/api/client.ts'],
+  ['a read error loses the server\'s reason and shows only the status text',
+    '      reason = body.reason ?? body.error ?? reason', '', 'src/api/client.ts'],
+  ['an unreachable write API throws a bare network error instead of "Start it with `node ui.js`"',
+    '      `Could not reach the Kit write API at ${path}. Start it with \\`node ui.js\\`.`,',
+    '      `Failed to fetch`,', 'src/api/client.ts'],
+  ['an empty note is omitted from the review request, so "he typed nothing" and "the field was not on the form" become the same request',
+    '    { state, note },', '    { state },', 'src/api/client.ts'],
+  ['an app whose name needs escaping breaks its own detail route',
+    'return get<ProjectDetail>(`/api/projects/${encodeURIComponent(app)}`)',
+    'return get<ProjectDetail>(`/api/projects/${app}`)', 'src/api/client.ts'],
+  ['the bind request drops the app, so the server cannot say which OTHER corpora the binding now generates against',
+    'return post<BindResult>(`/api/projects/${encodeURIComponent(app)}/bindings`, { noun, binding })',
+    'return post<BindResult>(`/api/projects/bindings`, { noun, binding })', 'src/api/client.ts'],
+
+  // ── decision 2's boundary, which is only a guarantee if he can watch it hold ─
+  ['a write that touched no git reports "Committed.", so the boundary decision 2 draws is invisible',
+    "{result.committed ? 'Committed.' : 'Not committed — Kit does not run git.'}",
+    "{result.committed ? 'Not committed — Kit does not run git.' : 'Committed.'}",
+    'src/components/WriteResultNote.tsx'],
+  ['a bind that changed what OTHER corpora generate says nothing — the global namespace goes silent again',
+    '{bind && bind.sharedWith.length > 0 && (', '{false && (', 'src/components/WriteResultNote.tsx'],
+  ['"a corpus could not be parsed" is dropped, so "could not look" is shown as "nothing else uses it"',
+    '{bind && bind.unreadableCorpora.length > 0 && (', '{false && (', 'src/components/WriteResultNote.tsx'],
+
+  // ── the three states are deliberately not two ──────────────────────────────
+  ['a resource still in flight renders as though it had arrived',
+    "if (resource.state === 'loading') {", 'if (false) {', 'src/components/Resource.tsx'],
+  ['a failed read renders as an empty page instead of the error the component exists to stop pages swallowing',
+    "if (resource.state === 'error') {", 'if (false) {', 'src/components/Resource.tsx'],
+
+  // ── the project list: what is real, what is a trial, what would not parse ──
+  ['a corpus that will not parse is listed as an ordinary openable project showing zero behaviours',
+    'if (project.error) {', 'if (false) {', 'src/pages/Projects.tsx'],
+  ['an invented trial corpus is presented as one of his real projects',
+    '{project.notReal ? (', '{false ? (', 'src/pages/Projects.tsx'],
+  ['a second corpus for an app already listed loses the badge saying which app it duplicates',
+    '{project.duplicateOf ? (', '{false ? (', 'src/pages/Projects.tsx'],
+
+  // ── adjudication: an inference is not a decision until a human makes it ────
+  ['every behaviour is shown as human-authored, so machine inferences are indistinguishable from what he wrote',
+    "{behaviour.source.origin === 'inferred' && <Badge tone=\"warning\">inferred</Badge>}",
+    '{false && <Badge tone="warning">inferred</Badge>}', 'src/pages/Project.tsx'],
+  ['the unreviewed flag is inverted, so the queue points at exactly the behaviours already adjudicated',
+    'unreviewed={unreviewed.has(b.id)}', 'unreviewed={!unreviewed.has(b.id)}', 'src/pages/Project.tsx'],
+  ['a bare denial is submittable, and a denial with no correction is the one thing parse() must refuse',
+    "disabled={saving || note.trim() === ''}", 'disabled={saving}', 'src/pages/BehaviourPage.tsx'],
+  ['approving a behaviour sends whatever is sitting in the correction box as the note',
+    "state === 'denied' ? note.trim() : null", 'note.trim()', 'src/pages/BehaviourPage.tsx'],
+  ['a recorded correction from a past denial is hidden from the next adjudicator',
+    '{behaviour.review.note && (', '{false && (', 'src/pages/BehaviourPage.tsx'],
+  ['a new behaviour can be submitted with a blank id',
+    "disabled={write.state === 'saving' || id.trim() === '' || title.trim() === ''}",
+    "disabled={write.state === 'saving' || title.trim() === ''}", 'src/pages/Project.tsx'],
+  ['a blank Actor field writes a literal empty `actor ""` line into the corpus',
+    '...(actor.trim() ? { actor: actor.trim() } : {}),', 'actor: actor.trim(),', 'src/pages/Project.tsx'],
+
+  // ── stage 4, the slice kit#32 shipped ─────────────────────────────────────
+  ['the bind panel asks him to bind every unbound noun in the project, not the ones this behaviour names',
+    '      .filter((n) => n.usedBy.includes(behaviourId))', '', 'src/pages/BehaviourPage.tsx'],
+  ['a noun no step here names sorts to the FRONT, putting the least relevant requirement first',
+    'return i === -1 ? Number.MAX_SAFE_INTEGER : i', 'return i === -1 ? -1 : i', 'src/pages/BehaviourPage.tsx'],
+  ['"Kit generated nothing for this behaviour" and an empty generated test become the same screen',
+    'if (!generated) {', 'if (false) {', 'src/pages/BehaviourPage.tsx'],
 ];
 
 let killed = 0;
