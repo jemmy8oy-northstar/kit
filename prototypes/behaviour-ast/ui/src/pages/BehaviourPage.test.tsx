@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import BehaviourPage from './BehaviourPage'
 import habits from '../test/fixtures/project-james-habits-app.json'
@@ -366,6 +366,18 @@ describe('adjudicating an inference', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
 
     expect(await screen.findByRole('status')).toBeInTheDocument()
+
+    // ⚠️ Waiting for the status element is NOT waiting for the re-read, and this
+    // line used to assume it was. `useWrite` sets the result and only then calls
+    // `onWrote()`, which is `useResource`'s `reload()` — and reload merely bumps
+    // a nonce, so the GET is issued by an EFFECT that runs after React commits.
+    // The status element is therefore in the DOM one commit before the re-read
+    // exists. It passed here every time and lost the race on a 2-core CI runner
+    // the first time the suite got slightly busier ([[run-it-in-a-second-environment]]).
+    // The sibling test above never had this bug because it waits for content
+    // that only the re-read can produce.
+    await waitFor(() => expect(calls).toHaveLength(3))
+
     expect(calls.map((c) => c.init?.method ?? 'GET')).toEqual(['GET', 'POST', 'GET'])
     expect(calls[1].url).toBe('/api/projects/james-habits-app/behaviours/BEH-SEED-1/review')
     // `note: null` explicitly, not an omitted key — the client and the contract
