@@ -94,6 +94,62 @@ describe('WriteResultNote', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('broken')
   })
 
+  // ── git write-back (kit#43) ────────────────────────────────────────────────
+  // James chose git over a database for a deployed Kit (kit#41). These pin the
+  // hop the server-side tests cannot: what the person who just clicked is told.
+
+  it('a pushed write names the commit and the branch it reached', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite, committed: true, pushed: true, commit: 'abc1234567', branch: 'main',
+    }} />)
+
+    const note = screen.getByRole('status')
+    expect(note).toHaveTextContent('abc1234567')
+    expect(note).toHaveTextContent('main')
+    // The local instruction must go away, or a deployed Kit tells him to run
+    // `git diff` against a working tree he has no access to.
+    expect(screen.queryByText(/commit it yourself/)).not.toBeInTheDocument()
+  })
+
+  // 🔴 The state this whole slice exists to make visible. The edit is committed
+  // to a disk that is about to be discarded, and every other signal on the page
+  // — `ok: true`, a file path, a commit sha — reads as success.
+  it('a commit that never reached the remote is an ALERT, not a quiet success', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite,
+      committed: true,
+      pushed: false,
+      commit: 'abc1234567',
+      branch: 'main',
+      note: 'git push exited 128: rejected',
+      warning: 'this edit is committed locally but did NOT reach origin: git push exited 128: rejected',
+    }} />)
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(/did NOT reach origin/)
+    // git's own words, not a summary of them — the kit#39 lesson.
+    expect(alert).toHaveTextContent(/128/)
+    // And it must say what that costs him, or it reads as a technicality.
+    expect(alert).toHaveTextContent(/lost if this Kit restarts/)
+  })
+
+  it('CONTROL: a clean push raises no alert, so the warning stays worth reading', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite, committed: true, pushed: true, commit: 'abc1234567', branch: 'main',
+    }} />)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('with git off the page says exactly what it always said', () => {
+    // Decision 2 unchanged for the local tool: nothing about the deployed case
+    // may leak into the run he does on his laptop.
+    render(<WriteResultNote result={corpusWrite} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Not committed — Kit does not run git/)
+    expect(screen.getByText(/commit it yourself/)).toBeInTheDocument()
+  })
+
   it('a corpus write carries no namespace warning — it cannot have one', () => {
     // `AnyWriteResult` is a union precisely so a bind cannot be rendered without
     // its `sharedWith`. This pins the other direction: a behaviour write must

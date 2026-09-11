@@ -11,10 +11,14 @@ import type { AnyWriteResult } from '../api/types'
  * it holding, which is why the file path and `committed: false` are rendered on
  * every success rather than swallowed into a tick.
  *
- * The server sends `committed` on every write and it is always false. It is read
- * rather than assumed here on purpose: if a later slice ever adds option C
- * (write and commit), the page starts telling the truth about it without anyone
- * remembering to come back and change this text.
+ * The server sends `committed` on every write. It is read rather than assumed
+ * here on purpose — and that has now paid off: kit#43 added the commit-and-push
+ * James chose over a database (kit#41), and this line started telling the truth
+ * about it on its own.
+ *
+ * 🔴 The state worth rendering loudly is neither success nor failure but the one
+ * between: committed locally and NOT pushed. The edit is safe on a disk that is
+ * about to be thrown away, and nothing else on the page would ever say so.
  *
  * ── Two kinds of write, and the difference is not cosmetic ──────────────────
  * A corpus write names a behaviour and touches this app's `.beh`. A BIND names
@@ -32,8 +36,19 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
       <p role="status">
         Wrote <strong>{bind ? bind.noun : (result as { behaviour: string }).behaviour}</strong> to{' '}
         <code>{result.file}</code>.{' '}
-        {result.committed ? 'Committed.' : 'Not committed — Kit does not run git.'}
+        {result.committed
+          ? result.pushed
+            ? `Committed as ${result.commit} and pushed to ${result.branch}.`
+            : `Committed as ${result.commit}.`
+          : 'Not committed — Kit does not run git.'}
       </p>
+
+      {result.warning && (
+        <p role="alert">
+          {result.warning} Your edit is safe in this Kit&rsquo;s working tree, but it has
+          not reached the repository — it will be lost if this Kit restarts.
+        </p>
+      )}
 
       {bind && bind.sharedWith.length > 0 && (
         <p role="alert">
@@ -49,9 +64,11 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
         </p>
       )}
 
-      <p className="muted">
-        Review it as a working-tree diff (<code>git diff</code>) and commit it yourself.
-      </p>
+      {!result.committed && (
+        <p className="muted">
+          Review it as a working-tree diff (<code>git diff</code>) and commit it yourself.
+        </p>
+      )}
     </Card>
   )
 }
