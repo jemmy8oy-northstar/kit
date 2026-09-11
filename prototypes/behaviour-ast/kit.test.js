@@ -3552,6 +3552,33 @@ test('marker: the marker tells a reader how to recover, and warns off git checko
   assert.ok(text.indexOf('deliberately WRONG') < text.indexOf('{"tool"'));
 });
 
+// ── the harness must name its own failure (kit#39) ───────────────────────────
+// mutate-ui.js runs its loop at require time, so its classifier cannot be
+// imported and driven the way mutation-marker.js can. It is asserted from
+// source for the same reason writer.js's "no path to git" test is: the claim is
+// about what the file contains, and the event it guards against has never been
+// reproduced on demand.
+//
+// What went wrong: the unmatched branch of run() returned a fixed sentence
+// saying only that nothing had identified itself. Three runs stopped on it and
+// three sessions each invented a different cause. A child taken by the OOM
+// killer and an ordinary non-zero exit produced character-identical output.
+test('mutate-ui: the unmatched failure branch reports the signal and status, not a fixed sentence', () => {
+  const src = fsx.readFileSync(pathx.join(__dirname, 'mutate-ui.js'), 'utf8');
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('*') && !l.trim().startsWith('//')).join('\n');
+
+  // The two fields that name the layer. Without them the message describes the
+  // absence of evidence instead of carrying any.
+  assert.ok(/e\.signal/.test(code), 'the fallback must report the signal that killed the child');
+  assert.ok(/e\.status/.test(code), 'the fallback must report the exit status');
+
+  // ...and the branch must be reached only when nothing else matched, or a
+  // recognised cause would be replaced by a less specific one.
+  const idxKnown = code.indexOf('Transform failed');
+  assert.ok(idxKnown !== -1 && idxKnown < code.indexOf('e.signal'),
+    'the known-cause scan must come first, so a nameable failure keeps its name');
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

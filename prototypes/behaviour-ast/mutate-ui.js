@@ -121,7 +121,18 @@ const run = () => {
     // tests. Either it could not transform the mutated file, or it collected no
     // files. Both are "the mutant never reached the suite".
     const why = /Unhandled Error|Failed to load|Transform failed|No test files found|error TS\d+/.exec(out);
-    return { invalid: why ? why[0] : `vitest exited non-zero with no test-failure line`, out };
+    if (why) return { invalid: why[0], out };
+    // 🔴 THE UNMATCHED BRANCH IS A GENERIC FALLBACK, AND IT FIRED THREE TIMES
+    // WITHOUT EVER SAYING WHY (kit#39). It means no cause downstream identified
+    // itself, so it is the one branch that must carry the raw evidence rather
+    // than a sentence describing the absence of evidence. `status` and `signal`
+    // are what name the layer: a child the OOM killer took reports
+    // `signal: 'SIGKILL', status: null` and is indistinguishable, in the old
+    // message, from a dozen unrelated failures. The output tail is included
+    // because the run that needs it has already ended by the time anyone reads.
+    const how = e.signal ? `killed by ${e.signal}` : `exit ${e.status}`;
+    const tail = out.trim().split('\n').slice(-3).join(' ⏎ ').slice(0, 300);
+    return { invalid: `vitest ${how}, no test-failure line — ${tail || '(no output)'}`, out };
   }
 };
 
