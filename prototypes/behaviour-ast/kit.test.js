@@ -3402,16 +3402,154 @@ test('nothing still says ui.js cannot serve the bundle, now that it does', () =>
       // that put the claim back scored a clean pass. A check that has only ever
       // been green has not been shown to discriminate
       // ([[ship-the-check-while-its-red]]).
-      .replace(/[`*_]/g, '')
+      //
+      // ⚠️ `\x60` is a backtick and must NOT be written as one. `jsDeclarationCount`
+      // does not recognise regex literals, so a bare backtick in this character
+      // class reads as the start of a template literal and blanks everything up to
+      // the next backtick in the FILE — the sibling test above pins exactly that
+      // blind spot. It cost nothing for as long as this was the last assertion in
+      // the file, because the swallowed run reached EOF and was discarded. The
+      // moment a section was appended below, the scan resumed in the wrong state,
+      // the two independent counts disagreed and coverage went unavailable — a
+      // fail-safe firing correctly, hundreds of lines from its cause.
+      .replace(/[\x60*_]/g, '')
       .replace(/\s+/g, ' ');
 
     // Present tense only. This README now *describes* the old claim — "this
     // section used to say ui.js did NOT serve the bundle" — and a check that
     // could not tell a retraction from the thing retracted would forbid the
     // sentence that fixes it.
-    assert.strictEqual(/\b(does not|doesn't|cannot|can not|can't|will not|won't) serve (this|the) bundle/i.test(text), false,
+    // ⚠️ The contractions are written `doesn.t`, not `doesn't`, and must stay
+    // that way. `jsDeclarationCount` does not recognise regex literals — the
+    // sibling test above pins the same blind spot for a backtick — so an
+    // apostrophe here reads as the start of a string, and the scan swallows
+    // every `test(` between it and the next apostrophe in the file. That cost
+    // nothing while this was the last assertion in the file, because the run
+    // to end-of-file is discarded. The moment ANY section was appended below,
+    // eight declarations vanished from the count, the independent counts
+    // disagreed, and coverage went unavailable — the fail-safe doing its job,
+    // for a reason nowhere near where it surfaced. `.` matches the apostrophe.
+    assert.strictEqual(/\b(does not|doesn.t|cannot|can not|can.t|will not|won.t) serve (this|the) bundle/i.test(text), false,
       `${name} still says ui.js does not serve the bundle, but ui.js has a bundle handler`);
   }
+});
+
+// ── the mutation marker: surviving a kill that no handler can catch ─────────
+//
+// `mutate.js` runs THIS suite once per mutant, so a test that wrote the real
+// marker at the repo root would delete the live marker of the run executing it.
+// Every test below builds its own marker over a temp directory via
+// `createMarker`, which is why that factory exists.
+section('mutation marker');
+
+const { createMarker } = require('./mutation-marker');
+// A killed run, reconstructed exactly: `arm()` records the originals, then the
+// file on disk is made wrong and nothing gets to clean up after it.
+const killedRun = (files, damage) => {
+  const root = fixture(files);
+  const m = createMarker({ root, markerPath: pathx.join(root, 'MUTATION-IN-PROGRESS') });
+  const originals = {};
+  for (const f of Object.keys(files)) originals[f] = files[f];
+  m.arm({
+    tool: 'mutate-test.js', base: '.', originals, warn: 'w', restoreAll: () => {},
+  });
+  for (const [f, wrong] of Object.entries(damage)) fsx.writeFileSync(pathx.join(root, f), wrong);
+  return { root, m };
+};
+const silent = { log: () => {}, error: () => {} };
+
+test('marker: a run killed mid-mutant is restored exactly from the marker alone', () => {
+  const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 999\n');
+
+  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
+  // The marker goes with it, or the next run refuses forever.
+  assert.strictEqual(fsx.existsSync(m.MARKER), false);
+});
+
+// The whole reason recovery exists rather than `git checkout -- <file>`: when
+// the 211th's mutant was found, an uncommitted edit to mutate-ui.js was sitting
+// beside it, and checking the file out would have destroyed that work.
+test('marker: recovery restores ONLY what was mutated, leaving other work alone', () => {
+  const { root, m } = killedRun(
+    { 'a.js': 'const ok = 1\n', 'b.js': 'const b = 1\n' },
+    { 'a.js': 'const ok = 999\n', 'b.js': 'REAL UNCOMMITTED WORK\n' },
+  );
+  // `b.js` is not in the damage the harness caused — it is a human's edit that
+  // happens to be in the same tree. Recovery must not have an opinion on it...
+  const originals = m.payload().files;
+  delete originals['b.js'];
+  fsx.writeFileSync(m.MARKER, fsx.readFileSync(m.MARKER, 'utf8').replace(/\{"tool".*\}/, JSON.stringify({ tool: 't', base: '.', files: originals })));
+
+  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'b.js'), 'utf8'), 'REAL UNCOMMITTED WORK\n');
+});
+
+// The silent hazard, and the one that made this worth building: without the
+// refusal, the next run reads the leftover mutant as pristine and restores TO
+// it, so the defect becomes permanent while the run still reports every mutant
+// killed. A clean sweep over a poisoned baseline is the worst possible output.
+test('marker: a stale marker REFUSES the next run rather than baselining the mutant', () => {
+  const { m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  const codes = [];
+  m.refuseIfStale('mutate-test.js', (c) => codes.push(c), silent);
+  assert.deepStrictEqual(codes, [2], 'a stale marker must stop the run with exit 2');
+});
+
+test('marker: the positive control — with no marker, a run is NOT refused', () => {
+  const root = fixture({ 'a.js': 'x\n' });
+  const m = createMarker({ root, markerPath: pathx.join(root, 'MUTATION-IN-PROGRESS') });
+  const codes = [];
+  m.refuseIfStale('mutate-test.js', (c) => codes.push(c), silent);
+  assert.deepStrictEqual(codes, [], 'no marker means nothing to refuse');
+});
+
+// "Could not restore" must never read as "nothing was wrong". A marker written
+// by an older build of these tools carries no originals, and the only honest
+// answer is exit 2 plus the instruction not to reach for `git checkout --`.
+test('marker: a marker with no originals is could-not-look (2), not a silent success', () => {
+  const root = fixture({ 'a.js': 'x\n' });
+  const markerPath = pathx.join(root, 'MUTATION-IN-PROGRESS');
+  fsx.writeFileSync(markerPath, 'mutate.js is running and the working tree is deliberately WRONG.\n');
+  const m = createMarker({ root, markerPath });
+
+  assert.strictEqual(m.recover(silent), 2);
+  // And it must NOT drop a marker it could not act on — that would erase the
+  // only remaining sign that a mutant is live.
+  assert.strictEqual(fsx.existsSync(markerPath), true);
+});
+
+test('marker: nothing to recover is 0, and says so rather than inventing damage', () => {
+  const root = fixture({ 'a.js': 'x\n' });
+  const m = createMarker({ root, markerPath: pathx.join(root, 'MUTATION-IN-PROGRESS') });
+  assert.strictEqual(m.recover(silent), 0);
+});
+
+// The two tools mutate different trees (`behaviour-ast` and `behaviour-ast/ui`)
+// and share one marker path, so recovery keys off the base recorded IN the
+// marker. A version that assumed its own base would write the right contents
+// to the wrong paths — and report success doing it.
+test('marker: recovery uses the base recorded in the marker, not the base of the caller', () => {
+  const root = fixture({ 'ui/src/a.ts': 'const ok = 1\n' });
+  const markerPath = pathx.join(root, 'MUTATION-IN-PROGRESS');
+  const m = createMarker({ root, markerPath });
+  m.arm({ tool: 'mutate-ui.js', base: 'ui', originals: { 'src/a.ts': 'const ok = 1\n' }, warn: 'w', restoreAll: () => {} });
+  fsx.writeFileSync(pathx.join(root, 'ui/src/a.ts'), 'const ok = 999\n');
+
+  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'ui/src/a.ts'), 'utf8'), 'const ok = 1\n');
+});
+
+test('marker: the marker tells a reader how to recover, and warns off git checkout', () => {
+  const { m } = killedRun({ 'a.js': 'x\n' }, {});
+  const text = fsx.readFileSync(m.MARKER, 'utf8');
+  assert.ok(/--recover/.test(text), 'the marker must name the command that fixes it');
+  assert.ok(/git checkout/.test(text), 'the marker must warn off the destructive manual fix');
+  // The prose has to come first: the payload is machine-readable bulk and the
+  // first thing anyone does with this file is read the top of it.
+  assert.ok(text.indexOf('deliberately WRONG') < text.indexOf('{"tool"'));
 });
 
 Promise.all(pending).then(() => {
