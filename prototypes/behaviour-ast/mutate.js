@@ -34,7 +34,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null };
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -487,6 +487,35 @@ MUTANTS.push(
 // corpus at once, a collision report that quietly says "nothing". None of them
 // throws, and all of them read as success on screen — which is why they are
 // mutated rather than trusted to the tests that were written beside them.
+// git write-back (kit#43). Every failure here is in the FLATTERING direction:
+// each one makes Kit report that an edit reached his repository when it did
+// not. That is the direction that loses work silently, because the person who
+// wrote the behaviour has already closed the tab.
+//
+// ⚠️ `git-store.js` is new to SUBJECTS. Adding the file is half the work — a
+// hand-written list that does not grow with the repo is why `requires.js` and
+// the whole UI went unmeasured for weeks [[a-score-is-scoped-to-a-population]].
+MUTANTS.push(
+  ['a failed push is reported as a successful one, so a stranded commit reads as saved',
+    'if (!pushed.ok) {', 'if (false) {', 'git-store.js'],
+  ['git write-back ignores its own switch, so the local tool starts committing unasked',
+    'if (!opts.enabled) {', 'if (false) {', 'git-store.js'],
+  ['the commit loses its pathspec and sweeps up whatever else the tree was dirty with',
+    "const committed = git([...ident, 'commit', '-m', message(opts.summary, opts.app), '--', rel], cwd);",
+    "const committed = git([...ident, 'commit', '-a', '-m', message(opts.summary, opts.app)], cwd);",
+    'git-store.js'],
+  ['a write that changed nothing still makes a commit, filling his history with noise',
+    'if (!staged.stdout.trim()) {', 'if (false) {', 'git-store.js'],
+  ['a detached HEAD is pushed to a guessed branch instead of refused',
+    'if (!branch) {', 'if (false) {', 'git-store.js'],
+  // The kit#39 lesson, on a different child process: a failure that does not
+  // name its layer sends three sessions looking in three wrong places.
+  ['a failed git call stops naming its exit status, so every failure reads alike',
+    'const first = String(r.stderr || \'\').trim().split(\'\\n\')[0] || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'return { ok: false, failure: \'git did not succeed\', stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'git-store.js'],
+);
+
 MUTANTS.push(
   // The guard that was inert in its first draft. Reinstating the original
   // spelling is the point: `JSON.stringify(value)` compares the damage to
