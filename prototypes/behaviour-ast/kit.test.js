@@ -3552,6 +3552,80 @@ test('marker: the marker tells a reader how to recover, and warns off git checko
   assert.ok(text.indexOf('deliberately WRONG') < text.indexOf('{"tool"'));
 });
 
+// ── one command to run Kit (kit#37) ──────────────────────────────────────────
+// The failure this guards is the quiet one. A fresh clone with no bundle serves
+// a 503, which at least says something is wrong; a bundle built before your
+// last edit serves a Kit that is silently not the one in your tree.
+const start = require('../../start.js');
+
+// Sets mtimes explicitly rather than writing files and hoping: a fixture whose
+// files are all created inside the same millisecond makes "newer than" untestable.
+const agedTree = (files) => {
+  const dir = fixture(files.paths);
+  for (const [f, seconds] of Object.entries(files.ages)) {
+    const t = new Date(Date.now() - seconds * 1000);
+    fsx.utimesSync(pathx.join(dir, f), t, t);
+  }
+  return dir;
+};
+
+test('start: a fresh clone has no bundle at all, which is maximally stale', () => {
+  const dir = agedTree({ paths: { 'index.html': '<html>', 'src/App.tsx': 'x' }, ages: {} });
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), true);
+});
+
+test('start: a bundle older than a source file is rebuilt', () => {
+  const dir = agedTree({
+    paths: { 'src/App.tsx': 'x', 'dist/index.html': 'built' },
+    ages: { 'dist/index.html': 60, 'src/App.tsx': 10 },
+  });
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), true);
+});
+
+// Note `src` itself is aged, not just the file in it. A directory's mtime moves
+// when a file is ADDED OR REMOVED in it, and that has to count as stale — the
+// deletion of a component changes the bundle and touches no surviving file. So
+// a fixture that ages the file but not its directory is not a tree that can
+// exist, and the first version of this test failed for exactly that reason.
+test('start: a bundle newer than every source file is left alone', () => {
+  const dir = agedTree({
+    paths: { 'src/App.tsx': 'x', 'index.html': '<html>', 'dist/index.html': 'built' },
+    ages: { 'dist/index.html': 10, 'src/App.tsx': 60, src: 60, 'index.html': 60 },
+  });
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), false);
+});
+
+test('start: DELETING a source file is stale too, though no surviving file changed', () => {
+  const dir = agedTree({
+    paths: { 'src/App.tsx': 'x', 'src/Gone.tsx': 'y', 'index.html': '<html>', 'dist/index.html': 'built' },
+    ages: { 'dist/index.html': 10, 'src/App.tsx': 60, 'src/Gone.tsx': 60, src: 60, 'index.html': 60 },
+  });
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), false);
+  fsx.unlinkSync(pathx.join(dir, 'src', 'Gone.tsx'));
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), true);
+});
+
+// The reason SOURCE_ENTRIES is more than `src`. A dependency bump changes the
+// bundle exactly as much as a component does, and a staleness check that only
+// watches src serves yesterday's dependencies out of a bundle it believes fresh.
+test('start: a lockfile newer than the bundle counts as stale, not just src', () => {
+  const dir = agedTree({
+    paths: { 'src/App.tsx': 'x', 'package-lock.json': '{}', 'dist/index.html': 'built' },
+    ages: { 'dist/index.html': 30, 'src/App.tsx': 60, 'package-lock.json': 5 },
+  });
+  assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), true);
+});
+
+// An interrupted `npm ci` leaves a node_modules that exists and cannot build.
+// "Is the directory there" and "can it build" are different questions and only
+// the second one is worth asking.
+test('start: a node_modules with no vite binary still needs installing', () => {
+  const half = agedTree({ paths: { '.package-lock.json': '{}' }, ages: {} });
+  assert.strictEqual(start.needsInstall(half), true);
+  const done = agedTree({ paths: { '.bin/vite': '#!/bin/sh' }, ages: {} });
+  assert.strictEqual(start.needsInstall(done), false);
+});
+
 // ── the harness must name its own failure (kit#39) ───────────────────────────
 // mutate-ui.js runs its loop at require time, so its classifier cannot be
 // imported and driven the way mutation-marker.js can. It is asserted from

@@ -17,6 +17,27 @@ A behaviour corpus is the artefact a human touches. It stays authoritative: unkn
 contradictions are detected and adjudicated, nouns bind to the app's vocabulary, and a behaviour with
 no test naming it **fails the build**.
 
+## Run it
+
+```
+node start.js
+```
+
+Then open **http://127.0.0.1:4321**. That is the whole thing: it installs and builds the UI the
+first time (about a minute), rebuilds when the bundle is older than the source, and serves.
+
+```
+node start.js --repos ~/code      # so Kit can find your tests and measure coverage
+node start.js --help              # ports, hosts, corpus directories
+```
+
+Without `--repos`, every project reports **not measured** — which is not the same as *nothing is
+tested*, and Kit will not pretend otherwise.
+
+⚠️ **Kit writes to your corpus and never commits.** Edits land in the working tree as an ordinary
+diff for you to review. Writes are refused unless it is bound to loopback, so the default is a local
+tool; see [`docs/design/ui.md`](docs/design/ui.md) decision 2.
+
 ## Where to start reading
 
 | | Document | What it answers |
@@ -41,9 +62,10 @@ never re-litigated.** That is Kit.
 falsifiable question: *can a behaviour tree generate a runnable test with no hand-written glue?*
 
 ```
+node start.js                               # the UI — install, build, serve
 node prototypes/behaviour-ast/kit.js        # generated tests + measurements
-node prototypes/behaviour-ast/kit.test.js   # 214 tests
-node prototypes/behaviour-ast/ui.js         # the API the UI runs on
+node prototypes/behaviour-ast/kit.test.js   # the suite
+node prototypes/behaviour-ast/ui.js         # the API alone, already built
 ```
 
 The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
