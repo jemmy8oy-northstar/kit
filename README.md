@@ -86,9 +86,5 @@ rulesets, the secrets the Docker build needs — is kept verbatim at
 
 ## Status
 
-The prototype runs and the UI is usable locally — `node start.js` above. Being deployed so it is
-reachable without a checkout ([#41](https://github.com/jemmy8oy-northstar/kit/issues/41)); until
-that lands, Kit is a local tool.
-
-Nothing here is a commitment, and the open decisions are still at the foot of
-[`docs/design/process.md`](docs/design/process.md) — they are James's, not the bot's.
+Planning. Nothing here is a commitment. The open decisions are at the foot of
+[`docs/design/process.md`](docs/design/process.md) and they are James's, not the bot's.
