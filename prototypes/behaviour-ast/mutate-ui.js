@@ -276,10 +276,38 @@ for (const [name, from, to, file] of MUTANTS) {
 
   fs.writeFileSync(path.join(UI, file), original.replace(from, to));
   const r = run();
+
+  // ── a kill is confirmed, a survival is not ───────────────────────────────
+  // 🔴 THIS EXISTS BECAUSE THE HARNESS PRODUCED A FALSE KILL, and only running
+  // it twice caught it. The first full run reported `killed (1 failing)` for
+  // "every behaviour is shown as human-authored"; the second reported SURVIVED,
+  // and five manual runs — on the second run's tree AND on a checkout of the
+  // first run's exact tree and test population — agreed with the second. The
+  // rule was genuinely untested and one run said it was covered.
+  //
+  // The asymmetry is deliberate and is the whole argument for the cost. A false
+  // SURVIVOR wastes a few minutes: you investigate and find nothing. A false
+  // KILL is invisible and says a rule is backed when nothing backs it — which
+  // is the single thing this harness exists to detect, failing silently. So an
+  // apparent kill is re-run, and only a kill that reproduces is counted.
+  //
+  // A disagreement is reported rather than resolved by a third run. Two runs
+  // differing means the suite is not deterministic under mutation, and that is
+  // a finding about the suite, not a number to average away.
+  let confirm = null;
+  if (!r.invalid && r.failed > 0) confirm = run();
   restoreAll();
 
   if (r.invalid) { invalid.push(name); console.log(`  ⚠️  INVALID MUTANT (${r.invalid})  ${name}`); }
-  else if (r.failed > 0) { killed++; console.log(`  killed (${r.failed} failing)  ${name}`); }
+  else if (r.failed > 0 && confirm.invalid) {
+    invalid.push(name);
+    console.log(`  ⚠️  NON-DETERMINISTIC (killed, then ${confirm.invalid})  ${name}`);
+  } else if (r.failed > 0 && confirm.failed === 0) {
+    // Counted as a SURVIVOR, not discarded: the evidence that it is killed did
+    // not reproduce, so the rule is unbacked until something proves otherwise.
+    survived.push(name);
+    console.log(`  ⚠️  FALSE KILL (${r.failed} failing, then green)  ${name}`);
+  } else if (r.failed > 0) { killed++; console.log(`  killed (${r.failed} failing)  ${name}`); }
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
 

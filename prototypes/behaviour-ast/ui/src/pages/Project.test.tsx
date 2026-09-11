@@ -71,6 +71,34 @@ describe('Project', () => {
     const flags = await screen.findAllByText('unreviewed')
     expect(flags).toHaveLength(habits.adjudication.unreviewed.length)
   })
+
+  it('marks each inferred behaviour in the LIST, not only in the summary count', async () => {
+    // Two different renders say "inferred" on this page: the summary badge
+    // ("3 inferred") and a per-row badge. Only the summary was pinned, so the
+    // row badge could vanish and the page would still read as though it said
+    // which behaviours a machine wrote — the distinction the whole adjudication
+    // queue rests on.
+    //
+    // The exact-text query is what separates them: the summary badge's text is
+    // "N inferred", not "inferred".
+    renderApp(habits, 'james-habits-app')
+
+    await screen.findByRole('heading', { name: 'james-habits-app', level: 1 })
+    const rowFlags = screen.getAllByText('inferred', { exact: true })
+    const inferredCount = habits.behaviours.filter((b) => b.source.origin === 'inferred').length
+    expect(inferredCount).toBeGreaterThan(0) // or this test is vacuous
+    expect(rowFlags).toHaveLength(inferredCount)
+  })
+
+  it('CONTROL: a corpus with no inferences shows no row marked inferred', async () => {
+    // snip-it is entirely `defined`. Without this, the count above is satisfied
+    // by a badge rendered on every row.
+    expect(snipIt.behaviours.every((b) => b.source.origin !== 'inferred')).toBe(true)
+    renderApp(snipIt, 'snip-it')
+
+    await screen.findByRole('heading', { name: 'snip-it', level: 1 })
+    expect(screen.queryByText('inferred', { exact: true })).not.toBeInTheDocument()
+  })
 })
 
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
