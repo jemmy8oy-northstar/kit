@@ -268,21 +268,47 @@ export interface NewBehaviour {
 }
 
 /**
+ * What git did with a write, on both write routes.
+ *
+ * Until kit#43 `committed` was the literal `false`: decision 2 in
+ * `docs/design/ui.md` stopped at the working tree, and the type said so. James
+ * then chose git over a database for a deployed Kit (kit#41), so `committed` is
+ * now a real boolean and these fields say which of three things happened.
+ *
+ * 🔴 `committed` and `pushed` are separate because the interesting state is the
+ * one between them. By the time git runs the file is already written, so a
+ * failed push does not mean "your edit was lost" — it means "your edit is on a
+ * disk nobody will read again". Collapsing them into one flag would report that
+ * as success, and the person who typed the behaviour has already closed the tab.
+ */
+export interface GitOutcome {
+  committed: boolean
+  /** Absent when git write-back is off — the local default. */
+  pushed?: boolean
+  /** Short sha, when there is a commit to name. */
+  commit?: string | null
+  branch?: string | null
+  note: string
+  /**
+   * Set ONLY when the edit is committed and did not reach the remote. Present
+   * rather than inferred: a UI should not have to deduce trouble from the
+   * absence of something.
+   */
+  warning?: string
+}
+
+/**
  * What both write routes return.
  *
- * `committed` is always `false` and is sent on every write on purpose — decision
- * 2 in `docs/design/ui.md` stops at the working tree, and a caller that assumes
- * otherwise should find out here rather than when the branch turns out empty.
- * The UI renders it for the same reason: the boundary is only a guarantee to him
- * if he can see it holding.
+ * The UI renders the git fields rather than assuming them, for the same reason
+ * it always did: the boundary is only a guarantee to him if he can see it
+ * holding, and now it is a boundary that can move.
  */
-export interface WriteResult {
+export interface WriteResult extends GitOutcome {
   ok: true
   app: string
   behaviour: string
   file: string
-  committed: false
-  note: string
 }
 
 /**
@@ -294,13 +320,11 @@ export interface WriteResult {
  * only one who can say whether sharing this noun with those corpora is what
  * they meant, and this is when they are looking.
  */
-export interface BindResult {
+export interface BindResult extends GitOutcome {
   ok: true
   app: string
   noun: string
   file: string
-  committed: false
-  note: string
   sharedWith: string[]
   /**
    * Corpora that would not parse, so `sharedWith` is an INCOMPLETE answer.

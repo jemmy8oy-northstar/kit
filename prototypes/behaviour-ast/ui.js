@@ -17,6 +17,7 @@
 // only reachable when the server is bound to a loopback address (rule 2 below).
 //
 //   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>] [--bindings <file>]
+//              [--git [--git-remote origin] [--git-branch <name>]]
 //
 //   GET  /api/projects        every corpus, with enough to render a list
 //   GET  /api/projects/<app>  project.js's full projection for one app
@@ -102,6 +103,7 @@ const http = require('http');
 const path = require('path');
 const proj = require('./project.js');
 const writer = require('./writer.js');
+const gitStore = require('./git-store.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 const DIST_DIR = path.join(__dirname, 'ui', 'dist');
@@ -538,14 +540,64 @@ function write(pathname, opts, body, json, origin = null) {
   // The response says what was NOT done, every time. Decision 2's whole content
   // is the second half of this sentence, and a caller that assumes a commit
   // finds out here rather than when the branch turns out to be empty.
+  const what = m[3] === 'review' ? `adjudicate ${id}` : m[2] ? `add a step to ${id}` : `add ${id}`;
   return json(200, {
     ok: true,
     app,
     behaviour: id,
     file: path.relative(process.cwd(), file),
-    committed: false,
-    note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+    ...gitOutcome(file, opts, what, app),
   });
+}
+
+/**
+ * What git did with this edit, as fields a caller can act on.
+ *
+ * One helper for both write paths so they cannot drift into describing the same
+ * outcome two different ways — the corpus write and the bindings write are
+ * equally lost if a push fails, and a caller should not have to learn two
+ * vocabularies to find that out.
+ *
+ * 🔴 `ok: true` still means the edit is ON DISK, which it always is by the time
+ * we get here. `pushed` is the field that says whether it reached anywhere that
+ * survives the pod restarting, and `warning` exists so a UI does not have to
+ * infer trouble from the absence of something.
+ */
+function gitOutcome(file, opts, summary, app) {
+  const g = gitStore.writeBack(file, { ...(opts.git || {}), summary, app });
+
+  // Off is the local default and decision 2 unchanged: say exactly what the
+  // response has always said, so nothing that reads this today breaks.
+  if (!(opts.git && opts.git.enabled)) {
+    return {
+      committed: false,
+      note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+    };
+  }
+
+  if (g.pushed) {
+    return {
+      committed: true,
+      pushed: true,
+      commit: g.commit,
+      branch: g.branch,
+      note: `committed as ${g.commit} and pushed to ${g.branch}.`,
+    };
+  }
+
+  // Everything else is switched-on-but-not-published. Benign (nothing changed)
+  // or serious (the push was rejected), and the caller is told which by the
+  // reason git itself gave, never by a summary of it.
+  return {
+    committed: g.committed,
+    pushed: false,
+    commit: g.commit,
+    branch: g.branch,
+    note: g.reason,
+    warning: g.committed
+      ? `this edit is committed locally but did NOT reach ${(opts.git && opts.git.remote) || 'origin'}: ${g.reason}`
+      : undefined,
+  };
 }
 
 /**
@@ -600,8 +652,7 @@ function postBinding(match, body, opts, json) {
     app,
     noun: result.noun,
     file: path.relative(process.cwd(), file),
-    committed: false,
-    note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',
+    ...gitOutcome(file, opts, `bind ${result.noun}`, app),
     // 🔴 The namespace fact, in the response rather than only in a log. The
     // person who just clicked bind is the only one who can tell whether
     // sharing this noun with those corpora is what they meant, and this is the
@@ -731,6 +782,14 @@ function parseArgs(argv) {
     // working tree of the thing it is measuring. Null means the real file,
     // which is the right default for the tool he actually opens.
     else if (argv[i] === '--bindings') { opts.bindings = next; i++; }
+    // ── git write-back (kit#43) ──────────────────────────────────────────────
+    // OFF unless asked for. Locally `docs/design/ui.md` decision 2 still holds:
+    // the edit lands in the working tree and the author reviews the diff. This
+    // flag is for the deployment James chose over a database on kit#41, where
+    // there is no working tree anyone will ever look at.
+    else if (argv[i] === '--git') { opts.git = { ...(opts.git || {}), enabled: true }; }
+    else if (argv[i] === '--git-remote') { opts.git = { ...(opts.git || {}), remote: next }; i++; }
+    else if (argv[i] === '--git-branch') { opts.git = { ...(opts.git || {}), branch: next }; i++; }
   }
   return opts;
 }
@@ -761,9 +820,19 @@ async function main(argv) {
   console.log(`kit ui  http://${opts.host}:${opts.port}`);
   console.log(`  ${apps.length} corpora: ${apps.join(', ')}`);
   console.log(`  repos: ${opts.repos || '(none — coverage will report unavailable, not zero)'}`);
+  const gitOn = !!(opts.git && opts.git.enabled);
   console.log(isLoopback(opts.host)
-    ? '  writes: ON — edits land in the working tree and are NEVER committed'
+    ? `  writes: ON — edits land in the working tree${gitOn ? ' and are committed and pushed' : ' and are NEVER committed'}`
     : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+  if (gitOn) {
+    // Printed whether or not the tree is a repo, because "--git was accepted
+    // and is doing nothing" is exactly the state an operator needs told at
+    // startup rather than discovering from an edit that vanished on restart.
+    const tree = gitStore.workTreeFor(path.join(opts.dir || BEH_DIR, '.'));
+    console.log(tree
+      ? `  git: ON — committing to ${opts.git.branch || gitStore.currentBranch(tree) || '(detached HEAD — writes will refuse)'} on ${opts.git.remote || 'origin'}`
+      : `  git: ON but ${opts.dir || BEH_DIR} IS NOT IN A GIT WORK TREE — every write will report that it was not committed`);
+  }
   // Said at startup and not only by the 503, because the person who needs to
   // read it is looking at this terminal, not at the browser tab they have not
   // opened yet.
