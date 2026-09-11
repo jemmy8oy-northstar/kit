@@ -22,6 +22,12 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const marker = require('./mutation-marker');
+
+// Recovery runs before anything reads the tree, so a run killed by an
+// uncatchable signal is undoable from either mutation tool.
+if (process.argv.includes('--recover')) process.exit(marker.recover());
+marker.refuseIfStale('mutate.js');
 
 const T = path.join(__dirname, 'kit.test.js');
 // Mutants name their file; kit.js is the default because it was the only one
@@ -46,23 +52,21 @@ const restoreAll = () => {
 // next to the files you were about to stage. Untracked and root-level on
 // purpose — inside the prototype directory it would be one more line in a
 // listing nobody reads, and tracked it would be a file to clean up.
-const MARKER = path.join(__dirname, '..', '..', 'MUTATION-IN-PROGRESS');
-const dropMarker = () => { try { fs.unlinkSync(MARKER); } catch { /* already gone */ } };
-fs.writeFileSync(MARKER, [
-  'mutate.js is running and the working tree is deliberately WRONG.',
-  '',
-  'Do not commit, stage, or read prototypes/behaviour-ast/*.js while this file',
-  'exists — you will capture a mutant. It is removed when the run ends.',
-  '',
-  `started ${new Date().toISOString()} by pid ${process.pid}`,
-  '',
-].join('\n'));
-// Every exit path, including the ones that skip the end of the script: a marker
-// left behind after a crash is a false alarm, but a marker missing during a run
-// is the failure it exists to prevent, so both are handled rather than assumed.
-process.on('exit', dropMarker);
-process.on('SIGINT', () => { restoreAll(); dropMarker(); process.exit(130); });
-process.on('SIGTERM', () => { restoreAll(); dropMarker(); process.exit(143); });
+//
+// ⚠️ This used to say a marker left behind after a crash was "a false alarm".
+// That was wrong twice over and is why `mutation-marker.js` exists — see its
+// header. A crash leaves a live mutant on disk AND poisons the next run's idea
+// of what pristine looks like.
+marker.arm({
+  tool: 'mutate.js',
+  base: path.relative(path.join(__dirname, '..', '..'), __dirname),
+  originals: SUBJECTS,
+  warn: [
+    'Do not commit, stage, or read prototypes/behaviour-ast/*.js while this file',
+    'exists — you will capture a mutant. It is removed when the run ends.',
+  ].join('\n'),
+  restoreAll,
+});
 
 const MUTANTS = [
   // adjudication (#68: "default included but marked unreviewed")

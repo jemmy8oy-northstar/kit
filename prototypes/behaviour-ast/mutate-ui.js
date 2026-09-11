@@ -28,9 +28,14 @@
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const marker = require('./mutation-marker');
 
 const UI = path.join(__dirname, 'ui');
 const VITEST = path.join(UI, 'node_modules', '.bin', 'vitest');
+
+// Recovery runs before the install check below: a tree left mutated by a killed
+// run must be restorable even from a pod where `npm ci` has never been run.
+if (process.argv.includes('--recover')) process.exit(marker.recover());
 
 // ── could not look ───────────────────────────────────────────────────────────
 // A mutation harness that silently reports "0 survived" because it never ran
@@ -41,6 +46,10 @@ if (!fs.existsSync(VITEST)) {
   console.error('cannot look: ui/node_modules/.bin/vitest is missing — run `npm ci` in prototypes/behaviour-ast/ui first');
   process.exit(2);
 }
+
+// Before a single original is read from disk — see mutation-marker.js for why a
+// stale marker has to refuse the run rather than be cleaned up.
+marker.refuseIfStale('mutate-ui.js');
 
 const SUBJECT_FILES = [
   'src/pages/Projects.tsx',
@@ -60,25 +69,20 @@ const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(UI, f), src);
 };
 
-// Same danger as `mutate.js`, so the same signal in the same place: for the
-// duration of a run the files on disk are deliberately wrong, and anything that
-// stages the tree in that window commits a mutant (claude-code-bot#92). The
-// marker is untracked and at the repo root so `git status` prints it as `??`
-// right next to the files you were about to stage.
-const MARKER = path.join(__dirname, '..', '..', 'MUTATION-IN-PROGRESS');
-const dropMarker = () => { try { fs.unlinkSync(MARKER); } catch { /* already gone */ } };
-fs.writeFileSync(MARKER, [
-  'mutate-ui.js is running and the working tree is deliberately WRONG.',
-  '',
-  'Do not commit, stage, or read prototypes/behaviour-ast/ui/src/** while this',
-  'file exists — you will capture a mutant. It is removed when the run ends.',
-  '',
-  `started ${new Date().toISOString()} by pid ${process.pid}`,
-  '',
-].join('\n'));
-process.on('exit', dropMarker);
-process.on('SIGINT', () => { restoreAll(); dropMarker(); process.exit(130); });
-process.on('SIGTERM', () => { restoreAll(); dropMarker(); process.exit(143); });
+// Same danger as `mutate.js`, so the same signal in the same place, from the
+// same module: for the duration of a run the files on disk are deliberately
+// wrong, and anything that stages the tree in that window commits a mutant
+// (claude-code-bot#92).
+marker.arm({
+  tool: 'mutate-ui.js',
+  base: path.relative(path.join(__dirname, '..', '..'), UI),
+  originals: SUBJECTS,
+  warn: [
+    'Do not commit, stage, or read prototypes/behaviour-ast/ui/src/** while this',
+    'file exists — you will capture a mutant. It is removed when the run ends.',
+  ].join('\n'),
+  restoreAll,
+});
 
 const ANSI = /\[[0-9;]*m/g;
 
