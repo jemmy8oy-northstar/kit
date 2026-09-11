@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
 import snipIt from '../test/fixtures/project-snip-it.json'
@@ -132,6 +132,33 @@ describe('the question sheet', () => {
         `/projects/james-habits-app/behaviours/${q.id}`,
       )
     }
+  })
+
+  it('will not submit a new behaviour without an id, and will not without a title', async () => {
+    // Both halves, because the button guards both and a test for one alone is
+    // satisfied by a form that dropped the other. An id is not a field the
+    // corpus can default: it is the key `check.js` gates on and the anchor every
+    // `serves`/`cites` line refers to, so a blank one is a behaviour nothing can
+    // ever name.
+    renderApp(snipIt, 'snip-it')
+
+    const add = await screen.findByRole('button', { name: 'Add behaviour' })
+    expect(add).toBeDisabled()
+
+    // Title only — still refused.
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'the cut is downloadable' } })
+    expect(add).toBeDisabled()
+
+    // Id as whitespace is the same as no id; `.trim()` is what makes that true.
+    fireEvent.change(screen.getByLabelText('Id'), { target: { value: '   ' } })
+    expect(add).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Id'), { target: { value: 'BEH-CUT-2' } })
+    expect(add).toBeEnabled()
+
+    // And the other direction: a title cleared after the fact re-disables it.
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: '' } })
+    expect(add).toBeDisabled()
   })
 
   it('shows no sheet at all when there is nothing to ask', async () => {
