@@ -25,6 +25,31 @@ than left to be re-derived from a queue entry:
 | 1 | local tool or deployed app? | **local developer tool** — `node ui.js` → loopback | default, unanswered by 2026-09-08 |
 | 2 | does it write the corpus? | **write the file, never touch git** (option B) | default, unanswered by 2026-09-08 |
 
+## 🐱 Both defaults were later OVERRULED by James, and that is the queue working
+
+The table above is what **silence** decided on 2026-09-08. He has since answered both out loud, and
+the answers went the other way — which is the point of writing a default down rather than waiting.
+
+| | he said | where | what it changed |
+|---|---|---|---|
+| 1 | *"Oh I was thinking 2 so that I can use on my phone. I guess we will need some auth."* | kit#25, 2026-09-11 | **deployed**, not laptop-only. Release means a URL he opens on a phone. |
+| 2 | *"Ok let's stick to git for now and park db"* | kit#41, 2026-09-11 | Kit **does** touch git when deployed — see `git-store.js` (kit#43). |
+
+🔑 **Decision 2 was overruled against my stated default, and the reason is worth keeping.** He had
+said *"will need a db and some auth I guess"*, so the queued default was *build the db, as he said*.
+Once the **cost** was written where he could see it — a db means the corpus stops being a file in his
+repo that he reviews as a diff, which is Kit's central premise — he reversed inside ten minutes. The
+cheap default is what extracted the expensive answer.
+
+⚠️ **Decision 2 is overruled for the DEPLOYED case only.** Locally nothing changed: `node ui.js` with
+no flags still writes the file and never runs git, because the review step it protects still has
+somewhere to happen. `--git` is the difference between the two deployments, not a replacement of one
+by the other. `writer.js` itself still contains no path to git at all, and a test asserts it.
+
+⚠️ **Decision 1's auth half is NOT settled** — *"I guess we will need some auth"* is the same hedge
+the database turned out to be, so it is asked rather than assumed: **kit#44**, acting 2026-09-16.
+Until it lands, a deployed Kit has no lock on its writes and must not be exposed.
+
 ⚠️ **Re-measured before acting, not just re-quoted** ([[re-measure-a-lapsed-default]]). Nothing in
 the three days since changed either answer: a deployed UI still needs a GitHub App token in the
 cluster, an auth story and a clone layer, all of which are secrets-and-platform work that is never
