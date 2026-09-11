@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
 import snipIt from '../test/fixtures/project-snip-it.json'
@@ -71,6 +71,34 @@ describe('Project', () => {
     const flags = await screen.findAllByText('unreviewed')
     expect(flags).toHaveLength(habits.adjudication.unreviewed.length)
   })
+
+  it('marks each inferred behaviour in the LIST, not only in the summary count', async () => {
+    // Two different renders say "inferred" on this page: the summary badge
+    // ("3 inferred") and a per-row badge. Only the summary was pinned, so the
+    // row badge could vanish and the page would still read as though it said
+    // which behaviours a machine wrote — the distinction the whole adjudication
+    // queue rests on.
+    //
+    // The exact-text query is what separates them: the summary badge's text is
+    // "N inferred", not "inferred".
+    renderApp(habits, 'james-habits-app')
+
+    await screen.findByRole('heading', { name: 'james-habits-app', level: 1 })
+    const rowFlags = screen.getAllByText('inferred', { exact: true })
+    const inferredCount = habits.behaviours.filter((b) => b.source.origin === 'inferred').length
+    expect(inferredCount).toBeGreaterThan(0) // or this test is vacuous
+    expect(rowFlags).toHaveLength(inferredCount)
+  })
+
+  it('CONTROL: a corpus with no inferences shows no row marked inferred', async () => {
+    // snip-it is entirely `defined`. Without this, the count above is satisfied
+    // by a badge rendered on every row.
+    expect(snipIt.behaviours.every((b) => b.source.origin !== 'inferred')).toBe(true)
+    renderApp(snipIt, 'snip-it')
+
+    await screen.findByRole('heading', { name: 'snip-it', level: 1 })
+    expect(screen.queryByText('inferred', { exact: true })).not.toBeInTheDocument()
+  })
 })
 
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
@@ -132,6 +160,33 @@ describe('the question sheet', () => {
         `/projects/james-habits-app/behaviours/${q.id}`,
       )
     }
+  })
+
+  it('will not submit a new behaviour without an id, and will not without a title', async () => {
+    // Both halves, because the button guards both and a test for one alone is
+    // satisfied by a form that dropped the other. An id is not a field the
+    // corpus can default: it is the key `check.js` gates on and the anchor every
+    // `serves`/`cites` line refers to, so a blank one is a behaviour nothing can
+    // ever name.
+    renderApp(snipIt, 'snip-it')
+
+    const add = await screen.findByRole('button', { name: 'Add behaviour' })
+    expect(add).toBeDisabled()
+
+    // Title only — still refused.
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'the cut is downloadable' } })
+    expect(add).toBeDisabled()
+
+    // Id as whitespace is the same as no id; `.trim()` is what makes that true.
+    fireEvent.change(screen.getByLabelText('Id'), { target: { value: '   ' } })
+    expect(add).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Id'), { target: { value: 'BEH-CUT-2' } })
+    expect(add).toBeEnabled()
+
+    // And the other direction: a title cleared after the fact re-disables it.
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: '' } })
+    expect(add).toBeDisabled()
   })
 
   it('shows no sheet at all when there is nothing to ask', async () => {

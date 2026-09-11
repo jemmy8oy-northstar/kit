@@ -21,6 +21,29 @@
     "_comment": ["Seed bindings for the contract. page:Home is ALREADY BOUND, so the rebind refusal has something to refuse."],
     "page:Home": { "route": "./" }
   },
+  "reads": [
+    {
+      "what": "open a project whose name has to survive the URL — the READ half of the escaping already pinned for writes",
+      "why": [
+        "`mutate-ui.js` dropped encodeURIComponent from fetchProject and every test stayed green.",
+        "The write paths were safe because this fixture drives `two words` through addStep on both",
+        "sides; the read path had no such entry, so the one place the client builds a GET URL was",
+        "pinned by nobody. A client-only assertion would have been the exact failure the `why` at the",
+        "top of this file warns about — proving the mock rather than the seam."
+      ],
+      "call": { "fn": "fetchProject", "args": ["two words"] },
+      "method": "GET",
+      "path": "/api/projects/two%20words",
+      "expect": { "status": 200, "jsonMustHave": { "app": "two words" } }
+    },
+    {
+      "what": "a project that does not exist is a 404 carrying a sentence, not an empty body",
+      "call": { "fn": "fetchProject", "args": ["nope"] },
+      "method": "GET",
+      "path": "/api/projects/nope",
+      "expect": { "status": 404, "reasonMustExist": true }
+    }
+  ],
   "requests": [
     {
       "what": "add one step to a behaviour that exists",

@@ -88,6 +88,77 @@ describe('BehaviourPage', () => {
     expect(headings).not.toEqual(alphabetical)
   })
 
+  it('sorts a noun no step here NAMES to the back, not the front', async () => {
+    // The -1 case in `rank()`, which no fixture reaches: `requires.js` counts a
+    // noun named only in another behaviour's `provides` value, so it is `usedBy`
+    // this behaviour while appearing in none of its step `refs`. `indexOf`
+    // returns -1 for it, and -1 sorts FIRST — putting the one requirement the
+    // reader cannot see in the generated test above everything they can.
+    //
+    // Constructed rather than captured, because the real corpus has no such
+    // noun today. That is the reason the branch survived: the comment on
+    // `rank()` says the case is real, and nothing exercised it.
+    const withGhost = {
+      ...habits,
+      requires: {
+        ...habits.requires,
+        missing: [
+          {
+            noun: 'field:Ghost',
+            kind: 'field',
+            name: 'Ghost',
+            usedBy: ['BEH-TODAY-1'],
+            bound: false,
+            satisfied: false,
+            needs: [{ id: 'label', surface: 'a label', verbs: ['fills'], met: false }],
+            binding: null,
+            sharedWith: [],
+          },
+          ...habits.requires.missing,
+        ],
+      },
+    }
+    renderAt(withGhost, 'james-habits-app', 'BEH-TODAY-1')
+
+    const headings = (await screen.findAllByRole('heading', { name: /^Bind/ }))
+      .map((h) => h.textContent ?? '')
+
+    // It must still be OFFERED — it is a real requirement — just not first.
+    expect(headings.some((h) => h.includes('field:Ghost'))).toBe(true)
+    expect(headings.findIndex((h) => h.includes('field:Ghost'))).toBe(headings.length - 1)
+    // And the nouns the steps DO name keep their step order in front of it.
+    expect(headings[0]).toContain('page:Today')
+  })
+
+  it('shows a correction recorded by a past denial, so the next adjudicator sees it', async () => {
+    // `review denied <correction>` is the only place a human's statement about
+    // what the behaviour SHOULD say is stored, and his #68 vocabulary requires
+    // one on every denial. Hiding it puts the next reader back where the denier
+    // started. No fixture carries a note, which is precisely why nothing noticed.
+    const denied = {
+      ...habits,
+      behaviours: habits.behaviours.map((b) =>
+        b.id === 'BEH-SEED-1'
+          ? { ...b, review: { state: 'denied', note: 'the page is Dashboard, not Home' } }
+          : b,
+      ),
+    }
+    renderAt(denied, 'james-habits-app', 'BEH-SEED-1')
+
+    expect(await screen.findByText(/Recorded correction:/)).toHaveTextContent(
+      'the page is Dashboard, not Home',
+    )
+  })
+
+  it('CONTROL: a behaviour with no correction shows no empty "Recorded correction" line', async () => {
+    // Otherwise the assertion above is satisfied by a page that always renders
+    // the label, with nothing after it.
+    renderAt(habits, 'james-habits-app', 'BEH-SEED-1')
+
+    await screen.findByRole('button', { name: 'Approve' })
+    expect(screen.queryByText(/Recorded correction:/)).not.toBeInTheDocument()
+  })
+
   it('says which OTHER corpora a binding would reach, before the click', async () => {
     // `bindings.json` is one flat map over every corpus, and its own comment
     // calls the convention that avoids collisions "still a habit rather than a
