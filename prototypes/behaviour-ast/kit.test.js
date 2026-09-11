@@ -3155,6 +3155,46 @@ test('the write contract fixture is not empty, and covers both routes', () => {
   assert.ok(binds.some((r) => r.expect.sharedWith && r.expect.sharedWith.length === 0), 'nothing in the contract binds an unshared noun');
 });
 
+test('the contract pins the READ path too, not only the writes', () => {
+  // The gap `mutate-ui.js` found: every write path was driven through a
+  // percent-encoded app name on both sides, and the one GET the client builds
+  // was pinned by nobody, so dropping `encodeURIComponent` from `fetchProject`
+  // left the whole frontend suite green.
+  assert.ok(CONTRACT.reads && CONTRACT.reads.length >= 2, 'the contract declares no reads');
+  assert.ok(CONTRACT.reads.some((r) => /%20/.test(r.path)),
+    'no read in the contract exercises a percent-encoded name');
+  assert.ok(CONTRACT.reads.some((r) => r.expect.status === 404),
+    'the reads only cover the happy path');
+});
+
+for (const req of CONTRACT.reads) {
+  test(`contract: ${req.method} ${req.path} — ${req.what}`, async () => {
+    const dir = fixture(CONTRACT.corpus);
+    const bindings = pathx.join(dir, 'bindings.json');
+    fsx.writeFileSync(bindings, `${JSON.stringify(CONTRACT.bindings, null, 2)}\n`);
+    const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
+    try {
+      const { port } = server.address();
+      const res = await get(port, req.path);
+      assert.strictEqual(res.status, req.expect.status,
+        `${req.path} answered ${res.status}: ${res.body}`);
+
+      const body = JSON.parse(res.body);
+      for (const [k, v] of Object.entries(req.expect.jsonMustHave || {})) {
+        // The DECODED name, which is the half that matters: a server that
+        // answered 200 for `/api/projects/two%20words` while serving some other
+        // corpus would satisfy a status-only assertion.
+        assert.strictEqual(body[k], v, `${req.path} answered with ${k}=${JSON.stringify(body[k])}`);
+      }
+      if (req.expect.reasonMustExist) {
+        assert.ok(body.reason, 'a 404 must carry a sentence, not just a code');
+      }
+    } finally {
+      await new Promise((r) => server.close(r));
+    }
+  });
+}
+
 for (const req of CONTRACT.requests) {
   test(`contract: ${req.method} ${req.path} — ${req.what}`, async () => {
     // A fresh corpus per request: these write, and a shared directory would make

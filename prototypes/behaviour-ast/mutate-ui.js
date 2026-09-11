@@ -236,8 +236,18 @@ const MUTANTS = [
   ['a new behaviour can be submitted with a blank id',
     "disabled={write.state === 'saving' || id.trim() === '' || title.trim() === ''}",
     "disabled={write.state === 'saving' || title.trim() === ''}", 'src/pages/Project.tsx'],
-  ['a blank Actor field writes a literal empty `actor ""` line into the corpus',
-    '...(actor.trim() ? { actor: actor.trim() } : {}),', 'actor: actor.trim(),', 'src/pages/Project.tsx'],
+  // ⚠️ REMOVED, and the removal is the finding: a mutant reading
+  //   '...(actor.trim() ? { actor: actor.trim() } : {}),' -> 'actor: actor.trim(),'
+  // survived the first run under the name "a blank Actor field writes a literal
+  // empty `actor ""` line into the corpus". **That damage cannot happen.**
+  // `writer.js:229` is `if (opts.actor) out.push(...)`, and '' is falsy, so the
+  // server drops the key regardless of what the client sends. The UI's guard is
+  // defence-in-depth over a server guard and there is no observable difference.
+  //
+  // A survivor is a question, not a verdict, and the answer here was "the mutant
+  // is wrong" rather than "a test is missing". Writing a test to kill it would
+  // have pinned a defect that does not exist and made the score look better for
+  // it [[an-equivalent-mutant-reports-survived]].
 
   // ── stage 4, the slice kit#32 shipped ─────────────────────────────────────
   ['the bind panel asks him to bind every unbound noun in the project, not the ones this behaviour names',

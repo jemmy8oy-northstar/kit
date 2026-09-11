@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ApiError, addBehaviour, addBinding, addStep, setReview } from './client'
+import { ApiError, addBehaviour, addBinding, addStep, fetchProject, setReview } from './client'
 import contract from '../test/fixtures/write-contract.json'
 import type { ReviewState } from './types'
 
@@ -84,6 +84,32 @@ describe('the write contract, from the client side', () => {
     const headers = calls[0].init.headers as Record<string, string>
     expect(headers['content-type']).toBe('application/json')
   })
+})
+
+describe('the read contract, from the client side', () => {
+  // Added because `mutate-ui.js` removed `encodeURIComponent` from
+  // `fetchProject` and all 59 tests stayed green. The write paths were already
+  // safe — the fixture drives `two words` through `addStep` on both sides — and
+  // the single GET the client builds was pinned by nobody.
+  //
+  // Deliberately driven from the same `contract.reads` kit.test.js drives into a
+  // real socket. Asserting the URL against a literal typed HERE would be the
+  // mock proving itself, which is the failure the fixture's own header warns of.
+  for (const read of contract.reads) {
+    it(`sends ${read.method} ${read.path} — ${read.what}`, async () => {
+      const calls = recorder(
+        read.expect.status === 200
+          ? ok({ app: 'two words', behaviours: [] })
+          : { ok: false, status: read.expect.status, body: { reason: 'no such project' } },
+      )
+
+      const [app] = read.call.args as [string]
+      await fetchProject(app).catch(() => undefined) // a 404 rejects; the request still went out
+
+      expect(calls).toHaveLength(1)
+      expect(calls[0].url).toBe(read.path)
+    })
+  }
 })
 
 describe('what a refusal does to the caller', () => {
