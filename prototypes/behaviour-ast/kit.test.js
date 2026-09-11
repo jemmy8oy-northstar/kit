@@ -3653,6 +3653,157 @@ test('mutate-ui: the unmatched failure branch reports the signal and status, not
     'the known-cause scan must come first, so a nameable failure keeps its name');
 });
 
+// ── git write-back: a write has to reach the repo (kit#43) ───────────────────
+//
+// James chose git over a database for a deployed Kit (kit#41): "Ok let's stick
+// to git for now and park db". Deployed there is no working tree anyone will
+// ever look at, so decision 2's review step — the edit lands in your tree and
+// you read the diff — has nowhere to happen unless the edit is committed.
+//
+// 🔑 These run against a REAL bare repo and a REAL clone, not a stubbed git.
+// The states worth having are the failures, and a stub asserts only that the
+// stub was called. Nothing here touches the network: a bare repo on disk is a
+// perfectly good remote.
+const gitStore = require('./git-store.js');
+const { spawnSync: spawnx } = require('child_process');
+
+/** A real remote, a real clone, and one committed corpus file inside it. */
+function gitFixture() {
+  const root = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-git-'));
+  const bare = pathx.join(root, 'bare.git');
+  const clone = pathx.join(root, 'clone');
+  const sh = (args, cwd) => {
+    const r = spawnx('git', args, { cwd, encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`fixture: git ${args.join(' ')} — ${r.stderr}`);
+    return r.stdout;
+  };
+  sh(['init', '-q', '--bare', '-b', 'main', bare]);
+  sh(['clone', '-q', bare, clone]);
+  sh(['-C', clone, 'config', 'user.name', 'fixture']);
+  sh(['-C', clone, 'config', 'user.email', 'fixture@example.com']);
+  fsx.mkdirSync(pathx.join(clone, 'behaviours'));
+  const file = pathx.join(clone, 'behaviours', 'demo.beh');
+  fsx.writeFileSync(file, 'behaviour BEH-1 "a thing"\n  actor visitor\n');
+  sh(['-C', clone, 'add', '-A']);
+  sh(['-C', clone, 'commit', '-q', '-m', 'initial']);
+  sh(['-C', clone, 'push', '-q', 'origin', 'main']);
+  return { root, bare, clone, file, sh };
+}
+
+test('git-store: it is off unless asked for, so the local tool is decision 2 unchanged', () => {
+  const f = gitFixture();
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  const r = gitStore.writeBack(f.file, {});
+  assert.strictEqual(r.committed, false);
+  assert.strictEqual(r.pushed, false);
+  // And the tree really is untouched — the claim is about git, not about a flag.
+  assert.ok(f.sh(['-C', f.clone, 'status', '--short']).includes('demo.beh'),
+    'the edit must still be sitting uncommitted in the working tree');
+});
+
+test('git-store: an edit is committed AND reaches the remote, not just the local clone', () => {
+  const f = gitFixture();
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'add a step to BEH-1', app: 'demo' });
+  assert.strictEqual(r.committed, true, r.reason);
+  assert.strictEqual(r.pushed, true, r.reason);
+
+  // 🔑 Asked of the BARE repo. Reading the clone would prove only that a commit
+  // happened locally, which is exactly the state this module exists to
+  // distinguish from a successful push.
+  const remote = f.sh(['-C', f.bare, 'show', 'main:behaviours/demo.beh']);
+  assert.ok(remote.includes('when opens page:Home'), 'the edit did not reach the remote');
+  assert.ok(f.sh(['-C', f.bare, 'log', '--oneline', '-1']).includes('add a step to BEH-1'),
+    'the commit message must describe the edit, or the history is as opaque as the db he refused');
+});
+
+test('git-store: a write that changes nothing makes no commit, rather than an empty one', () => {
+  const f = gitFixture();
+  const before = f.sh(['-C', f.clone, 'rev-parse', 'HEAD']).trim();
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'no-op' });
+  assert.strictEqual(r.committed, false);
+  assert.ok(r.reason.includes('unchanged'), r.reason);
+  assert.strictEqual(f.sh(['-C', f.clone, 'rev-parse', 'HEAD']).trim(), before,
+    're-adjudicating to the state it already had must not add a commit');
+});
+
+test('git-store: switched on outside a work tree is reported, not thrown and not silent', () => {
+  const root = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-nogit-'));
+  const loose = pathx.join(root, 'x.beh');
+  fsx.writeFileSync(loose, 'behaviour BEH-9 "z"\n');
+  const r = gitStore.writeBack(loose, { enabled: true, summary: 'x' });
+  assert.strictEqual(r.committed, false);
+  assert.ok(r.reason.includes('not inside a git work tree'), r.reason);
+});
+
+// 🔴 The one the module exists for. By the time git runs, commitToDisk has
+// ALREADY written the file — so a push failure never means "your edit was
+// lost", it means "your edit is on a disk nobody will read again". Reporting
+// that as success is how a deployed Kit loses work silently.
+test('git-store: when the push fails the commit still happened, and both facts are reported', () => {
+  const f = gitFixture();
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  // Move the remote out from under the clone: a real push failure, not a stub.
+  fsx.renameSync(f.bare, f.bare + '.gone');
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'add a step' });
+
+  assert.strictEqual(r.committed, true, 'the commit half succeeded and must say so');
+  assert.strictEqual(r.pushed, false, 'the push half failed and must say so');
+  assert.ok(r.commit, 'a local commit that exists must be nameable, so a person can find it');
+  // The reason has to carry git's own words. A summary of them is how kit#39
+  // spent three sessions unable to say why a run stopped.
+  assert.ok(r.reason.includes('push'), r.reason);
+  assert.ok(r.reason.includes('128') || r.reason.includes('exited'), r.reason);
+});
+
+test('git-store: the commit carries only the corpus, not whatever else the tree was dirty with', () => {
+  const f = gitFixture();
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  // A pod's tree can be dirty for reasons that have nothing to do with this
+  // edit. `git commit -a` would sweep them into his history under a message
+  // describing one behaviour.
+  const stray = pathx.join(f.clone, 'behaviours', 'unrelated.txt');
+  fsx.writeFileSync(stray, 'not part of this edit\n');
+  f.sh(['-C', f.clone, 'add', '--', 'behaviours/unrelated.txt']);
+
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'add a step' });
+  assert.strictEqual(r.pushed, true, r.reason);
+  const touched = f.sh(['-C', f.bare, 'show', '--name-only', '--format=', 'main']).trim().split('\n');
+  assert.deepStrictEqual(touched, ['behaviours/demo.beh'],
+    'the commit must contain the corpus alone');
+});
+
+test('git-store: a detached HEAD is refused rather than pushed to a guessed branch', () => {
+  const f = gitFixture();
+  f.sh(['-C', f.clone, 'checkout', '-q', '--detach', 'HEAD']);
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'add a step' });
+  assert.strictEqual(r.committed, false);
+  assert.ok(r.reason.includes('detached'), r.reason);
+});
+
+// The lesson of kit#39, applied to a different child process. Three outcomes
+// that need three different fixes — the binary is absent, it exited non-zero,
+// it was signalled — must not collapse into one sentence.
+test('git-store: a failed git call names the layer that failed, not a fixed sentence', () => {
+  const f = gitFixture();
+  const exited = gitStore.git(['rev-parse', '--verify', 'refs/heads/does-not-exist'], f.clone);
+  assert.strictEqual(exited.ok, false);
+  assert.ok(exited.failure.includes('exited'), exited.failure);
+
+  // A missing binary must be distinguishable from a rejected command, because
+  // "git is not installed in this image" and "your push was rejected" send
+  // whoever reads them to entirely different places.
+  const gone = gitStore.git(['rev-parse', 'HEAD'], pathx.join(f.root, 'no-such-dir'));
+  assert.strictEqual(gone.ok, false);
+  assert.ok(gone.failure.length > 0);
+});
+
+test('git-store: the commit message describes the edit and names the app', () => {
+  assert.strictEqual(gitStore.message('add BEH-7', 'snip-it'), 'kit: add BEH-7 (snip-it)');
+  assert.strictEqual(gitStore.message('bind page:Home', null), 'kit: bind page:Home');
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);
