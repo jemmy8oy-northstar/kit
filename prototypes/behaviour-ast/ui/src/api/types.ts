@@ -343,3 +343,17 @@ export interface BindResult extends GitOutcome {
  * in result` where the difference matters.
  */
 export type AnyWriteResult = WriteResult | BindResult
+
+/**
+ * Whether this Kit has a password, and whether this browser is past it (kit#46).
+ *
+ * Two booleans rather than one tri-state, because they answer independent
+ * questions and collapsing them loses the case that matters: a LOCAL Kit is
+ * `{ required: false, signedIn: true }` and must never be shown a sign-in form,
+ * while a deployed one before sign-in is `{ required: true, signedIn: false }`.
+ * A single "canWrite" flag would make those two look the same on the way in.
+ */
+export interface SessionState {
+  required: boolean
+  signedIn: boolean
+}

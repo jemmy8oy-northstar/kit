@@ -1,5 +1,6 @@
 import type {
-  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, WriteResult,
+  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, SessionState,
+  WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -91,6 +92,31 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 export function fetchProjects(): Promise<{ projects: ProjectSummary[] }> {
   return get<{ projects: ProjectSummary[] }>('/api/projects')
+}
+
+/**
+ * Is there a lock on this Kit, and am I past it? (kit#46)
+ *
+ * Asked before the app draws anything, because the two states the page has to
+ * tell apart — "you must sign in" and "there is no sign-in here" — are not
+ * distinguishable from a failed write. A local Kit is permanently the second
+ * one and must never show a password field.
+ */
+export function fetchSession(): Promise<SessionState> {
+  return get<SessionState>('/api/session')
+}
+
+/**
+ * Sign in. The token never comes back to this code — it arrives as an HttpOnly
+ * cookie the browser stores and this script cannot read, which is the point.
+ * All we learn is whether it worked.
+ */
+export function signIn(password: string): Promise<{ ok: true; signedIn: true }> {
+  return post<{ ok: true; signedIn: true }>('/api/session', { password })
+}
+
+export function signOut(): Promise<{ ok: true; signedIn: false }> {
+  return post<{ ok: true; signedIn: false }>('/api/session/end', null)
 }
 
 export function addStep(app: string, id: string, step: string): Promise<WriteResult> {
