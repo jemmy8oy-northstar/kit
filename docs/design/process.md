@@ -207,3 +207,67 @@ stop ([[artefacts-not-states]]).
    hold in one head, both are real, and — the part I had not appreciated — **both skipped the SDD pipeline's
    spec stages entirely**, so their defined and inferred behaviours have never once been reconciled. That
    is the exact condition Kit claims to fix, occurring naturally rather than staged.
+
+## How a spec change reaches git — ANSWERED by James on #52, 2026-09-12
+
+He opened #52 with a Gemini transcript proposing a branch-per-spec-change flow, then decided it in his
+own words. Three decisions and a sequencing rule:
+
+1. ✅ **A spec change opens a branch and a PR, and the PR starts red.** *"I was thinking the user changes
+   the spec which creates a new pr, then in the background you can update the implementation to get the
+   tests passing and match the new spec."*
+   🔑 **He picked neither option I offered.** Mine were *spec-only* (the `.beh` travels alone, CI green,
+   auto-mergeable) and *spec+tests* (red by design, he merges it when the implementation lands). His is
+   better than both: the PR is **an opened work item whose acceptance criteria are executable**, and the
+   implementation lands *in that same PR*. So the merge is gated on the behaviour existing rather than on
+   a policy about auto-merge — and **"auto or manual" stops being a question**, because a PR cannot
+   auto-merge while its own generated tests are failing.
+   ⇒ Kit emits a *ticket*, not a commit. The hand-off into the existing workflow is the
+   `claude-code-bot` label, which is how every other work item here reaches me.
+2. ✅ **The corpus lives in the project's repo.** *"I feel like the projects spec should live in the
+   projects repo."* This is the *same* decision as (1): spec and implementation can only be one PR if
+   they share a repo. Recorded with its full cost in `ui.md`; the load-bearing consequence is that
+   **`kit.js`, and therefore the stage 7 gate, cannot yet read a corpus outside its own directory.**
+3. ✅ **The UI authenticates with GitHub.** *"Sounds good"*, to the recommendation that Kit use GitHub
+   auth — **the web flow, and the user's own token, not an App installation token.** `kit#47`'s password
+   is unaffected and not wasted: the `auth.js` that PR introduces (⚠️ **it is not on `dev` yet** — #47
+   is open at the time of writing) mints an opaque session with `sessions().create()`, which takes no
+   argument and knows nothing about how identity was proved. OAuth would change only what happens
+   *before* it, so the password is the first of two ways to mint the same session, not a detour.
+   ⚠️ **It costs one more secret than the password, not fewer.** Gemini's "zero password risk" framing is
+   backwards in this estate: the password is one hand-made value, while the web flow needs a client
+   secret (and the App route a private key too). The device flow needs no secret, but GitHub explicitly
+   says not to enable it outside "a constrained environment (CLIs, IoT devices, or headless systems)",
+   and Kit's UI is a browser app. The argument that carries the decision is the one that never counted
+   secrets: **GitHub auth dissolves the push-credential question** — the user's token *is* the push
+   credential — and it buys commit attribution, which is genuinely missing today (every write-back
+   commits as `kit <kit@users.noreply.github.com>`).
+4. 📋 **Sequencing: Kit is validated on Kit before any other repo is onboarded.** *"I think maybe we
+   validate using kit before onboarding other repos and adding the specs etc."* This selects the step
+   `ui.md`'s own sequence already lists as its last: Kit's corpus in browser verbs, gated by
+   `kit check`, so the self-hosting claim is measured rather than argued.
+
+### 🔴 The middle of that loop does not exist yet
+
+Gemini's step 5 — *"CI runs spec-to-test generator & validation"* — has **no implementation**, and the
+flow above rests on it. Measured 2026-09-12:
+
+- `ci.yml` runs Kit's **own** suites only. **No job runs a generated test.**
+- Generated Playwright specs are written to `os.tmpdir()` by `selfhost/run.js` and **never enter a
+  repository**. That harness is a manual gate and must stay one: Kit has no `@playwright/test`
+  dependency, so it takes the binary on the command line.
+
+⇒ Closing the gap needs a dependency (**packaging**) *and* a workflow (**platform**) — both James's under
+claude-code-bot#83. Until then **a spec-change PR can only carry the `.beh` file itself**, which is the
+one thing his loop cannot do without.
+
+⚠️ **This is an absence, so no build reports it** and a green CI badge is not evidence against it. It is
+recorded here because that is the only place it can be.
+
+### One mechanical constraint on the write-back target
+
+Write-back should target a **dedicated branch, not `dev`** — and the reason is mechanical, not policy.
+`ci.yml` is `cancel-in-progress` keyed on the ref, so a spec edit pushed to `dev` **kills an in-flight
+CI run** there; and `writeBack` never pulls first, so from a stale clone the write **strands** rather
+than conflicting. Nothing forbids `dev` (kit has no rulesets and `dev` is unprotected — a push would be
+accepted), which is exactly why the constraint needs writing down.

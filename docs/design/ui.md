@@ -244,7 +244,71 @@ on it.
 
 ## What this document does not decide
 
-Anything about what the UI is *for* beyond his four verbs. In particular: whether it manages
-**projects** (many repos, one place) or **one corpus at a time** is left open, because his sentence
-says "my projects" and every existing tool in Kit takes a single app. That is a product question,
-not an engineering one, and guessing it would shape everything downstream.
+Anything about what the UI is *for* beyond his four verbs.
+
+~~In particular: whether it manages **projects** (many repos, one place) or **one corpus at a
+time** is left open, because his sentence says "my projects" and every existing tool in Kit takes a
+single app. That is a product question, not an engineering one, and guessing it would shape
+everything downstream.~~ **ANSWERED by James on #52, 2026-09-12 — see below.**
+
+## The corpus lives in the project's repo — ANSWERED by James on #52, 2026-09-12
+
+> *"I feel like the projects spec should live in the projects repo"* — and, separately,
+> *"I think maybe we validate using kit before onboarding other repos and adding the specs etc"*
+
+**One corpus per project, in that project's own repository.** Recorded here rather than left on the
+thread, for the same reason as the four decisions in `process.md`: a decision that only exists in a
+comment is the thing this project exists to stop ([[artefacts-not-states]]).
+
+🔑 **It is the same decision as the branching one below**, not an independent preference. A spec
+change and the implementation it forces can only travel in *one* PR if they live in one repo, and
+he chose one PR. The two answers land or move together.
+
+### What this already is, rather than what it would cost
+
+Most of it is built, which was not obvious from the thread:
+
+- **Corpus location is already a flag on the server.** `ui.js` takes `--dir <path>`, defaulting to
+  `prototypes/behaviour-ast/behaviours`, and it flows to `corpora()`, `writer.corpusPath()` and the
+  coverage projection. There is no containment check, so an absolute path outside Kit works.
+- **The write-back already targets the corpus's own repository.** `git-store.js`'s `workTreeFor()`
+  resolves the work tree by running `git rev-parse --show-toplevel` *from the corpus file's own
+  directory*. Pointed at another repo's `behaviours/`, a write commits and pushes to **that** repo.
+  A directory in no git repo fails loudly rather than silently falling back to Kit's own.
+- **`--repos` exists but answers a different question:** where an app's *source* lives, so coverage
+  can be measured against its real tests. It expects `<reposDir>/<app>`, i.e. one parent directory
+  of checkouts named exactly like the corpus files.
+
+So for the *editing* surface this is configuration, not construction.
+
+### 🔴 The gate cannot follow, and that is the cost
+
+`kit.js` — the CLI behind the reports, the question sheets and **`kit check`, the coverage gate** —
+resolves its corpus as `path.join(__dirname, 'behaviours')`. There is no `--dir` and no path
+argument; its only positional filters *which files inside that fixed directory* load.
+
+`process.md` stage 7 calls that gate "the only part of the system that can go red, and therefore
+the only part that cannot be politely ignored". So under this decision the editing surface can point
+at a project's repo while the enforcing surface cannot see it: a corpus in `snip-it` would be
+viewable and writable from the UI and **ungated in CI**. That is the precise failure mode stage 7
+already warns about with its own table — two repos, byte-identical test scripts, only one of them
+actually gating.
+
+⇒ **Giving `kit.js` the `--dir` its sibling entry point already has is the enabling change for
+onboarding a second repo.** It is deliberately *not* done yet, because of his sequencing: Kit is
+validated on Kit first, and Kit's own corpus is already in Kit's own repo, so nothing moves.
+
+### What his sequencing makes free, and what it defers
+
+- **Free:** `behaviours/kit.beh` and `behaviours/kit-ui.beh` describe Kit and live in Kit's repo, so
+  they already satisfy the rule. Validating on Kit needs no corpus move and no new flag.
+- **Deferred by him:** onboarding another repo — which needs the `kit.js` flag above, plus a
+  decision about where `bindings.json` lives, since today it is **one flat map shared across every
+  corpus** and a per-repo corpus implies a per-repo binding set. That is kit#23's territory and is
+  not settled here.
+- ⚠️ **Of the nine corpora in `behaviours/` today, only two are Kit's own.** Four describe real
+  repos (`james-habits-app`, `language-vocab`, `macro-metrics`, `snip-it`) and would move under this
+  decision; three (`trial-habits-a`, `trial-habits-b`, `trial-lend`) are trials and an invented app
+  — **test data that stays put**. The UI lists all nine as "Projects", so three of those entries are
+  fixtures presented as projects. Anything that reasons over "the project list" must say which
+  population it means ([[a-directory-is-a-population]]).
