@@ -128,6 +128,32 @@ function unreadable(got) {
   return got.passed === 0 && got.failed === 0;
 }
 
+// 🔴 A browser that would not start is not a test result, and `unreadable()`
+// cannot see it — correctly, because a tally WAS produced. What was not
+// produced is any contact with the app.
+//
+// Playwright reports a browser it could not launch as an ordinary test failure,
+// once per test. So a machine whose browsers are missing emits a complete,
+// well-formed, entirely red report — which is the single most misleading shape
+// available, because it is indistinguishable by tally from Kit having regressed
+// to nothing. MEASURED on 2026-09-12: run in this pod without `--browsers`,
+// `--check` printed `0 passed, 6 failed` and concluded *"the run no longer says
+// what the write-up claims"* — i.e. the write-up is wrong. That is the one
+// conclusion that talks a later session into `--record`, which would overwrite
+// `expected.json` with zeroes and delete the evidence this harness exists to
+// protect. The environment was broken; the tool blamed Kit
+// ([[measurement-not-verdict]]).
+//
+// `browserType.launch:` is deliberately the narrowest possible discriminator:
+// it is Playwright's launch API failing, which is categorically a fault in the
+// environment and never an assertion about Kit. Any occurrence at all is
+// enough — a suite where only some tests could start a browser has still not
+// measured the ones that could not, and "could not look" is the fail-safe
+// answer for that ([[a-narrow-catch-is-an-instrument]]).
+function launchFailed(output) {
+  return /browserType\.launch:/.test(output);
+}
+
 function drifted(want, now) {
   return JSON.stringify(want) !== JSON.stringify(now);
 }
@@ -138,7 +164,15 @@ function parseResults(output) {
   return {
     passed: passed ? Number(passed[1]) : 0,
     failed: failed ? Number(failed[1]) : 0,
-    failing: [...output.matchAll(/^\s+\S*specs\/\S+\s+›\s+(.*?)\s*$/gm)].map((m) => m[1].trim()),
+    // The trailing `─+` is the list reporter PADDING the line out to a fixed
+    // width, and whether a given name gets any depends on how long that name
+    // is. Left in, it becomes part of the recorded test name: a 6-failure run
+    // here produced `"…listed as a project ───────"`. `expected.json` holds a
+    // clean name only because the one test that fails today happens to be long
+    // enough to need no padding — so the fixture this was written against was
+    // the case that worked ([[feed-it-the-extreme-case]]). Strip it, or a
+    // rename shortens a title into spurious drift.
+    failing: [...output.matchAll(/^\s+\S*specs\/\S+\s+›\s+(.*?)(?:\s+─+)?\s*$/gm)].map((m) => m[1].trim()),
   };
 }
 
@@ -228,6 +262,14 @@ async function main(argv = []) {
     }
 
     const got = parseResults(output);
+    // Before the tally is believed: a run that could not start a browser has
+    // measured nothing, however complete its report looks.
+    if (launchFailed(output)) {
+      console.error('\nselfhost: Playwright could not START a browser, so no test reached the app — could not look.');
+      console.error('  This is NOT a finding about Kit, and --check deliberately does not call it drift.');
+      console.error('  Pass --browsers <dir> if the install is not where Playwright looks by default.');
+      return 2;
+    }
     if (unreadable(got)) {
       console.error('selfhost: could not read a pass/fail tally out of the run — could not look');
       return 2;
@@ -268,6 +310,6 @@ async function main(argv = []) {
   return code;
 }
 
-module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, unreadable, drifted, main, SUBJECT, EXPECTED };
+module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, unreadable, launchFailed, drifted, main, SUBJECT, EXPECTED };
 
 if (require.main === module) main(process.argv.slice(2)).then((c) => process.exit(c));

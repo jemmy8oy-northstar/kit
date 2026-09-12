@@ -200,6 +200,20 @@ node prototypes/behaviour-ast/selfhost/run.js --playwright <bin> [--browsers <di
 `--check` re-runs the tests and exits 1 if the outcome has drifted from
 `selfhost/expected.json`; exit 2 is **could not look**, which is deliberately not 0.
 
+✅ **Re-measured 2026-09-12 on `dev`: 5 passed, 1 failed, exit 0 — the table above is still what
+the run says.** Worth dating, because `--check` is manual: between the run that recorded these
+numbers and this one, nothing had executed them, so their shelf life was unmeasured rather than
+long ([[a-capability-claim-has-a-shelf-life]]).
+
+🔴 **`--browsers` is not optional in practice, and forgetting it used to produce a LIE.** Playwright
+reports a browser it cannot launch as an ordinary test failure, once per test, so a machine whose
+browsers sit somewhere else emits a complete, well-formed, entirely red report. Run here without
+the flag, `--check` printed `0 passed, 6 failed` and concluded *"the run no longer says what the
+write-up claims"* — blaming this document for a fault in the environment, and pointing the reader
+at `--record`, which would have overwritten `expected.json` with zeroes and destroyed the evidence.
+A launch failure is now **exit 2**, and `selfhost/fixtures/no-browser.txt` is that run's verbatim
+output, kept as the fixture three tests drive from.
+
 **Kit does not depend on `@playwright/test`, on purpose** — adding it is a packaging change and
 therefore James's call ([claude-code-bot#83](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/83)).
 So the binary is named on the command line, and its absence refuses rather than skipping. That
