@@ -34,7 +34,12 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null };
+// `../../start.js` is the repo-root entry point (kit#37). It joined this list in
+// kit#49, when it stopped being pure plumbing and gained a rule of its own: the
+// bundle is stale if it was built for a different path prefix, which no mtime can
+// see. A file with a rule and no mutant is the unbacked claim this harness exists
+// to catch, whichever directory it happens to live in.
+const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
@@ -638,6 +643,47 @@ MUTANTS.push(
     'sharedWith: result.sharedWith,', 'sharedWith: [],', 'ui.js'],
   ['a bind names an app that has no corpus, so sharedWith compares against nothing',
     'if (!writer.corpusPath(app, dir)) {', 'if (false) {', 'ui.js'],
+
+  // ── rule 8, the path Kit is served under (kit#49) ───────────────────────────
+  // Four of the five describe the SAME consequence, which is why they are worth
+  // this many: Kit deployed at `/kit` shares a host with four other apps behind
+  // an ingress that does not rewrite, and every unmatched path on that host
+  // answers **200 with the portfolio's SPA**. Every one of these failures
+  // therefore presents as a working page that loads nothing, with no 404 and no
+  // log line anywhere ([[green-over-the-clients-question]]).
+  ['the prefix is never stripped, so a Kit mounted at /kit 404s every one of its own routes',
+    'const pathname = stripBasePath(requested, basePath);', 'const pathname = requested;', 'ui.js'],
+  // The dangerous direction of the same line: answering paths that are not ours.
+  // On a shared host those belong to a SIBLING app, so Kit starts returning 200
+  // for another application's URLs.
+  ['a request outside the prefix is served anyway, so Kit answers for a sibling app',
+    '    if (pathname === null) {', '    if (false) {', 'ui.js'],
+  ['the prefix match accepts /kitten, so a different app\'s paths are treated as inside this one',
+    'if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);',
+    'if (pathname.startsWith(basePath)) return pathname.slice(basePath.length);', 'ui.js'],
+  ['the bare prefix stops serving the shell, so the URL he types is the one that 404s',
+    "  if (pathname === basePath) return '/';", '', 'ui.js'],
+  // The normaliser is the single source the server AND vite's `base` derive from,
+  // so a trailing slash surviving here desynchronises the two.
+  ['the normaliser keeps a trailing slash, so the server and the build disagree by one character',
+    "const trimmed = String(value ?? '').trim().replace(/^\\/+/, '').replace(/\\/+$/, '');",
+    "const trimmed = String(value ?? '').trim().replace(/^\\/+/, '');", 'ui.js'],
+  // The build-time half, which no restart can correct. Reading `null` as a match
+  // would silence the one warning that catches an image built for the wrong path.
+  ['a bundle built for the wrong prefix is read as matching, so the only warning about it never prints',
+    'return m ? normaliseBasePath(m[1]) : null;', 'return null;', 'ui.js'],
+  // Changing KIT_BASE_PATH touches no source file, so without this line every
+  // mtime in the tree says "fresh" and `start.js` serves a bundle built for a
+  // different prefix — a blank page that no rebuild is ever triggered to fix.
+  ['changing the path prefix does not trigger a rebuild, so start.js serves a bundle built for somewhere else',
+    "if (builtFor !== null && builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;", '',
+    '../../start.js'],
+  // And the other direction: "cannot tell what it was built for" must not mean
+  // "stale", or an index.html naming no asset rebuilds on every single run.
+  ['a bundle whose prefix cannot be read is treated as stale, so every run rebuilds forever',
+    "if (builtFor !== null && builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;",
+    "if (builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;",
+    '../../start.js'],
 );
 
 let killed = 0;

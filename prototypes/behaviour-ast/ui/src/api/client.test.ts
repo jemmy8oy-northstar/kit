@@ -143,3 +143,50 @@ describe('what a refusal does to the caller', () => {
     await expect(addStep('gamma', 'BEH-G', 'then sees region:Main')).rejects.toBeInstanceOf(ApiError)
   })
 })
+
+describe('the path Kit is served under (kit#49, rule 8)', () => {
+  // The prefix is applied inside `get`/`post` rather than at the call sites, so
+  // these assert the two fetchers and deliberately not all nine routes: a route
+  // added later cannot miss it, which is the property worth pinning.
+  //
+  // ⚠️ The failure this guards is silent. Deployed, Kit shares one host with four
+  // other apps and every unmatched path there answers **200 with the portfolio's
+  // SPA** — so an unprefixed fetch does not 404, it resolves, and `res.json()`
+  // fails three layers from the cause.
+
+  it('prefixes every read and every write with BASE_URL', async () => {
+    vi.stubEnv('BASE_URL', '/kit/')
+    const calls = recorder(ok({ projects: [] }))
+
+    await fetchProject('gamma').catch(() => undefined)
+    await addStep('gamma', 'BEH-G', 'then sees region:Main').catch(() => undefined)
+
+    expect(calls.map((c) => c.url)).toEqual([
+      '/kit/api/projects/gamma',
+      '/kit/api/projects/gamma/behaviours/BEH-G/steps',
+    ])
+  })
+
+  it('CONTROL: with no prefix the URLs are byte-identical to what they always were', async () => {
+    // `BASE_URL` is '/' when vite built with no `base`, and the trailing slash is
+    // stripped rather than joined — so the local tool's requests do not change at
+    // all. Without this control the test above would also pass on a version that
+    // prefixed every URL with a stray slash.
+    vi.stubEnv('BASE_URL', '/')
+    const calls = recorder(ok({ projects: [] }))
+
+    await fetchProject('gamma').catch(() => undefined)
+
+    expect(calls[0].url).toBe('/api/projects/gamma')
+  })
+
+  it('names the URL it actually requested when the server is unreachable', async () => {
+    // The diagnostic has to be the path that went out, not the unprefixed one it
+    // was derived from — otherwise the one error that would reveal a misconfigured
+    // prefix prints the spelling that would have worked.
+    vi.stubEnv('BASE_URL', '/kit/')
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed') }))
+
+    await expect(fetchProject('gamma')).rejects.toThrow('/kit/api/projects/gamma')
+  })
+})
