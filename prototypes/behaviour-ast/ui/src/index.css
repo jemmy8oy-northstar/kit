@@ -169,3 +169,42 @@ pre {
   padding: var(--space-4);
   overflow-x: auto;
 }
+
+/*
+ * The sign-in gate (kit#46). Layout only, tokens only — same rule as the rest
+ * of this file. It sits OUTSIDE `.app`, because it replaces the whole app
+ * rather than appearing inside it, so it carries its own container.
+ *
+ * Sized for a phone first: that is the client this slice exists for, and a
+ * form at 72rem on a 390px screen is the failure mode to avoid.
+ */
+.signin {
+  max-width: 24rem;
+  margin: 0 auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.signin input {
+  padding: var(--space-3);
+  font-size: var(--text-base);
+  font-family: var(--font-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.signin button {
+  padding: var(--space-3);
+  font-size: var(--text-base);
+  font-family: var(--font-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.error {
+  color: var(--color-danger);
+}

@@ -104,6 +104,7 @@ const path = require('path');
 const proj = require('./project.js');
 const writer = require('./writer.js');
 const gitStore = require('./git-store.js');
+const auth = require('./auth.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 const DIST_DIR = path.join(__dirname, 'ui', 'dist');
@@ -361,10 +362,10 @@ function bundle(pathname, distDir = DIST_DIR) {
  * object and a server that delivers it are different claims
  * ([[test-the-delivery-not-just-the-value]]).
  */
-function route(method, pathname, opts = {}, body = null, origin = null) {
+function route(method, pathname, opts = {}, body = null, origin = null, cookie = null) {
   const json = (status, b) => ({ status, contentType: 'application/json', body: b });
 
-  if (method === 'POST') return write(pathname, opts, body, json, origin);
+  if (method === 'POST') return write(pathname, opts, body, json, origin, cookie);
 
   if (method !== 'GET') {
     return json(405, {
@@ -384,6 +385,22 @@ function route(method, pathname, opts = {}, body = null, origin = null) {
 
   if (pathname === '/api/health') {
     return json(200, { ok: true });
+  }
+
+  // ── who am I? (kit#46) ────────────────────────────────────────────────────
+  // The page needs this BEFORE it renders anything, because the two states it
+  // has to tell apart are "you must sign in" and "there is no sign-in here" —
+  // and a local Kit is permanently the second one. Inferring it from a 401 on
+  // the first write would mean the user discovers the lock by losing an edit.
+  //
+  // Deliberately readable without a session: it reveals only whether a lock
+  // exists, which anyone can determine anyway by attempting one write, and
+  // hiding it would make the page unable to draw itself.
+  if (pathname === '/api/session') {
+    return json(200, {
+      required: auth.enabled(opts),
+      signedIn: !auth.enabled(opts) || auth.signedIn(opts.sessions, cookie),
+    });
   }
 
   if (pathname === '/api/projects') {
@@ -428,7 +445,7 @@ function route(method, pathname, opts = {}, body = null, origin = null) {
  * a time. Note the ORDER — the loopback refusal comes before the body is looked
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
-function write(pathname, opts, body, json, origin = null) {
+function write(pathname, opts, body, json, origin = null, cookie = null) {
   // Rule 4, and it is checked FIRST because it is the only one that defends
   // against a caller who is not the developer.
   //
@@ -444,10 +461,16 @@ function write(pathname, opts, body, json, origin = null) {
   // attach to every cross-origin POST and which page script cannot forge. A
   // request with no Origin at all is a non-browser caller — curl, the CLI, the
   // suite — and is allowed; that is the normal case, not a hole.
+  //
+  // 🔴 Deployed, loopback is no longer the whole answer: the page Kit serves is
+  // at `https://<public origin>`, so that origin must be accepted too or every
+  // write from the browser he actually uses is refused. `--public-origin` names
+  // it EXACTLY — scheme, host and port compared as a whole string, not a
+  // hostname suffix. A suffix test is how `balenthiran.co.uk.evil.com` passes
+  // for `balenthiran.co.uk`, and it is the classic way this check is written
+  // wrong.
   if (origin !== null && origin !== undefined) {
-    let host = null;
-    try { host = new URL(origin).hostname; } catch { host = null; }
-    if (!host || !isLoopback(host)) {
+    if (!originAllowed(origin, opts)) {
       return json(403, {
         error: 'cross-origin-write',
         reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
@@ -457,9 +480,43 @@ function write(pathname, opts, body, json, origin = null) {
     }
   }
 
-  // Rule 2. Decision 1 said local tool; a write path reachable from the network
-  // is the deployed option arriving through a flag rather than through him.
-  if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
+  // ── sign in / sign out (kit#46) ──────────────────────────────────────────
+  // Below the Origin check and above the lock, which is the only correct place
+  // for it. Above the Origin check it would let any page on the internet run a
+  // password-guessing loop through someone's browser; below the lock it would
+  // be a key locked inside the box it opens.
+  if (pathname === '/api/session' || pathname === '/api/session/end') {
+    return session(pathname, opts, body, json, cookie);
+  }
+
+  // ── the lock (kit#46) ────────────────────────────────────────────────────
+  // Rule 2 used to be the only thing here, and it asks the wrong question: it
+  // tests `opts.host`, the address this process was STARTED on, so it is a
+  // startup switch rather than a check on the caller. That is why a deployed
+  // Kit is read-only today.
+  //
+  // A configured password replaces it with a question about the caller. The
+  // two branches are exclusive on purpose:
+  //
+  //   password set   → the session decides, and the bind address is irrelevant.
+  //                    This is the deployment.
+  //   password unset → rule 2 exactly as it was, untouched. This is his laptop,
+  //                    and it must not change because nobody asked it to.
+  //
+  // ⚠️ Note what is NOT here: there is no branch that allows a write because
+  // the host is loopback WHILE a password is set. A Kit with a password in
+  // front of it is a Kit whose writes are locked, including through a proxy
+  // that makes the caller look local — which is the exact hole kit#44 measured
+  // in the old gate.
+  if (auth.enabled(opts)) {
+    if (!auth.signedIn(opts.sessions, cookie)) {
+      return json(401, {
+        error: 'not-signed-in',
+        reason: 'this Kit is password-protected and this request carries no valid session. '
+          + 'POST the password to /api/session first.',
+      });
+    }
+  } else if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
     return json(403, {
       error: 'not-loopback',
       reason: `writes are served only to loopback; this server is bound to ${opts.host}. `
@@ -686,15 +743,109 @@ function postBinding(match, body, opts, json) {
  * JSON write triggers, and an allowlist naming ports breaks the moment Vite
  * picks a different one.
  */
-function cors(origin) {
-  if (!origin) return {};
-  let host;
+/**
+ * May a page at `origin` write to this Kit?
+ *
+ * Loopback is always allowed — that is the local tool, unchanged. A deployment
+ * additionally names its own public origin with `--public-origin`.
+ *
+ * 🔴 The comparison is on the WHOLE normalised origin, never a substring.
+ * `endsWith('balenthiran.co.uk')` would accept `https://balenthiran.co.uk.evil.com`
+ * and `includes` would accept `https://evil.com/?x=balenthiran.co.uk`. Parsing
+ * both sides and comparing `origin` to `origin` is the only form of this check
+ * that does not have a famous bypass.
+ */
+function originAllowed(origin, opts = {}) {
+  let url;
   try {
-    host = new URL(origin).hostname;
+    url = new URL(origin);
   } catch {
-    return {};
+    // An Origin that is not a URL is not a browser Kit serves. Refused rather
+    // than ignored: the alternative treats a malformed header as "no origin",
+    // which is the branch that ALLOWS the write.
+    return false;
   }
-  if (!isLoopback(host)) return {};
+  if (isLoopback(url.hostname)) return true;
+
+  const allowed = opts.publicOrigin;
+  if (!allowed) return false;
+  let want;
+  try {
+    want = new URL(allowed);
+  } catch {
+    return false;
+  }
+  // `url.origin` is the scheme+host+port triple with the default port removed,
+  // so `https://x` and `https://x:443` compare equal, and `http://x` does not
+  // match `https://x` — a downgrade to plain HTTP is a different origin and is
+  // supposed to fail here.
+  return url.origin === want.origin;
+}
+
+/**
+ * `POST /api/session` — sign in. `POST /api/session/end` — sign out.
+ *
+ * Both answer 404 when no password is configured, rather than 400 or 200. A
+ * local Kit genuinely has no such route, and saying so keeps one truth in one
+ * place: the page asks `/api/session` whether a lock exists and gets `required:
+ * false`; anything that skips that step and posts a password anyway is told the
+ * endpoint is not there, which is exactly what it is.
+ */
+function session(pathname, opts, body, json, cookie) {
+  if (!auth.enabled(opts)) {
+    return json(404, {
+      error: 'no-such-route',
+      reason: 'this Kit has no password configured, so there is nothing to sign in to',
+    });
+  }
+
+  if (pathname === '/api/session/end') {
+    const token = auth.parseCookies(cookie)[auth.COOKIE];
+    if (opts.sessions) opts.sessions.destroy(token);
+    // The cookie is cleared even if the token was already unknown. Signing out
+    // twice, or after a restart wiped the store, must still leave the browser
+    // without a cookie — otherwise the page believes it is signed in and every
+    // write 401s with no way for the user to reach the sign-in form again.
+    return { status: 200, contentType: 'application/json', body: { ok: true, signedIn: false }, setCookie: auth.clearCookieHeader(opts) };
+  }
+
+  // A throttle is only useful if it is shared across requests, so it lives on
+  // opts beside the session store. Missing one means no throttling rather than
+  // no sign-in: a server that cannot be signed into is worse than one that can
+  // be guessed at, and `serve()` always provides it.
+  const wait = opts.throttle ? opts.throttle.retryAfterMs() : 0;
+  if (wait > 0) {
+    return json(429, {
+      error: 'too-many-attempts',
+      reason: `too many failed sign-ins; try again in ${Math.ceil(wait / 1000)}s`,
+      retryAfterSeconds: Math.ceil(wait / 1000),
+    });
+  }
+
+  const given = body && typeof body === 'object' ? body.password : null;
+  if (!auth.secretsMatch(typeof given === 'string' ? given : '', opts.password)) {
+    if (opts.throttle) opts.throttle.fail();
+    // One message for a missing password and for a wrong one. Telling them
+    // apart tells a guesser which half of the request they got right.
+    return json(401, { error: 'bad-password', reason: 'that is not the password' });
+  }
+
+  if (opts.throttle) opts.throttle.succeed();
+  const token = opts.sessions.create();
+  return {
+    status: 200,
+    contentType: 'application/json',
+    // 🔴 The token is NOT in the body. It goes out only as an HttpOnly cookie,
+    // so page script can never read it — returning it here as well would undo
+    // that in one line and hand any XSS a durable credential.
+    body: { ok: true, signedIn: true },
+    setCookie: auth.cookieHeader(token, opts),
+  };
+}
+
+function cors(origin, opts = {}) {
+  if (!origin) return {};
+  if (!originAllowed(origin, opts)) return {};
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
@@ -712,14 +863,28 @@ function serve(opts = {}) {
   const port = opts.port ?? DEFAULT_PORT;
   const host = opts.host ?? DEFAULT_HOST;
 
+  // One session store and one throttle per SERVER, created here rather than per
+  // request for the obvious reason, and attached to opts rather than closed over
+  // so that `route`/`write` stay pure functions of their arguments — which is
+  // what lets the suite test the lock without a socket. A caller that supplies
+  // its own (the tests do) keeps it.
+  if (auth.enabled(opts)) {
+    if (!opts.sessions) opts.sessions = auth.sessions();
+    if (!opts.throttle) opts.throttle = auth.throttle();
+  }
+
   const server = http.createServer((req, res) => {
     // `new URL` needs a base; the host header is untrusted input and is only
     // ever used to satisfy the parser, never read back out.
     const { pathname } = new URL(req.url, 'http://localhost');
 
     const send = (result) => {
-      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin) };
+      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin, opts) };
       if (result.cacheControl) headers['cache-control'] = result.cacheControl;
+      // Set only by the sign-in and sign-out routes. Checked for presence
+      // rather than truthiness so an empty string could never be sent as a
+      // header — though `clearCookieHeader` never returns one.
+      if (result.setCookie) headers['set-cookie'] = result.setCookie;
       res.writeHead(result.status, headers);
       // `raw` is set only by `bundle()`, and its presence is what distinguishes
       // bytes from a payload. Checked with `!== undefined` rather than for
@@ -732,11 +897,11 @@ function serve(opts = {}) {
     // the two can never disagree — an ACAO that permits an origin a preflight
     // refuses is a bug that only shows up in a browser.
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, cors(req.headers.origin));
+      res.writeHead(204, cors(req.headers.origin, opts));
       return res.end();
     }
 
-    if (req.method !== 'POST') return send(route(req.method, pathname, opts));
+    if (req.method !== 'POST') return send(route(req.method, pathname, opts, null, null, req.headers.cookie ?? null));
 
     let size = 0;
     const chunks = [];
@@ -758,7 +923,7 @@ function serve(opts = {}) {
       } catch (e) {
         return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
       }
-      send(route('POST', pathname, opts, body, req.headers.origin ?? null));
+      send(route('POST', pathname, opts, body, req.headers.origin ?? null, req.headers.cookie ?? null));
     });
   });
 
@@ -768,8 +933,23 @@ function serve(opts = {}) {
   });
 }
 
-function parseArgs(argv) {
+function parseArgs(argv, env = process.env) {
   const opts = { dir: BEH_DIR, bindings: null, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
+
+  // ── the password (kit#46) ────────────────────────────────────────────────
+  // From the ENVIRONMENT and deliberately not from a flag. A flag is visible in
+  // `ps`, in a shell history and in the pod's own command line, and Kubernetes
+  // delivers a secret as an env var anyway (`secretKeyRef`), which is what the
+  // rest of the estate already does. Unset means no lock, which is his laptop.
+  if (typeof env.KIT_PASSWORD === 'string') opts.password = env.KIT_PASSWORD;
+  // The origin the browser will actually be on, e.g. https://balenthiran.co.uk.
+  // Only meaningful deployed; locally the loopback rule covers it.
+  if (env.KIT_PUBLIC_ORIGIN) opts.publicOrigin = env.KIT_PUBLIC_ORIGIN;
+  // Set the cookie's `Secure` flag. Derived from the public origin rather than
+  // configured separately, because the two can only ever disagree by mistake:
+  // an https deployment wants Secure, and a plain-http localhost cannot use it.
+  opts.secure = !!(opts.publicOrigin && /^https:/i.test(opts.publicOrigin));
+
   for (let i = 0; i < argv.length; i++) {
     const next = argv[i + 1];
     if (argv[i] === '--port') { opts.port = Number(next); i++; }
@@ -787,6 +967,14 @@ function parseArgs(argv) {
     // the edit lands in the working tree and the author reviews the diff. This
     // flag is for the deployment James chose over a database on kit#41, where
     // there is no working tree anyone will ever look at.
+    // Overrides KIT_PUBLIC_ORIGIN, so a flag beats the environment — the usual
+    // precedence, and the one that lets a test drive this without mutating
+    // process.env underneath every other test in the file.
+    else if (argv[i] === '--public-origin') {
+      opts.publicOrigin = next;
+      opts.secure = /^https:/i.test(next || '');
+      i++;
+    }
     else if (argv[i] === '--git') { opts.git = { ...(opts.git || {}), enabled: true }; }
     else if (argv[i] === '--git-remote') { opts.git = { ...(opts.git || {}), remote: next }; i++; }
     else if (argv[i] === '--git-branch') { opts.git = { ...(opts.git || {}), branch: next }; i++; }
@@ -821,9 +1009,23 @@ async function main(argv) {
   console.log(`  ${apps.length} corpora: ${apps.join(', ')}`);
   console.log(`  repos: ${opts.repos || '(none — coverage will report unavailable, not zero)'}`);
   const gitOn = !!(opts.git && opts.git.enabled);
-  console.log(isLoopback(opts.host)
-    ? `  writes: ON — edits land in the working tree${gitOn ? ' and are committed and pushed' : ' and are NEVER committed'}`
-    : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+  // Three states, not two, since kit#46 — and the operator has to be able to
+  // tell which one they are in from this line alone, because the other way to
+  // find out is to lose a write.
+  if (auth.enabled(opts)) {
+    console.log(`  writes: LOCKED — sign in with the password in KIT_PASSWORD${gitOn ? '; edits are committed and pushed' : '; edits are NEVER committed'}`);
+    console.log(`  origin: ${opts.publicOrigin || '(none set — only a loopback page may write; set KIT_PUBLIC_ORIGIN when deployed)'}`);
+  } else {
+    console.log(isLoopback(opts.host)
+      ? `  writes: ON — edits land in the working tree${gitOn ? ' and are committed and pushed' : ' and are NEVER committed'}`
+      : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+    // Said loudly, because this is the configuration that looks deployed and
+    // is not: bound to the world, no password, so every write is refused and
+    // the page will appear broken rather than protected.
+    if (!isLoopback(opts.host)) {
+      console.log('    set KIT_PASSWORD to accept writes from a non-loopback address (kit#44)');
+    }
+  }
   if (gitOn) {
     // Printed whether or not the tree is a repo, because "--git was accepted
     // and is doing nothing" is exactly the state an operator needs told at
@@ -843,7 +1045,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  route, write, serve, cors, isLoopback, corpora, repoFor, summary, parseArgs, main,
+  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
 };
 
