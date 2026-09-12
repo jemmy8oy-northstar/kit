@@ -1589,6 +1589,72 @@ test('an unreadable run and a drifted run are separate answers, and neither is "
     'the same tally with a DIFFERENT test failing is drift — that is the case a count alone misses');
 });
 
+// The three tests below are driven from `selfhost/fixtures/no-browser.txt`, which
+// is the VERBATIM terminal output of this harness run in a pod whose browsers are
+// not where Playwright looks. It is committed rather than transcribed because a
+// hand-written approximation of a reporter's output is a fixture that agrees with
+// whatever the reader already does ([[test-the-reader-against-the-artefact]]).
+const noBrowser = fsx.readFileSync(pathx.join(__dirname, 'selfhost', 'fixtures', 'no-browser.txt'), 'utf8');
+
+test('a browser that would not START is could-not-look, not Kit regressing to zero', () => {
+  // The failure this guards is a false ACCUSATION, not a false green: run
+  // without --browsers, every test fails at launch, and the tally (0 passed,
+  // 6 failed) is indistinguishable from Kit having broken completely. --check
+  // then reported "the run no longer says what the write-up claims", which is
+  // the one verdict that argues for --record — and a --record here would
+  // overwrite expected.json with zeroes and destroy the evidence.
+  assert.ok(noBrowser.includes('browserType.launch:'), 'the fixture must actually contain a launch failure');
+  assert.strictEqual(selfrun.launchFailed(noBrowser), true);
+
+  const got = selfrun.parseResults(noBrowser);
+  assert.deepStrictEqual({ passed: got.passed, failed: got.failed }, { passed: 0, failed: 6 },
+    'a full, well-formed, entirely red report — which is exactly why the tally cannot be trusted alone');
+  assert.strictEqual(selfrun.unreadable(got), false,
+    'and unreadable() still says false, correctly: a tally WAS produced. The two predicates answer different questions');
+  assert.strictEqual(selfrun.drifted({ passed: 5, failed: 1 }, { passed: got.passed, failed: got.failed }), true,
+    'drifted() would call it drift, which is why launchFailed() has to be consulted FIRST');
+});
+
+test('CONTROL: six REAL failures are still drift — the discriminator is the cause, not the count', () => {
+  // Same tally, same shape, one word different. Without this the test above
+  // passes just as well for a launchFailed() that returns true whenever things
+  // look bad, which would convert every genuine total regression into "could
+  // not look" — silence in place of the loudest signal this harness has.
+  const realFailures = noBrowser.replace(/browserType\.launch:/g, 'expect(received).toBeVisible() failed:');
+  assert.ok(!realFailures.includes('browserType.launch:'), 'the control must not still contain the launch error');
+  assert.strictEqual(selfrun.launchFailed(realFailures), false);
+  const got = selfrun.parseResults(realFailures);
+  assert.strictEqual(got.failed, 6, 'the tally is identical to the launch-failure case');
+});
+
+test('the reporter PADS a failing name with ─, and the padding is not part of the name', () => {
+  // Whether a name picks up a trailing rule depends on how long that name is,
+  // so the 1-failure fixture this parser was written against happened to be the
+  // case with no padding ([[feed-it-the-extreme-case]]). Left in, the rule ends
+  // up inside the recorded test name, and a rename that shortens a title would
+  // read as drift.
+  assert.ok(/project ─+/.test(noBrowser), 'the fixture must actually contain a padded name');
+  assert.ok(/one screen\s*$/m.test(noBrowser), 'and an UNPADDED one, so the fix cannot be "always strip a suffix"');
+
+  const { failing } = selfrun.parseResults(noBrowser);
+  assert.deepStrictEqual(failing, [
+    '[BEH-LIST-1] Every corpus Kit can read is listed as a project',
+    '[BEH-SHEET-1] A project shows the question sheet Kit built for it',
+    '[BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen',
+    '[BEH-ADJ-1] An inference can be adjudicated from the browser',
+    '[BEH-ADJ-2] Denying an inference asks for the correction it must carry',
+    '[BEH-STEP-1] A step can be added while the generated test is in view',
+  ], 'every name clean, whether the reporter padded it or not');
+
+  // And the single-failure wording that IS recorded in expected.json still
+  // parses byte-identically — the fix must not move the number it is checked
+  // against.
+  const one = '  1 failed\n    specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry \n\n  5 passed (23.8s)\n';
+  assert.deepStrictEqual(selfrun.parseResults(one).failing,
+    JSON.parse(fsx.readFileSync(selfrun.EXPECTED, 'utf8')).failing,
+    'the recorded expectation is still what the reporter produces');
+});
+
 test('the write-up quotes the numbers the harness records — with the markdown stripped', () => {
   // kit#27's shelf-life check was green because a BACKTICK sat where its
   // matcher expected a space. Strip the emphasis before matching, never match
