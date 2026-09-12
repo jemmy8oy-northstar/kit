@@ -10,6 +10,10 @@
 //   · decision 1 — **it is a local developer tool.** A deployed one needs a
 //     GitHub App token in the cluster, an auth story and a clone layer, all of
 //     which are platform-and-secrets work that is never mine.
+//     🔴 **REVERSED BY JAMES, kit#25: it is deployed — a URL on his phone.** The
+//     auth story is rule 8's sibling (`auth.js`, kit#46); the path prefix that a
+//     deployed Kit needs is rule 8 below (kit#49). The loopback rule did not go
+//     away, it became the branch that runs when no password is set.
 //   · decision 2 — **it writes the corpus file, and never touches git.** He
 //     reviews the change as an ordinary working-tree diff and commits it.
 //
@@ -97,6 +101,29 @@
 // nor a blank page (which reads as "broken"). It is a 503 naming the command
 // that builds it. The API keeps serving throughout: the read model working and
 // the bundle being absent are two different states.
+//
+// ── 8. Kit can be served under a path prefix, and it is ONE value ───────────
+// kit#49. Deployed, Kit is `balenthiran.co.uk/kit` — every app in the estate
+// shares one host under a path prefix and the ingress does NOT rewrite, so the
+// app has to know its own prefix. Getting this wrong is the quietest failure in
+// the estate: **every unmatched path on that host answers 200 with the
+// portfolio's SPA**, so a Kit asking for `/assets/index-abc.js` would be handed
+// somebody else's JavaScript with a 200 and no error anywhere
+// ([[green-over-the-clients-question]]).
+//
+// The prefix reaches four places — vite's `base`, the router's `basename`, the
+// API client's fetches and this file's routing — and four copies of one value is
+// how three of them end up agreeing. So `normaliseBasePath` below is the only
+// normaliser, `vite.config.ts` imports it from here, and everything in the
+// browser reads `import.meta.env.BASE_URL`, which vite derives from `base`.
+//
+// Here it is stripped ONCE, at the edge in `serve()`, before `route()` sees the
+// path. Every rule above is therefore written against an app-relative path and
+// did not change — and a request that is not under the prefix is a 404 rather
+// than being quietly served anyway, because `/kitten` is not Kit.
+//
+// **Unset is today's behaviour byte for byte**, which is the point: his laptop
+// is untouched, and a subdomain (if he picks one) needs no prefix at all.
 
 const fs = require('fs');
 const http = require('http');
@@ -155,6 +182,80 @@ function isLoopback(host) {
   if (host === 'localhost' || host === '::1' || host === '[::1]') return true;
   return /^127\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(String(host))
     && String(host).split('.').slice(1).every((n) => Number(n) >= 0 && Number(n) <= 255);
+}
+
+/**
+ * Rule 8. The one spelling of the path Kit is served under.
+ *
+ * Returns a prefix with a leading slash and NO trailing one (`/kit`), or `''`
+ * for "served at the root", which is every local run. `''` rather than `null`
+ * so the callers below can concatenate unconditionally and the unprefixed case
+ * comes out byte-identical to what it was before this rule existed.
+ *
+ * Generous about the spellings a person or a values.yaml actually produces —
+ * `kit`, `/kit`, `/kit/` and `kit/` all mean the same thing, and refusing three
+ * of them would turn a deployment into a typo hunt. Strict about the result: it
+ * is the single string that vite's `base`, the router's `basename` and the strip
+ * in `serve()` are all derived from, so they cannot disagree by a slash.
+ *
+ * ⚠️ `vite.config.ts` imports THIS function. Changing its output changes the
+ * asset URLs baked into `index.html` at build time — the one place the value is
+ * not read at runtime and so the one that cannot be corrected by a restart.
+ */
+function normaliseBasePath(value) {
+  const trimmed = String(value ?? '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  return trimmed === '' ? '' : `/${trimmed}`;
+}
+
+/**
+ * Rule 8's strip: a request path as the app should see it, or `null` for "this
+ * request is not under our prefix at all".
+ *
+ * `null` and not a fallthrough to the path unchanged, which is the whole reason
+ * this returns three outcomes rather than two. If a Kit served at `/kit` also
+ * answered `/api/projects`, then on a shared host it would be answering for a
+ * path that belongs to a SIBLING APP, and the sibling's 404 would become Kit's
+ * 200. The caller turns `null` into a 404 naming the prefix.
+ *
+ * The exact-match case is deliberate and is not the same as the slash case:
+ * `/kit` must serve the shell, because that is the URL he will type and a
+ * redirect to `/kit/` is a round trip that buys nothing — vite's `base` makes
+ * every asset URL absolute, so the page works either way.
+ */
+function stripBasePath(pathname, basePath) {
+  if (!basePath) return pathname;
+  if (pathname === basePath) return '/';
+  // `basePath + '/'` and never `startsWith(basePath)`: the second accepts
+  // `/kitten`, which is a different app's path, and would hand its requests to
+  // this one.
+  if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);
+  return null;
+}
+
+/**
+ * Rule 8's build-time half, read back out of the bundle that was actually built.
+ *
+ * The prefix reaches the browser through vite's `base`, which is baked into the
+ * asset URLs in `index.html` at BUILD time. That makes it the one half of this
+ * value a restart cannot correct — an image built at `/` and served under `/kit`
+ * asks for `/assets/index-abc.js`, which on a shared host answers **200 with a
+ * sibling app's JavaScript**, and the page is blank with nothing wrong in any
+ * log on either side.
+ *
+ * So it is read rather than trusted: the prefix that is really in the bundle,
+ * `''` if the bundle is at the root, or `null` for "could not tell". Null is a
+ * third answer on purpose and must not be reported as a mismatch — an absent
+ * bundle and a bundle built wrong are different states, and rule 7 already has
+ * a sentence for the first ([[empty-means-two-things]]).
+ */
+function bundleBasePath(distDir = DIST_DIR) {
+  const index = path.join(distDir, 'index.html');
+  if (!fs.existsSync(index)) return null;
+  // Vite emits every hashed artefact under `<base>assets/`, so the text before
+  // `/assets/` IS the base — taken from the built file rather than recomputed
+  // from the environment, which is the entire point of reading it here.
+  const m = /(?:src|href)="([^"]*)\/assets\/[^"]+"/.exec(fs.readFileSync(index, 'utf8'));
+  return m ? normaliseBasePath(m[1]) : null;
 }
 
 /** Every corpus in behaviours/, by app name. The only source of valid names. */
@@ -873,10 +974,15 @@ function serve(opts = {}) {
     if (!opts.throttle) opts.throttle = auth.throttle();
   }
 
+  // Rule 8. Normalised once per server rather than once per request, so a
+  // malformed spelling cannot mean one thing on the first request and another on
+  // the thousandth.
+  const basePath = normaliseBasePath(opts.basePath);
+
   const server = http.createServer((req, res) => {
     // `new URL` needs a base; the host header is untrusted input and is only
     // ever used to satisfy the parser, never read back out.
-    const { pathname } = new URL(req.url, 'http://localhost');
+    const { pathname: requested } = new URL(req.url, 'http://localhost');
 
     const send = (result) => {
       const headers = { 'content-type': result.contentType, ...cors(req.headers.origin, opts) };
@@ -892,6 +998,20 @@ function serve(opts = {}) {
       // as the string "undefined" wearing its content-type.
       res.end(result.raw !== undefined ? result.raw : JSON.stringify(result.body));
     };
+
+    // Rule 8, and it happens before everything below it on purpose: a request
+    // that is not under our prefix must not have its body read, its Origin
+    // consulted or a preflight answered. It is not ours, and saying so is the
+    // only honest response — a Kit at `/kit` that also answered `/api/projects`
+    // would be answering for whichever sibling app owns that path.
+    const pathname = stripBasePath(requested, basePath);
+    if (pathname === null) {
+      return send({
+        status: 404,
+        contentType: 'application/json',
+        body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
+      });
+    }
 
     // A preflight is answered by the same allowlist that answers the request, so
     // the two can never disagree — an ACAO that permits an origin a preflight
@@ -950,6 +1070,13 @@ function parseArgs(argv, env = process.env) {
   // an https deployment wants Secure, and a plain-http localhost cannot use it.
   opts.secure = !!(opts.publicOrigin && /^https:/i.test(opts.publicOrigin));
 
+  // ── the path prefix (kit#49, rule 8) ─────────────────────────────────────
+  // From the environment and not a flag, for a reason that is not the password's:
+  // `vite.config.ts` reads the SAME variable at build time, and a value that
+  // lives in a flag could not reach a build. It is one env var so that the image
+  // and the container cannot be given different answers.
+  opts.basePath = normaliseBasePath(env.KIT_BASE_PATH);
+
   for (let i = 0; i < argv.length; i++) {
     const next = argv[i + 1];
     if (argv[i] === '--port') { opts.port = Number(next); i++; }
@@ -1005,7 +1132,7 @@ async function main(argv) {
     return 2;
   }
 
-  console.log(`kit ui  http://${opts.host}:${opts.port}`);
+  console.log(`kit ui  http://${opts.host}:${opts.port}${opts.basePath}`);
   console.log(`  ${apps.length} corpora: ${apps.join(', ')}`);
   console.log(`  repos: ${opts.repos || '(none — coverage will report unavailable, not zero)'}`);
   const gitOn = !!(opts.git && opts.git.enabled);
@@ -1041,12 +1168,30 @@ async function main(argv) {
   console.log(fs.existsSync(path.join(opts.dist ?? DIST_DIR, 'index.html'))
     ? '  ui: serving the built bundle — open the URL above, nothing else to run'
     : `  ui: NOT BUILT — the API answers, the page will not. Build it once:\n      ${BUILD_CMD}`);
+  // Rule 8's one irreversible half, checked rather than assumed. The bundle was
+  // built with whatever KIT_BASE_PATH was set at BUILD time, which in a container
+  // is a different moment from this one — so the two can disagree, and when they
+  // do the symptom is a blank page and a silent 200 from a sibling app. Said at
+  // startup because that is the only place anybody would see it.
+  const built = bundleBasePath(opts.dist ?? DIST_DIR);
+  if (built !== null && built !== opts.basePath) {
+    // Both spellings are named, because which one is wrong is not something this
+    // process can know — it has a bundle and a setting and they disagree.
+    const setting = (v) => (v === '' ? 'KIT_BASE_PATH unset' : `KIT_BASE_PATH=${v}`);
+    console.error(`  🔴 ui: THE BUNDLE WAS BUILT FOR ${built || '/'} AND THIS SERVER SERVES ${opts.basePath || '/'}`);
+    console.error(`      The page will load nothing and every request will still answer 200.`);
+    console.error(`      Rebuild the UI with ${setting(opts.basePath)}, or restart this server with ${setting(built)}.`);
+  }
   return 0;
 }
 
 module.exports = {
   route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
+  // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
+  // the suite: it is imported there so the build and the server derive the
+  // prefix from one function and cannot disagree by a slash.
+  normaliseBasePath, stripBasePath, bundleBasePath,
 };
 
 if (require.main === module) {

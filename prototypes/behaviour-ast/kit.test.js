@@ -2136,6 +2136,188 @@ test('a real listening server delivers the shell as HTML, and the hashed asset i
   }
 });
 
+// ══════════════ rule 8 — the path Kit is served under (kit#49) ══════════════
+//
+// Deployed, Kit is `balenthiran.co.uk/kit`, on a host it shares with four other
+// apps behind an ingress that does not rewrite. The failure these exist to stop
+// is the quiet one: **every unmatched path on that host answers 200 with the
+// portfolio's SPA**, so a prefix that is wrong by one slash produces a blank page
+// and no error anywhere on either side ([[green-over-the-clients-question]]).
+//
+// The prefixed case is tested, not only the unset one. A suite that exercised
+// only the default would pass identically on a build where none of this works —
+// which is the whole category of mistake rule 8 is about.
+
+// Its own POST helper rather than the `post` defined further down with the write
+// tests: that one is declared below this point, and a `const` is not hoisted.
+const postFull = (port, path, body) => new Promise((resolve, reject) => {
+  const data = Buffer.from(JSON.stringify(body));
+  const req = require('http').request({
+    host: '127.0.0.1', port, path, method: 'POST',
+    headers: { 'content-type': 'application/json', 'content-length': data.length },
+  }, (res) => {
+    let b = '';
+    res.on('data', (c) => { b += c; });
+    res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: b }));
+  });
+  req.on('error', reject);
+  req.end(data);
+});
+
+test('rule 8: one normaliser, and it accepts the spellings a person or a values.yaml produces', () => {
+  // Generous in, strict out. `/kit`, `kit`, `/kit/` and `kit/` all mean the same
+  // thing to a human writing a helm value, and refusing three of them turns a
+  // deployment into a typo hunt. What must NOT vary is the output, because it is
+  // concatenated by the server and turned into vite's `base` by the build.
+  for (const spelling of ['/kit', 'kit', '/kit/', 'kit/', '//kit//', ' /kit/ ']) {
+    assert.strictEqual(ui.normaliseBasePath(spelling), '/kit', `spelling: ${JSON.stringify(spelling)}`);
+  }
+  // Every spelling of "no prefix" collapses to the empty string, and `''` rather
+  // than null is what lets the callers concatenate unconditionally — the
+  // unprefixed case then comes out byte-identical to what it was.
+  for (const none of ['', '/', '//', undefined, null, '   ']) {
+    assert.strictEqual(ui.normaliseBasePath(none), '', `spelling: ${JSON.stringify(none)}`);
+  }
+});
+
+test('rule 8: the strip has THREE outcomes, and `not ours` is the one that matters', () => {
+  // Unset is a pure passthrough. This is the control for every other test in the
+  // file: if it ever fails, rule 8 has changed the local tool.
+  assert.strictEqual(ui.stripBasePath('/api/projects', ''), '/api/projects');
+  assert.strictEqual(ui.stripBasePath('/', ''), '/');
+
+  assert.strictEqual(ui.stripBasePath('/kit', '/kit'), '/',
+    'the URL he will actually type must serve the shell, without a redirect');
+  assert.strictEqual(ui.stripBasePath('/kit/', '/kit'), '/');
+  assert.strictEqual(ui.stripBasePath('/kit/api/projects', '/kit'), '/api/projects');
+  assert.strictEqual(ui.stripBasePath('/kit/assets/index-abc123.js', '/kit'), '/assets/index-abc123.js');
+
+  // 🔴 The three that must be null rather than served. A Kit at `/kit` answering
+  // `/api/projects` would be answering for whichever SIBLING APP owns that path
+  // on the shared host, turning that app's 404 into Kit's 200.
+  assert.strictEqual(ui.stripBasePath('/api/projects', '/kit'), null);
+  assert.strictEqual(ui.stripBasePath('/', '/kit'), null);
+  // And the one a `startsWith(basePath)` test would have got wrong.
+  assert.strictEqual(ui.stripBasePath('/kitten/api/projects', '/kit'), null,
+    '/kitten is a different app, not a path inside this one');
+});
+
+test('rule 8: the prefix is read back OUT of the built bundle, because the build bakes it in', () => {
+  // `base` rewrites asset URLs inside index.html at build time, so this is the
+  // one half of the value a restart cannot correct. Read rather than trusted.
+  assert.strictEqual(ui.bundleBasePath(distDir), '',
+    'the existing fixture is a root build, and must read as one');
+
+  const prefixed = fixture({
+    'index.html': '<!doctype html><div id="root"></div><script src="/kit/assets/index-abc123.js"></script>',
+    'assets/index-abc123.js': 'console.log("bundle")',
+  });
+  assert.strictEqual(ui.bundleBasePath(prefixed), '/kit');
+
+  // Two different nulls, and neither may be reported as a mismatch: rule 7
+  // already has a sentence for "never built", and "cannot tell" is not "wrong"
+  // ([[empty-means-two-things]]).
+  assert.strictEqual(ui.bundleBasePath(NO_DIST), null, 'no bundle is not a wrong bundle');
+  assert.strictEqual(ui.bundleBasePath(fixture({ 'index.html': '<!doctype html><div id="root"></div>' })), null,
+    'an index.html naming no asset tells us nothing, which is not the same as telling us it is at the root');
+});
+
+test('a real prefixed server serves Kit under /kit and refuses the root it does not own', async () => {
+  // Over a socket, because `stripBasePath` returning the right string and the
+  // server wiring it in front of every route are different claims
+  // ([[test-the-delivery-not-just-the-value]]).
+  const server = await ui.serve({ dir: uiDir, dist: distDir, port: 0, host: '127.0.0.1', basePath: '/kit' });
+  try {
+    const { port } = server.address();
+
+    const health = await getFull(port, '/kit/api/health');
+    assert.strictEqual(health.status, 200);
+    assert.deepStrictEqual(JSON.parse(health.body), { ok: true });
+
+    // The URL he types. Not a redirect: vite's `base` makes every asset URL
+    // absolute, so the page works from `/kit` as well as `/kit/`.
+    const shell = await getFull(port, '/kit');
+    assert.strictEqual(shell.status, 200);
+    assert.match(shell.headers['content-type'], /^text\/html/);
+    assert.match(shell.body, /id="root"/);
+
+    const asset = await getFull(port, '/kit/assets/index-abc123.js');
+    assert.strictEqual(asset.status, 200);
+    assert.strictEqual(asset.body, 'console.log("bundle")');
+
+    // A client route under the prefix still reaches the shell — BrowserRouter
+    // with a basename means reloading on a project page arrives here.
+    const deep = await getFull(port, '/kit/projects/alpha');
+    assert.strictEqual(deep.status, 200);
+    assert.match(deep.body, /id="root"/);
+
+    // 🔴 The refusals. Each of these paths belongs to another app on the shared
+    // host, and a 200 here is how Kit would start answering for it.
+    for (const notOurs of ['/api/health', '/', '/assets/index-abc123.js', '/kitten/api/health']) {
+      const r = await getFull(port, notOurs);
+      assert.strictEqual(r.status, 404, `${notOurs} must not be served by a Kit mounted at /kit`);
+      // The reason names the prefix, so the person who mis-set it is told what
+      // this Kit thinks it is rather than just that their URL was wrong.
+      assert.match(JSON.parse(r.body).reason, /served under \/kit/, notOurs);
+    }
+  } finally {
+    server.close();
+  }
+});
+
+test('a real prefixed server applies the prefix to POST too, and says which 404 it is', async () => {
+  // The two 404s are deliberately distinguishable. A POST inside the prefix to a
+  // route that does not exist is the router's 404; a POST outside the prefix is
+  // rule 8's, and its body must not even have been read.
+  const server = await ui.serve({ dir: uiDir, dist: distDir, port: 0, host: '127.0.0.1', basePath: '/kit' });
+  try {
+    const { port } = server.address();
+
+    const inside = await postFull(port, '/kit/api/nope', { step: 'x' });
+    assert.strictEqual(inside.status, 404);
+    assert.match(JSON.parse(inside.body).reason, /nothing accepts a POST/,
+      'inside the prefix, the router answers — so the prefix was stripped before routing');
+
+    const outside = await postFull(port, '/api/nope', { step: 'x' });
+    assert.strictEqual(outside.status, 404);
+    assert.match(JSON.parse(outside.body).reason, /served under \/kit/,
+      'outside it, rule 8 answers first and the body is never parsed');
+  } finally {
+    server.close();
+  }
+});
+
+test('CONTROL: an unprefixed server is exactly what it was — rule 8 is absent, not off', async () => {
+  // The point of the rule as built: unset means today's behaviour byte for byte,
+  // so his laptop is untouched and a subdomain would need none of this. A test
+  // that only ever ran the prefixed case could not tell this had broken.
+  const server = await ui.serve({ dir: uiDir, dist: distDir, port: 0, host: '127.0.0.1' });
+  try {
+    const { port } = server.address();
+    assert.strictEqual((await getFull(port, '/api/health')).status, 200);
+    assert.strictEqual((await getFull(port, '/')).status, 200);
+    // And the prefixed spelling is now just an unknown CLIENT route, which rule 6
+    // says reaches the shell — the same answer `/projects/alpha` gets. Asserted on
+    // the content-type rather than the status, because the status is 200 either
+    // way and it was 200 that made this worth pinning: a test reading the code
+    // alone would write 404 here and be wrong about what rule 6 already does.
+    const stray = await getFull(port, '/kit/api/health');
+    assert.strictEqual(stray.status, 200);
+    assert.match(stray.headers['content-type'], /^text\/html/,
+      'an unprefixed Kit has no /kit, so this is the SPA fallback and not the API');
+  } finally {
+    server.close();
+  }
+});
+
+test('rule 8: the env var is read into opts, in every spelling', () => {
+  // `parseArgs` and not a flag: `vite.config.ts` reads the SAME variable at build
+  // time, and a flag could not reach a build.
+  assert.strictEqual(ui.parseArgs([], { KIT_BASE_PATH: '/kit/' }).basePath, '/kit');
+  assert.strictEqual(ui.parseArgs([], { KIT_BASE_PATH: 'kit' }).basePath, '/kit');
+  assert.strictEqual(ui.parseArgs([], {}).basePath, '', 'unset is the local tool');
+});
+
 // ══════════════ the corpus writer (writer.js, claude-code-bot#59 / kit#16) ══════════════
 //
 // Decision 2 in docs/design/ui.md lapsed on 2026-09-08 and its stated default is
@@ -3603,6 +3785,36 @@ test('start: DELETING a source file is stale too, though no surviving file chang
   assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), false);
   fsx.unlinkSync(pathx.join(dir, 'src', 'Gone.tsx'));
   assert.strictEqual(start.needsBuild(dir, pathx.join(dir, 'dist', 'index.html')), true);
+});
+
+// kit#49. The staleness question is not only about mtimes, and this is the case
+// that proves it: KIT_BASE_PATH is read when the UI is BUILT and baked into the
+// asset URLs, so changing it changes what the bundle must be while touching no
+// source file at all. Every mtime test above would call that tree fresh.
+test('start: a bundle built for a DIFFERENT path prefix is stale, though no file changed', () => {
+  const fresh = {
+    paths: {
+      'src/App.tsx': 'x',
+      'index.html': '<html>',
+      'dist/index.html': '<script src="/kit/assets/index-abc.js"></script>',
+    },
+    ages: { 'dist/index.html': 10, 'src/App.tsx': 60, src: 60, 'index.html': 60 },
+  };
+  const dir = agedTree(fresh);
+  const distIndex = pathx.join(dir, 'dist', 'index.html');
+
+  // Same tree, three different answers, and the ONLY thing that varies is the
+  // environment the next build would run in.
+  assert.strictEqual(start.needsBuild(dir, distIndex, { KIT_BASE_PATH: '/kit' }), false,
+    'built for /kit and about to serve /kit — nothing to do');
+  assert.strictEqual(start.needsBuild(dir, distIndex, {}), true,
+    'built for /kit and about to serve the root — the page would be blank');
+  assert.strictEqual(start.needsBuild(dir, distIndex, { KIT_BASE_PATH: '/other' }), true);
+
+  // And "cannot tell" is not "stale": an index.html naming no asset says nothing
+  // about what it was built for, and rebuilding on it would rebuild forever.
+  const opaque = agedTree({ ...fresh, paths: { ...fresh.paths, 'dist/index.html': 'built' } });
+  assert.strictEqual(start.needsBuild(opaque, pathx.join(opaque, 'dist', 'index.html'), { KIT_BASE_PATH: '/kit' }), false);
 });
 
 // The reason SOURCE_ENTRIES is more than `src`. A dependency bump changes the
