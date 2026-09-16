@@ -34,8 +34,10 @@ The first draft of this measurement claimed C# tests would each need
 `[Fact(DisplayName=…)]` added, because a marker cannot live inside a method
 identifier — and two of the three apps are 100% C# method-named.
 
-**That is wrong, and `kit.js:420` is why:** `coverage()` scans the whole test
-**source**, not the title. `// [BEH-X]` above the method is enough. The marker
+**That is wrong, and `coverage()` in `kit.js` is why:** it scans the whole test
+**source**, not the title. _(This cited `kit.js:420` until 2026-09-16; `coverage()`
+was by then at 436, and line 420 was unrelated fixture code. A line number is a
+citation with a shelf life of one unrelated edit — name the function.)_ `// [BEH-X]` above the method is enough. The marker
 syntax also collides with nothing already written — **zero `[ALLCAPS]` tokens across
 all 37 test files**, so `orphanTests` stays signal rather than noise (`[Fact]`,
 `[Theory]`, `[InlineData]` are not all-caps and do not match).

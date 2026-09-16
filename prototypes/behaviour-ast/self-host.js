@@ -23,10 +23,12 @@
 //
 //   node self-host.js            # measure and report
 //   node self-host.js --check    # exit 1 if docs/pilots/kit-self-hosting.md has drifted
-//   node self-host.js --record   # rewrite the findings file (see the warning in it)
+//   node self-host.js --record   # rewrite the findings file AND the write-up's
+//                                # generated blocks (see the warning in the JSON)
 //
 // Exit 0 = measured. Exit 1 = --check and the write-up no longer matches the
-// corpus. Exit 2 = could not look, which is deliberately not 0.
+// corpus. Exit 2 = could not look, which is deliberately not 0 — including the
+// case where the write-up's markers cannot be found at all.
 
 const fs = require('fs');
 const path = require('path');
@@ -34,6 +36,85 @@ const kit = require('./kit.js');
 
 const BEH = path.join(__dirname, 'behaviours', 'kit.beh');
 const FINDINGS = path.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.json');
+const WRITEUP = path.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md');
+
+// ── The write-up's numbers are GENERATED, not checked ───────────────────────
+//
+// `--check` used to compare the findings JSON against the corpus and stop there,
+// so it stayed green from 2026-09-05 to 2026-09-16 while the prose it exists to
+// protect said 14 behaviours / 42 steps / 21 contracts and the machine record
+// beside it said 20 / 60 / 36. Someone re-recorded and did not touch the prose —
+// the one thing the findings file's own header forbids.
+//
+// The fix is not a cleverer checker. The write-up already states the principle,
+// about a different fact: *"That list is read out of `generate()`'s switch at
+// runtime, not re-typed here. A hard-coded copy is how this document would start
+// lying about the code."* The verb vocabulary was read at runtime and never
+// drifted; the counts were re-typed and did. So the counts stop being re-typed:
+// `--record` writes them into the markdown between markers, `--check`
+// regenerates and compares. There is no second copy left to disagree.
+//
+// ⚠️ What is deliberately NOT generated: a number that is HISTORY. "derived was
+// 0 at ten behaviours and still 0 at fourteen" is a dated observation about past
+// corpora, not a measurement of this one, and regenerating it would erase the
+// evidence the argument rests on. A historical number is not drift — it just has
+// to say when it was taken.
+const BEGIN = (key) => `<!-- self-host:begin ${key} -->`;
+const END = (key) => `<!-- self-host:end ${key} -->`;
+
+const BLOCKS = {
+  numbers: (m) => [
+    '| | |',
+    '|---|---|',
+    `| behaviours parsed | **${m.behaviours} of ${m.behaviours}**, no parse error |`,
+    `| steps | ${m.steps} |`,
+    `| prose \`contract\` lines | ${m.contracts} |`,
+    `| steps **derived** from a behaviour | **${m.derived}** |`,
+  ],
+  saturation: (m) => [
+    '| | generated | ungenerated |',
+    '|---|---|---|',
+    `| no bindings | ${m.unbound.generated} | ${m.unbound.ungenerated} |`,
+    `| **every noun bound** | **${m.bound.generated}** | ${m.bound.ungenerated} |`,
+    `| of which **derived** | **${m.derived}** | |`,
+  ],
+  verbs: (m) => [
+    '| verb | steps | in the generator? |',
+    '|---|---|---|',
+    ...m.verbs.map((v) => `| \`${v.verb}\` | ${v.steps} | ${v.known ? 'yes' : '**no**'} |`),
+  ],
+  vocabulary: (m) => [`\`${m.generatorVerbs.join(', ')}\``],
+};
+
+/**
+ * Rewrite every marked block in `md` from the live measurement.
+ *
+ * Returns `{ text, missing }`. A key in `missing` has no usable marker pair —
+ * which callers must treat as COULD NOT LOOK, never as agreement. A parser that
+ * silently passes when it stops finding its markers is the failure mode that let
+ * this document drift in the first place, one level up.
+ */
+function spliceBlocks(md, m) {
+  const missing = [];
+  let out = md;
+  for (const [key, render] of Object.entries(BLOCKS)) {
+    const begin = out.indexOf(BEGIN(key));
+    const end = out.indexOf(END(key));
+    if (begin === -1 || end === -1 || end < begin) { missing.push(key); continue; }
+    out = `${out.slice(0, begin + BEGIN(key).length)}\n${render(m).join('\n')}\n${out.slice(end)}`;
+  }
+  return { text: out, missing };
+}
+
+/** The write-up, or `null` if it cannot be opened — which is could-not-look. */
+function writeUp(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    console.error(`self-host: cannot read ${path.relative(process.cwd(), file)} — could not look`);
+    return null;
+  }
+}
 
 // The generator's whole vocabulary, read from the source of truth rather than
 // re-typed here — a hard-coded copy of this list is how the doc starts lying
@@ -157,7 +238,24 @@ function main(argv) {
   // --corpus exists so the suite can drive this over a fixture. Without it the
   // only reachable input is the committed corpus, and the refusal paths below
   // would be untestable — which is how a refusal ends up decorative.
+  //
+  // --writeup is here for exactly the same reason, and the reason is the
+  // sentence above: the markdown paths below REFUSE (exit 2 on a marker that
+  // cannot be found), and a refusal no test can reach is decorative. It is the
+  // whole failure this change exists to fix, one level up.
+  //
+  // --findings was added for a reason worth recording, because the gate found it
+  // rather than a person: once the markdown blocks cover every field of the
+  // snapshot, disabling the JSON comparison entirely left `--check` STILL going
+  // red on a drifted corpus — via the markdown — so `mutate.js`'s "`--check`
+  // accepts drift silently" mutant survived for the first time. It is not an
+  // equivalent mutant; the JSON branch really did stop being proven, and a
+  // hand-edited findings file is the one drift only it can catch.
   const ci = argv.indexOf('--corpus');
+  const wi = argv.indexOf('--writeup');
+  const fi = argv.indexOf('--findings');
+  const findingsPath = fi >= 0 ? argv[fi + 1] : FINDINGS;
+  const writeupPath = wi >= 0 ? argv[wi + 1] : WRITEUP;
   const beh = ci >= 0 ? argv[ci + 1] : BEH;
   if (!beh || !fs.existsSync(beh)) {
     console.error(`self-host: no corpus at ${beh} — could not look`);
@@ -174,25 +272,40 @@ function main(argv) {
   }
 
   if (argv.includes('--record')) {
-    fs.writeFileSync(FINDINGS, JSON.stringify({
+    fs.writeFileSync(findingsPath, JSON.stringify({
       _: [
-        'Written by `node self-host.js --record`. The prose in kit-self-hosting.md',
-        'quotes these numbers; `node self-host.js --check` recomputes and exits 1 on',
-        'any difference. Re-record ONLY after deciding the write-up is wrong — a',
-        're-record with no edit to the prose is the drift, not the fix.',
+        'Written by `node self-host.js --record`, which ALSO rewrites the generated',
+        'blocks in kit-self-hosting.md in the same run — the prose no longer keeps a',
+        'hand-typed copy of any of these numbers, because for eleven days it kept a',
+        'WRONG one and `--check` never opened the file. `--check` recomputes both and',
+        'exits 1 on any difference, 2 if it cannot find the markers to look at.',
       ],
       ...snapshot(m),
     }, null, 2) + '\n');
-    console.log(`recorded ${path.relative(process.cwd(), FINDINGS)}`);
+    console.log(`recorded ${path.relative(process.cwd(), findingsPath)}`);
+
+    // The JSON alone is what a re-record used to mean, and re-recording without
+    // touching the prose IS the drift. So the prose is written in the same
+    // breath — and if its markers cannot be found, this refuses rather than
+    // leaving the two halves disagreeing again.
+    const wrote = writeUp(writeupPath);
+    if (wrote === null) return 2;
+    const { text, missing } = spliceBlocks(wrote, m);
+    if (missing.length) {
+      console.error(`self-host --record: no self-host:begin/end markers for ${missing.join(', ')} in ${path.relative(process.cwd(), writeupPath)} — could not look, and the JSON above is now AHEAD of the prose`);
+      return 2;
+    }
+    fs.writeFileSync(writeupPath, text);
+    console.log(`recorded ${path.relative(process.cwd(), writeupPath)} (${Object.keys(BLOCKS).length} block(s))`);
     return 0;
   }
 
   if (argv.includes('--check')) {
-    if (!fs.existsSync(FINDINGS)) {
-      console.error(`self-host --check: no findings file at ${FINDINGS} — could not look`);
+    if (!fs.existsSync(findingsPath)) {
+      console.error(`self-host --check: no findings file at ${findingsPath} — could not look`);
       return 2;
     }
-    const was = JSON.parse(fs.readFileSync(FINDINGS, 'utf8'));
+    const was = JSON.parse(fs.readFileSync(findingsPath, 'utf8'));
     delete was._;
     const now = snapshot(m);
     if (JSON.stringify(was) !== JSON.stringify(now)) {
@@ -201,7 +314,29 @@ function main(argv) {
       console.error(`  now:      ${JSON.stringify(now)}`);
       return 1;
     }
-    console.log('self-host --check: the recorded findings still match the corpus.');
+
+    // The half that was missing, and the reason this check could report green
+    // for eleven days over a write-up six behaviours out of date: the JSON
+    // agreeing with the corpus says nothing about the PROSE, and the prose is
+    // the artefact anybody reads.
+    const md = writeUp(writeupPath);
+    if (md === null) return 2;
+    const { text, missing } = spliceBlocks(md, m);
+    if (missing.length) {
+      console.error(`self-host --check: no self-host:begin/end markers for ${missing.join(', ')} in ${path.relative(process.cwd(), writeupPath)} — could not look, which is NOT the same as looking and finding it fine`);
+      return 2;
+    }
+    if (text !== md) {
+      console.error('self-host --check: the write-up\'s generated blocks no longer match the corpus.');
+      const was = md.split('\n');
+      const now = text.split('\n');
+      for (let i = 0; i < Math.max(was.length, now.length); i++) {
+        if (was[i] !== now[i]) console.error(`  line ${i + 1}\n    write-up: ${was[i] ?? '(end of file)'}\n    corpus:   ${now[i] ?? '(end of file)'}`);
+      }
+      console.error('  run `node self-host.js --record` — but read the JSON header first: a re-record with no edit to the surrounding prose is the drift, not the fix.');
+      return 1;
+    }
+    console.log(`self-host --check: the recorded findings and all ${Object.keys(BLOCKS).length} generated block(s) in the write-up still match the corpus.`);
     return 0;
   }
 
@@ -209,6 +344,6 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { measure, generatorVerbs, generousBindings, main };
+module.exports = { measure, generatorVerbs, generousBindings, spliceBlocks, BLOCKS, main };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

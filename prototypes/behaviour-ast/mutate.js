@@ -261,6 +261,21 @@ MUTANTS.push(
     'if (m.behaviours === 0 || m.steps === 0) {', 'if (false) {', 'self-host.js'],
   ['--check accepts drift silently',
     'if (JSON.stringify(was) !== JSON.stringify(now)) {', 'if (false) {', 'self-host.js'],
+  // The bug this file's own write-up carried for eleven days: `--check` compared
+  // the JSON to the corpus, agreed with itself, and never opened the markdown
+  // anyone actually reads.
+  ['--check stops reading the write-up, so the prose can say 14 while the corpus says 20',
+    'if (text !== md) {', 'if (false) {', 'self-host.js'],
+  // One level up again: a checker whose markers stop matching must say COULD NOT
+  // LOOK. If this survives, renaming a marker is a silent way to switch the
+  // check off.
+  ['a marker the parser cannot find reads as agreement instead of could-not-look',
+    'if (begin === -1 || end === -1 || end < begin) { missing.push(key); continue; }',
+    'if (begin === -1 || end === -1 || end < begin) { continue; }', 'self-host.js'],
+  // A splice that inserts beside the stale block instead of replacing it leaves
+  // BOTH numbers in the document, and the wrong one reads like the right one.
+  ['the splice keeps the stale block and writes the fresh one beside it',
+    "${out.slice(end)}`;", '${out.slice(begin + BEGIN(key).length)}`;', 'self-host.js'],
   // The original defect, reinstated: count the whole global bindings file
   // instead of this corpus's nouns. Every app then reports the same number and
   // a corpus binding nothing reports the same headline as one binding all.
