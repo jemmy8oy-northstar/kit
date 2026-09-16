@@ -1255,6 +1255,89 @@ test('--check goes RED when the corpus drifts from the recorded findings', () =>
   assert.strictEqual(quiet(() => selfhost.main(['--corpus', beh, '--check'])), 1);
 });
 
+// ── the write-up's numbers are generated, not re-typed ──────────────────────
+//
+// `--check` compared the findings JSON to the corpus and stopped there, so from
+// 2026-09-05 to 2026-09-16 it reported green while the prose it exists to protect
+// said 14 / 42 / 21 and the JSON beside it said 20 / 60 / 36. A green check over
+// a wrong document is worse than no check: it is what stopped anyone looking.
+
+test('the write-up quotes NO count the tool did not generate — every marked block round-trips', () => {
+  const m = selfhost.measure(fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8'));
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const { text, missing } = selfhost.spliceBlocks(doc, m);
+  assert.deepStrictEqual(missing, [], `the real write-up has lost its markers for ${missing.join(', ')}`);
+  assert.strictEqual(text, doc, 'the committed write-up is not what --record would write — run `node self-host.js --record`');
+});
+
+test('CONTROL: every key in BLOCKS is actually marked up in the real write-up', () => {
+  // Without this, adding a fifth generated block and forgetting to mark the doc
+  // leaves that number hand-typed and unchecked — the original bug, re-created
+  // one key at a time. `missing` above would catch it too, but only because the
+  // list is currently complete; this says the two must stay the same size.
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const keys = Object.keys(selfhost.BLOCKS);
+  assert.ok(keys.length > 0, 'BLOCKS is empty — the check would pass by having nothing to check');
+  for (const key of keys) {
+    assert.ok(doc.includes(`<!-- self-host:begin ${key} -->`), `no begin marker for "${key}"`);
+    assert.ok(doc.includes(`<!-- self-host:end ${key} -->`), `no end marker for "${key}"`);
+  }
+});
+
+test('a hand-edited number inside a marked block is RED, not a shrug', () => {
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const dir = fixture({});
+  const md = pathx.join(dir, 'writeup.md');
+  // The exact drift that happened: the steps count left behind at its old value.
+  fsx.writeFileSync(md, doc.replace('| steps | 60 |', '| steps | 42 |'));
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', md, '--check'])), 1);
+});
+
+test('a marker the parser cannot find is exit 2 — could-not-look, never a silent pass', () => {
+  // The failure one level up: a checker whose matcher quietly stops matching
+  // reports the same green as a document that is correct. If this ever returns
+  // 0, renaming a marker becomes a way to switch the check off in silence.
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const dir = fixture({});
+  const md = pathx.join(dir, 'writeup.md');
+  fsx.writeFileSync(md, doc.replace('<!-- self-host:end verbs -->', '<!-- end of the verbs table -->'));
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', md, '--check'])), 2);
+});
+
+test('a write-up that cannot be opened at all is exit 2, not exit 0', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', '/no/such/writeup.md', '--check'])), 2);
+});
+
+test('a hand-edited FINDINGS file is RED on its own, with the prose left correct', () => {
+  // Found by the mutation gate, not by reading: once the markdown blocks cover
+  // every field of the snapshot, `if (false)`-ing the JSON comparison left
+  // --check going red anyway via the prose, so mutate.js's "--check accepts
+  // drift silently" survived for the first time. It was not an equivalent
+  // mutant — the JSON branch had genuinely stopped being proven, and this is the
+  // one drift only it can catch [[an-equivalent-mutant-reports-survived]].
+  const dir = fixture({});
+  const json = pathx.join(dir, 'findings.json');
+  const real = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.json'), 'utf8'));
+  fsx.writeFileSync(json, JSON.stringify({ ...real, steps: real.steps + 1 }, null, 2));
+  assert.strictEqual(quiet(() => selfhost.main(['--findings', json, '--check'])), 1);
+});
+
+test('a FINDINGS file that is not there is exit 2, not exit 0', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--findings', '/no/such/findings.json', '--check'])), 2);
+});
+
+test('spliceBlocks REWRITES a stale block rather than appending beside it', () => {
+  // A splice that inserted instead of replacing would leave both numbers in the
+  // document, and the wrong one reads exactly like the right one.
+  const m = selfhost.measure('behaviour BEH-1 "x"\n  when runs command:Go\n');
+  const before = `a\n<!-- self-host:begin numbers -->\n| steps | 999 |\n<!-- self-host:end numbers -->\nb\n`;
+  const { text, missing } = selfhost.spliceBlocks(before, m);
+  assert.deepStrictEqual(missing.filter((k) => k === 'numbers'), []);
+  assert.ok(!text.includes('999'), 'the stale number survived the splice');
+  assert.ok(text.startsWith('a\n') && text.endsWith('b\n'), 'the splice ate text outside its own markers');
+  assert.strictEqual(text.match(/self-host:begin numbers/g).length, 1, 'the marker was duplicated');
+});
+
 test('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => {
   // kit.beh's nouns are command:KitCheck and status:One. Leaving it in a study
   // about UI binding glue is a category error; excluding it silently is worse.

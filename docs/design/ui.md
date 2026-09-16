@@ -108,8 +108,17 @@ projection. From `kit.js`:
 | `adjudication` | `{defined, inferred, unreviewed[], approved[], denied[], untraceable[]}` | the review queue |
 | `questions` + `renderSheet` | the decision/review packs | **the sheet, made clickable** |
 
-Five corpora exist (`james-habits-app` 23, `language-vocab` 27, `macro-metrics` 10, `snip-it` 8,
-`kit` 10) — enough real material that the UI has something to show on day one rather than a fixture.
+Six real corpora exist, 94 behaviours between them — measured 2026-09-16: `language-vocab` 27,
+`james-habits-app` 23, `kit` 20, `macro-metrics` 10, `snip-it` 8, `kit-ui` 6. Enough real material
+that the UI has something to show on day one rather than a fixture.
+
+⚠️ `behaviours/` holds **nine** `.beh` files; the other three are trials and declare themselves so
+in the corpus (`# kit:duplicate-corpus`, `# kit:not-a-real-app`). Read the directive, never a
+filename list — the directory is an implicit population for everything that reads it. _(This
+sentence said "Five corpora … `kit` 10" until 2026-09-16, having missed `kit-ui` entirely and
+frozen `kit` at its 2026-09-05 size. Unlike the tables in
+[`docs/pilots/kit-self-hosting.md`](../pilots/kit-self-hosting.md), nothing regenerates these
+numbers, so they are dated rather than trusted.)_
 
 ## Decision 1 — where does it run?
 
