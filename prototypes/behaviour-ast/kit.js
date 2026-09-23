@@ -249,6 +249,16 @@ function resolve(behaviours) {
         // Two behaviours asserting different values for the same slot is
         // James's "this conflicts with a previous behaviour, supersede?" — and
         // it needs no embeddings and no LLM. It falls out of the Map.
+        //
+        // The limit this Map imposes, decided on kit#23 and NOT a bug to fix:
+        // the key is an exact string, so detection is SAME-NOUN only. Two
+        // behaviours describing one control as `checkbox:HabitDone` and
+        // `checkbox:HabitItem` are two keys, and nothing collides — Kit reports
+        // no conflict because it has nothing to compare. Independent readings
+        // of one brief agreed on 3 nouns of 32 (docs/trials/habits-forward-run.md).
+        // No canonical vocabulary and no reconciliation step is planned: the
+        // forward path does not guess, because requires.js dictates the noun
+        // names to whoever implements the contract.
         (existing.conflict = existing.conflict || []).push({ from: p.from, value: p.value, at: p.at });
       }
     }
