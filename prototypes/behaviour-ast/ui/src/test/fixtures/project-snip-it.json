@@ -595,7 +595,7 @@
     },
     {
       "id": "BEH-EDIT-1",
-      "code": "test(\"[BEH-EDIT-1] The editor loads a transcript and offers its toolbar\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Remove filler words\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Send for export\" })).toBeVisible();\n  // UNGENERATED: then shows region:WordTrack \"transcribe\"\n});",
+      "code": "test(\"[BEH-EDIT-1] The editor loads a transcript and offers its toolbar\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Remove filler words\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Send for export\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows region:WordTrack \\\"transcribe\\\"\" });\n  // UNGENERATED: then shows region:WordTrack \"transcribe\"\n});",
       "missing": [
         "region:WordTrack"
       ],
@@ -617,7 +617,7 @@
     },
     {
       "id": "BEH-CUT-1",
-      "code": "test(\"[BEH-CUT-1] Sending for export submits a cut and surfaces the finished job\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await page.getByRole(\"button\", { name: \"Send for export\" }).click();\n  // UNGENERATED: then shows region:CutStatus \"is complete\"\n  await expect(page.getByRole(\"link\", { name: \"Download\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): POST /api/cuts is sent exactly once\n  // CONTRACT (not derivable from a behaviour): the body carries transcriptionJobId\n  // CONTRACT (not derivable from a behaviour): the body carries every word\n  // CONTRACT (not derivable from a behaviour): at least one word is marked not kept\n});",
+      "code": "test(\"[BEH-CUT-1] Sending for export submits a cut and surfaces the finished job\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await page.getByRole(\"button\", { name: \"Send for export\" }).click();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows region:CutStatus \\\"is complete\\\"\" });\n  // UNGENERATED: then shows region:CutStatus \"is complete\"\n  await expect(page.getByRole(\"link\", { name: \"Download\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): POST /api/cuts is sent exactly once\n  // CONTRACT (not derivable from a behaviour): the body carries transcriptionJobId\n  // CONTRACT (not derivable from a behaviour): the body carries every word\n  // CONTRACT (not derivable from a behaviour): at least one word is marked not kept\n});",
       "missing": [
         "region:CutStatus"
       ],
