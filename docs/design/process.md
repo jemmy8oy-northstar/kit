@@ -114,7 +114,9 @@ Consequences, all of them the point:
 
 ## Stage 5 — Generation: refuse rather than guess
 
-Kit emits tests, or emits `// UNGENERATED:` and names the unbound noun.
+Kit emits tests, or emits `// UNGENERATED:` and names the unbound noun — plus a
+`kit-ungenerated` Playwright annotation, so the refusal reaches the test report and not only a
+reader of the file (kit#31, 2026-09-24). It changes no test outcome, deliberately.
 
 This is not fastidiousness, it is the answer to the best-evidenced failure mode in the newest research:
 LLM-generated specs reach ~94% semantic coverage, and **the residual failure is omission that still

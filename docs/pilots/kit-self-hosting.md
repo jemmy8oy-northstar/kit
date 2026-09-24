@@ -202,19 +202,25 @@ design has always claimed, and this is the first time it produced running code.
 unknowns mechanism, not a literal — and emits:
 
 ```
+test.info().annotations.push({ type: "kit-ungenerated", description: "when fills field:KitCorrection with \"…\"" });
 // UNGENERATED: when fills field:KitCorrection with "…"
 await page.getByRole("button", { name: "Deny" }).click();
 ```
 
-**The refusal becomes a comment and the test runs on regardless.** Deny is disabled precisely
-because the fill never happened, so the test fails on a click timeout — a failure that reads
-like an application bug and is nothing of the kind. The cause is three lines above it, in a
-comment, which no test runner will ever show you.
+**The test still runs on regardless.** Deny is disabled precisely because the fill never
+happened, so it fails on a click timeout — a failure that reads like an application bug and is
+nothing of the kind. The cause is the line above it.
 
-So the refusal is honest at the point of generation and lost at the point of execution. Kit
-knows the test is incomplete and emits an artefact that does not. Whether the emitter should
-`test.fixme()` the whole test, `throw` at the refused line, or keep today's behaviour is a
-change to what Kit emits for **every** corpus, so it is not folded in here.
+Originally the refusal was *only* the comment, which no test runner will ever show you: honest
+at the point of generation and lost at the point of execution, so Kit knew the test was
+incomplete and emitted an artefact that did not. **Resolved 2026-09-24 (kit#31):** the emitter
+now also pushes a Playwright annotation, so the refusal reaches the report.
+
+🔑 **It deliberately changes no test outcome.** 74 of the 125 tests generated across the nine
+committed corpora carry at least one refusal, so `throw` or `test.fixme()` would have
+re-coloured most of every consumer's suite to say something the suite already knew. The
+annotation is emitted **above** the comment so that the comment stays directly above the action
+that depends on it — that adjacency is the finding, and `kit.test.js` pins it.
 
 ⚠️ **The confound, stated plainly:** the same author wrote the app, this corpus and its
 bindings, in one sitting. That is fatal to any *independence* claim, which is why
