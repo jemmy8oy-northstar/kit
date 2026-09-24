@@ -3933,6 +3933,67 @@ test('marker: recovery uses the base recorded in the marker, not the base of the
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'ui/src/a.ts'), 'utf8'), 'const ok = 1\n');
 });
 
+// ── the marker's git status is itself a rule, and it has TWO sides ──────────
+//
+// Everything above tests the marker's behaviour. These two test its *place in
+// the repository*, which no amount of correct behaviour can supply, and which
+// has now been got wrong twice: `git add -A` run during a mutation run has
+// twice swept the marker into a commit alongside a live mutant
+// (claude-code-bot#92, and again 2026-09-24 — that commit took the marker and
+// a deleted line in `saturation.js`, and a following `git checkout --` put the
+// mutant BACK because HEAD was by then the commit containing it).
+//
+// The two sides pull in opposite directions, which is the whole point:
+//
+//  1. It must never be TRACKED. A committed marker means some past `git add -A`
+//     ran during a live run, so a mutant was almost certainly committed with
+//     it — and from then on every fresh clone starts life refusing to mutate,
+//     because `refuseIfStale` sees a marker that no run will ever remove.
+//  2. It must never be IGNORED. The marker's entire announcement mechanism is
+//     showing up as `??` in `git status`, right beside the files you are about
+//     to stage. Adding it to `.gitignore` is the *plausible* fix for rule 1 and
+//     it is the wrong one: it stops `git add -A` staging the MARKER while doing
+//     nothing about the mutants, which are tracked files with modifications and
+//     get staged either way. It removes the alarm and leaves the fire.
+//
+// So a repo that satisfies rule 1 by breaking rule 2 is strictly worse than the
+// mistake it is fixing. Asserting only rule 1 would call that an improvement.
+const realMarker = require('./mutation-marker');
+// Against the REAL repository, not a fixture — that is the thing being claimed.
+// Safe to run mid-mutation: neither query reads the working tree, so the answer
+// is the same whether or not a marker is on disk right now.
+const gitAtRoot = (...args) => {
+  const r = require('child_process').spawnSync('git', ['-C', realMarker.ROOT, ...args], { encoding: 'utf8' });
+  // Could-not-look is never green — kit's own BEH-GATE-2, applied to kit.
+  assert.ok(!r.error, `could not look: git could not be run — ${r.error && r.error.message}`);
+  return { status: r.status, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() };
+};
+
+test('marker: MUTATION-IN-PROGRESS is not tracked, so no `git add -A` ever committed one', () => {
+  const tree = gitAtRoot('rev-parse', '--is-inside-work-tree');
+  assert.strictEqual(tree.out, 'true', `could not look: ${realMarker.ROOT} is not a git work tree — ${tree.err}`);
+
+  const listed = gitAtRoot('ls-files', '--', 'MUTATION-IN-PROGRESS');
+  assert.strictEqual(listed.status, 0, `could not look: git ls-files exited ${listed.status} — ${listed.err}`);
+  assert.strictEqual(listed.out, '',
+    'MUTATION-IN-PROGRESS is a TRACKED file. A `git add -A` ran during a live mutation run, '
+    + 'so a mutant was very likely committed beside it — and every clone of this repo now '
+    + 'refuses to mutate, because refuseIfStale() finds a marker no run will ever drop. '
+    + '`git rm --cached MUTATION-IN-PROGRESS`, then check what else that commit swept up.');
+});
+
+test('marker: MUTATION-IN-PROGRESS is not gitignored — being visible in `git status` IS the mechanism', () => {
+  // `--no-index` asks the ignore RULES only, so this stays true independently of
+  // whether the file happens to be tracked — the test above owns that half.
+  const ci = gitAtRoot('check-ignore', '--no-index', '-v', '--', 'MUTATION-IN-PROGRESS');
+  assert.notStrictEqual(ci.status, 0,
+    `MUTATION-IN-PROGRESS is IGNORED by "${ci.out}". That silences the alarm without touching `
+    + 'the hazard: the mutants are tracked files with modifications, so `git add -A` still stages '
+    + 'them — you have only stopped git from telling you a run is in progress. Remove the pattern; '
+    + 'the marker is meant to be an untracked `??` sitting in your way.');
+  assert.strictEqual(ci.status, 1, `could not look: git check-ignore exited ${ci.status} — ${ci.err}`);
+});
+
 test('marker: the marker tells a reader how to recover, and warns off git checkout', () => {
   const { m } = killedRun({ 'a.js': 'x\n' }, {});
   const text = fsx.readFileSync(m.MARKER, 'utf8');
