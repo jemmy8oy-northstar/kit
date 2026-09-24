@@ -308,6 +308,12 @@ function sameValue(a, b) {
 // thing on the page. There is one per noun — not one per step, and not one per
 // behaviour. That is the entire difference from a Cucumber step definition.
 
+// The annotation type a refused step carries into the Playwright report.
+// Exported so tooling reads it from one place — but the tests spell the string
+// out rather than importing it, so renaming the value cannot stay invisible by
+// both sides agreeing with each other.
+const UNGENERATED_ANNOTATION = 'kit-ungenerated';
+
 function generate(behaviour, bindings, symbols = new Map()) {
   const body = [];
   const missing = new Set();
@@ -332,7 +338,23 @@ function generate(behaviour, bindings, symbols = new Map()) {
     }
     const lines = emit(step, bind, bindings, symbols);
     if (lines) { body.push(...lines); stats.generated += lines.length; }
-    else { body.push(`// UNGENERATED: ${step.kind} ${step.text}`); stats.ungenerated++; }
+    else {
+      // A refused step is now visible to a RUNNER, not only to a reader.
+      // The comment alone is inert: the test runs straight on into an action
+      // that depends on the step Kit declined to write, and fails like an
+      // application bug. An annotation surfaces the refusal in the report and
+      // changes no control flow — deliberately, because 74 of the 125 tests
+      // generated across the nine committed corpora carry at least one
+      // refusal, so throwing or test.fixme() would have re-coloured most of
+      // every consumer's suite to say something the suite already knew.
+      //
+      // It goes ABOVE the comment, never below: the comment has to stay
+      // directly above the action that depends on it. That adjacency is the
+      // finding this whole thread is about, and kit.test.js pins it.
+      body.push(`test.info().annotations.push({ type: ${JSON.stringify(UNGENERATED_ANNOTATION)}, description: ${JSON.stringify(`${step.kind} ${step.text}`)} });`);
+      body.push(`// UNGENERATED: ${step.kind} ${step.text}`);
+      stats.ungenerated++;
+    }
   }
 
   const code = [
@@ -1140,6 +1162,7 @@ module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
+  UNGENERATED_ANNOTATION,
 };
 
 // ─────────────────────────── cli ───────────────────────────

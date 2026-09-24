@@ -1582,19 +1582,19 @@ test('and all 20 of them are DERIVED, not `state` strings copied out of bindings
   assert.strictEqual(stats.derived, stats.generated);
 });
 
-test('THE FINDING, pinned: the refusal is a comment, and the next line acts as if it happened', () => {
+test('THE FINDING, pinned: the refusal sits directly above the action that depends on it', () => {
   // BEH-ADJ-2 fills a correction before clicking Deny. The generator correctly
-  // refuses to derive the fill — and emits the refusal as a COMMENT, so the
-  // test runs straight on into a click on a button that is disabled *because
-  // the fill never happened*. It fails like an application bug.
+  // refuses to derive the fill, so the test runs straight on into a click on a
+  // button that is disabled *because the fill never happened*. It fails like an
+  // application bug.
   //
-  // Whether the emitter should test.fixme(), throw at the refused line, or keep
-  // today's behaviour changes what Kit emits for EVERY corpus, so it is not
-  // decided here. This test is the half that is true under all three options:
-  // whatever he picks, the suite has to be able to SEE a refused step sitting
-  // above an action that depends on it. Today it can, and it goes red the
-  // moment that changes — which is the point of writing it before the decision
-  // rather than after.
+  // This test was written BEFORE the decision about what to do, as the half
+  // that is true under all four options: whatever was chosen, the suite has to
+  // be able to see a refused step sitting above an action that depends on it.
+  // The decision has since been made — kit#31's queue entry lapsed on
+  // 2026-09-24 to its stated default, ANNOTATE — and the adjacency survived it
+  // intact, which is why this still reads the same. The annotation is emitted
+  // ABOVE the comment precisely so that it would.
   const { source } = selfrun.emitSpec();
   const refused = selfrun.refusals(source);
   assert.strictEqual(refused.length, 1, 'exactly one refusal in this corpus');
@@ -1603,13 +1603,60 @@ test('THE FINDING, pinned: the refusal is a comment, and the next line acts as i
     'the line after the refusal is the click that depends on it — this adjacency IS the defect');
 });
 
-test('the refusal is inert at runtime, which is exactly why it is lost', () => {
-  // The positive half of the same fact: nothing in the emitted artefact makes a
-  // runner stop. A reader sees the refusal; a runner cannot.
+test('a refused step now reaches the RUNNER, not just a reader', () => {
+  // What changed on 2026-09-24. The comment on its own is inert: a reader sees
+  // the refusal and a runner cannot, so a suite full of them reports itself
+  // complete. The annotation puts it in the Playwright report.
   const { source } = selfrun.emitSpec();
-  const line = source.split('\n').find((l) => l.includes('UNGENERATED'));
-  assert.match(line.trim(), /^\/\//, 'a comment, so no runner will ever surface it');
+  const lines = source.split('\n');
+  const i = lines.findIndex((l) => l.includes('// UNGENERATED:'));
+  assert.ok(i > 0, 'the refusal comment is still there for a reader');
+  // Spelled out, not imported from the module under test: if both sides read
+  // the same constant, renaming its value is invisible to this assertion.
+  assert.match(lines[i - 1].trim(),
+    /^test\.info\(\)\.annotations\.push\(\{ type: "kit-ungenerated", description: /,
+    'the annotation sits directly above the comment it belongs to');
+  assert.strictEqual(require('./kit').UNGENERATED_ANNOTATION, 'kit-ungenerated',
+    'and the exported constant is the same string the artefact carries');
+  assert.match(lines[i - 1], /fills field:KitCorrection/, 'carrying the step it refused');
+});
+
+test('and it still changes no test outcome, which is the whole reason it was chosen', () => {
+  // 74 of the 125 tests generated across the nine committed corpora carry at
+  // least one refusal. Throwing or test.fixme() would have re-coloured most of
+  // every consumer's suite to say something the suite already knew, so the
+  // option chosen was the one that surfaces the refusal and touches nothing
+  // else. An annotation that halted would be a different decision wearing this
+  // one's name.
+  const { source } = selfrun.emitSpec();
   assert.ok(!/test\.fixme|test\.skip|throw new/.test(source), 'nothing in the spec halts on the refused step');
+  assert.ok(!/await\s+test\.info\(\)/.test(source), 'and the annotation is not awaited, so it cannot even pause');
+});
+
+test('every refused step gets exactly one annotation, across every committed corpus', () => {
+  // The single-instance tests above measure ONE refusal in ONE corpus. The
+  // claim being made is about all of them, so count over the whole population
+  // rather than trusting that kit-ui generalises — nine corpora, 125 tests.
+  const bindings = JSON.parse(fsx.readFileSync(pathx.join(__dirname, 'bindings.json'), 'utf8'));
+  const dir = pathx.join(__dirname, 'behaviours');
+  let refusals = 0, annotations = 0, corpora = 0;
+  for (const f of fsx.readdirSync(dir).filter((f) => f.endsWith('.beh'))) {
+    corpora++;
+    // resolve() then generate(b, bindings, symbols) — the same pipeline
+    // selfhost/run.js:emitSpec uses. A simpler parse-and-generate here would
+    // be measuring a path no consumer takes.
+    const { behaviours, symbols } =
+      resolve(parse(fsx.readFileSync(pathx.join(dir, f), 'utf8'), f));
+    for (const b of behaviours) {
+      const { code, stats } = generate(b, bindings, symbols);
+      refusals += stats.ungenerated;
+      annotations += (code.match(/test\.info\(\)\.annotations\.push\(/g) || []).length;
+    }
+  }
+  assert.ok(corpora >= 9, `every corpus was read, not just the first (${corpora})`);
+  assert.ok(refusals > 0, 'a population with no refusals would prove nothing');
+  assert.strictEqual(annotations, refusals,
+    'one annotation per refused step — no double-emit, and none silently dropped');
 });
 
 test('the harness REFUSES rather than skipping when it has no Playwright', async () => {
