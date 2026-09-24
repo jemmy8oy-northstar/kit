@@ -181,6 +181,27 @@ const MUTANTS = [
   ['uncovered behaviours no longer affect the exit code',
     'if (!errors.length && !result.uncovered.length) {', 'if (true) {', 'check.js'],
 
+  // --dir. The gate can now read a corpus that lives with its project (kit#52),
+  // which means it can also read the WRONG one and report a confident verdict
+  // over it. Every mutant here is a version that still exits 0 on something.
+  ['--dir is accepted and ignored, so the gate reads kit own corpus instead',
+    'const behPath = path.join(dir, `${app}.beh`);',
+    'const behPath = path.join(DEFAULT_DIR, `${app}.beh`);', 'check.js'],
+  // ⚠️ The PLAUSIBLE half-fix, and the reason it gets its own mutant: moving the
+  // corpus lookup and leaving the mapping behind passes every test that only
+  // checks --via markers, because that path never opens the mapping at all.
+  ['the mapping stays on __dirname, so a relocated project is gated against kit own claims',
+    'const mapPath = path.join(dir, `${app}.tests.json`);',
+    'const mapPath = path.join(DEFAULT_DIR, `${app}.tests.json`);', 'check.js'],
+  ['an unknown flag is ignored again, so a typo silently gates the default corpus',
+    'return { error: `unknown option ${a}` };', 'continue;', 'check.js'],
+  ['a value flag with nothing after it eats the next flag instead of refusing',
+    "if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };",
+    'if (false) return { error: `${a} needs a value` };', 'check.js'],
+  ['a second positional is taken as the app, so two corpus names is first-one-wins',
+    'return { error: `two app names given, "${opts.app}" and "${a}" — this gate checks one corpus` };',
+    'opts.app = a;', 'check.js'],
+
   // the prose accounting. Every rule here exists to stop the corpus reporting a
   // flattering fraction of a document it only partly encoded, so a survivor
   // means the flattering version would ship unnoticed.
