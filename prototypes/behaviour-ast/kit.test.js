@@ -992,17 +992,33 @@ test('--dir: a mapping beside the corpus is found, and the header names where it
     `the header must name the corpus it read; said: ${said}`);
 });
 
-test('a typo\'d flag is exit 2, never a silent fall back to ./behaviours', () => {
+test('a typo\'d flag is exit 2 and NAMES the flag — never a silent fall back to ./behaviours', () => {
   // `--behaviours` instead of `--dir` used to be ignored, which means the gate
-  // would have checked KIT'S OWN corpus and reported a clean pass — a green that
-  // says nothing about the project the user asked about.
+  // would have checked KIT'S OWN corpus and reported a verdict over it — a
+  // result that says nothing about the project the user asked about.
+  //
+  // ⚠️ The typo is LAST, with no value after it, and asserting the REASON is the
+  // whole test. The first version put a path after the typo and asserted only
+  // the code — and SURVIVED the mutant that deletes this refusal, because the
+  // leftover path then became a second app name and "two app names" exits 2 as
+  // well. An exit code two rules can both produce measures neither.
   const repo = fixture({ 'a.spec.ts': "test('x', () => {});" });
-  assert.strictEqual(quiet(() => check.main(['kit', '--repo', repo, '--behaviours', '/tmp'])), 2);
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main(['kit', '--repo', repo, '--behaviours']); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 2, said);
+  assert.ok(said.includes('unknown option --behaviours'), `said: ${said}`);
 });
 
-test('--dir with no value is exit 2, rather than eating the next flag', () => {
-  const repo = fixture({ 'a.spec.ts': "test('x', () => {});" });
-  assert.strictEqual(quiet(() => check.main(['kit', '--dir', '--repo', repo])), 2);
+test('parseArgs: a value flag with nothing after it refuses, rather than eating the next flag', () => {
+  // ⚠️ Asserted on parseArgs, not through main(), for the same reason as above:
+  // with this guard deleted `--dir` swallows `--repo`, the leftover path becomes
+  // a second app name, and THAT exits 2 too. Both arrangements are pinned —
+  // nothing after it at all, and a flag after it.
+  assert.strictEqual(check.parseArgs(['kit', '--repo', 'r', '--dir']).error, '--dir needs a value');
+  assert.strictEqual(check.parseArgs(['kit', '--dir', '--repo', 'r']).error, '--dir needs a value');
 });
 
 test('parseArgs: a repo path equal to the app name still finds the app', () => {
