@@ -286,6 +286,20 @@ MUTANTS.push(
     'for (const b of behaviours) for (const n of nounsOf(b)) referenced.add(n);',
     'const _all = []; for (const b of behaviours) for (const n of nounsOf(b)) _all.push(n); referenced.add = Set.prototype.add; _all.forEach((n) => Set.prototype.add.call(referenced, n + Math.random()));',
     'kit.js'],
+  // `fills` is the ONE verb whose nouns are not written in the step — they are
+  // resolved out of another behaviour's `provides`. Reading `bindings` directly
+  // instead of going through bind() is therefore invisible everywhere else, and
+  // it is how the CLI came to report 16 unbound nouns on a corpus where the
+  // requires panel reported 18 (#38, #61). The second mutant is the plausible
+  // WRONG fix: routing through bind() but refusing on the first miss, which
+  // names one field per round instead of all of them.
+  ['a field reached through a `provides` goes back to bypassing bind(), so the CLI stops naming it',
+    "const bound = fields.map((f) => bind({ kind: 'field', name: f }));",
+    'const bound = fields.map((f) => bindings[`field:${f}`] || null);', 'kit.js'],
+  ['fills refuses on the FIRST unbound field, so a user is told about them one round at a time',
+    "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
+    "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
+    'kit.js'],
   // selfhost/run.js — the harness that executes Kit's own output. Every mutant
   // here is reachable WITHOUT a browser, on purpose: the parts that need one
   // are gated by `--check`, which is a manual run, so anything only a browser
