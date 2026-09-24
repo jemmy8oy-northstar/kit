@@ -2617,9 +2617,16 @@ test('binding: a new noun is added and every existing binding is untouched', () 
 
 test('binding: the warning fires on the real cross-app collision, and is silent otherwise', () => {
   const corpora = W.corpusNouns();
+  // ⚠️ This list is a function of the CORPUS DIRECTORY, not of the writer. It
+  // said `['trial-lend']` until `longlist.beh` arrived on 2026-09-24 and used
+  // `region:EmptyState` too — a true collision, in a namespace that is global
+  // on purpose, so the right move was to record the new member rather than to
+  // rename the noun and hide it. Expect to edit this line whenever a corpus is
+  // added; that friction is the point, because adding a corpus silently changes
+  // every measurement that reads the directory.
   const clash = W.addBinding(BINDINGS_TEXT, 'region:EmptyState', { role: 'region', name: 'Nothing yet' }, { corpora, app: 'trial-habits-a' });
   assert.ok(clash.ok, clash.reason);
-  assert.deepStrictEqual(clash.sharedWith, ['trial-lend']);
+  assert.deepStrictEqual(clash.sharedWith, ['longlist', 'trial-lend']);
 
   const clean = W.addBinding(BINDINGS_TEXT, 'button:SomethingNobodyElseUses', { role: 'button', name: 'x' }, { corpora, app: 'kit-ui' });
   assert.ok(clean.ok, clean.reason);

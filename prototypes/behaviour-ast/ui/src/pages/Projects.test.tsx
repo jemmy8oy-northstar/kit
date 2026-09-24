@@ -37,17 +37,27 @@ describe('Projects', () => {
   })
 
   it('marks a trial corpus, so an invented app is not shown as a project', async () => {
-    // The fixture carries exactly one notReal corpus. It must appear in the
-    // list (hiding it would make the list lie about what Kit reads) AND be
-    // distinguishable, because 0% against a real app and 0% against an app that
-    // does not exist mean opposite things (claude-code-bot#92).
+    // Every notReal corpus must appear in the list (hiding one would make the
+    // list lie about what Kit reads) AND be distinguishable, because 0% against
+    // a real app and 0% against an app that does not exist mean opposite things
+    // (claude-code-bot#92).
+    //
+    // ⚠️ This asserted `toHaveLength(1)` until `longlist.beh` became the second
+    // trial on 2026-09-24. The count was never the claim — it is a property of
+    // the corpus DIRECTORY, so pinning it made adding a trial corpus look like a
+    // UI regression. Asserting one badge PER trial keeps it red-capable (drop
+    // the badge and the two numbers diverge) without coupling it to how many
+    // trials happen to exist. The `>= 1` is what stops it passing vacuously if
+    // the fixture ever carries none.
     mockFetch(projectsFixture)
     renderProjects()
 
     const trials = projectsFixture.projects.filter((p) => p.notReal)
-    expect(trials).toHaveLength(1)
-    expect(await screen.findByRole('link', { name: trials[0].app })).toBeInTheDocument()
-    expect(screen.getAllByText(/trial — no app/)).toHaveLength(1)
+    expect(trials.length).toBeGreaterThanOrEqual(1)
+    for (const trial of trials) {
+      expect(await screen.findByRole('link', { name: trial.app })).toBeInTheDocument()
+    }
+    expect(screen.getAllByText(/trial — no app/)).toHaveLength(trials.length)
   })
 
   it('marks a duplicate corpus with the app it specifies, not just "trial"', async () => {
