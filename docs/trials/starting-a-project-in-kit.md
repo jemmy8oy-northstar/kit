@@ -103,6 +103,17 @@ behaviour keep refusing with no way to discover why short of reading the generat
 🔑 **It is the hole-filling mechanism — Kit's signature feature — that has the blind spot.** A field
 that arrived through a `provides` is exactly the field the CLI cannot tell you about.
 
+✅ **FIXED, on the branch stacked on this one.** `fills` now resolves its fields through `bind()`
+like every other verb, so `node kit.js longlist` reports the same **18** the panel does. It binds
+*all* of them before refusing — returning on the first miss would have named one field, and a user
+who bound it would then be told about the next, which is the same blind spot spread over rounds.
+
+⚠️ **What actually let this survive is that nothing compared the two front ends.** Both derive the
+unbound set independently — `generate()` collects what `bind()` was asked for and could not supply,
+`requires.js` walks the steps and works out what each verb owes — and they had never been asked to
+agree. They now are, **over every corpus in the directory**, so the next divergence is caught in the
+suite rather than by someone typing bindings in by hand for an afternoon.
+
 ## 5. Adding one corpus turned three assertions red, in two different suites
 
 Dropping a single `.beh` file into the directory broke:

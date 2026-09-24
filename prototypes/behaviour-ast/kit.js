@@ -415,10 +415,22 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       // and the field it generates against came from a DIFFERENT behaviour.
       const fields = step.resolved && step.resolved.fields;
       if (!fields) return null;
+      // Route every resolved field through bind(), not bindings[] directly.
+      // bind() is the ONLY thing that records a noun as missing, and reading
+      // `bindings` behind its back is what left `node kit.js <app>` naming a
+      // shorter list of obligations than the UI's requires panel — 16 against
+      // 18 on the longlist corpus, with the two it hid being exactly the two
+      // that take it from 26/28 to 28/28 (#38, #61). A field that arrived
+      // through a `provides` is the one obligation a CLI user could not
+      // discover short of reading this function.
+      //
+      // Bind them ALL before refusing. Returning on the first miss would name
+      // one field, and a user who binds it is then told about the next — the
+      // same blind spot spread over several rounds instead of one.
+      const bound = fields.map((f) => bind({ kind: 'field', name: f }));
+      if (bound.some((fb) => !fb)) return null;
       const lines = [];
-      for (const f of fields) {
-        const fb = bindings[`field:${f}`];
-        if (!fb) return null;
+      for (const fb of bound) {
         // Same false green as `attaches`: without a label BOTH branches below
         // emit `getByLabel(undefined)`, which is generated, counted, and unable
         // to run. Note this verb needs a LABEL specifically, not addressability
