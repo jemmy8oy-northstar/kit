@@ -9,6 +9,15 @@
 //
 //   node check.js <app> --repo <path>              # option C, the default
 //   node check.js <app> --repo <path> --via markers # option A
+//   node check.js <app> --repo <path> --dir <corpus-dir>
+//
+// ⚠️ WHY `--dir` EXISTS. James decided on kit#52 that *a spec lives with its
+// project*. `ui.js`, `project.js`, `writer.js` and `saturation.js` have all taken
+// `--dir` for a while; this gate did not, so a corpus anywhere other than
+// `./behaviours` could be served, browsed and WRITTEN through the UI while being
+// gateable by nothing. That asymmetry is the whole hazard: the one part of Kit
+// that goes red was the one part that could only look in its own repo. The
+// default is unchanged, so every existing invocation means what it did.
 //
 // Exit codes, and the distinction matters more than the gate:
 //   0  every behaviour in the corpus has a test naming it
@@ -69,13 +78,52 @@ function readTests(repo) {
   return { files, titles, sources };
 }
 
-function main(argv) {
-  const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--via');
-  const repo = argv[argv.indexOf('--repo') + 1];
-  const via = argv.includes('--via') ? argv[argv.indexOf('--via') + 1] : 'mapping';
+const VALUE_FLAGS = new Set(['--repo', '--via', '--dir']);
+const DEFAULT_DIR = path.join(__dirname, 'behaviours');
 
-  if (!app || !repo || argv.indexOf('--repo') < 0) {
-    console.error('usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers]');
+// Scans positionally instead of `argv.indexOf(flag) + 1`. The old form asked
+// `argv.indexOf(a)` for the index of a VALUE, which is the first index holding
+// that string and not necessarily this one — so an app whose name equalled the
+// repo path made the app unfindable. With a third value-flag that collision gets
+// likelier, and a mis-scanned `--dir` gates the wrong corpus.
+//
+// 🔑 Every rejection here is exit 2, never a default. A typo'd `--dir` that fell
+// back to `./behaviours` would gate Kit's own corpus, report a clean pass, and be
+// indistinguishable in CI from having checked the corpus you asked for — the
+// exact failure `readTests` already refuses for.
+function parseArgs(argv) {
+  const opts = { app: null, repo: null, via: 'mapping', dir: DEFAULT_DIR };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+      if (a === '--repo') opts.repo = v;
+      else if (a === '--via') opts.via = v;
+      else opts.dir = v;
+      i++;
+    } else if (a.startsWith('--')) {
+      return { error: `unknown option ${a}` };
+    } else if (opts.app === null) {
+      opts.app = a;
+    } else {
+      return { error: `two app names given, "${opts.app}" and "${a}" — this gate checks one corpus` };
+    }
+  }
+  return opts;
+}
+
+function main(argv) {
+  const opts = parseArgs(argv);
+  if (opts.error) {
+    console.error(`cannot look: ${opts.error}`);
+    console.error('usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]');
+    return 2;
+  }
+  const { app, repo, via, dir } = opts;
+
+  if (!app || !repo) {
+    console.error('usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]');
     return 2;
   }
   if (via !== 'mapping' && via !== 'markers') {
@@ -84,7 +132,7 @@ function main(argv) {
   }
   if (!fs.existsSync(repo)) { console.error(`cannot look: no such repo ${repo}`); return 2; }
 
-  const behPath = path.join(__dirname, 'behaviours', `${app}.beh`);
+  const behPath = path.join(dir, `${app}.beh`);
   if (!fs.existsSync(behPath)) { console.error(`cannot look: no corpus ${behPath}`); return 2; }
   const { behaviours } = resolve(parse(fs.readFileSync(behPath, 'utf8'), `${app}.beh`));
   if (!behaviours.length) { console.error(`cannot look: ${app}.beh resolved to 0 behaviours`); return 2; }
@@ -100,13 +148,21 @@ function main(argv) {
     // other direction: the corpus lost a behaviour the tests still name.
     errors = result.orphanTests.map((id) => `[${id}] is named by a test but is not a behaviour in this corpus`);
   } else {
-    const mapPath = path.join(__dirname, 'behaviours', `${app}.tests.json`);
+    // Same `dir`, deliberately. A `--dir` that moved the corpus but left the
+    // mapping behind would half-relocate a project: the gate would read one
+    // repo's behaviours against another repo's claims about its tests, and both
+    // files exist, so nothing would say so.
+    const mapPath = path.join(dir, `${app}.tests.json`);
     if (!fs.existsSync(mapPath)) { console.error(`cannot look: no mapping ${mapPath} (--via mapping)`); return 2; }
     result = mapping(behaviours, JSON.parse(fs.readFileSync(mapPath, 'utf8')), read.titles);
     errors = result.errors;
   }
 
   console.log(`── kit check: ${app} (via ${via}) ──`);
+  // Name the corpus that was read, not just the app. Once two directories can
+  // answer to one app name, "kit check: snip-it ✅" no longer says which one
+  // went green, and the reader of a CI log has no way to find out.
+  console.log(`   ${behaviours.length} behaviour(s) read from ${behPath}`);
   console.log(`   ${read.files.length} test file(s), ${read.titles.length} test(s) read from ${repo}`);
   console.log(`   ${result.covered.length}/${behaviours.length} behaviour(s) have a test naming them\n`);
 
@@ -124,4 +180,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
-module.exports = { main, readTests, walk };
+module.exports = { main, readTests, walk, parseArgs, DEFAULT_DIR };

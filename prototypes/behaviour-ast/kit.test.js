@@ -914,6 +914,108 @@ test('the shipped snip-it mapping is RED today, and for the two behaviours it sa
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-UP-2', 'BEH-EDIT-0']);
 });
 
+// ── --dir: the gate can look outside its own repo (kit#52, kit#53) ──
+//
+// His kit#52 decision is that a spec lives with its project. `ui.js` has taken
+// `--dir` for a while and its WRITE route honours it, so a corpus in another
+// repo was already servable, browsable and writable — and gateable by nothing,
+// because this gate could only read `./behaviours`. These pin the half that was
+// missing, and the two ways a half-done version would still look fine.
+
+// A corpus that exists ONLY outside kit's own behaviours/ directory. Built from
+// the real snip-it corpus so the shape is not a toy, then given an app name no
+// file in `./behaviours` answers to — if the default dir could satisfy any of
+// these, the test would pass while measuring nothing.
+const OUTSIDE_APP = 'gateable-elsewhere';
+const outsideCorpus = () => {
+  const src = fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8');
+  assert.ok(!fsx.existsSync(pathx.join(check.DEFAULT_DIR, `${OUTSIDE_APP}.beh`)),
+    `${OUTSIDE_APP}.beh exists in the default dir — these tests would pass without --dir working`);
+  return { dir: fixture({ [`${OUTSIDE_APP}.beh`]: src }), ids: resolve(parse(src, 'o.beh')).behaviours.map((b) => b.id) };
+};
+
+test('--dir: a corpus that exists only outside the repo can be gated, and goes GREEN', () => {
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers', '--dir', dir])), 0);
+});
+
+test('--dir: and goes RED for the corpus it was pointed at, not a different one', () => {
+  // The control that stops the green above being "it read something, anything".
+  // Same outside corpus, one behaviour's test removed.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.slice(1).map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers', '--dir', dir])), 1);
+});
+
+test('--dir: without it the same corpus is invisible — exit 2, not a pass', () => {
+  // The bug, pinned. Before `--dir` this was the ONLY outcome available for a
+  // corpus living with its project.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.ok(dir, 'fixture built');
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers'])), 2);
+});
+
+test('--dir: the mapping is read from --dir too, so a project is not half-relocated', () => {
+  // The plausible wrong fix: move the .beh lookup and leave `${app}.tests.json`
+  // on `__dirname`. Under the DEFAULT --via that version reads one repo's
+  // behaviours against another repo's claims — and if kit's own dir happened to
+  // hold a mapping for this name it would report a verdict over a file the user
+  // never pointed at. Here nothing holds one, so the honest answer is exit 2.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main([OUTSIDE_APP, '--repo', repo, '--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 2, said);
+  assert.ok(said.includes(pathx.join(dir, `${OUTSIDE_APP}.tests.json`)),
+    `the refusal must name the mapping it looked for INSIDE --dir; said: ${said}`);
+});
+
+test('--dir: a mapping beside the corpus is found, and the header names where it read', () => {
+  // The green half of the pair above, and the provenance line with it: once two
+  // directories can answer to one app name, "kit check: X ✅" does not say which.
+  const { dir, ids } = outsideCorpus();
+  const map = Object.fromEntries(ids.map((id) => [id, [{ file: 'a.spec.ts', title: `${id} is covered` }]]));
+  fsx.writeFileSync(pathx.join(dir, `${OUTSIDE_APP}.tests.json`), JSON.stringify(map));
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('${id} is covered', () => {});`).join('\n') });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main([OUTSIDE_APP, '--repo', repo, '--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(said.includes(pathx.join(dir, `${OUTSIDE_APP}.beh`)),
+    `the header must name the corpus it read; said: ${said}`);
+});
+
+test('a typo\'d flag is exit 2, never a silent fall back to ./behaviours', () => {
+  // `--behaviours` instead of `--dir` used to be ignored, which means the gate
+  // would have checked KIT'S OWN corpus and reported a clean pass — a green that
+  // says nothing about the project the user asked about.
+  const repo = fixture({ 'a.spec.ts': "test('x', () => {});" });
+  assert.strictEqual(quiet(() => check.main(['kit', '--repo', repo, '--behaviours', '/tmp'])), 2);
+});
+
+test('--dir with no value is exit 2, rather than eating the next flag', () => {
+  const repo = fixture({ 'a.spec.ts': "test('x', () => {});" });
+  assert.strictEqual(quiet(() => check.main(['kit', '--dir', '--repo', repo])), 2);
+});
+
+test('parseArgs: a repo path equal to the app name still finds the app', () => {
+  // The old `argv.indexOf(value)` form asked for the FIRST index holding that
+  // string, so this returned no app at all and the gate refused a valid call.
+  assert.deepStrictEqual(check.parseArgs(['snip-it', '--repo', 'snip-it']),
+    { app: 'snip-it', repo: 'snip-it', via: 'mapping', dir: check.DEFAULT_DIR });
+});
+
+test('parseArgs: two app names is a refusal, not a silent first-one-wins', () => {
+  assert.ok(check.parseArgs(['a', 'b', '--repo', 'x']).error, 'two positionals must refuse');
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 
