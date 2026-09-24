@@ -1983,6 +1983,76 @@ test('CONTROL: a fully-bound corpus reports nothing missing, so the tests above 
   assert.ok(p.requires.satisfied.length >= 10, `only ${p.requires.satisfied.length} satisfied nouns`);
 });
 
+test('🔴 a field reached through a `provides` is named as unbound, not silently swallowed', () => {
+  // THE FINDING (#38, #61): `node kit.js longlist` reported 16 unbound nouns
+  // and the UI's requires panel reported 18. Both read the same corpus. The
+  // two it hid were `field:Idea` and `field:WhyNow`, which are exactly the two
+  // bindings that take the corpus from 26/28 generated to 28/28 — so a CLI
+  // user bound everything they were told to, watched a step keep refusing, and
+  // had no way to discover why short of reading emit().
+  //
+  // The cause is that `fills` is the one verb whose nouns are not written in
+  // the step: they are resolved out of ANOTHER behaviour's `provides`, so
+  // there was no ref to hand to bind() and it read `bindings` directly. bind()
+  // is the only thing that records a noun as missing.
+  //
+  // This is the hole-filling mechanism — Kit's signature feature — so the
+  // blind spot sat in the part a new user reaches first.
+  const src = [
+    'behaviour BEH-F1 "fills a form it did not name the fields of"',
+    '  source defined docs/D.md#1',
+    '  actor owner',
+    '  when fills form:Signup with ?fields',
+    '',
+    'behaviour BEH-F2 "and the fields come from here"',
+    '  source defined docs/D.md#1',
+    '  actor owner',
+    '  provides form:Signup.fields = Email, Reason',
+    '',
+  ].join('\n');
+  const { behaviours, symbols } = build(src);
+  const g = generate(behaviours[0], { 'form:Signup': { label: 'Sign up' } }, symbols);
+
+  assert.deepStrictEqual(g.missing, ['field:Email', 'field:Reason'],
+    'the fields it refused on must be the fields it names');
+  assert.match(g.code, /UNGENERATED: when fills form:Signup/);
+
+  // BOTH of them, in one pass. Refusing on the first miss would name one
+  // field, and a user who binds it is then told about the next — the same
+  // blind spot spread over several rounds instead of removed.
+  assert.strictEqual(g.missing.length, 2, 'one round, not one field per round');
+});
+
+test('the generator and the requires panel name the SAME unbound nouns, in every corpus', () => {
+  // The CLI and the UI are two front ends over one model, and until #61 they
+  // disagreed on one corpus by two nouns with nothing measuring it. The
+  // populations are derived independently — generate() collects what bind()
+  // was asked for and could not supply; requires.js walks the steps and works
+  // out what each verb OWES — so agreement is a real cross-check rather than
+  // two readings of one list.
+  //
+  // The corpus directory is the population ([[a-directory-is-a-population]]):
+  // read it, never a hardcoded list, so onboarding a project is covered the
+  // day the file lands.
+  const dir = pathx.join(__dirname, 'behaviours');
+  const apps = fsx.readdirSync(dir).filter((f) => f.endsWith('.beh')).map((f) => f.replace(/\.beh$/, ''));
+  assert.ok(apps.length >= 9, `only ${apps.length} corpora found — the population is wrong, not the claim`);
+
+  let compared = 0;
+  for (const app of apps) {
+    const p = proj.project(app);
+    const fromGenerator = new Set();
+    for (const g of p.generated) for (const m of g.missing) fromGenerator.add(m);
+    const fromRequires = new Set(p.requires.missing.map((n) => n.noun));
+    assert.deepStrictEqual([...fromGenerator].sort(), [...fromRequires].sort(),
+      `${app}: the CLI and the requires panel disagree about what is unbound`);
+    if (fromRequires.size) compared++;
+  }
+  // Without this the test would pass over ten corpora that each report nothing
+  // — two empty sets are equal, and prove nothing.
+  assert.ok(compared >= 5, `only ${compared} corpora had any unbound noun to compare`);
+});
+
 test('a trial corpus is projected as notReal, and a real one is not', () => {
   // The UI is a viewer, so it must SHOW a trial corpus — hiding one would make
   // the list lie about what corpora Kit reads. But 0% against a real app and 0%
@@ -2735,9 +2805,16 @@ test('binding: a new noun is added and every existing binding is untouched', () 
 
 test('binding: the warning fires on the real cross-app collision, and is silent otherwise', () => {
   const corpora = W.corpusNouns();
+  // ⚠️ This list is a function of the CORPUS DIRECTORY, not of the writer. It
+  // said `['trial-lend']` until `longlist.beh` arrived on 2026-09-24 and used
+  // `region:EmptyState` too — a true collision, in a namespace that is global
+  // on purpose, so the right move was to record the new member rather than to
+  // rename the noun and hide it. Expect to edit this line whenever a corpus is
+  // added; that friction is the point, because adding a corpus silently changes
+  // every measurement that reads the directory.
   const clash = W.addBinding(BINDINGS_TEXT, 'region:EmptyState', { role: 'region', name: 'Nothing yet' }, { corpora, app: 'trial-habits-a' });
   assert.ok(clash.ok, clash.reason);
-  assert.deepStrictEqual(clash.sharedWith, ['trial-lend']);
+  assert.deepStrictEqual(clash.sharedWith, ['longlist', 'trial-lend']);
 
   const clean = W.addBinding(BINDINGS_TEXT, 'button:SomethingNobodyElseUses', { role: 'button', name: 'x' }, { corpora, app: 'kit-ui' });
   assert.ok(clean.ok, clean.reason);
