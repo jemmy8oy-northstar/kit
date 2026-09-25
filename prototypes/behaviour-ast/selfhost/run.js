@@ -217,7 +217,9 @@ async function main(argv = []) {
   // ⚠️ Latent rather than live: kit-ui.beh is entirely `opens`/`sees`, so nothing
   // generated from it reaches the bind route today. Half-applied isolation is
   // still worth closing, because what makes it reachable is adding one behaviour.
-  const bindings = path.join(tmp, 'bindings.json');
+  // Named off the resolver rather than spelled again, so the copy follows the
+  // real file if it is ever renamed — and so this stays the one place that knows.
+  const bindings = path.join(tmp, path.basename(BINDINGS));
   fs.copyFileSync(BINDINGS, bindings);
   const specs = path.join(tmp, 'specs');
   fs.mkdirSync(specs);
