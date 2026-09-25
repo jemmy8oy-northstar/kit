@@ -914,6 +914,206 @@ test('the shipped snip-it mapping is RED today, and for the two behaviours it sa
   assert.deepStrictEqual(r.uncovered.map((b) => b.id), ['BEH-UP-2', 'BEH-EDIT-0']);
 });
 
+// ── --dir: the gate can look outside its own repo (kit#52, kit#53) ──
+//
+// His kit#52 decision is that a spec lives with its project. `ui.js` has taken
+// `--dir` for a while and its WRITE route honours it, so a corpus in another
+// repo was already servable, browsable and writable — and gateable by nothing,
+// because this gate could only read `./behaviours`. These pin the half that was
+// missing, and the two ways a half-done version would still look fine.
+
+// A corpus that exists ONLY outside kit's own behaviours/ directory. Built from
+// the real snip-it corpus so the shape is not a toy, then given an app name no
+// file in `./behaviours` answers to — if the default dir could satisfy any of
+// these, the test would pass while measuring nothing.
+const OUTSIDE_APP = 'gateable-elsewhere';
+const outsideCorpus = () => {
+  const src = fsx.readFileSync(pathx.join(__dirname, 'behaviours/snip-it.beh'), 'utf8');
+  assert.ok(!fsx.existsSync(pathx.join(check.DEFAULT_DIR, `${OUTSIDE_APP}.beh`)),
+    `${OUTSIDE_APP}.beh exists in the default dir — these tests would pass without --dir working`);
+  return { dir: fixture({ [`${OUTSIDE_APP}.beh`]: src }), ids: resolve(parse(src, 'o.beh')).behaviours.map((b) => b.id) };
+};
+
+test('--dir: a corpus that exists only outside the repo can be gated, and goes GREEN', () => {
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers', '--dir', dir])), 0);
+});
+
+test('--dir: and goes RED for the corpus it was pointed at, not a different one', () => {
+  // The control that stops the green above being "it read something, anything".
+  // Same outside corpus, one behaviour's test removed.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.slice(1).map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers', '--dir', dir])), 1);
+});
+
+test('--dir: without it the same corpus is invisible — exit 2, not a pass', () => {
+  // The bug, pinned. Before `--dir` this was the ONLY outcome available for a
+  // corpus living with its project.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  assert.ok(dir, 'fixture built');
+  assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers'])), 2);
+});
+
+test('--dir: the mapping is read from --dir too, so a project is not half-relocated', () => {
+  // The plausible wrong fix: move the .beh lookup and leave `${app}.tests.json`
+  // on `__dirname`. Under the DEFAULT --via that version reads one repo's
+  // behaviours against another repo's claims — and if kit's own dir happened to
+  // hold a mapping for this name it would report a verdict over a file the user
+  // never pointed at. Here nothing holds one, so the honest answer is exit 2.
+  const { dir, ids } = outsideCorpus();
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('[${id}] covers it', () => {});`).join('\n') });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main([OUTSIDE_APP, '--repo', repo, '--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 2, said);
+  assert.ok(said.includes(pathx.join(dir, `${OUTSIDE_APP}.tests.json`)),
+    `the refusal must name the mapping it looked for INSIDE --dir; said: ${said}`);
+});
+
+test('--dir: a mapping beside the corpus is found, and the header names where it read', () => {
+  // The green half of the pair above, and the provenance line with it: once two
+  // directories can answer to one app name, "kit check: X ✅" does not say which.
+  const { dir, ids } = outsideCorpus();
+  const map = Object.fromEntries(ids.map((id) => [id, [{ file: 'a.spec.ts', title: `${id} is covered` }]]));
+  fsx.writeFileSync(pathx.join(dir, `${OUTSIDE_APP}.tests.json`), JSON.stringify(map));
+  const repo = fixture({ 'a.spec.ts': ids.map((id) => `test('${id} is covered', () => {});`).join('\n') });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main([OUTSIDE_APP, '--repo', repo, '--dir', dir]); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 0, said);
+  assert.ok(said.includes(pathx.join(dir, `${OUTSIDE_APP}.beh`)),
+    `the header must name the corpus it read; said: ${said}`);
+});
+
+test('a typo\'d flag is exit 2 and NAMES the flag — never a silent fall back to ./behaviours', () => {
+  // `--behaviours` instead of `--dir` used to be ignored, which means the gate
+  // would have checked KIT'S OWN corpus and reported a verdict over it — a
+  // result that says nothing about the project the user asked about.
+  //
+  // ⚠️ The typo is LAST, with no value after it, and asserting the REASON is the
+  // whole test. The first version put a path after the typo and asserted only
+  // the code — and SURVIVED the mutant that deletes this refusal, because the
+  // leftover path then became a second app name and "two app names" exits 2 as
+  // well. An exit code two rules can both produce measures neither.
+  const repo = fixture({ 'a.spec.ts': "test('x', () => {});" });
+  let said = '';
+  const log = console.log, err = console.error;
+  console.log = console.error = (...a) => { said += a.join(' ') + '\n'; };
+  let code;
+  try { code = check.main(['kit', '--repo', repo, '--behaviours']); } finally { console.log = log; console.error = err; }
+  assert.strictEqual(code, 2, said);
+  assert.ok(said.includes('unknown option --behaviours'), `said: ${said}`);
+});
+
+test('parseArgs: a value flag with nothing after it refuses, rather than eating the next flag', () => {
+  // ⚠️ Asserted on parseArgs, not through main(), for the same reason as above:
+  // with this guard deleted `--dir` swallows `--repo`, the leftover path becomes
+  // a second app name, and THAT exits 2 too. Both arrangements are pinned —
+  // nothing after it at all, and a flag after it.
+  assert.strictEqual(check.parseArgs(['kit', '--repo', 'r', '--dir']).error, '--dir needs a value');
+  assert.strictEqual(check.parseArgs(['kit', '--dir', '--repo', 'r']).error, '--dir needs a value');
+});
+
+test('parseArgs: a repo path equal to the app name still finds the app', () => {
+  // The old `argv.indexOf(value)` form asked for the FIRST index holding that
+  // string, so this returned no app at all and the gate refused a valid call.
+  assert.deepStrictEqual(check.parseArgs(['snip-it', '--repo', 'snip-it']),
+    { app: 'snip-it', repo: 'snip-it', via: 'mapping', dir: check.DEFAULT_DIR });
+});
+
+test('parseArgs: two app names is a refusal, not a silent first-one-wins', () => {
+  assert.ok(check.parseArgs(['a', 'b', '--repo', 'x']).error, 'two positionals must refuse');
+});
+
+section('kit.js\'s own CLI: the flags it does not have, it used to accept');
+const { parseCliArgs } = require('./kit');
+
+test('parseCliArgs: an unknown flag refuses and NAMES it, rather than being dropped', () => {
+  // ⚠️ THE FLAG IS LAST, WITH NO VALUE AFTER IT, and the assertion is on the
+  // REASON — the same trap as `--behaviours` above ([[an-exit-code-two-rules-produce]]).
+  // Written as `['kit', '--dir', '/elsewhere']` this test would pass with the
+  // guard deleted: `/elsewhere` becomes a second corpus name and "two corpus
+  // names" refuses too. With nothing after it there is no second rule to hide
+  // behind — delete the guard and `only` is 'kit' with no error at all, which is
+  // precisely the old behaviour: a full report on Kit's own corpus.
+  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, 'unknown option --dir');
+  // Both arrangements pinned anyway, because the value-carrying form is the one
+  // a human actually types after reading check.js's docs.
+  assert.strictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']).error, 'unknown option --dir');
+  // A single-dash typo is not a corpus name either. `-h` aside, nothing here
+  // takes short flags, so `-dir` must refuse rather than become a positional.
+  assert.strictEqual(parseCliArgs(['-dir']).error, 'unknown option -dir');
+});
+
+test('parseCliArgs: --help is answered, and asking for help is not an error', () => {
+  for (const flag of ['--help', '-h']) {
+    const r = parseCliArgs([flag]);
+    assert.strictEqual(r.help, true, `${flag} did not ask for help`);
+    assert.strictEqual(r.error, undefined, `${flag} was treated as an error`);
+  }
+});
+
+test('parseCliArgs: --rev with nothing after it refuses rather than eating the next flag', () => {
+  assert.strictEqual(parseCliArgs(['kit', '--rev']).error, '--rev needs a value');
+  assert.strictEqual(parseCliArgs(['--rev', '--help']).error, '--rev needs a value');
+});
+
+test('parseCliArgs: a corpus named the same as the rev is still found', () => {
+  // The old form was `argv.find((a) => !a.startsWith('--') && a !== rev)`, which
+  // excluded every argument whose STRING equalled the rev — so this call found no
+  // corpus at all and silently reported on all ten instead of the one asked for.
+  assert.deepStrictEqual(parseCliArgs(['kit', '--rev', 'kit']),
+    { sheet: false, only: 'kit', rev: 'kit', help: false });
+});
+
+test('parseCliArgs: sheet is a subcommand in first position and a corpus name anywhere else', () => {
+  assert.strictEqual(parseCliArgs(['sheet', 'kit']).sheet, true);
+  assert.strictEqual(parseCliArgs(['sheet', 'kit']).only, 'kit');
+  // Not a subcommand here: a corpus really called "sheet" must stay reachable.
+  assert.strictEqual(parseCliArgs(['kit', 'sheet']).error,
+    'two corpus names given, "kit" and "sheet" — this reports on one');
+  assert.strictEqual(parseCliArgs(['sheet']).sheet, true);
+});
+
+test('parseCliArgs: two corpus names is a refusal, not a silent first-one-wins', () => {
+  assert.strictEqual(parseCliArgs(['a', 'b']).error,
+    'two corpus names given, "a" and "b" — this reports on one');
+});
+
+test('kit.js refuses a corpus that parses to zero behaviours, instead of reporting NaN%', () => {
+  // ⚠️ SPAWNED, not called: this guard lives in the `require.main === module`
+  // block, which a `require` of this module deliberately does not run. The corpus
+  // has to go in `behaviours/` because that path is `__dirname`-bound — which is
+  // kit#66's subject — so it is removed in a `finally` and its absence asserted.
+  // A stray `.beh` here would change what `saturation.js` and `check.js` measure
+  // ([[a-directory-is-a-population]]).
+  const probe = pathx.join(__dirname, 'behaviours', 'zz-empty-probe.beh');
+  let r;
+  try {
+    // A header comment and nothing else: the natural first keystroke of someone
+    // starting a corpus, and previously answered with a table of zeros ending
+    // `generated / total 0/0 = NaN%`.
+    fsx.writeFileSync(probe, '# a project I have just started\n');
+    r = require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'kit.js'), 'zz-empty-probe'], { encoding: 'utf8' });
+  } finally {
+    fsx.rmSync(probe, { force: true });
+  }
+  assert.strictEqual(fsx.existsSync(probe), false, 'the probe corpus was left in behaviours/');
+  assert.strictEqual(r.status, 2, `stdout: ${r.stdout}`);
+  assert.ok(r.stderr.includes('parsed to 0 behaviours'), `stderr: ${r.stderr}`);
+  // The point of the refusal: no report at all, rather than a report of zeros.
+  assert.ok(!r.stdout.includes('NaN'), `NaN still reaches the reader: ${r.stdout}`);
+  assert.strictEqual(r.stdout, '', `a refused run still printed a report: ${r.stdout}`);
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 
@@ -1255,6 +1455,89 @@ test('--check goes RED when the corpus drifts from the recorded findings', () =>
   assert.strictEqual(quiet(() => selfhost.main(['--corpus', beh, '--check'])), 1);
 });
 
+// ── the write-up's numbers are generated, not re-typed ──────────────────────
+//
+// `--check` compared the findings JSON to the corpus and stopped there, so from
+// 2026-09-05 to 2026-09-16 it reported green while the prose it exists to protect
+// said 14 / 42 / 21 and the JSON beside it said 20 / 60 / 36. A green check over
+// a wrong document is worse than no check: it is what stopped anyone looking.
+
+test('the write-up quotes NO count the tool did not generate — every marked block round-trips', () => {
+  const m = selfhost.measure(fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8'));
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const { text, missing } = selfhost.spliceBlocks(doc, m);
+  assert.deepStrictEqual(missing, [], `the real write-up has lost its markers for ${missing.join(', ')}`);
+  assert.strictEqual(text, doc, 'the committed write-up is not what --record would write — run `node self-host.js --record`');
+});
+
+test('CONTROL: every key in BLOCKS is actually marked up in the real write-up', () => {
+  // Without this, adding a fifth generated block and forgetting to mark the doc
+  // leaves that number hand-typed and unchecked — the original bug, re-created
+  // one key at a time. `missing` above would catch it too, but only because the
+  // list is currently complete; this says the two must stay the same size.
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const keys = Object.keys(selfhost.BLOCKS);
+  assert.ok(keys.length > 0, 'BLOCKS is empty — the check would pass by having nothing to check');
+  for (const key of keys) {
+    assert.ok(doc.includes(`<!-- self-host:begin ${key} -->`), `no begin marker for "${key}"`);
+    assert.ok(doc.includes(`<!-- self-host:end ${key} -->`), `no end marker for "${key}"`);
+  }
+});
+
+test('a hand-edited number inside a marked block is RED, not a shrug', () => {
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const dir = fixture({});
+  const md = pathx.join(dir, 'writeup.md');
+  // The exact drift that happened: the steps count left behind at its old value.
+  fsx.writeFileSync(md, doc.replace('| steps | 60 |', '| steps | 42 |'));
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', md, '--check'])), 1);
+});
+
+test('a marker the parser cannot find is exit 2 — could-not-look, never a silent pass', () => {
+  // The failure one level up: a checker whose matcher quietly stops matching
+  // reports the same green as a document that is correct. If this ever returns
+  // 0, renaming a marker becomes a way to switch the check off in silence.
+  const doc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.md'), 'utf8');
+  const dir = fixture({});
+  const md = pathx.join(dir, 'writeup.md');
+  fsx.writeFileSync(md, doc.replace('<!-- self-host:end verbs -->', '<!-- end of the verbs table -->'));
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', md, '--check'])), 2);
+});
+
+test('a write-up that cannot be opened at all is exit 2, not exit 0', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--writeup', '/no/such/writeup.md', '--check'])), 2);
+});
+
+test('a hand-edited FINDINGS file is RED on its own, with the prose left correct', () => {
+  // Found by the mutation gate, not by reading: once the markdown blocks cover
+  // every field of the snapshot, `if (false)`-ing the JSON comparison left
+  // --check going red anyway via the prose, so mutate.js's "--check accepts
+  // drift silently" survived for the first time. It was not an equivalent
+  // mutant — the JSON branch had genuinely stopped being proven, and this is the
+  // one drift only it can catch [[an-equivalent-mutant-reports-survived]].
+  const dir = fixture({});
+  const json = pathx.join(dir, 'findings.json');
+  const real = JSON.parse(fsx.readFileSync(pathx.join(__dirname, '..', '..', 'docs', 'pilots', 'kit-self-hosting.json'), 'utf8'));
+  fsx.writeFileSync(json, JSON.stringify({ ...real, steps: real.steps + 1 }, null, 2));
+  assert.strictEqual(quiet(() => selfhost.main(['--findings', json, '--check'])), 1);
+});
+
+test('a FINDINGS file that is not there is exit 2, not exit 0', () => {
+  assert.strictEqual(quiet(() => selfhost.main(['--findings', '/no/such/findings.json', '--check'])), 2);
+});
+
+test('spliceBlocks REWRITES a stale block rather than appending beside it', () => {
+  // A splice that inserted instead of replacing would leave both numbers in the
+  // document, and the wrong one reads exactly like the right one.
+  const m = selfhost.measure('behaviour BEH-1 "x"\n  when runs command:Go\n');
+  const before = `a\n<!-- self-host:begin numbers -->\n| steps | 999 |\n<!-- self-host:end numbers -->\nb\n`;
+  const { text, missing } = selfhost.spliceBlocks(before, m);
+  assert.deepStrictEqual(missing.filter((k) => k === 'numbers'), []);
+  assert.ok(!text.includes('999'), 'the stale number survived the splice');
+  assert.ok(text.startsWith('a\n') && text.endsWith('b\n'), 'the splice ate text outside its own markers');
+  assert.strictEqual(text.match(/self-host:begin numbers/g).length, 1, 'the marker was duplicated');
+});
+
 test('saturation EXCLUDES a corpus that declares it has no UI, and says so', () => {
   // kit.beh's nouns are command:KitCheck and status:One. Leaving it in a study
   // about UI binding glue is a category error; excluding it silently is worse.
@@ -1499,19 +1782,19 @@ test('and all 20 of them are DERIVED, not `state` strings copied out of bindings
   assert.strictEqual(stats.derived, stats.generated);
 });
 
-test('THE FINDING, pinned: the refusal is a comment, and the next line acts as if it happened', () => {
+test('THE FINDING, pinned: the refusal sits directly above the action that depends on it', () => {
   // BEH-ADJ-2 fills a correction before clicking Deny. The generator correctly
-  // refuses to derive the fill — and emits the refusal as a COMMENT, so the
-  // test runs straight on into a click on a button that is disabled *because
-  // the fill never happened*. It fails like an application bug.
+  // refuses to derive the fill, so the test runs straight on into a click on a
+  // button that is disabled *because the fill never happened*. It fails like an
+  // application bug.
   //
-  // Whether the emitter should test.fixme(), throw at the refused line, or keep
-  // today's behaviour changes what Kit emits for EVERY corpus, so it is not
-  // decided here. This test is the half that is true under all three options:
-  // whatever he picks, the suite has to be able to SEE a refused step sitting
-  // above an action that depends on it. Today it can, and it goes red the
-  // moment that changes — which is the point of writing it before the decision
-  // rather than after.
+  // This test was written BEFORE the decision about what to do, as the half
+  // that is true under all four options: whatever was chosen, the suite has to
+  // be able to see a refused step sitting above an action that depends on it.
+  // The decision has since been made — kit#31's queue entry lapsed on
+  // 2026-09-24 to its stated default, ANNOTATE — and the adjacency survived it
+  // intact, which is why this still reads the same. The annotation is emitted
+  // ABOVE the comment precisely so that it would.
   const { source } = selfrun.emitSpec();
   const refused = selfrun.refusals(source);
   assert.strictEqual(refused.length, 1, 'exactly one refusal in this corpus');
@@ -1520,13 +1803,60 @@ test('THE FINDING, pinned: the refusal is a comment, and the next line acts as i
     'the line after the refusal is the click that depends on it — this adjacency IS the defect');
 });
 
-test('the refusal is inert at runtime, which is exactly why it is lost', () => {
-  // The positive half of the same fact: nothing in the emitted artefact makes a
-  // runner stop. A reader sees the refusal; a runner cannot.
+test('a refused step now reaches the RUNNER, not just a reader', () => {
+  // What changed on 2026-09-24. The comment on its own is inert: a reader sees
+  // the refusal and a runner cannot, so a suite full of them reports itself
+  // complete. The annotation puts it in the Playwright report.
   const { source } = selfrun.emitSpec();
-  const line = source.split('\n').find((l) => l.includes('UNGENERATED'));
-  assert.match(line.trim(), /^\/\//, 'a comment, so no runner will ever surface it');
+  const lines = source.split('\n');
+  const i = lines.findIndex((l) => l.includes('// UNGENERATED:'));
+  assert.ok(i > 0, 'the refusal comment is still there for a reader');
+  // Spelled out, not imported from the module under test: if both sides read
+  // the same constant, renaming its value is invisible to this assertion.
+  assert.match(lines[i - 1].trim(),
+    /^test\.info\(\)\.annotations\.push\(\{ type: "kit-ungenerated", description: /,
+    'the annotation sits directly above the comment it belongs to');
+  assert.strictEqual(require('./kit').UNGENERATED_ANNOTATION, 'kit-ungenerated',
+    'and the exported constant is the same string the artefact carries');
+  assert.match(lines[i - 1], /fills field:KitCorrection/, 'carrying the step it refused');
+});
+
+test('and it still changes no test outcome, which is the whole reason it was chosen', () => {
+  // 74 of the 125 tests generated across the nine committed corpora carry at
+  // least one refusal. Throwing or test.fixme() would have re-coloured most of
+  // every consumer's suite to say something the suite already knew, so the
+  // option chosen was the one that surfaces the refusal and touches nothing
+  // else. An annotation that halted would be a different decision wearing this
+  // one's name.
+  const { source } = selfrun.emitSpec();
   assert.ok(!/test\.fixme|test\.skip|throw new/.test(source), 'nothing in the spec halts on the refused step');
+  assert.ok(!/await\s+test\.info\(\)/.test(source), 'and the annotation is not awaited, so it cannot even pause');
+});
+
+test('every refused step gets exactly one annotation, across every committed corpus', () => {
+  // The single-instance tests above measure ONE refusal in ONE corpus. The
+  // claim being made is about all of them, so count over the whole population
+  // rather than trusting that kit-ui generalises — nine corpora, 125 tests.
+  const bindings = JSON.parse(fsx.readFileSync(pathx.join(__dirname, 'bindings.json'), 'utf8'));
+  const dir = pathx.join(__dirname, 'behaviours');
+  let refusals = 0, annotations = 0, corpora = 0;
+  for (const f of fsx.readdirSync(dir).filter((f) => f.endsWith('.beh'))) {
+    corpora++;
+    // resolve() then generate(b, bindings, symbols) — the same pipeline
+    // selfhost/run.js:emitSpec uses. A simpler parse-and-generate here would
+    // be measuring a path no consumer takes.
+    const { behaviours, symbols } =
+      resolve(parse(fsx.readFileSync(pathx.join(dir, f), 'utf8'), f));
+    for (const b of behaviours) {
+      const { code, stats } = generate(b, bindings, symbols);
+      refusals += stats.ungenerated;
+      annotations += (code.match(/test\.info\(\)\.annotations\.push\(/g) || []).length;
+    }
+  }
+  assert.ok(corpora >= 9, `every corpus was read, not just the first (${corpora})`);
+  assert.ok(refusals > 0, 'a population with no refusals would prove nothing');
+  assert.strictEqual(annotations, refusals,
+    'one annotation per refused step — no double-emit, and none silently dropped');
 });
 
 test('the harness REFUSES rather than skipping when it has no Playwright', async () => {
@@ -1587,6 +1917,72 @@ test('an unreadable run and a drifted run are separate answers, and neither is "
   assert.strictEqual(selfrun.drifted({ passed: 5 }, { passed: 6 }), true, 'one more pass is drift, not an improvement to wave through');
   assert.strictEqual(selfrun.drifted({ failing: ['a'] }, { failing: ['b'] }), true,
     'the same tally with a DIFFERENT test failing is drift — that is the case a count alone misses');
+});
+
+// The three tests below are driven from `selfhost/fixtures/no-browser.txt`, which
+// is the VERBATIM terminal output of this harness run in a pod whose browsers are
+// not where Playwright looks. It is committed rather than transcribed because a
+// hand-written approximation of a reporter's output is a fixture that agrees with
+// whatever the reader already does ([[test-the-reader-against-the-artefact]]).
+const noBrowser = fsx.readFileSync(pathx.join(__dirname, 'selfhost', 'fixtures', 'no-browser.txt'), 'utf8');
+
+test('a browser that would not START is could-not-look, not Kit regressing to zero', () => {
+  // The failure this guards is a false ACCUSATION, not a false green: run
+  // without --browsers, every test fails at launch, and the tally (0 passed,
+  // 6 failed) is indistinguishable from Kit having broken completely. --check
+  // then reported "the run no longer says what the write-up claims", which is
+  // the one verdict that argues for --record — and a --record here would
+  // overwrite expected.json with zeroes and destroy the evidence.
+  assert.ok(noBrowser.includes('browserType.launch:'), 'the fixture must actually contain a launch failure');
+  assert.strictEqual(selfrun.launchFailed(noBrowser), true);
+
+  const got = selfrun.parseResults(noBrowser);
+  assert.deepStrictEqual({ passed: got.passed, failed: got.failed }, { passed: 0, failed: 6 },
+    'a full, well-formed, entirely red report — which is exactly why the tally cannot be trusted alone');
+  assert.strictEqual(selfrun.unreadable(got), false,
+    'and unreadable() still says false, correctly: a tally WAS produced. The two predicates answer different questions');
+  assert.strictEqual(selfrun.drifted({ passed: 5, failed: 1 }, { passed: got.passed, failed: got.failed }), true,
+    'drifted() would call it drift, which is why launchFailed() has to be consulted FIRST');
+});
+
+test('CONTROL: six REAL failures are still drift — the discriminator is the cause, not the count', () => {
+  // Same tally, same shape, one word different. Without this the test above
+  // passes just as well for a launchFailed() that returns true whenever things
+  // look bad, which would convert every genuine total regression into "could
+  // not look" — silence in place of the loudest signal this harness has.
+  const realFailures = noBrowser.replace(/browserType\.launch:/g, 'expect(received).toBeVisible() failed:');
+  assert.ok(!realFailures.includes('browserType.launch:'), 'the control must not still contain the launch error');
+  assert.strictEqual(selfrun.launchFailed(realFailures), false);
+  const got = selfrun.parseResults(realFailures);
+  assert.strictEqual(got.failed, 6, 'the tally is identical to the launch-failure case');
+});
+
+test('the reporter PADS a failing name with ─, and the padding is not part of the name', () => {
+  // Whether a name picks up a trailing rule depends on how long that name is,
+  // so the 1-failure fixture this parser was written against happened to be the
+  // case with no padding ([[feed-it-the-extreme-case]]). Left in, the rule ends
+  // up inside the recorded test name, and a rename that shortens a title would
+  // read as drift.
+  assert.ok(/project ─+/.test(noBrowser), 'the fixture must actually contain a padded name');
+  assert.ok(/one screen\s*$/m.test(noBrowser), 'and an UNPADDED one, so the fix cannot be "always strip a suffix"');
+
+  const { failing } = selfrun.parseResults(noBrowser);
+  assert.deepStrictEqual(failing, [
+    '[BEH-LIST-1] Every corpus Kit can read is listed as a project',
+    '[BEH-SHEET-1] A project shows the question sheet Kit built for it',
+    '[BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen',
+    '[BEH-ADJ-1] An inference can be adjudicated from the browser',
+    '[BEH-ADJ-2] Denying an inference asks for the correction it must carry',
+    '[BEH-STEP-1] A step can be added while the generated test is in view',
+  ], 'every name clean, whether the reporter padded it or not');
+
+  // And the single-failure wording that IS recorded in expected.json still
+  // parses byte-identically — the fix must not move the number it is checked
+  // against.
+  const one = '  1 failed\n    specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry \n\n  5 passed (23.8s)\n';
+  assert.deepStrictEqual(selfrun.parseResults(one).failing,
+    JSON.parse(fsx.readFileSync(selfrun.EXPECTED, 'utf8')).failing,
+    'the recorded expectation is still what the reporter produces');
 });
 
 test('the write-up quotes the numbers the harness records — with the markdown stripped', () => {
@@ -1714,6 +2110,76 @@ test('CONTROL: a fully-bound corpus reports nothing missing, so the tests above 
   assert.deepStrictEqual(p.requires.missing.map((n) => n.noun), []);
   assert.deepStrictEqual(p.requires.insufficient.map((n) => n.noun), []);
   assert.ok(p.requires.satisfied.length >= 10, `only ${p.requires.satisfied.length} satisfied nouns`);
+});
+
+test('🔴 a field reached through a `provides` is named as unbound, not silently swallowed', () => {
+  // THE FINDING (#38, #61): `node kit.js longlist` reported 16 unbound nouns
+  // and the UI's requires panel reported 18. Both read the same corpus. The
+  // two it hid were `field:Idea` and `field:WhyNow`, which are exactly the two
+  // bindings that take the corpus from 26/28 generated to 28/28 — so a CLI
+  // user bound everything they were told to, watched a step keep refusing, and
+  // had no way to discover why short of reading emit().
+  //
+  // The cause is that `fills` is the one verb whose nouns are not written in
+  // the step: they are resolved out of ANOTHER behaviour's `provides`, so
+  // there was no ref to hand to bind() and it read `bindings` directly. bind()
+  // is the only thing that records a noun as missing.
+  //
+  // This is the hole-filling mechanism — Kit's signature feature — so the
+  // blind spot sat in the part a new user reaches first.
+  const src = [
+    'behaviour BEH-F1 "fills a form it did not name the fields of"',
+    '  source defined docs/D.md#1',
+    '  actor owner',
+    '  when fills form:Signup with ?fields',
+    '',
+    'behaviour BEH-F2 "and the fields come from here"',
+    '  source defined docs/D.md#1',
+    '  actor owner',
+    '  provides form:Signup.fields = Email, Reason',
+    '',
+  ].join('\n');
+  const { behaviours, symbols } = build(src);
+  const g = generate(behaviours[0], { 'form:Signup': { label: 'Sign up' } }, symbols);
+
+  assert.deepStrictEqual(g.missing, ['field:Email', 'field:Reason'],
+    'the fields it refused on must be the fields it names');
+  assert.match(g.code, /UNGENERATED: when fills form:Signup/);
+
+  // BOTH of them, in one pass. Refusing on the first miss would name one
+  // field, and a user who binds it is then told about the next — the same
+  // blind spot spread over several rounds instead of removed.
+  assert.strictEqual(g.missing.length, 2, 'one round, not one field per round');
+});
+
+test('the generator and the requires panel name the SAME unbound nouns, in every corpus', () => {
+  // The CLI and the UI are two front ends over one model, and until #61 they
+  // disagreed on one corpus by two nouns with nothing measuring it. The
+  // populations are derived independently — generate() collects what bind()
+  // was asked for and could not supply; requires.js walks the steps and works
+  // out what each verb OWES — so agreement is a real cross-check rather than
+  // two readings of one list.
+  //
+  // The corpus directory is the population ([[a-directory-is-a-population]]):
+  // read it, never a hardcoded list, so onboarding a project is covered the
+  // day the file lands.
+  const dir = pathx.join(__dirname, 'behaviours');
+  const apps = fsx.readdirSync(dir).filter((f) => f.endsWith('.beh')).map((f) => f.replace(/\.beh$/, ''));
+  assert.ok(apps.length >= 9, `only ${apps.length} corpora found — the population is wrong, not the claim`);
+
+  let compared = 0;
+  for (const app of apps) {
+    const p = proj.project(app);
+    const fromGenerator = new Set();
+    for (const g of p.generated) for (const m of g.missing) fromGenerator.add(m);
+    const fromRequires = new Set(p.requires.missing.map((n) => n.noun));
+    assert.deepStrictEqual([...fromGenerator].sort(), [...fromRequires].sort(),
+      `${app}: the CLI and the requires panel disagree about what is unbound`);
+    if (fromRequires.size) compared++;
+  }
+  // Without this the test would pass over ten corpora that each report nothing
+  // — two empty sets are equal, and prove nothing.
+  assert.ok(compared >= 5, `only ${compared} corpora had any unbound noun to compare`);
 });
 
 test('a trial corpus is projected as notReal, and a real one is not', () => {
@@ -2421,6 +2887,66 @@ test('binding: the real bindings.json is one FLAT map shared by every corpus', (
   }
 });
 
+test('binding: only bindings.js says where bindings live — nobody re-derives the path', () => {
+  // The rule the consolidation rests on, and it has to be a test rather than a
+  // convention: a rule applied by hand at N call sites is N chances to differ,
+  // and this codebase has already paid for that once. `project.js:74` carries
+  // the post-mortem — the write honoured `--bindings`, the read did not, and a
+  // successful bind re-read the other file and showed the same refusal, with
+  // every test passing throughout. It was fixed in ONE place and five other
+  // callers kept the shape of the bug.
+  //
+  // ⚠️ This is what stops a sixth caller quietly reopening it, and it is also
+  // what keeps kit#66 a one-function change instead of an eleven-file one.
+  // Asserted by reading the source, because "resolution happens in one place" is
+  // a property of the FILES rather than of any one run — the same argument
+  // writer.js's "it never shells out" test makes about itself.
+  const dir = __dirname;
+  const offenders = [];
+  const walk = (d) => {
+    for (const e of fsx.readdirSync(d, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name === 'ui' || e.name === 'dist') continue;
+      const full = pathx.join(d, e.name);
+      if (e.isDirectory()) { walk(full); continue; }
+      if (!e.name.endsWith('.js')) continue;
+      // bindings.js is allowed to know; this test and mutate.js quote the string
+      // in order to police or mutate it, which is not a second resolution.
+      if (['bindings.js', 'kit.test.js', 'mutate.js'].includes(e.name)) continue;
+      const code = fsx.readFileSync(full, 'utf8').split('\n')
+        .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+      // ⚠️ The quote characters are escapes, not literals, and that is load-bearing:
+      // `jsDeclarationCount` does not know regex literals, so a bare quote or
+      // backtick inside one blanks everything to the next matching quote and the
+      // independent count silently collapses. Writing it the obvious way took the
+      // coverage fail-safe red three tests away from the cause.
+      if (/[\x22\x27\x60]bindings\.json[\x22\x27\x60]/.test(code)) offenders.push(pathx.relative(dir, full));
+    }
+  };
+  walk(dir);
+  assert.deepStrictEqual(offenders, [],
+    `these re-derive the bindings path instead of asking bindings.js: ${offenders.join(', ')}`);
+});
+
+test('binding: the resolver answers the same for "told nothing" and an explicit null', () => {
+  // `ui.js` threads an explicit `null` into project() precisely so its read and
+  // its write cannot be configured apart. If those two ever answered
+  // differently, that guarantee would be the thing that broke.
+  const B = require('./bindings.js');
+  assert.strictEqual(B.resolve(null), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve(undefined), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve(), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve('/somewhere/else.json'), '/somewhere/else.json');
+});
+
+test('binding: the resolver reads a file VERBATIM, comments and all', () => {
+  // Filtering `_comment*` here would look tidy and would quietly change what the
+  // writer round-trips back to disk. There are three of them in the real file.
+  const b = require('./bindings.js').read(null);
+  const comments = Object.keys(b).filter((k) => W.isComment(k));
+  assert.ok(comments.length >= 3, `the reader dropped comment keys: kept ${comments.length}`);
+  assert.deepStrictEqual(Object.keys(b), Object.keys(JSON.parse(BINDINGS_TEXT)));
+});
+
 test('binding: the noun namespace really is global, and one collision is cross-APP', () => {
   // The measurement the mechanism exists for, re-run rather than quoted. Six of
   // the seven shared names are james-habits-app described three ways, where
@@ -2468,9 +2994,16 @@ test('binding: a new noun is added and every existing binding is untouched', () 
 
 test('binding: the warning fires on the real cross-app collision, and is silent otherwise', () => {
   const corpora = W.corpusNouns();
+  // ⚠️ This list is a function of the CORPUS DIRECTORY, not of the writer. It
+  // said `['trial-lend']` until `longlist.beh` arrived on 2026-09-24 and used
+  // `region:EmptyState` too — a true collision, in a namespace that is global
+  // on purpose, so the right move was to record the new member rather than to
+  // rename the noun and hide it. Expect to edit this line whenever a corpus is
+  // added; that friction is the point, because adding a corpus silently changes
+  // every measurement that reads the directory.
   const clash = W.addBinding(BINDINGS_TEXT, 'region:EmptyState', { role: 'region', name: 'Nothing yet' }, { corpora, app: 'trial-habits-a' });
   assert.ok(clash.ok, clash.reason);
-  assert.deepStrictEqual(clash.sharedWith, ['trial-lend']);
+  assert.deepStrictEqual(clash.sharedWith, ['longlist', 'trial-lend']);
 
   const clean = W.addBinding(BINDINGS_TEXT, 'button:SomethingNobodyElseUses', { role: 'button', name: 'x' }, { corpora, app: 'kit-ui' });
   assert.ok(clean.ok, clean.reason);
@@ -3540,6 +4073,67 @@ test('marker: recovery uses the base recorded in the marker, not the base of the
 
   assert.strictEqual(m.recover(silent), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'ui/src/a.ts'), 'utf8'), 'const ok = 1\n');
+});
+
+// ── the marker's git status is itself a rule, and it has TWO sides ──────────
+//
+// Everything above tests the marker's behaviour. These two test its *place in
+// the repository*, which no amount of correct behaviour can supply, and which
+// has now been got wrong twice: `git add -A` run during a mutation run has
+// twice swept the marker into a commit alongside a live mutant
+// (claude-code-bot#92, and again 2026-09-24 — that commit took the marker and
+// a deleted line in `saturation.js`, and a following `git checkout --` put the
+// mutant BACK because HEAD was by then the commit containing it).
+//
+// The two sides pull in opposite directions, which is the whole point:
+//
+//  1. It must never be TRACKED. A committed marker means some past `git add -A`
+//     ran during a live run, so a mutant was almost certainly committed with
+//     it — and from then on every fresh clone starts life refusing to mutate,
+//     because `refuseIfStale` sees a marker that no run will ever remove.
+//  2. It must never be IGNORED. The marker's entire announcement mechanism is
+//     showing up as `??` in `git status`, right beside the files you are about
+//     to stage. Adding it to `.gitignore` is the *plausible* fix for rule 1 and
+//     it is the wrong one: it stops `git add -A` staging the MARKER while doing
+//     nothing about the mutants, which are tracked files with modifications and
+//     get staged either way. It removes the alarm and leaves the fire.
+//
+// So a repo that satisfies rule 1 by breaking rule 2 is strictly worse than the
+// mistake it is fixing. Asserting only rule 1 would call that an improvement.
+const realMarker = require('./mutation-marker');
+// Against the REAL repository, not a fixture — that is the thing being claimed.
+// Safe to run mid-mutation: neither query reads the working tree, so the answer
+// is the same whether or not a marker is on disk right now.
+const gitAtRoot = (...args) => {
+  const r = require('child_process').spawnSync('git', ['-C', realMarker.ROOT, ...args], { encoding: 'utf8' });
+  // Could-not-look is never green — kit's own BEH-GATE-2, applied to kit.
+  assert.ok(!r.error, `could not look: git could not be run — ${r.error && r.error.message}`);
+  return { status: r.status, out: (r.stdout || '').trim(), err: (r.stderr || '').trim() };
+};
+
+test('marker: MUTATION-IN-PROGRESS is not tracked, so no `git add -A` ever committed one', () => {
+  const tree = gitAtRoot('rev-parse', '--is-inside-work-tree');
+  assert.strictEqual(tree.out, 'true', `could not look: ${realMarker.ROOT} is not a git work tree — ${tree.err}`);
+
+  const listed = gitAtRoot('ls-files', '--', 'MUTATION-IN-PROGRESS');
+  assert.strictEqual(listed.status, 0, `could not look: git ls-files exited ${listed.status} — ${listed.err}`);
+  assert.strictEqual(listed.out, '',
+    'MUTATION-IN-PROGRESS is a TRACKED file. A `git add -A` ran during a live mutation run, '
+    + 'so a mutant was very likely committed beside it — and every clone of this repo now '
+    + 'refuses to mutate, because refuseIfStale() finds a marker no run will ever drop. '
+    + '`git rm --cached MUTATION-IN-PROGRESS`, then check what else that commit swept up.');
+});
+
+test('marker: MUTATION-IN-PROGRESS is not gitignored — being visible in `git status` IS the mechanism', () => {
+  // `--no-index` asks the ignore RULES only, so this stays true independently of
+  // whether the file happens to be tracked — the test above owns that half.
+  const ci = gitAtRoot('check-ignore', '--no-index', '-v', '--', 'MUTATION-IN-PROGRESS');
+  assert.notStrictEqual(ci.status, 0,
+    `MUTATION-IN-PROGRESS is IGNORED by "${ci.out}". That silences the alarm without touching `
+    + 'the hazard: the mutants are tracked files with modifications, so `git add -A` still stages '
+    + 'them — you have only stopped git from telling you a run is in progress. Remove the pattern; '
+    + 'the marker is meant to be an untracked `??` sitting in your way.');
+  assert.strictEqual(ci.status, 1, `could not look: git check-ignore exited ${ci.status} — ${ci.err}`);
 });
 
 test('marker: the marker tells a reader how to recover, and warns off git checkout', () => {

@@ -181,6 +181,27 @@ const MUTANTS = [
   ['uncovered behaviours no longer affect the exit code',
     'if (!errors.length && !result.uncovered.length) {', 'if (true) {', 'check.js'],
 
+  // --dir. The gate can now read a corpus that lives with its project (kit#52),
+  // which means it can also read the WRONG one and report a confident verdict
+  // over it. Every mutant here is a version that still exits 0 on something.
+  ['--dir is accepted and ignored, so the gate reads kit own corpus instead',
+    'const behPath = path.join(dir, `${app}.beh`);',
+    'const behPath = path.join(DEFAULT_DIR, `${app}.beh`);', 'check.js'],
+  // ⚠️ The PLAUSIBLE half-fix, and the reason it gets its own mutant: moving the
+  // corpus lookup and leaving the mapping behind passes every test that only
+  // checks --via markers, because that path never opens the mapping at all.
+  ['the mapping stays on __dirname, so a relocated project is gated against kit own claims',
+    'const mapPath = path.join(dir, `${app}.tests.json`);',
+    'const mapPath = path.join(DEFAULT_DIR, `${app}.tests.json`);', 'check.js'],
+  ['an unknown flag is ignored again, so a typo silently gates the default corpus',
+    'return { error: `unknown option ${a}` };', 'continue;', 'check.js'],
+  ['a value flag with nothing after it eats the next flag instead of refusing',
+    "if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };",
+    'if (false) return { error: `${a} needs a value` };', 'check.js'],
+  ['a second positional is taken as the app, so two corpus names is first-one-wins',
+    'return { error: `two app names given, "${opts.app}" and "${a}" — this gate checks one corpus` };',
+    'opts.app = a;', 'check.js'],
+
   // the prose accounting. Every rule here exists to stop the corpus reporting a
   // flattering fraction of a document it only partly encoded, so a survivor
   // means the flattering version would ship unnoticed.
@@ -261,6 +282,21 @@ MUTANTS.push(
     'if (m.behaviours === 0 || m.steps === 0) {', 'if (false) {', 'self-host.js'],
   ['--check accepts drift silently',
     'if (JSON.stringify(was) !== JSON.stringify(now)) {', 'if (false) {', 'self-host.js'],
+  // The bug this file's own write-up carried for eleven days: `--check` compared
+  // the JSON to the corpus, agreed with itself, and never opened the markdown
+  // anyone actually reads.
+  ['--check stops reading the write-up, so the prose can say 14 while the corpus says 20',
+    'if (text !== md) {', 'if (false) {', 'self-host.js'],
+  // One level up again: a checker whose markers stop matching must say COULD NOT
+  // LOOK. If this survives, renaming a marker is a silent way to switch the
+  // check off.
+  ['a marker the parser cannot find reads as agreement instead of could-not-look',
+    'if (begin === -1 || end === -1 || end < begin) { missing.push(key); continue; }',
+    'if (begin === -1 || end === -1 || end < begin) { continue; }', 'self-host.js'],
+  // A splice that inserts beside the stale block instead of replacing it leaves
+  // BOTH numbers in the document, and the wrong one reads like the right one.
+  ['the splice keeps the stale block and writes the fresh one beside it',
+    "${out.slice(end)}`;", '${out.slice(begin + BEGIN(key).length)}`;', 'self-host.js'],
   // The original defect, reinstated: count the whole global bindings file
   // instead of this corpus's nouns. Every app then reports the same number and
   // a corpus binding nothing reports the same headline as one binding all.
@@ -271,6 +307,41 @@ MUTANTS.push(
     'for (const b of behaviours) for (const n of nounsOf(b)) referenced.add(n);',
     'const _all = []; for (const b of behaviours) for (const n of nounsOf(b)) _all.push(n); referenced.add = Set.prototype.add; _all.forEach((n) => Set.prototype.add.call(referenced, n + Math.random()));',
     'kit.js'],
+  // `fills` is the ONE verb whose nouns are not written in the step — they are
+  // resolved out of another behaviour's `provides`. Reading `bindings` directly
+  // instead of going through bind() is therefore invisible everywhere else, and
+  // it is how the CLI came to report 16 unbound nouns on a corpus where the
+  // requires panel reported 18 (#38, #61). The second mutant is the plausible
+  // WRONG fix: routing through bind() but refusing on the first miss, which
+  // names one field per round instead of all of them.
+  ['a field reached through a `provides` goes back to bypassing bind(), so the CLI stops naming it',
+    "const bound = fields.map((f) => bind({ kind: 'field', name: f }));",
+    'const bound = fields.map((f) => bindings[`field:${f}`] || null);', 'kit.js'],
+  ['fills refuses on the FIRST unbound field, so a user is told about them one round at a time',
+    "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
+    "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
+    'kit.js'],
+  // kit.js's own CLI. The first of these is the defect as it actually shipped:
+  // every `--flag` this tool does not know was dropped in silence, so
+  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing.
+  // The rest are the guards written alongside it (#67).
+  ['an unknown flag goes back to being silently dropped, so --dir reports on the wrong corpus',
+    "    } else if (a.startsWith('-')) {\n      return { error: `unknown option ${a}` };\n",
+    '    } else if (a.startsWith(\'-\')) {\n      continue;\n', 'kit.js'],
+  ['--help stops being recognised, so asking for help runs the whole report',
+    "    if (a === '--help' || a === '-h') {\n      opts.help = true;\n    } else if (CLI_VALUE_FLAGS.has(a)) {",
+    '    if (CLI_VALUE_FLAGS.has(a)) {', 'kit.js'],
+  ['a value flag at the end eats the following flag instead of refusing',
+    'if (v === undefined || v.startsWith(\'--\')) return { error: `${a} needs a value` };',
+    'if (v === undefined) return { error: `${a} needs a value` };', 'kit.js'],
+  ['`sheet` is detected in last position rather than first, so the subcommand and the corpus swap',
+    "if (argv[0] === 'sheet') { opts.sheet = true; i = 1; }",
+    "if (argv[argv.length - 1] === 'sheet') { opts.sheet = true; i = 1; }", 'kit.js'],
+  // The NaN: a corpus that parses to nothing used to render a full report whose
+  // every number was 0 and whose last one was not a number.
+  ['a corpus that parses to zero behaviours is reported on instead of refused',
+    '  if (!behaviours.length) {\n    console.error(`cannot look: ${files.join(\', \')} parsed to 0 behaviours — nothing to report on yet`);\n    process.exit(2);\n  }\n',
+    '', 'kit.js'],
   // selfhost/run.js — the harness that executes Kit's own output. Every mutant
   // here is reachable WITHOUT a browser, on purpose: the parts that need one
   // are gated by `--check`, which is a manual run, so anything only a browser
@@ -283,6 +354,10 @@ MUTANTS.push(
     'return got.passed === 0 && got.failed === 0;', 'return false;', 'selfhost/run.js'],
   ['--check accepts drift silently, so the write-up and the run can part company',
     'return JSON.stringify(want) !== JSON.stringify(now);', 'return false;', 'selfhost/run.js'],
+  ['a browser that would not start is read as a tally, so a broken pod reports Kit regressing to zero',
+    'return /browserType\\.launch:/.test(output);', 'return false;', 'selfhost/run.js'],
+  ['the reporter\'s padding stays inside the recorded test name, so a rename reads as drift',
+    '(.*?)(?:\\s+─+)?\\s*$', '(.*?)\\s*$', 'selfhost/run.js'],
   ['the line after a refusal is not recorded, so the adjacency THAT IS THE FINDING cannot be asserted',
     "if (m) out.push({ step: m[1], next: (lines[i + 1] || '').trim() });", "if (m) out.push({ step: m[1], next: '' });", 'selfhost/run.js'],
   ['saturation stops excluding a corpus that declares it has no UI',
@@ -625,9 +700,14 @@ MUTANTS.push(
   // The defect running the server found: the write honoured --bindings and the
   // read did not, so the page re-read a different file and showed the same
   // refusal after a successful bind.
+  // ⚠️ Re-anchored when the resolution moved into bindings.js (kit#66). The rule
+  // under test is unchanged — the projection must honour the file it was given —
+  // but the anchor now INVERTS the argument rather than swapping a whole
+  // expression, because `read(null)` is precisely the old defect: resolve to the
+  // default file and ignore what the caller was told.
   ['the projection ignores --bindings, so the re-read after a write sees the wrong file',
-    "const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));",
-    "const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));", 'project.js'],
+    "const bindings = require('./bindings.js').read(bindingsFile);",
+    "const bindings = require('./bindings.js').read(null);", 'project.js'],
   ['ui.js stops passing the bindings file to the read, re-opening the same split',
     'bindingsFile: opts.bindings || null,', 'bindingsFile: null,', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',

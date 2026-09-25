@@ -34,6 +34,7 @@
 const fs = require('fs');
 const path = require('path');
 const kit = require('./kit.js');
+const bindingsOf = require('./bindings.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 const STEP_KEYS = ['given', 'when', 'then'];
@@ -335,9 +336,15 @@ function main(argv = [], textReader = nounsFromText) {
   // be measuring my own convention. This measures what the bindings POINT AT —
   // role+name, label, locator or route — which no prefix can change. Two apps
   // with a "Toggle Theme" button share a target even under different keys.
-  const bindPath = path.join(__dirname, 'bindings.json');
+  //
+  // ⚠️ This resolves THIS directory's bindings even under `--dir <elsewhere>`,
+  // and that asymmetry is deliberate for now rather than overlooked: see
+  // bindings.js, which is the one place it will change when a relocated corpus
+  // brings its own (kit#66). Against a foreign corpus the count below collapses
+  // — measured 27 -> 1 — without saying it could not look.
+  const bindPath = bindingsOf.resolve(null);
   if (fs.existsSync(bindPath)) {
-    const bindings = JSON.parse(fs.readFileSync(bindPath, 'utf8'));
+    const bindings = bindingsOf.read(null);
     const sig = (b) => {
       if (!b || typeof b !== 'object' || Array.isArray(b)) return null;
       if (b.role) return `${b.role}|${b.name}`;

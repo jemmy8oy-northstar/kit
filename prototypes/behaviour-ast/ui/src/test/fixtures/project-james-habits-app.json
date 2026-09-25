@@ -933,7 +933,7 @@
   "generated": [
     {
       "id": "BEH-TODAY-1",
-      "code": "test(\"[BEH-TODAY-1] The day's habits are listed in order so the whole day can be logged from one screen\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // UNGENERATED: then sees control:DateStepper\n});",
+      "code": "test(\"[BEH-TODAY-1] The day's habits are listed in order so the whole day can be logged from one screen\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees control:DateStepper\" });\n  // UNGENERATED: then sees control:DateStepper\n});",
       "missing": [
         "page:Today",
         "region:HabitList",
@@ -947,7 +947,7 @@
     },
     {
       "id": "BEH-TODAY-2",
-      "code": "test(\"[BEH-TODAY-2] A checkbox habit is ticked inline\", async ({ page }) => {\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitRow\n  // UNGENERATED: then sees badge:Streak\n});",
+      "code": "test(\"[BEH-TODAY-2] A checkbox habit is ticked inline\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitRow\" });\n  // UNGENERATED: when activates checkbox:HabitRow\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n});",
       "missing": [
         "habit:BooleanSeeded",
         "page:Today",
@@ -962,7 +962,7 @@
     },
     {
       "id": "BEH-TODAY-3",
-      "code": "test(\"[BEH-TODAY-3] A numeric habit takes a value in a number field\", async ({ page }) => {\n  // UNGENERATED: given habit:NumericSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills field:HabitValue with ?value\n  // UNGENERATED: then sees badge:Streak\n});",
+      "code": "test(\"[BEH-TODAY-3] A numeric habit takes a value in a number field\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NumericSeeded\" });\n  // UNGENERATED: given habit:NumericSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:HabitValue with ?value\" });\n  // UNGENERATED: when fills field:HabitValue with ?value\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n});",
       "missing": [
         "habit:NumericSeeded",
         "page:Today",
@@ -976,7 +976,7 @@
     },
     {
       "id": "BEH-TODAY-4",
-      "code": "test(\"[BEH-TODAY-4] Previous days can be reached with the date stepper and back-filled\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates control:DateStepperBack\n  // UNGENERATED: then sees region:HabitList\n});",
+      "code": "test(\"[BEH-TODAY-4] Previous days can be reached with the date stepper and back-filled\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates control:DateStepperBack\" });\n  // UNGENERATED: when activates control:DateStepperBack\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
       "missing": [
         "page:Today",
         "control:DateStepperBack",
@@ -990,7 +990,7 @@
     },
     {
       "id": "BEH-MANAGE-1",
-      "code": "test(\"[BEH-MANAGE-1] Habits can be added, renamed, reordered and archived\", async ({ page }) => {\n  // UNGENERATED: when opens page:Manage\n  // UNGENERATED: then sees button:AddHabit\n  // UNGENERATED: then sees region:HabitEditor\n});",
+      "code": "test(\"[BEH-MANAGE-1] Habits can be added, renamed, reordered and archived\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Manage\" });\n  // UNGENERATED: when opens page:Manage\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:AddHabit\" });\n  // UNGENERATED: then sees button:AddHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitEditor\" });\n  // UNGENERATED: then sees region:HabitEditor\n});",
       "missing": [
         "page:Manage",
         "button:AddHabit",
@@ -1004,7 +1004,7 @@
     },
     {
       "id": "BEH-HISTORY-1",
-      "code": "test(\"[BEH-HISTORY-1] Each habit shows a 30-day completion grid with current and longest streak\", async ({ page }) => {\n  // UNGENERATED: when opens page:History\n  // UNGENERATED: then sees region:CompletionGrid\n  // UNGENERATED: then sees badge:CurrentStreak\n  // UNGENERATED: then sees badge:LongestStreak\n});",
+      "code": "test(\"[BEH-HISTORY-1] Each habit shows a 30-day completion grid with current and longest streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:History\" });\n  // UNGENERATED: when opens page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:CompletionGrid\" });\n  // UNGENERATED: then sees region:CompletionGrid\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:CurrentStreak\" });\n  // UNGENERATED: then sees badge:CurrentStreak\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:LongestStreak\" });\n  // UNGENERATED: then sees badge:LongestStreak\n});",
       "missing": [
         "page:History",
         "region:CompletionGrid",
@@ -1039,7 +1039,7 @@
     },
     {
       "id": "BEH-SEED-1",
-      "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
+      "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
       "missing": [
         "page:Today",
         "region:HabitList"
@@ -1082,7 +1082,7 @@
     },
     {
       "id": "BEH-STREAK-1",
-      "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees badge:Streak\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
+      "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
       "missing": [
         "habit:BooleanSeeded",
         "page:Today",

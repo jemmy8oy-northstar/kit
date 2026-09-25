@@ -56,6 +56,22 @@ exactly that and GitHub Spec Kit passed 120K stars. What nobody ships is the *se
 contradiction detection over an accumulated spec corpus, with a supersede decision recorded so it is
 never re-litigated.** That is Kit.
 
+⚠️ **The limit of that claim, stated up front: detection is _same-noun_ only.** A contradiction is a
+`Map` collision on `kind:Name.slot`, so two behaviours only collide when they spell the noun
+identically. Two readings of the same feature that name one control `checkbox:HabitDone` and
+`checkbox:HabitItem` produce two keys, and Kit reports **no conflict** — silently, because there is
+nothing for it to compare. Measured in [`docs/trials/habits-forward-run.md`](docs/trials/habits-forward-run.md):
+two independent readings of the same brief agreed on **3 nouns out of 32**, and named the app's central
+control three different ways.
+
+**Kit does not fix this, by decision** — there is no canonical vocabulary and no reconciliation step,
+and none is planned. The forward path does not need one: `requires.js` emits a required-surface
+contract that *dictates* the noun names to whoever implements it, so the builder never guesses. The
+gap is real only when two corpora are written independently and then merged, which is not the
+workflow Kit is for. Semantic conflict — two behaviours that contradict in meaning without colliding
+on a slot — is a separate, later, model-shaped problem; see
+[`docs/design/process.md`](docs/design/process.md) stage 3.
+
 ## The prototype
 
 [`prototypes/behaviour-ast/`](prototypes/behaviour-ast/) — the only part of this that runs. It answers one

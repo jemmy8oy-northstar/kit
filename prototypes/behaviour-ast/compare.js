@@ -46,7 +46,7 @@ const realBlob = norm(expand(real));
 const dir = path.join(__dirname, 'behaviours');
 const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
   .flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
-const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+const bindings = require('./bindings.js').read(null);
 const { behaviours, symbols } = resolve(all);
 
 let exact = 0, substring = 0, absent = 0;

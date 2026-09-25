@@ -249,6 +249,16 @@ function resolve(behaviours) {
         // Two behaviours asserting different values for the same slot is
         // James's "this conflicts with a previous behaviour, supersede?" — and
         // it needs no embeddings and no LLM. It falls out of the Map.
+        //
+        // The limit this Map imposes, decided on kit#23 and NOT a bug to fix:
+        // the key is an exact string, so detection is SAME-NOUN only. Two
+        // behaviours describing one control as `checkbox:HabitDone` and
+        // `checkbox:HabitItem` are two keys, and nothing collides — Kit reports
+        // no conflict because it has nothing to compare. Independent readings
+        // of one brief agreed on 3 nouns of 32 (docs/trials/habits-forward-run.md).
+        // No canonical vocabulary and no reconciliation step is planned: the
+        // forward path does not guess, because requires.js dictates the noun
+        // names to whoever implements the contract.
         (existing.conflict = existing.conflict || []).push({ from: p.from, value: p.value, at: p.at });
       }
     }
@@ -298,6 +308,12 @@ function sameValue(a, b) {
 // thing on the page. There is one per noun — not one per step, and not one per
 // behaviour. That is the entire difference from a Cucumber step definition.
 
+// The annotation type a refused step carries into the Playwright report.
+// Exported so tooling reads it from one place — but the tests spell the string
+// out rather than importing it, so renaming the value cannot stay invisible by
+// both sides agreeing with each other.
+const UNGENERATED_ANNOTATION = 'kit-ungenerated';
+
 function generate(behaviour, bindings, symbols = new Map()) {
   const body = [];
   const missing = new Set();
@@ -322,7 +338,23 @@ function generate(behaviour, bindings, symbols = new Map()) {
     }
     const lines = emit(step, bind, bindings, symbols);
     if (lines) { body.push(...lines); stats.generated += lines.length; }
-    else { body.push(`// UNGENERATED: ${step.kind} ${step.text}`); stats.ungenerated++; }
+    else {
+      // A refused step is now visible to a RUNNER, not only to a reader.
+      // The comment alone is inert: the test runs straight on into an action
+      // that depends on the step Kit declined to write, and fails like an
+      // application bug. An annotation surfaces the refusal in the report and
+      // changes no control flow — deliberately, because 74 of the 125 tests
+      // generated across the nine committed corpora carry at least one
+      // refusal, so throwing or test.fixme() would have re-coloured most of
+      // every consumer's suite to say something the suite already knew.
+      //
+      // It goes ABOVE the comment, never below: the comment has to stay
+      // directly above the action that depends on it. That adjacency is the
+      // finding this whole thread is about, and kit.test.js pins it.
+      body.push(`test.info().annotations.push({ type: ${JSON.stringify(UNGENERATED_ANNOTATION)}, description: ${JSON.stringify(`${step.kind} ${step.text}`)} });`);
+      body.push(`// UNGENERATED: ${step.kind} ${step.text}`);
+      stats.ungenerated++;
+    }
   }
 
   const code = [
@@ -405,10 +437,22 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       // and the field it generates against came from a DIFFERENT behaviour.
       const fields = step.resolved && step.resolved.fields;
       if (!fields) return null;
+      // Route every resolved field through bind(), not bindings[] directly.
+      // bind() is the ONLY thing that records a noun as missing, and reading
+      // `bindings` behind its back is what left `node kit.js <app>` naming a
+      // shorter list of obligations than the UI's requires panel — 16 against
+      // 18 on the longlist corpus, with the two it hid being exactly the two
+      // that take it from 26/28 to 28/28 (#38, #61). A field that arrived
+      // through a `provides` is the one obligation a CLI user could not
+      // discover short of reading this function.
+      //
+      // Bind them ALL before refusing. Returning on the first miss would name
+      // one field, and a user who binds it is then told about the next — the
+      // same blind spot spread over several rounds instead of one.
+      const bound = fields.map((f) => bind({ kind: 'field', name: f }));
+      if (bound.some((fb) => !fb)) return null;
       const lines = [];
-      for (const f of fields) {
-        const fb = bindings[`field:${f}`];
-        if (!fb) return null;
+      for (const fb of bound) {
         // Same false green as `attaches`: without a label BOTH branches below
         // emit `getByLabel(undefined)`, which is generated, counted, and unable
         // to run. Note this verb needs a LABEL specifically, not addressability
@@ -1126,10 +1170,60 @@ function boundNouns(behaviours, bindings) {
   return { referenced, bound: bound.length };
 }
 
+const CLI_VALUE_FLAGS = new Set(['--rev']);
+const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
+
+// 🔑 EVERY UNKNOWN FLAG IS A REFUSAL, never a silent drop. This is `check.js:90`'s
+// rule, arriving at the one entry point that never had it.
+//
+// The old scan was `argv.find((a) => !a.startsWith('--') && a !== rev)`, which
+// throws away anything beginning `--` without ever asking whether it was a flag
+// this tool has. `--dir` is the flag that makes it bite: `check.js` gained it in
+// kit#63 and `ui.js`, `project.js`, `writer.js` and `saturation.js` all take it,
+// so a reader who has seen any of them — or `docs/design/tagging.md` — types
+// `node kit.js kit --dir /elsewhere` and gets a confident 26-behaviour report
+// about Kit's own corpus. Nothing in the output says the flag was ignored.
+//
+// ⚠️ Whether `kit.js` should GAIN `--dir` is kit#66 and is James's: a relocated
+// corpus takes the noun namespace out of the only directory `sharedWith` can
+// see. This makes its absence loud; it does not pre-empt the answer.
+//
+// Scans positionally rather than `indexOf`, for `check.js:84-88`'s reason: the
+// index of a VALUE is the first index holding that string, so a corpus named the
+// same as the rev made the corpus unfindable. The old `a !== rev` had exactly
+// that bug, plus a second — a trailing `--rev` left `rev` undefined, and every
+// argument then compared unequal to it.
+function parseCliArgs(argv) {
+  const opts = { sheet: false, only: null, rev: '', help: false };
+  let i = 0;
+  // `sheet` is a subcommand, so it is only a subcommand in first position —
+  // a corpus that happened to be called "sheet" anywhere else stays a corpus.
+  if (argv[0] === 'sheet') { opts.sheet = true; i = 1; }
+  for (; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--help' || a === '-h') {
+      opts.help = true;
+    } else if (CLI_VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+      opts.rev = v;
+      i++;
+    } else if (a.startsWith('-')) {
+      return { error: `unknown option ${a}` };
+    } else if (opts.only === null) {
+      opts.only = a;
+    } else {
+      return { error: `two corpus names given, "${opts.only}" and "${a}" — this reports on one` };
+    }
+  }
+  return opts;
+}
+
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
+  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE,
 };
 
 // ─────────────────────────── cli ───────────────────────────
@@ -1144,22 +1238,40 @@ if (require.main === module) {
   // Separate mode rather than another block of output: the sheet is a document
   // someone opens, and a document with a coverage table stapled to the top is a
   // document nobody finishes.
-  const sheetMode = process.argv[2] === 'sheet';
-  const argv = process.argv.slice(sheetMode ? 3 : 2);
   // `--rev` records WHICH revision of the app the corpus was read from, which is
   // the only provenance a reader can check. Deliberately no timestamp: the
   // committed sheet is asserted byte-identical to this output, and a wall-clock
   // date would make it differ every day for no reader's benefit — which is the
   // kind of drift that gets a failing check deleted rather than fixed.
-  const revArg = argv.findIndex((a) => a === '--rev');
-  const rev = revArg >= 0 ? argv[revArg + 1] : '';
-  const only = argv.find((a) => !a.startsWith('--') && a !== rev);
+  const cli = parseCliArgs(process.argv.slice(2));
+  if (cli.error) {
+    console.error(`cannot look: ${cli.error}`);
+    console.error(CLI_USAGE);
+    process.exit(2);
+  }
+  // Help is answered before anything is read, so `--help` works in a directory
+  // whose corpus does not parse. It exits 0: asking for help is not an error.
+  if (cli.help) { console.log(CLI_USAGE); process.exit(0); }
+  const { sheet: sheetMode, only, rev } = cli;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
     .filter((f) => !only || f.includes(only));
   if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  const bindings = require('./bindings.js').read(null);
   const { behaviours, conflicts, symbols } = resolve(all);
+
+  // ⚠️ REFUSE, rather than report a table of zeros ending `0/0 = NaN%`. Both
+  // siblings already do — `check.js:138` and `project.js:72` — and this is the
+  // FIRST-RUN case, not an exotic one: writing a header comment before the first
+  // `behaviour` block is a natural first keystroke, and the answer to it was a
+  // full report whose every number was 0 and whose last one was not a number.
+  //
+  // A file that exists and parses to nothing is a different statement from no
+  // file at all, so it gets its own message naming the files read.
+  if (!behaviours.length) {
+    console.error(`cannot look: ${files.join(', ')} parsed to 0 behaviours — nothing to report on yet`);
+    process.exit(2);
+  }
 
   if (sheetMode) {
     // A sheet built from a corpus that fails its own link check would present

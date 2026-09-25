@@ -105,6 +105,7 @@ const proj = require('./project.js');
 const writer = require('./writer.js');
 const gitStore = require('./git-store.js');
 const auth = require('./auth.js');
+const bindingsOf = require('./bindings.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
 const DIST_DIR = path.join(__dirname, 'ui', 'dist');
@@ -689,7 +690,7 @@ function postBinding(match, body, opts, json) {
     return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
   }
 
-  const file = opts.bindings || writer.BINDINGS_FILE;
+  const file = bindingsOf.resolve(opts.bindings);
   if (!fs.existsSync(file)) {
     return json(500, { error: 'no-bindings-file', reason: `there is no bindings file at ${path.relative(process.cwd(), file)}` });
   }
