@@ -311,10 +311,19 @@ validated on Kit first, and Kit's own corpus is already in Kit's own repo, so no
 
 - **Free:** `behaviours/kit.beh` and `behaviours/kit-ui.beh` describe Kit and live in Kit's repo, so
   they already satisfy the rule. Validating on Kit needs no corpus move and no new flag.
-- **Deferred by him:** onboarding another repo — which needs the `kit.js` flag above, plus a
-  decision about where `bindings.json` lives, since today it is **one flat map shared across every
-  corpus** and a per-repo corpus implies a per-repo binding set. That is kit#23's territory and is
-  not settled here.
+- **~~Deferred by him~~ — ANSWERED 2026-09-25 (claude-code-bot#66):** onboarding another repo needs
+  the `kit.js` flag above, plus a decision about where bindings live. That second half is now made.
+  It read: *"today it is one flat map shared across every corpus and a per-repo corpus implies a
+  per-repo binding set. That is kit#23's territory and is not settled here."*
+  **His answer: the binding set goes with the corpus.** *"I think lives in a repo not shared in kit.
+  Imagine scaled to 1000 projects and 1000 project owners no need to share nouns."* A corpus's
+  bindings are now `behaviours/<app>.bindings.json`, beside its `.beh`, and a project owns its
+  vocabulary the same way it owns its spec (kit#52). The flat `bindings.json` is deleted; the
+  migration was lossless, 43 nouns splitting 16/13/14 across three corpora with none claimed twice
+  and none orphaned, so nothing had to be duplicated to get here.
+  ⚠️ **This removes a hazard, not a mechanism.** `sharedWith` still names the other corpora using a
+  noun NAME — it just reports a fact about naming instead of warning you that your bind reached
+  them.
 - ⚠️ **Of the nine corpora in `behaviours/` today, only two are Kit's own.** Four describe real
   repos (`james-habits-app`, `language-vocab`, `macro-metrics`, `snip-it`) and would move under this
   decision; three (`trial-habits-a`, `trial-habits-b`, `trial-lend`) are trials and an invented app
