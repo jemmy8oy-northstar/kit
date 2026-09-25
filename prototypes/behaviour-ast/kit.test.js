@@ -1897,9 +1897,12 @@ test('derived SUBTRACTS state steps — over a corpus that actually has one', ()
   // published as "14 generated".
   const dir = fixture({
     's.beh': 'behaviour BEH-S "one"\n  given state cart:Full\n  when opens page:Home\n',
-    'b.json': JSON.stringify({ 'cart:Full': { state: 'seed()' }, 'page:Home': { route: '/' } }),
+    // `s.bindings.json`, not `b.json`: under kit#66 the bindings a corpus gets
+    // are the ones NAMED AFTER IT, so the fixture has to be built that way or it
+    // would be exercising a resolution rule that no longer exists.
+    's.bindings.json': JSON.stringify({ 'cart:Full': { state: 'seed()' }, 'page:Home': { route: '/' } }),
   });
-  const { stats } = selfrun.emitSpec(pathx.join(dir, 's.beh'), pathx.join(dir, 'b.json'));
+  const { stats } = selfrun.emitSpec(pathx.join(dir, 's.beh'));
   assert.strictEqual(stats.state, 1, 'the fixture must actually contain a state step');
   assert.strictEqual(stats.generated, 2, 'both steps generate');
   assert.strictEqual(stats.derived, 1, 'but only the `opens` is DERIVED — the state step is a copied string');
@@ -2080,10 +2083,13 @@ test('🔴 a binding that EXISTS and satisfies no verb is reported as insufficie
   const dir = fixture({
     'eta.beh': 'behaviour BEH-E "eta"\n  actor engineer\n  when opens page:Shelf\n  then lands page:Shelf\n',
   });
-  const bindings = pathx.join(dir, 'bindings.json');
+  // Named after the corpus, because that is now the whole resolution rule: the
+  // fixture cannot hand `project()` a bindings path any more, and that is the
+  // point — the read and the write no longer HAVE two places to disagree.
+  const bindings = pathx.join(dir, 'eta.bindings.json');
   fsx.writeFileSync(bindings, `${JSON.stringify({ 'page:Shelf': { route: './shelf' } }, null, 2)}\n`);
 
-  const p = proj.project('eta', { behDir: dir, bindingsFile: bindings });
+  const p = proj.project('eta', { behDir: dir });
   assert.deepStrictEqual(p.requires.missing.map((n) => n.noun), [], 'it is bound, so it is not missing');
   assert.deepStrictEqual(p.requires.insufficient.map((n) => n.noun), ['page:Shelf']);
 
@@ -2859,32 +2865,81 @@ test('writer: it contains no path to git at all — decision 2, checked not prom
   assert.strictEqual(/require\(['"]child_process/.test(code), false);
 });
 
-// ── binding: the write that reaches every corpus at once (stage 4) ─────────
+// ── binding: the write that is scoped to ONE corpus (stage 4) ──────────────
 //
 // `docs/design/process.md` calls bind-by-noun "the most important decision in
 // the design, and the fix for the thing that killed Cucumber", and it was the
 // only verb of the loop with no write path. Measured across all nine corpora on
 // 2026-09-10: 129 of 172 nouns (75%) unbound.
 //
-// The population is asserted first, because every test below is about a file
-// that could stop having the property they are written against.
+// ⚠️ THIS SECTION'S PREMISE CHANGED ON kit#66 AND THE OLD ONE SAID SO ITSELF.
+// It used to open by asserting that the real bindings file was ONE FLAT MAP over
+// every corpus, with the comment: *"If bindings ever became per-app, the
+// collision hazard disappears and these tests become theatre — so the shape is
+// asserted rather than assumed."* James then made them per-app. So the premise
+// is REWRITTEN rather than deleted — a section whose stated reason for existing
+// has been removed, and which still passes, is exactly the theatre it warned
+// about. What each test below is now FOR is stated on the test.
 
-section('binding: the one write that is not scoped to one corpus');
+section('binding: the write that is scoped to one corpus');
 
 const { parseStep } = require('./kit');
-const BINDINGS_TEXT = fsx.readFileSync(pathx.join(__dirname, 'bindings.json'), 'utf8');
+// Which corpora actually bind anything. Derived, never listed: `readdirSync` is
+// the same rule the UI uses to know which projects exist, so a corpus gaining or
+// losing bindings cannot leave a hardcoded list behind ([[the-stored-list-ages]]).
+const BOUND_CORPORA = fsx.readdirSync(pathx.join(__dirname, 'behaviours'))
+  .filter((f) => f.endsWith('.bindings.json')).map((f) => f.replace('.bindings.json', '')).sort();
 
-test('binding: the real bindings.json is one FLAT map shared by every corpus', () => {
-  // The premise the whole `sharedWith` mechanism rests on. If bindings ever
-  // became per-app, the collision hazard disappears and these tests become
-  // theatre — so the shape is asserted rather than assumed.
-  const b = JSON.parse(BINDINGS_TEXT);
-  const real = Object.keys(b).filter((k) => !W.isComment(k));
-  assert.ok(real.length >= 20, `only ${real.length} bindings to reason about`);
-  for (const k of real) {
-    assert.ok(W.isNoun(k), `${k} is not a <kind>:<Name> noun, so the map is not keyed by noun`);
-    assert.strictEqual(typeof b[k], 'object', `${k} is not an object`);
+// A real corpus's bindings, used below as a SUBSTRATE for `addBinding` — real
+// prose keys and real values, so the round-trip is tested against a file that
+// exists rather than a hand-built object. It used to be the one flat map; snip-it
+// is the successor that still contains `page:Home`, which the rebind-is-refused
+// test is written against.
+// ⚠️ `addBinding` takes TEXT and never learns which file it came from — `app`
+// feeds only `sharedWith`, which reads the corpus directory. So a test below may
+// pass an app other than snip-it and still be saying something true.
+const BINDINGS_TEXT = fsx.readFileSync(require('./bindings.js').fileFor('snip-it'), 'utf8');
+
+test('binding: every bindings file is keyed by noun and belongs to a corpus beside it', () => {
+  // The population every test below reasons over, asserted rather than assumed.
+  // The second half is the one the flat map could not make: a bindings file with
+  // no `.beh` beside it is an ORPHAN — bindings for a corpus that no longer
+  // exists, which nothing else in Kit would ever mention.
+  assert.ok(BOUND_CORPORA.length >= 3, `only ${BOUND_CORPORA.length} corpora bind anything`);
+  let total = 0;
+  for (const app of BOUND_CORPORA) {
+    const b = require('./bindings.js').readFor(app);
+    const real = Object.keys(b).filter((k) => !W.isComment(k));
+    assert.ok(real.length >= 1, `${app}.bindings.json binds nothing — delete it rather than ship an empty one`);
+    for (const k of real) {
+      assert.ok(W.isNoun(k), `${app}: ${k} is not a <kind>:<Name> noun, so the map is not keyed by noun`);
+      assert.strictEqual(typeof b[k], 'object', `${app}: ${k} is not an object`);
+    }
+    assert.ok(fsx.existsSync(pathx.join(__dirname, 'behaviours', `${app}.beh`)),
+      `${app}.bindings.json has no corpus beside it — it binds nouns nothing can reference`);
+    total += real.length;
   }
+  assert.ok(total >= 20, `only ${total} bindings across the estate to reason about`);
+});
+
+test('binding: no noun is bound TWICE across corpora — a name is not a collision any more', () => {
+  // The measurement that made his answer cheap, re-run rather than quoted: the
+  // flat map's 43 real nouns split across three corpora with nothing claimed by
+  // two of them, so nothing had to be duplicated and nothing was dropped.
+  //
+  // ⚠️ It is NOT a rule that this stays zero — under kit#66 two corpora binding
+  // `page:Home` differently is CORRECT and is the entire point. It is asserted
+  // because a duplicate today would mean the split guessed, and a reader should
+  // be told which of those two worlds these numbers came from.
+  const seen = new Map();
+  for (const app of BOUND_CORPORA) {
+    for (const k of Object.keys(require('./bindings.js').readFor(app)).filter((k) => !W.isComment(k))) {
+      seen.set(k, [...(seen.get(k) || []), app]);
+    }
+  }
+  const twice = [...seen.entries()].filter(([, apps]) => apps.length > 1);
+  assert.deepStrictEqual(twice.map(([k, a]) => `${k}: ${a.join('+')}`), [],
+    'a noun is bound by two corpora — correct under kit#66, but re-measure the migration claim before trusting it');
 });
 
 test('binding: only bindings.js says where bindings live — nobody re-derives the path', () => {
@@ -2927,24 +2982,44 @@ test('binding: only bindings.js says where bindings live — nobody re-derives t
     `these re-derive the bindings path instead of asking bindings.js: ${offenders.join(', ')}`);
 });
 
-test('binding: the resolver answers the same for "told nothing" and an explicit null', () => {
-  // `ui.js` threads an explicit `null` into project() precisely so its read and
-  // its write cannot be configured apart. If those two ever answered
-  // differently, that guarantee would be the thing that broke.
+test('binding: a corpus\'s bindings are a FUNCTION of where the corpus is', () => {
+  // The whole of kit#66 in one assertion. There used to be a `resolve(fileOrNull)`
+  // here, and a test that it answered the same for `null` and `undefined` — which
+  // existed because `ui.js` had to thread one value into a read and a write that
+  // could otherwise be configured apart. That guarantee is now structural: name
+  // the directory and you have named the bindings, so there is no second argument
+  // for a caller to get wrong.
   const B = require('./bindings.js');
-  assert.strictEqual(B.resolve(null), B.BINDINGS_FILE);
-  assert.strictEqual(B.resolve(undefined), B.BINDINGS_FILE);
-  assert.strictEqual(B.resolve(), B.BINDINGS_FILE);
-  assert.strictEqual(B.resolve('/somewhere/else.json'), '/somewhere/else.json');
+  assert.strictEqual(B.fileFor('snip-it'), pathx.join(__dirname, 'behaviours', 'snip-it.bindings.json'));
+  assert.strictEqual(B.fileFor('snip-it', '/elsewhere'), pathx.join('/elsewhere', 'snip-it.bindings.json'));
+  // Two corpora in ONE directory get two files — the property the flat map could
+  // not have, and the reason his "1000 projects, 1000 owners" answer needs it.
+  assert.notStrictEqual(B.fileFor('snip-it', '/x'), B.fileFor('macro-metrics', '/x'));
 });
 
-test('binding: the resolver reads a file VERBATIM, comments and all', () => {
-  // Filtering `_comment*` here would look tidy and would quietly change what the
-  // writer round-trips back to disk. There are three of them in the real file.
-  const b = require('./bindings.js').read(null);
-  const comments = Object.keys(b).filter((k) => W.isComment(k));
-  assert.ok(comments.length >= 3, `the reader dropped comment keys: kept ${comments.length}`);
-  assert.deepStrictEqual(Object.keys(b), Object.keys(JSON.parse(BINDINGS_TEXT)));
+test('binding: a corpus with NO bindings file binds nothing — and that is not an error', () => {
+  // 7 of the 10 corpora here are genuinely in this state, so it has to be a real
+  // answer rather than a crash. ⚠️ It must NOT be conflated with a file that
+  // exists and will not parse: that is could-not-look, and silently returning {}
+  // would report a broken checkout as "0 bound" ([[empty-means-two-things]]).
+  const B = require('./bindings.js');
+  const dir = fixture({ 'zeta.beh': 'behaviour BEH-Z "z"\n  when opens page:Home\n' });
+  assert.deepStrictEqual(B.readFor('zeta', dir), {}, 'a missing file is not nothing-bound');
+  fsx.writeFileSync(pathx.join(dir, 'zeta.bindings.json'), 'not json at all');
+  assert.throws(() => B.readFor('zeta', dir), 'an unparseable file read as nothing-bound');
+});
+
+test('binding: the reader returns a file VERBATIM, comments and all', () => {
+  // Filtering `_comment` here would look tidy and would quietly change what the
+  // writer round-trips back to disk — the prose in these files carries the
+  // "deliberately absent" refusals, which are the honest half of every corpus.
+  const B = require('./bindings.js');
+  for (const app of BOUND_CORPORA) {
+    const b = B.readFor(app);
+    const raw = JSON.parse(fsx.readFileSync(B.fileFor(app), 'utf8'));
+    assert.deepStrictEqual(Object.keys(b), Object.keys(raw), `${app}: the reader reshaped the file`);
+    assert.ok(Object.keys(b).some((k) => W.isComment(k)), `${app}: the reader dropped its comment key`);
+  }
 });
 
 test('binding: the noun namespace really is global, and one collision is cross-APP', () => {
@@ -3683,7 +3758,16 @@ test('the write contract fixture is not empty, and covers both routes', () => {
   // sharing report has to be exercised in both directions or the empty case is
   // never distinguished from an unimplemented one.
   const binds = CONTRACT.requests.filter((r) => /\/bindings$/.test(r.path));
-  assert.ok(binds.every((r) => r.targetFile === 'bindings.json'), 'a bind request does not declare its target file');
+  // ⚠️ `<app>.bindings.json`, and the app in the file name must be the app in the
+  // PATH. That is the whole of kit#66 expressed in the contract: a bind request
+  // whose target file named another corpus would be the old flat map wearing a
+  // new name, and this is the assertion that would catch it.
+  assert.ok(binds.length >= 1, 'the contract binds nothing');
+  for (const r of binds) {
+    const app = decodeURIComponent(/^\/api\/projects\/([^/]+)\/bindings$/.exec(r.path)[1]);
+    assert.strictEqual(r.targetFile, `${app}.bindings.json`,
+      `${r.path} writes ${r.targetFile} — a bind must land in the bindings of the app it is routed under`);
+  }
   assert.ok(binds.some((r) => (r.expect.sharedWith || []).length > 0), 'nothing in the contract binds a shared noun');
   assert.ok(binds.some((r) => r.expect.sharedWith && r.expect.sharedWith.length === 0), 'nothing in the contract binds an unshared noun');
 });
@@ -3700,12 +3784,21 @@ test('the contract pins the READ path too, not only the writes', () => {
     'the reads only cover the happy path');
 });
 
+// The contract's seed bindings, written the way kit#66 says they live: one file
+// per corpus, beside that corpus, inside the fixture directory. There is no
+// second path to hand the server — `dir` is the whole configuration now.
+function seedBindings(dir) {
+  for (const [app, b] of Object.entries(CONTRACT.bindings)) {
+    if (app.startsWith('_')) continue;
+    fsx.writeFileSync(pathx.join(dir, `${app}.bindings.json`), `${JSON.stringify(b, null, 2)}\n`);
+  }
+}
+
 for (const req of CONTRACT.reads) {
   test(`contract: ${req.method} ${req.path} — ${req.what}`, async () => {
     const dir = fixture(CONTRACT.corpus);
-    const bindings = pathx.join(dir, 'bindings.json');
-    fsx.writeFileSync(bindings, `${JSON.stringify(CONTRACT.bindings, null, 2)}\n`);
-    const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
+    seedBindings(dir);
+    const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
     try {
       const { port } = server.address();
       const res = await get(port, req.path);
@@ -3733,18 +3826,17 @@ for (const req of CONTRACT.requests) {
     // A fresh corpus per request: these write, and a shared directory would make
     // them depend on the order they run in.
     const dir = fixture(CONTRACT.corpus);
-    // `bindings.json` lives beside the corpora in the fixture only; in the real
-    // tree it sits one level up, which is exactly why `serve` takes its path
-    // rather than deriving it — a test that had to write into the repo's own
-    // bindings file could not be run twice.
-    const bindings = pathx.join(dir, 'bindings.json');
-    fsx.writeFileSync(bindings, `${JSON.stringify(CONTRACT.bindings, null, 2)}\n`);
+    // ⚠️ These write, and `serve` no longer takes a bindings path to keep them
+    // out of the repo — `dir` does it, because kit#66 put the bindings inside the
+    // corpus directory. That is the isolation, and a test that had to write into
+    // the repo's own bindings file could not be run twice.
+    seedBindings(dir);
 
     const target = req.targetFile
       ? pathx.join(dir, req.targetFile)
       : pathx.join(dir, `${req.call.args[0]}.beh`);
     const before = fsx.readFileSync(target, 'utf8');
-    const server = await ui.serve({ dir, bindings, port: 0, host: '127.0.0.1' });
+    const server = await ui.serve({ dir, port: 0, host: '127.0.0.1' });
     try {
       const { port } = server.address();
       const res = await post(port, req.path, req.body, null, req.contentType);

@@ -730,7 +730,10 @@ function main(argv) {
 module.exports = {
   block, ids, addStep, addBehaviour, setReview, validate, shape,
   addBinding, sharedWith, corpusNouns, isComment, isNoun,
-  corpusPath, commitToDisk, parseArgs, main, INDENT, BINDINGS_FILE,
+  // No `BINDINGS_FILE` re-export: there is no longer ONE bindings file to name,
+  // and a re-export would have been a second answer to kit#66's question. Ask
+  // `bindings.js` for `fileFor(app, dir)` instead.
+  corpusPath, commitToDisk, parseArgs, main, INDENT,
 };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
