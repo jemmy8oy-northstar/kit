@@ -1118,6 +1118,59 @@ test('kit.js refuses a corpus that parses to zero behaviours, instead of reporti
   assert.strictEqual(r.stdout, '', `a refused run still printed a report: ${r.stdout}`);
 });
 
+test('🔴 the all-corpora run generates each behaviour against ITS OWN corpus\x27s bindings', () => {
+  // kit#66's central rule, and until this test nothing automated held it: a
+  // mutant merging every corpus's bindings into one map SURVIVED the whole suite
+  // — 179 other mutants died and the one restoring the global namespace lived.
+  // That merge is the flat file rebuilt inside the loop that replaced it, and its
+  // symptom is the emission his decision exists to prevent: a corpus that binds
+  // nothing silently resolving another project's noun and emitting a test that
+  // RUNS, against the wrong app, with no unbound-noun warning.
+  //
+  // Driven through the CLI rather than through `generate()` directly, because the
+  // per-corpus lookup lives in the CLI's own aggregation — a unit test of
+  // `generate` would pass with the aggregation merged.
+  //
+  // ⚠️ The probes go in the REAL `behaviours/`: `kit.js` has no `--dir` (kit#68
+  // made it refuse the flag rather than silently ignore it), so there is nowhere
+  // else to put them. Removed in a `finally` and their absence asserted — a stray
+  // corpus here changes what `saturation.js` and `check.js` measure
+  // ([[a-directory-is-a-population]]).
+  const beh = pathx.join(__dirname, 'behaviours');
+  const files = ['zz-probe-bound.beh', 'zz-probe-bound.bindings.json', 'zz-probe-unbound.beh'];
+  let r;
+  try {
+    fsx.writeFileSync(pathx.join(beh, 'zz-probe-bound.beh'),
+      'behaviour BEH-ZZ-BOUND "the corpus that binds it"\n  when opens page:ZzShared\n');
+    fsx.writeFileSync(pathx.join(beh, 'zz-probe-bound.bindings.json'),
+      `${JSON.stringify({ 'page:ZzShared': { route: './zz-bound' } }, null, 2)}\n`);
+    fsx.writeFileSync(pathx.join(beh, 'zz-probe-unbound.beh'),
+      'behaviour BEH-ZZ-UNBOUND "the corpus that does not"\n  when opens page:ZzShared\n');
+    r = require('child_process').spawnSync('node', [pathx.join(__dirname, 'kit.js')], { encoding: 'utf8' });
+  } finally {
+    for (const f of files) fsx.rmSync(pathx.join(beh, f), { force: true });
+  }
+  for (const f of files) {
+    assert.strictEqual(fsx.existsSync(pathx.join(beh, f)), false, `${f} was left in behaviours/`);
+  }
+  assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+
+  const blockFor = (id) => {
+    const i = r.stdout.indexOf(`[${id}]`);
+    assert.notStrictEqual(i, -1, `${id} is not in the report at all — the run did not see the probe`);
+    return r.stdout.slice(i, r.stdout.indexOf('\n\n', i));
+  };
+  // The POSITIVE CONTROL first. Without it, a run that bound nothing anywhere
+  // would satisfy the assertion below and read as a pass ([[empty-means-two-things]]).
+  assert.match(blockFor('BEH-ZZ-BOUND'), /page\.goto\(\x22\.\/zz-bound\x22\)/,
+    'the corpus that OWNS the binding did not generate from it — the probe proves nothing');
+  const unbound = blockFor('BEH-ZZ-UNBOUND');
+  assert.match(unbound, /UNGENERATED: when opens page:ZzShared/,
+    'a corpus with no bindings reached another corpus\x27s — the global namespace is back');
+  assert.doesNotMatch(unbound, /page\.goto/,
+    'a corpus binding nothing emitted a navigation, which can only have come from another project');
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 

@@ -36,8 +36,31 @@ const T = path.join(__dirname, 'kit.test.js');
 // than the gate go unmeasured.
 const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
+// 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
+// proves it. Two of the kit#66 mutants make a write land in THIS checkout's
+// `behaviours/` instead of the directory it was told to use — that is the defect,
+// and the suite kills them for it. But the file the mutant wrote is still there
+// afterwards: `restoreAll()` only rewrites the subjects it read at startup, so a
+// mutant's SIDE EFFECT outlives it.
+//
+// What that cost: the run ended `179/180 killed` and then `HARNESS BROKEN: suite
+// is not green after restore` — because two stray `.bindings.json` files had
+// joined the corpus directory and a test that counts what is in there noticed
+// ([[a-directory-is-a-population]]). The message names the harness, so the
+// obvious reading is that your change broke something, and the real cause is a
+// mutant behaving exactly as designed.
+//
+// So the corpus directory is snapshotted too, and anything that appeared during a
+// mutant is removed with it. Only ADDITIONS are cleaned: a mutant that deletes or
+// edits a committed corpus file must still reach the final green check, because
+// that is damage no snapshot here should be quietly papering over.
+const CORPUS_DIR = path.join(__dirname, 'behaviours');
+const CORPUS_BEFORE = new Set(fs.readdirSync(CORPUS_DIR));
 const restoreAll = () => {
   for (const [f, src] of Object.entries(SUBJECTS)) fs.writeFileSync(path.join(__dirname, f), src);
+  for (const f of fs.readdirSync(CORPUS_DIR)) {
+    if (!CORPUS_BEFORE.has(f)) fs.rmSync(path.join(CORPUS_DIR, f), { force: true, recursive: true });
+  }
 };
 
 // ⚠️ THIS TOOL EDITS THE WORKING TREE. For the duration of a run, the files on
