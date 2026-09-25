@@ -297,10 +297,19 @@ MUTANTS.push(
   // BOTH numbers in the document, and the wrong one reads like the right one.
   ['the splice keeps the stale block and writes the fresh one beside it',
     "${out.slice(end)}`;", '${out.slice(begin + BEGIN(key).length)}`;', 'self-host.js'],
-  // The original defect, reinstated: count the whole global bindings file
-  // instead of this corpus's nouns. Every app then reports the same number and
-  // a corpus binding nothing reports the same headline as one binding all.
-  ['the bound-noun count goes back to counting the global bindings file',
+  // 🔴 kit#66's central rule, as a mutant: the all-corpora run merges every
+  // corpus's bindings into one map, which is the flat namespace rebuilt inside
+  // the loop that replaced it. A behaviour in a corpus that binds nothing would
+  // then resolve some OTHER project's noun and emit a test that runs against the
+  // wrong app — the exact emission his decision exists to make impossible.
+  ['the all-corpora run merges every corpus\x27s bindings, restoring the global namespace',
+    'const { code, missing, stats } = generate(b, bindingsFor(b), symbols);',
+    'const { code, missing, stats } = generate(b, Object.assign({}, ...Object.values(byApp)), symbols);',
+    'kit.js'],
+  // The original defect, reinstated: count the whole bindings file instead of
+  // this corpus's nouns. Every app then reports the same number and a corpus
+  // binding nothing reports the same headline as one binding all.
+  ['the bound-noun count goes back to counting the whole bindings file',
     'const bound = [...referenced].filter((n) => Object.prototype.hasOwnProperty.call(bindings, n));',
     'const bound = Object.keys(bindings);', 'kit.js'],
   ['the referenced-noun set counts repeats, so a noun named twice inflates the denominator',
@@ -634,16 +643,21 @@ MUTANTS.push(
   // The defect running the server found: the write honoured --bindings and the
   // read did not, so the page re-read a different file and showed the same
   // refusal after a successful bind.
-  // ⚠️ Re-anchored when the resolution moved into bindings.js (kit#66). The rule
-  // under test is unchanged — the projection must honour the file it was given —
-  // but the anchor now INVERTS the argument rather than swapping a whole
-  // expression, because `read(null)` is precisely the old defect: resolve to the
-  // default file and ignore what the caller was told.
-  ['the projection ignores --bindings, so the re-read after a write sees the wrong file',
-    "const bindings = require('./bindings.js').read(bindingsFile);",
-    "const bindings = require('./bindings.js').read(null);", 'project.js'],
-  ['ui.js stops passing the bindings file to the read, re-opening the same split',
-    'bindingsFile: opts.bindings || null,', 'bindingsFile: null,', 'ui.js'],
+  //
+  // ⚠️ RE-ANCHORED TWICE, and the second time the rule itself changed shape. It
+  // was "the projection must honour the file it was given"; under kit#66 nobody
+  // is given a file, because bindings live beside the corpus and `dir` selects
+  // both. So the split can only be reopened by DROPPING THE DIRECTORY — a read
+  // or a write that falls back to this checkout's own `behaviours/` while its
+  // counterpart uses the one it was pointed at. Both mutants below do exactly
+  // that, one on each side, because a guarantee that holds in one direction only
+  // is the bug wearing the fix's name ([[one-sided-assertion-blesses-the-wrong-fix]]).
+  ['the projection reads THIS checkout\x27s bindings instead of the corpus directory it was given',
+    'const bindings = require(\x27./bindings.js\x27).readFor(app, behDir);',
+    'const bindings = require(\x27./bindings.js\x27).readFor(app);', 'project.js'],
+  ['the bind WRITES to this checkout\x27s bindings while the read uses the directory it was given',
+    'const file = bindingsOf.fileFor(app, dir);',
+    'const file = bindingsOf.fileFor(app);', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',
     'insufficient: req.insufficient.map(withShared),', 'insufficient: [],', 'project.js'],
   ['the bind route is gone, so a POST to it falls through to the behaviours matcher',

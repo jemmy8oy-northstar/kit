@@ -397,7 +397,11 @@ test('language-vocab is a different shape from habits, and the corpus says so', 
   // The whole documented UI is missing, and that is the finding, not a failure of
   // the corpus. Asserting it stops someone "fixing" the zero by inventing nouns.
   const { generate } = require('./kit');
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  // This corpus's OWN bindings, which under kit#66 is what it generates against
+  // — and it has none, which is the honest substrate for a test whose finding is
+  // that the screens do not exist. It used to read the flat map, where the answer
+  // happened not to depend on the other corpora's nouns; now it cannot.
+  const bindings = require('./bindings.js').readFor('language-vocab');
   const { symbols } = resolve(parse(src, 'language-vocab.beh'));
   const missing = new Set();
   for (const b of behaviours) for (const m of generate(b, bindings, symbols).missing) missing.add(m);
@@ -1837,11 +1841,15 @@ test('every refused step gets exactly one annotation, across every committed cor
   // The single-instance tests above measure ONE refusal in ONE corpus. The
   // claim being made is about all of them, so count over the whole population
   // rather than trusting that kit-ui generalises — nine corpora, 125 tests.
-  const bindings = JSON.parse(fsx.readFileSync(pathx.join(__dirname, 'bindings.json'), 'utf8'));
   const dir = pathx.join(__dirname, 'behaviours');
   let refusals = 0, annotations = 0, corpora = 0;
   for (const f of fsx.readdirSync(dir).filter((f) => f.endsWith('.beh'))) {
     corpora++;
+    // ⚠️ EACH CORPUS AGAINST ITS OWN BINDINGS since kit#66 — a single map read
+    // once outside this loop would be the flat namespace rebuilt in a test, and
+    // would quietly inflate the count by letting one corpus satisfy another's
+    // nouns. That is the exact emission the decision exists to make impossible.
+    const bindings = require('./bindings.js').readFor(f.replace('.beh', ''), dir);
     // resolve() then generate(b, bindings, symbols) — the same pipeline
     // selfhost/run.js:emitSpec uses. A simpler parse-and-generate here would
     // be measuring a path no consumer takes.
@@ -3599,7 +3607,10 @@ test('requires: the real corpora are unchanged by the emit() fixes', () => {
   const src = fs.readFileSync(path.join(__dirname, 'behaviours', 'snip-it.beh'), 'utf8');
   const bs = parse(src);
   const { symbols } = resolve(bs);
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  // snip-it's OWN bindings. ⚠️ The two published numbers below are what says the
+  // kit#66 split changed nothing: they were measured against the flat map, and
+  // they have to survive a migration that moved 14 of its 43 nouns into this file.
+  const bindings = require('./bindings.js').readFor('snip-it');
   let generated = 0, ungenerated = 0;
   for (const b of bs) {
     const g = generate(b, bindings, symbols);
