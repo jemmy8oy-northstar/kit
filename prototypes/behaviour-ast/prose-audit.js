@@ -109,7 +109,7 @@ function audit(ledger, behaviours) {
 // Not a test — a demonstration, because "the noun namespace is global" is the
 // kind of claim that reads as pedantry until you see the wrong line come out.
 function demoCollision() {
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  const bindings = require('./bindings.js').read(null);
   const src = 'behaviour BEH-DEMO "a macro-metrics behaviour that says page:Home"\n  actor visitor\n  when opens page:Home';
   const { behaviours, symbols } = resolve(parse(src, 'demo.beh'));
   const { code } = generate(behaviours[0], bindings, symbols);

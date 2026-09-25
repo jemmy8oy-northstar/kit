@@ -634,9 +634,14 @@ MUTANTS.push(
   // The defect running the server found: the write honoured --bindings and the
   // read did not, so the page re-read a different file and showed the same
   // refusal after a successful bind.
+  // ⚠️ Re-anchored when the resolution moved into bindings.js (kit#66). The rule
+  // under test is unchanged — the projection must honour the file it was given —
+  // but the anchor now INVERTS the argument rather than swapping a whole
+  // expression, because `read(null)` is precisely the old defect: resolve to the
+  // default file and ignore what the caller was told.
   ['the projection ignores --bindings, so the re-read after a write sees the wrong file',
-    "const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));",
-    "const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));", 'project.js'],
+    "const bindings = require('./bindings.js').read(bindingsFile);",
+    "const bindings = require('./bindings.js').read(null);", 'project.js'],
   ['ui.js stops passing the bindings file to the read, re-opening the same split',
     'bindingsFile: opts.bindings || null,', 'bindingsFile: null,', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',

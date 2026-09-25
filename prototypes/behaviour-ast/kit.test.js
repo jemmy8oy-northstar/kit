@@ -2887,6 +2887,66 @@ test('binding: the real bindings.json is one FLAT map shared by every corpus', (
   }
 });
 
+test('binding: only bindings.js says where bindings live — nobody re-derives the path', () => {
+  // The rule the consolidation rests on, and it has to be a test rather than a
+  // convention: a rule applied by hand at N call sites is N chances to differ,
+  // and this codebase has already paid for that once. `project.js:74` carries
+  // the post-mortem — the write honoured `--bindings`, the read did not, and a
+  // successful bind re-read the other file and showed the same refusal, with
+  // every test passing throughout. It was fixed in ONE place and five other
+  // callers kept the shape of the bug.
+  //
+  // ⚠️ This is what stops a sixth caller quietly reopening it, and it is also
+  // what keeps kit#66 a one-function change instead of an eleven-file one.
+  // Asserted by reading the source, because "resolution happens in one place" is
+  // a property of the FILES rather than of any one run — the same argument
+  // writer.js's "it never shells out" test makes about itself.
+  const dir = __dirname;
+  const offenders = [];
+  const walk = (d) => {
+    for (const e of fsx.readdirSync(d, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name === 'ui' || e.name === 'dist') continue;
+      const full = pathx.join(d, e.name);
+      if (e.isDirectory()) { walk(full); continue; }
+      if (!e.name.endsWith('.js')) continue;
+      // bindings.js is allowed to know; this test and mutate.js quote the string
+      // in order to police or mutate it, which is not a second resolution.
+      if (['bindings.js', 'kit.test.js', 'mutate.js'].includes(e.name)) continue;
+      const code = fsx.readFileSync(full, 'utf8').split('\n')
+        .filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+      // ⚠️ The quote characters are escapes, not literals, and that is load-bearing:
+      // `jsDeclarationCount` does not know regex literals, so a bare quote or
+      // backtick inside one blanks everything to the next matching quote and the
+      // independent count silently collapses. Writing it the obvious way took the
+      // coverage fail-safe red three tests away from the cause.
+      if (/[\x22\x27\x60]bindings\.json[\x22\x27\x60]/.test(code)) offenders.push(pathx.relative(dir, full));
+    }
+  };
+  walk(dir);
+  assert.deepStrictEqual(offenders, [],
+    `these re-derive the bindings path instead of asking bindings.js: ${offenders.join(', ')}`);
+});
+
+test('binding: the resolver answers the same for "told nothing" and an explicit null', () => {
+  // `ui.js` threads an explicit `null` into project() precisely so its read and
+  // its write cannot be configured apart. If those two ever answered
+  // differently, that guarantee would be the thing that broke.
+  const B = require('./bindings.js');
+  assert.strictEqual(B.resolve(null), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve(undefined), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve(), B.BINDINGS_FILE);
+  assert.strictEqual(B.resolve('/somewhere/else.json'), '/somewhere/else.json');
+});
+
+test('binding: the resolver reads a file VERBATIM, comments and all', () => {
+  // Filtering `_comment*` here would look tidy and would quietly change what the
+  // writer round-trips back to disk. There are three of them in the real file.
+  const b = require('./bindings.js').read(null);
+  const comments = Object.keys(b).filter((k) => W.isComment(k));
+  assert.ok(comments.length >= 3, `the reader dropped comment keys: kept ${comments.length}`);
+  assert.deepStrictEqual(Object.keys(b), Object.keys(JSON.parse(BINDINGS_TEXT)));
+});
+
 test('binding: the noun namespace really is global, and one collision is cross-APP', () => {
   // The measurement the mechanism exists for, re-run rather than quoted. Six of
   // the seven shared names are james-habits-app described three ways, where

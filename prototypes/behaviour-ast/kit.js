@@ -1257,7 +1257,7 @@ if (require.main === module) {
     .filter((f) => !only || f.includes(only));
   if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  const bindings = require('./bindings.js').read(null);
   const { behaviours, conflicts, symbols } = resolve(all);
 
   // ⚠️ REFUSE, rather than report a table of zeros ending `0/0 = NaN%`. Both

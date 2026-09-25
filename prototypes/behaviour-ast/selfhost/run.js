@@ -40,7 +40,7 @@ const kit = require('../kit.js');
 const ROOT = path.join(__dirname, '..');
 const CORPUS = path.join(ROOT, 'behaviours');
 const SUBJECT = 'kit-ui.beh';
-const BINDINGS = path.join(ROOT, 'bindings.json');
+const BINDINGS = require('../bindings.js').BINDINGS_FILE;
 const DIST = path.join(ROOT, 'ui', 'dist', 'index.html');
 const EXPECTED = path.join(__dirname, 'expected.json');
 
@@ -210,6 +210,17 @@ async function main(argv = []) {
   const corpus = path.join(tmp, 'behaviours');
   fs.mkdirSync(corpus);
   for (const f of fs.readdirSync(CORPUS)) fs.copyFileSync(path.join(CORPUS, f), path.join(corpus, f));
+  // The bindings belong inside that isolation too, and did not used to be. The
+  // corpus was copied precisely so a self-hosted test could not dirty the real
+  // one, while the `ui.js` spawned below was given `--dir` and no `--bindings` —
+  // so a bind would have written straight into the repo's own bindings.json.
+  // ⚠️ Latent rather than live: kit-ui.beh is entirely `opens`/`sees`, so nothing
+  // generated from it reaches the bind route today. Half-applied isolation is
+  // still worth closing, because what makes it reachable is adding one behaviour.
+  // Named off the resolver rather than spelled again, so the copy follows the
+  // real file if it is ever renamed — and so this stays the one place that knows.
+  const bindings = path.join(tmp, path.basename(BINDINGS));
+  fs.copyFileSync(BINDINGS, bindings);
   const specs = path.join(tmp, 'specs');
   fs.mkdirSync(specs);
   fs.writeFileSync(path.join(specs, 'kit-ui.spec.ts'), spec.source);
@@ -231,7 +242,7 @@ async function main(argv = []) {
     return 2;
   }
 
-  const server = spawn(process.execPath, [path.join(ROOT, 'ui.js'), '--port', String(port), '--dir', corpus], { stdio: 'ignore' });
+  const server = spawn(process.execPath, [path.join(ROOT, 'ui.js'), '--port', String(port), '--dir', corpus, '--bindings', bindings], { stdio: 'ignore' });
   let code = 0;
   try {
     if (!(await waitForServer(port))) {
