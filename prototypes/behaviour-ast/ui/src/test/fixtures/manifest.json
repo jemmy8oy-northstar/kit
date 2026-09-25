@@ -1,0 +1,26 @@
+{
+  "_comment": "Which fixtures in this directory are a recording of the real read API, and which are hand-written. Read by BOTH `generate.js` (which writes the generated ones) and `fixtures.test.ts` (which asserts they still match). One list, two consumers, so neither side can gain a fixture the other does not know about. A JSON file cannot carry a `# kit:` marker the way a corpus can, so membership is declared here instead — with a reason, never as a bare filename.",
+  "generated": [
+    {
+      "route": "/api/projects",
+      "file": "projects.json",
+      "why": "the list every corpus in the directory appears in — the fixture a new project changes"
+    },
+    {
+      "route": "/api/projects/snip-it",
+      "file": "project-snip-it.json",
+      "why": "a real app's full projection, with every sharedWith empty"
+    },
+    {
+      "route": "/api/projects/james-habits-app",
+      "file": "project-james-habits-app.json",
+      "why": "a real app's full projection whose nouns ARE shared, so sharedWith is exercised"
+    }
+  ],
+  "handWritten": [
+    {
+      "file": "write-contract.json",
+      "why": "not a recording of anything — it is one half of a contract pinned from both sides, by ui/src/api/client.test.ts and by prototypes/behaviour-ast/kit.test.js. Regenerating it would delete the pin."
+    }
+  ]
+}
