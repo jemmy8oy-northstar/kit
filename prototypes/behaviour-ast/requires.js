@@ -333,7 +333,8 @@ function main(argv) {
 
   const behaviours = parse(fs.readFileSync(corpus, 'utf8'));
   resolve(behaviours); // fills each step's `resolved`, which `fills` needs
-  const bindings = require('./bindings.js').read(null);
+  // This app's own bindings, from beside its corpus (kit#66).
+  const bindings = require('./bindings.js').readFor(app);
   const report = requirements(behaviours, bindings);
 
   if (asJson) {

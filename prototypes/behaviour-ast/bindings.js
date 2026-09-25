@@ -1,88 +1,104 @@
 // bindings.js — THE ONE ANSWER TO "WHERE DO THIS CORPUS'S BINDINGS LIVE?"
 //
-// Nothing here is new behaviour. Every caller resolved that question for itself
-// before this file existed, and they did not all resolve it the same way:
+// ── The rule, as James decided it on kit#66 ─────────────────────────────────
+// A corpus's bindings live BESIDE IT, in `<app>.bindings.json`, and belong to
+// that corpus alone. His words: *"I think lives in a repo not shared in kit.
+// Imagine scaled to 1000 projects and 1000 project owners no need to share
+// nouns."* So a project owns its vocabulary the same way it owns its spec
+// (kit#52), and two projects naming the same noun is not a collision — it is two
+// projects, each right about itself.
 //
-//   writer.js, project.js, ui.js   took `--bindings`, defaulting to __dirname
-//   kit.js, requires.js,           hardcoded path.join(__dirname,'bindings.json')
-//   compare.js, prose-audit.js,    with no flag and no way to point them anywhere
-//   saturation.js                  — even the three that already took `--dir`
+// This replaces one flat map over every corpus. What that map cost is written in
+// its own header, twice: snip-it's `page:Home` was `./` and macro-metrics' was
+// `/macro-metrics/`, so an unprefixed `page:Home` in the wrong corpus emitted
+// `page.goto('./')` — a test that RUNS, against the wrong app, with no
+// unbound-noun warning. Every noun in two of the three corpora was hand-prefixed
+// to dodge that, which the file itself called "not a design, it is a habit".
 //
-// ── Why that split is a defect and not a tidiness complaint ─────────────────
-// It has already cost us once. `project.js:74` carries the post-mortem: `ui.js`
-// gained `--bindings` so a harness could exercise the bind route without writing
-// into the repo it was measuring, the WRITE honoured it and the READ did not, and
-// a bind reported success, changed the file on disk, and the page re-read the
-// *other* file and showed the same refusal. Every test passed throughout.
+// ── Why `--bindings` is gone rather than extended ───────────────────────────
+// It pointed at ONE file, which cannot address a run spanning several corpora.
+// It existed so a harness could exercise the bind route without writing into the
+// repo it was measuring — and `--dir` now does that by itself, because isolating
+// the corpus directory isolates the bindings inside it. One flag where there were
+// two, and `selfhost/run.js`'s half-applied isolation (it copied the corpus and
+// not the bindings) stops being possible to write.
 //
-// That was fixed in ONE place. Five callers kept the shape of the bug, which is
-// what makes it worth a module rather than a sixth careful patch: a rule applied
-// by hand at N call sites is not a rule, it is N chances to differ.
+// ── The naming ─────────────────────────────────────────────────────────────
+// `<app>.bindings.json`, beside `<app>.beh`, following the `<app>.tests.json`
+// convention already in `behaviours/`. A corpus with no file binds nothing, which
+// is a real state and not an error: 7 of the 10 corpora here bind nothing today.
 //
-// ── What the split makes LATENT, measured 2026-09-25 (kit#66) ───────────────
-// Both of these are latent today and neither is a live bug — say so, because the
-// first framing of them overclaimed and a probe is the only reason we know:
-//
-//   `saturation.js --dir <elsewhere>` reads the corpora it was pointed at and the
-//   bindings of THIS directory. Against a byte-identical copy that is invisible —
-//   a copy shares noun NAMES, so Kit's own bindings still resolve them and both
-//   runs print the same 27 bound targets. Against a genuinely foreign corpus
-//   (every `kind:Name` uniformly renamed, grammar, population and per-corpus noun
-//   counts held identical) the same command prints **1**. It does not say it could
-//   not look; it prints the collapse as a finding.
-//
-//   `selfhost/run.js:207` copies the corpus into a tmpdir described in its own
-//   comment as "the copy the tests are allowed to write to", and does not copy
-//   bindings.json or pass `--bindings` to the ui.js it spawns. A self-hosted bind
-//   would therefore write to the real repo file. Not reachable today — kit-ui.beh
-//   is entirely `opens`/`sees` — so the isolation is half-applied, not broken.
-//
-// Both bite the moment a corpus genuinely relocates, which is exactly what James
-// decided on kit#66: bindings live WITH the corpus, per-project namespaces, on the
-// argument that a thousand projects with a thousand owners have no need to share
-// nouns. Executing that means changing where the answer comes from. This file is
-// so that it changes in one function instead of eleven.
-//
-// ⚠️ It deliberately takes NO `dir` argument yet. The resolution rule here is
-// today's rule exactly, unchanged, so this lands provably behaviour-neutral; a
-// parameter nothing reads would be a rule nobody enforces.
-//
-// ⚠️ It lives in its own module and requires nothing, because it cannot live in
-// writer.js — writer.js already requires kit.js, and kit.js needs this.
+// ⚠️ It requires nothing, and must not. `writer.js` already requires `kit.js`, so
+// a resolver living in `writer.js` could not be used by `kit.js`.
 
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Where a caller that was given nothing more specific looks. This is the file
- * beside the prototype, which is where every corpus's bindings live today.
- */
-const BINDINGS_FILE = path.join(__dirname, 'bindings.json');
+const SUFFIX = '.bindings.json';
+
+/** Where corpora live when a caller was told nothing more specific. */
+const BEH_DIR = path.join(__dirname, 'behaviours');
 
 /**
- * The resolution rule, in one place. `file` is whatever the caller was told on
- * the command line (`--bindings`), or null/undefined if it was told nothing.
- *
- * Null-defaulting rather than a default parameter value, so that a caller
- * threading an explicit `null` through — which `ui.js` does, to guarantee its
- * read and its write cannot be configured apart — gets the same answer as a
- * caller that passed nothing at all.
+ * The resolution rule, in one place: a corpus's bindings sit beside its `.beh`.
+ * This is the function James's kit#66 decision lives in — everything else just
+ * calls it, which is what claude-code-bot#69 was for.
  */
-function resolve(file) {
-  return file || BINDINGS_FILE;
+function fileFor(app, dir = BEH_DIR) {
+  return path.join(dir, `${app}${SUFFIX}`);
 }
 
 /**
- * Read and parse a bindings file, VERBATIM.
+ * Read one corpus's bindings, VERBATIM.
  *
- * ⚠️ It must not filter the `_comment*` keys, and there are three of them
- * (`_comment`, `_comment_macro_metrics`, `_comment_kit_ui`). They are prose the
- * writer round-trips on every bind, `writer.js:isComment` is what knows to skip
- * them, and `kit.js` is unbothered because it looks nouns up by name. Filtering
- * here would quietly change what gets written back.
+ * ⚠️ It must not filter the `_comment` key. It is prose the writer round-trips on
+ * every bind, `writer.js:isComment` is what knows to skip it, and `kit.js` is
+ * unbothered because it looks nouns up by name. Filtering here would quietly
+ * change what gets written back.
+ *
+ * A missing file returns `{}` — "this corpus binds nothing yet", which is a state
+ * 7 of the 10 corpora are genuinely in, and which the report already renders as
+ * `0/N bound`. It is NOT conflated with an unreadable one: a file that exists and
+ * will not parse still throws, because that is could-not-look.
  */
-function read(file) {
-  return JSON.parse(fs.readFileSync(resolve(file), 'utf8'));
+function readFor(app, dir = BEH_DIR) {
+  const file = fileFor(app, dir);
+  if (!fs.existsSync(file)) return {};
+  return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-module.exports = { BINDINGS_FILE, resolve, read };
+/**
+ * The corpus a behaviour came from. `at` is `<file>:<line>` and is the ONLY
+ * per-behaviour provenance the AST carries — deliberately read here rather than
+ * adding a field, so the parsed shape (and the UI fixtures pinned to it) do not
+ * move for a resolution change.
+ *
+ * ⚠️ Ids are corpus-scoped and DO collide across corpora — `kit.beh` and
+ * `kit-ui.beh` both use `BEH-UI-*` — so a behaviour must never be traced back to
+ * its corpus by id.
+ */
+function corpusOf(behaviour) {
+  const at = behaviour && behaviour.at;
+  if (typeof at !== 'string') return null;
+  const file = at.slice(0, at.lastIndexOf(':'));
+  return file.endsWith('.beh') ? file.slice(0, -'.beh'.length) : null;
+}
+
+/**
+ * Every corpus's bindings in one directory, keyed by app. For a run spanning
+ * several corpora: each behaviour is generated against ITS OWN corpus's map, so
+ * two corpora using one noun name cannot reach each other — by construction,
+ * rather than by a warning nobody reads.
+ */
+function readAll(dir = BEH_DIR) {
+  const out = {};
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir)) {
+    if (!f.endsWith('.beh')) continue;
+    const app = f.slice(0, -'.beh'.length);
+    out[app] = readFor(app, dir);
+  }
+  return out;
+}
+
+module.exports = { SUFFIX, BEH_DIR, fileFor, readFor, readAll, corpusOf };
