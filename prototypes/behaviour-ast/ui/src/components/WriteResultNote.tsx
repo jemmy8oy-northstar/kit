@@ -22,12 +22,21 @@ import type { AnyWriteResult } from '../api/types'
  *
  * ── Two kinds of write, and the difference is not cosmetic ──────────────────
  * A corpus write names a behaviour and touches this app's `.beh`. A BIND names
- * a noun and touches `bindings.json`, which is one flat map over every corpus —
- * so it can have changed what OTHER projects generate, and the response says
- * which. That sentence is rendered here rather than left to the caller: this is
- * the component every write path already uses to report success, and a warning
- * that only appears when someone remembers to add it is the habit the mechanism
- * was built to replace.
+ * a noun and touches this app's `<app>.bindings.json`, beside it.
+ *
+ * ⚠️ THE SENTENCE BELOW USED TO BE AN ALARM AND IS NOW A FACT (kit#66). Bindings
+ * were one flat map over every corpus, so a bind really did change what OTHER
+ * projects generate, and this was the only place anyone would find out. James
+ * ended that: *"Imagine scaled to 1000 projects and 1000 project owners no need
+ * to share nouns."* A bind now reaches one corpus, so the same list means
+ * something weaker and still worth reading — these other projects use the NAME,
+ * and bind it for themselves.
+ *
+ * So it is a `status` rather than an `alert`. An alert for a thing that cannot
+ * happen is how people learn to ignore alerts, and this component's whole job is
+ * that the ones which remain are worth reading. ⚠️ Retiring `sharedWith` outright
+ * would be a bigger change than the one he made — the information still helps
+ * while you are naming things — so the wording moved and the mechanism did not.
  */
 export default function WriteResultNote({ result }: { result: AnyWriteResult }) {
   const bind = 'noun' in result ? result : null
@@ -51,9 +60,9 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
       )}
 
       {bind && bind.sharedWith.length > 0 && (
-        <p role="alert">
-          The noun namespace is global: <code>{bind.noun}</code> is also used by{' '}
-          {bind.sharedWith.join(', ')}, which now generate against this binding too.
+        <p role="status">
+          <code>{bind.noun}</code> is a name also used by {bind.sharedWith.join(', ')}, which bind
+          it separately — this write reaches only this project.
         </p>
       )}
 

@@ -223,9 +223,11 @@ export interface NounRequirement {
   /**
    * The OTHER corpora that reference this same noun name.
    *
-   * `bindings.json` is one flat map over every corpus, so binding a noun here
-   * changes what these generate too. Always an array: "nothing collides" and
-   * "nobody looked" must not both arrive as `undefined`.
+   * ⚠️ It used to mean binding a noun here CHANGED what these generate, because
+   * bindings were one flat map over every corpus. Since kit#66 each corpus binds
+   * its own nouns in `<app>.bindings.json`, so this is a fact about naming and no
+   * longer a hazard. Always an array: "nothing shares this name" and "nobody
+   * looked" must not both arrive as `undefined`.
    */
   sharedWith: string[]
 }
@@ -249,7 +251,7 @@ export interface Requires {
 }
 
 /**
- * A binding value, as `bindings.json` stores it and `emit()` reads it.
+ * A binding value, as `<app>.bindings.json` stores it and `emit()` reads it.
  *
  * Left open rather than a union of the six known shapes. `emit()` is the only
  * definition of which keys mean what, and a closed type here would have to be
@@ -315,10 +317,11 @@ export interface WriteResult extends GitOutcome {
  * What `POST /api/projects/<app>/bindings` returns.
  *
  * Not a `WriteResult`: it names a `noun` rather than a `behaviour`, and it
- * carries the two facts no corpus write has. `sharedWith` is the moment the
- * global namespace stops being a habit — the person who just clicked is the
- * only one who can say whether sharing this noun with those corpora is what
- * they meant, and this is when they are looking.
+ * carries the two facts no corpus write has. `sharedWith` used to be the moment
+ * the global namespace stopped being a habit — under one flat map, the person
+ * who just clicked was the only one who could say whether sharing the noun with
+ * those corpora was what they meant. kit#66 removed the sharing, so it now
+ * reports which other projects use the same NAME and bind it themselves.
  */
 export interface BindResult extends GitOutcome {
   ok: true
@@ -339,7 +342,7 @@ export interface BindResult extends GitOutcome {
  * A union rather than a common base with `subject: string`, because the two
  * results genuinely differ in more than a name — a bind carries `sharedWith`
  * and a corpus write cannot — and flattening them would let a component render
- * a bind without its namespace warning and still typecheck. Narrow on `'noun'
+ * a bind without its shared-name note and still typecheck. Narrow on `'noun'
  * in result` where the difference matters.
  */
 export type AnyWriteResult = WriteResult | BindResult
