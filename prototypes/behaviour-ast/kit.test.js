@@ -1032,6 +1032,88 @@ test('parseArgs: two app names is a refusal, not a silent first-one-wins', () =>
   assert.ok(check.parseArgs(['a', 'b', '--repo', 'x']).error, 'two positionals must refuse');
 });
 
+section('kit.js\'s own CLI: the flags it does not have, it used to accept');
+const { parseCliArgs } = require('./kit');
+
+test('parseCliArgs: an unknown flag refuses and NAMES it, rather than being dropped', () => {
+  // ⚠️ THE FLAG IS LAST, WITH NO VALUE AFTER IT, and the assertion is on the
+  // REASON — the same trap as `--behaviours` above ([[an-exit-code-two-rules-produce]]).
+  // Written as `['kit', '--dir', '/elsewhere']` this test would pass with the
+  // guard deleted: `/elsewhere` becomes a second corpus name and "two corpus
+  // names" refuses too. With nothing after it there is no second rule to hide
+  // behind — delete the guard and `only` is 'kit' with no error at all, which is
+  // precisely the old behaviour: a full report on Kit's own corpus.
+  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, 'unknown option --dir');
+  // Both arrangements pinned anyway, because the value-carrying form is the one
+  // a human actually types after reading check.js's docs.
+  assert.strictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']).error, 'unknown option --dir');
+  // A single-dash typo is not a corpus name either. `-h` aside, nothing here
+  // takes short flags, so `-dir` must refuse rather than become a positional.
+  assert.strictEqual(parseCliArgs(['-dir']).error, 'unknown option -dir');
+});
+
+test('parseCliArgs: --help is answered, and asking for help is not an error', () => {
+  for (const flag of ['--help', '-h']) {
+    const r = parseCliArgs([flag]);
+    assert.strictEqual(r.help, true, `${flag} did not ask for help`);
+    assert.strictEqual(r.error, undefined, `${flag} was treated as an error`);
+  }
+});
+
+test('parseCliArgs: --rev with nothing after it refuses rather than eating the next flag', () => {
+  assert.strictEqual(parseCliArgs(['kit', '--rev']).error, '--rev needs a value');
+  assert.strictEqual(parseCliArgs(['--rev', '--help']).error, '--rev needs a value');
+});
+
+test('parseCliArgs: a corpus named the same as the rev is still found', () => {
+  // The old form was `argv.find((a) => !a.startsWith('--') && a !== rev)`, which
+  // excluded every argument whose STRING equalled the rev — so this call found no
+  // corpus at all and silently reported on all ten instead of the one asked for.
+  assert.deepStrictEqual(parseCliArgs(['kit', '--rev', 'kit']),
+    { sheet: false, only: 'kit', rev: 'kit', help: false });
+});
+
+test('parseCliArgs: sheet is a subcommand in first position and a corpus name anywhere else', () => {
+  assert.strictEqual(parseCliArgs(['sheet', 'kit']).sheet, true);
+  assert.strictEqual(parseCliArgs(['sheet', 'kit']).only, 'kit');
+  // Not a subcommand here: a corpus really called "sheet" must stay reachable.
+  assert.strictEqual(parseCliArgs(['kit', 'sheet']).error,
+    'two corpus names given, "kit" and "sheet" — this reports on one');
+  assert.strictEqual(parseCliArgs(['sheet']).sheet, true);
+});
+
+test('parseCliArgs: two corpus names is a refusal, not a silent first-one-wins', () => {
+  assert.strictEqual(parseCliArgs(['a', 'b']).error,
+    'two corpus names given, "a" and "b" — this reports on one');
+});
+
+test('kit.js refuses a corpus that parses to zero behaviours, instead of reporting NaN%', () => {
+  // ⚠️ SPAWNED, not called: this guard lives in the `require.main === module`
+  // block, which a `require` of this module deliberately does not run. The corpus
+  // has to go in `behaviours/` because that path is `__dirname`-bound — which is
+  // kit#66's subject — so it is removed in a `finally` and its absence asserted.
+  // A stray `.beh` here would change what `saturation.js` and `check.js` measure
+  // ([[a-directory-is-a-population]]).
+  const probe = pathx.join(__dirname, 'behaviours', 'zz-empty-probe.beh');
+  let r;
+  try {
+    // A header comment and nothing else: the natural first keystroke of someone
+    // starting a corpus, and previously answered with a table of zeros ending
+    // `generated / total 0/0 = NaN%`.
+    fsx.writeFileSync(probe, '# a project I have just started\n');
+    r = require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'kit.js'), 'zz-empty-probe'], { encoding: 'utf8' });
+  } finally {
+    fsx.rmSync(probe, { force: true });
+  }
+  assert.strictEqual(fsx.existsSync(probe), false, 'the probe corpus was left in behaviours/');
+  assert.strictEqual(r.status, 2, `stdout: ${r.stdout}`);
+  assert.ok(r.stderr.includes('parsed to 0 behaviours'), `stderr: ${r.stderr}`);
+  // The point of the refusal: no report at all, rather than a report of zeros.
+  assert.ok(!r.stdout.includes('NaN'), `NaN still reaches the reader: ${r.stdout}`);
+  assert.strictEqual(r.stdout, '', `a refused run still printed a report: ${r.stdout}`);
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 

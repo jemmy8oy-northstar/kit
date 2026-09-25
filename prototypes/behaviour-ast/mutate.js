@@ -321,6 +321,27 @@ MUTANTS.push(
     "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
     "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
     'kit.js'],
+  // kit.js's own CLI. The first of these is the defect as it actually shipped:
+  // every `--flag` this tool does not know was dropped in silence, so
+  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing.
+  // The rest are the guards written alongside it (#67).
+  ['an unknown flag goes back to being silently dropped, so --dir reports on the wrong corpus',
+    "    } else if (a.startsWith('-')) {\n      return { error: `unknown option ${a}` };\n",
+    '    } else if (a.startsWith(\'-\')) {\n      continue;\n', 'kit.js'],
+  ['--help stops being recognised, so asking for help runs the whole report',
+    "    if (a === '--help' || a === '-h') {\n      opts.help = true;\n    } else if (CLI_VALUE_FLAGS.has(a)) {",
+    '    if (CLI_VALUE_FLAGS.has(a)) {', 'kit.js'],
+  ['a value flag at the end eats the following flag instead of refusing',
+    'if (v === undefined || v.startsWith(\'--\')) return { error: `${a} needs a value` };',
+    'if (v === undefined) return { error: `${a} needs a value` };', 'kit.js'],
+  ['`sheet` is detected in last position rather than first, so the subcommand and the corpus swap',
+    "if (argv[0] === 'sheet') { opts.sheet = true; i = 1; }",
+    "if (argv[argv.length - 1] === 'sheet') { opts.sheet = true; i = 1; }", 'kit.js'],
+  // The NaN: a corpus that parses to nothing used to render a full report whose
+  // every number was 0 and whose last one was not a number.
+  ['a corpus that parses to zero behaviours is reported on instead of refused',
+    '  if (!behaviours.length) {\n    console.error(`cannot look: ${files.join(\', \')} parsed to 0 behaviours — nothing to report on yet`);\n    process.exit(2);\n  }\n',
+    '', 'kit.js'],
   // selfhost/run.js — the harness that executes Kit's own output. Every mutant
   // here is reachable WITHOUT a browser, on purpose: the parts that need one
   // are gated by `--check`, which is a manual run, so anything only a browser

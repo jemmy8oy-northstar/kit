@@ -1170,11 +1170,60 @@ function boundNouns(behaviours, bindings) {
   return { referenced, bound: bound.length };
 }
 
+const CLI_VALUE_FLAGS = new Set(['--rev']);
+const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
+
+// 🔑 EVERY UNKNOWN FLAG IS A REFUSAL, never a silent drop. This is `check.js:90`'s
+// rule, arriving at the one entry point that never had it.
+//
+// The old scan was `argv.find((a) => !a.startsWith('--') && a !== rev)`, which
+// throws away anything beginning `--` without ever asking whether it was a flag
+// this tool has. `--dir` is the flag that makes it bite: `check.js` gained it in
+// kit#63 and `ui.js`, `project.js`, `writer.js` and `saturation.js` all take it,
+// so a reader who has seen any of them — or `docs/design/tagging.md` — types
+// `node kit.js kit --dir /elsewhere` and gets a confident 26-behaviour report
+// about Kit's own corpus. Nothing in the output says the flag was ignored.
+//
+// ⚠️ Whether `kit.js` should GAIN `--dir` is kit#66 and is James's: a relocated
+// corpus takes the noun namespace out of the only directory `sharedWith` can
+// see. This makes its absence loud; it does not pre-empt the answer.
+//
+// Scans positionally rather than `indexOf`, for `check.js:84-88`'s reason: the
+// index of a VALUE is the first index holding that string, so a corpus named the
+// same as the rev made the corpus unfindable. The old `a !== rev` had exactly
+// that bug, plus a second — a trailing `--rev` left `rev` undefined, and every
+// argument then compared unequal to it.
+function parseCliArgs(argv) {
+  const opts = { sheet: false, only: null, rev: '', help: false };
+  let i = 0;
+  // `sheet` is a subcommand, so it is only a subcommand in first position —
+  // a corpus that happened to be called "sheet" anywhere else stays a corpus.
+  if (argv[0] === 'sheet') { opts.sheet = true; i = 1; }
+  for (; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--help' || a === '-h') {
+      opts.help = true;
+    } else if (CLI_VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+      opts.rev = v;
+      i++;
+    } else if (a.startsWith('-')) {
+      return { error: `unknown option ${a}` };
+    } else if (opts.only === null) {
+      opts.only = a;
+    } else {
+      return { error: `two corpus names given, "${opts.only}" and "${a}" — this reports on one` };
+    }
+  }
+  return opts;
+}
+
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
-  UNGENERATED_ANNOTATION,
+  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE,
 };
 
 // ─────────────────────────── cli ───────────────────────────
@@ -1189,22 +1238,40 @@ if (require.main === module) {
   // Separate mode rather than another block of output: the sheet is a document
   // someone opens, and a document with a coverage table stapled to the top is a
   // document nobody finishes.
-  const sheetMode = process.argv[2] === 'sheet';
-  const argv = process.argv.slice(sheetMode ? 3 : 2);
   // `--rev` records WHICH revision of the app the corpus was read from, which is
   // the only provenance a reader can check. Deliberately no timestamp: the
   // committed sheet is asserted byte-identical to this output, and a wall-clock
   // date would make it differ every day for no reader's benefit — which is the
   // kind of drift that gets a failing check deleted rather than fixed.
-  const revArg = argv.findIndex((a) => a === '--rev');
-  const rev = revArg >= 0 ? argv[revArg + 1] : '';
-  const only = argv.find((a) => !a.startsWith('--') && a !== rev);
+  const cli = parseCliArgs(process.argv.slice(2));
+  if (cli.error) {
+    console.error(`cannot look: ${cli.error}`);
+    console.error(CLI_USAGE);
+    process.exit(2);
+  }
+  // Help is answered before anything is read, so `--help` works in a directory
+  // whose corpus does not parse. It exits 0: asking for help is not an error.
+  if (cli.help) { console.log(CLI_USAGE); process.exit(0); }
+  const { sheet: sheetMode, only, rev } = cli;
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
     .filter((f) => !only || f.includes(only));
   if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
   const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
   const { behaviours, conflicts, symbols } = resolve(all);
+
+  // ⚠️ REFUSE, rather than report a table of zeros ending `0/0 = NaN%`. Both
+  // siblings already do — `check.js:138` and `project.js:72` — and this is the
+  // FIRST-RUN case, not an exotic one: writing a header comment before the first
+  // `behaviour` block is a natural first keystroke, and the answer to it was a
+  // full report whose every number was 0 and whose last one was not a number.
+  //
+  // A file that exists and parses to nothing is a different statement from no
+  // file at all, so it gets its own message naming the files read.
+  if (!behaviours.length) {
+    console.error(`cannot look: ${files.join(', ')} parsed to 0 behaviours — nothing to report on yet`);
+    process.exit(2);
+  }
 
   if (sheetMode) {
     // A sheet built from a corpus that fails its own link check would present
