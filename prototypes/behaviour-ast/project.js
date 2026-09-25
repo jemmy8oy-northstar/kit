@@ -85,7 +85,7 @@ function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {
   // Kept as an explicit null-defaulting parameter rather than a mutable module
   // constant so the two paths are impossible to configure apart again — `ui.js`
   // passes the same value to both.
-  const bindings = JSON.parse(fs.readFileSync(bindingsFile || path.join(__dirname, 'bindings.json'), 'utf8'));
+  const bindings = require('./bindings.js').read(bindingsFile);
 
   // The output pane: one generated test per behaviour, with what it could not
   // bind. This is the half of his loop that is "iterating on the output".

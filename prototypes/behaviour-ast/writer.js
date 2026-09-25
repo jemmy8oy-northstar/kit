@@ -54,7 +54,10 @@ const path = require('path');
 const { parse, parseStep, nounsOf } = require('./kit.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
-const BINDINGS_FILE = path.join(__dirname, 'bindings.json');
+// Re-exported rather than re-derived: `bindings.js` is the one place that answers
+// where a corpus's bindings live, and a second `path.join` here would be a second
+// answer waiting to drift from it (kit#66).
+const { BINDINGS_FILE } = require('./bindings.js');
 
 /** The indentation every corpus uses for a step line under its behaviour header. */
 const INDENT = '  ';

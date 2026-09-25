@@ -333,7 +333,7 @@ function main(argv) {
 
   const behaviours = parse(fs.readFileSync(corpus, 'utf8'));
   resolve(behaviours); // fills each step's `resolved`, which `fills` needs
-  const bindings = JSON.parse(fs.readFileSync(path.join(__dirname, 'bindings.json'), 'utf8'));
+  const bindings = require('./bindings.js').read(null);
   const report = requirements(behaviours, bindings);
 
   if (asJson) {
