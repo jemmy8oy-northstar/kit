@@ -2474,6 +2474,32 @@ test('available coverage reports a number — the control for null-not-zero', ()
   assert.ok(withRepo.coverage.covered > 0);
 });
 
+test('a --repos with no checkout for this app names the path it looked for, not the absent flag', () => {
+  // Found by an author with no prior context driving the real UI, and it is the
+  // THIRD state this pair of controls never had: `repos` given, and no checkout
+  // for THIS app underneath it. `repoFor` used to collapse it into the same
+  // `null` that "nothing was given" produces, so both arrived at
+  // project.js's default sentence — and that sentence tells you to pass a flag
+  // you just passed. It is not a log line: `CoverageBadge` renders it as the
+  // tooltip on `not measured`, so it is the only explanation a user ever gets
+  // ([[empty-means-two-things]]).
+  const dir = pathx.join(__dirname, 'behaviours');
+  const noCheckouts = fixture({ 'unrelated.txt': 'a repos dir with no app checkouts in it\n' });
+
+  const missing = ui.summary('kit', { dir, repos: noCheckouts });
+  assert.strictEqual(missing.coverage.available, false);
+  assert.ok(!/no --repo given/.test(missing.coverage.reason),
+    `a repos dir WAS given, so the reason must not blame its absence: ${missing.coverage.reason}`);
+  assert.ok(missing.coverage.reason.includes(pathx.join(noCheckouts, 'kit')),
+    `the reason must name the path it looked for: ${missing.coverage.reason}`);
+
+  // CONTROL, and the half that keeps the fix honest: when the flag genuinely is
+  // absent, the sentence blaming its absence is the correct one and must stay.
+  const none = ui.summary('kit', { dir, repos: null });
+  assert.ok(/no --repo given/.test(none.coverage.reason),
+    `CONTROL: with no repos dir at all the absent-flag reason is right: ${none.coverage.reason}`);
+});
+
 test('a corpus that will not parse is reported as an error, not as zero behaviours', () => {
   const broken = fixture({ 'broken.beh': 'when opens page:Home\n' });
   const r = ui.route('GET', '/api/projects', { dir: broken });

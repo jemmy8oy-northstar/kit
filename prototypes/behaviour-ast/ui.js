@@ -175,8 +175,20 @@ function corpora(dir = BEH_DIR) {
  */
 function repoFor(app, reposDir) {
   if (!reposDir) return null;
-  const candidate = path.join(reposDir, app);
-  return fs.existsSync(candidate) ? candidate : null;
+  // 🔴 The candidate is returned whether or not it exists, and that is the whole
+  // point. This used to `return fs.existsSync(candidate) ? candidate : null`,
+  // which threw away the one fact the caller needed: `project.js` cannot tell
+  // `null`-because-nothing-was-given from `null`-because-this-app-has-no-checkout,
+  // so it fell through to "no --repo given, so no test files were read" — a
+  // sentence that is FALSE for a user who passed `--repos` and is shown to them
+  // as the tooltip on `not measured`.
+  //
+  // Measured on this tree with `--repos /data/repos`: five of ten corpora
+  // (kit-ui, longlist, trial-habits-a, trial-habits-b, trial-lend) blamed the
+  // absent flag. `project.js` already has the right sentence for a path that is
+  // not there, one branch below the one they were landing in, so handing it the
+  // path is a deletion rather than a new message ([[empty-means-two-things]]).
+  return path.join(reposDir, app);
 }
 
 /**
