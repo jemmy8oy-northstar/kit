@@ -463,6 +463,15 @@ MUTANTS.push(
     ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
   ['a corpus that will not parse is listed as an app with no behaviours',
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
+  // The sibling of the rule two mutants above, one layer further out: rule 4
+  // says unavailable is never zero, and this says an unavailable must not blame
+  // the wrong cause. Discarding the candidate path collapses "no --repos was
+  // given" into "this app has no checkout under the one you gave", and the
+  // second is then reported as the first — to the user, as the tooltip on
+  // `not measured`.
+  ['a missing checkout is reported as a missing --repos flag',
+    '  return path.join(reposDir, app);',
+    '  const c = path.join(reposDir, app);\n  return fs.existsSync(c) ? c : null;', 'ui.js'],
 );
 
 // ui, serving the built bundle (rules 5–7). Every mutant here makes the server
