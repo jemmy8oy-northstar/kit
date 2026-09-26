@@ -4334,6 +4334,17 @@ test('marker: ownerAlive says FALSE for a process that has certainly exited', ()
   }
 });
 
+// 🔴 The branch that fails OPEN, and the only one no real process here can
+// produce: every pid in this container shares one uid, so `kill(pid, 0)` never
+// raises EPERM and the mapping went unmeasured. EPERM means "it exists and is
+// someone else's" — alive. Reading it as dead would recover over a live run
+// owned by another user, and would look exactly this green.
+test('marker: ownerAlive treats EPERM as ALIVE — it exists, it is just not ours', () => {
+  const raising = (code) => () => { const e = new Error(code); e.code = code; throw e; };
+  assert.strictEqual(ownerAlive(4242, raising('EPERM')), true, 'EPERM is alive, not dead');
+  assert.strictEqual(ownerAlive(4242, raising('ESRCH')), false, 'ESRCH is the only "no such process"');
+});
+
 // ── the marker's git status is itself a rule, and it has TWO sides ──────────
 //
 // Everything above tests the marker's behaviour. These two test its *place in

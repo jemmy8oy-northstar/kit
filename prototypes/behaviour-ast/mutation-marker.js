@@ -57,12 +57,18 @@ const ORIGINALS = '--- pristine originals below (JSON) — `--recover` restores 
  * live run's next file with nothing left to restore it from. The originals stay
  * in the marker either way, so nothing is lost by stopping.
  */
-function ownerAlive(pid) {
+function ownerAlive(pid, kill = (p) => process.kill(p, 0)) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
-    process.kill(pid, 0);
+    kill(pid);
     return true;
   } catch (e) {
+    // ⚠️ `EPERM` is the FAIL-OPEN branch and the reason `kill` is injectable at
+    // all. Every process in the container this runs in shares one uid, so no
+    // control here can produce a foreign-uid pid — the branch was unreachable,
+    // and "return false" would look just as green while recovering over a live
+    // run owned by someone else. Injecting the syscall is what lets it be tested
+    // rather than reasoned about.
     return e.code === 'EPERM';
   }
 }
