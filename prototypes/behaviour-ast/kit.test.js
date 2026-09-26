@@ -1087,6 +1087,168 @@ test('parseCliArgs: two corpus names is a refusal, not a silent first-one-wins',
     'two corpus names given, "a" and "b" — this reports on one');
 });
 
+section('a corpus NAME that names two corpora');
+const { selectCorpora } = require('./kit');
+
+// The directory as it stands, so these read as the real ambiguities rather than
+// invented ones. Non-`.beh` entries included on purpose: the filter used to be
+// two chained `.filter`s and one of them did this job.
+const DIR_LISTING = ['kit.beh', 'kit-ui.beh', 'james-habits-app.beh',
+  'trial-habits-a.beh', 'trial-habits-b.beh', 'trial-lend.beh', 'bindings.json', 'README.md'];
+
+test('selectCorpora: an EXACT corpus name wins over the substring it is a prefix of', () => {
+  // THE FINDING. `node kit.js kit` matched kit.beh AND kit-ui.beh and reported
+  // one merged block over both — 26 behaviours and 20/126 = 16%, against
+  // kit.beh's own 20 and 0/96 = 0%. kit.beh's ZERO derived lines is the whole
+  // reason kit-ui.beh exists as a separate corpus, so the most natural command
+  // in Kit's own repo was erasing the evidence it was written to preserve.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit'), { files: ['kit.beh'] });
+  // Not a prefix rule and not a "shortest match" rule — an exact-filename rule.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit-ui'), { files: ['kit-ui.beh'] });
+});
+
+test('selectCorpora: a name that matches two corpora REFUSES and names every candidate', () => {
+  // ⚠️ The assertion is on the REASON and on the candidate list, not just on
+  // "there is an error" — `trial` and a misspelling both produce an error, and
+  // only one of them produces three names ([[an-exit-code-two-rules-produce]]).
+  const r = selectCorpora(DIR_LISTING, 'trial');
+  assert.strictEqual(r.kind, 'ambiguous');
+  assert.deepStrictEqual(r.files, [], 'a refusal must select nothing');
+  assert.match(r.error, /"trial" names 3 corpora — trial-habits-a, trial-habits-b, trial-lend/);
+  // The reason, in the message, because the reader has to choose: this is
+  // kit.js's own stated rule for why the filter exists at all.
+  assert.match(r.error, /tells you about neither/);
+  // Two is the same rule as three. `trial-habits` is the pair a reader reaches
+  // for when they mean "both habits trials", which is exactly the merge.
+  assert.strictEqual(selectCorpora(DIR_LISTING, 'trial-habits').kind, 'ambiguous');
+});
+
+test('selectCorpora: a UNIQUE substring still resolves — the old spellings keep working', () => {
+  // Regression guard, and not a hypothetical one: `kit.test.js`'s own
+  // remediation message tells a human to run `node kit.js sheet james-habits`,
+  // and `node kit.js kit.beh` is how the merged report was worked around.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'james-habits'), { files: ['james-habits-app.beh'] });
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit.beh'), { files: ['kit.beh'] });
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'lend'), { files: ['trial-lend.beh'] });
+});
+
+test('selectCorpora: no name reports on everything, and only on .beh files', () => {
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, null).files,
+    DIR_LISTING.filter((f) => f.endsWith('.beh')));
+  // `kind` distinguishes the two refusals so a caller can word them apart: only
+  // "nothing is there" wants the directory named.
+  assert.strictEqual(selectCorpora(DIR_LISTING, 'zznope').kind, 'none');
+  assert.match(selectCorpora(DIR_LISTING, 'zznope').error, /no corpus matching "zznope"/);
+});
+
+test('node kit.js kit reports on kit.beh ALONE, and kit-ui.beh is nowhere in it', () => {
+  // ⚠️ SPAWNED and over the REAL corpora, because the rule that mattered lives
+  // in the `require.main === module` block and the defect was only ever visible
+  // end-to-end. Asserted against kit.beh's own parsed count rather than the
+  // literal 20, so adding a behaviour to kit.beh does not fail this for the
+  // wrong reason — but a corpus named `kit-*` rejoining the report does.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8');
+  const own = resolve(parse(src, 'kit.beh')).behaviours;
+  const r = require('child_process').spawnSync(
+    'node', [pathx.join(__dirname, 'kit.js'), 'kit'], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+  assert.match(r.stdout, new RegExp(`behaviours\\s+${own.length}\\b`),
+    `the report did not say ${own.length} behaviours — kit-ui.beh is being folded in again`);
+  // The discriminator, and the one that cannot be satisfied by a coincidence of
+  // counts: kit-ui.beh's ids are emitted as test titles when it is in the
+  // population, so their absence is proof of the population, not of a number.
+  //
+  // ⚠️ `BEH-ADJ-1` is deliberately NOT in this list. It is the one id the two
+  // corpora SHARE, so it appears either way and asserting on it fails a correct
+  // fix — which is how it was caught here, by failing first.
+  for (const id of ['BEH-LIST-1', 'BEH-SHEET-1', 'BEH-PAIR-1', 'BEH-ADJ-2', 'BEH-STEP-1']) {
+    assert.ok(!r.stdout.includes(id), `${id} is from kit-ui.beh and reached a report about kit`);
+  }
+});
+
+test('selectCorpora: an EMPTY name is a refusal, not "you gave me no name"', () => {
+  // ⚠️ `only == null`, not `!only`. The first draft used `!only`, so
+  // `node kit.js ""` reported **133 behaviours merged across all ten corpora** —
+  // the exact failure this function exists to prevent, through a different door.
+  // `node kit.js "$CORPUS"` with `CORPUS` unset is how a script walks into it.
+  const r = selectCorpora(DIR_LISTING, '');
+  assert.strictEqual(r.kind, 'empty');
+  assert.deepStrictEqual(r.files, []);
+  assert.match(r.error, /an empty corpus name was given/);
+  // The control: no name at all is still the deliberate aggregate, and the two
+  // must not collapse back into one branch.
+  assert.strictEqual(selectCorpora(DIR_LISTING, null).error, undefined);
+  assert.strictEqual(selectCorpora(DIR_LISTING, undefined).error, undefined);
+});
+
+test('a REFUSED `node kit.js <name>` exits 2, says why, and prints no report', () => {
+  // ⚠️ SPAWNED, and this test exists because a unit test on `selectCorpora` is
+  // not a test of the CLI. Replacing the whole `if (picked.error)` block in the
+  // `require.main` section with `process.exit(0)` left all 346 tests GREEN: the
+  // rule was covered and the wiring that turns it into an exit code and a
+  // sentence a user reads was covered by nothing ([[passing-is-not-gating]]).
+  const run = (arg) => require('child_process').spawnSync(
+    'node', [pathx.join(__dirname, 'kit.js'), arg], { encoding: 'utf8', maxBuffer: 1 << 26 });
+
+  const amb = run('trial');
+  assert.strictEqual(amb.status, 2, `an ambiguous name must exit 2; stdout: ${amb.stdout}`);
+  assert.match(amb.stderr, /"trial" names 3 corpora — trial-habits-a, trial-habits-b, trial-lend/);
+  assert.strictEqual(amb.stdout, '', `a refused run printed a report anyway: ${amb.stdout}`);
+  // ⚠️ The directory path belongs to "nothing is there", NOT to "that names
+  // three things" — the first version of this stapled a path onto the end of a
+  // sentence about candidates, and it read as a sentence about the directory.
+  assert.ok(!amb.stderr.includes(__dirname), `the ambiguity message named a directory: ${amb.stderr}`);
+
+  const none = run('zznope');
+  assert.strictEqual(none.status, 2, `an unmatched name must exit 2; stdout: ${none.stdout}`);
+  assert.match(none.stderr, /no corpus matching "zznope"/);
+  assert.ok(none.stderr.includes('behaviours'), `"nothing is there" must say where it looked: ${none.stderr}`);
+
+  const empty = run('');
+  assert.strictEqual(empty.status, 2, `an empty name must exit 2; stdout: ${empty.stdout}`);
+  assert.match(empty.stderr, /an empty corpus name was given/);
+  assert.strictEqual(empty.stdout, '', `an empty name still produced a report: ${empty.stdout}`);
+});
+
+test('the merge `node kit.js kit` used to do gave one id to two behaviours', () => {
+  // 🔑 WHY THE MERGE WAS WORSE THAN A WRONG PERCENTAGE. `kit.beh` and
+  // `kit-ui.beh` both define BEH-ADJ-1 — legitimately, because they are two
+  // corpora for two different surfaces and nothing joins them. Folding them into
+  // one population makes one id name two behaviours with different titles, and
+  // `resolve()` reports 0 conflicts over it.
+  //
+  // `writer.js` REFUSES to append a behaviour whose id a corpus already holds
+  // (`mutate.js` carries the mutant for it), so Kit holds this rule within a
+  // file and the CLI's name resolution was manufacturing a breach across two.
+  // That is what makes `selectCorpora` a correctness fix rather than a tidier
+  // number: ids are how `serves`, the sheet and every adjudication are keyed.
+  const merged = ['kit.beh', 'kit-ui.beh'].flatMap((f) =>
+    parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours', f), 'utf8'), f));
+  const { behaviours } = resolve(merged);
+  const dupes = behaviours.map((b) => b.id).filter((id, i, a) => a.indexOf(id) !== i);
+  assert.deepStrictEqual(dupes, ['BEH-ADJ-1'],
+    'the shared id is the evidence for this test — if it is gone, the test no longer shows anything');
+  // And the two really are different behaviours, not one file read twice
+  // ([[hash-the-artefacts-you-compare]]).
+  const titles = new Set(behaviours.filter((b) => b.id === 'BEH-ADJ-1').map((b) => b.title));
+  assert.strictEqual(titles.size, 2, `one id, one title — nothing was being conflated: ${[...titles]}`);
+});
+
+test('saturation.js resolves a corpus name by kit.js\'s rule, not its own copy', () => {
+  // This file carried a byte-identical `f.includes(only)`, and every number it
+  // prints is an AGGREGATE over the population that filter chose — so a silent
+  // merge here is worse than in kit.js, not better. The import is the point:
+  // asserting the shared behaviour is what stops the two drifting apart again.
+  const sat = require('./saturation');
+  const logs = [];
+  const err = console.error;
+  console.error = (...a) => logs.push(a.join(' '));
+  let code;
+  try { code = sat.main(['trial']); } finally { console.error = err; }
+  assert.strictEqual(code, 2, 'an ambiguous --only must be "could not look", not an empty study');
+  assert.match(logs.join('\n'), /"trial" names 3 corpora/);
+});
+
 test('kit.js refuses a corpus that parses to zero behaviours, instead of reporting NaN%', () => {
   // ⚠️ SPAWNED, not called: this guard lives in the `require.main === module`
   // block, which a `require` of this module deliberately does not run. The corpus

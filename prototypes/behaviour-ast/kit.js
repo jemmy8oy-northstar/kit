@@ -1173,6 +1173,86 @@ function boundNouns(behaviours, bindings) {
 const CLI_VALUE_FLAGS = new Set(['--rev']);
 const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
 
+// 🔑 A NAME THAT NAMES TWO CORPORA IS A REFUSAL, never a silent merge.
+//
+// The old filter was `f.includes(only)` — a substring test — and the rule it
+// breaks is written eleven lines below it, in the comment that justifies the
+// filter's existence: *"a measurement averaged over two unrelated corpora tells
+// you about neither."* `node kit.js kit` matched `kit.beh` AND `kit-ui.beh` and
+// reported one merged block over both:
+//
+//              node kit.js kit     kit.beh alone
+//   behaviours           26                  20
+//   nouns bound       16/59                0/43
+//   generated/total 20/126 = 16%       0/96 = 0%
+//
+// ⚠️ `kit.beh`'s **0 derived** is load-bearing evidence — it is why `kit-ui.beh`
+// exists as a separate corpus at all — and the most natural command in Kit's own
+// repo turned it into 16% without a word. The conflation had already been
+// written into this file as though 26 were one corpus: the `parseCliArgs` comment
+// below described "a confident 26-behaviour report about Kit's own corpus", and
+// that sentence is corrected in the same commit as this one — which is why it is
+// quoted here from its own historical note rather than cited by line.
+//
+// ⚠️ An earlier draft of this paragraph cited `kit.js:1184` in the present tense
+// for that sentence. Both halves were wrong: the line number was this comment's
+// own table, and the sentence had been deleted by this very change. A citation
+// into the file you are editing goes stale as you edit it — quote, or point at a
+// function by name.
+//
+// The rule, in the order it resolves:
+//   1. an EXACT corpus name wins. `node kit.js kit` means `kit.beh`, because a
+//      name that IS a corpus name names that corpus. Refusing it would be
+//      pedantry and would leave Kit's own corpus with no way to be asked for.
+//   2. otherwise a unique substring resolves, unchanged — `james-habits` and
+//      `kit.beh` both still work, and `kit.test.js:566`'s paste-able remediation
+//      line is one of those.
+//   3. otherwise REFUSE and name the candidates. `node kit.js trial` names three
+//      trials, and picking one of them silently is the defect above.
+//
+// Returns `{ files }` or `{ files: [], error }` rather than exiting, so it is
+// testable without a subprocess and so both callers word their own exit.
+// Exported because `saturation.js:184` carries the identical filter, for the
+// reason `nounsOf` states above: two copies of a rule are two things free to
+// drift. ⚠️ `requires.js:328` and `writer.js:597` resolve a corpus name
+// EXACTLY and `ui.js:406` by membership — three rules in one toolkit, and the
+// two that substring-matched are the two that print aggregates.
+function selectCorpora(files, only) {
+  const beh = files.filter((f) => f.endsWith('.beh'));
+  // ⚠️ `only == null`, NOT `!only`. An empty string is a name that was GIVEN and
+  // is empty, which is a different statement from no name at all — and the first
+  // draft of this function conflated them, so `node kit.js ""` reported 133
+  // behaviours merged across all ten corpora. That is precisely the failure this
+  // function exists to prevent, reached through a different door, and
+  // `node kit.js "$CORPUS"` with `CORPUS` unset is how a script walks into it.
+  if (only === null || only === undefined) return { files: beh };
+  if (only === '') {
+    return {
+      files: [],
+      kind: 'empty',
+      error: 'an empty corpus name was given — name one, or pass no name at all to report on every corpus',
+    };
+  }
+  const exact = beh.filter((f) => f === `${only}.beh`);
+  if (exact.length) return { files: exact };
+  const matches = beh.filter((f) => f.includes(only));
+  // `kind` so a caller can word its own message. "nothing is there" wants the
+  // directory named — it is a where-did-you-look answer; "that names three
+  // things" must NOT have a path stapled to the end of it, which is what the
+  // first version of this did and it read as a sentence about the directory.
+  if (!matches.length) return { files: [], kind: 'none', error: `no corpus matching "${only}"` };
+  if (matches.length > 1) {
+    const names = matches.map((f) => f.replace(/\.beh$/, '')).join(', ');
+    return {
+      files: [],
+      kind: 'ambiguous',
+      error: `"${only}" names ${matches.length} corpora — ${names}. ` +
+        'Name one: a measurement merged over unrelated corpora tells you about neither',
+    };
+  }
+  return { files: matches };
+}
+
 // 🔑 EVERY UNKNOWN FLAG IS A REFUSAL, never a silent drop. This is `check.js:90`'s
 // rule, arriving at the one entry point that never had it.
 //
@@ -1181,8 +1261,13 @@ const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
 // this tool has. `--dir` is the flag that makes it bite: `check.js` gained it in
 // kit#63 and `ui.js`, `project.js`, `writer.js` and `saturation.js` all take it,
 // so a reader who has seen any of them — or `docs/design/tagging.md` — types
-// `node kit.js kit --dir /elsewhere` and gets a confident 26-behaviour report
-// about Kit's own corpus. Nothing in the output says the flag was ignored.
+// `node kit.js kit --dir /elsewhere` and gets a confident report about Kit's own
+// corpus. Nothing in the output says the flag was ignored.
+//
+// ⚠️ This comment used to say "a confident 26-behaviour report about Kit's own
+// corpus". 26 was never Kit's own corpus: `kit.beh` has 20, and the substring
+// filter this file used to carry was folding `kit-ui.beh` in. `selectCorpora`
+// below is why the number in that sentence is now 20 and why it is not quoted.
 //
 // ⚠️ Whether `kit.js` should GAIN `--dir` is kit#66 and is James's: a relocated
 // corpus takes the noun namespace out of the only directory `sharedWith` can
@@ -1223,7 +1308,7 @@ module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
-  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE,
+  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, selectCorpora,
 };
 
 // ─────────────────────────── cli ───────────────────────────
@@ -1253,9 +1338,18 @@ if (require.main === module) {
   // whose corpus does not parse. It exits 0: asking for help is not an error.
   if (cli.help) { console.log(CLI_USAGE); process.exit(0); }
   const { sheet: sheetMode, only, rev } = cli;
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
-    .filter((f) => !only || f.includes(only));
-  if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
+  const picked = selectCorpora(fs.readdirSync(dir), only);
+  if (picked.error) {
+    // The `kind` check is what stops "that names three corpora" acquiring a
+    // directory path it is not about. ⚠️ Held by a SPAWNED test, not a unit one:
+    // replacing this whole block with `process.exit(0)` left all 346 tests green
+    // — `selectCorpora` was covered and the wiring that turns its refusal into an
+    // exit code and a sentence was covered by nothing.
+    console.error(`cannot look: ${picked.error}${picked.kind === 'none' ? ` in ${dir}` : ''}`);
+    process.exit(2);
+  }
+  const files = picked.files;
+  if (!files.length) { console.error(`cannot look: no corpus at all in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
   const bindings = require('./bindings.js').read(null);
   const { behaviours, conflicts, symbols } = resolve(all);
