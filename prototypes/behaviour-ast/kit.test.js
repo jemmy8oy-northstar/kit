@@ -2465,10 +2465,24 @@ test('available coverage reports a number — the control for null-not-zero', ()
   // a count. Without this, a summary that reported null unconditionally would
   // pass the test above.
   const s = ui.summary('kit', { dir: pathx.join(__dirname, 'behaviours'), repos: null });
-  const withRepo = ui.summary('kit', {
-    dir: pathx.join(__dirname, 'behaviours'),
-    repos: pathx.join(__dirname, '..', '..', '..'),
-  });
+  // 🔴 `repoFor` is `join(reposDir, app)`, so a `repos` directory only resolves
+  // for the app `kit` if it CONTAINS something called `kit`. This used to pass
+  // `__dirname/../../..` — the parent of this checkout — which made the assertion
+  // depend on **the checkout being NAMED `kit`**. That is true of `/data/repos/kit`
+  // and true in CI (GitHub checks out to `<work>/kit/kit`), so it was green
+  // everywhere anyone looked; it is false in any `git worktree`, any
+  // `git clone <url> mykit`, and any differently-named fork.
+  //
+  // Measured on one commit and one machine, varying only the path:
+  // `/tmp/kit-wt-diag` → 350 passed, 1 failed; `/tmp/kitprobe/kit` → 351, 0.
+  // It cost a wake an hour: a merged-tree probe run from worktrees reported this
+  // single failure against SEVEN unrelated open PRs, which reads exactly like a
+  // merge having broken them.
+  //
+  // So the layout the assertion needs is built here rather than hoped for.
+  const repos = fixture({});
+  fsx.symlinkSync(pathx.join(__dirname, '..', '..'), pathx.join(repos, 'kit'), 'dir');
+  const withRepo = ui.summary('kit', { dir: pathx.join(__dirname, 'behaviours'), repos });
   assert.strictEqual(s.coverage.available, false, 'no repos dir must be unavailable');
   assert.strictEqual(withRepo.coverage.available, true, 'kit beside its own repo must be available');
   assert.ok(withRepo.coverage.covered > 0);
