@@ -1,0 +1,21 @@
+# `COPY . .` in the build stage takes the whole repo, because `tsc -b` typechecks
+# a test that requires `../../../ui.js` and a build scoped to `ui/` cannot resolve
+# it. This is what keeps that from also taking the install it just did.
+#
+# ⚠️ node_modules first and for a reason that is not size: the builder runs
+# `npm ci` BEFORE `COPY . .`, so a host `node_modules` copied over the top would
+# replace a freshly installed tree with whatever happens to be on the machine
+# doing the build — a lockfile-respecting install silently overwritten by one
+# that is not.
+node_modules
+**/node_modules
+
+# Built by the image, never copied into it. A stale host bundle landing here would
+# be overwritten by the build, but it would also be the thing `--no-build` served
+# if the build step were ever skipped.
+prototypes/behaviour-ast/ui/dist
+
+.git
+.github
+docs
+*.md

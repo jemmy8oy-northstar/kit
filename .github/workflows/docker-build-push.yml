@@ -1,36 +1,25 @@
 name: Build and Push Docker Images to OCIR
 
-# Triggered manually only. To also deploy on every merge to main, add:
-#   push:
-#     branches:
-#       - main
-# to the `on:` block below.
+# ── why this file is not the template any more ───────────────────────────────
+# It was repo-template's untouched scaffold, which builds `./backend` and
+# `./frontend` and patches two image tags named the same. Kit has neither
+# directory and never has. That is the whole explanation for a symptom that had
+# only ever been described: this workflow "has never once succeeded". It was not
+# failing on Kit's code — it was asserting the existence of an application layout
+# that does not exist here, on a branch (`main`) that until now did not contain
+# Kit at all.
 #
-# This template targets OCI Container Registry with ARM64 images (for OKE free tier).
+# Kit is ONE image. `ui.js` serves the built SPA and the API from a single Node
+# process on one port, so there is one build, one tag and one thing to patch.
 #
-# Required GitHub repository variables (Settings → Secrets and variables → Variables):
-#   OCIR_REGISTRY    e.g. lhr.ocir.io
-#   OCIR_NAMESPACE   e.g. your-tenancy-namespace
+# Everything else is deliberately unchanged from the estate's shape: the GitOps
+# App token, GitVersion, the native ARM64 runner, OCIR, and the commit-back that
+# writes the new tag into helm/values.yaml for ArgoCD to pick up.
 #
-# Required GitHub repository secrets (Settings → Secrets and variables → Secrets):
-#   OCIR_USERNAME    e.g. your-tenancy/oracleidentitycloudservice/your@email.com
-#   OCIR_AUTH_TOKEN  OCI auth token (not your account password)
-#
-# Image names are derived from the repository name: {repo-name}-frontend and {repo-name}-backend.
-# They must match the image paths configured in helm/values.yaml.
-#
-# ARM64 runner note:
-#   This workflow uses ubuntu-24.04-arm — a native ARM64 GitHub-hosted runner.
-#   This avoids QEMU emulation overhead and is available on PUBLIC repositories for free.
-#   For PRIVATE repositories, ubuntu-24.04-arm requires a paid plan.
-#   If you are on a private repo, replace the runner with:
-#     runs-on: ubuntu-latest
-#   and add a QEMU setup step before Docker Buildx:
-#     - name: Set up QEMU
-#       uses: docker/setup-qemu-action@v3
-#       with:
-#         platforms: arm64
-#   then add `platforms: linux/arm64` to both build-push steps.
+# Required repository variables:  OCIR_REGISTRY, OCIR_NAMESPACE, GIT_OPS_APP_ID
+# Required repository secrets:    OCIR_USERNAME, OCIR_AUTH_TOKEN,
+#                                 GITOPS_APP_PRIVATE_KEY
+# All six are org-level already; nothing new is needed for Kit.
 
 on:
   push:
@@ -39,12 +28,11 @@ on:
   workflow_dispatch:
 
 env:
-  FRONTEND_IMAGE: ${{ github.event.repository.name }}-frontend
-  BACKEND_IMAGE: ${{ github.event.repository.name }}-backend
+  IMAGE: ${{ github.event.repository.name }}
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-24.04-arm  # Native ARM64 runner — no QEMU emulation overhead
+    runs-on: ubuntu-24.04-arm # Native ARM64 runner — no QEMU emulation overhead
 
     steps:
       # --- 1. GENERATE SHORT-LIVED GITOPS BOT TOKEN ---
@@ -59,7 +47,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for GitVersion to read full git history
+          fetch-depth: 0 # Required for GitVersion to read full git history
           token: ${{ steps.app-token.outputs.token }} # 🔑 Overrides the restricted default token
 
       - name: Install GitVersion
@@ -71,6 +59,34 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v1
 
+      - name: Install yq (YAML Processor)
+        uses: mikefarah/yq@v4.44.1
+
+      # --- 3. THE PATH KIT IS SERVED UNDER, READ FROM THE CHART ---
+      #
+      # 🔑 Read rather than written here, and that is the point. Kit is served at
+      # a path prefix on a host it shares with four other apps, and `base` is
+      # baked into the bundle's asset URLs at BUILD time — so this value has to be
+      # known now, and it has to be the same one the ingress will route on. Two
+      # places to type it is one place for them to disagree, and the symptom is a
+      # page that loads and does nothing: every unmatched path on that host
+      # answers 200 with the portfolio's SPA, so nothing 404s and nothing logs.
+      #
+      # An EMPTY read is refused rather than defaulted. A missing field and a
+      # deliberate root deployment produce the same empty string, and building the
+      # wrong one of those silently is exactly the failure above.
+      - name: Read the ingress path from helm/values.yaml
+        id: base
+        run: |
+          set -euo pipefail
+          BASE_PATH=$(yq -r '.apps[] | select(.name == "kit") | .ingress.path // ""' helm/values.yaml)
+          if [ -z "$BASE_PATH" ]; then
+            echo "::error::no .apps[name=kit].ingress.path in helm/values.yaml — refusing to build a bundle for an unknown path"
+            exit 1
+          fi
+          echo "Kit will be served under: $BASE_PATH"
+          echo "base_path=$BASE_PATH" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -81,60 +97,54 @@ jobs:
           username: ${{ secrets.OCIR_USERNAME }}
           password: ${{ secrets.OCIR_AUTH_TOKEN }}
 
-      # --- 3. BUILD & PUSH BACKEND ---
-      - name: Build and push Backend
+      # --- 4. BUILD & PUSH THE ONE IMAGE ---
+      - name: Build and push Kit
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
           push: true
           provenance: false
           sbom: false
+          build-args: |
+            KIT_BASE_PATH=${{ steps.base.outputs.base_path }}
           tags: |
-            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:latest
-            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.BACKEND_IMAGE }}:${{ steps.gitversion.outputs.semVer }}
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
-
-      # --- 4. BUILD & PUSH FRONTEND ---
-      - name: Build and push Frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          provenance: false
-          sbom: false
-          tags: |
-            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:latest
-            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.FRONTEND_IMAGE }}:${{ steps.gitversion.outputs.semVer }}
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.IMAGE }}:latest
+            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.IMAGE }}:${{ steps.gitversion.outputs.semVer }}
+          cache-from: type=gha,scope=kit
+          cache-to: type=gha,mode=max,scope=kit
 
       # --- 5. THE GITOPS AUTO-UPDATE LOOP ---
-      - name: Install yq (YAML Processor)
-        uses: mikefarah/yq@v4.44.1
-
       - name: Update Helm Chart Values File
         run: |
+          set -euo pipefail
           NEW_VERSION="${{ steps.gitversion.outputs.semVer }}"
           VALUES_FILE="helm/values.yaml"
-          
-          echo "Patching array image tags in $VALUES_FILE to version: $NEW_VERSION"
-          
-          yq -i '(.apps[] | select(.name == "backend") | .image.tag) = "'"$NEW_VERSION"'"' $VALUES_FILE
-          yq -i '(.apps[] | select(.name == "frontend") | .image.tag) = "'"$NEW_VERSION"'"' $VALUES_FILE
+
+          echo "Patching the kit image tag in $VALUES_FILE to version: $NEW_VERSION"
+          yq -i '(.apps[] | select(.name == "kit") | .image.tag) = "'"$NEW_VERSION"'"' $VALUES_FILE
+
+          # The patch above rewrites the whole file, and the ingress path in it is
+          # the single source the build step just read. Re-read it afterwards: a
+          # rewrite that dropped or altered that line would go unnoticed until the
+          # NEXT build produced a bundle for the wrong path.
+          AFTER=$(yq -r '.apps[] | select(.name == "kit") | .ingress.path // ""' $VALUES_FILE)
+          if [ "$AFTER" != "${{ steps.base.outputs.base_path }}" ]; then
+            echo "::error::patching the image tag changed the ingress path from '${{ steps.base.outputs.base_path }}' to '$AFTER'"
+            exit 1
+          fi
 
       - name: Commit and Push Image Tag Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git add helm/values.yaml
-          
+
           if git diff --staged --quiet; then
             echo "No manifest changes required. Version is already up to date."
           else
             git commit -m "chore(gitops): release version ${{ steps.gitversion.outputs.semVer }} [skip ci]"
-            
+
             # This cleanly pushes back using the App token set during checkout
             git push origin HEAD
           fi

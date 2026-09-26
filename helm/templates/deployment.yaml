@@ -1,0 +1,71 @@
+{{- range .Values.apps }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" $ }}-{{ .name }}
+  labels:
+    app: {{ .name }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: {{ .name }}
+      release: {{ include "app.fullname" $ }}
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}
+        release: {{ include "app.fullname" $ }}
+    spec:
+      containers:
+        - name: {{ .name }}
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - containerPort: {{ .containerPort }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- if or .env .ingress }}
+          env:
+            {{- /*
+            KIT_BASE_PATH is DERIVED from the ingress path, not configured
+            beside it. Kit is served under a path prefix on a host it shares
+            with four other apps, and it has to know that prefix itself because
+            the ingress does not rewrite. Written out twice, the two copies
+            would eventually disagree — and the symptom is a blank page in which
+            every request still answers 200, because on this host an unmatched
+            path is answered by the portfolio's SPA. Derived, there is only one.
+
+            The image build reads the SAME field out of values.yaml and bakes it
+            into the bundle's asset URLs, so all three come from this one line.
+            */}}
+            {{- if .ingress }}
+            - name: KIT_BASE_PATH
+              value: {{ .ingress.path | quote }}
+            {{- end }}
+            {{- range .env }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ .value | quote }}
+              {{- else if .valueFrom }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .valueFrom.secretKeyRef.name }}
+                  key: {{ .valueFrom.secretKeyRef.key }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- end }}
