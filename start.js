@@ -88,8 +88,8 @@ const HELP = `Kit — one command to run it.
                    loopback, so a non-loopback host serves a read-only Kit.
   --repos <dir>    where your checkouts live. Without it, coverage reports
                    "not measured" — which is not the same as "nothing is tested".
-  --dir <dir>      a directory of .beh corpora. Defaults to Kit's own.
-  --bindings <f>   a bindings file to write to instead of the repo's.
+  --dir <dir>      a directory of .beh corpora, and the bindings beside them.
+                   Defaults to Kit's own.
   --no-build       serve the existing bundle and neither install nor build.
   --help
 
