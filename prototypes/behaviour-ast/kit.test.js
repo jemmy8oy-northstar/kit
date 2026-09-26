@@ -4157,7 +4157,7 @@ test('nothing still says ui.js cannot serve the bundle, now that it does', () =>
 // `createMarker`, which is why that factory exists.
 section('mutation marker');
 
-const { createMarker } = require('./mutation-marker');
+const { createMarker, ownerAlive } = require('./mutation-marker');
 // A killed run, reconstructed exactly: `arm()` records the originals, then the
 // file on disk is made wrong and nothing gets to clean up after it.
 const killedRun = (files, damage) => {
@@ -4172,12 +4172,24 @@ const killedRun = (files, damage) => {
   return { root, m };
 };
 const silent = { log: () => {}, error: () => {} };
+// `killedRun` arms from the TEST's own process, so the pid it records is alive —
+// and `recover()` now refuses while the owning run is alive. So every fixture
+// here states the thing it was always simulating: the owner is dead. Passing the
+// real probe instead would refuse all of them, which is the guard working.
+const dead = () => false;
+// ⚠️ It asserts the pid it was HANDED. A probe that just returned `true` would
+// pass identically over a guard that checked the wrong value — or nothing at all
+// — so the delivery is tested, not only the outcome.
+const stillRunning = (pid) => {
+  assert.strictEqual(pid, process.pid, 'the guard must probe the pid recorded in the marker');
+  return true;
+};
 
 test('marker: a run killed mid-mutant is restored exactly from the marker alone', () => {
   const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 999\n');
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
   // The marker goes with it, or the next run refuses forever.
   assert.strictEqual(fsx.existsSync(m.MARKER), false);
@@ -4197,7 +4209,7 @@ test('marker: recovery restores ONLY what was mutated, leaving other work alone'
   delete originals['b.js'];
   fsx.writeFileSync(m.MARKER, fsx.readFileSync(m.MARKER, 'utf8').replace(/\{"tool".*\}/, JSON.stringify({ tool: 't', base: '.', files: originals })));
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'b.js'), 'utf8'), 'REAL UNCOMMITTED WORK\n');
 });
@@ -4253,8 +4265,84 @@ test('marker: recovery uses the base recorded in the marker, not the base of the
   m.arm({ tool: 'mutate-ui.js', base: 'ui', originals: { 'src/a.ts': 'const ok = 1\n' }, warn: 'w', restoreAll: () => {} });
   fsx.writeFileSync(pathx.join(root, 'ui/src/a.ts'), 'const ok = 999\n');
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'ui/src/a.ts'), 'utf8'), 'const ok = 1\n');
+});
+
+// ── the marker is the restore data, so recovery must not race its own run ────
+//
+// The hazard this section exists for, hit for real on 2026-09-26: `--recover`
+// called while a mutation run was still going restored what had been mutated so
+// far, deleted the originals, and left the live run to mutate a DIFFERENT file
+// with nothing able to undo it. `arm()` had recorded the owning pid since the
+// module was written — but only in the prose above the payload, where no code
+// could reach it. A value captured and never read is a rule the code lacks.
+test('marker: recovery REFUSES while the run that armed it is still alive', () => {
+  const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+
+  assert.strictEqual(m.recover(silent, stillRunning), 2, 'a live owner is could-not-look, not success');
+  // The two things that make it destructive, asserted separately: it must not
+  // undo the live run's work, and it must not delete the only copy of the
+  // originals that run still needs for the file it mutates next.
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 999\n',
+    'recovery must leave a live run\'s mutant alone');
+  assert.strictEqual(fsx.existsSync(m.MARKER), true,
+    'refusing must not consume the marker — it is the restore data, not a flag');
+});
+
+// The guard can only fire if the pid reaches somewhere machine-readable. Assert
+// the payload directly, because the prose line carried it for weeks and every
+// test still passed.
+test('marker: arm() records the owning pid IN the payload, not only in the prose', () => {
+  const { m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  assert.strictEqual(m.payload().pid, process.pid);
+});
+
+// A marker written before this change has no pid. Refusing those would make every
+// pre-existing marker unrecoverable, which is strictly worse than the hazard — so
+// it recovers, and says the absence out loud rather than letting "cannot tell"
+// read as "nothing is live".
+test('marker: a marker with no pid still recovers, and NAMES the thing it could not check', () => {
+  const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  const p = m.payload();
+  delete p.pid;
+  fsx.writeFileSync(m.MARKER, fsx.readFileSync(m.MARKER, 'utf8').replace(/\{"tool".*\}/, JSON.stringify(p)));
+  const said = [];
+
+  assert.strictEqual(m.recover({ log: (s) => said.push(s), error: (s) => said.push(s) }), 0);
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
+  assert.match(said.join('\n'), /records no pid/, 'an unknown liveness must be stated, not hidden');
+});
+
+// ⚠️ The two tests above inject the probe, so they would pass identically over an
+// `ownerAlive` that always returned false. These exercise the REAL default in
+// both directions — the only reason the injection is safe.
+test('marker: ownerAlive says TRUE for a process that is certainly running', () => {
+  assert.strictEqual(ownerAlive(process.pid), true, 'this very process is alive');
+});
+
+test('marker: ownerAlive says FALSE for a process that has certainly exited', () => {
+  // `spawnSync` returns only after the child is reaped, so its pid is a real pid
+  // that is definitely gone — no sleeping, no guessing at an unused number.
+  const gone = require('child_process').spawnSync('node', ['-e', '0']);
+  assert.strictEqual(gone.status, 0, 'the probe child must actually have run');
+  assert.strictEqual(ownerAlive(gone.pid), false);
+  // And a pid that could never be one is dead, not a crash: `payload().pid` is
+  // whatever was in the file, including nothing.
+  for (const junk of [undefined, null, 0, -1, 'nope', 1.5]) {
+    assert.strictEqual(ownerAlive(junk), false, `${junk} is not a live pid`);
+  }
+});
+
+// 🔴 The branch that fails OPEN, and the only one no real process here can
+// produce: every pid in this container shares one uid, so `kill(pid, 0)` never
+// raises EPERM and the mapping went unmeasured. EPERM means "it exists and is
+// someone else's" — alive. Reading it as dead would recover over a live run
+// owned by another user, and would look exactly this green.
+test('marker: ownerAlive treats EPERM as ALIVE — it exists, it is just not ours', () => {
+  const raising = (code) => () => { const e = new Error(code); e.code = code; throw e; };
+  assert.strictEqual(ownerAlive(4242, raising('EPERM')), true, 'EPERM is alive, not dead');
+  assert.strictEqual(ownerAlive(4242, raising('ESRCH')), false, 'ESRCH is the only "no such process"');
 });
 
 // ── the marker's git status is itself a rule, and it has TWO sides ──────────
