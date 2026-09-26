@@ -4398,6 +4398,141 @@ test('git-store: the commit message describes the edit and names the app', () =>
   assert.strictEqual(gitStore.message('bind page:Home', null), 'kit: bind page:Home');
 });
 
+section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
+
+// kit#68 established the rule at `kit.js` and fixed `kit.js`. It did not fix the
+// seven other entry points, and nothing here would have noticed, because a test
+// that names the tools it checks can only ever check the tools somebody remembered.
+//
+// 🔑 So the population is DERIVED: every file that declares itself runnable with
+// `require.main === module`. A new entry point joins this test by existing, which is
+// the whole point — `requires.js`, `project.js`, `ui.js`, `writer.js`,
+// `saturation.js`, `self-host.js`, `converge.js` and `prose-audit.js` all shipped
+// after `check.js` had the rule, and every one of them shipped without it.
+//
+// Behavioural rather than structural, deliberately: it spawns each tool and reads
+// what it does. A structural test ("does this file call cli.unknownFlag") would
+// have to exempt `kit.js` and `check.js`, which satisfy the rule with their own
+// parsers, and would pass for a file that called the helper and ignored it.
+const ENTRY_POINTS = (() => {
+  const found = [];
+  for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
+    if (!e.isFile() || !e.name.endsWith('.js')) continue;
+    // kit.test.js is this file. `selfhost/run.js` is excluded by not walking
+    // subdirectories: it drives Playwright, and kit deliberately has no
+    // `@playwright/test` dependency to drive it with (adding one is packaging,
+    // which is James's under #83), so it cannot run here at all.
+    if (e.name === 'kit.test.js') continue;
+    const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
+    if (!src.includes('require.main === module')) continue;
+    found.push(e.name);
+  }
+  return found.sort();
+})();
+
+// ⚠️ NOT MEASURED, which is not the same as fine: `mutate.js` and `mutate-ui.js`
+// are the mutation harness. They EDIT THE WORKING TREE, so spawning them from a
+// test would rewrite the source under the run; and they carry neither
+// `require.main === module` nor a guard, so they are outside the population above
+// rather than exempted from it. Left for a follow-up on purpose — editing the
+// harness during a change that the harness is about to mutate is the one shape
+// worth not combining.
+test('cli: the derived population is the real one, not a stale list', () => {
+  // A fail-safe, for the reason `jsDeclarationCount` is one: if the discovery above
+  // ever silently matches nothing, every assertion below it passes over an empty
+  // set and this section reports green while checking no tool at all.
+  assert.ok(ENTRY_POINTS.length >= 8,
+    `only ${ENTRY_POINTS.length} entry point(s) discovered — the scan has stopped matching: ${ENTRY_POINTS.join(', ')}`);
+  for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js']) {
+    assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
+  }
+});
+
+test('cli: every entry point REFUSES a flag it does not have, and names it', () => {
+  const FLAG = '--zznotaflag';
+  const offenders = [];
+  for (const f of ENTRY_POINTS) {
+    // A timeout because the failure mode for a server is not a wrong answer, it is
+    // no answer: before this change `node ui.js --zznotaflag` started listening and
+    // never came back.
+    const r = spawnx(process.execPath, [f, FLAG], { cwd: __dirname, encoding: 'utf8', timeout: 30000 });
+    const out = (r.stdout || '') + (r.stderr || '');
+    if (r.status === 0 || r.signal) { offenders.push(`${f} (exit ${r.status}${r.signal ? ` signal ${r.signal}` : ''})`); continue; }
+    if (!out.includes(FLAG)) offenders.push(`${f} (exit ${r.status}, but never named the flag)`);
+  }
+  assert.deepStrictEqual(offenders, [],
+    `these accept a flag they do not have: ${offenders.join(', ')}`);
+});
+
+test('cli: a REFUSAL, not a default — the tool must not answer about its own corpus', () => {
+  // The rule the test above does not reach. `requires.js snip-it --check --dir X`
+  // used to exit 1 having gated KIT'S OWN corpus while naming yours, and
+  // `--dir /no/such/dir` used to exit 0 with a full 16-noun report about a
+  // directory that cannot exist. Both are exit 0/1 answers, so a test that only
+  // asserted "non-zero" would have passed for the second one.
+  const r = spawnx(process.execPath,
+    ['requires.js', 'snip-it', '--check', '--dir', '/no/such/dir'], { cwd: __dirname, encoding: 'utf8' });
+  const out = (r.stdout || '') + (r.stderr || '');
+  assert.strictEqual(r.status, 2, `a refusal is exit 2, never a verdict about something else; got ${r.status}`);
+  assert.ok(!/nouns referenced/.test(out), `it answered anyway:\n${out}`);
+});
+
+test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () => {
+  const { unknownFlag } = require('./cli.js');
+  assert.strictEqual(unknownFlag(['snip-it', '--json'], ['--json', '--check']), null);
+  assert.strictEqual(unknownFlag(['snip-it', '--dir', '/x'], ['--json']), '--dir');
+  // The first offender, not the last: a refusal naming the second typo while the
+  // first stays hidden sends the reader back round the loop.
+  assert.strictEqual(unknownFlag(['--aaa', '--bbb'], []), '--aaa');
+  // A value that is itself a flag means the value was forgotten — `check.js:99`
+  // and `kit.js:1208` both refuse it, and consuming it as a path is how a gate
+  // ends up pointed at somewhere nobody named.
+  assert.strictEqual(unknownFlag(['--dir', '--check'], ['--dir']), '--check');
+  // A positional that merely CONTAINS a dash is not a flag.
+  assert.strictEqual(unknownFlag(['my-app'], []), null);
+  assert.strictEqual(unknownFlag(['-'], []), null, 'a lone dash is the stdin convention');
+  // Accepts a Set as well as an array, because every caller has one shape or the other.
+  assert.strictEqual(unknownFlag(['--json'], new Set(['--json'])), null);
+});
+
+test('cli: a guard cannot refuse a flag its own tool implements', () => {
+  // The drift THIS change could introduce, and the reason it needs pinning: each
+  // guard names its tool's flags as a literal list, so a flag added to the parser
+  // and forgotten here becomes unusable. A refusal for a flag that works is as
+  // wrong as a silent drop for one that doesn't, and harder to explain.
+  //
+  // Source-level, not behavioural, and that is a real limitation stated rather than
+  // hidden: the first cut of this asked each tool about each of its own flags by
+  // spawning it, which took minutes and hung on `ui.js --git` — a flag whose
+  // correct behaviour is to start a server and not return. Reading the two lists
+  // cannot catch a guard that is never CALLED; the spawn test above is what covers
+  // that, and the pair is what makes either useful.
+  const mismatches = [];
+  for (const f of ENTRY_POINTS) {
+    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+    const call = src.match(/unknownFlag\((?:[^,]+),\s*(\[[^\]]*\]|[A-Z_]+)\s*\)/);
+    if (!call) continue; // kit.js and check.js satisfy the rule with their own parsers.
+    let listed = call[1];
+    if (!listed.startsWith('[')) {
+      const named = src.match(new RegExp(`const ${listed} = (\\[[^\\]]*\\])`));
+      assert.ok(named, `${f}: the guard names ${listed}, which is not declared as a literal list here`);
+      listed = named[1];
+    }
+    const known = new Set([...listed.matchAll(/'(--[a-z][a-z-]*)'/g)].map((m) => m[1]));
+    // Every flag the tool's own CODE compares against. Comments are stripped first,
+    // because several of these files discuss flags they do NOT implement — `ui.js`
+    // names `--dirr` in a comment as the typo that motivated the guard, and
+    // `converge.js` explains why it refuses `--dir` rather than wiring it up.
+    const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+    const compared = new Set();
+    for (const m of code.matchAll(/(?:===|!==|indexOf\(|includes\()\s*'(--[a-z][a-z-]*)'/g)) compared.add(m[1]);
+    for (const flag of compared) {
+      if (!known.has(flag)) mismatches.push(`${f} implements ${flag} and its guard would refuse it`);
+    }
+  }
+  assert.deepStrictEqual(mismatches, [], mismatches.join('; '));
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);

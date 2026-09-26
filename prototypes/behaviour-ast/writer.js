@@ -627,6 +627,16 @@ function parseArgs(argv) {
 }
 
 function main(argv) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). This is the only tool
+  // here that WRITES, and `parseArgs` above ends `else opts.rest.push(argv[i])` —
+  // so an unrecognised flag did not merely get ignored, it became a POSITIONAL.
+  // `writer.js --zznot snip-it review BEH-1 approved` took `--zznot` as the app
+  // name. Refusing before anything is resolved means a typo cannot reach a write.
+  const bad = require('./cli.js').unknownFlag(argv, ['--dir', '--bindings', '--source', '--actor']);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: writer.js <app> <verb> ... [--dir <behaviours>] [--bindings <file>] [--source defined|inferred] [--actor <name>]');
+  }
   const { dir, bindings: bindingsFile, source, actor, rest } = parseArgs(argv);
   const [app, verb, id, arg] = rest;
 
