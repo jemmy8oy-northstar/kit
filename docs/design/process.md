@@ -112,6 +112,49 @@ Consequences, all of them the point:
 - **A noun the app does not have is a build failure, not a passing test.** This is what makes the spec
   *constrain* the app rather than describe it.
 
+### Where a corpus's bindings live — ANSWERED by James on #66, 2026-09-25
+
+The question this answers was never asked out loud for four weeks. It sat on the board as a note to
+myself — *"where a relocated project's bindings live is a real open question, do not build it just
+to finish the pair"* — correctly reasoned, with no default, no date and no thread, which is how a
+decision-shaped sentence hides in plain sight.
+
+I offered two options and priced option 2 as the costlier. He took it, on a scaling argument I had
+not made:
+
+> *"I think lives in a repo not shared in kit. Imagine scaled to 1000 projects and 1000 project
+> owners no need to share nouns."*
+
+1. ✅ **A corpus's bindings live BESIDE IT, in `behaviours/<app>.bindings.json`, and belong to that
+   corpus alone.** This is the same decision as #52's *"the projects spec should live in the projects
+   repo"*: a project owns its vocabulary exactly as it owns its spec, and two projects naming the same
+   noun is not a collision — it is two projects, each right about itself.
+2. 🔑 **What it replaces, and what that cost.** There was one flat map over every corpus, so the noun
+   namespace was GLOBAL. An unprefixed `page:Home` in the macro-metrics corpus inherited snip-it's
+   `./` and emitted a test that RAN, against the wrong app, with no unbound-noun warning. Two of the
+   three bound corpora hand-prefixed every noun to dodge it, which the file itself called *"not a
+   design, it is a habit"*. `node prose-audit.js --demo-collision` prints the old hazard beside the
+   refusal that replaced it.
+3. ✅ **The migration was lossless, and that was measured before it was claimed.** The flat map's 43
+   real nouns split **16 / 13 / 14** across exactly three corpora (`kit-ui`, `macro-metrics`,
+   `snip-it`) with **0 claimed by two corpora and 0 orphaned** — so the duplication cost I priced
+   option 2 at is zero today. The other 7 of 10 corpora bind nothing and get no file, which is a real
+   state rather than an error. Every artefact `kit.js` produces hashes identical to before **except
+   one**: the all-corpora ratio moved `43/179` → `43/189`, because a name used by three corpora is now
+   three things to bind rather than one. That is the decision showing up in the number, not drift.
+4. ⚠️ **`sharedWith` is kept, and its meaning changed under it.** It used to mean *"your bind just
+   became their bind too"*. It now means *"these corpora use this NAME and bind it themselves"* —
+   still worth knowing while you are naming things, and worth nobody's alarm. So the sentence it feeds
+   changed on the CLI and on the screen, and stopped being a `role="alert"`. Retiring the mechanism
+   outright would be a larger call than the one he made.
+5. ⚠️ **Two side effects, both closed by construction rather than by care.** `--bindings` is gone from
+   `ui.js`, `writer.js` and `project.js`: it named one file, which a run spanning several corpora
+   cannot use, and `--dir` now isolates both. That is what makes `selfhost/run.js`'s half-applied
+   isolation — it copied the corpus and not the bindings, so a self-hosted bind would have written
+   into the real repo — impossible to write down again. And `saturation.js --dir <elsewhere>` used to
+   read *this* directory's bindings against a foreign corpus, silently collapsing 27 bound targets to
+   1; it now reads the directory it was pointed at.
+
 ## Stage 5 — Generation: refuse rather than guess
 
 Kit emits tests, or emits `// UNGENERATED:` and names the unbound noun — plus a

@@ -54,10 +54,10 @@ const path = require('path');
 const { parse, parseStep, nounsOf } = require('./kit.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
-// Re-exported rather than re-derived: `bindings.js` is the one place that answers
-// where a corpus's bindings live, and a second `path.join` here would be a second
-// answer waiting to drift from it (kit#66).
-const { BINDINGS_FILE } = require('./bindings.js');
+// Asked, never re-derived: `bindings.js` is the one place that answers where a
+// corpus's bindings live, and a second `path.join` here would be a second answer
+// waiting to drift from it (kit#66). A test enforces that.
+const bindingsOf = require('./bindings.js');
 
 /** The indentation every corpus uses for a step line under its behaviour header. */
 const INDENT = '  ';
@@ -336,13 +336,13 @@ function setReview(text, id, state, note = null) {
 }
 
 // ─────────────────────────── bindings ───────────────────────────
-// Everything above edits a `.beh` document. This edits `bindings.json`, and the
-// difference in technique is not a style choice: a corpus is a hand-authored
-// document whose COMMENTS carry its caveats, so it is spliced line by line and
-// never re-serialised (rule 1). JSON has no comments to lose. `bindings.json`
-// keeps its prose in real `_comment*` KEYS precisely so a round-trip preserves
-// it, so the safe thing here is the opposite of the safe thing there: parse,
-// mutate the object, re-stringify.
+// Everything above edits a `.beh` document. This edits that corpus's
+// `<app>.bindings.json`, and the difference in technique is not a style choice:
+// a corpus is a hand-authored document whose COMMENTS carry its caveats, so it is
+// spliced line by line and never re-serialised (rule 1). JSON has no comments to
+// lose. A bindings file keeps its prose in a real `_comment` KEY precisely so a
+// round-trip preserves it, so the safe thing here is the opposite of the safe
+// thing there: parse, mutate the object, re-stringify.
 //
 // ── Why a binding is worth a write path at all ──────────────────────────────
 // Stage 4 of `docs/design/process.md` — bind by noun, not by step — is the
@@ -353,29 +353,33 @@ function setReview(text, id, state, note = null) {
 // became comments", and then leaves you to go and hand-edit a JSON file. This
 // closes that.
 //
-// ── 🔴 THE NOUN NAMESPACE IS GLOBAL, and the file itself calls that a habit ──
-// `bindings.json` is one flat map over every corpus, and its own `_comment_kit_ui`
-// block says:
+// ── 🔴 THE NOUN NAMESPACE WAS GLOBAL, AND kit#66 ENDED THAT ─────────────────
+// This used to be one flat map over every corpus, and the hazard was real: an
+// unprefixed `page:Home` in the macro-metrics corpus inherited snip-it's `./` and
+// emitted a test that RAN, against the wrong app, with no unbound-noun warning.
+// Two of the three bound corpora hand-prefixed every noun to dodge it, which the
+// file called "not a design, it is a habit". `sharedWith()` below was built to
+// turn that habit into a mechanism, because a habit stops being enough the moment
+// binding is a form with a button — which is what this function made it.
 //
-//     "Every noun is prefixed `Kit*` because THE NOUN NAMESPACE IS GLOBAL. An
-//      unprefixed page:Home here would inherit snip-it's './' and emit a test
-//      that runs against the wrong app with no unbound-noun warning. Still a
-//      habit rather than a design."
+// James decided the model instead: *"I think lives in a repo not shared in kit.
+// Imagine scaled to 1000 projects and 1000 project owners no need to share
+// nouns."* A corpus now binds its own nouns, so the collision cannot occur and
+// there is no hazard left for a mechanism to catch.
 //
-// A habit is enough while binding means opening the file and reading that
-// paragraph. It stops being enough the moment binding is a form with a button,
-// which is what this function makes it — so the hazard has to become a
-// mechanism. `sharedWith()` below is that mechanism.
+// ⚠️ `sharedWith()` IS DELIBERATELY STILL HERE, and it is not vestigial — but it
+// answers a different question now. It used to mean "your bind just became their
+// bind too"; it means "these corpora use this NAME and bind it themselves". That
+// is worth knowing while you are naming things and worth nobody's alarm, so the
+// wording it feeds changed with it. Retiring the mechanism outright would reach
+// the browser UI and is a larger call than the one James made.
 //
-// It REPORTS rather than REFUSES, and that is deliberate. Measured across the
-// nine corpora, 7 noun names are used by more than one corpus and **6 of the 7
-// are james-habits-app described three ways** (the app plus its two trial
-// corpora), where sharing one binding is correct and is the point of binding by
-// noun. Only `region:EmptyState` (trial-habits-a and trial-lend) is a genuine
-// cross-APP collision. A blanket refusal would break the correct majority to
-// stop the minority; naming the other corpora lets the human tell which one they
-// are in. Refusing to guess is Kit's rule for the EMITTER, where the alternative
-// is a false green — here the alternative is a true fact on screen.
+// It REPORTS rather than REFUSES, which was deliberate then and is trivially
+// right now: with per-corpus namespaces there is nothing left that a refusal
+// could protect. The measurement that settled it under the old model still reads
+// well — of 7 noun names used by more than one corpus, 6 were james-habits-app
+// described three ways, where sharing was the point; a blanket refusal would have
+// broken the correct majority to stop one case.
 
 /**
  * Is this string exactly one noun, by the PARSER's definition of a noun?
@@ -610,10 +614,12 @@ function commitToDisk(file, result) {
 }
 
 function parseArgs(argv) {
-  const opts = { dir: BEH_DIR, bindings: BINDINGS_FILE, source: null, actor: null, rest: [] };
+  // No `--bindings`: it pointed at one file, and bindings now live beside the
+  // corpus, so `--dir` selects both (kit#66). One flag where there were two, and
+  // a harness can no longer isolate the corpus while writing the real bindings.
+  const opts = { dir: BEH_DIR, source: null, actor: null, rest: [] };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--dir') { opts.dir = argv[i + 1]; i++; }
-    else if (argv[i] === '--bindings') { opts.bindings = argv[i + 1]; i++; }
     // `--source defined` exists because using this tool on Kit's own corpus
     // found it missing. The HTTP surface takes `source` in the body and the CLI
     // could not say it, so a human at a terminal could only write behaviours
@@ -627,7 +633,7 @@ function parseArgs(argv) {
 }
 
 function main(argv) {
-  const { dir, bindings: bindingsFile, source, actor, rest } = parseArgs(argv);
+  const { dir, source, actor, rest } = parseArgs(argv);
   const [app, verb, id, arg] = rest;
 
   if (!app || !verb) {
@@ -637,13 +643,20 @@ function main(argv) {
     return 2;
   }
 
-  // `bind` writes a DIFFERENT file from every other verb — one global
-  // bindings.json rather than this app's corpus — so it takes its own path out
-  // before the corpus is resolved. `app` is still required and still meaningful:
-  // it is what `sharedWith` excludes, i.e. the corpus you are claiming to be in.
+  // `bind` writes a DIFFERENT file from every other verb — this app's bindings
+  // rather than this app's corpus — so it takes its own path out before the
+  // corpus is resolved. `app` names which one, which is what kit#66 made it mean:
+  // it used to select only whose warning you got, and now it selects the file.
   if (verb === 'bind') {
-    if (!fs.existsSync(bindingsFile)) {
-      console.error(`writer: no bindings file at ${bindingsFile}`);
+    const bindingsFile = bindingsOf.fileFor(app, dir);
+    // ⚠️ A corpus with no bindings file yet is the NORMAL first bind, not an
+    // error — 7 of the 10 corpora here are in that state. Under one flat map the
+    // file always existed and its absence could only mean a broken checkout; per
+    // corpus, absence means "nothing bound yet" and the first write creates it.
+    // The corpus itself must still exist, and that is checked below by the same
+    // rule every other verb uses.
+    if (!corpusPath(app, dir)) {
+      console.error(`writer: no corpus for ${app} in ${dir} — refusing to bind against nothing`);
       return 2;
     }
     let value;
@@ -653,7 +666,7 @@ function main(argv) {
       console.error(`writer: refused — bad-binding: the value is not JSON (${e.message})`);
       return 1;
     }
-    const text = fs.readFileSync(bindingsFile, 'utf8');
+    const text = fs.existsSync(bindingsFile) ? fs.readFileSync(bindingsFile, 'utf8') : '{}';
     const result = addBinding(text, id, value, { corpora: corpusNouns(dir), app });
     if (!result.ok) {
       console.error(`writer: refused — ${result.error}: ${result.reason}`);
@@ -661,12 +674,17 @@ function main(argv) {
     }
     commitToDisk(bindingsFile, result);
     console.log(`writer: ${path.relative(process.cwd(), bindingsFile)} updated — the change is in your working tree and NOT committed`);
-    // Printed on stdout beside the success, not buried in a log: the whole
-    // reason this line exists is that the person who just clicked bind is the
-    // one who can tell whether sharing it with those corpora is what they meant.
+    // ⚠️ NOT A WARNING ANY MORE, and the wording had to change with the model.
+    // Under one flat map this line said the bind "now generates against this
+    // binding too" for every listed corpus, which was true and was the hazard.
+    // Under kit#66 each corpus binds its own nouns, so this write reaches
+    // nothing else — the listed corpora share the NAME and bind it themselves.
+    // Kept because it is still worth knowing when you are naming things; stated
+    // as a fact rather than an alarm, because an alarm for a thing that cannot
+    // happen is how people learn to ignore alarms.
     if (result.sharedWith.length) {
-      console.log(`writer: ⚠️  the noun namespace is GLOBAL — ${result.noun} is also referenced by ${result.sharedWith.join(', ')}, `
-        + 'which now generate against this binding too');
+      console.log(`writer: ${result.noun} is a name also used by ${result.sharedWith.join(', ')}, `
+        + 'which bind it separately — this write reaches only ' + app);
     }
     return 0;
   }
@@ -712,7 +730,10 @@ function main(argv) {
 module.exports = {
   block, ids, addStep, addBehaviour, setReview, validate, shape,
   addBinding, sharedWith, corpusNouns, isComment, isNoun,
-  corpusPath, commitToDisk, parseArgs, main, INDENT, BINDINGS_FILE,
+  // No `BINDINGS_FILE` re-export: there is no longer ONE bindings file to name,
+  // and a re-export would have been a second answer to kit#66's question. Ask
+  // `bindings.js` for `fileFor(app, dir)` instead.
+  corpusPath, commitToDisk, parseArgs, main, INDENT,
 };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

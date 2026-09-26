@@ -46,7 +46,11 @@ const realBlob = norm(expand(real));
 const dir = path.join(__dirname, 'behaviours');
 const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
   .flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
-const bindings = require('./bindings.js').read(null);
+// Each behaviour generates against ITS OWN corpus's bindings (kit#66), never a
+// merged map — the same rule kit.js follows, so this comparison and the report
+// cannot disagree about what a corpus binds.
+const bindingsOf = require('./bindings.js');
+const byApp = bindingsOf.readAll(dir);
 const { behaviours, symbols } = resolve(all);
 
 let exact = 0, substring = 0, absent = 0;
@@ -54,7 +58,7 @@ const misses = [];
 
 console.log(`── every generated line vs ${REPO}@origin/dev:${SPEC} ──\n`);
 for (const b of behaviours) {
-  const { code } = generate(b, bindings, symbols);
+  const { code } = generate(b, byApp[bindingsOf.corpusOf(b)] || {}, symbols);
   for (const raw of code.split('\n')) {
     const line = raw.trim();
     if (!line.startsWith('await ')) continue;

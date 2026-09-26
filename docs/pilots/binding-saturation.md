@@ -96,6 +96,13 @@ does not show up as shared because only snip-it's corpus references it. The
 honest summary is that the namespace forces a choice between collision and zero
 reuse, and neither branch produces saturation across apps.
 
+> ⚠️ **Superseded 2026-09-25 (claude-code-bot#66).** James decided the namespace this section
+> treats as forced is no longer global: bindings now live per-corpus at
+> `prototypes/behaviour-ast/behaviours/<app>.bindings.json`, so there is no shared table for two
+> apps to collide in or fail to reuse. The zero-reuse measurement above held under the shared
+> `bindings.json` design and stands as a record of what was true at the time; it is not a
+> property of the corpora going forward.
+
 ## The head-to-head Kit has never run
 
 The claim is against Gherkin, but the fairer comparison is against what a person

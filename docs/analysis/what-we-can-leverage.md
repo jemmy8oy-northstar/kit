@@ -243,6 +243,12 @@ after the next edit:
   a CI step, or a git hook. "Fails the build" is aspirational at the level of this code.
 - Only one binding file (`bindings.json`, 14 nouns) against one behaviour corpus (8 behaviours, all from one
   spec file). No test of noun-binding reuse across multiple unrelated apps/repos.
+
+  > ⚠️ **Superseded 2026-09-25 (claude-code-bot#66).** James decided against a single shared
+  > binding file: bindings now live per-corpus at `prototypes/behaviour-ast/behaviours/<app>.bindings.json`,
+  > with a per-corpus noun namespace rather than a global one. The single-file, single-corpus count above
+  > describes the prototype as it stood before that decision and stands as a record of what was true at
+  > the time.
 - Only Playwright is a generation target. No Vitest/RTL emission, no backend (xUnit) emission — despite the
   estate having wired harnesses for both (see §3).
 - No handling of contradictions beyond same-slot value mismatch — no semantic/near-duplicate detection (the
