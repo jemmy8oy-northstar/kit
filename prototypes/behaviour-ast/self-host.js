@@ -251,6 +251,15 @@ function main(argv) {
   // accepts drift silently" mutant survived for the first time. It is not an
   // equivalent mutant; the JSON branch really did stop being proven, and a
   // hand-edited findings file is the one drift only it can catch.
+  // An unknown flag is a refusal, not a silent drop (cli.js). `--check` here gates
+  // a committed document, and the paragraph above is the argument for why: a
+  // refusal no test can reach is decorative, and a refusal a typo can skip past is
+  // the same thing with extra steps.
+  const bad = require('./cli.js').unknownFlag(argv, ['--check', '--corpus', '--findings', '--record', '--writeup']);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: node self-host.js [--corpus <file>] [--writeup <file>] [--findings <file>] [--record] [--check]');
+  }
   const ci = argv.indexOf('--corpus');
   const wi = argv.indexOf('--writeup');
   const fi = argv.indexOf('--findings');

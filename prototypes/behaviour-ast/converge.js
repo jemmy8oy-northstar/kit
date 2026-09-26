@@ -165,6 +165,17 @@ function render(loaded, pairs) {
 
 function main(argv) {
   const args = argv.slice(2);
+  // An unknown flag is a refusal, not a silent drop (cli.js). This tool reports a
+  // measurement that gets quoted in documents, and a measurement attributed to the
+  // wrong input is worse than no measurement.
+  //
+  // ⚠️ `--dir` is REFUSED here rather than wired up, even though `load()` at line 81
+  // already accepts `opts.dir` and nothing passes it. Wiring it would be giving a
+  // tool a flag it lacks, which is `kit.js:1187`'s deferral to James; and the error
+  // at line 83 hardcodes `behaviours/${app}.beh`, so a wired `--dir` would report
+  // the wrong directory in its own refusal. Both noted, neither done.
+  const unknown = require('./cli.js').unknownFlag(args, ['--json']);
+  if (unknown) return require('./cli.js').refuse(unknown, 'usage: node converge.js <appA> <appB> [<appC> ...] [--json]');
   const asJson = args.includes('--json');
   const apps = args.filter((a) => !a.startsWith('--'));
 
