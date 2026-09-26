@@ -62,6 +62,10 @@ const SUBJECT_FILES = [
   'src/components/useWrite.ts',
   'src/hooks/useResource.ts',
   'src/api/client.ts',
+  // kit#46. Added in the same commit as the component, which is the whole
+  // reason it has to be here: 8 tests written beside the code they test prove
+  // nothing until something breaks the code and watches them go red.
+  'src/components/SignIn.tsx',
 ];
 const SUBJECTS = {};
 for (const f of SUBJECT_FILES) SUBJECTS[f] = fs.readFileSync(path.join(UI, f), 'utf8');
@@ -271,6 +275,30 @@ const MUTANTS = [
     'return i === -1 ? Number.MAX_SAFE_INTEGER : i', 'return i === -1 ? -1 : i', 'src/pages/BehaviourPage.tsx'],
   ['"Kit generated nothing for this behaviour" and an empty generated test become the same screen',
     'if (!generated) {', 'if (false) {', 'src/pages/BehaviourPage.tsx'],
+
+  // ── the sign-in gate (kit#46) ─────────────────────────────────────────────
+  // The server-side lock is mutated in `mutate.js`. What only these can reach
+  // is which of three states the PAGE decides it is in — and the two failures
+  // that matter are both "shows the app when it should not", because a gate
+  // that wrongly opens is the one nobody reports.
+  ['a locked Kit renders the app anyway, so the gate is decoration',
+    '  if (state.required && !state.signedIn) {', '  if (false) {', 'src/components/SignIn.tsx'],
+  ['a LOCAL Kit is shown a password field, inventing a step that does not exist',
+    '  if (state.required && !state.signedIn) {', '  if (!state.signedIn) {', 'src/components/SignIn.tsx'],
+  ['the app renders for one frame before the server has answered, firing reads it cannot make',
+    '  if (!state) {\n    return <p role="status">Checking…</p>\n  }', '  if (false) {\n    return <p role="status">Checking…</p>\n  }',
+    'src/components/SignIn.tsx'],
+  // A server we could not ask must not fall through to the app: the app then
+  // makes read calls that also fail, and an unreachable server presents as an
+  // empty corpus [[empty-means-two-things]].
+  ['a server that could not be asked falls through to the app instead of saying so',
+    '  if (error && !state) {', '  if (false) {', 'src/components/SignIn.tsx'],
+  ['a wrong password is swallowed, so the form just clears and nothing explains why',
+    '        setError(err instanceof ApiError ? err.message : \'Could not sign in\')', '        setError(null)',
+    'src/components/SignIn.tsx'],
+  ['an empty password is submittable, spending one of the throttle\'s five attempts on a stray tap',
+    '        <button type="submit" disabled={busy || password.length === 0}>', '        <button type="submit" disabled={busy}>',
+    'src/components/SignIn.tsx'],
 ];
 
 let killed = 0;
