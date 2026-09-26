@@ -4328,6 +4328,41 @@ test('marker: the marker tells a reader how to recover, and warns off git checko
   assert.ok(text.indexOf('deliberately WRONG') < text.indexOf('{"tool"'));
 });
 
+test('every tracked source file is plain text — one NUL byte makes grep skip the whole file', () => {
+  // Repository state, like the two marker tests above, and asserted against the
+  // REAL tree because the claim is about this repo rather than about a fixture.
+  //
+  // 🔴 Why this is worth a test rather than a one-line fix and a shrug: a single
+  // NUL byte makes `grep` classify a file as BINARY, and a binary file's matching
+  // LINES are suppressed while `-c` and `-l` keep answering normally. So the
+  // failure states the opposite of itself — `grep -c` says 37 matches and
+  // `grep -rn` shows none of them, in the file it is most worth searching.
+  // `kit.js` carried one for an unknown time, written as a literal byte where the
+  // `\0` escape was meant, and a search for `boundNouns` across this directory
+  // never once returned its own definition ([[empty-means-two-things]]).
+  //
+  // Whole-population, not just kit.js: the point is that nothing anywhere becomes
+  // quietly unsearchable, and a check naming one file would not have caught this
+  // one either — nobody suspected that file.
+  const ls = gitAtRoot('ls-files', '-z', '--', '*.js', '*.ts', '*.tsx', '*.beh', '*.md', '*.json', '*.yml');
+  assert.strictEqual(ls.status, 0, `could not look: git ls-files exited ${ls.status} — ${ls.err}`);
+  const files = ls.out.split('\0').filter(Boolean);
+  // Could-not-look is never green: an empty listing would pass this vacuously,
+  // which is the exact shape of bug it is written to catch.
+  assert.ok(files.length > 50, `could not look: git ls-files returned ${files.length} file(s)`);
+
+  const offenders = [];
+  for (const rel of files) {
+    const buf = fsx.readFileSync(pathx.join(realMarker.ROOT, rel));
+    const at = buf.indexOf(0);
+    if (at !== -1) offenders.push(`${rel} (first NUL at byte ${at})`);
+  }
+  assert.deepStrictEqual(offenders, [],
+    `these tracked text files contain a raw NUL byte, so grep treats them as binary and shows no `
+    + `matching lines for anything in them: ${offenders.join(', ')}. Write the separator as the `
+    + `escape \\0 in a string literal — the runtime value is identical and the file stays text.`);
+});
+
 // ── one command to run Kit (kit#37) ──────────────────────────────────────────
 // The failure this guards is the quiet one. A fresh clone with no bundle serves
 // a 503, which at least says something is wrong; a bundle built before your

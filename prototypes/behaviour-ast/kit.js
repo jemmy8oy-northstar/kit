@@ -1317,7 +1317,14 @@ if (require.main === module) {
   for (const [app, bs] of perApp) {
     const r = boundNouns(bs, byApp[app] || {});
     boundCount += r.bound;
-    for (const n of r.referenced) referenced.add(`${app} ${n}`);
+    // `\0` as an ESCAPE, never a literal NUL byte in the source. The separator
+    // itself is right — no app name or noun can contain a NUL, so the composite
+    // key cannot collide — but typing the byte rather than the escape made this
+    // file BINARY to every tool that classifies by content. `grep` then matches
+    // it and prints NOTHING, so a search across the prototype directory silently
+    // skipped kit.js, the largest source file here. An empty grep result meant
+    // "suppressed", not "absent" ([[empty-means-two-things]]).
+    for (const n of r.referenced) referenced.add(`${app}\0${n}`);
   }
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
   const unbound = new Set();
