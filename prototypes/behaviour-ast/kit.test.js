@@ -4177,7 +4177,13 @@ const silent = { log: () => {}, error: () => {} };
 // here states the thing it was always simulating: the owner is dead. Passing the
 // real probe instead would refuse all of them, which is the guard working.
 const dead = () => false;
-const stillRunning = () => true;
+// ⚠️ It asserts the pid it was HANDED. A probe that just returned `true` would
+// pass identically over a guard that checked the wrong value — or nothing at all
+// — so the delivery is tested, not only the outcome.
+const stillRunning = (pid) => {
+  assert.strictEqual(pid, process.pid, 'the guard must probe the pid recorded in the marker');
+  return true;
+};
 
 test('marker: a run killed mid-mutant is restored exactly from the marker alone', () => {
   const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
