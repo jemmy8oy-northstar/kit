@@ -117,7 +117,12 @@ The sheet is the artefact designed to be handed to someone else, so a false clai
 contents came from is worse here than in a log. Stated as a finding rather than fixed: the sheet's
 framing text is what he specified on claude-code-bot#68, so rewriting it is not mine to do alone.
 
-## 4. ⚠️ Two adjacent numbers invite an inference that is false
+## 4. ⚠️ Two adjacent numbers invite an inference that is false — now diagnosed
+
+_⚠️ **Extended later the same day.** This section originally ended *"Not diagnosed further here"*, and
+that was deliberate: the first attempt at it asserted an invariant that turned out to be mine rather
+than Kit's, so it was left as a measurement instead of a verdict. Everything from **The cause** down
+is the diagnosis. **Not one number above it was changed.**_
 
 `kit.js` prints, two lines apart:
 
@@ -140,7 +145,76 @@ neither contains the other:
 consistent under any definition where the unbound are a subset of the referenced. My first attempt at
 this finding asserted the invariant `referenced − bound = unbound` and was **wrong** — that was my
 formula, never Kit's claim. So the defect is not arithmetic; it is that two incomparable measurements
-are printed adjacently under one heading, and the reader cannot tell. Not diagnosed further here.
+are printed adjacently under one heading, and the reader cannot tell.
+
+### The cause, and it is one sentence in two places
+
+- **`nouns bound X/Y` counts the step-reference population.** `boundNouns()` calls `nounsOf()`, which
+  walks `step.refs` and nothing else (`kit.js:1151`).
+- **The `unbound` list counts the binding-target population.** It is `generate()`'s `missing`, and
+  `kit.js:325` fills that **only from `bind()` calls `emit()` actually reaches** — the comment beside
+  it says so: *"bind() is the ONLY thing that records a noun as missing."*
+
+Three mechanisms then separate them, and all three are visible in the corpora:
+
+1. **A noun on a step `emit()` refuses is never a binding target.** `kit.beh` is the extreme case:
+   **23 of its 43 referenced nouns** are `command:`, `status:`, `error:`, `slot:`, `host:` — no
+   locator will ever bind them, so they sit in the denominator and never in the list.
+2. **`fills form:X with ?fields` binds the resolved *fields*, never the form.** So `form:NewIdea`,
+   `form:Upload` and `form:NewLoan` are referenced-and-unbound and reported by nothing. That is §2
+   above, seen from the other side.
+3. **A `field:` named only in a `provides form:X.fields = …` value is a binding target that was never
+   referenced.** `field:Idea`, `field:WhyNow`, `field:Hours`, `field:DueDate`. This is what pushes
+   `longlist` to 18 against 17.
+
+| corpus | `bound/referenced` | `unbound` listed | needs binding, never listed | listed, not referenced |
+|---|---|---|---|---|
+| `longlist` | 0/17 | **18** | 1 — `form:NewIdea` | 2 — `field:Idea`, `field:WhyNow` |
+| `kit` | 0/43 | 20 | **23** | — |
+| `snip-it` | 14/17 | 2 | 1 — `form:Upload` | — |
+| `trial-lend` | 0/16 | 16 | 1 — `form:NewLoan` | 1 — `field:DueDate` |
+| `trial-habits-b` | 0/17 | 16 | 2 | 1 — `field:Hours` |
+| `james-habits-app` | 0/16 | 15 | 1 — `field:HabitValue` | — |
+| `macro-metrics` | 13/18 | 5 | — | — |
+
+🔑 **Mechanism 3 is already documented, and that is what settles who owns the fix.** `writer.js:420`
+and `:560` state it outright — *"a `field:` named only in a `provides` value is invisible to
+`nounsOf()`"* — and `requires.js:219-228` keeps three populations deliberately apart for exactly this
+reason. `mutate.js` even carries a mutant for the generator half (*"a field reached through a
+`provides` goes back to bypassing `bind()`, so the CLI stops naming it"*). So **`nounsOf()` is not a
+bug to patch**: two callers depend on it being precisely the step-reference population. The defect is
+in the **report**, which prints a fraction over one population two lines above a list over the other,
+under one `── measured ──` heading, with nothing saying so.
+
+### The consequence for a reader, which is not cosmetic
+
+**Two Kit commands print a line called `nouns referenced` for the same corpus and disagree — in 8 of
+the 10 committed corpora.**
+
+```
+$ node kit.js longlist      | grep 'nouns bound'
+  nouns bound           0/17
+$ node requires.js longlist | grep 'nouns referenced'
+  nouns referenced   18
+```
+
+And the instruction the numbers imply is wrong in both directions: binding every noun on the
+`unbound` list still leaves refused steps, because mechanisms 1 and 2 put nouns in the denominator
+that no binding can satisfy — 23 of them in Kit's own corpus. `0/43` is not "0% of the way through
+binding Kit"; only 20 of those 43 are work a binding could ever do.
+
+⚠️ **Which population `nouns bound X/Y` should use is a question, not a patch** — the fraction could
+move onto the binding targets, or the report could name all three populations. Raised rather than
+answered.
+
+### One thing found while diagnosing it, and fixed
+
+Putting the two CLIs side by side over all ten corpora needed `node kit.js kit`, which turned out to
+report on `kit.beh` **and** `kit-ui.beh` merged: `kit.js:1257` filtered corpus files by substring. It
+read 26 behaviours and `20/126 = 16%` derived for a corpus whose own answer is 20 and `0/96 = 0%` —
+erasing the zero that is the entire reason `kit-ui.beh` exists separately — and it gave one id to two
+behaviours, because both corpora legitimately define `BEH-ADJ-1`. Unlike everything else in this
+document that is a plain defect with no product question in it, so it is fixed rather than reported.
 
 ## 5. What the author found hard (model-dependent — read as testimony, not measurement)
 
