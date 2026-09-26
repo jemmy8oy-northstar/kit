@@ -1188,9 +1188,17 @@ const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
 //
 // ⚠️ `kit.beh`'s **0 derived** is load-bearing evidence — it is why `kit-ui.beh`
 // exists as a separate corpus at all — and the most natural command in Kit's own
-// repo turned it into 16% without a word. `kit.js:1184`'s own comment says "a
-// confident 26-behaviour report about Kit's own corpus", so the conflation had
-// already been written into this file as though 26 were one corpus.
+// repo turned it into 16% without a word. The conflation had already been
+// written into this file as though 26 were one corpus: the `parseCliArgs` comment
+// below described "a confident 26-behaviour report about Kit's own corpus", and
+// that sentence is corrected in the same commit as this one — which is why it is
+// quoted here from its own historical note rather than cited by line.
+//
+// ⚠️ An earlier draft of this paragraph cited `kit.js:1184` in the present tense
+// for that sentence. Both halves were wrong: the line number was this comment's
+// own table, and the sentence had been deleted by this very change. A citation
+// into the file you are editing goes stale as you edit it — quote, or point at a
+// function by name.
 //
 // The rule, in the order it resolves:
 //   1. an EXACT corpus name wins. `node kit.js kit` means `kit.beh`, because a
@@ -1211,7 +1219,20 @@ const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
 // two that substring-matched are the two that print aggregates.
 function selectCorpora(files, only) {
   const beh = files.filter((f) => f.endsWith('.beh'));
-  if (!only) return { files: beh };
+  // ⚠️ `only == null`, NOT `!only`. An empty string is a name that was GIVEN and
+  // is empty, which is a different statement from no name at all — and the first
+  // draft of this function conflated them, so `node kit.js ""` reported 133
+  // behaviours merged across all ten corpora. That is precisely the failure this
+  // function exists to prevent, reached through a different door, and
+  // `node kit.js "$CORPUS"` with `CORPUS` unset is how a script walks into it.
+  if (only === null || only === undefined) return { files: beh };
+  if (only === '') {
+    return {
+      files: [],
+      kind: 'empty',
+      error: 'an empty corpus name was given — name one, or pass no name at all to report on every corpus',
+    };
+  }
   const exact = beh.filter((f) => f === `${only}.beh`);
   if (exact.length) return { files: exact };
   const matches = beh.filter((f) => f.includes(only));
@@ -1319,6 +1340,11 @@ if (require.main === module) {
   const { sheet: sheetMode, only, rev } = cli;
   const picked = selectCorpora(fs.readdirSync(dir), only);
   if (picked.error) {
+    // The `kind` check is what stops "that names three corpora" acquiring a
+    // directory path it is not about. ⚠️ Held by a SPAWNED test, not a unit one:
+    // replacing this whole block with `process.exit(0)` left all 346 tests green
+    // — `selectCorpora` was covered and the wiring that turns its refusal into an
+    // exit code and a sentence was covered by nothing.
     console.error(`cannot look: ${picked.error}${picked.kind === 'none' ? ` in ${dir}` : ''}`);
     process.exit(2);
   }

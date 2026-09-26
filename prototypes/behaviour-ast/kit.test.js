@@ -1166,6 +1166,50 @@ test('node kit.js kit reports on kit.beh ALONE, and kit-ui.beh is nowhere in it'
   }
 });
 
+test('selectCorpora: an EMPTY name is a refusal, not "you gave me no name"', () => {
+  // ⚠️ `only == null`, not `!only`. The first draft used `!only`, so
+  // `node kit.js ""` reported **133 behaviours merged across all ten corpora** —
+  // the exact failure this function exists to prevent, through a different door.
+  // `node kit.js "$CORPUS"` with `CORPUS` unset is how a script walks into it.
+  const r = selectCorpora(DIR_LISTING, '');
+  assert.strictEqual(r.kind, 'empty');
+  assert.deepStrictEqual(r.files, []);
+  assert.match(r.error, /an empty corpus name was given/);
+  // The control: no name at all is still the deliberate aggregate, and the two
+  // must not collapse back into one branch.
+  assert.strictEqual(selectCorpora(DIR_LISTING, null).error, undefined);
+  assert.strictEqual(selectCorpora(DIR_LISTING, undefined).error, undefined);
+});
+
+test('a REFUSED `node kit.js <name>` exits 2, says why, and prints no report', () => {
+  // ⚠️ SPAWNED, and this test exists because a unit test on `selectCorpora` is
+  // not a test of the CLI. Replacing the whole `if (picked.error)` block in the
+  // `require.main` section with `process.exit(0)` left all 346 tests GREEN: the
+  // rule was covered and the wiring that turns it into an exit code and a
+  // sentence a user reads was covered by nothing ([[passing-is-not-gating]]).
+  const run = (arg) => require('child_process').spawnSync(
+    'node', [pathx.join(__dirname, 'kit.js'), arg], { encoding: 'utf8', maxBuffer: 1 << 26 });
+
+  const amb = run('trial');
+  assert.strictEqual(amb.status, 2, `an ambiguous name must exit 2; stdout: ${amb.stdout}`);
+  assert.match(amb.stderr, /"trial" names 3 corpora — trial-habits-a, trial-habits-b, trial-lend/);
+  assert.strictEqual(amb.stdout, '', `a refused run printed a report anyway: ${amb.stdout}`);
+  // ⚠️ The directory path belongs to "nothing is there", NOT to "that names
+  // three things" — the first version of this stapled a path onto the end of a
+  // sentence about candidates, and it read as a sentence about the directory.
+  assert.ok(!amb.stderr.includes(__dirname), `the ambiguity message named a directory: ${amb.stderr}`);
+
+  const none = run('zznope');
+  assert.strictEqual(none.status, 2, `an unmatched name must exit 2; stdout: ${none.stdout}`);
+  assert.match(none.stderr, /no corpus matching "zznope"/);
+  assert.ok(none.stderr.includes('behaviours'), `"nothing is there" must say where it looked: ${none.stderr}`);
+
+  const empty = run('');
+  assert.strictEqual(empty.status, 2, `an empty name must exit 2; stdout: ${empty.stdout}`);
+  assert.match(empty.stderr, /an empty corpus name was given/);
+  assert.strictEqual(empty.stdout, '', `an empty name still produced a report: ${empty.stdout}`);
+});
+
 test('the merge `node kit.js kit` used to do gave one id to two behaviours', () => {
   // 🔑 WHY THE MERGE WAS WORSE THAN A WRONG PERCENTAGE. `kit.beh` and
   // `kit-ui.beh` both define BEH-ADJ-1 — legitimately, because they are two
