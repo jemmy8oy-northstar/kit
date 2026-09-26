@@ -66,6 +66,10 @@ const SUBJECT_FILES = [
   // reason it has to be here: 8 tests written beside the code they test prove
   // nothing until something breaks the code and watches them go red.
   'src/components/SignIn.tsx',
+  // kit#49. App.tsx carried no rule worth mutating until rule 8 put the router's
+  // `basename` in it — one prop whose absence is a page that draws correctly and
+  // links out of the application.
+  'src/App.tsx',
 ];
 const SUBJECTS = {};
 for (const f of SUBJECT_FILES) SUBJECTS[f] = fs.readFileSync(path.join(UI, f), 'utf8');
@@ -217,9 +221,16 @@ const MUTANTS = [
     'return post<BindResult>(`/api/projects/bindings`, { noun, binding })', 'src/api/client.ts'],
 
   // ── decision 2's boundary, which is only a guarantee if he can watch it hold ─
+  // ⚠️ RE-ANCHORED (kit#49). This pointed at a flat ternary,
+  // `{result.committed ? 'Committed.' : 'Not committed — …'}`, which kit#45
+  // replaced with a nested one when it added the commit-and-push rendering. The
+  // anchor therefore stopped matching the moment that merged, and the rule went
+  // UNMEASURED — which is exactly the failure `mutate.js`'s header is about, and
+  // the reason an unmatched anchor is reported rather than skipped. Inverting the
+  // condition says the same thing as swapping the branches did, and is anchored
+  // on one short line instead of on the shape of the whole expression.
   ['a write that touched no git reports "Committed.", so the boundary decision 2 draws is invisible',
-    "{result.committed ? 'Committed.' : 'Not committed — Kit does not run git.'}",
-    "{result.committed ? 'Not committed — Kit does not run git.' : 'Committed.'}",
+    '        {result.committed\n', '        {!result.committed\n',
     'src/components/WriteResultNote.tsx'],
   ['a bind that changed what OTHER corpora generate says nothing — the global namespace goes silent again',
     '{bind && bind.sharedWith.length > 0 && (', '{false && (', 'src/components/WriteResultNote.tsx'],
@@ -299,13 +310,70 @@ const MUTANTS = [
   ['an empty password is submittable, spending one of the throttle\'s five attempts on a stray tap',
     '        <button type="submit" disabled={busy || password.length === 0}>', '        <button type="submit" disabled={busy}>',
     'src/components/SignIn.tsx'],
+
+  // ── the path Kit is served under (kit#49, rule 8) ───────────────────────────
+  // Both of these describe the same outcome and it is the quietest one in the
+  // estate: Kit deployed at `/kit` shares its host with four other apps behind an
+  // ingress that does not rewrite, and **every unmatched path there answers 200
+  // with the portfolio's SPA**. So neither failure 404s. The first loads a page
+  // that cannot fetch anything; the second gives you a header link that silently
+  // leaves Kit. Nothing on either side logs a thing
+  // ([[green-over-the-clients-question]]).
+  ['every fetch goes to the host root, where a sibling app answers 200 and the page loads nothing',
+    "  return import.meta.env.BASE_URL.replace(/\\/$/, '') + path",
+    '  return path',
+    'src/api/client.ts'],
+  // Not `basename={undefined}`: dropping the prop is what a careless edit
+  // actually does, and it is the spelling that must go red.
+  ['the router loses its basename, so every link in the header navigates out of Kit entirely',
+    "      <Router basename={import.meta.env.BASE_URL.replace(/\\/$/, '') || '/'}>", '      <Router>',
+    'src/App.tsx'],
+  // 🔴 The defect a real browser found and the whole server-side suite could not.
+  // react-router matches a basename by `startsWith`, so `/kit/` never matches the
+  // location `/kit` — the URL he types — and the router renders NOTHING while the
+  // shell, both hashed assets and every API call return 200. This mutant is the
+  // bug, put back deliberately, so the test that caught it can never be deleted
+  // without something going red.
+  ['the basename keeps its trailing slash, so /kit renders a white page and every request still 200s',
+    "      <Router basename={import.meta.env.BASE_URL.replace(/\\/$/, '') || '/'}>",
+    '      <Router basename={import.meta.env.BASE_URL}>',
+    'src/App.tsx'],
 ];
+
+// ── --only filter ────────────────────────────────────────────────────────────
+// Proves a small slice (e.g. one new component's mutants) without paying for
+// the full ~70-minute run. Filters a DERIVED list only: MUTANTS itself,
+// SUBJECT_FILES, SUBJECTS and restoreAll() are untouched, so restore still
+// covers every subject file even when this run only mutates one of them.
+const onlyArgIdx = process.argv.indexOf('--only');
+const only = onlyArgIdx !== -1 ? process.argv[onlyArgIdx + 1] : null;
+// `--only` with nothing after it, or followed by another flag, would otherwise
+// leave `only` falsy and run the FULL suite while the operator believes they
+// asked for a slice — the same "absent and empty read identically" failure the
+// zero-match check below refuses ([[empty-means-two-things]]).
+if (onlyArgIdx !== -1 && (only === undefined || only.startsWith('--'))) {
+  console.error('cannot look: --only needs a substring to match, e.g. `--only SignIn.tsx`');
+  process.exit(2);
+}
+const RUN_MUTANTS = only
+  ? MUTANTS.filter(([name, , , file]) => name.includes(only) || file.includes(only))
+  : MUTANTS;
+
+// A filter that matches nothing is a typo, not an empty pass. Reading a 0/0
+// run as success is exactly the "silently reports 0 survived because it never
+// ran anything" failure this harness exists to catch (see the block above the
+// vitest-presence check), so a bad --only exits 2 (could not look) rather
+// than 0.
+if (only && RUN_MUTANTS.length === 0) {
+  console.error(`cannot look: --only ${JSON.stringify(only)} matched no mutants`);
+  process.exit(2);
+}
 
 let killed = 0;
 const survived = [];
 const invalid = [];
 
-for (const [name, from, to, file] of MUTANTS) {
+for (const [name, from, to, file] of RUN_MUTANTS) {
   const original = SUBJECTS[file];
   // An anchor that stopped matching is a SURVIVOR, not a skip. A refactor that
   // moves the line silently stops the rule from being measured, and a skip
@@ -354,7 +422,20 @@ for (const [name, from, to, file] of MUTANTS) {
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
 
-console.log(`\n${killed}/${MUTANTS.length} killed, ${survived.length} survived, ${invalid.length} invalid`);
+// A filtered run must never be readable as a full score: printing only
+// "${killed}/${RUN_MUTANTS.length}" would look identical to a genuine
+// suite-wide result whenever the filtered count happens to read cleanly.
+// State the filter and the true MUTANTS.length alongside it so a filtered
+// pass can never be mistaken for "the suite is proven".
+if (only) {
+  console.log(
+    `\n${killed}/${RUN_MUTANTS.length} killed, ${survived.length} survived, ${invalid.length} invalid` +
+      ` — FILTERED RUN (--only ${JSON.stringify(only)}) over ${RUN_MUTANTS.length} of ${MUTANTS.length} mutants` +
+      ' total; this is NOT a score for the suite.',
+  );
+} else {
+  console.log(`\n${killed}/${MUTANTS.length} killed, ${survived.length} survived, ${invalid.length} invalid`);
+}
 
 // Restoring from an in-memory copy can itself be the thing that is broken, so
 // the run does not get to end on trust: the suite must be green again before
