@@ -1257,7 +1257,12 @@ if (require.main === module) {
     .filter((f) => !only || f.includes(only));
   if (!files.length) { console.error(`no corpus matching "${only}" in ${dir}`); process.exit(2); }
   const all = files.flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
-  const bindings = require('./bindings.js').read(null);
+  // One map per corpus, never a merged one. A behaviour is generated against its
+  // OWN corpus's bindings, so two corpora using the same noun name cannot reach
+  // each other — by construction rather than by a warning (kit#66).
+  const bindingsOf = require('./bindings.js');
+  const byApp = bindingsOf.readAll(dir);
+  const bindingsFor = (b) => byApp[bindingsOf.corpusOf(b)] || {};
   const { behaviours, conflicts, symbols } = resolve(all);
 
   // ⚠️ REFUSE, rather than report a table of zeros ending `0/0 = NaN%`. Both
@@ -1295,12 +1300,30 @@ if (require.main === module) {
     return;
   }
 
-  const { referenced, bound: boundCount } = boundNouns(behaviours, bindings);
+  // ⚠️ Counted PER CORPUS and then summed, not over one merged map. Under
+  // per-corpus bindings, `region:Main` in two corpora is two nouns owned by two
+  // projects, so deduplicating by name across corpora would under-count the
+  // denominator — it would report one noun where there are two things to bind.
+  // This is why the all-corpora run's ratio moves in kit#66 while every
+  // single-corpus run is untouched.
+  const perApp = new Map();
+  for (const b of behaviours) {
+    const app = bindingsOf.corpusOf(b) || '<inline>';
+    if (!perApp.has(app)) perApp.set(app, []);
+    perApp.get(app).push(b);
+  }
+  let boundCount = 0;
+  const referenced = new Set();
+  for (const [app, bs] of perApp) {
+    const r = boundNouns(bs, byApp[app] || {});
+    boundCount += r.bound;
+    for (const n of r.referenced) referenced.add(`${app} ${n}`);
+  }
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
   const unbound = new Set();
 
   for (const b of behaviours) {
-    const { code, missing, stats } = generate(b, bindings, symbols);
+    const { code, missing, stats } = generate(b, bindingsFor(b), symbols);
     for (const k of Object.keys(totals)) totals[k] += stats[k];
     missing.forEach((m) => unbound.add(m));
     console.log(code);

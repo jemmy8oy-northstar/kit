@@ -9,7 +9,7 @@
 //
 //   node prose-audit.js                                  # ledger only
 //   node prose-audit.js --source <path-to-user-stories>  # + drift check
-//   node prose-audit.js --demo-collision                 # the global-noun hazard
+//   node prose-audit.js --demo-collision                 # the global-noun hazard, before and after
 //
 // Exit codes follow check.js, and the middle one is the point:
 //   0  every AC in the ledger is accounted for, and every claim it makes holds
@@ -106,19 +106,36 @@ function audit(ledger, behaviours) {
   return { problems, tally, shapes, asked };
 }
 
-// Not a test — a demonstration, because "the noun namespace is global" is the
-// kind of claim that reads as pedantry until you see the wrong line come out.
+// Not a test — a demonstration, kept because the hazard it used to show is the
+// reason kit#66 exists, and "it cannot happen now" is the kind of claim that
+// reads as assertion until you see the refusal come out.
+//
+// ⚠️ THIS USED TO PRINT THE BUG AND NOW PRINTS THE FIX. Under one flat map, a
+// macro-metrics behaviour saying `page:Home` inherited snip-it's `./` and emitted
+// a test that RAN, against the wrong app, with no unbound-noun warning. Bindings
+// now live with the corpus, so the same behaviour resolves against
+// macro-metrics' own file, does not find the noun, and refuses by name.
+//
+// Both sides are printed, because "the emitted line is gone" is only evidence if
+// you can see what it was replaced by — and a demo that shows nothing at all
+// reads the same as a demo that broke ([[empty-means-two-things]]).
 function demoCollision() {
-  const bindings = require('./bindings.js').read(null);
+  const bindingsOf = require('./bindings.js');
   const src = 'behaviour BEH-DEMO "a macro-metrics behaviour that says page:Home"\n  actor visitor\n  when opens page:Home';
-  const { behaviours, symbols } = resolve(parse(src, 'demo.beh'));
-  const { code } = generate(behaviours[0], bindings, symbols);
-  console.log('── --demo-collision: what a second app gets for free ──');
-  console.log("   macro-metrics' home is /macro-metrics/. snip-it's page:Home is './'.");
-  console.log('   A macro-metrics corpus that writes page:Home emits:\n');
-  console.log(code.split('\n').map((l) => '   ' + l).join('\n'));
-  console.log('\n   No unbound-noun warning, no conflict, and the test RUNS — against the');
-  console.log('   wrong app. Every noun in bindings.json is global across every corpus.');
+  const { behaviours, symbols } = resolve(parse(src, 'macro-metrics.beh'));
+  const own = generate(behaviours[0], bindingsOf.readFor('macro-metrics'), symbols);
+  const snipIt = generate(behaviours[0], bindingsOf.readFor('snip-it'), symbols);
+
+  console.log('── --demo-collision: the hazard kit#66 removed ──');
+  console.log("   macro-metrics' home is /macro-metrics/. snip-it's page:Home is './'.\n");
+  console.log('   BEFORE — one flat map, so this corpus reached snip-it\'s binding:');
+  console.log(snipIt.code.split('\n').map((l) => '     ' + l).join('\n'));
+  console.log('     (no unbound-noun warning, no conflict, and the test RUNS — against');
+  console.log('      the wrong app. That was the whole hazard.)\n');
+  console.log('   NOW — the corpus binds its own nouns, and page:Home is not one of them:');
+  console.log(own.code.split('\n').map((l) => '     ' + l).join('\n'));
+  console.log(`     unbound noun(s): ${own.missing.join(', ') || '(none)'}`);
+  console.log('\n   A refusal that names the noun, instead of a green test against the wrong app.');
 }
 
 function main(argv) {

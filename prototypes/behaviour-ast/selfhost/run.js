@@ -40,7 +40,7 @@ const kit = require('../kit.js');
 const ROOT = path.join(__dirname, '..');
 const CORPUS = path.join(ROOT, 'behaviours');
 const SUBJECT = 'kit-ui.beh';
-const BINDINGS = require('../bindings.js').BINDINGS_FILE;
+const bindingsOf = require('../bindings.js');
 const DIST = path.join(ROOT, 'ui', 'dist', 'index.html');
 const EXPECTED = path.join(__dirname, 'expected.json');
 
@@ -48,8 +48,17 @@ const EXPECTED = path.join(__dirname, 'expected.json');
 // and concatenate `generate()`'s output. Nothing here rewrites, reorders or
 // repairs what the generator emitted — the whole point is to execute Kit's
 // output rather than a tidied version of it.
-function emitSpec(corpusPath = path.join(CORPUS, SUBJECT), bindingsPath = BINDINGS) {
-  const bindings = JSON.parse(fs.readFileSync(bindingsPath, 'utf8'));
+// `dir` rather than a bindings path: under kit#66 a corpus's bindings are a
+// function of where the corpus is, so naming the directory names both. Callers
+// that want the isolated copy pass the tmpdir and get the copied bindings with
+// it — there is no second argument left to forget.
+function emitSpec(corpusPath = path.join(CORPUS, SUBJECT)) {
+  // Both the app and the directory come from the ONE path given, because under
+  // kit#66 that is what determines the bindings. There is no second argument to
+  // pass the wrong file in, which is the half-applied isolation this harness
+  // shipped with for three months.
+  const app = path.basename(corpusPath).replace(/\.beh$/, '');
+  const bindings = bindingsOf.readFor(app, path.dirname(corpusPath));
   const src = fs.readFileSync(corpusPath, 'utf8');
   const { behaviours, symbols } = kit.resolve(kit.parse(src, path.basename(corpusPath)));
 
@@ -210,17 +219,15 @@ async function main(argv = []) {
   const corpus = path.join(tmp, 'behaviours');
   fs.mkdirSync(corpus);
   for (const f of fs.readdirSync(CORPUS)) fs.copyFileSync(path.join(CORPUS, f), path.join(corpus, f));
-  // The bindings belong inside that isolation too, and did not used to be. The
-  // corpus was copied precisely so a self-hosted test could not dirty the real
-  // one, while the `ui.js` spawned below was given `--dir` and no `--bindings` —
-  // so a bind would have written straight into the repo's own bindings.json.
-  // ⚠️ Latent rather than live: kit-ui.beh is entirely `opens`/`sees`, so nothing
-  // generated from it reaches the bind route today. Half-applied isolation is
-  // still worth closing, because what makes it reachable is adding one behaviour.
-  // Named off the resolver rather than spelled again, so the copy follows the
-  // real file if it is ever renamed — and so this stays the one place that knows.
-  const bindings = path.join(tmp, path.basename(BINDINGS));
-  fs.copyFileSync(BINDINGS, bindings);
+  // ⚠️ The loop above is what isolates the bindings, and that is the whole point
+  // of kit#66's shape. This used to copy the corpus and NOT the one global
+  // bindings.json, then spawn `ui.js` with `--dir` and no `--bindings` — so a
+  // self-hosted bind wrote straight into the repo's real file. (Latent rather
+  // than live: kit-ui.beh is all `opens`/`sees`, so nothing generated from it
+  // reached the bind route. What made it reachable was adding one behaviour.)
+  // Now the bindings sit INSIDE `behaviours/` as `<app>.bindings.json`, so
+  // copying the directory copies them, and the half-applied state has no way to
+  // be written down. Do not reintroduce a second path here.
   const specs = path.join(tmp, 'specs');
   fs.mkdirSync(specs);
   fs.writeFileSync(path.join(specs, 'kit-ui.spec.ts'), spec.source);
@@ -242,7 +249,7 @@ async function main(argv = []) {
     return 2;
   }
 
-  const server = spawn(process.execPath, [path.join(ROOT, 'ui.js'), '--port', String(port), '--dir', corpus, '--bindings', bindings], { stdio: 'ignore' });
+  const server = spawn(process.execPath, [path.join(ROOT, 'ui.js'), '--port', String(port), '--dir', corpus], { stdio: 'ignore' });
   let code = 0;
   try {
     if (!(await waitForServer(port))) {

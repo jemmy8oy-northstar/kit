@@ -38,16 +38,20 @@
 # question is kit#23's and is still open. Read the derived count as evidence
 # about the generator, never about the notation's learnability.
 #
-# ── Nouns are prefixed `Kit*`, and that is not style ─────────────────────────
-# bindings.json's own warning: THE NOUN NAMESPACE IS GLOBAL ACROSS APPS. An
-# unprefixed `page:Home` here would silently reuse snip-it's binding and emit
-# `page.goto('./')` — a test that RUNS, against the wrong app, with no
-# unbound-noun warning. Prefixing is a habit rather than a design, and that is
-# still true; it is written down here so the next corpus does not learn it the
-# hard way.
+# ── Nouns are prefixed `Kit*`, and they no longer need to be ─────────────────
+# THE REASON IS GONE AS OF claude-code-bot#66 (2026-09-25). The old bindings file
+# warned that THE NOUN NAMESPACE IS GLOBAL ACROSS APPS: an unprefixed `page:Home`
+# here would silently reuse snip-it's binding and emit `page.goto('./')` — a test
+# that RUNS, against the wrong app, with no unbound-noun warning. James ended
+# that; a corpus now binds its own nouns in `kit-ui.bindings.json` beside this
+# file, so the collision cannot occur.
+#
+# The prefixes are therefore harmless history rather than a rule, and they stay:
+# renaming a noun is a change to the CORPUS and his to make (claude-code-bot#58),
+# not a tidy-up. Do NOT tell the next corpus to copy the habit.
 #
 # Every accessible name below was READ OFF THE RUNNING APP, not invented — the
-# same rule bindings.json holds itself to.
+# same rule every bindings file holds itself to.
 #
 # ⚠️ Ids here are NOT `BEH-UI-*`, deliberately. `kit.beh` already uses that
 # prefix for four behaviours of the ui.js SERVER — the loopback bind, the

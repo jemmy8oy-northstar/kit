@@ -153,14 +153,14 @@ export function setReview(
 }
 
 /**
- * Bind a noun — stage 4, and the only write here whose file is not this app's
- * corpus.
+ * Bind a noun — stage 4, and the write that touches this app's bindings rather
+ * than its corpus.
  *
- * `app` is still in the path and is not decoration: `bindings.json` is one flat
- * map over every corpus, so the server answers with `sharedWith` — the OTHER
- * corpora that reference this noun and will now generate against this binding —
- * and it cannot work out which corpora are "other" without being told which one
- * you are in.
+ * `app` selects the FILE since kit#66 (`<app>.bindings.json`, beside the corpus),
+ * where it used to select only whose warning you got: bindings were one flat map
+ * over every corpus. It is still what makes `sharedWith` answerable either way —
+ * the server cannot work out which corpora are "other" without being told which
+ * one you are in.
  */
 export function addBinding(app: string, noun: string, binding: Binding): Promise<BindResult> {
   return post<BindResult>(`/api/projects/${encodeURIComponent(app)}/bindings`, { noun, binding })

@@ -50,26 +50,32 @@ describe('WriteResultNote', () => {
     expect(note).not.toHaveTextContent(/^Committed\.$/)
   })
 
-  it('names the OTHER corpora a bind just changed — the namespace is global', () => {
-    // The moment the global namespace stops being a habit. The person who just
-    // clicked is the only one who can say whether sharing this noun with those
-    // corpora is what they meant, and this is when they are looking.
+  it('names the other corpora using this NAME, and says the write did not reach them', () => {
+    // ⚠️ This used to assert an `alert` reading "the noun namespace is global …
+    // which now generate against this binding too". Under kit#66 that sentence is
+    // FALSE — a bind reaches one corpus — so the assertion had to move with it
+    // rather than be deleted: a test still passing over a claim its own subject
+    // has abandoned is the theatre this suite is meant to catch.
     render(<WriteResultNote result={bind({ sharedWith: ['epsilon', 'delta'] })} />)
 
-    const warning = screen.getByRole('alert')
-    expect(warning).toHaveTextContent('epsilon')
-    expect(warning).toHaveTextContent('delta')
+    const note = screen.getByText(/is a name also used by/)
+    expect(note).toHaveTextContent('epsilon')
+    expect(note).toHaveTextContent('delta')
     // Not just the names: the sentence has to say what it MEANS, or it reads as
-    // a list of unrelated projects.
-    expect(warning).toHaveTextContent(/generate against this binding too/)
+    // a list of unrelated projects — and what it means now is the REASSURANCE.
+    expect(note).toHaveTextContent(/this write reaches only this project/)
+    // 🔴 And it is not an alert. A `role="alert"` interrupts a screen reader for
+    // a hazard that his decision removed, which is how the remaining alerts on
+    // this card get trained away.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('CONTROL: a bind that collides with nothing raises no warning', () => {
-    // Without this, the assertion above would pass just as well if the warning
+  it('CONTROL: a bind that shares no name says nothing at all', () => {
+    // Without this, the assertion above would pass just as well if the sentence
     // rendered on every bind — which would train him to ignore it.
     render(<WriteResultNote result={bind({ sharedWith: [] })} />)
 
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByText(/is a name also used by/)).not.toBeInTheDocument()
   })
 
   it('says a corpus could not be parsed, so "could not look" is not read as "nothing else uses it"', () => {
@@ -150,13 +156,13 @@ describe('WriteResultNote', () => {
     expect(screen.getByText(/commit it yourself/)).toBeInTheDocument()
   })
 
-  it('a corpus write carries no namespace warning — it cannot have one', () => {
+  it('a corpus write carries no shared-name note — it cannot have one', () => {
     // `AnyWriteResult` is a union precisely so a bind cannot be rendered without
     // its `sharedWith`. This pins the other direction: a behaviour write must
     // not grow one.
     render(<WriteResultNote result={corpusWrite} />)
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.queryByText(/noun namespace is global/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/is a name also used by/)).not.toBeInTheDocument()
   })
 })

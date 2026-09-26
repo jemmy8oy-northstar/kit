@@ -335,7 +335,7 @@ function GeneratedPane({
         <BindForm key={n.noun} app={project.app} noun={n} onWrote={onWrote} />
       ))}
       {insufficient.map((n) => (
-        <InsufficientBinding key={n.noun} noun={n} />
+        <InsufficientBinding key={n.noun} app={project.app} noun={n} />
       ))}
     </>
   )
@@ -414,13 +414,17 @@ const EXAMPLE: Record<string, string> = {
  * an example. If typing JSON turns out to be the friction, a picker can be
  * added over a working loop; a second grammar cannot be removed from one.
  *
- * ── 🔴 The sharing warning is BEFORE the click, not after ────────────────────
- * `bindings.json` is one flat map over every corpus, and its own comment calls
- * the `Kit*` prefixing convention that avoids collisions "still a habit rather
- * than a design". A habit is enough while binding means opening the file and
- * reading that paragraph; it is not enough once binding is a button. So the
- * corpora that would also generate against this binding are named here, while
- * there is still a decision to make, and named again in the response.
+ * ── The shared-name note is BEFORE the click, not after ─────────────────────
+ * ⚠️ IT USED TO BE A WARNING. Bindings were one flat map over every corpus, and
+ * that file called the `Kit*` prefixing convention which avoided collisions
+ * "still a habit rather than a design" — a habit being enough while binding
+ * meant opening the file and reading the paragraph, and not enough once binding
+ * was a button. kit#66 ended the sharing: a corpus binds its own nouns, so this
+ * write cannot reach another project.
+ *
+ * The list stays because it still helps while you are NAMING things, and it
+ * stays before the click for the same reason as ever. What changed is that it no
+ * longer describes a consequence — which is why it must not read like one.
  */
 function BindForm({
   app,
@@ -486,8 +490,8 @@ function BindForm({
       */}
       {noun.sharedWith.length > 0 && (
         <p className="caution">
-          The noun namespace is global: <code>{noun.noun}</code> is also used by{' '}
-          {noun.sharedWith.join(', ')}, which will generate against this binding too.
+          <code>{noun.noun}</code> is a name also used by {noun.sharedWith.join(', ')}, which
+          bind it separately — a binding here reaches only this project.
         </p>
       )}
 
@@ -517,12 +521,14 @@ function BindForm({
  * would show a refusal here with no cause at all.
  *
  * No form, deliberately. Fixing this means CHANGING an existing binding, and
- * `writer.addBinding` refuses that on purpose — a rebind silently alters what
- * every corpus mentioning the noun already generates, including ones nobody at
- * this screen has opened. So this states the diagnosis and sends you to the
- * file, which is the honest affordance for an edit that is not a click.
+ * `writer.addBinding` refuses that on purpose — a rebind silently alters every
+ * test this corpus already generates from the noun, including behaviours nobody
+ * at this screen has opened. (Before kit#66 it reached every OTHER corpus too;
+ * that is gone, and the reason to refuse is not.) So this states the diagnosis
+ * and sends you to the file, which is the honest affordance for an edit that is
+ * not a click.
  */
-function InsufficientBinding({ noun }: { noun: NounRequirement }) {
+function InsufficientBinding({ app, noun }: { app: string; noun: NounRequirement }) {
   const unmet = noun.needs.filter((n) => !n.met)
   return (
     <Card elevation="flat">
@@ -543,8 +549,9 @@ function InsufficientBinding({ noun }: { noun: NounRequirement }) {
         ))}
       </ul>
       <p className="muted">
-        Kit will not rebind a noun from here: changing an existing binding changes every
-        corpus that mentions it. Edit <code>bindings.json</code> and review the diff.
+        Kit will not rebind a noun from here: changing an existing binding changes every test
+        this corpus already generates from it. Edit <code>{app}.bindings.json</code> and review
+        the diff.
       </p>
     </Card>
   )
