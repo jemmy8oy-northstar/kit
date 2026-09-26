@@ -9,7 +9,7 @@
 // and neither changes its shape, so it can be built before either lands
 // ([[option-invariant-half]]).
 //
-//   node project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]
+//   node project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]
 //
 // It adds no analysis. Every field below is an existing kit.js export, renamed
 // only where the export's name would be meaningless outside kit.js. If you find
@@ -63,7 +63,7 @@ function readTests(repo) {
   return { files: out, titles, sources };
 }
 
-function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {}) {
+function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   const corpusPath = path.join(behDir, `${app}.beh`);
   if (!fs.existsSync(corpusPath)) return { fatal: `no corpus at ${corpusPath}` };
 
@@ -71,21 +71,22 @@ function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {
   const { behaviours, conflicts, symbols } = kit.resolve(kit.parse(src, `${app}.beh`));
   if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };
 
-  // 🔴 A PARAMETER, not `__dirname`, and this is a defect running the server
-  // found that the suite could not.
+  // 🔴 DERIVED FROM `behDir`, and the history is why that matters.
   //
-  // `ui.js` gained `--bindings` so a demo or a harness could exercise the bind
-  // route without writing into the repo it is measuring. The WRITE honoured it
-  // and this READ did not, so a bind reported success, changed the file on
-  // disk, and the page re-read the *other* bindings file and showed the same
-  // refusal — the loop's whole payoff, silently absent. Every test passed
-  // throughout: the node suite asserts the file on disk after a write and
+  // `ui.js` once gained a separate `--bindings` so a demo or a harness could
+  // exercise the bind route without writing into the repo it was measuring. The
+  // WRITE honoured it and this READ did not, so a bind reported success, changed
+  // the file on disk, and the page re-read the *other* bindings file and showed
+  // the same refusal — the loop's whole payoff, silently absent. Every test
+  // passed throughout: the node suite asserts the file on disk after a write and
   // never re-reads the projection, and the frontend suite reads a fixture.
   //
-  // Kept as an explicit null-defaulting parameter rather than a mutable module
-  // constant so the two paths are impossible to configure apart again — `ui.js`
-  // passes the same value to both.
-  const bindings = require('./bindings.js').read(bindingsFile);
+  // That was fixed by threading one parameter to both paths, which works only for
+  // as long as everyone keeps threading it. Under kit#66 there is nothing left to
+  // thread: bindings live beside the corpus, so `behDir` selects both and the two
+  // paths are no longer *able* to disagree. The bug is closed by construction
+  // rather than by care.
+  const bindings = require('./bindings.js').readFor(app, behDir);
 
   // The output pane: one generated test per behaviour, with what it could not
   // bind. This is the half of his loop that is "iterating on the output".
@@ -146,9 +147,16 @@ function project(app, { repo = null, behDir = BEH_DIR, bindingsFile = null } = {
   // second is invisible to `boundNouns()`, which counts the key.
   //
   // `sharedWith` is attached here rather than in requires.js because it is a
-  // property of the WRITE, not of the requirement: it answers "if I bind this,
-  // what else changes", and the answer only exists because bindings.json is one
-  // flat map over every corpus. Computed once for the directory, not per noun.
+  // property of the WRITE, not of the requirement.
+  //
+  // ⚠️ ITS MEANING CHANGED UNDER kit#66 AND THE FIELD DID NOT. It used to answer
+  // "if I bind this, what else changes" — a real hazard, because one flat map
+  // meant your bind silently became every other corpus's too. Now a corpus binds
+  // its own nouns, so binding here changes nothing anywhere else, and the honest
+  // reading is "these other corpora use this NAME, and bind it for themselves".
+  // Kept rather than retired because the information is still worth having when
+  // you are naming things; the warning wording it feeds is what had to change.
+  // Computed once for the directory, not per noun.
   const req = requires.requirements(behaviours, bindings);
   const corpusNouns = writer.corpusNouns(behDir);
   const withShared = (n) => ({
@@ -235,16 +243,14 @@ function main(argv) {
   }
   const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--dir');
   if (!app) {
-    console.error('usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]');
+    console.error('usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]');
     return 2;
   }
   const ri = argv.indexOf('--repo');
   const di = argv.indexOf('--dir');
-  const bi = argv.indexOf('--bindings');
   const out = project(app, {
     repo: ri >= 0 ? argv[ri + 1] : null,
     behDir: di >= 0 ? argv[di + 1] : BEH_DIR,
-    bindingsFile: bi >= 0 ? argv[bi + 1] : null,
   });
   if (out.fatal) {
     console.error(`project: ${out.fatal} — could not look`);

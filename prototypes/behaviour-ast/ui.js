@@ -16,7 +16,7 @@
 // The two decisions are not independent, and the code says so: a write path is
 // only reachable when the server is bound to a loopback address (rule 2 below).
 //
-//   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>] [--bindings <file>]
+//   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>] [--dir <behaviours>]
 //              [--git [--git-remote origin] [--git-branch <name>]]
 //
 //   GET  /api/projects        every corpus, with enough to render a list
@@ -220,13 +220,14 @@ function summary(app, opts) {
 /** project.js names its corpus directory `behDir`; this is the only place that spelling leaks. */
 function projectOf(app, opts) {
   try {
-    // `bindingsFile` passed from the SAME `opts` the write path reads, so the
-    // two can never point at different files. They could when `--bindings`
-    // first shipped: the write honoured it, this read did not, and a bind
-    // succeeded while the page went on showing the refusal.
+    // There is no bindings path to pass any more, and that is the point of
+    // kit#66: bindings live beside the corpus, so `behDir` selects both and the
+    // read and the write cannot point at different files. They could when
+    // `--bindings` first shipped — the write honoured it, this read did not, and
+    // a bind succeeded while the page went on showing the refusal. That was fixed
+    // by threading one value to both paths; now there is nothing to thread.
     return proj.project(app, {
       behDir: opts.dir || BEH_DIR,
-      bindingsFile: opts.bindings || null,
       repo: repoFor(app, opts.repos),
     });
   } catch (e) {
@@ -469,17 +470,12 @@ function write(pathname, opts, body, json, origin = null) {
     });
   }
 
-  // ── the one write that is not scoped to this corpus ──────────────────────
-  // `/api/projects/<app>/bindings` writes `bindings.json`, which is ONE FLAT
-  // MAP over every corpus — so unlike the three routes below, the file this
-  // touches is not the app's own.
-  //
-  // It is still routed under the app, and that is not an inconsistency. The app
-  // is what `sharedWith` excludes: "which OTHER corpora reference this noun"
-  // has no answer without knowing which one you are in. Routing it at
-  // `/api/bindings` would have to take the app in the body to say the same
-  // thing, and would read as if the write were global in a way the three below
-  // are not — which is true of the FILE and false of the request.
+  // ── the write that touches the app's bindings rather than its corpus ─────
+  // `/api/projects/<app>/bindings` writes `<app>.bindings.json`, beside that
+  // app's `.beh`. Under kit#66 this is scoped to one corpus exactly like the
+  // three routes below — it used to be the exception, writing one flat map
+  // shared by every corpus, and the route shape did not have to change when the
+  // model did, because it was already routed under the app that owns it.
   const bm = /^\/api\/projects\/([^/]+)\/bindings$/.exec(pathname);
   if (bm) return postBinding(bm, body, opts, json);
 
@@ -633,13 +629,16 @@ function postBinding(match, body, opts, json) {
     return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
   }
 
-  const file = bindingsOf.resolve(opts.bindings);
-  if (!fs.existsSync(file)) {
-    return json(500, { error: 'no-bindings-file', reason: `there is no bindings file at ${path.relative(process.cwd(), file)}` });
-  }
+  // ⚠️ A corpus with no bindings file yet is the NORMAL first bind and not a
+  // 500 — most corpora here are in that state. Under one flat map the file
+  // always existed, so its absence could only mean a broken checkout; per corpus,
+  // absence means "nothing bound yet" and this write is what creates it. The
+  // check that protects against a bad request is the corpus lookup above.
+  const file = bindingsOf.fileFor(app, dir);
+  const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '{}';
 
   const skipped = [];
-  const result = writer.addBinding(fs.readFileSync(file, 'utf8'), body.noun, body.binding, {
+  const result = writer.addBinding(before, body.noun, body.binding, {
     corpora: writer.corpusNouns(dir, (a) => skipped.push(a)),
     app,
   });
@@ -654,10 +653,11 @@ function postBinding(match, body, opts, json) {
     noun: result.noun,
     file: path.relative(process.cwd(), file),
     ...gitOutcome(file, opts, `bind ${result.noun}`, app),
-    // 🔴 The namespace fact, in the response rather than only in a log. The
-    // person who just clicked bind is the only one who can tell whether
-    // sharing this noun with those corpora is what they meant, and this is the
-    // moment they are looking.
+    // 🔴 The naming fact, in the response rather than only in a log — and it is
+    // a FACT rather than a warning since kit#66. It used to mean "your bind just
+    // became their bind too", which was the hazard one flat map created. Now each
+    // corpus binds its own nouns, so this write reaches only `app`, and the list
+    // says which other corpora use the same NAME while binding it for themselves.
     sharedWith: result.sharedWith,
     // A corpus that would not parse was skipped, so `sharedWith` is an
     // INCOMPLETE answer and says so. Silence here would turn "could not look"
@@ -770,19 +770,20 @@ function serve(opts = {}) {
 }
 
 function parseArgs(argv) {
-  const opts = { dir: BEH_DIR, bindings: null, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
+  const opts = { dir: BEH_DIR, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
   for (let i = 0; i < argv.length; i++) {
     const next = argv[i + 1];
     if (argv[i] === '--port') { opts.port = Number(next); i++; }
     else if (argv[i] === '--host') { opts.host = next; i++; }
     else if (argv[i] === '--repos') { opts.repos = next; i++; }
+    // ⚠️ `--dir` now isolates the BINDINGS TOO, and `--bindings` is gone with
+    // kit#66. It existed because the bind route WRITES, so a demo or a harness
+    // pointed at the repo dirtied the working tree of the thing it was measuring
+    // — and it could only name one file, which a run spanning several corpora
+    // cannot use. Bindings live beside the corpus, so copying the directory
+    // copies them: `selfhost/run.js` had to remember to do both and no longer
+    // can forget.
     else if (argv[i] === '--dir') { opts.dir = next; i++; }
-    // `--bindings` for the same reason `selfhost/run.js` copies the corpus
-    // before running Kit's own generated tests: the bind route WRITES, so a
-    // demo or a harness pointed at the repo's own bindings.json dirties the
-    // working tree of the thing it is measuring. Null means the real file,
-    // which is the right default for the tool he actually opens.
-    else if (argv[i] === '--bindings') { opts.bindings = next; i++; }
     // ── git write-back (kit#43) ──────────────────────────────────────────────
     // OFF unless asked for. Locally `docs/design/ui.md` decision 2 still holds:
     // the edit lands in the working tree and the author reviews the diff. This

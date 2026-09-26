@@ -338,21 +338,22 @@ function main(argv = [], textReader = nounsFromText) {
   }
 
   // The reuse figure above is keyed on the noun NAME, which the corpus author
-  // controls: bindings.json says the macro-metrics nouns were hand-prefixed
-  // (page:MacroHome, not page:Home) to dodge the global-namespace collision. So
-  // a 0% keyed on names is partly a naming habit, and reporting only that would
-  // be measuring my own convention. This measures what the bindings POINT AT —
-  // role+name, label, locator or route — which no prefix can change. Two apps
-  // with a "Toggle Theme" button share a target even under different keys.
+  // controls: two of the three bound corpora hand-prefixed their nouns
+  // (page:MacroHome, not page:Home) to dodge the global-namespace collision that
+  // kit#66 has since removed. So a 0% keyed on names is partly a naming habit,
+  // and reporting only that would be measuring my own convention. This measures
+  // what the bindings POINT AT — role+name, label, locator or route — which no
+  // prefix can change. Two apps with a "Toggle Theme" button share a target even
+  // under different keys.
   //
-  // ⚠️ This resolves THIS directory's bindings even under `--dir <elsewhere>`,
-  // and that asymmetry is deliberate for now rather than overlooked: see
-  // bindings.js, which is the one place it will change when a relocated corpus
-  // brings its own (kit#66). Against a foreign corpus the count below collapses
-  // — measured 27 -> 1 — without saying it could not look.
-  const bindPath = bindingsOf.resolve(null);
-  if (fs.existsSync(bindPath)) {
-    const bindings = bindingsOf.read(null);
+  // ✅ READS THE BINDINGS OF THE DIRECTORY IT WAS POINTED AT. It used to read
+  // this file's own directory even under `--dir <elsewhere>`, which was invisible
+  // against a byte-identical copy (a copy shares noun names, so the same 27 bound
+  // targets resolved) and collapsed to 1 against a genuinely foreign corpus —
+  // printed as a finding rather than as "could not look". kit#66 is what makes
+  // the honest version possible: the bindings are in `dir`.
+  {
+    const perApp = bindingsOf.readAll(dir);
     const sig = (b) => {
       if (!b || typeof b !== 'object' || Array.isArray(b)) return null;
       if (b.role) return `${b.role}|${b.name}`;
@@ -365,8 +366,12 @@ function main(argv = [], textReader = nounsFromText) {
     };
     const bySig = new Map();
     for (const r of results) {
+      // Each corpus is looked up in ITS OWN bindings — which is the measure this
+      // section always meant. Under one flat map it read the same because there
+      // was only one map; the difference shows the moment a corpus relocates.
+      const mine = perApp[r.file.replace(/\.beh$/, '')] || {};
       for (const noun of r.nounSet) {
-        const s = sig(bindings[noun]);
+        const s = sig(mine[noun]);
         if (!s) continue;
         if (!bySig.has(s)) bySig.set(s, new Set());
         bySig.get(s).add(r.file);
@@ -374,7 +379,7 @@ function main(argv = [], textReader = nounsFromText) {
     }
     const shared = [...bySig.entries()].filter(([, apps]) => apps.size > 1);
     console.log('\nSame measure, keyed on what the binding POINTS AT rather than the noun name,');
-    console.log('because the names were hand-prefixed to dodge the global namespace (bindings.json):');
+    console.log('because the names were hand-prefixed to dodge a global namespace kit#66 has since removed:');
     console.log(`  ${bySig.size} distinct bound targets across all corpora; ` +
       `${shared.length} reached by more than one app` +
       (shared.length ? ` — ${shared.map(([s]) => s).join(', ')}` : ''));

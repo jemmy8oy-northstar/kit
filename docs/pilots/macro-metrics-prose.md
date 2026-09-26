@@ -105,6 +105,13 @@ nouns in `bindings.json` are hand-prefixed to dodge this, which is a habit, not 
 (`button:ToggleTheme` is a near-miss the other way: both apps label it *"Toggle Theme"*, so
 one shared binding is correct today by coincidence.)
 
+> ⚠️ **Superseded 2026-09-25 (claude-code-bot#66).** James decided bindings no longer live in
+> one shared `bindings.json`: each corpus gets its own `prototypes/behaviour-ast/behaviours/<app>.bindings.json`,
+> and the noun namespace is per-corpus, not global — *"no need to share nouns"* at scale. The
+> collision measured above was real under the old shared-file design and stands as a record of
+> what was true at the time; it cannot recur once namespaces don't overlap. `node prose-audit.js
+> --demo-collision` still runs, but now prints the hazard *and* the refusal that replaced it.
+
 **4. One acceptance criterion is not one assertion.** AC line 93 carries seven sub-bullets
 under a single checkbox. The 46 above therefore *undercounts* the real assertion load, and
 every fraction in this document is correspondingly generous to the notation.

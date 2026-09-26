@@ -159,12 +159,14 @@ describe('BehaviourPage', () => {
     expect(screen.queryByText(/Recorded correction:/)).not.toBeInTheDocument()
   })
 
-  it('says which OTHER corpora a binding would reach, before the click', async () => {
-    // `bindings.json` is one flat map over every corpus, and its own comment
-    // calls the convention that avoids collisions "still a habit rather than a
-    // design". This is that habit becoming a mechanism — and it has to be on
-    // the form, not only in the response, because after the write the decision
-    // has already been made.
+  it('names the OTHER corpora using this noun NAME, before the click', async () => {
+    // ⚠️ This used to assert "The noun namespace is global … will generate
+    // against this binding too", which was true under one flat map and is FALSE
+    // since kit#66: a bind reaches one corpus. The assertion moved with the
+    // sentence rather than being deleted — a test still green over a claim its
+    // subject has abandoned is exactly the theatre worth catching.
+    // It stays ON THE FORM rather than only in the response, for the unchanged
+    // reason: after the write the naming decision has already been made.
     renderAt(habits, 'james-habits-app', 'BEH-TODAY-1')
 
     await screen.findAllByRole('button', { name: 'Bind' })
@@ -172,19 +174,19 @@ describe('BehaviourPage', () => {
     // `trial-habits-b` are the same app described twice (cc-bot#92's forward
     // trials) — so the assertion is over the whole set rather than over the
     // first match, and it names the noun each caution belongs to.
-    const cautions = screen.getAllByText(/The noun namespace is global/)
+    const cautions = screen.getAllByText(/is a name also used by/)
     expect(cautions.length).toBeGreaterThan(0)
     for (const c of cautions) expect(c).toHaveTextContent(/trial-habits-[ab]/)
     expect(cautions.some((c) => c.textContent?.includes('page:Today'))).toBe(true)
   })
 
-  it('CONTROL: a noun no other corpus uses gets no sharing caution', async () => {
-    // Without this, a component that printed the caution unconditionally would
-    // pass the test above and be telling every binding it collides.
+  it('CONTROL: a noun no other corpus uses gets no shared-name note', async () => {
+    // Without this, a component that printed the note unconditionally would pass
+    // the test above and be telling every binding it shares.
     renderAt(snipIt, 'snip-it', 'BEH-HOME-1')
 
     await screen.findByText('The landing page renders')
-    expect(screen.queryByText(/The noun namespace is global/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/is a name also used by/)).not.toBeInTheDocument()
   })
 
   it('distinguishes "no test was generated" from an empty one', async () => {
