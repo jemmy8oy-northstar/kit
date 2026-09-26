@@ -18,7 +18,7 @@
 //   node writer.js <app> add-behaviour <BEH-ID> "<title>"   [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "approved"          [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "denied <correction>"
-//   node writer.js <app> bind <kind:Noun> '<json>'           [--bindings <file>]
+//   node writer.js <app> bind <kind:Noun> '<json>'           [--dir <behaviours>]
 //
 // ── 1. A surgical edit of one block, never a re-serialisation ────────────────
 // A corpus is a hand-authored document whose comments carry its most important

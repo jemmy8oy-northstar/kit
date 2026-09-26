@@ -4376,6 +4376,44 @@ test('start: a node_modules with no vite binary still needs installing', () => {
   assert.strictEqual(start.needsInstall(done), false);
 });
 
+// ── help text is a promise the code has to keep (kit#66, kit#70) ─────────────
+// `start.js --help` advertised `--bindings <f>`, "a bindings file to write to
+// instead of the repo's", for as long as it took kit#66 to delete the flag and
+// nobody to notice the help. `start.js` forwards every flag it does not consume
+// to `ui.js`, and `ui.js`'s parseArgs ignores an unknown one — so the flag was
+// accepted, silently dropped, and the bind landed in the corpus directory the
+// user had passed it to STAY OUT OF. Measured end-to-end before this fix: a real
+// POST to `/api/projects/<app>/bindings` returned 200 and wrote beside the
+// corpus, not to the named file.
+//
+// The stale line is a one-character fix; this test is the part worth having,
+// because the next flag to be deleted will leave the same residue. Derived from
+// source rather than from a hand-written list: a list here would be a second
+// answer to "which flags exist", free to drift from the first exactly the way
+// the help text just did.
+test('start: every flag --help advertises is one some tool actually consumes', () => {
+  const startSrc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'start.js'), 'utf8');
+  const uiSrc = fsx.readFileSync(pathx.join(__dirname, 'ui.js'), 'utf8');
+
+  const help = /const HELP = `([\s\S]*?)`;/.exec(startSrc);
+  assert.ok(help, 'start.js must still have a HELP template to check');
+
+  // Flags named in the left-hand column of the options list. Anchored to the
+  // line start so a `--bindings` mentioned inside a prose sentence explaining
+  // why it is gone does not read as an offer to accept it.
+  const advertised = [...help[1].matchAll(/^\s{2}(--[a-z-]+)/gm)].map((m) => m[1]);
+  assert.ok(advertised.length >= 5, `expected the options list to be found, got ${advertised.length}`);
+
+  // What each layer really takes, read off the comparisons themselves.
+  const consumedBy = (src) => new Set([...src.matchAll(/argv(?:\[i\])?\s*(?:===|\.includes\()\s*'(--[a-z-]+)'/g)].map((m) => m[1]));
+  const accepted = new Set([...consumedBy(startSrc), ...consumedBy(uiSrc)]);
+
+  const lying = advertised.filter((f) => !accepted.has(f));
+  assert.deepStrictEqual(lying, [],
+    `start.js --help offers ${lying.join(', ')}, which neither start.js nor ui.js reads — `
+    + 'a flag advertised and silently dropped is worse than one that does not exist');
+});
+
 // ── the harness must name its own failure (kit#39) ───────────────────────────
 // mutate-ui.js runs its loop at require time, so its classifier cannot be
 // imported and driven the way mutation-marker.js can. It is asserted from
