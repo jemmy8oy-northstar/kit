@@ -45,8 +45,9 @@ true** — which is the only claim this page makes. The project list, on a phone
 ![Kit's project list at 390x844](https://raw.githubusercontent.com/jemmy8oy-northstar/kit/87faf2bad178e8f1bc174ab96851fbd8fb5cb94e/docs/screenshots/ui/trial-projects-390.png)
 
 Opening `james-habits-app` shows the tool at its best — a real contradiction, both sides cited to
-`docs/DESIGN.md` anchors, two options naming real files and lines, a recommendation, and an explicit
-counter-argument to its own recommendation:
+anchors in **that app's own** `DESIGN.md` (`#A2`, `#mvp-3`; there is no `docs/DESIGN.md` in kit),
+two options naming real files and lines, a recommendation, and an explicit counter-argument to its
+own recommendation:
 
 ![The question sheet at 390x844](https://raw.githubusercontent.com/jemmy8oy-northstar/kit/87faf2bad178e8f1bc174ab96851fbd8fb5cb94e/docs/screenshots/ui/trial-question-sheet-390.png)
 
