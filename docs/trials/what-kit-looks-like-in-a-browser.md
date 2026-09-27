@@ -79,6 +79,20 @@ every corpus through Kit's own read API:
 than showing an empty one — no heading, no "nothing to decide". Pinned from both sides: the API's
 `questions.length` and the rendered `Question sheet` heading agree on all ten.
 
+**Counted a second way, because the probe behind that table lied twice before it worked** (§6). The
+independent route needs no probe at all — it reads the raw corpus instead of Kit's API, so anyone
+can re-run it:
+
+```
+grep -c '^behaviour '   prototypes/behaviour-ast/behaviours/*.beh
+grep -c 'source inferred' prototypes/behaviour-ast/behaviours/*.beh
+```
+
+**Every cell above matches**, all ten corpora, both columns (`defined` = the difference). And it
+exposes a structural fact the table only implies: **`questions` equals `inferred` exactly — 11 and
+11, 15 and 15.** The sheet is not *related* to the inferred count, it *is* the inferred count, which
+is why a corpus with none loses the whole section rather than part of it.
+
 ![A project with no sheet, at 390x844](https://raw.githubusercontent.com/jemmy8oy-northstar/kit/87faf2bad178e8f1bc174ab96851fbd8fb5cb94e/docs/screenshots/ui/trial-no-sheet-390.png)
 
 This is the **measured consequence** of [kit#73](https://github.com/jemmy8oy-northstar/kit/issues/73)(a),
