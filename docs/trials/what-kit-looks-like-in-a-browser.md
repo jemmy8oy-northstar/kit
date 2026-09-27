@@ -184,7 +184,9 @@ is rendered at all**.
 🔑 **The sharp version is visible only by looking at the image.** At 390px the title is cut mid-word
 (`A behaviour with no test nar`) and all three annotation lines are cut mid-token (`type: "kit-ung`)
 — **and the closing `});` is still on screen.** So the block does not look truncated, it looks
-complete. A reader has no cue that anything is missing, which is worse than an obviously clipped box.
+complete. A reader has no cue that anything is missing, which is worse than an obviously clipped box:
+
+![The generated-test panel at 390x844, cut mid-token with no scroll cue](https://raw.githubusercontent.com/jemmy8oy-northstar/kit/43297f25c082db2c82ab0e2319647bd594b90b51/docs/screenshots/ui/trial-code-panel-truncated-390.png)
 
 **2. Two console 404s for one request — ✅ count confirmed, ❌ NOT a Kit defect.** Exactly 2 console
 error lines for exactly 1 request/response pair. But the same 2-for-1 doubling reproduces with a bare
