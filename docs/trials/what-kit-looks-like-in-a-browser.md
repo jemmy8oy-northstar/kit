@@ -31,7 +31,7 @@ promises as its second behaviour is one that 8 of Kit's 10 projects never show.*
 | `page.on('pageerror')` across a whole session | **fired zero times** |
 | `page.on('console')` errors on any real project or the home page | **none** (the only two were a deliberate `/projects/does-not-exist-xyz`, handled in-page) |
 | failed requests | **none** |
-| legible at 390x844 | **yes** — single-column cards, no overlap, no clipping, badges wrap |
+| legible at 390x844 | **yes, with one exception** — single-column cards, no overlap, badges wrap; but the generated-test panel hides **2.24x** its own width behind an unmarked horizontal scroll (§5) |
 
 Worth stating plainly, because every previous trial measured a way Kit falls short.
 
@@ -159,14 +159,45 @@ Reproduced by me, from the raw corpus:
   a resolution to this… that is James's call."* Corroborated by my own render — it is on the
   screenshot in §1. Honest, and still a loop that terminates.
 
-**Recorded but NOT reproduced** — treat as claims, not findings, until someone controls them:
+### The three claims that were unreproduced have now been measured
 
-- the generated-test `<pre>` scrolls horizontally with no visible affordance (`scrollWidth` 760 vs
-  `clientWidth` 538), worse at 390px;
-- one navigation to a nonexistent project logged **two** identical console 404 lines for **one**
-  observed request (agent flagged it undiagnosed);
-- the end-to-end write loop landing in the corpus — I never drove writes, so I am taking that on
-  its evidence, not mine.
+A second blind agent, in its own throwaway clone, was sent at exactly the three claims this page had
+refused to call findings. **All three resolved — and one of them turned out not to be a Kit defect at
+all**, which is why they were worth controlling rather than repeating.
+
+**1. The generated-test panel truncates, unmarked, and it is twice as bad on a phone. ✅ REPRODUCED —
+and it qualifies §1's "legible on a phone".**
+
+| viewport | `scrollWidth` | `clientWidth` | hidden |
+|---|---|---|---|
+| 1280x800 | 760 | 538 | **1.41x** |
+| 390x844 | 760 | **340** | **2.24x** |
+
+`scrollWidth` is identical at both because `white-space: pre` fixes the content width to the longest
+line; only the box shrinks. I reproduced the **mechanism** from source myself rather than take the
+numbers on trust — `prototypes/behaviour-ast/ui/src/index.css:170` sets `overflow-x: auto` on every
+`pre`, `:161-163` sets `pre code { overflow-wrap: normal }` so it can never wrap instead, and a grep
+of the whole stylesheet finds **zero** scrollbar, fade or gradient affordance. `offsetHeight -
+clientHeight` is exactly `2px`, which is the `1px` border top and bottom — i.e. **no scrollbar track
+is rendered at all**.
+
+🔑 **The sharp version is visible only by looking at the image.** At 390px the title is cut mid-word
+(`A behaviour with no test nar`) and all three annotation lines are cut mid-token (`type: "kit-ung`)
+— **and the closing `});` is still on screen.** So the block does not look truncated, it looks
+complete. A reader has no cue that anything is missing, which is worse than an obviously clipped box.
+
+**2. Two console 404s for one request — ✅ count confirmed, ❌ NOT a Kit defect.** Exactly 2 console
+error lines for exactly 1 request/response pair. But the same 2-for-1 doubling reproduces with a bare
+`fetch()` and **no Kit code running at all**, so it is a Chromium console artefact. Kit's client
+(`ui/src/client.ts:20-46`) does one `fetch` and one body read; React StrictMode is ruled out too (a
+production `vite build`, and the request count stays at 1, which StrictMode would not allow).
+*Recorded because a plausible defect that dissolves under control is a result, not a non-event.*
+
+**3. The write loop lands in the working tree and commits nothing. ✅ REPRODUCED independently.**
+A behaviour authored through the real UI form on `trial-lend`: the server returns `committed: false`,
+`git diff` shows exactly one hunk appending the block, `git status --short` shows `M` and nothing
+staged, and `git log` is unchanged before and after. **This is the half I had been taking on someone
+else's evidence; it now has two.**
 
 ## 6. Two probes lied to me before one worked
 
