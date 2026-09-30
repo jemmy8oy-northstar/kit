@@ -307,8 +307,17 @@ function main(argv) {
   const { parse, resolve } = require('./kit');
 
   const args = argv.slice(2);
+  // 🔑 The measured case, before this guard existed: `requires.js snip-it --check
+  // --dir /elsewhere` reported 16 nouns and exited 1 about KIT'S OWN corpus while
+  // naming yours, and `--dir /no/such/dir` exited 0 with a full report about a
+  // directory that cannot exist. `--check` is a gate, so that is a gate passing
+  // judgement on an artefact nobody named. See cli.js.
+  const bad = require('./cli.js').unknownFlag(args, ['--json', '--check']);
+  if (bad) return require('./cli.js').refuse(bad, 'usage: node requires.js <app> [--json] [--check]');
   const asJson = args.includes('--json');
   const asCheck = args.includes('--check');
+  // Still `find` rather than a positional scan, but it can no longer be handed a
+  // flag's value: an unknown flag is gone by here, and no known flag takes one.
   const app = args.find((a) => !a.startsWith('--'));
 
   if (!app) {

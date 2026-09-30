@@ -171,6 +171,14 @@ function pct(x) { return x === null ? 'n/a' : (x * 100).toFixed(0) + '%'; }
 function num(x, d = 2) { return x === null ? 'n/a' : x.toFixed(d); }
 
 function main(argv = [], textReader = nounsFromText) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). `--check` gates a
+  // COMMITTED document here, so a typo'd flag meant the gate passed judgement on
+  // Kit's own corpus while the reader believed it had measured `--dir`'s.
+  const bad = require('./cli.js').unknownFlag(argv, ['--check', '--dir', '--record']);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: node saturation.js [<app>] [--dir <behaviours>] [--check] [--record]');
+  }
   const checkMode = argv.includes('--check');
   const dirArg = argv.indexOf('--dir');
   const dir = dirArg >= 0 ? argv[dirArg + 1] : BEH_DIR;

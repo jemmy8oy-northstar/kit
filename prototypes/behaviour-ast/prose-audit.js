@@ -139,6 +139,11 @@ function demoCollision() {
 }
 
 function main(argv) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). The numbers below are
+  // quoted in `docs/pilots/macro-metrics-prose.md`; a dropped `--source` would
+  // report "no drift" because it never looked, which reads identically to agreement.
+  const bad = require('./cli.js').unknownFlag(argv, ['--demo-collision', '--source']);
+  if (bad) return require('./cli.js').refuse(bad, 'usage: node prose-audit.js [--source <path>] [--demo-collision]');
   if (argv.includes('--demo-collision')) { demoCollision(); return 0; }
 
   if (!fs.existsSync(LEDGER)) { console.error(`cannot look: no ledger at ${LEDGER}`); return 2; }
