@@ -1,0 +1,272 @@
+# kit:not-a-real-app
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# HOSTED KIT — the app James described on kit#88, which DOES NOT EXIST YET
+#
+# James, kit#88 (2026-09-27), after the paragraphs describing the workflow:
+#
+#   "Also, just an additional note, when I am describing user workflows as I
+#   have above, you can add these in kits beh since I am effectively descriving
+#   how we should enhance the spec right."
+#
+# Yes. So this file is that paragraph of his, and the four before it, rewritten
+# as behaviours instead of left as prose on an issue. It is the thing he asked
+# for one line later: "Ideally I want to be driving the development of kit in
+# kit."
+#
+# ⚠️ EVERY BEHAVIOUR HERE DESCRIBES SOFTWARE THAT HAS NOT BEEN WRITTEN. That is
+# the point of writing it down first, and it has two consequences a reader must
+# not mistake for defects:
+#
+#   1. **No test names any of these**, so `node check.js kit-hosted --repo .`
+#      exits 1. That red is the WORK ITEM, not a failure of the corpus — it is
+#      `BEH-GATE-1` in kit.beh doing exactly what it says. Measured on kit#88
+#      (2026-09-30) on a throwaway copy before this file was written.
+#   2. **The nouns are deliberately unbound.** There is no `kit-hosted.bindings.json`
+#      beside this file, so generation reports `marker:Ungenerated` rather than
+#      emitting Playwright. That is not an oversight to be fixed: every bindings
+#      file in this directory holds itself to "read off the running app, not
+#      invented", and there is no running app to read. Inventing locators for
+#      screens that do not exist is the one thing that rule forbids.
+#
+# ── Why `# kit:not-a-real-app`, and why that is the honest directive ─────────
+# saturation.js excludes this corpus from the binding-saturation study, whose
+# claim is about how REAL apps reuse nouns. Software that does not exist cannot
+# be evidence for it. `# kit:no-ui` would arguably also be true of the backend
+# half — `request:*`, `branch:*` and `status:*` will never bind to a locator —
+# but the frontend half genuinely is a browser surface, so declaring no-ui
+# would be a lie about this file, and existence is the axis that actually
+# disqualifies it. One directive, the true one.
+#
+# ── Why this is a THIRD Kit corpus and not more of the other two ────────────
+# `kit.beh` closes with "Every behaviour below is real, and every one is already
+# tested in `kit.test.js`". Putting unbuilt behaviours there would falsify that
+# sentence AND turn kit's own CI gate red, since `kit` is the corpus CI checks
+# by name. Its separate warning — do not add browser behaviours to move its 0 —
+# points the same way.
+#
+# `kit-ui.beh` describes the LOCAL browser UI, which exists, and records that 5
+# of its 6 generated tests pass against the running app. Unbuilt behaviours
+# would cost that claim its meaning too.
+#
+# So Kit is three apps in its own registry: the command-line tool (kit.beh, no
+# UI), the local UI (kit-ui.beh, built), and the hosted service (this file, not
+# built).
+#
+# ── ✅ THE CONTRADICTION A READER WILL EXPECT, AND WHY THERE ISN'T ONE ───────
+# kit.beh's `BEH-WRITE-5` says "A write route is unreachable unless the server
+# is bound to loopback" — and hosted Kit is, by definition, not on loopback. It
+# reads like a straight conflict, and Kit would not catch it: the symbol table
+# is per-corpus, so nothing here can conflict with anything there.
+#
+# It is not a conflict, because of his own qualification on the C# decision:
+# "maybe we can keep node around for now for local dev as an option". The Node
+# server keeps serving local dev and BEH-WRITE-5 stays true OF IT. This corpus
+# describes a different deployment of a different server, whose write gate is
+# `BEH-GATE-*` below rather than the interface it binds. Two apps, two answers,
+# both true. That is why nobody has to reach for a `supersede` keyword — which
+# does not exist, and whose addition would be a change to the corpus LANGUAGE
+# and therefore his (claude-code-bot#58).
+#
+# ── WHAT IS DELIBERATELY ABSENT ─────────────────────────────────────────────
+# * **No caching behaviour.** I proposed a per-repo shallow clone on kit#88 and
+#   he deferred it in the same breath he raised it: "We will see how it goes
+#   pulling and pushing files from github without any volume for this pod. In
+#   the future we can talk about optimising this process if need be." So the
+#   spec says nothing about it. A behaviour asserting a cache would be me
+#   deciding something he explicitly postponed.
+# * **No language.** Nothing below says C#, .NET or Node. `kit-interim-dual-runtime`
+#   (kit#88, acts 2026-10-03) is open, and answering an open question by
+#   building is exactly what this corpus must not do. Every behaviour here is
+#   true of the hosted service whichever runtime it ships in — which is also
+#   the point of specifying before porting.
+# * **No merge.** He wrote "raise a PR (and potentially merge it)". The
+#   parenthesis is his own hedge and the merge policy is claude-code-bot#54's,
+#   not this app's, so the spec stops at the PR.
+#
+# Every behaviour traces to a line of kit#88 or to a decision recorded in
+# docs/design/process.md. Nothing is `source inferred` without an `asks`
+# attached, so an inference cannot pass itself off as something he said.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ The read path ═══════════════════════════════════════════════════════════
+# "The backend can pull the projects and serve the behaviours to the frontend."
+
+behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
+  source defined kit#88
+  actor engineer
+  given repo:Remote
+  when runs command:KitServe
+  then reports origin:GitHub
+  contract today the list is readdirSync(behaviours/*.beh) against the checkout
+  contract the process happens to sit in — correct for a laptop, meaningless for a
+  contract pod whose clone is an implementation detail of its image
+
+behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
+  source defined kit#88
+  actor engineer
+  given project:Public
+  when runs command:KitServe
+  then reports auth:NotRequired
+  contract his instinct, quoted: "obviously beh from public repos dont need to be
+  contract authenticated so maybe can be returned faster" — so the split is not a
+  contract performance tweak layered on later, it is which credential the request needs
+  contract a public read that fails because a token could not be minted is a bug
+
+behaviour BEH-PULL-3 "A private project is served only against a live installation token"
+  source defined kit#88
+  actor engineer
+  given project:Private
+  when runs command:KitServe
+  then reports auth:InstallationToken
+  contract the kit-github secret he created on 2026-09-27 holds an app id, an
+  contract installation id and a private key — a credential that is EXCHANGED for a
+  contract short-lived token, never sent as one
+  contract an expired token is re-minted rather than returned as a failed read, which
+  contract is what he meant by "some similar refresh token mechanism to what you are using"
+
+behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend renders what it is handed"
+  source defined kit#88
+  actor engineer
+  given request:Project
+  when runs command:KitServe
+  then reports work:ServerSide
+  contract "I am envisioning, the frontend has the UI, keep it light let the backend
+  contract do the heavy lifting" — so the generated test a screen shows is computed
+  contract server-side and arrives as data; the browser never carries the engine
+  contract this is also what makes the engine's language a private decision rather
+  contract than a public one
+
+
+# ═══ Acting on a project ══════════════════════════════════════════════════════
+# "Then the user can act on a project, add new behaviours, update behaviours,
+# remove behaviours etc and then can 'Commit'."
+
+behaviour BEH-ACT-1 "A behaviour is added to a project from a phone"
+  source defined kit#88
+  actor engineer
+  when opens page:KitHostedProject
+  then sees button:KitHostedAddBehaviour
+  contract "top priority now I think is deploying kit so that I can use it from my
+  contract phone" — the phone is the requirement, not a nice-to-have, and it is why
+  contract nothing here may depend on a loopback bind
+
+behaviour BEH-ACT-2 "An existing behaviour is updated without rewriting the file around it"
+  source defined kit#88
+  actor engineer
+  when opens page:KitHostedBehaviour
+  then sees button:KitHostedSave
+  contract writer.js already splices one block so every comment survives
+  contract (kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the
+  contract headers in this directory are where a corpus's caveats live
+
+behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anything still references it"
+  source defined kit#88
+  actor engineer
+  when opens page:KitHostedBehaviour
+  then sees button:KitHostedRemove
+  contract ⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —
+  contract writer.js can add a step and splice a block, and has no remove path
+  contract a behaviour can be the target of `serves` or `cites` from another one, so
+  contract deleting it silently is how a corpus acquires a dangling reference
+
+behaviour BEH-ACT-4 "Edits are held until Commit, so a half-described change never reaches a branch"
+  source inferred kit#88
+  actor engineer
+  when opens page:KitHostedProject
+  then sees button:KitHostedCommit
+  asks "Does a hosted edit write to GitHub immediately, or accumulate until Commit?"
+  option "Accumulate until Commit" "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing"
+  option "Write each edit straight through" "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches"
+  recommend "Accumulate until Commit" "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice."
+  against "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous."
+
+
+# ═══ Commit ═══════════════════════════════════════════════════════════════════
+# "The backend can then create a new commit in a branch off develop? Here the AI
+# (you for now) can read the behaviour changes, update the generated tests,
+# update inferences etc, implement changes in the app to get the tests passing -
+# raise a PR (and potentially merge it)."
+
+behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on dev"
+  source defined kit#88
+  actor engineer
+  given change:Pending
+  when runs command:KitCommit
+  then reports branch:Created
+  contract answering the question mark in his own sentence: it has to be a branch
+  contract a spec written before its code exists makes check.js exit 1 BY DESIGN
+  contract (kit.beh BEH-GATE-1), so committing to dev would push a known-red tree
+  contract onto the branch every other PR is measured against
+  contract ⚠️ UNBUILT: git-store.js defaults to `opts.branch || currentBranch(cwd)`,
+  contract so today a pod would push a phone edit onto whatever branch its clone sits on
+
+behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who pressed Commit"
+  source defined docs/design/process.md#3
+  actor engineer
+  given change:Pending
+  when runs command:KitCommit
+  then reports author:Kit
+  contract his override on kit#88, 2026-09-30: "Let's let the commit belong to kit
+  contract for now… using the gh app speeds up timelines"
+  contract ⚠️ THIS IS A TRADE HE MADE KNOWINGLY, NOT A LIMITATION — commit
+  contract attribution was the argument that carried the earlier web-flow decision,
+  contract and he judged shipping sooner worth more while Kit has one user
+  contract the condition for revisiting it is a SECOND USER, not a date
+
+behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is where the work is picked up"
+  source defined kit#88
+  actor engineer
+  given branch:Pushed
+  when runs command:KitCommit
+  then reports pull:Opened
+  contract "Here the AI (you for now) can read the behaviour changes, update the
+  contract generated tests, update inferences etc, implement changes in the app to get
+  contract the tests passing - raise a PR"
+  contract the PR is the handover: a pushed branch with no PR is invisible to every
+  contract instrument that looks for work
+
+behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the work item"
+  source inferred kit#88
+  actor engineer
+  given branch:Pushed
+  when runs command:KitCheck
+  then exits status:One
+  serves BEH-COMMIT-3
+  contract MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:
+  contract adding one unimplemented behaviour took `20/20 behaviour(s) have a test
+  contract naming them` to `20/21` and exit 0 to exit 1
+  contract so "the tests are failing" is the normal state of a fresh Kit branch, and
+  contract anything that treats a red branch as a fault will fight the workflow he
+  contract described rather than serve it
+
+
+# ═══ The deployed boundary ════════════════════════════════════════════════════
+# What changes the moment Kit is reachable from a phone rather than from
+# localhost. His words: "Since I have set up the secret you should now be able
+# to set up kit as a proper full stack app."
+
+behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every configuration"
+  source defined docs/design/process.md
+  actor engineer
+  given request:Anonymous
+  when runs command:KitServe
+  then reports status:Ok
+  contract kit is a public repo, so a corpus served to an unauthenticated caller
+  contract discloses nothing that `git clone` does not
+  contract gating reads would cost the thing he wants — glancing at a spec from a
+  contract phone — to protect data that is already public
+
+behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the operator"
+  source defined docs/design/process.md
+  actor engineer
+  given request:Unauthenticated
+  when runs command:KitCommit
+  then reports status:Forbidden
+  contract this is the half BEH-WRITE-5 used to hold by binding loopback, which a
+  contract hosted service cannot do — so the gate moves from the interface to a
+  contract credential, and kit#47's KIT_PASSWORD is the first one
+  contract ⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the
+  contract App installation token is how KIT talks to GITHUB; the password is how a
+  contract PERSON is let into Kit. Neither substitutes for the other
