@@ -273,24 +273,82 @@ own words. Three decisions and a sequencing rule:
    projects repo."* This is the *same* decision as (1): spec and implementation can only be one PR if
    they share a repo. Recorded with its full cost in `ui.md`; the load-bearing consequence is that
    **`kit.js`, and therefore the stage 7 gate, cannot yet read a corpus outside its own directory.**
-3. ✅ **The UI authenticates with GitHub.** *"Sounds good"*, to the recommendation that Kit use GitHub
-   auth — **the web flow, and the user's own token, not an App installation token.** `kit#47`'s password
-   is unaffected and not wasted: the `auth.js` that PR introduces (⚠️ **it is not on `dev` yet** — #47
-   is open at the time of writing) mints an opaque session with `sessions().create()`, which takes no
-   argument and knows nothing about how identity was proved. OAuth would change only what happens
-   *before* it, so the password is the first of two ways to mint the same session, not a detour.
-   ⚠️ **It costs one more secret than the password, not fewer.** Gemini's "zero password risk" framing is
-   backwards in this estate: the password is one hand-made value, while the web flow needs a client
-   secret (and the App route a private key too). The device flow needs no secret, but GitHub explicitly
-   says not to enable it outside "a constrained environment (CLIs, IoT devices, or headless systems)",
-   and Kit's UI is a browser app. The argument that carries the decision is the one that never counted
-   secrets: **GitHub auth dissolves the push-credential question** — the user's token *is* the push
-   credential — and it buys commit attribution, which is genuinely missing today (every write-back
-   commits as `kit <kit@users.noreply.github.com>`).
+3. 🔴 **SUPERSEDED 2026-09-30 — the GitHub App does reads *and* writes, and commits belong to Kit.**
+   On `kit#88` he reversed this in as many words: *"Let's let the commit belong to kit for now, when we
+   want to enable more users we can extend to use GitHub oauth but using the gh app speeds up timelines
+   for now and we know how this works let's take this approach for now **override the previous
+   decision**."* So the operative decision is the **App installation credential** — the `kit-github`
+   secret he created, holding an app id, an installation id and a private key.
+   🔑 **What he traded, stated plainly because the record should not flatter the choice:** the argument
+   that carried the original decision was **commit attribution**, and this gives it up. Every write-back
+   continues to commit as `kit <kit@users.noreply.github.com>` rather than as him. He knows — it is the
+   thing the sentence above concedes — and he judged shipping sooner worth more than authorship while
+   Kit has exactly one user. **OAuth returns when it has more than one**, and that is the condition to
+   re-read this on, not a date.
+   ⚠️ **The reversal was not noticed by him unprompted, and that matters for how this file is used.**
+   He created the `kit-github` secret on 2026-09-27 while describing it as something *"the backend can
+   use to read and write to gh"* — i.e. he had already chosen the App route in practice, fifteen days
+   and many threads after ruling it out, without connecting the two. It was resolved only because the
+   two rulings were put side by side and he was asked which won. ⇒ **A decision recorded here is not
+   self-enforcing; the record's value is that it can be held up against a later one.**
+   ✅ **What is unaffected.** `kit#47`'s password is still not wasted, for exactly the reason it never
+   was: the `auth.js` that PR introduces (⚠️ **not on `dev` yet** — #47 is open at the time of writing)
+   mints an opaque session via `sessions().create()`, which takes no argument and knows nothing about
+   how identity was proved. **The App credential and the password sit at different layers** — the App is
+   how Kit talks to GitHub, the password is how a person is let into Kit — so the App route does not
+   remove the need for the second, it only changes what pushes.
+   ⚠️ **The secret count still goes up, not down.** The password is one hand-made value; the App route
+   needs a private key as well. Gemini's "zero password risk" framing was backwards in this estate and
+   still is. What survives intact from the original argument is the part that never counted secrets:
+   **GitHub auth dissolves the push-credential question**, because the installation token *is* the push
+   credential.
+
+   <details>
+   <summary>The decision this replaces, kept verbatim — a superseded ruling is evidence, not clutter</summary>
+
+   > 3. ✅ **The UI authenticates with GitHub.** *"Sounds good"*, to the recommendation that Kit use
+   >    GitHub auth — **the web flow, and the user's own token, not an App installation token.**
+   >    […] The argument that carries the decision is the one that never counted secrets: **GitHub auth
+   >    dissolves the push-credential question** — the user's token *is* the push credential — and it
+   >    buys commit attribution, which is genuinely missing today (every write-back commits as
+   >    `kit <kit@users.noreply.github.com>`).
+
+   Stated on `kit#52`, 2026-09-12; landed here when `kit#53` merged 2026-09-23; overridden on `kit#88`,
+   2026-09-30. It was in force for seven days and was never built, which is the only reason the reversal
+   cost nothing but this paragraph.
+
+   </details>
 4. 📋 **Sequencing: Kit is validated on Kit before any other repo is onboarded.** *"I think maybe we
    validate using kit before onboarding other repos and adding the specs etc."* This selects the step
    `ui.md`'s own sequence already lists as its last: Kit's corpus in browser verbs, gated by
    `kit check`, so the self-hosting claim is measured rather than argued.
+5. ✅ **The hosted engine becomes C#; Node stays.** Decided on `kit#88`, 2026-09-30: *"Let's move to
+   csharp, I want it closer to my stack, I want it scalable from the start, I want the csharp, react,
+   vite, autogen stack. I also want to move this to a server model."* **Three qualifications are his own
+   words and all three narrow the work**, so none of them should be read out of the record:
+   - *"maybe we can keep node around for now for local dev as an option"* ⇒ **this is not a migration
+     that deletes the Node engine.** The 181 mutants and the suite they hold keep running.
+   - *"we also intend to have a Claude plugin… maybe when we get to implementing the plugin we go for an
+     mcp approach but let's not worry for now"* ⇒ Node is kept for a **second product**, not out of
+     caution. That product is out of scope for now by his own instruction.
+   - *"crack on with hosted csharp"* ⇒ the target is **the hosted path only.**
+   🔑 **The reason he gave was deployment confidence — *"We know how to deploy dotnet + react"* — and it
+   is worth recording that this premise was half false when examined, without that changing the
+   decision.** Kit's frontend already *is* the house stack (React 19, Vite 7, TypeScript 5.9,
+   `react-router`, plus the design system — which `web-template`'s own frontend does **not** yet
+   consume). What was genuinely unaligned was the backend (bare `node:http`), the directory layout, and
+   the absence of any image or chart. A wrong premise does not refute a proposal: the skill he is
+   pointing at is Docker/OCIR/Helm/ArgoCD, which does not inspect the language in the image, but
+   "closer to my stack" and "scalable from the start" are preferences he is entitled to hold directly.
+   🔑 **Why Node keeping running is load-bearing rather than sentimental.** Generation is **byte-for-byte
+   deterministic** — measured 2026-09-30 across four corpora and three entry points, with no timestamps,
+   PIDs or absolute paths leaking into the output. So the Node engine can serve as the **executable
+   specification** the C# implementation is verified against, via committed golden files. That is what
+   stops the port discarding the evidence the 181 mutants represent, and it is why the conformance
+   harness is built *before* any module is ported.
+   ⚠️ **The one thing here he has not decided** is whether Phase 1's hosted image carries both runtimes
+   (C# server, Node engine behind one interface) so the server ships before the engine is ported.
+   Queued with a default; it is an architecture call and therefore his.
 
 ### 🔴 The middle of that loop does not exist yet
 
