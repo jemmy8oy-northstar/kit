@@ -65,9 +65,18 @@ function newestMtime(target) {
  * whereas a bundle built before your last edit serves you a Kit that silently
  * is not the one in your tree.
  */
-function needsBuild(uiDir = UI, distIndex = DIST_INDEX) {
+function needsBuild(uiDir = UI, distIndex = DIST_INDEX, env = process.env) {
   const built = newestMtime(distIndex);
   if (built === 0) return true;
+  // 🔑 Not only mtimes. `KIT_BASE_PATH` (kit#49) is read at BUILD time and baked
+  // into the asset URLs, so changing it changes what the bundle must be while
+  // touching no source file at all — every mtime test above says "fresh" and the
+  // page would be blank. Compared against the prefix read back out of the bundle
+  // itself rather than against a remembered value, because the bundle is the only
+  // thing that knows what it was built for.
+  const ui = require(path.join(BEH, 'ui.js'));
+  const builtFor = ui.bundleBasePath(path.dirname(distIndex));
+  if (builtFor !== null && builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;
   return SOURCE_ENTRIES.some((e) => newestMtime(path.join(uiDir, e)) > built);
 }
 
@@ -92,6 +101,15 @@ const HELP = `Kit — one command to run it.
   --bindings <f>   a bindings file to write to instead of the repo's.
   --no-build       serve the existing bundle and neither install nor build.
   --help
+
+Environment:
+  KIT_PASSWORD     lock writes behind a password (kit#44). Unset = the loopback
+                   rule above.
+  KIT_BASE_PATH    the path Kit is served under, e.g. /kit (kit#49). Unset = the
+                   root, which is every local run. ⚠️ It is read when the UI is
+                   BUILT as well as when it is served, so a bundle built without
+                   it cannot be served under a prefix — ui.js says so at startup
+                   rather than leaving you a white page.
 
 It installs and builds the UI the first time, and rebuilds when the bundle is
 older than the source. Then it serves, and prints the URL to open.`;

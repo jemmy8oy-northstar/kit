@@ -18,7 +18,28 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string): Promise<T> {
+/**
+ * The path Kit is served under, prepended to every request (kit#49, rule 8).
+ *
+ * Applied HERE, inside the two fetchers, rather than at the ~9 call sites below.
+ * That is not tidiness: a route added later would silently skip a per-call-site
+ * prefix and fetch from the root, and on a shared host the root answers 200 with
+ * a sibling app's SPA rather than failing ([[green-over-the-clients-question]]).
+ * Inside `get`/`post` there is nowhere for a new route to go that misses it.
+ *
+ * `import.meta.env.BASE_URL` is vite's own echo of the `base` it built with — so
+ * the browser reads the value the bundle was built for, not one configured twice.
+ * It is `/` unless `KIT_BASE_PATH` was set, and the trailing slash is stripped so
+ * an unprefixed build requests exactly the strings it always did.
+ *
+ * Read per call rather than once at module load, so a test can change it.
+ */
+function url(path: string): string {
+  return import.meta.env.BASE_URL.replace(/\/$/, '') + path
+}
+
+async function get<T>(requested: string): Promise<T> {
+  const path = url(requested)
   let res: Response
   try {
     res = await fetch(path)
@@ -56,7 +77,8 @@ async function get<T>(path: string): Promise<T> {
 // checks the Origin header before it reads the body. This header is declared
 // because the server parses JSON; the defence is on the server, where an
 // attacker cannot choose it.
-async function post<T>(path: string, body: unknown): Promise<T> {
+async function post<T>(requested: string, body: unknown): Promise<T> {
+  const path = url(requested)
   let res: Response
   try {
     res = await fetch(path, {

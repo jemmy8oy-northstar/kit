@@ -7,7 +7,23 @@ import SignIn from './components/SignIn'
 export default function App() {
   return (
     <SignIn>
-      <Router>
+      {/*
+      `basename` is kit#49's rule 8 in the router. Without it every `<Link to="/">`
+      navigates to the host root — which on a shared host is a DIFFERENT APP that
+      answers 200, so pressing "Kit" in the header would quietly leave Kit. Read
+      from `import.meta.env.BASE_URL`, the same value the API client and the built
+      asset URLs come from, because three readers of one value is the arrangement
+      this rule exists to keep.
+
+      🔴 The trailing slash is stripped, and a real browser is what proved it has
+      to be. `BASE_URL` is `/kit/`, and react-router matches by `startsWith`, so a
+      basename of `/kit/` does NOT match the location `/kit` — which is the URL he
+      will type. The result was a WHITE PAGE with every asset and every fetch
+      returning 200, because the server and the bundle were both correct and only
+      the router had declined to match. `|| '/'` because stripping the slash from
+      the unprefixed `/` would leave an empty basename.
+      */}
+      <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
         <div className="app">
           <header>
             <Link to="/" className="brand">

@@ -48,6 +48,21 @@ by the other. `writer.js` itself still contains no path to git at all, and a tes
 
 ⚠️ **Decision 1's auth half is NOT settled** — *"I guess we will need some auth"* is the same hedge
 the database turned out to be, so it is asked rather than assumed: **kit#44**, acting 2026-09-16.
+
+🔑 **Decision 1 had a third consequence nobody costed: Kit needs to know its own address** (kit#49).
+Every app in the estate shares `balenthiran.co.uk` behind an ingress that does **not** rewrite, so a
+deployed Kit is `balenthiran.co.uk/kit` and has to ask for its own JavaScript and its own API under
+that prefix. It did not — every URL in the UI was root-absolute.
+
+The reason this is worth a paragraph rather than a line is the failure mode. **Every unmatched path
+on that host answers 200 with the portfolio's SPA**, so none of these mistakes 404. A bundle built
+for the wrong prefix, a fetch that skips it, a router basename with one extra slash: each produces a
+page that loads and does nothing, with a clean access log on both sides. `ui.js` rule 8 is the
+answer — one value, `KIT_BASE_PATH`, read by vite's `base`, the router's `basename`, the API client
+and the server's routing, with the server reading the prefix back **out of the built bundle** at
+startup so the one half a restart cannot correct is checked rather than trusted.
+
+**Unset is the local tool, byte for byte.** A subdomain, if he ever picks one, needs none of it.
 Until it lands, a deployed Kit has no lock on its writes and must not be exposed.
 
 ⚠️ **Re-measured before acting, not just re-quoted** ([[re-measure-a-lapsed-default]]). Nothing in
