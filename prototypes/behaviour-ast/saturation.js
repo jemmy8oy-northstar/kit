@@ -180,8 +180,17 @@ function main(argv = [], textReader = nounsFromText) {
     console.error(`saturation: no behaviours directory at ${dir} — could not look`);
     return 2;
   }
-  const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
-    .filter((f) => !only || f.includes(only));
+  // The corpus-name rule is kit.js's, imported rather than re-derived: this file
+  // carried a byte-identical `f.includes(only)` filter, and a rule applied by
+  // hand at two call sites is two things free to drift. It bites harder here
+  // than anywhere, because every number this file prints is an AGGREGATE over
+  // the population the filter chose.
+  const picked = kit.selectCorpora(fs.readdirSync(dir), only);
+  if (picked.error) {
+    console.error(`saturation: ${picked.error} — could not look`);
+    return 2;
+  }
+  const all = picked.files;
 
   // This study asks whether the glue binding a SPEC to a UI saturates as the UI
   // grows. A corpus with no UI has no answer to give and would sit in the
