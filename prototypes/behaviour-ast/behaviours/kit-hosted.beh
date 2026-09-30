@@ -38,6 +38,22 @@
 # would be a lie about this file, and existence is the axis that actually
 # disqualifies it. One directive, the true one.
 #
+# 🔴 **THAT LINE IS LOAD-BEARING FOR CI, AND NOT FOR THE REASON IT WAS CHOSEN.**
+# Measured on 2026-09-30 with this file's directive deleted and nothing else
+# changed: `node kit.test.js` goes from **351 passed, 0 failed** to **350 passed,
+# 1 failed**. The failing test is "--check goes RED when the write-up drifts from
+# the corpora" — saturation.js reads `behaviours/*.beh` as its POPULATION, so an
+# undeclared corpus joins the study and the frozen write-up stops matching.
+#
+# Two things follow, and the second is why this paragraph exists:
+#   * The directive was picked because it is TRUE, and it happens to also be the
+#     thing keeping the branch green. Do not read the green as evidence that
+#     adding a corpus is free.
+#   * **The red does not name its cause.** It says a write-up drifted; it does
+#     not say someone added a file. A future wake adding an eleventh corpus will
+#     see a saturation test fail on a change that never touched saturation. The
+#     fix is a directive or a refreshed write-up, never "revert the corpus".
+#
 # ── Why this is a THIRD Kit corpus and not more of the other two ────────────
 # `kit.beh` closes with "Every behaviour below is real, and every one is already
 # tested in `kit.test.js`". Putting unbuilt behaviours there would falsify that
