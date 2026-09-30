@@ -1091,6 +1091,168 @@ test('parseCliArgs: two corpus names is a refusal, not a silent first-one-wins',
     'two corpus names given, "a" and "b" — this reports on one');
 });
 
+section('a corpus NAME that names two corpora');
+const { selectCorpora } = require('./kit');
+
+// The directory as it stands, so these read as the real ambiguities rather than
+// invented ones. Non-`.beh` entries included on purpose: the filter used to be
+// two chained `.filter`s and one of them did this job.
+const DIR_LISTING = ['kit.beh', 'kit-ui.beh', 'james-habits-app.beh',
+  'trial-habits-a.beh', 'trial-habits-b.beh', 'trial-lend.beh', 'bindings.json', 'README.md'];
+
+test('selectCorpora: an EXACT corpus name wins over the substring it is a prefix of', () => {
+  // THE FINDING. `node kit.js kit` matched kit.beh AND kit-ui.beh and reported
+  // one merged block over both — 26 behaviours and 20/126 = 16%, against
+  // kit.beh's own 20 and 0/96 = 0%. kit.beh's ZERO derived lines is the whole
+  // reason kit-ui.beh exists as a separate corpus, so the most natural command
+  // in Kit's own repo was erasing the evidence it was written to preserve.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit'), { files: ['kit.beh'] });
+  // Not a prefix rule and not a "shortest match" rule — an exact-filename rule.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit-ui'), { files: ['kit-ui.beh'] });
+});
+
+test('selectCorpora: a name that matches two corpora REFUSES and names every candidate', () => {
+  // ⚠️ The assertion is on the REASON and on the candidate list, not just on
+  // "there is an error" — `trial` and a misspelling both produce an error, and
+  // only one of them produces three names ([[an-exit-code-two-rules-produce]]).
+  const r = selectCorpora(DIR_LISTING, 'trial');
+  assert.strictEqual(r.kind, 'ambiguous');
+  assert.deepStrictEqual(r.files, [], 'a refusal must select nothing');
+  assert.match(r.error, /"trial" names 3 corpora — trial-habits-a, trial-habits-b, trial-lend/);
+  // The reason, in the message, because the reader has to choose: this is
+  // kit.js's own stated rule for why the filter exists at all.
+  assert.match(r.error, /tells you about neither/);
+  // Two is the same rule as three. `trial-habits` is the pair a reader reaches
+  // for when they mean "both habits trials", which is exactly the merge.
+  assert.strictEqual(selectCorpora(DIR_LISTING, 'trial-habits').kind, 'ambiguous');
+});
+
+test('selectCorpora: a UNIQUE substring still resolves — the old spellings keep working', () => {
+  // Regression guard, and not a hypothetical one: `kit.test.js`'s own
+  // remediation message tells a human to run `node kit.js sheet james-habits`,
+  // and `node kit.js kit.beh` is how the merged report was worked around.
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'james-habits'), { files: ['james-habits-app.beh'] });
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'kit.beh'), { files: ['kit.beh'] });
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, 'lend'), { files: ['trial-lend.beh'] });
+});
+
+test('selectCorpora: no name reports on everything, and only on .beh files', () => {
+  assert.deepStrictEqual(selectCorpora(DIR_LISTING, null).files,
+    DIR_LISTING.filter((f) => f.endsWith('.beh')));
+  // `kind` distinguishes the two refusals so a caller can word them apart: only
+  // "nothing is there" wants the directory named.
+  assert.strictEqual(selectCorpora(DIR_LISTING, 'zznope').kind, 'none');
+  assert.match(selectCorpora(DIR_LISTING, 'zznope').error, /no corpus matching "zznope"/);
+});
+
+test('node kit.js kit reports on kit.beh ALONE, and kit-ui.beh is nowhere in it', () => {
+  // ⚠️ SPAWNED and over the REAL corpora, because the rule that mattered lives
+  // in the `require.main === module` block and the defect was only ever visible
+  // end-to-end. Asserted against kit.beh's own parsed count rather than the
+  // literal 20, so adding a behaviour to kit.beh does not fail this for the
+  // wrong reason — but a corpus named `kit-*` rejoining the report does.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'behaviours', 'kit.beh'), 'utf8');
+  const own = resolve(parse(src, 'kit.beh')).behaviours;
+  const r = require('child_process').spawnSync(
+    'node', [pathx.join(__dirname, 'kit.js'), 'kit'], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.strictEqual(r.status, 0, `stderr: ${r.stderr}`);
+  assert.match(r.stdout, new RegExp(`behaviours\\s+${own.length}\\b`),
+    `the report did not say ${own.length} behaviours — kit-ui.beh is being folded in again`);
+  // The discriminator, and the one that cannot be satisfied by a coincidence of
+  // counts: kit-ui.beh's ids are emitted as test titles when it is in the
+  // population, so their absence is proof of the population, not of a number.
+  //
+  // ⚠️ `BEH-ADJ-1` is deliberately NOT in this list. It is the one id the two
+  // corpora SHARE, so it appears either way and asserting on it fails a correct
+  // fix — which is how it was caught here, by failing first.
+  for (const id of ['BEH-LIST-1', 'BEH-SHEET-1', 'BEH-PAIR-1', 'BEH-ADJ-2', 'BEH-STEP-1']) {
+    assert.ok(!r.stdout.includes(id), `${id} is from kit-ui.beh and reached a report about kit`);
+  }
+});
+
+test('selectCorpora: an EMPTY name is a refusal, not "you gave me no name"', () => {
+  // ⚠️ `only == null`, not `!only`. The first draft used `!only`, so
+  // `node kit.js ""` reported **133 behaviours merged across all ten corpora** —
+  // the exact failure this function exists to prevent, through a different door.
+  // `node kit.js "$CORPUS"` with `CORPUS` unset is how a script walks into it.
+  const r = selectCorpora(DIR_LISTING, '');
+  assert.strictEqual(r.kind, 'empty');
+  assert.deepStrictEqual(r.files, []);
+  assert.match(r.error, /an empty corpus name was given/);
+  // The control: no name at all is still the deliberate aggregate, and the two
+  // must not collapse back into one branch.
+  assert.strictEqual(selectCorpora(DIR_LISTING, null).error, undefined);
+  assert.strictEqual(selectCorpora(DIR_LISTING, undefined).error, undefined);
+});
+
+test('a REFUSED `node kit.js <name>` exits 2, says why, and prints no report', () => {
+  // ⚠️ SPAWNED, and this test exists because a unit test on `selectCorpora` is
+  // not a test of the CLI. Replacing the whole `if (picked.error)` block in the
+  // `require.main` section with `process.exit(0)` left all 346 tests GREEN: the
+  // rule was covered and the wiring that turns it into an exit code and a
+  // sentence a user reads was covered by nothing ([[passing-is-not-gating]]).
+  const run = (arg) => require('child_process').spawnSync(
+    'node', [pathx.join(__dirname, 'kit.js'), arg], { encoding: 'utf8', maxBuffer: 1 << 26 });
+
+  const amb = run('trial');
+  assert.strictEqual(amb.status, 2, `an ambiguous name must exit 2; stdout: ${amb.stdout}`);
+  assert.match(amb.stderr, /"trial" names 3 corpora — trial-habits-a, trial-habits-b, trial-lend/);
+  assert.strictEqual(amb.stdout, '', `a refused run printed a report anyway: ${amb.stdout}`);
+  // ⚠️ The directory path belongs to "nothing is there", NOT to "that names
+  // three things" — the first version of this stapled a path onto the end of a
+  // sentence about candidates, and it read as a sentence about the directory.
+  assert.ok(!amb.stderr.includes(__dirname), `the ambiguity message named a directory: ${amb.stderr}`);
+
+  const none = run('zznope');
+  assert.strictEqual(none.status, 2, `an unmatched name must exit 2; stdout: ${none.stdout}`);
+  assert.match(none.stderr, /no corpus matching "zznope"/);
+  assert.ok(none.stderr.includes('behaviours'), `"nothing is there" must say where it looked: ${none.stderr}`);
+
+  const empty = run('');
+  assert.strictEqual(empty.status, 2, `an empty name must exit 2; stdout: ${empty.stdout}`);
+  assert.match(empty.stderr, /an empty corpus name was given/);
+  assert.strictEqual(empty.stdout, '', `an empty name still produced a report: ${empty.stdout}`);
+});
+
+test('the merge `node kit.js kit` used to do gave one id to two behaviours', () => {
+  // 🔑 WHY THE MERGE WAS WORSE THAN A WRONG PERCENTAGE. `kit.beh` and
+  // `kit-ui.beh` both define BEH-ADJ-1 — legitimately, because they are two
+  // corpora for two different surfaces and nothing joins them. Folding them into
+  // one population makes one id name two behaviours with different titles, and
+  // `resolve()` reports 0 conflicts over it.
+  //
+  // `writer.js` REFUSES to append a behaviour whose id a corpus already holds
+  // (`mutate.js` carries the mutant for it), so Kit holds this rule within a
+  // file and the CLI's name resolution was manufacturing a breach across two.
+  // That is what makes `selectCorpora` a correctness fix rather than a tidier
+  // number: ids are how `serves`, the sheet and every adjudication are keyed.
+  const merged = ['kit.beh', 'kit-ui.beh'].flatMap((f) =>
+    parse(fsx.readFileSync(pathx.join(__dirname, 'behaviours', f), 'utf8'), f));
+  const { behaviours } = resolve(merged);
+  const dupes = behaviours.map((b) => b.id).filter((id, i, a) => a.indexOf(id) !== i);
+  assert.deepStrictEqual(dupes, ['BEH-ADJ-1'],
+    'the shared id is the evidence for this test — if it is gone, the test no longer shows anything');
+  // And the two really are different behaviours, not one file read twice
+  // ([[hash-the-artefacts-you-compare]]).
+  const titles = new Set(behaviours.filter((b) => b.id === 'BEH-ADJ-1').map((b) => b.title));
+  assert.strictEqual(titles.size, 2, `one id, one title — nothing was being conflated: ${[...titles]}`);
+});
+
+test('saturation.js resolves a corpus name by kit.js\'s rule, not its own copy', () => {
+  // This file carried a byte-identical `f.includes(only)`, and every number it
+  // prints is an AGGREGATE over the population that filter chose — so a silent
+  // merge here is worse than in kit.js, not better. The import is the point:
+  // asserting the shared behaviour is what stops the two drifting apart again.
+  const sat = require('./saturation');
+  const logs = [];
+  const err = console.error;
+  console.error = (...a) => logs.push(a.join(' '));
+  let code;
+  try { code = sat.main(['trial']); } finally { console.error = err; }
+  assert.strictEqual(code, 2, 'an ambiguous --only must be "could not look", not an empty study');
+  assert.match(logs.join('\n'), /"trial" names 3 corpora/);
+});
+
 test('kit.js refuses a corpus that parses to zero behaviours, instead of reporting NaN%', () => {
   // ⚠️ SPAWNED, not called: this guard lives in the `require.main === module`
   // block, which a `require` of this module deliberately does not run. The corpus
@@ -2465,13 +2627,53 @@ test('available coverage reports a number — the control for null-not-zero', ()
   // a count. Without this, a summary that reported null unconditionally would
   // pass the test above.
   const s = ui.summary('kit', { dir: pathx.join(__dirname, 'behaviours'), repos: null });
-  const withRepo = ui.summary('kit', {
-    dir: pathx.join(__dirname, 'behaviours'),
-    repos: pathx.join(__dirname, '..', '..', '..'),
-  });
+  // 🔴 `repoFor` is `join(reposDir, app)`, so a `repos` directory only resolves
+  // for the app `kit` if it CONTAINS something called `kit`. This used to pass
+  // `__dirname/../../..` — the parent of this checkout — which made the assertion
+  // depend on **the checkout being NAMED `kit`**. That is true of `/data/repos/kit`
+  // and true in CI (GitHub checks out to `<work>/kit/kit`), so it was green
+  // everywhere anyone looked; it is false in any `git worktree`, any
+  // `git clone <url> mykit`, and any differently-named fork.
+  //
+  // Measured on one commit and one machine, varying only the path:
+  // `/tmp/kit-wt-diag` → 350 passed, 1 failed; `/tmp/kitprobe/kit` → 351, 0.
+  // It cost a wake an hour: a merged-tree probe run from worktrees reported this
+  // single failure against SEVEN unrelated open PRs, which reads exactly like a
+  // merge having broken them.
+  //
+  // So the layout the assertion needs is built here rather than hoped for.
+  const repos = fixture({});
+  fsx.symlinkSync(pathx.join(__dirname, '..', '..'), pathx.join(repos, 'kit'), 'dir');
+  const withRepo = ui.summary('kit', { dir: pathx.join(__dirname, 'behaviours'), repos });
   assert.strictEqual(s.coverage.available, false, 'no repos dir must be unavailable');
   assert.strictEqual(withRepo.coverage.available, true, 'kit beside its own repo must be available');
   assert.ok(withRepo.coverage.covered > 0);
+});
+
+test('a --repos with no checkout for this app names the path it looked for, not the absent flag', () => {
+  // Found by an author with no prior context driving the real UI, and it is the
+  // THIRD state this pair of controls never had: `repos` given, and no checkout
+  // for THIS app underneath it. `repoFor` used to collapse it into the same
+  // `null` that "nothing was given" produces, so both arrived at
+  // project.js's default sentence — and that sentence tells you to pass a flag
+  // you just passed. It is not a log line: `CoverageBadge` renders it as the
+  // tooltip on `not measured`, so it is the only explanation a user ever gets
+  // ([[empty-means-two-things]]).
+  const dir = pathx.join(__dirname, 'behaviours');
+  const noCheckouts = fixture({ 'unrelated.txt': 'a repos dir with no app checkouts in it\n' });
+
+  const missing = ui.summary('kit', { dir, repos: noCheckouts });
+  assert.strictEqual(missing.coverage.available, false);
+  assert.ok(!/no --repo given/.test(missing.coverage.reason),
+    `a repos dir WAS given, so the reason must not blame its absence: ${missing.coverage.reason}`);
+  assert.ok(missing.coverage.reason.includes(pathx.join(noCheckouts, 'kit')),
+    `the reason must name the path it looked for: ${missing.coverage.reason}`);
+
+  // CONTROL, and the half that keeps the fix honest: when the flag genuinely is
+  // absent, the sentence blaming its absence is the correct one and must stay.
+  const none = ui.summary('kit', { dir, repos: null });
+  assert.ok(/no --repo given/.test(none.coverage.reason),
+    `CONTROL: with no repos dir at all the absent-flag reason is right: ${none.coverage.reason}`);
 });
 
 test('a corpus that will not parse is reported as an error, not as zero behaviours', () => {
@@ -4313,7 +4515,7 @@ test('nothing still says ui.js cannot serve the bundle, now that it does', () =>
 // `createMarker`, which is why that factory exists.
 section('mutation marker');
 
-const { createMarker } = require('./mutation-marker');
+const { createMarker, ownerAlive } = require('./mutation-marker');
 // A killed run, reconstructed exactly: `arm()` records the originals, then the
 // file on disk is made wrong and nothing gets to clean up after it.
 const killedRun = (files, damage) => {
@@ -4328,12 +4530,24 @@ const killedRun = (files, damage) => {
   return { root, m };
 };
 const silent = { log: () => {}, error: () => {} };
+// `killedRun` arms from the TEST's own process, so the pid it records is alive —
+// and `recover()` now refuses while the owning run is alive. So every fixture
+// here states the thing it was always simulating: the owner is dead. Passing the
+// real probe instead would refuse all of them, which is the guard working.
+const dead = () => false;
+// ⚠️ It asserts the pid it was HANDED. A probe that just returned `true` would
+// pass identically over a guard that checked the wrong value — or nothing at all
+// — so the delivery is tested, not only the outcome.
+const stillRunning = (pid) => {
+  assert.strictEqual(pid, process.pid, 'the guard must probe the pid recorded in the marker');
+  return true;
+};
 
 test('marker: a run killed mid-mutant is restored exactly from the marker alone', () => {
   const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 999\n');
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
   // The marker goes with it, or the next run refuses forever.
   assert.strictEqual(fsx.existsSync(m.MARKER), false);
@@ -4353,7 +4567,7 @@ test('marker: recovery restores ONLY what was mutated, leaving other work alone'
   delete originals['b.js'];
   fsx.writeFileSync(m.MARKER, fsx.readFileSync(m.MARKER, 'utf8').replace(/\{"tool".*\}/, JSON.stringify({ tool: 't', base: '.', files: originals })));
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'b.js'), 'utf8'), 'REAL UNCOMMITTED WORK\n');
 });
@@ -4409,8 +4623,84 @@ test('marker: recovery uses the base recorded in the marker, not the base of the
   m.arm({ tool: 'mutate-ui.js', base: 'ui', originals: { 'src/a.ts': 'const ok = 1\n' }, warn: 'w', restoreAll: () => {} });
   fsx.writeFileSync(pathx.join(root, 'ui/src/a.ts'), 'const ok = 999\n');
 
-  assert.strictEqual(m.recover(silent), 0);
+  assert.strictEqual(m.recover(silent, dead), 0);
   assert.strictEqual(fsx.readFileSync(pathx.join(root, 'ui/src/a.ts'), 'utf8'), 'const ok = 1\n');
+});
+
+// ── the marker is the restore data, so recovery must not race its own run ────
+//
+// The hazard this section exists for, hit for real on 2026-09-26: `--recover`
+// called while a mutation run was still going restored what had been mutated so
+// far, deleted the originals, and left the live run to mutate a DIFFERENT file
+// with nothing able to undo it. `arm()` had recorded the owning pid since the
+// module was written — but only in the prose above the payload, where no code
+// could reach it. A value captured and never read is a rule the code lacks.
+test('marker: recovery REFUSES while the run that armed it is still alive', () => {
+  const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+
+  assert.strictEqual(m.recover(silent, stillRunning), 2, 'a live owner is could-not-look, not success');
+  // The two things that make it destructive, asserted separately: it must not
+  // undo the live run's work, and it must not delete the only copy of the
+  // originals that run still needs for the file it mutates next.
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 999\n',
+    'recovery must leave a live run\'s mutant alone');
+  assert.strictEqual(fsx.existsSync(m.MARKER), true,
+    'refusing must not consume the marker — it is the restore data, not a flag');
+});
+
+// The guard can only fire if the pid reaches somewhere machine-readable. Assert
+// the payload directly, because the prose line carried it for weeks and every
+// test still passed.
+test('marker: arm() records the owning pid IN the payload, not only in the prose', () => {
+  const { m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  assert.strictEqual(m.payload().pid, process.pid);
+});
+
+// A marker written before this change has no pid. Refusing those would make every
+// pre-existing marker unrecoverable, which is strictly worse than the hazard — so
+// it recovers, and says the absence out loud rather than letting "cannot tell"
+// read as "nothing is live".
+test('marker: a marker with no pid still recovers, and NAMES the thing it could not check', () => {
+  const { root, m } = killedRun({ 'a.js': 'const ok = 1\n' }, { 'a.js': 'const ok = 999\n' });
+  const p = m.payload();
+  delete p.pid;
+  fsx.writeFileSync(m.MARKER, fsx.readFileSync(m.MARKER, 'utf8').replace(/\{"tool".*\}/, JSON.stringify(p)));
+  const said = [];
+
+  assert.strictEqual(m.recover({ log: (s) => said.push(s), error: (s) => said.push(s) }), 0);
+  assert.strictEqual(fsx.readFileSync(pathx.join(root, 'a.js'), 'utf8'), 'const ok = 1\n');
+  assert.match(said.join('\n'), /records no pid/, 'an unknown liveness must be stated, not hidden');
+});
+
+// ⚠️ The two tests above inject the probe, so they would pass identically over an
+// `ownerAlive` that always returned false. These exercise the REAL default in
+// both directions — the only reason the injection is safe.
+test('marker: ownerAlive says TRUE for a process that is certainly running', () => {
+  assert.strictEqual(ownerAlive(process.pid), true, 'this very process is alive');
+});
+
+test('marker: ownerAlive says FALSE for a process that has certainly exited', () => {
+  // `spawnSync` returns only after the child is reaped, so its pid is a real pid
+  // that is definitely gone — no sleeping, no guessing at an unused number.
+  const gone = require('child_process').spawnSync('node', ['-e', '0']);
+  assert.strictEqual(gone.status, 0, 'the probe child must actually have run');
+  assert.strictEqual(ownerAlive(gone.pid), false);
+  // And a pid that could never be one is dead, not a crash: `payload().pid` is
+  // whatever was in the file, including nothing.
+  for (const junk of [undefined, null, 0, -1, 'nope', 1.5]) {
+    assert.strictEqual(ownerAlive(junk), false, `${junk} is not a live pid`);
+  }
+});
+
+// 🔴 The branch that fails OPEN, and the only one no real process here can
+// produce: every pid in this container shares one uid, so `kill(pid, 0)` never
+// raises EPERM and the mapping went unmeasured. EPERM means "it exists and is
+// someone else's" — alive. Reading it as dead would recover over a live run
+// owned by another user, and would look exactly this green.
+test('marker: ownerAlive treats EPERM as ALIVE — it exists, it is just not ours', () => {
+  const raising = (code) => () => { const e = new Error(code); e.code = code; throw e; };
+  assert.strictEqual(ownerAlive(4242, raising('EPERM')), true, 'EPERM is alive, not dead');
+  assert.strictEqual(ownerAlive(4242, raising('ESRCH')), false, 'ESRCH is the only "no such process"');
 });
 
 // ── the marker's git status is itself a rule, and it has TWO sides ──────────
@@ -4482,6 +4772,41 @@ test('marker: the marker tells a reader how to recover, and warns off git checko
   // The prose has to come first: the payload is machine-readable bulk and the
   // first thing anyone does with this file is read the top of it.
   assert.ok(text.indexOf('deliberately WRONG') < text.indexOf('{"tool"'));
+});
+
+test('every tracked source file is plain text — one NUL byte makes grep skip the whole file', () => {
+  // Repository state, like the two marker tests above, and asserted against the
+  // REAL tree because the claim is about this repo rather than about a fixture.
+  //
+  // 🔴 Why this is worth a test rather than a one-line fix and a shrug: a single
+  // NUL byte makes `grep` classify a file as BINARY, and a binary file's matching
+  // LINES are suppressed while `-c` and `-l` keep answering normally. So the
+  // failure states the opposite of itself — `grep -c` says 37 matches and
+  // `grep -rn` shows none of them, in the file it is most worth searching.
+  // `kit.js` carried one for an unknown time, written as a literal byte where the
+  // `\0` escape was meant, and a search for `boundNouns` across this directory
+  // never once returned its own definition ([[empty-means-two-things]]).
+  //
+  // Whole-population, not just kit.js: the point is that nothing anywhere becomes
+  // quietly unsearchable, and a check naming one file would not have caught this
+  // one either — nobody suspected that file.
+  const ls = gitAtRoot('ls-files', '-z', '--', '*.js', '*.ts', '*.tsx', '*.beh', '*.md', '*.json', '*.yml');
+  assert.strictEqual(ls.status, 0, `could not look: git ls-files exited ${ls.status} — ${ls.err}`);
+  const files = ls.out.split('\0').filter(Boolean);
+  // Could-not-look is never green: an empty listing would pass this vacuously,
+  // which is the exact shape of bug it is written to catch.
+  assert.ok(files.length > 50, `could not look: git ls-files returned ${files.length} file(s)`);
+
+  const offenders = [];
+  for (const rel of files) {
+    const buf = fsx.readFileSync(pathx.join(realMarker.ROOT, rel));
+    const at = buf.indexOf(0);
+    if (at !== -1) offenders.push(`${rel} (first NUL at byte ${at})`);
+  }
+  assert.deepStrictEqual(offenders, [],
+    `these tracked text files contain a raw NUL byte, so grep treats them as binary and shows no `
+    + `matching lines for anything in them: ${offenders.join(', ')}. Write the separator as the `
+    + `escape \\0 in a string literal — the runtime value is identical and the file stays text.`);
 });
 
 // ── one command to run Kit (kit#37) ──────────────────────────────────────────
@@ -4586,6 +4911,44 @@ test('start: a node_modules with no vite binary still needs installing', () => {
   assert.strictEqual(start.needsInstall(half), true);
   const done = agedTree({ paths: { '.bin/vite': '#!/bin/sh' }, ages: {} });
   assert.strictEqual(start.needsInstall(done), false);
+});
+
+// ── help text is a promise the code has to keep (kit#66, kit#70) ─────────────
+// `start.js --help` advertised `--bindings <f>`, "a bindings file to write to
+// instead of the repo's", for as long as it took kit#66 to delete the flag and
+// nobody to notice the help. `start.js` forwards every flag it does not consume
+// to `ui.js`, and `ui.js`'s parseArgs ignores an unknown one — so the flag was
+// accepted, silently dropped, and the bind landed in the corpus directory the
+// user had passed it to STAY OUT OF. Measured end-to-end before this fix: a real
+// POST to `/api/projects/<app>/bindings` returned 200 and wrote beside the
+// corpus, not to the named file.
+//
+// The stale line is a one-character fix; this test is the part worth having,
+// because the next flag to be deleted will leave the same residue. Derived from
+// source rather than from a hand-written list: a list here would be a second
+// answer to "which flags exist", free to drift from the first exactly the way
+// the help text just did.
+test('start: every flag --help advertises is one some tool actually consumes', () => {
+  const startSrc = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'start.js'), 'utf8');
+  const uiSrc = fsx.readFileSync(pathx.join(__dirname, 'ui.js'), 'utf8');
+
+  const help = /const HELP = `([\s\S]*?)`;/.exec(startSrc);
+  assert.ok(help, 'start.js must still have a HELP template to check');
+
+  // Flags named in the left-hand column of the options list. Anchored to the
+  // line start so a `--bindings` mentioned inside a prose sentence explaining
+  // why it is gone does not read as an offer to accept it.
+  const advertised = [...help[1].matchAll(/^\s{2}(--[a-z-]+)/gm)].map((m) => m[1]);
+  assert.ok(advertised.length >= 5, `expected the options list to be found, got ${advertised.length}`);
+
+  // What each layer really takes, read off the comparisons themselves.
+  const consumedBy = (src) => new Set([...src.matchAll(/argv(?:\[i\])?\s*(?:===|\.includes\()\s*'(--[a-z-]+)'/g)].map((m) => m[1]));
+  const accepted = new Set([...consumedBy(startSrc), ...consumedBy(uiSrc)]);
+
+  const lying = advertised.filter((f) => !accepted.has(f));
+  assert.deepStrictEqual(lying, [],
+    `start.js --help offers ${lying.join(', ')}, which neither start.js nor ui.js reads — `
+    + 'a flag advertised and silently dropped is worse than one that does not exist');
 });
 
 // ── the harness must name its own failure (kit#39) ───────────────────────────
@@ -4765,7 +5128,6 @@ test('git-store: the commit message describes the edit and names the app', () =>
   assert.strictEqual(gitStore.message('add BEH-7', 'snip-it'), 'kit: add BEH-7 (snip-it)');
   assert.strictEqual(gitStore.message('bind page:Home', null), 'kit: bind page:Home');
 });
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // auth.js — one password, so a write can be accepted from somewhere that is not
@@ -5193,6 +5555,141 @@ test('a real UNLOCKED server is exactly what it was — no sign-in, writes strai
     const none = await postC(port, '/api/session', { password: 'anything' });
     assert.strictEqual(none.status, 404, 'and there is no sign-in route to find');
   } finally { server.close(); }
+});
+
+section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
+
+// kit#68 established the rule at `kit.js` and fixed `kit.js`. It did not fix the
+// seven other entry points, and nothing here would have noticed, because a test
+// that names the tools it checks can only ever check the tools somebody remembered.
+//
+// 🔑 So the population is DERIVED: every file that declares itself runnable with
+// `require.main === module`. A new entry point joins this test by existing, which is
+// the whole point — `requires.js`, `project.js`, `ui.js`, `writer.js`,
+// `saturation.js`, `self-host.js`, `converge.js` and `prose-audit.js` all shipped
+// after `check.js` had the rule, and every one of them shipped without it.
+//
+// Behavioural rather than structural, deliberately: it spawns each tool and reads
+// what it does. A structural test ("does this file call cli.unknownFlag") would
+// have to exempt `kit.js` and `check.js`, which satisfy the rule with their own
+// parsers, and would pass for a file that called the helper and ignored it.
+const ENTRY_POINTS = (() => {
+  const found = [];
+  for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
+    if (!e.isFile() || !e.name.endsWith('.js')) continue;
+    // kit.test.js is this file. `selfhost/run.js` is excluded by not walking
+    // subdirectories: it drives Playwright, and kit deliberately has no
+    // `@playwright/test` dependency to drive it with (adding one is packaging,
+    // which is James's under #83), so it cannot run here at all.
+    if (e.name === 'kit.test.js') continue;
+    const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
+    if (!src.includes('require.main === module')) continue;
+    found.push(e.name);
+  }
+  return found.sort();
+})();
+
+// ⚠️ NOT MEASURED, which is not the same as fine: `mutate.js` and `mutate-ui.js`
+// are the mutation harness. They EDIT THE WORKING TREE, so spawning them from a
+// test would rewrite the source under the run; and they carry neither
+// `require.main === module` nor a guard, so they are outside the population above
+// rather than exempted from it. Left for a follow-up on purpose — editing the
+// harness during a change that the harness is about to mutate is the one shape
+// worth not combining.
+test('cli: the derived population is the real one, not a stale list', () => {
+  // A fail-safe, for the reason `jsDeclarationCount` is one: if the discovery above
+  // ever silently matches nothing, every assertion below it passes over an empty
+  // set and this section reports green while checking no tool at all.
+  assert.ok(ENTRY_POINTS.length >= 8,
+    `only ${ENTRY_POINTS.length} entry point(s) discovered — the scan has stopped matching: ${ENTRY_POINTS.join(', ')}`);
+  for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js']) {
+    assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
+  }
+});
+
+test('cli: every entry point REFUSES a flag it does not have, and names it', () => {
+  const FLAG = '--zznotaflag';
+  const offenders = [];
+  for (const f of ENTRY_POINTS) {
+    // A timeout because the failure mode for a server is not a wrong answer, it is
+    // no answer: before this change `node ui.js --zznotaflag` started listening and
+    // never came back.
+    const r = spawnx(process.execPath, [f, FLAG], { cwd: __dirname, encoding: 'utf8', timeout: 30000 });
+    const out = (r.stdout || '') + (r.stderr || '');
+    if (r.status === 0 || r.signal) { offenders.push(`${f} (exit ${r.status}${r.signal ? ` signal ${r.signal}` : ''})`); continue; }
+    if (!out.includes(FLAG)) offenders.push(`${f} (exit ${r.status}, but never named the flag)`);
+  }
+  assert.deepStrictEqual(offenders, [],
+    `these accept a flag they do not have: ${offenders.join(', ')}`);
+});
+
+test('cli: a REFUSAL, not a default — the tool must not answer about its own corpus', () => {
+  // The rule the test above does not reach. `requires.js snip-it --check --dir X`
+  // used to exit 1 having gated KIT'S OWN corpus while naming yours, and
+  // `--dir /no/such/dir` used to exit 0 with a full 16-noun report about a
+  // directory that cannot exist. Both are exit 0/1 answers, so a test that only
+  // asserted "non-zero" would have passed for the second one.
+  const r = spawnx(process.execPath,
+    ['requires.js', 'snip-it', '--check', '--dir', '/no/such/dir'], { cwd: __dirname, encoding: 'utf8' });
+  const out = (r.stdout || '') + (r.stderr || '');
+  assert.strictEqual(r.status, 2, `a refusal is exit 2, never a verdict about something else; got ${r.status}`);
+  assert.ok(!/nouns referenced/.test(out), `it answered anyway:\n${out}`);
+});
+
+test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () => {
+  const { unknownFlag } = require('./cli.js');
+  assert.strictEqual(unknownFlag(['snip-it', '--json'], ['--json', '--check']), null);
+  assert.strictEqual(unknownFlag(['snip-it', '--dir', '/x'], ['--json']), '--dir');
+  // The first offender, not the last: a refusal naming the second typo while the
+  // first stays hidden sends the reader back round the loop.
+  assert.strictEqual(unknownFlag(['--aaa', '--bbb'], []), '--aaa');
+  // A value that is itself a flag means the value was forgotten — `check.js:99`
+  // and `kit.js:1208` both refuse it, and consuming it as a path is how a gate
+  // ends up pointed at somewhere nobody named.
+  assert.strictEqual(unknownFlag(['--dir', '--check'], ['--dir']), '--check');
+  // A positional that merely CONTAINS a dash is not a flag.
+  assert.strictEqual(unknownFlag(['my-app'], []), null);
+  assert.strictEqual(unknownFlag(['-'], []), null, 'a lone dash is the stdin convention');
+  // Accepts a Set as well as an array, because every caller has one shape or the other.
+  assert.strictEqual(unknownFlag(['--json'], new Set(['--json'])), null);
+});
+
+test('cli: a guard cannot refuse a flag its own tool implements', () => {
+  // The drift THIS change could introduce, and the reason it needs pinning: each
+  // guard names its tool's flags as a literal list, so a flag added to the parser
+  // and forgotten here becomes unusable. A refusal for a flag that works is as
+  // wrong as a silent drop for one that doesn't, and harder to explain.
+  //
+  // Source-level, not behavioural, and that is a real limitation stated rather than
+  // hidden: the first cut of this asked each tool about each of its own flags by
+  // spawning it, which took minutes and hung on `ui.js --git` — a flag whose
+  // correct behaviour is to start a server and not return. Reading the two lists
+  // cannot catch a guard that is never CALLED; the spawn test above is what covers
+  // that, and the pair is what makes either useful.
+  const mismatches = [];
+  for (const f of ENTRY_POINTS) {
+    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+    const call = src.match(/unknownFlag\((?:[^,]+),\s*(\[[^\]]*\]|[A-Z_]+)\s*\)/);
+    if (!call) continue; // kit.js and check.js satisfy the rule with their own parsers.
+    let listed = call[1];
+    if (!listed.startsWith('[')) {
+      const named = src.match(new RegExp(`const ${listed} = (\\[[^\\]]*\\])`));
+      assert.ok(named, `${f}: the guard names ${listed}, which is not declared as a literal list here`);
+      listed = named[1];
+    }
+    const known = new Set([...listed.matchAll(/'(--[a-z][a-z-]*)'/g)].map((m) => m[1]));
+    // Every flag the tool's own CODE compares against. Comments are stripped first,
+    // because several of these files discuss flags they do NOT implement — `ui.js`
+    // names `--dirr` in a comment as the typo that motivated the guard, and
+    // `converge.js` explains why it refuses `--dir` rather than wiring it up.
+    const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+    const compared = new Set();
+    for (const m of code.matchAll(/(?:===|!==|indexOf\(|includes\()\s*'(--[a-z][a-z-]*)'/g)) compared.add(m[1]);
+    for (const flag of compared) {
+      if (!known.has(flag)) mismatches.push(`${f} implements ${flag} and its guard would refuse it`);
+    }
+  }
+  assert.deepStrictEqual(mismatches, [], mismatches.join('; '));
 });
 
 Promise.all(pending).then(() => {

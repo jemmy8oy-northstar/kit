@@ -18,7 +18,7 @@
 //   node writer.js <app> add-behaviour <BEH-ID> "<title>"   [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "approved"          [--dir <behaviours>]
 //   node writer.js <app> review <BEH-ID> "denied <correction>"
-//   node writer.js <app> bind <kind:Noun> '<json>'           [--bindings <file>]
+//   node writer.js <app> bind <kind:Noun> '<json>'           [--dir <behaviours>]
 //
 // ── 1. A surgical edit of one block, never a re-serialisation ────────────────
 // A corpus is a hand-authored document whose comments carry its most important
@@ -633,6 +633,19 @@ function parseArgs(argv) {
 }
 
 function main(argv) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). This is the only tool
+  // here that WRITES, and `parseArgs` above ends `else opts.rest.push(argv[i])` —
+  // so an unrecognised flag did not merely get ignored, it became a POSITIONAL.
+  // `writer.js --zznot snip-it review BEH-1 approved` took `--zznot` as the app
+  // name. Refusing before anything is resolved means a typo cannot reach a write.
+  // ⚠️ `--bindings` is deliberately NOT in this list: kit#66 deleted it, and a
+  // known-flag list that still names a deleted flag would accept it silently —
+  // the exact failure this guard exists to stop, one door further in.
+  const bad = require('./cli.js').unknownFlag(argv, ['--dir', '--source', '--actor']);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: writer.js <app> <verb> ... [--dir <behaviours>] [--source defined|inferred] [--actor <name>]');
+  }
   const { dir, source, actor, rest } = parseArgs(argv);
   const [app, verb, id, arg] = rest;
 

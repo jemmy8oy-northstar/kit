@@ -1,0 +1,76 @@
+fullnameOverride: "kit"
+
+# Shared with every other app in the estate: one host, one wildcard cert, one
+# namespace, and a path prefix per app. The ingress does NOT rewrite, so the app
+# has to know its own prefix — which is what `KIT_BASE_PATH` below is for.
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: balenthiran.co.uk
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    - hosts:
+        - balenthiran.co.uk
+      secretName: balenthiran-tls # shared wildcard cert — no per-project TLS setup
+registryPrefix: "lhr.ocir.io/lr7uc6l49odc" # shared OCIR namespace
+
+apps:
+  # ONE entry, not the backend/frontend pair. Kit has neither: `ui.js` serves the
+  # SPA and the API from the same process and the same port.
+  - name: kit
+    image:
+      repository: lhr.ocir.io/lr7uc6l49odc/kit
+      # Patched by `docker-build-push.yml` on every push to main — GitOps, so
+      # ArgoCD reads the new tag out of this file rather than watching OCIR.
+      tag: latest
+      pullPolicy: Always
+    containerPort: 8080
+    replicas: 1
+    service:
+      port: 80
+      targetPort: 8080
+    ingress:
+      # 🔑 THIS LINE IS THE ONLY COPY OF KIT'S PATH, and three things read it:
+      # the ingress rule (here), the container's `KIT_BASE_PATH`, which
+      # `templates/deployment.yaml` DERIVES from this field rather than taking a
+      # second value, and the image build, which greps it out of this file and
+      # bakes it into the bundle's asset URLs.
+      #
+      # It is derived rather than repeated because two copies of a path is how
+      # one of them ends up stale — and the symptom is a page that loads and does
+      # nothing, with a 200 on every request, because an unmatched path on this
+      # shared host is answered by the portfolio's SPA. To move Kit to a
+      # subdomain, empty this and all three follow.
+      path: /kit
+      pathType: Prefix
+    env:
+      # The public origin the browser will really be on. It is what sets the
+      # session cookie's `Secure` flag, so behind TLS it is not optional.
+      - name: KIT_PUBLIC_ORIGIN
+        value: "https://balenthiran.co.uk"
+      # ⚠️ CREATED BY HAND, like every secret in this estate — no chart and no
+      # fleet config creates one. The name and key are NOT free to choose here:
+      # they have to match the command already given on kit#44.
+      #
+      #   kubectl create secret generic kit-auth \
+      #     --from-literal=password=<the password> -n balenthiran
+      #
+      # Unset would mean an unlocked Kit on a public URL, and the pod refuses to
+      # start writing in that state rather than serving one — see `auth.js`.
+      - name: KIT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: kit-auth
+            key: password
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+# ⚠️ NOT SET, deliberately: `--git` write-back. A deployed Kit that commits your
+# edits needs a git credential to push them, and which kind that should be is
+# still open (kit#48). Until it is answered the pod accepts edits and shows
+# "Not committed — Kit does not run git." on every one, which is true. Turning
+# write-back on without the credential would produce the one state worth
+# avoiding: commits nobody can push, in a container that is wiped on restart.

@@ -230,6 +230,17 @@ const MUTANTS = [
     'return { error: `two app names given, "${opts.app}" and "${a}" — this gate checks one corpus` };',
     'opts.app = a;', 'check.js'],
 
+  // ── selectCorpora: the rule that a NAME names one corpus ───────────────────
+  // Both hand-verified before being written down. The first reddens 2 tests (the
+  // rule's own and the end-to-end spawn), the second reddens 2 (the refusal and
+  // the saturation.js drift guard) — and the drift guard is why the second one
+  // matters most: it is what stops saturation.js quietly keeping its own copy of
+  // this rule again, which is the shape the defect had for as long as it existed.
+  ['an exact corpus name stops winning, so `kit.js kit` merges kit.beh and kit-ui.beh again',
+    'if (exact.length) return { files: exact };', 'if (false) return { files: exact };', 'kit.js'],
+  ['a name that matches two corpora merges them silently instead of refusing',
+    'if (matches.length > 1) {', 'if (false) {', 'kit.js'],
+
   // the prose accounting. Every rule here exists to stop the corpus reporting a
   // flattering fraction of a document it only partly encoded, so a survivor
   // means the flattering version would ship unnoticed.
@@ -468,6 +479,15 @@ MUTANTS.push(
     ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
   ['a corpus that will not parse is listed as an app with no behaviours',
     'if (p.fatal) {', 'if (false) {', 'ui.js'],
+  // The sibling of the rule two mutants above, one layer further out: rule 4
+  // says unavailable is never zero, and this says an unavailable must not blame
+  // the wrong cause. Discarding the candidate path collapses "no --repos was
+  // given" into "this app has no checkout under the one you gave", and the
+  // second is then reported as the first — to the user, as the tooltip on
+  // `not measured`.
+  ['a missing checkout is reported as a missing --repos flag',
+    '  return path.join(reposDir, app);',
+    '  const c = path.join(reposDir, app);\n  return fs.existsSync(c) ? c : null;', 'ui.js'],
 );
 
 // ui, serving the built bundle (rules 5–7). Every mutant here makes the server

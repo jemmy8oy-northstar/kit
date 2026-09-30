@@ -171,6 +171,14 @@ function pct(x) { return x === null ? 'n/a' : (x * 100).toFixed(0) + '%'; }
 function num(x, d = 2) { return x === null ? 'n/a' : x.toFixed(d); }
 
 function main(argv = [], textReader = nounsFromText) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). `--check` gates a
+  // COMMITTED document here, so a typo'd flag meant the gate passed judgement on
+  // Kit's own corpus while the reader believed it had measured `--dir`'s.
+  const bad = require('./cli.js').unknownFlag(argv, ['--check', '--dir', '--record']);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: node saturation.js [<app>] [--dir <behaviours>] [--check] [--record]');
+  }
   const checkMode = argv.includes('--check');
   const dirArg = argv.indexOf('--dir');
   const dir = dirArg >= 0 ? argv[dirArg + 1] : BEH_DIR;
@@ -180,8 +188,17 @@ function main(argv = [], textReader = nounsFromText) {
     console.error(`saturation: no behaviours directory at ${dir} — could not look`);
     return 2;
   }
-  const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
-    .filter((f) => !only || f.includes(only));
+  // The corpus-name rule is kit.js's, imported rather than re-derived: this file
+  // carried a byte-identical `f.includes(only)` filter, and a rule applied by
+  // hand at two call sites is two things free to drift. It bites harder here
+  // than anywhere, because every number this file prints is an AGGREGATE over
+  // the population the filter chose.
+  const picked = kit.selectCorpora(fs.readdirSync(dir), only);
+  if (picked.error) {
+    console.error(`saturation: ${picked.error} — could not look`);
+    return 2;
+  }
+  const all = picked.files;
 
   // This study asks whether the glue binding a SPEC to a UI saturates as the UI
   // grows. A corpus with no UI has no answer to give and would sit in the

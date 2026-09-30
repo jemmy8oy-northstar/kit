@@ -277,8 +277,20 @@ function corpora(dir = BEH_DIR) {
  */
 function repoFor(app, reposDir) {
   if (!reposDir) return null;
-  const candidate = path.join(reposDir, app);
-  return fs.existsSync(candidate) ? candidate : null;
+  // 🔴 The candidate is returned whether or not it exists, and that is the whole
+  // point. This used to `return fs.existsSync(candidate) ? candidate : null`,
+  // which threw away the one fact the caller needed: `project.js` cannot tell
+  // `null`-because-nothing-was-given from `null`-because-this-app-has-no-checkout,
+  // so it fell through to "no --repo given, so no test files were read" — a
+  // sentence that is FALSE for a user who passed `--repos` and is shown to them
+  // as the tooltip on `not measured`.
+  //
+  // Measured on this tree with `--repos /data/repos`: five of ten corpora
+  // (kit-ui, longlist, trial-habits-a, trial-habits-b, trial-lend) blamed the
+  // absent flag. `project.js` already has the right sentence for a path that is
+  // not there, one branch below the one they were landing in, so handing it the
+  // path is a deletion rather than a new message ([[empty-means-two-things]]).
+  return path.join(reposDir, app);
 }
 
 /**
@@ -1115,7 +1127,30 @@ function parseArgs(argv, env = process.env) {
   return opts;
 }
 
+// Every flag `parseArgs` above recognises. Listed rather than derived, because the
+// chain is `else if`s over string literals and there is nothing to derive from —
+// so the one hazard is this list drifting from that chain, which is what
+// `cli: every flag a tool documents, it accepts` in kit.test.js exists to catch.
+const KNOWN_FLAGS = ['--port', '--host', '--repos', '--dir', '--bindings', '--public-origin', '--git', '--git-remote', '--git-branch'];
+
 async function main(argv) {
+  // 🔑 The most consequential instance of kit#67's bug, and the last one found.
+  // `parseArgs` above is an `else if` chain with NO final `else`, so an unrecognised
+  // flag fell off the end in silence and the server STARTED — on Kit's own corpus.
+  // `node ui.js --dirr /mycorpus` served, and let you WRITE to, a corpus you had
+  // not named. `start.js:128` forwards every flag it does not own straight here, so
+  // the reachable form of it is `node start.js --dirr /mycorpus` — the one command
+  // the README tells a new user to run.
+  //
+  // Refusing here rather than in start.js on purpose: start.js cannot know this
+  // tool's flags without keeping a second copy of the list, and a second copy is
+  // the thing that goes stale.
+  const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
+  if (bad) {
+    return require('./cli.js').refuse(bad,
+      'usage: node ui.js [--port <n>] [--host <h>] [--repos <dir>] [--dir <behaviours>] [--bindings <file>] [--git] [--git-remote <r>] [--git-branch <b>]');
+  }
+
   const opts = parseArgs(argv);
 
   if (!Number.isInteger(opts.port) || opts.port < 1 || opts.port > 65535) {

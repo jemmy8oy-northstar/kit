@@ -45,6 +45,34 @@ const path = require('path');
 
 const ORIGINALS = '--- pristine originals below (JSON) — `--recover` restores them ---';
 
+/**
+ * Is the process that armed this marker still running?
+ *
+ * Signal 0 asks the kernel about a pid without delivering anything. `ESRCH` is
+ * the only answer that means "no such process"; `EPERM` means it exists and is
+ * someone else's, which for this guard is still alive.
+ *
+ * Pid reuse is possible and is deliberately resolved towards refusing: a wrong
+ * refusal prints a pid you can check by hand, while a wrong permission strands a
+ * live run's next file with nothing left to restore it from. The originals stay
+ * in the marker either way, so nothing is lost by stopping.
+ */
+function ownerAlive(pid, kill = (p) => process.kill(p, 0)) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    kill(pid);
+    return true;
+  } catch (e) {
+    // ⚠️ `EPERM` is the FAIL-OPEN branch and the reason `kill` is injectable at
+    // all. Every process in the container this runs in shares one uid, so no
+    // control here can produce a foreign-uid pid — the branch was unreachable,
+    // and "return false" would look just as green while recovering over a live
+    // run owned by someone else. Injecting the syscall is what lets it be tested
+    // rather than reasoned about.
+    return e.code === 'EPERM';
+  }
+}
+
 function createMarker({ root, markerPath }) {
   const MARKER = markerPath || path.join(root, 'MUTATION-IN-PROGRESS');
 
@@ -78,8 +106,14 @@ function createMarker({ root, markerPath }) {
    * Restore the tree from a killed run. Returns a process exit code: 0 restored
    * (or nothing to do), 2 could not look — the same convention the tools use, so
    * "I could not restore it" never reads as "it was fine".
+   *
+   * `isAlive` is injected for the same reason `exit` and `log` are: the fixtures
+   * below arm a marker from the *test's own* process, so their recorded pid is
+   * genuinely alive and a real probe would refuse every one of them. Two tests
+   * exercise the real `ownerAlive` in both directions so the injection cannot
+   * hide a default that never worked.
    */
-  function recover(log = console) {
+  function recover(log = console, isAlive = ownerAlive) {
     if (!fs.existsSync(MARKER)) {
       log.log('nothing to recover: no MUTATION-IN-PROGRESS marker.');
       return 0;
@@ -90,6 +124,31 @@ function createMarker({ root, markerPath }) {
       log.error('  from it. Revert the mutant by hand against HEAD — do NOT use `git checkout --`,');
       log.error('  which would also destroy any real uncommitted work beside the mutant.');
       return 2;
+    }
+    // 🔴 THE MARKER IS THE RESTORE DATA, NOT A FLAG, so recovering while its run
+    // is still going is destructive twice over: it puts back what has been
+    // mutated so far, then deletes the only copy of the originals — and the live
+    // run goes on to mutate a DIFFERENT file with nothing left to undo it. It
+    // cost the 248th twenty minutes and a live mutant in `Project.tsx`.
+    //
+    // `arm()` has always written this pid into the marker, but only into the
+    // prose above the payload, where nothing could read it. A value captured and
+    // never read is a rule the code does not have.
+    if (isAlive(p.pid)) {
+      log.error(`cannot look: ${p.tool} (pid ${p.pid}) is STILL RUNNING, so this marker is live`);
+      log.error('  restore data, not leftovers. Recovering now would undo what it has mutated so');
+      log.error('  far and delete the originals it needs for whatever it mutates next.');
+      log.error(`  Let it finish, or stop it first (\`kill ${p.pid}\` — it restores on SIGTERM).`);
+      log.error(`  If \`ps -p ${p.pid} -o command=\` shows something unrelated, that pid was reused:`);
+      log.error('  the originals are plain JSON inside the marker and can be applied by hand.');
+      return 2;
+    }
+    // An older marker carries no pid. Proceeding is the lesser evil — refusing
+    // would make every marker written before this change unrecoverable — but the
+    // absence gets said out loud rather than read as "no run is live".
+    if (p.pid === undefined) {
+      log.log('note: this marker records no pid, so whether a run is still live could not be');
+      log.log('  checked. Confirm no `mutate*` process is running before trusting this.');
     }
     // Only files that actually differ are written. A recovery that rewrote
     // every subject would touch mtimes across the tree and, more to the point,
@@ -146,7 +205,10 @@ function createMarker({ root, markerPath }) {
         `started ${new Date().toISOString()} by pid ${process.pid}`,
         '',
         ORIGINALS,
-        JSON.stringify({ tool, base, files: originals }),
+        // The pid goes in the PAYLOAD, not just the prose line above: `recover()`
+        // refuses while this process is alive, and it can only do that if the
+        // value is somewhere machine-readable.
+        JSON.stringify({ tool, base, pid: process.pid, files: originals }),
         '',
       ].join('\n'),
     );
@@ -167,4 +229,6 @@ function createMarker({ root, markerPath }) {
 }
 
 const ROOT = path.join(__dirname, '..', '..');
-module.exports = Object.assign(createMarker({ root: ROOT }), { createMarker, ORIGINALS, ROOT });
+module.exports = Object.assign(createMarker({ root: ROOT }), {
+  createMarker, ORIGINALS, ROOT, ownerAlive,
+});
