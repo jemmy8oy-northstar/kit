@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kit
+# Kit is ONE container, not the backend + frontend pair the rest of the estate
+# deploys: `ui.js` serves the built SPA and the API from a single Node process,
+# and `start.js --no-build` exists so a container can serve a bundle that was
+# built at image-build time. The chart is otherwise holiday-planning's, so the
+# shape a future reader recognises is the shape they get.
+description: Kit — the behaviour corpus tool, one Node process serving its own UI
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
