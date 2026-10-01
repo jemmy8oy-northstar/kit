@@ -4,7 +4,9 @@
 // dropped it without a word — so `node kit.js kit --dir /elsewhere` printed a
 // confident report about Kit's own corpus and nothing in the output said the flag
 // had been ignored. kit#68 fixed that one entry point. It did not fix the others,
-// and there are six of them:
+// and there are seven of them (this said "six" until 2026-10-01, while listing
+// seven — `kit.test.js`'s ENTRY_POINTS derives the population instead of counting
+// it by hand, which is why the test has always said seven):
 //
 //   requires.js   user-facing, and `--check` is a GATE
 //   project.js    user-facing — the read model the UI is built on
@@ -13,6 +15,15 @@
 //   converge.js   a measurement that gets quoted
 //   prose-audit.js a measurement that gets quoted
 //   writer.js     WRITES to a corpus
+//
+// ⚠️ That list is the population kit#72 fixed, NOT every tool in this directory.
+// `measure-tagging.js`, `compare.js`, `mutate.js` and `mutate-ui.js` still accept
+// any flag silently — none of them requires this file (measured: `grep -c
+// "require('./cli.js')"` is 0 in all four). The sharp one is `mutate.js --recoverr`,
+// which does not recover: it starts a destructive five-and-a-half-minute mutation
+// run, which then adopts whatever live mutant is in the tree as its pristine
+// baseline. Tracked on kit#67; the fix waits on kit#96 because a third branch
+// touching `kit.test.js` conflicts with it.
 //
 // 🔑 The reason this matters more than a usability nit: every one of those tools
 // exists to answer a question about a NAMED artefact, and a dropped flag makes it

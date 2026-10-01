@@ -142,4 +142,10 @@ change (claude-code-bot#83) — isolated PR, James's review, never a self-merge.
 that lands, this gate gates nothing, and saying otherwise would be the exact defect
 Kit was built to name ([[passing-is-not-gating]]).
 
-Raised on claude-code-bot#84.
+⚠️ **And it is raised on no thread at all — this paragraph is the only thing holding it.**
+This line read "Raised on claude-code-bot#84" from 2026-09-03 until 2026-10-01, but
+claude-code-bot#84 is an issue titled "Holiday", opened 2026-09-02 — a day *before* the
+citation was written, so it never pointed at this gap for a single day. Searched
+org-wide for a thread that does: there is none. Whether to open one is a judgement
+about his review load, not a gap to fill quietly — so the absence is stated here
+rather than papered over with a second wrong number.

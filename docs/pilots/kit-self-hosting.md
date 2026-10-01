@@ -228,7 +228,12 @@ bindings, in one sitting. That is fatal to any *independence* claim, which is wh
 binding-saturation study. It is **not** fatal to the question asked here — whether the
 generator can emit a runnable test for a browser surface — because that question is about the
 generator, and the answer is checkable by running it. Whether two authors would choose the
-same nouns is kit#23, still open.
+same nouns was **measured in kit#23** — a merged trial write-up, not a decision thread — and
+**decided on 2026-09-23**: conflict detection catches same-noun contradictions only, and no
+canonical vocabulary or reconciliation step is being built. The limit is recorded in the
+README beside the differentiator claim it qualifies, plus a comment at `resolve()` in
+`kit.js` (kit#57). ⚠️ **This line said "kit#23, still open" until 2026-10-01**, nine days
+after the decision — so a reader was told an answered question was still live.
 
 ## What changed in the registry
 
