@@ -1170,6 +1170,7 @@ function boundNouns(behaviours, bindings) {
   return { referenced, bound: bound.length };
 }
 
+const { looksLikeAFlag } = require('./cli.js');
 const CLI_VALUE_FLAGS = new Set(['--rev']);
 const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
 
@@ -1290,10 +1291,14 @@ function parseCliArgs(argv) {
       opts.help = true;
     } else if (CLI_VALUE_FLAGS.has(a)) {
       const v = argv[i + 1];
-      if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+      // ⚠️ This test was `v.startsWith('--')` while the one below was `'-'` —
+      // one function, two definitions of "a flag" — so `--rev -h` set the
+      // revision to `-h` and the sheet's provenance line said "over the app at
+      // `-h`" at exit 0. Both now ask `cli.js`.
+      if (v === undefined || looksLikeAFlag(v)) return { error: `${a} needs a value` };
       opts.rev = v;
       i++;
-    } else if (a.startsWith('-')) {
+    } else if (looksLikeAFlag(a)) {
       return { error: `unknown option ${a}` };
     } else if (opts.only === null) {
       opts.only = a;
