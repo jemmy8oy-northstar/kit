@@ -180,4 +180,7 @@ function main(argv) {
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
-module.exports = { main, readTests, walk, parseArgs, DEFAULT_DIR };
+// `VALUE_FLAGS` is exported so the gate on the flag predicate can read the tool's
+// OWN set rather than keep a copy of it — a copy would be a fourth list free to
+// drift, which is the defect the three gates above this one exist for.
+module.exports = { main, readTests, walk, parseArgs, VALUE_FLAGS, DEFAULT_DIR };

@@ -1308,7 +1308,7 @@ module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
-  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, selectCorpora,
+  UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, CLI_VALUE_FLAGS, selectCorpora,
 };
 
 // ─────────────────────────── cli ───────────────────────────
