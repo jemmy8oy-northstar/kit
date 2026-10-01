@@ -10,6 +10,10 @@
 //   · decision 1 — **it is a local developer tool.** A deployed one needs a
 //     GitHub App token in the cluster, an auth story and a clone layer, all of
 //     which are platform-and-secrets work that is never mine.
+//     🔴 **REVERSED BY JAMES, kit#25: it is deployed — a URL on his phone.** The
+//     auth story is rule 8's sibling (`auth.js`, kit#46); the path prefix that a
+//     deployed Kit needs is rule 8 below (kit#49). The loopback rule did not go
+//     away, it became the branch that runs when no password is set.
 //   · decision 2 — **it writes the corpus file, and never touches git.** He
 //     reviews the change as an ordinary working-tree diff and commits it.
 //
@@ -97,6 +101,29 @@
 // nor a blank page (which reads as "broken"). It is a 503 naming the command
 // that builds it. The API keeps serving throughout: the read model working and
 // the bundle being absent are two different states.
+//
+// ── 8. Kit can be served under a path prefix, and it is ONE value ───────────
+// kit#49. Deployed, Kit is `balenthiran.co.uk/kit` — every app in the estate
+// shares one host under a path prefix and the ingress does NOT rewrite, so the
+// app has to know its own prefix. Getting this wrong is the quietest failure in
+// the estate: **every unmatched path on that host answers 200 with the
+// portfolio's SPA**, so a Kit asking for `/assets/index-abc.js` would be handed
+// somebody else's JavaScript with a 200 and no error anywhere
+// ([[green-over-the-clients-question]]).
+//
+// The prefix reaches four places — vite's `base`, the router's `basename`, the
+// API client's fetches and this file's routing — and four copies of one value is
+// how three of them end up agreeing. So `normaliseBasePath` below is the only
+// normaliser, `vite.config.ts` imports it from here, and everything in the
+// browser reads `import.meta.env.BASE_URL`, which vite derives from `base`.
+//
+// Here it is stripped ONCE, at the edge in `serve()`, before `route()` sees the
+// path. Every rule above is therefore written against an app-relative path and
+// did not change — and a request that is not under the prefix is a 404 rather
+// than being quietly served anyway, because `/kitten` is not Kit.
+//
+// **Unset is today's behaviour byte for byte**, which is the point: his laptop
+// is untouched, and a subdomain (if he picks one) needs no prefix at all.
 
 const fs = require('fs');
 const http = require('http');
@@ -104,6 +131,7 @@ const path = require('path');
 const proj = require('./project.js');
 const writer = require('./writer.js');
 const gitStore = require('./git-store.js');
+const auth = require('./auth.js');
 const bindingsOf = require('./bindings.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
@@ -155,6 +183,80 @@ function isLoopback(host) {
   if (host === 'localhost' || host === '::1' || host === '[::1]') return true;
   return /^127\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(String(host))
     && String(host).split('.').slice(1).every((n) => Number(n) >= 0 && Number(n) <= 255);
+}
+
+/**
+ * Rule 8. The one spelling of the path Kit is served under.
+ *
+ * Returns a prefix with a leading slash and NO trailing one (`/kit`), or `''`
+ * for "served at the root", which is every local run. `''` rather than `null`
+ * so the callers below can concatenate unconditionally and the unprefixed case
+ * comes out byte-identical to what it was before this rule existed.
+ *
+ * Generous about the spellings a person or a values.yaml actually produces —
+ * `kit`, `/kit`, `/kit/` and `kit/` all mean the same thing, and refusing three
+ * of them would turn a deployment into a typo hunt. Strict about the result: it
+ * is the single string that vite's `base`, the router's `basename` and the strip
+ * in `serve()` are all derived from, so they cannot disagree by a slash.
+ *
+ * ⚠️ `vite.config.ts` imports THIS function. Changing its output changes the
+ * asset URLs baked into `index.html` at build time — the one place the value is
+ * not read at runtime and so the one that cannot be corrected by a restart.
+ */
+function normaliseBasePath(value) {
+  const trimmed = String(value ?? '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  return trimmed === '' ? '' : `/${trimmed}`;
+}
+
+/**
+ * Rule 8's strip: a request path as the app should see it, or `null` for "this
+ * request is not under our prefix at all".
+ *
+ * `null` and not a fallthrough to the path unchanged, which is the whole reason
+ * this returns three outcomes rather than two. If a Kit served at `/kit` also
+ * answered `/api/projects`, then on a shared host it would be answering for a
+ * path that belongs to a SIBLING APP, and the sibling's 404 would become Kit's
+ * 200. The caller turns `null` into a 404 naming the prefix.
+ *
+ * The exact-match case is deliberate and is not the same as the slash case:
+ * `/kit` must serve the shell, because that is the URL he will type and a
+ * redirect to `/kit/` is a round trip that buys nothing — vite's `base` makes
+ * every asset URL absolute, so the page works either way.
+ */
+function stripBasePath(pathname, basePath) {
+  if (!basePath) return pathname;
+  if (pathname === basePath) return '/';
+  // `basePath + '/'` and never `startsWith(basePath)`: the second accepts
+  // `/kitten`, which is a different app's path, and would hand its requests to
+  // this one.
+  if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);
+  return null;
+}
+
+/**
+ * Rule 8's build-time half, read back out of the bundle that was actually built.
+ *
+ * The prefix reaches the browser through vite's `base`, which is baked into the
+ * asset URLs in `index.html` at BUILD time. That makes it the one half of this
+ * value a restart cannot correct — an image built at `/` and served under `/kit`
+ * asks for `/assets/index-abc.js`, which on a shared host answers **200 with a
+ * sibling app's JavaScript**, and the page is blank with nothing wrong in any
+ * log on either side.
+ *
+ * So it is read rather than trusted: the prefix that is really in the bundle,
+ * `''` if the bundle is at the root, or `null` for "could not tell". Null is a
+ * third answer on purpose and must not be reported as a mismatch — an absent
+ * bundle and a bundle built wrong are different states, and rule 7 already has
+ * a sentence for the first ([[empty-means-two-things]]).
+ */
+function bundleBasePath(distDir = DIST_DIR) {
+  const index = path.join(distDir, 'index.html');
+  if (!fs.existsSync(index)) return null;
+  // Vite emits every hashed artefact under `<base>assets/`, so the text before
+  // `/assets/` IS the base — taken from the built file rather than recomputed
+  // from the environment, which is the entire point of reading it here.
+  const m = /(?:src|href)="([^"]*)\/assets\/[^"]+"/.exec(fs.readFileSync(index, 'utf8'));
+  return m ? normaliseBasePath(m[1]) : null;
 }
 
 /** Every corpus in behaviours/, by app name. The only source of valid names. */
@@ -375,10 +477,10 @@ function bundle(pathname, distDir = DIST_DIR) {
  * object and a server that delivers it are different claims
  * ([[test-the-delivery-not-just-the-value]]).
  */
-function route(method, pathname, opts = {}, body = null, origin = null) {
+function route(method, pathname, opts = {}, body = null, origin = null, cookie = null) {
   const json = (status, b) => ({ status, contentType: 'application/json', body: b });
 
-  if (method === 'POST') return write(pathname, opts, body, json, origin);
+  if (method === 'POST') return write(pathname, opts, body, json, origin, cookie);
 
   if (method !== 'GET') {
     return json(405, {
@@ -398,6 +500,22 @@ function route(method, pathname, opts = {}, body = null, origin = null) {
 
   if (pathname === '/api/health') {
     return json(200, { ok: true });
+  }
+
+  // ── who am I? (kit#46) ────────────────────────────────────────────────────
+  // The page needs this BEFORE it renders anything, because the two states it
+  // has to tell apart are "you must sign in" and "there is no sign-in here" —
+  // and a local Kit is permanently the second one. Inferring it from a 401 on
+  // the first write would mean the user discovers the lock by losing an edit.
+  //
+  // Deliberately readable without a session: it reveals only whether a lock
+  // exists, which anyone can determine anyway by attempting one write, and
+  // hiding it would make the page unable to draw itself.
+  if (pathname === '/api/session') {
+    return json(200, {
+      required: auth.enabled(opts),
+      signedIn: !auth.enabled(opts) || auth.signedIn(opts.sessions, cookie),
+    });
   }
 
   if (pathname === '/api/projects') {
@@ -442,7 +560,7 @@ function route(method, pathname, opts = {}, body = null, origin = null) {
  * a time. Note the ORDER — the loopback refusal comes before the body is looked
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
-function write(pathname, opts, body, json, origin = null) {
+function write(pathname, opts, body, json, origin = null, cookie = null) {
   // Rule 4, and it is checked FIRST because it is the only one that defends
   // against a caller who is not the developer.
   //
@@ -458,10 +576,16 @@ function write(pathname, opts, body, json, origin = null) {
   // attach to every cross-origin POST and which page script cannot forge. A
   // request with no Origin at all is a non-browser caller — curl, the CLI, the
   // suite — and is allowed; that is the normal case, not a hole.
+  //
+  // 🔴 Deployed, loopback is no longer the whole answer: the page Kit serves is
+  // at `https://<public origin>`, so that origin must be accepted too or every
+  // write from the browser he actually uses is refused. `--public-origin` names
+  // it EXACTLY — scheme, host and port compared as a whole string, not a
+  // hostname suffix. A suffix test is how `balenthiran.co.uk.evil.com` passes
+  // for `balenthiran.co.uk`, and it is the classic way this check is written
+  // wrong.
   if (origin !== null && origin !== undefined) {
-    let host = null;
-    try { host = new URL(origin).hostname; } catch { host = null; }
-    if (!host || !isLoopback(host)) {
+    if (!originAllowed(origin, opts)) {
       return json(403, {
         error: 'cross-origin-write',
         reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
@@ -471,9 +595,43 @@ function write(pathname, opts, body, json, origin = null) {
     }
   }
 
-  // Rule 2. Decision 1 said local tool; a write path reachable from the network
-  // is the deployed option arriving through a flag rather than through him.
-  if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
+  // ── sign in / sign out (kit#46) ──────────────────────────────────────────
+  // Below the Origin check and above the lock, which is the only correct place
+  // for it. Above the Origin check it would let any page on the internet run a
+  // password-guessing loop through someone's browser; below the lock it would
+  // be a key locked inside the box it opens.
+  if (pathname === '/api/session' || pathname === '/api/session/end') {
+    return session(pathname, opts, body, json, cookie);
+  }
+
+  // ── the lock (kit#46) ────────────────────────────────────────────────────
+  // Rule 2 used to be the only thing here, and it asks the wrong question: it
+  // tests `opts.host`, the address this process was STARTED on, so it is a
+  // startup switch rather than a check on the caller. That is why a deployed
+  // Kit is read-only today.
+  //
+  // A configured password replaces it with a question about the caller. The
+  // two branches are exclusive on purpose:
+  //
+  //   password set   → the session decides, and the bind address is irrelevant.
+  //                    This is the deployment.
+  //   password unset → rule 2 exactly as it was, untouched. This is his laptop,
+  //                    and it must not change because nobody asked it to.
+  //
+  // ⚠️ Note what is NOT here: there is no branch that allows a write because
+  // the host is loopback WHILE a password is set. A Kit with a password in
+  // front of it is a Kit whose writes are locked, including through a proxy
+  // that makes the caller look local — which is the exact hole kit#44 measured
+  // in the old gate.
+  if (auth.enabled(opts)) {
+    if (!auth.signedIn(opts.sessions, cookie)) {
+      return json(401, {
+        error: 'not-signed-in',
+        reason: 'this Kit is password-protected and this request carries no valid session. '
+          + 'POST the password to /api/session first.',
+      });
+    }
+  } else if (!isLoopback(opts.host ?? DEFAULT_HOST)) {
     return json(403, {
       error: 'not-loopback',
       reason: `writes are served only to loopback; this server is bound to ${opts.host}. `
@@ -699,15 +857,109 @@ function postBinding(match, body, opts, json) {
  * JSON write triggers, and an allowlist naming ports breaks the moment Vite
  * picks a different one.
  */
-function cors(origin) {
-  if (!origin) return {};
-  let host;
+/**
+ * May a page at `origin` write to this Kit?
+ *
+ * Loopback is always allowed — that is the local tool, unchanged. A deployment
+ * additionally names its own public origin with `--public-origin`.
+ *
+ * 🔴 The comparison is on the WHOLE normalised origin, never a substring.
+ * `endsWith('balenthiran.co.uk')` would accept `https://balenthiran.co.uk.evil.com`
+ * and `includes` would accept `https://evil.com/?x=balenthiran.co.uk`. Parsing
+ * both sides and comparing `origin` to `origin` is the only form of this check
+ * that does not have a famous bypass.
+ */
+function originAllowed(origin, opts = {}) {
+  let url;
   try {
-    host = new URL(origin).hostname;
+    url = new URL(origin);
   } catch {
-    return {};
+    // An Origin that is not a URL is not a browser Kit serves. Refused rather
+    // than ignored: the alternative treats a malformed header as "no origin",
+    // which is the branch that ALLOWS the write.
+    return false;
   }
-  if (!isLoopback(host)) return {};
+  if (isLoopback(url.hostname)) return true;
+
+  const allowed = opts.publicOrigin;
+  if (!allowed) return false;
+  let want;
+  try {
+    want = new URL(allowed);
+  } catch {
+    return false;
+  }
+  // `url.origin` is the scheme+host+port triple with the default port removed,
+  // so `https://x` and `https://x:443` compare equal, and `http://x` does not
+  // match `https://x` — a downgrade to plain HTTP is a different origin and is
+  // supposed to fail here.
+  return url.origin === want.origin;
+}
+
+/**
+ * `POST /api/session` — sign in. `POST /api/session/end` — sign out.
+ *
+ * Both answer 404 when no password is configured, rather than 400 or 200. A
+ * local Kit genuinely has no such route, and saying so keeps one truth in one
+ * place: the page asks `/api/session` whether a lock exists and gets `required:
+ * false`; anything that skips that step and posts a password anyway is told the
+ * endpoint is not there, which is exactly what it is.
+ */
+function session(pathname, opts, body, json, cookie) {
+  if (!auth.enabled(opts)) {
+    return json(404, {
+      error: 'no-such-route',
+      reason: 'this Kit has no password configured, so there is nothing to sign in to',
+    });
+  }
+
+  if (pathname === '/api/session/end') {
+    const token = auth.parseCookies(cookie)[auth.COOKIE];
+    if (opts.sessions) opts.sessions.destroy(token);
+    // The cookie is cleared even if the token was already unknown. Signing out
+    // twice, or after a restart wiped the store, must still leave the browser
+    // without a cookie — otherwise the page believes it is signed in and every
+    // write 401s with no way for the user to reach the sign-in form again.
+    return { status: 200, contentType: 'application/json', body: { ok: true, signedIn: false }, setCookie: auth.clearCookieHeader(opts) };
+  }
+
+  // A throttle is only useful if it is shared across requests, so it lives on
+  // opts beside the session store. Missing one means no throttling rather than
+  // no sign-in: a server that cannot be signed into is worse than one that can
+  // be guessed at, and `serve()` always provides it.
+  const wait = opts.throttle ? opts.throttle.retryAfterMs() : 0;
+  if (wait > 0) {
+    return json(429, {
+      error: 'too-many-attempts',
+      reason: `too many failed sign-ins; try again in ${Math.ceil(wait / 1000)}s`,
+      retryAfterSeconds: Math.ceil(wait / 1000),
+    });
+  }
+
+  const given = body && typeof body === 'object' ? body.password : null;
+  if (!auth.secretsMatch(typeof given === 'string' ? given : '', opts.password)) {
+    if (opts.throttle) opts.throttle.fail();
+    // One message for a missing password and for a wrong one. Telling them
+    // apart tells a guesser which half of the request they got right.
+    return json(401, { error: 'bad-password', reason: 'that is not the password' });
+  }
+
+  if (opts.throttle) opts.throttle.succeed();
+  const token = opts.sessions.create();
+  return {
+    status: 200,
+    contentType: 'application/json',
+    // 🔴 The token is NOT in the body. It goes out only as an HttpOnly cookie,
+    // so page script can never read it — returning it here as well would undo
+    // that in one line and hand any XSS a durable credential.
+    body: { ok: true, signedIn: true },
+    setCookie: auth.cookieHeader(token, opts),
+  };
+}
+
+function cors(origin, opts = {}) {
+  if (!origin) return {};
+  if (!originAllowed(origin, opts)) return {};
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'GET, POST, OPTIONS',
@@ -725,14 +977,33 @@ function serve(opts = {}) {
   const port = opts.port ?? DEFAULT_PORT;
   const host = opts.host ?? DEFAULT_HOST;
 
+  // One session store and one throttle per SERVER, created here rather than per
+  // request for the obvious reason, and attached to opts rather than closed over
+  // so that `route`/`write` stay pure functions of their arguments — which is
+  // what lets the suite test the lock without a socket. A caller that supplies
+  // its own (the tests do) keeps it.
+  if (auth.enabled(opts)) {
+    if (!opts.sessions) opts.sessions = auth.sessions();
+    if (!opts.throttle) opts.throttle = auth.throttle();
+  }
+
+  // Rule 8. Normalised once per server rather than once per request, so a
+  // malformed spelling cannot mean one thing on the first request and another on
+  // the thousandth.
+  const basePath = normaliseBasePath(opts.basePath);
+
   const server = http.createServer((req, res) => {
     // `new URL` needs a base; the host header is untrusted input and is only
     // ever used to satisfy the parser, never read back out.
-    const { pathname } = new URL(req.url, 'http://localhost');
+    const { pathname: requested } = new URL(req.url, 'http://localhost');
 
     const send = (result) => {
-      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin) };
+      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin, opts) };
       if (result.cacheControl) headers['cache-control'] = result.cacheControl;
+      // Set only by the sign-in and sign-out routes. Checked for presence
+      // rather than truthiness so an empty string could never be sent as a
+      // header — though `clearCookieHeader` never returns one.
+      if (result.setCookie) headers['set-cookie'] = result.setCookie;
       res.writeHead(result.status, headers);
       // `raw` is set only by `bundle()`, and its presence is what distinguishes
       // bytes from a payload. Checked with `!== undefined` rather than for
@@ -741,15 +1012,29 @@ function serve(opts = {}) {
       res.end(result.raw !== undefined ? result.raw : JSON.stringify(result.body));
     };
 
+    // Rule 8, and it happens before everything below it on purpose: a request
+    // that is not under our prefix must not have its body read, its Origin
+    // consulted or a preflight answered. It is not ours, and saying so is the
+    // only honest response — a Kit at `/kit` that also answered `/api/projects`
+    // would be answering for whichever sibling app owns that path.
+    const pathname = stripBasePath(requested, basePath);
+    if (pathname === null) {
+      return send({
+        status: 404,
+        contentType: 'application/json',
+        body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
+      });
+    }
+
     // A preflight is answered by the same allowlist that answers the request, so
     // the two can never disagree — an ACAO that permits an origin a preflight
     // refuses is a bug that only shows up in a browser.
     if (req.method === 'OPTIONS') {
-      res.writeHead(204, cors(req.headers.origin));
+      res.writeHead(204, cors(req.headers.origin, opts));
       return res.end();
     }
 
-    if (req.method !== 'POST') return send(route(req.method, pathname, opts));
+    if (req.method !== 'POST') return send(route(req.method, pathname, opts, null, null, req.headers.cookie ?? null));
 
     let size = 0;
     const chunks = [];
@@ -771,7 +1056,7 @@ function serve(opts = {}) {
       } catch (e) {
         return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
       }
-      send(route('POST', pathname, opts, body, req.headers.origin ?? null));
+      send(route('POST', pathname, opts, body, req.headers.origin ?? null, req.headers.cookie ?? null));
     });
   });
 
@@ -781,8 +1066,34 @@ function serve(opts = {}) {
   });
 }
 
-function parseArgs(argv) {
+function parseArgs(argv, env = process.env) {
+  // No `bindings` key: kit#66 deleted `--bindings` and made `--dir` isolate the
+  // bindings too. It is left out rather than kept as a dead `null`, because the
+  // one reader below is the flag loop and an unread key here is a flag someone
+  // will later re-wire by hand.
   const opts = { dir: BEH_DIR, repos: null, port: DEFAULT_PORT, host: DEFAULT_HOST };
+
+  // ── the password (kit#46) ────────────────────────────────────────────────
+  // From the ENVIRONMENT and deliberately not from a flag. A flag is visible in
+  // `ps`, in a shell history and in the pod's own command line, and Kubernetes
+  // delivers a secret as an env var anyway (`secretKeyRef`), which is what the
+  // rest of the estate already does. Unset means no lock, which is his laptop.
+  if (typeof env.KIT_PASSWORD === 'string') opts.password = env.KIT_PASSWORD;
+  // The origin the browser will actually be on, e.g. https://balenthiran.co.uk.
+  // Only meaningful deployed; locally the loopback rule covers it.
+  if (env.KIT_PUBLIC_ORIGIN) opts.publicOrigin = env.KIT_PUBLIC_ORIGIN;
+  // Set the cookie's `Secure` flag. Derived from the public origin rather than
+  // configured separately, because the two can only ever disagree by mistake:
+  // an https deployment wants Secure, and a plain-http localhost cannot use it.
+  opts.secure = !!(opts.publicOrigin && /^https:/i.test(opts.publicOrigin));
+
+  // ── the path prefix (kit#49, rule 8) ─────────────────────────────────────
+  // From the environment and not a flag, for a reason that is not the password's:
+  // `vite.config.ts` reads the SAME variable at build time, and a value that
+  // lives in a flag could not reach a build. It is one env var so that the image
+  // and the container cannot be given different answers.
+  opts.basePath = normaliseBasePath(env.KIT_BASE_PATH);
+
   for (let i = 0; i < argv.length; i++) {
     const next = argv[i + 1];
     if (argv[i] === '--port') { opts.port = Number(next); i++; }
@@ -801,6 +1112,14 @@ function parseArgs(argv) {
     // the edit lands in the working tree and the author reviews the diff. This
     // flag is for the deployment James chose over a database on kit#41, where
     // there is no working tree anyone will ever look at.
+    // Overrides KIT_PUBLIC_ORIGIN, so a flag beats the environment — the usual
+    // precedence, and the one that lets a test drive this without mutating
+    // process.env underneath every other test in the file.
+    else if (argv[i] === '--public-origin') {
+      opts.publicOrigin = next;
+      opts.secure = /^https:/i.test(next || '');
+      i++;
+    }
     else if (argv[i] === '--git') { opts.git = { ...(opts.git || {}), enabled: true }; }
     else if (argv[i] === '--git-remote') { opts.git = { ...(opts.git || {}), remote: next }; i++; }
     else if (argv[i] === '--git-branch') { opts.git = { ...(opts.git || {}), branch: next }; i++; }
@@ -812,7 +1131,7 @@ function parseArgs(argv) {
 // chain is `else if`s over string literals and there is nothing to derive from —
 // so the one hazard is this list drifting from that chain, which is what
 // `cli: every flag a tool documents, it accepts` in kit.test.js exists to catch.
-const KNOWN_FLAGS = ['--port', '--host', '--repos', '--dir', '--bindings', '--git', '--git-remote', '--git-branch'];
+const KNOWN_FLAGS = ['--port', '--host', '--repos', '--dir', '--bindings', '--public-origin', '--git', '--git-remote', '--git-branch'];
 
 async function main(argv) {
   // 🔑 The most consequential instance of kit#67's bug, and the last one found.
@@ -854,13 +1173,27 @@ async function main(argv) {
     return 2;
   }
 
-  console.log(`kit ui  http://${opts.host}:${opts.port}`);
+  console.log(`kit ui  http://${opts.host}:${opts.port}${opts.basePath}`);
   console.log(`  ${apps.length} corpora: ${apps.join(', ')}`);
   console.log(`  repos: ${opts.repos || '(none — coverage will report unavailable, not zero)'}`);
   const gitOn = !!(opts.git && opts.git.enabled);
-  console.log(isLoopback(opts.host)
-    ? `  writes: ON — edits land in the working tree${gitOn ? ' and are committed and pushed' : ' and are NEVER committed'}`
-    : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+  // Three states, not two, since kit#46 — and the operator has to be able to
+  // tell which one they are in from this line alone, because the other way to
+  // find out is to lose a write.
+  if (auth.enabled(opts)) {
+    console.log(`  writes: LOCKED — sign in with the password in KIT_PASSWORD${gitOn ? '; edits are committed and pushed' : '; edits are NEVER committed'}`);
+    console.log(`  origin: ${opts.publicOrigin || '(none set — only a loopback page may write; set KIT_PUBLIC_ORIGIN when deployed)'}`);
+  } else {
+    console.log(isLoopback(opts.host)
+      ? `  writes: ON — edits land in the working tree${gitOn ? ' and are committed and pushed' : ' and are NEVER committed'}`
+      : `  writes: OFF — ${opts.host} is not loopback (docs/design/ui.md decision 1)`);
+    // Said loudly, because this is the configuration that looks deployed and
+    // is not: bound to the world, no password, so every write is refused and
+    // the page will appear broken rather than protected.
+    if (!isLoopback(opts.host)) {
+      console.log('    set KIT_PASSWORD to accept writes from a non-loopback address (kit#44)');
+    }
+  }
   if (gitOn) {
     // Printed whether or not the tree is a repo, because "--git was accepted
     // and is doing nothing" is exactly the state an operator needs told at
@@ -876,12 +1209,30 @@ async function main(argv) {
   console.log(fs.existsSync(path.join(opts.dist ?? DIST_DIR, 'index.html'))
     ? '  ui: serving the built bundle — open the URL above, nothing else to run'
     : `  ui: NOT BUILT — the API answers, the page will not. Build it once:\n      ${BUILD_CMD}`);
+  // Rule 8's one irreversible half, checked rather than assumed. The bundle was
+  // built with whatever KIT_BASE_PATH was set at BUILD time, which in a container
+  // is a different moment from this one — so the two can disagree, and when they
+  // do the symptom is a blank page and a silent 200 from a sibling app. Said at
+  // startup because that is the only place anybody would see it.
+  const built = bundleBasePath(opts.dist ?? DIST_DIR);
+  if (built !== null && built !== opts.basePath) {
+    // Both spellings are named, because which one is wrong is not something this
+    // process can know — it has a bundle and a setting and they disagree.
+    const setting = (v) => (v === '' ? 'KIT_BASE_PATH unset' : `KIT_BASE_PATH=${v}`);
+    console.error(`  🔴 ui: THE BUNDLE WAS BUILT FOR ${built || '/'} AND THIS SERVER SERVES ${opts.basePath || '/'}`);
+    console.error(`      The page will load nothing and every request will still answer 200.`);
+    console.error(`      Rebuild the UI with ${setting(opts.basePath)}, or restart this server with ${setting(built)}.`);
+  }
   return 0;
 }
 
 module.exports = {
-  route, write, serve, cors, isLoopback, corpora, repoFor, summary, parseArgs, main,
+  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
+  // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
+  // the suite: it is imported there so the build and the server derive the
+  // prefix from one function and cannot disagree by a slash.
+  normaliseBasePath, stripBasePath, bundleBasePath,
 };
 
 if (require.main === module) {
