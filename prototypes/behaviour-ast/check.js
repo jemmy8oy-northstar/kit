@@ -81,6 +81,11 @@ function readTests(repo) {
 const VALUE_FLAGS = new Set(['--repo', '--via', '--dir']);
 const DEFAULT_DIR = path.join(__dirname, 'behaviours');
 
+// The one predicate for "this token is a flag, not a value". This file used to
+// carry its own — `startsWith('--')` — which made `-h` an app name and let a
+// forgotten `--dir` eat the next flag as a corpus path. See `cli.js`.
+const { looksLikeAFlag } = require('./cli.js');
+
 // Scans positionally instead of `argv.indexOf(flag) + 1`. The old form asked
 // `argv.indexOf(a)` for the index of a VALUE, which is the first index holding
 // that string and not necessarily this one — so an app whose name equalled the
@@ -97,12 +102,12 @@ function parseArgs(argv) {
     const a = argv[i];
     if (VALUE_FLAGS.has(a)) {
       const v = argv[i + 1];
-      if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };
+      if (v === undefined || looksLikeAFlag(v)) return { error: `${a} needs a value` };
       if (a === '--repo') opts.repo = v;
       else if (a === '--via') opts.via = v;
       else opts.dir = v;
       i++;
-    } else if (a.startsWith('--')) {
+    } else if (looksLikeAFlag(a)) {
       return { error: `unknown option ${a}` };
     } else if (opts.app === null) {
       opts.app = a;
@@ -180,4 +185,7 @@ function main(argv) {
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
-module.exports = { main, readTests, walk, parseArgs, DEFAULT_DIR };
+// `VALUE_FLAGS` is exported so the gate on the flag predicate can read the tool's
+// OWN set rather than keep a copy of it — a copy would be a fourth list free to
+// drift, which is the defect the three gates above this one exist for.
+module.exports = { main, readTests, walk, parseArgs, VALUE_FLAGS, DEFAULT_DIR };

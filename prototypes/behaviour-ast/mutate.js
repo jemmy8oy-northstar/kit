@@ -67,6 +67,19 @@ const T = path.join(__dirname, 'kit.test.js');
 // bundle is stale if it was built for a different path prefix, which no mtime can
 // see. A file with a rule and no mutant is the unbacked claim this harness exists
 // to catch, whichever directory it happens to live in.
+// 🔴 `cli.js` is DELIBERATELY NOT A SUBJECT, and the reason is a conflict rather
+// than an oversight. `looksLikeAFlag` is now one line deciding whether twelve tools
+// refuse a flag or swallow it, so a mutant over it is exactly what you would want —
+// and adding one is IMPOSSIBLE while kit#101's sandbox stands. That sandbox spawns
+// this tool in a temp directory holding only the tool and the two modules it
+// requires at load, one of which is `cli.js`, precisely so the destructive path
+// cannot start: its first act is to read a subject that is not there. A `cli.js`
+// that is BOTH sandboxed and a subject gives the unguarded run something real to
+// mutate inside the box, and `kit.test.js`'s "the sandbox holds none of the files
+// mutate.js mutates" went red when this was tried. The invariant is worth more than
+// the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
+// which was run RED first and named five defects. **Do not "finish the job" by
+// adding `cli.js` here — the test will tell you, but this says why.**
 const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
@@ -252,7 +265,7 @@ const MUTANTS = [
   ['an unknown flag is ignored again, so a typo silently gates the default corpus',
     'return { error: `unknown option ${a}` };', 'continue;', 'check.js'],
   ['a value flag with nothing after it eats the next flag instead of refusing',
-    "if (v === undefined || v.startsWith('--')) return { error: `${a} needs a value` };",
+    'if (v === undefined || looksLikeAFlag(v)) return { error: `${a} needs a value` };',
     'if (false) return { error: `${a} needs a value` };', 'check.js'],
   ['a second positional is taken as the app, so two corpus names is first-one-wins',
     'return { error: `two app names given, "${opts.app}" and "${a}" — this gate checks one corpus` };',
@@ -402,13 +415,13 @@ MUTANTS.push(
   // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing.
   // The rest are the guards written alongside it (#67).
   ['an unknown flag goes back to being silently dropped, so --dir reports on the wrong corpus',
-    "    } else if (a.startsWith('-')) {\n      return { error: `unknown option ${a}` };\n",
-    '    } else if (a.startsWith(\'-\')) {\n      continue;\n', 'kit.js'],
+    '    } else if (looksLikeAFlag(a)) {\n      return { error: `unknown option ${a}` };\n',
+    '    } else if (looksLikeAFlag(a)) {\n      continue;\n', 'kit.js'],
   ['--help stops being recognised, so asking for help runs the whole report',
     "    if (a === '--help' || a === '-h') {\n      opts.help = true;\n    } else if (CLI_VALUE_FLAGS.has(a)) {",
     '    if (CLI_VALUE_FLAGS.has(a)) {', 'kit.js'],
   ['a value flag at the end eats the following flag instead of refusing',
-    'if (v === undefined || v.startsWith(\'--\')) return { error: `${a} needs a value` };',
+    'if (v === undefined || looksLikeAFlag(v)) return { error: `${a} needs a value` };',
     'if (v === undefined) return { error: `${a} needs a value` };', 'kit.js'],
   ['`sheet` is detected in last position rather than first, so the subcommand and the corpus swap',
     "if (argv[0] === 'sheet') { opts.sheet = true; i = 1; }",
