@@ -224,22 +224,21 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   };
 }
 
-const KNOWN_FLAGS = ['--repo', '--dir', '--bindings', '--pretty'];
+// `--bindings` is NOT here, and its absence is the point: kit#70 deleted the flag
+// (bindings live beside the corpus), so advertising it meant `project.js
+// --bindings /x snip-it` was accepted, the flag ignored, and `/x` silently taken
+// as the app name. It is now refused by name like any other unknown flag, which
+// also retires the positional-guard bug this list used to create.
+const KNOWN_FLAGS = ['--repo', '--dir', '--pretty'];
 
 function main(argv) {
   // An unknown flag is a refusal, not a silent drop (cli.js). This is the read
   // model the UI is built on, so a dropped `--dir` here answers confidently about
   // a different corpus than the one named.
-  //
-  // ⚠️ It does NOT fix the other bug on the line below: the positional guard
-  // excludes a value that follows `--repo` or `--dir` but NOT one that follows
-  // `--bindings`, so `project.js --bindings /x snip-it` takes `/x` as the app.
-  // Left alone deliberately — kit#70 DELETES `--bindings`, and patching a flag his
-  // open PR removes would conflict with it to no purpose. Noted, not fixed.
   const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
   if (bad) {
     return require('./cli.js').refuse(bad,
-      'usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--bindings <file>] [--pretty]');
+      'usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]');
   }
   const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--dir');
   if (!app) {
