@@ -23,6 +23,34 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
+const { unknownFlag, refuse } = require('./cli.js');
+
+// kit#67. The last two tools in this directory to take a flag they do not know
+// and run anyway — and the sharpest instance of it, because this one EDITS THE
+// WORKING TREE: `node mutate.js --recoverr` did not recover, it discarded the
+// typo and started a destructive 5½-minute run on a tree you had just asked it
+// to put back.
+//
+// 🔑 THE GUARD IS FIRST, before even `--recover`, and that ordering is the whole
+// reason this tool is testable at all. It reads argv and nothing else, so it is
+// the one step here that neither touches the tree nor depends on it — which is
+// what lets `kit.test.js` spawn this file in a directory containing none of the
+// files below. Move it down and the refusal stops being provable without
+// running the mutation.
+//
+// ONE list, rendered twice: flag name → the value it takes (empty for none), so
+// the accept-list and the usage line cannot disagree. kit#100 fixed a tool with
+// three hand-written copies of its flag list and left a gate holding two of them;
+// having one copy is the version of that fix that cannot drift.
+// 🔑 The value is the PLACEHOLDER, not the whole rendering. It started as the
+// whole rendering (`'--recover': '--recover'`), which read fine and quietly made
+// the key/value mixup untestable: `Object.values` still contained `--recover`, so
+// a guard built from the wrong half of the map refused nothing and the red control
+// for it came back green.
+const FLAGS = { '--recover': '' };
+const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
+const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
+if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
 
 // Recovery runs before anything reads the tree, so a run killed by an
 // uncatchable signal is undoable from either mutation tool.

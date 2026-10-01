@@ -5588,22 +5588,41 @@ section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
 // Playwright, and kit deliberately has no `@playwright/test` dependency to drive it
 // with (adding one is packaging, which is James's under #83).
 //
-// Every `#!` file is therefore either in this population or in `UNSPAWNABLE` with a
-// reason — asserted below, not merely intended.
+// Every `#!` file is therefore in exactly one of three places — this population,
+// `UNSPAWNABLE`, or `SANDBOXED` — and that sentence is TRUE BY CONSTRUCTION, not a
+// thing any test below can check: the scan is literally the `#!` files minus the two
+// maps. What the tests below check instead is the way back in (a tool with no `#!`)
+// and the way out (`UNSPAWNABLE` growing a member that should have been guarded).
 const UNSPAWNABLE = {
   'kit.test.js': 'this file — the suite cannot spawn itself, and has no flags to guard',
-  // ⚠️ The harness pair, and the reason is not squeamishness. Both EDIT THE WORKING
-  // TREE, so spawning one from a test rewrites the source under the run, and a run
-  // killed by the test timeout leaves a live mutant behind (`mutate-ui.js` survives
-  // SIGTERM). They are also unreachable by the two SOURCE-level tests further down,
-  // which is measured rather than assumed: their source embeds OTHER files' source
-  // as mutant fixtures, so the extraction reads `mutate.js:380` — a stored snippet
-  // of `kit.js`'s parser — and concludes `mutate.js` implements `--help`. It does
-  // not. Adding `--help` to a guard there to quiet the test would advertise a flag
-  // that does not exist, i.e. reintroduce kit#95 to silence kit#67.
-  // ⇒ Guarding these two needs a mechanism neither existing test provides, so it is
-  // a follow-up on purpose. Declared here, not forgotten.
-  'mutate.js': 'mutation harness: edits the working tree, and its source embeds other files\' source as fixtures',
+};
+
+// 🔑 The harness pair: spawnable, but NOT HERE. They EDIT THE WORKING TREE, so
+// spawning one in `__dirname` rewrites the source under the run, and a run killed
+// by the test timeout leaves a live mutant behind (`mutate-ui.js` survives
+// SIGTERM). They are also unreachable by the two SOURCE-level tests further down,
+// measured rather than assumed: their source embeds OTHER files' source as mutant
+// fixtures, so the extraction reads `mutate.js:380` — a stored snippet of
+// `kit.js`'s parser — and concludes `mutate.js` implements `--help`. It does not,
+// and adding `--help` to a guard there to quiet that test would advertise a flag
+// that does not exist, i.e. reintroduce kit#95 to silence kit#67.
+//
+// 🔑 SO THE ANSWER IS NOT TO MAKE THE TOOL SAFE, IT IS TO EMPTY THE ENVIRONMENT.
+// A flag guard reads argv and nothing else, so it is the one step in either tool
+// that neither touches the tree nor depends on it; everything destructive is
+// environment-dependent. Spawn them where the environment they would damage does
+// not exist — a temp directory holding the tool and the two modules it requires at
+// load, and NONE of the files it mutates. The guard path is unaffected; the
+// destructive path cannot start, because its first act is to read a subject that
+// is not there. That makes the RED CONTROL runnable, which is the thing the
+// deferral was really about: with the guard deleted, `mutate.js --zznotaflag`
+// reaches `readFileSync` and dies ENOENT — proof it fell through rather than
+// refused, obtained without mutating anything.
+//
+// It is the same move as `selfhost/run.js`'s temp corpus copy, inverted: copy
+// nothing rather than copy everything.
+const SANDBOXED = {
+  'mutate.js': 'mutation harness: edits the working tree, so its guard is proved in a sandbox with none of its subjects in it',
   'mutate-ui.js': 'UI mutation harness: same as mutate.js, and it survives SIGTERM',
 };
 
@@ -5611,7 +5630,7 @@ const ENTRY_POINTS = (() => {
   const found = [];
   for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
     if (!e.isFile() || !e.name.endsWith('.js')) continue;
-    if (UNSPAWNABLE[e.name]) continue;
+    if (UNSPAWNABLE[e.name] || SANDBOXED[e.name]) continue;
     const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
     if (!src.startsWith('#!')) continue;
     found.push(e.name);
@@ -5631,9 +5650,9 @@ test('cli: the derived population is the real one, not a stale list', () => {
     'compare.js', 'measure-tagging.js']) {
     assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
   }
-  // ⚠️ "Every `#!` file is in ENTRY_POINTS or in UNSPAWNABLE" is NOT asserted here,
-  // and deliberately not: the scan above is literally every `#!` file MINUS
-  // `UNSPAWNABLE`, so that statement is true by construction and a test of it could
+  // ⚠️ "Every `#!` file is in ENTRY_POINTS, UNSPAWNABLE or SANDBOXED" is NOT asserted
+  // here, and deliberately not: the scan above is literally every `#!` file MINUS
+  // those two maps, so that statement is true by construction and a test of it could
   // never fail. It was written, and it was inert ([[inert-half-of-a-control]]). The
   // two checks below are what that one was reaching for, and both can go red.
   //
@@ -5656,14 +5675,25 @@ test('cli: the derived population is the real one, not a stale list', () => {
   // 2. An exemption is a claim about a file, and a claim about a file that no longer
   // exists is how an exemption outlives the thing it excused
   // ([[a-thing-that-left-the-set-is-invisible]]). A blank reason is the other way it
-  // rots: `UNSPAWNABLE` is the one hand-written list left in this section, so the
-  // cost of adding a name to it is having to say why.
-  for (const [f, why] of Object.entries(UNSPAWNABLE)) {
-    assert.ok(fsx.existsSync(pathx.join(__dirname, f)),
-      `UNSPAWNABLE exempts ${f}, which does not exist — delete the exemption with the file`);
-    assert.ok(typeof why === 'string' && why.trim().length >= 20,
-      `UNSPAWNABLE exempts ${f} without saying why`);
+  // rots: these two maps are the only hand-written lists left in this section, so
+  // the cost of adding a name to either is having to say why.
+  for (const [map, names] of [['UNSPAWNABLE', UNSPAWNABLE], ['SANDBOXED', SANDBOXED]]) {
+    for (const [f, why] of Object.entries(names)) {
+      assert.ok(fsx.existsSync(pathx.join(__dirname, f)),
+        `${map} names ${f}, which does not exist — delete the entry with the file`);
+      assert.ok(typeof why === 'string' && why.trim().length >= 20,
+        `${map} names ${f} without saying why`);
+    }
   }
+  // 3. `UNSPAWNABLE` is the only way out of every guard check in this section, and
+  // its one honest member is this file. `SANDBOXED` is not an escape hatch — those
+  // tools ARE spawned, just elsewhere — so the hazard is a future tool landing in
+  // `UNSPAWNABLE` instead, with a plausible reason, and going unguarded in silence.
+  // That is how `mutate.js` and `mutate-ui.js` spent months accepting every flag.
+  // Pinning the list here does not stop anyone widening it; it makes widening it
+  // cost a test edit, which is the only part a reviewer reliably sees.
+  assert.deepStrictEqual(Object.keys(UNSPAWNABLE), ['kit.test.js'],
+    `UNSPAWNABLE has grown to ${Object.keys(UNSPAWNABLE).join(', ')} — a tool that cannot be spawned HERE belongs in SANDBOXED, which still proves its guard`);
 });
 
 test('cli: every entry point REFUSES a flag it does not have, and names it', () => {
@@ -5696,6 +5726,88 @@ test('cli: every entry point REFUSES a flag it does not have, and names it', () 
   }
   assert.deepStrictEqual(offenders, [],
     `these accept a flag they do not have: ${offenders.join(', ')}`);
+});
+
+// The files a harness tool needs in order to REACH its guard: the two modules it
+// requires at load. Deliberately nothing else — the absence of its subjects is what
+// makes the spawn safe, and the test below measures that absence rather than
+// trusting this comment.
+const SANDBOX_DEPS = ['cli.js', 'mutation-marker.js'];
+
+function sandboxFor(tool) {
+  const dir = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-guard-'));
+  // ⚠️ The two-level nesting is not cosmetic. `mutation-marker.js` computes the repo
+  // root as `__dirname/../..`, so a flat sandbox would write MUTATION-IN-PROGRESS
+  // into the OS temp directory instead of inside the sandbox — the one thing either
+  // tool writes before it has read anything, escaping the box meant to contain it.
+  const inner = pathx.join(dir, 'prototypes', 'behaviour-ast');
+  fsx.mkdirSync(inner, { recursive: true });
+  for (const f of [tool, ...SANDBOX_DEPS]) {
+    fsx.copyFileSync(pathx.join(__dirname, f), pathx.join(inner, f));
+  }
+  return { dir, inner };
+}
+
+test('cli: the harness pair refuses an unknown flag, proved where it can do no damage', () => {
+  for (const tool of Object.keys(SANDBOXED)) {
+    const { dir, inner } = sandboxFor(tool);
+    try {
+      // (a) A flag it does not have. Exit 2 AND `cli.js`'s one phrasing — and here
+      // the sentence is doing the work on its own, not reinforcing the code.
+      // Unguarded, `mutate-ui.js --zznotaflag` ALREADY exits 2, because the
+      // missing-install branch is an exit 2 too and a sandbox has no `npm ci`. Exit
+      // code alone would certify this tool as guarded while it took every flag in
+      // the world ([[a-crash-that-echoes-your-input]]) — the same way `compare.js`
+      // satisfied the weaker criterion this test used before kit#67.
+      const FLAG = '--zznotaflag';
+      const bad = spawnx(process.execPath, [tool, FLAG], { cwd: inner, encoding: 'utf8', timeout: 30000 });
+      const badOut = (bad.stdout || '') + (bad.stderr || '');
+      assert.ok(!bad.signal, `${tool} (signal ${bad.signal} — never came back)`);
+      assert.strictEqual(bad.status, 2, `${tool}: a refusal is exit 2; got ${bad.status}\n${badOut}`);
+      assert.ok(badOut.includes(`unknown option ${FLAG}`),
+        `${tool}: exit 2 but never said "unknown option ${FLAG}" — something else refused, or it crashed:\n${badOut}`);
+
+      // (b) THE OTHER SIDE OF THE SEAM, and the half that makes (a) mean anything
+      // [[pin-a-seam-from-both-sides]]. A sandbox is a deliberately broken
+      // environment, so "it exited 2" is a claim I have to attribute: the same tool,
+      // in the same sandbox, given a flag it DOES have must come back 0 and must not
+      // say "unknown option". That pins the refusal to the flag rather than to the
+      // emptiness around it ([[a-tidy-report-from-a-broken-environment]]), and it
+      // catches the live authoring hazard in these two guards — both render one flag
+      // map two ways, so passing the VALUES where the KEYS belong would refuse
+      // `--recover` itself, and (a) alone would still be green.
+      const good = spawnx(process.execPath, [tool, '--recover'], { cwd: inner, encoding: 'utf8', timeout: 30000 });
+      const goodOut = (good.stdout || '') + (good.stderr || '');
+      assert.strictEqual(good.status, 0,
+        `${tool} --recover: a flag the tool HAS must not fail; got ${good.status}\n${goodOut}`);
+      assert.ok(!goodOut.includes('unknown option'),
+        `${tool}: refuses its own --recover, so the guard's accept-list is wrong, not its refusal:\n${goodOut}`);
+    } finally {
+      fsx.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test('cli: the sandbox holds none of the files mutate.js mutates', () => {
+  // The safety argument above is "the destructive path cannot start, because its
+  // first act is to read a subject that is not there". That is a claim about a list
+  // in ANOTHER file, and `cli.js` is a plausible future mutation subject — it now
+  // carries the rule every one of these guards depends on. The day it joins
+  // `SUBJECTS`, the sandbox stops being empty and the comment above becomes prose
+  // that used to be true ([[comments-are-a-plan-not-a-record]]).
+  const src = fsx.readFileSync(pathx.join(__dirname, 'mutate.js'), 'utf8');
+  const m = src.match(/const SUBJECTS = \{([^}]*)\}/);
+  assert.ok(m, 'could not find mutate.js\'s SUBJECTS list — the extraction below has stopped matching');
+  const subjects = [...m[1].matchAll(/'([^']+)'/g)].map((x) => pathx.basename(x[1]));
+  // A fail-safe for the same reason `jsDeclarationCount` has one: an extraction that
+  // silently matched nothing would make the disjointness below vacuous.
+  assert.ok(subjects.length >= 12,
+    `only ${subjects.length} subject(s) extracted from mutate.js — the scan has stopped matching: ${subjects.join(', ')}`);
+  const overlap = [...SANDBOX_DEPS, ...Object.keys(SANDBOXED)].filter((f) => subjects.includes(f));
+  assert.deepStrictEqual(overlap, [],
+    `${overlap.join(', ')}: in the sandbox AND in mutate.js's subjects, so an unguarded run would start mutating inside the box. Keep the sandbox to files mutate.js does not touch.`);
+  // `mutate-ui.js`'s subjects need no check: every one is under `ui/`, a directory
+  // the sandbox never creates, so no flat file copied into it can collide.
 });
 
 test('cli: a REFUSAL, not a default — the tool must not answer about its own corpus', () => {
