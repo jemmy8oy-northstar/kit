@@ -5573,37 +5573,96 @@ section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
 // what it does. A structural test ("does this file call cli.unknownFlag") would
 // have to exempt `kit.js` and `check.js`, which satisfy the rule with their own
 // parsers, and would pass for a file that called the helper and ignored it.
+// A tool says it is one with a `#!` line; a module does not carry one. That is the
+// marker — and it is the marker because it is the only one here that means "a human
+// runs this". This scan used to read `require.main === module`, which measures
+// something else: whether the file is safe to REQUIRE. Four tools answer that
+// differently and sat outside the population for months as a result —
+// `measure-tagging.js`, `compare.js`, `mutate.js` and `mutate-ui.js`, every one of
+// which accepted any flag silently the whole time (kit#67). Nothing in this
+// directory is executable, so the `#!` has no job other than declaring intent, and
+// `auth.js` and `git-store.js` carried one by mistake: both are pure modules and
+// the line is deleted in the same change that starts believing it.
+//
+// `selfhost/run.js` is still excluded by not walking subdirectories: it drives
+// Playwright, and kit deliberately has no `@playwright/test` dependency to drive it
+// with (adding one is packaging, which is James's under #83).
+//
+// Every `#!` file is therefore either in this population or in `UNSPAWNABLE` with a
+// reason — asserted below, not merely intended.
+const UNSPAWNABLE = {
+  'kit.test.js': 'this file — the suite cannot spawn itself, and has no flags to guard',
+  // ⚠️ The harness pair, and the reason is not squeamishness. Both EDIT THE WORKING
+  // TREE, so spawning one from a test rewrites the source under the run, and a run
+  // killed by the test timeout leaves a live mutant behind (`mutate-ui.js` survives
+  // SIGTERM). They are also unreachable by the two SOURCE-level tests further down,
+  // which is measured rather than assumed: their source embeds OTHER files' source
+  // as mutant fixtures, so the extraction reads `mutate.js:380` — a stored snippet
+  // of `kit.js`'s parser — and concludes `mutate.js` implements `--help`. It does
+  // not. Adding `--help` to a guard there to quiet the test would advertise a flag
+  // that does not exist, i.e. reintroduce kit#95 to silence kit#67.
+  // ⇒ Guarding these two needs a mechanism neither existing test provides, so it is
+  // a follow-up on purpose. Declared here, not forgotten.
+  'mutate.js': 'mutation harness: edits the working tree, and its source embeds other files\' source as fixtures',
+  'mutate-ui.js': 'UI mutation harness: same as mutate.js, and it survives SIGTERM',
+};
+
 const ENTRY_POINTS = (() => {
   const found = [];
   for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
     if (!e.isFile() || !e.name.endsWith('.js')) continue;
-    // kit.test.js is this file. `selfhost/run.js` is excluded by not walking
-    // subdirectories: it drives Playwright, and kit deliberately has no
-    // `@playwright/test` dependency to drive it with (adding one is packaging,
-    // which is James's under #83), so it cannot run here at all.
-    if (e.name === 'kit.test.js') continue;
+    if (UNSPAWNABLE[e.name]) continue;
     const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
-    if (!src.includes('require.main === module')) continue;
+    if (!src.startsWith('#!')) continue;
     found.push(e.name);
   }
   return found.sort();
 })();
 
-// ⚠️ NOT MEASURED, which is not the same as fine: `mutate.js` and `mutate-ui.js`
-// are the mutation harness. They EDIT THE WORKING TREE, so spawning them from a
-// test would rewrite the source under the run; and they carry neither
-// `require.main === module` nor a guard, so they are outside the population above
-// rather than exempted from it. Left for a follow-up on purpose — editing the
-// harness during a change that the harness is about to mutate is the one shape
-// worth not combining.
 test('cli: the derived population is the real one, not a stale list', () => {
   // A fail-safe, for the reason `jsDeclarationCount` is one: if the discovery above
   // ever silently matches nothing, every assertion below it passes over an empty
-  // set and this section reports green while checking no tool at all.
+  // set and this section reports green while checking no tool at all. It is NOT the
+  // same check as the completeness one below — that one shares the scan's own
+  // predicate, so a predicate that matched nothing would satisfy it vacuously.
   assert.ok(ENTRY_POINTS.length >= 8,
     `only ${ENTRY_POINTS.length} entry point(s) discovered — the scan has stopped matching: ${ENTRY_POINTS.join(', ')}`);
-  for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js']) {
+  for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js',
+    'compare.js', 'measure-tagging.js']) {
     assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
+  }
+  // ⚠️ "Every `#!` file is in ENTRY_POINTS or in UNSPAWNABLE" is NOT asserted here,
+  // and deliberately not: the scan above is literally every `#!` file MINUS
+  // `UNSPAWNABLE`, so that statement is true by construction and a test of it could
+  // never fail. It was written, and it was inert ([[inert-half-of-a-control]]). The
+  // two checks below are what that one was reaching for, and both can go red.
+  //
+  // 1. The marker has to be honest in the OTHER direction. The scan can only see a
+  // tool that declares itself one, so the way back into kit#67 is a new script with
+  // no `#!` — invisible again, and invisible the same silent way. A file that is
+  // neither a declared tool nor a module is therefore a failure. Every one of the
+  // five unmarked files here exports a module today, so this is a real population
+  // and not an empty one.
+  const undeclared = [];
+  for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
+    if (!e.isFile() || !e.name.endsWith('.js')) continue;
+    const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
+    if (src.startsWith('#!') || src.includes('module.exports')) continue;
+    undeclared.push(e.name);
+  }
+  assert.deepStrictEqual(undeclared, [],
+    `${undeclared.join(', ')}: neither a declared tool (#! line) nor a module (module.exports) — if it is a tool, give it the #! so the guard population can see it`);
+
+  // 2. An exemption is a claim about a file, and a claim about a file that no longer
+  // exists is how an exemption outlives the thing it excused
+  // ([[a-thing-that-left-the-set-is-invisible]]). A blank reason is the other way it
+  // rots: `UNSPAWNABLE` is the one hand-written list left in this section, so the
+  // cost of adding a name to it is having to say why.
+  for (const [f, why] of Object.entries(UNSPAWNABLE)) {
+    assert.ok(fsx.existsSync(pathx.join(__dirname, f)),
+      `UNSPAWNABLE exempts ${f}, which does not exist — delete the exemption with the file`);
+    assert.ok(typeof why === 'string' && why.trim().length >= 20,
+      `UNSPAWNABLE exempts ${f} without saying why`);
   }
 });
 
@@ -5616,8 +5675,24 @@ test('cli: every entry point REFUSES a flag it does not have, and names it', () 
     // never came back.
     const r = spawnx(process.execPath, [f, FLAG], { cwd: __dirname, encoding: 'utf8', timeout: 30000 });
     const out = (r.stdout || '') + (r.stderr || '');
-    if (r.status === 0 || r.signal) { offenders.push(`${f} (exit ${r.status}${r.signal ? ` signal ${r.signal}` : ''})`); continue; }
-    if (!out.includes(FLAG)) offenders.push(`${f} (exit ${r.status}, but never named the flag)`);
+    if (r.signal) { offenders.push(`${f} (signal ${r.signal} — never came back)`); continue; }
+    // 🔑 Exit 2 and the canonical sentence, NOT merely "non-zero and the flag
+    // appears somewhere". That weaker pair is what this asserted until kit#67, and
+    // `compare.js` SATISFIED IT WITHOUT HAVING A GUARD: unguarded, it took
+    // `--zznotaflag` as its positional repo path, `git -C --zznotaflag` died, and
+    // the fatal error quoted the flag back. Exit non-zero ✓, names the flag ✓,
+    // refused nothing. **A crash that echoes your typo is indistinguishable from a
+    // refusal** under the old criterion, and the whole point of the guard is the
+    // difference between them ([[a-green-build-is-not-evidence-it-was-needed]]).
+    //
+    // Exit 2 is the three-valued rule — refusal is never conflated with a verdict
+    // (`check.js:120`, and the test below says the same for `requires.js`) — and
+    // `cli.js`'s `refuse()` exists so twelve tools do not phrase it twelve ways,
+    // which is exactly what makes it assertable here.
+    if (r.status !== 2) { offenders.push(`${f} (exit ${r.status}, not the refusal's exit 2)`); continue; }
+    if (!out.includes(`unknown option ${FLAG}`)) {
+      offenders.push(`${f} (exit 2, but did not say "unknown option ${FLAG}" — a crash can also exit non-zero while quoting the flag)`);
+    }
   }
   assert.deepStrictEqual(offenders, [],
     `these accept a flag they do not have: ${offenders.join(', ')}`);
