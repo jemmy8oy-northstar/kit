@@ -17,13 +17,23 @@
 //   writer.js     WRITES to a corpus
 //
 // ⚠️ That list is the population kit#72 fixed, NOT every tool in this directory.
-// `measure-tagging.js`, `compare.js`, `mutate.js` and `mutate-ui.js` still accept
-// any flag silently — none of them requires this file (measured: `grep -c
-// "require('./cli.js')"` is 0 in all four). The sharp one is `mutate.js --recoverr`,
-// which does not recover: it starts a destructive five-and-a-half-minute mutation
-// run, which then adopts whatever live mutant is in the tree as its pristine
-// baseline. Tracked on kit#67; the fix waits on kit#96 because a third branch
-// touching `kit.test.js` conflicts with it.
+// `measure-tagging.js`, `compare.js`, `mutate.js` and `mutate-ui.js` were outside
+// it and accepted any flag silently — including `mutate.js --recoverr`, which does
+// not recover: it started a destructive five-and-a-half-minute mutation run that
+// then adopted whatever live mutant was in the tree as its pristine baseline.
+// ✅ **All four were fixed on 2026-10-01 by kit#99 and kit#101**, and every `#!`
+// tool in this directory now refuses a flag it does not have.
+//
+// 🔴 This paragraph said the opposite for most of a day, in the present tense, and
+// cited its own measurement — "none of them requires this file (measured:
+// `grep -c "require('./cli.js')"` is 0 in all four)". That grep returns 2, 2, 1, 1
+// today. The two merges that falsified it landed the same morning, and **the author
+// of both did not notice; a reader with no context found it by running the grep the
+// comment told them to run.** A measurement quoted in prose has a shelf life and no
+// gate — `kit.test.js`'s three flag-list tests read code, never comments, and that
+// is deliberate (the header block is prose, maintained as prose). So the rule a
+// comment like this needs is the one it broke: **say when it was measured, and in
+// the past tense.** [[a-written-claim-has-a-shelf-life]]
 //
 // 🔑 The reason this matters more than a usability nit: every one of those tools
 // exists to answer a question about a NAMED artefact, and a dropped flag makes it
