@@ -41,9 +41,12 @@ const VITEST = path.join(UI, 'node_modules', '.bin', 'vitest');
 // would have certified this tool as guarded while it accepted every flag in the
 // world** — which is why the test asserts `cli.js`'s canonical sentence and not
 // just the code ([[a-crash-that-echoes-your-input]]).
-const FLAGS = { '--recover': '--recover', '--only': '--only <subject>' };
+// Same shape as `mutate.js`, and see there for why the value is the placeholder
+// rather than the whole rendering.
+const FLAGS = { '--recover': '', '--only': '<subject>' };
+const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const badFlag = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
-if (badFlag) process.exit(refuse(badFlag, `usage: node mutate-ui.js [${Object.values(FLAGS).join('] [')}]`));
+if (badFlag) process.exit(refuse(badFlag, `usage: node mutate-ui.js [${usage()}]`));
 
 // Recovery runs before the install check below: a tree left mutated by a killed
 // run must be restorable even from a pod where `npm ci` has never been run.

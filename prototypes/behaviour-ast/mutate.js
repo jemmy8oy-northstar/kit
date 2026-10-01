@@ -38,13 +38,19 @@ const { unknownFlag, refuse } = require('./cli.js');
 // files below. Move it down and the refusal stops being provable without
 // running the mutation.
 //
-// One list, rendered twice: the names the guard accepts are the KEYS, the usage
-// line is the VALUES. kit#100 fixed a tool with three hand-written copies of its
-// flag list and left a gate holding two of them; one copy is the version of that
-// fix that cannot drift.
-const FLAGS = { '--recover': '--recover' };
+// ONE list, rendered twice: flag name → the value it takes (empty for none), so
+// the accept-list and the usage line cannot disagree. kit#100 fixed a tool with
+// three hand-written copies of its flag list and left a gate holding two of them;
+// having one copy is the version of that fix that cannot drift.
+// 🔑 The value is the PLACEHOLDER, not the whole rendering. It started as the
+// whole rendering (`'--recover': '--recover'`), which read fine and quietly made
+// the key/value mixup untestable: `Object.values` still contained `--recover`, so
+// a guard built from the wrong half of the map refused nothing and the red control
+// for it came back green.
+const FLAGS = { '--recover': '' };
+const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
-if (bad) process.exit(refuse(bad, `usage: node mutate.js [${Object.values(FLAGS).join('] [')}]`));
+if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
 
 // Recovery runs before anything reads the tree, so a run killed by an
 // uncatchable signal is undoable from either mutation tool.
