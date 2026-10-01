@@ -29,9 +29,21 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
+const { unknownFlag, refuse } = require('./cli.js');
 
 const UI = path.join(__dirname, 'ui');
 const VITEST = path.join(UI, 'node_modules', '.bin', 'vitest');
+
+// kit#67, and see `mutate.js` for why the guard goes FIRST — ahead of recovery
+// and ahead of the install check. This file has an extra reason to need the
+// ordering said out loud: unguarded, `node mutate-ui.js --zznotaflag` already
+// exits 2, because the missing-install branch below exits 2 too. **Exit 2 alone
+// would have certified this tool as guarded while it accepted every flag in the
+// world** — which is why the test asserts `cli.js`'s canonical sentence and not
+// just the code ([[a-crash-that-echoes-your-input]]).
+const FLAGS = { '--recover': '--recover', '--only': '--only <subject>' };
+const badFlag = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
+if (badFlag) process.exit(refuse(badFlag, `usage: node mutate-ui.js [${Object.values(FLAGS).join('] [')}]`));
 
 // Recovery runs before the install check below: a tree left mutated by a killed
 // run must be restorable even from a pod where `npm ci` has never been run.
