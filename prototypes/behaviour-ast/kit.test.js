@@ -6078,6 +6078,129 @@ test('cli: ONE dash makes a token a flag, in every parser here', () => {
   assert.deepStrictEqual(wrong, [], wrong.join('; '));
 });
 
+test('cli: an app name that EQUALS a flag value is still the app name', () => {
+  // The other half of kit#103, and a different rule from the one above: that test
+  // asks what counts as a flag, this one asks which positional is which once you
+  // know. They fail independently, so they are separate tests.
+  //
+  // `check.js`'s `parseArgs` carries a long comment explaining why it stopped
+  // scanning with `argv.indexOf(a)` — the index of a VALUE is the first index
+  // holding that string, not necessarily this one. `project.js` was still doing it,
+  // and nobody carried the fix across. Measured on `dev` @ `50db472`:
+  //
+  //   $ node project.js --repo foo foo
+  //   usage: project.js <app> [--repo <path>] ...     rc=2
+  //
+  // An app name WAS given. `project.js` is the read model the UI is built on, and
+  // both blind reviewers in `docs/trials/reviewing-the-guard-i-just-shipped.md`
+  // found it independently — which is why it is a gate and not a one-line patch.
+  //
+  // 🔑 The POPULATION is derived from what each tool EXPORTS. A parser is reachable
+  // by a unit test only if it is exported, and exporting it is the act that makes
+  // this rule checkable — so "every entry point that exports a parser is declared
+  // here" is the honest way in, and a stale declaration is the way out. Both
+  // directions fail. The three flag-list gates cannot see any of this: a parser is
+  // not a list.
+  // 🔑 Two rules, two populations, measured rather than assumed. Deriving the
+  // population found FIVE exported parsers where I had assumed three — `writer.js`
+  // and `ui.js` as well — and they do not all have the same defect:
+  //
+  //   collision (indexOf)  only parsers that pick ONE named positional
+  //   forgotten value      every parser with a value flag
+  //
+  // So `positional: null` means "this parser has no single named positional, check
+  // the forgotten-value half only". `writer.js` collects positionals into `rest`
+  // and never had the collision bug; it had the other one, and it is the tool that
+  // WRITES [[size-against-the-worst-case]].
+  const PARSERS = {
+    'kit.js': () => {
+      const m = require('./kit');
+      return { parse: m.parseCliArgs, valueFlags: m.CLI_VALUE_FLAGS, positional: 'only' };
+    },
+    'check.js': () => {
+      const m = require('./check');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: 'app' };
+    },
+    'project.js': () => {
+      const m = require('./project');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: 'app' };
+    },
+    'writer.js': () => {
+      const m = require('./writer');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
+  };
+
+  // 🔴 The one way out, pinned to exactly one file and carrying its reason — the
+  // shape `UNSPAWNABLE` above uses, for the same purpose: a deferral belongs in the
+  // artefact, not in prose nobody re-reads. `ui.js` has the forgotten-value defect
+  // too (eight value flags, extracted the same unguarded way) and is NOT fixed here:
+  // it is the only entry point whose `main` starts a long-lived HTTP server, so its
+  // parser is not reachable by a unit test without one, and that is a change of its
+  // own. Tracked on kit#103.
+  const DEFERRED = {
+    'ui.js': 'eight value flags, and main() starts a server — kit#103',
+  };
+  for (const [f, why] of Object.entries(DEFERRED)) {
+    assert.ok(ENTRY_POINTS.includes(f), `${f} is deferred here but is not an entry point any more`);
+    assert.ok(why && why.length > 20, `${f}'s deferral must give a reason, not just a name`);
+    assert.ok(!(f in PARSERS), `${f} is both driven and deferred — pick one`);
+  }
+
+  const exportsAParser = ENTRY_POINTS.filter((f) => {
+    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+    const exported = src.match(/module\.exports\s*=\s*\{[\s\S]*?\}/);
+    return !!exported && /\bparse(Args|CliArgs)\b/.test(exported[0]);
+  });
+  assert.deepStrictEqual(exportsAParser.slice().sort(),
+    [...Object.keys(PARSERS), ...Object.keys(DEFERRED)].sort(),
+    `these entry points export a parser: ${exportsAParser.join(', ')} — and this test accounts for `
+    + `${[...Object.keys(PARSERS), ...Object.keys(DEFERRED)].join(', ')}. Exporting a parser is what `
+    + 'makes this rule checkable, so one that is exported and neither driven nor deferred here is a '
+    + 'tool nothing holds to it');
+
+  const wrong = [];
+  for (const [file, load] of Object.entries(PARSERS)) {
+    const { parse: parseFn, valueFlags, positional } = load();
+    assert.ok(valueFlags && valueFlags.size, `${file}: must expose its OWN value-flag set`);
+
+    for (const flag of valueFlags) {
+      // A value that is itself a flag means the value was forgotten. Taking it is
+      // how a tool ends up pointed at a directory nobody named.
+      const eaten = parseFn([flag, '--pretty']);
+      if (!eaten.error) {
+        wrong.push(`${file}: ${flag} --pretty was ACCEPTED (${JSON.stringify(eaten)}) — the value `
+          + 'was forgotten and the next flag was eaten as it');
+      }
+      if (positional === null) continue;
+      // The collision: the app is named "foo" AND the flag's value is "foo".
+      // `indexOf` finds the value's index first, so the real positional is skipped.
+      for (const argv of [[flag, 'foo', 'foo'], ['foo', flag, 'foo']]) {
+        const got = parseFn(argv.slice());
+        if (got.error) {
+          wrong.push(`${file}: ${argv.join(' ')} was REFUSED as "${got.error}" — an app name was given`);
+        } else if (got[positional] !== 'foo') {
+          wrong.push(`${file}: ${argv.join(' ')} lost the app name — ${positional} is `
+            + `${JSON.stringify(got[positional])}, not "foo"`);
+        }
+      }
+    }
+
+    // The positive controls, so a parser that refused everything cannot pass here.
+    assert.ok(!parseFn(['foo']).error, `${file}: refuses its own plain invocation`);
+    for (const flag of valueFlags) {
+      const ok = parseFn(['foo', flag, 'mapping']);
+      assert.ok(!ok.error, `${file}: refuses ${flag} with an ordinary value — ${ok.error}`);
+    }
+    if (positional !== null) {
+      const two = parseFn(['foo', 'bar']);
+      assert.ok(two.error && /two (app|corpus) names/.test(two.error),
+        `${file}: two positionals must still be refused, got ${JSON.stringify(two)}`);
+    }
+  }
+  assert.deepStrictEqual(wrong, [], wrong.join('; '));
+});
+
 Promise.all(pending).then(() => {
   console.log(`\n${pass} passed, ${fail} failed\n`);
   process.exit(fail ? 1 : 0);
