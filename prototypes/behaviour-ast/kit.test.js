@@ -5730,15 +5730,23 @@ test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () 
 });
 
 /**
- * The two flag lists a tool carries: what its guard ADVERTISES as acceptable, and
- * what its code actually COMPARES against. Both directions of drift are defects,
- * so the extraction lives in one place and the two tests below differ only in
- * which way round they subtract ([[an-unused-field-is-a-missing-rule]]).
+ * The THREE copies of its flag list a tool carries: what its guard ADVERTISES as
+ * acceptable (`known`), what its code actually COMPARES against (`compared`), and
+ * what it TELLS A HUMAN it accepts (`usage`). Every direction of drift between them
+ * is a defect, so the extraction lives in one place and the tests below differ only
+ * in which pair they subtract ([[an-unused-field-is-a-missing-rule]]).
+ *
+ * It was two copies until kit#67. The third was found by reading a merge conflict
+ * rather than by any check: `#47` added `--public-origin` to `KNOWN_FLAGS` and to
+ * `parseArgs` — satisfying both existing tests — and not to `ui.js`'s usage line, so
+ * the message a reader gets when a flag is refused omitted a flag the tool takes.
+ * Measured across all twelve tools before being fixed: exactly one instance, so this
+ * is a gate against a recurrence rather than a cleanup of a pattern.
  *
  * @param {string} f a file in this directory
- * @returns {{known:Set<string>, compared:Set<string>}|null} null when the tool
- *   satisfies the rule with its own parser rather than `unknownFlag` (kit.js,
- *   check.js), which is not a failure.
+ * @returns {{known:Set<string>, compared:Set<string>, usage:string}|null} null when
+ *   the tool satisfies the rule with its own parser rather than `unknownFlag`
+ *   (kit.js, check.js), which is not a failure.
  */
 function flagLists(f) {
   const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
@@ -5758,7 +5766,14 @@ function flagLists(f) {
   const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
   const compared = new Set();
   for (const m of code.matchAll(/(?:===|!==|indexOf\(|includes\()\s*'(--[a-z][a-z-]*)'/g)) compared.add(m[1]);
-  return { known, compared };
+  // Every `usage:` line in the file, joined. Joined rather than picked, because a
+  // tool may print one from its guard and another from its own argument validation
+  // (`project.js`, `requires.js`, `check.js` each have two) and a flag documented in
+  // either has been documented. Read from `src`, not `code`: a usage string lives
+  // inside a `refuse(...)` call, never in a comment, and stripping comment lines
+  // would break one that is wrapped across lines.
+  const usage = [...src.matchAll(/'(usage: [^']*)'/g)].map((m) => m[1]).join(' | ');
+  return { known, compared, usage };
 }
 
 test('cli: a guard cannot refuse a flag its own tool implements', () => {
@@ -5803,6 +5818,48 @@ test('cli: a guard cannot ADVERTISE a flag its own tool no longer implements', (
     }
   }
   assert.deepStrictEqual(advertised, [], advertised.join('; '));
+});
+
+test('cli: a tool must TELL A HUMAN about every flag it accepts', () => {
+  // The third copy of the flag list, and the one that had no gate at all until
+  // kit#67. The pair above keeps `KNOWN_FLAGS` and the parser honest with each other;
+  // neither looks at the sentence the tool actually shows you, which is the only one
+  // of the three a user ever reads.
+  //
+  // The failure is quiet in a specific way: the usage string is printed BY the
+  // refusal, so a reader who typo'd a flag is handed a list that silently omits a
+  // real one, at the exact moment they are trying to find out what is valid. Nothing
+  // looks broken — the refusal worked — and the flag they needed appears not to
+  // exist. `--public-origin` was in that state from `#47` merging until this change.
+  //
+  // ⚠️ `kit.js` and `check.js` are not reached, for the same reason as the pair above:
+  // they satisfy the refusal rule with their own positional parsers, so there is no
+  // `KNOWN_FLAGS` to read. Stated rather than hidden — folding all three parsers into
+  // one is the right end state and is an architecture call, not a fix.
+  //
+  // ⚠️ And there is a FOURTH copy this deliberately does NOT gate: the invocation
+  // block in each tool's header comment, which omitted `--public-origin` too and is
+  // corrected by hand in the same change. It stays ungated because a comment is
+  // allowed to discuss a flag the tool does not implement, and several here do on
+  // purpose — `ui.js` names `--dirr` as the typo that motivated the guard, and
+  // `converge.js` explains why it refuses `--dir` rather than wiring it up. A gate
+  // over comments would have to be wrong in one of those two directions. **So the
+  // header block is the one copy with no check behind it; it is prose, and it is
+  // maintained as prose.**
+  const undocumented = [];
+  for (const f of ENTRY_POINTS) {
+    const lists = flagLists(f);
+    if (!lists) continue;
+    for (const flag of lists.known) {
+      if (!lists.usage.includes(flag)) {
+        undocumented.push(`${f} accepts ${flag} but no usage line mentions it`);
+      }
+    }
+    // A guard with nothing to print is the degenerate form of the same defect: it
+    // refuses your flag and tells you nothing about which ones would have worked.
+    if (lists.known.size && !lists.usage) undocumented.push(`${f} has a guard but no usage line at all`);
+  }
+  assert.deepStrictEqual(undocumented, [], undocumented.join('; '));
 });
 
 Promise.all(pending).then(() => {

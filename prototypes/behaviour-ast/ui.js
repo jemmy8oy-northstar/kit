@@ -21,7 +21,7 @@
 // only reachable when the server is bound to a loopback address (rule 2 below).
 //
 //   node ui.js [--port 4321] [--host 127.0.0.1] [--repos <dir>] [--dir <behaviours>]
-//              [--git [--git-remote origin] [--git-branch <name>]]
+//              [--public-origin <url>] [--git [--git-remote origin] [--git-branch <name>]]
 //
 //   GET  /api/projects        every corpus, with enough to render a list
 //   GET  /api/projects/<app>  project.js's full projection for one app
@@ -1154,7 +1154,7 @@ async function main(argv) {
   const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
   if (bad) {
     return require('./cli.js').refuse(bad,
-      'usage: node ui.js [--port <n>] [--host <h>] [--repos <dir>] [--dir <behaviours>] [--git] [--git-remote <r>] [--git-branch <b>]');
+      'usage: node ui.js [--port <n>] [--host <h>] [--repos <dir>] [--dir <behaviours>] [--public-origin <url>] [--git] [--git-remote <r>] [--git-branch <b>]');
   }
 
   const opts = parseArgs(argv);
