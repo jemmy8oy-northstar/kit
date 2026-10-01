@@ -54,6 +54,9 @@ const path = require('path');
 const { parse, parseStep, nounsOf } = require('./kit.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
+// The flags that take a VALUE, as opposed to the boolean ones. One set, used by
+// `parseArgs` itself and read by `kit.test.js`'s gate — not a copy of the list.
+const VALUE_FLAGS = new Set(['--dir', '--source', '--actor']);
 // Asked, never re-derived: `bindings.js` is the one place that answers where a
 // corpus's bindings live, and a second `path.join` here would be a second answer
 // waiting to drift from it (kit#66). A test enforces that.
@@ -617,17 +620,42 @@ function parseArgs(argv) {
   // No `--bindings`: it pointed at one file, and bindings now live beside the
   // corpus, so `--dir` selects both (kit#66). One flag where there were two, and
   // a harness can no longer isolate the corpus while writing the real bindings.
+  //
+  // ⚠️ Each value flag checks that what follows is actually a VALUE. It did not,
+  // and this is the tool `cli.js` calls the most consequential instance because it
+  // WRITES. Measured on `dev` @ `50db472`:
+  //
+  //   $ node writer.js kit add-step BEH-X "test step" --dir --actor human
+  //   rc=2  writer: no corpus named 'kit' in --actor
+  //
+  // `--dir` ate `--actor` as its directory, `--actor human` never happened, the
+  // positional `human` fell into `rest`, and the message named none of it — it
+  // blamed `--dir` for a path it should never have held. `unknownFlag` cannot see
+  // this case by construction: BOTH tokens are in `known`, so there is no unknown
+  // flag to report (kit#103).
+  // `--source defined` exists because using this tool on Kit's own corpus found it
+  // missing. The HTTP surface takes `source` in the body and the CLI could not say
+  // it, so a human at a terminal could only write behaviours marked as a machine's
+  // inference. Defaulting to `inferred` is right; being unable to say otherwise is
+  // not.
   const opts = { dir: BEH_DIR, source: null, actor: null, rest: [] };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--dir') { opts.dir = argv[i + 1]; i++; }
-    // `--source defined` exists because using this tool on Kit's own corpus
-    // found it missing. The HTTP surface takes `source` in the body and the CLI
-    // could not say it, so a human at a terminal could only write behaviours
-    // marked as a machine's inference. Defaulting to `inferred` is right; being
-    // unable to say otherwise is not.
-    else if (argv[i] === '--source') { opts.source = argv[i + 1]; i++; }
-    else if (argv[i] === '--actor') { opts.actor = argv[i + 1]; i++; }
-    else opts.rest.push(argv[i]);
+    const a = argv[i];
+    if (VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      if (v === undefined || require('./cli.js').looksLikeAFlag(v)) {
+        return { error: `${a} needs a value` };
+      }
+      // Assigned by comparing the NAME, not by index, so that `cli: a guard cannot
+      // ADVERTISE a flag its own tool no longer implements` can still see all three.
+      // That gate reads the flags this CODE compares against, and a `VALUE_FLAGS.has`
+      // test on its own makes every one of them invisible to it — `project.js` went
+      // red on exactly that in this change, which is the gate working.
+      if (a === '--dir') opts.dir = v;
+      else if (a === '--source') opts.source = v;
+      else if (a === '--actor') opts.actor = v;
+      i++;
+    } else opts.rest.push(a);
   }
   return opts;
 }
@@ -646,7 +674,13 @@ function main(argv) {
     return require('./cli.js').refuse(bad,
       'usage: writer.js <app> <verb> ... [--dir <behaviours>] [--source defined|inferred] [--actor <name>]');
   }
-  const { dir, source, actor, rest } = parseArgs(argv);
+  const parsed = parseArgs(argv);
+  if (parsed.error) {
+    console.error(`cannot look: ${parsed.error}`);
+    console.error('usage: writer.js <app> <verb> ... [--dir <behaviours>] [--source defined|inferred] [--actor <name>]');
+    return 2;
+  }
+  const { dir, source, actor, rest } = parsed;
   const [app, verb, id, arg] = rest;
 
   if (!app || !verb) {
@@ -746,7 +780,7 @@ module.exports = {
   // No `BINDINGS_FILE` re-export: there is no longer ONE bindings file to name,
   // and a re-export would have been a second answer to kit#66's question. Ask
   // `bindings.js` for `fileFor(app, dir)` instead.
-  corpusPath, commitToDisk, parseArgs, main, INDENT,
+  corpusPath, commitToDisk, parseArgs, VALUE_FLAGS, main, INDENT,
 };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

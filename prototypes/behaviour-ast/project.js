@@ -230,35 +230,85 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
 // as the app name. It is now refused by name like any other unknown flag, which
 // also retires the positional-guard bug this list used to create.
 const KNOWN_FLAGS = ['--repo', '--dir', '--pretty'];
+const VALUE_FLAGS = new Set(['--repo', '--dir']);
+const USAGE = 'usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]';
+
+// Which positional is which, and nothing else.
+//
+// 🔑 **Deliberately not an unknown-flag guard.** `main` calls `cli.js`'s
+// `unknownFlag` before this runs and that is the only place a flag is refused by
+// name, so a branch for it here would be unreachable from the one caller — dead
+// code that reads as a second opinion. This function's whole job is the part
+// `unknownFlag` cannot do: tell an app name apart from a flag's value.
+//
+// ⚠️ It replaces a `find` + `indexOf` scan that had the exact bug the comment
+// above `check.js`'s `parseArgs` documents as fixed — "`argv.indexOf(a)` for the
+// index of a VALUE, which is the first index holding that string and not
+// necessarily this one". Measured on `dev` @ `50db472`:
+//
+//   $ node project.js --repo foo foo
+//   usage: project.js <app> [--repo <path>] ...     (exit 2)
+//
+// An app name WAS given. `indexOf('foo')` returned the index of the value, whose
+// predecessor is `--repo`, so the real positional was skipped and the tool
+// reported that none was given. `check.js` fixed this in its own parser and
+// nobody carried it here; two blind reviewers found it independently (kit#103).
+// This is the read model the UI is built on.
+function parseArgs(argv) {
+  const opts = { app: null, repo: null, behDir: BEH_DIR, pretty: false };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      // A value that is itself a flag means the value was forgotten. Taking it
+      // would point the read model at a directory nobody named (kit#103).
+      if (v === undefined || require('./cli.js').looksLikeAFlag(v)) {
+        return { error: `${a} needs a value` };
+      }
+      // Compared by name rather than `else`, because `cli: a guard cannot ADVERTISE
+      // a flag its own tool no longer implements` reads the flags this code COMPARES
+      // against — and an `else` branch makes `--dir` invisible to it. That gate went
+      // red on exactly this, which is the gate working.
+      if (a === '--repo') opts.repo = v;
+      else if (a === '--dir') opts.behDir = v;
+      i++;
+    } else if (a === '--pretty') {
+      opts.pretty = true;
+    } else if (opts.app === null) {
+      opts.app = a;
+    } else {
+      return { error: `two app names given, "${opts.app}" and "${a}" — this reports on one` };
+    }
+  }
+  return opts;
+}
 
 function main(argv) {
   // An unknown flag is a refusal, not a silent drop (cli.js). This is the read
   // model the UI is built on, so a dropped `--dir` here answers confidently about
   // a different corpus than the one named.
   const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
-  if (bad) {
-    return require('./cli.js').refuse(bad,
-      'usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]');
-  }
-  const app = argv.find((a) => !a.startsWith('--') && argv[argv.indexOf(a) - 1] !== '--repo' && argv[argv.indexOf(a) - 1] !== '--dir');
-  if (!app) {
-    console.error('usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]');
+  if (bad) return require('./cli.js').refuse(bad, USAGE);
+
+  const opts = parseArgs(argv);
+  if (opts.error) {
+    console.error(`cannot look: ${opts.error}`);
+    console.error(USAGE);
     return 2;
   }
-  const ri = argv.indexOf('--repo');
-  const di = argv.indexOf('--dir');
-  const out = project(app, {
-    repo: ri >= 0 ? argv[ri + 1] : null,
-    behDir: di >= 0 ? argv[di + 1] : BEH_DIR,
-  });
+  if (!opts.app) {
+    console.error(USAGE);
+    return 2;
+  }
+  const out = project(opts.app, { repo: opts.repo, behDir: opts.behDir });
   if (out.fatal) {
     console.error(`project: ${out.fatal} — could not look`);
     return 2;
   }
-  console.log(JSON.stringify(out, null, argv.includes('--pretty') ? 2 : 0));
+  console.log(JSON.stringify(out, null, opts.pretty ? 2 : 0));
   return 0;
 }
 
-module.exports = { project, main };
+module.exports = { project, main, parseArgs, VALUE_FLAGS };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
