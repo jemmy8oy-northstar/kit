@@ -35,6 +35,17 @@ const { execFileSync } = require('child_process');
 // twice for about an hour, which is how long it takes for two of them to drift.
 const { parse, resolve, testTitles, expectedTestCount, TEST_FILE_RE } = require(path.join(__dirname, 'kit.js'));
 
+// An unknown flag is a refusal, not a silent drop (cli.js, kit#67). Checked HERE,
+// before the `APPS` reads below, rather than beside the `--json` branch that is the
+// only flag this tool has: that branch sits at the far end of the file, after three
+// repos have been read at `origin/dev`, so a typo would otherwise cost the whole
+// measurement and then still answer as though nothing had been asked.
+const KNOWN_FLAGS = ['--json'];
+{
+  const bad = require('./cli.js').unknownFlag(process.argv.slice(2), KNOWN_FLAGS);
+  if (bad) process.exit(require('./cli.js').refuse(bad, 'usage: measure-tagging.js [--json]'));
+}
+
 const APPS = [
   { corpus: 'snip-it.beh', repo: '/data/repos/snip-it' },
   { corpus: 'james-habits-app.beh', repo: '/data/repos/james-habits-app' },

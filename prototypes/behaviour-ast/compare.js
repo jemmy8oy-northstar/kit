@@ -22,6 +22,25 @@ const SPEC = 'frontend/e2e/editor.spec.ts';
 const REPO = process.env.SNIPIT_REPO || process.argv[2] ||
   path.resolve(__dirname, '..', '..', '..', 'snip-it');
 
+// This tool implements NO flags — its one input is the positional above — so every
+// `--`-prefixed token is a typo, and the empty list says that rather than leaving it
+// to be inferred (cli.js, kit#67). It matters more here than it looks: the entire
+// output is a per-line YES/NO about a NAMED spec in a NAMED repo, and the obvious
+// typo is a `--repo`-shaped one borrowed from the five sibling tools that DO take
+// flags. Unguarded, `compare.js --repo /x` made `--repo` the repo path, and the only
+// reason that was not silent is that `git -C --repo` happens to die — which is worse
+// than it sounds, because dying while quoting your typo is indistinguishable from
+// refusing it, and that is precisely how this file passed the guard test for months
+// without having a guard. `unknownFlag` skips positionals, so `argv[2]` is untouched.
+const KNOWN_FLAGS = [];
+{
+  const bad = require('./cli.js').unknownFlag(process.argv.slice(2), KNOWN_FLAGS);
+  if (bad) {
+    process.exit(require('./cli.js').refuse(bad,
+      'usage: compare.js [<path-to-snip-it>]   (or set SNIPIT_REPO)'));
+  }
+}
+
 const real = execFileSync('git', ['-C', REPO, 'show', `origin/dev:${SPEC}`], { encoding: 'utf8' });
 
 // The first version of this comparator scored 18/28 and SEVEN of the ten misses

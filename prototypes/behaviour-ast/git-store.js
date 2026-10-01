@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 'use strict';
 /**
  * Put a corpus edit back into git, for a Kit that is not running on your laptop.

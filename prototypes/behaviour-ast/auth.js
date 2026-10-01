@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 'use strict';
 /**
  * One password, so a write can be accepted from somewhere that is not loopback.
