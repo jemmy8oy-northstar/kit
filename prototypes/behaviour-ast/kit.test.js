@@ -5654,6 +5654,38 @@ test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () 
   assert.strictEqual(unknownFlag(['--json'], new Set(['--json'])), null);
 });
 
+/**
+ * The two flag lists a tool carries: what its guard ADVERTISES as acceptable, and
+ * what its code actually COMPARES against. Both directions of drift are defects,
+ * so the extraction lives in one place and the two tests below differ only in
+ * which way round they subtract ([[an-unused-field-is-a-missing-rule]]).
+ *
+ * @param {string} f a file in this directory
+ * @returns {{known:Set<string>, compared:Set<string>}|null} null when the tool
+ *   satisfies the rule with its own parser rather than `unknownFlag` (kit.js,
+ *   check.js), which is not a failure.
+ */
+function flagLists(f) {
+  const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+  const call = src.match(/unknownFlag\((?:[^,]+),\s*(\[[^\]]*\]|[A-Z_]+)\s*\)/);
+  if (!call) return null;
+  let listed = call[1];
+  if (!listed.startsWith('[')) {
+    const named = src.match(new RegExp(`const ${listed} = (\\[[^\\]]*\\])`));
+    assert.ok(named, `${f}: the guard names ${listed}, which is not declared as a literal list here`);
+    listed = named[1];
+  }
+  const known = new Set([...listed.matchAll(/'(--[a-z][a-z-]*)'/g)].map((m) => m[1]));
+  // Every flag the tool's own CODE compares against. Comments are stripped first,
+  // because several of these files discuss flags they do NOT implement — `ui.js`
+  // names `--dirr` in a comment as the typo that motivated the guard, and
+  // `converge.js` explains why it refuses `--dir` rather than wiring it up.
+  const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+  const compared = new Set();
+  for (const m of code.matchAll(/(?:===|!==|indexOf\(|includes\()\s*'(--[a-z][a-z-]*)'/g)) compared.add(m[1]);
+  return { known, compared };
+}
+
 test('cli: a guard cannot refuse a flag its own tool implements', () => {
   // The drift THIS change could introduce, and the reason it needs pinning: each
   // guard names its tool's flags as a literal list, so a flag added to the parser
@@ -5668,28 +5700,34 @@ test('cli: a guard cannot refuse a flag its own tool implements', () => {
   // that, and the pair is what makes either useful.
   const mismatches = [];
   for (const f of ENTRY_POINTS) {
-    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
-    const call = src.match(/unknownFlag\((?:[^,]+),\s*(\[[^\]]*\]|[A-Z_]+)\s*\)/);
-    if (!call) continue; // kit.js and check.js satisfy the rule with their own parsers.
-    let listed = call[1];
-    if (!listed.startsWith('[')) {
-      const named = src.match(new RegExp(`const ${listed} = (\\[[^\\]]*\\])`));
-      assert.ok(named, `${f}: the guard names ${listed}, which is not declared as a literal list here`);
-      listed = named[1];
-    }
-    const known = new Set([...listed.matchAll(/'(--[a-z][a-z-]*)'/g)].map((m) => m[1]));
-    // Every flag the tool's own CODE compares against. Comments are stripped first,
-    // because several of these files discuss flags they do NOT implement — `ui.js`
-    // names `--dirr` in a comment as the typo that motivated the guard, and
-    // `converge.js` explains why it refuses `--dir` rather than wiring it up.
-    const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
-    const compared = new Set();
-    for (const m of code.matchAll(/(?:===|!==|indexOf\(|includes\()\s*'(--[a-z][a-z-]*)'/g)) compared.add(m[1]);
-    for (const flag of compared) {
-      if (!known.has(flag)) mismatches.push(`${f} implements ${flag} and its guard would refuse it`);
+    const lists = flagLists(f);
+    if (!lists) continue; // kit.js and check.js satisfy the rule with their own parsers.
+    for (const flag of lists.compared) {
+      if (!lists.known.has(flag)) mismatches.push(`${f} implements ${flag} and its guard would refuse it`);
     }
   }
   assert.deepStrictEqual(mismatches, [], mismatches.join('; '));
+});
+
+test('cli: a guard cannot ADVERTISE a flag its own tool no longer implements', () => {
+  // The converse of the test above, and the direction it had no coverage for
+  // (kit#95). `ui.js` kept `--bindings` in KNOWN_FLAGS and in its usage line after
+  // kit#66 removed the flag — `bindings.js` even carries a header explaining why
+  // it is "gone rather than extended". So `ui.js --bindings x` was ACCEPTED and
+  // SILENTLY IGNORED, which is the precise failure the guard exists to kill: the
+  // reader is told their flag was understood and nothing honours it.
+  //
+  // A silent drop is worse than the refusal the first test guards against. A
+  // refusal is loud and gets fixed in a minute; this one looks like it worked.
+  const advertised = [];
+  for (const f of ENTRY_POINTS) {
+    const lists = flagLists(f);
+    if (!lists) continue;
+    for (const flag of lists.known) {
+      if (!lists.compared.has(flag)) advertised.push(`${f} advertises ${flag} but its code never reads it`);
+    }
+  }
+  assert.deepStrictEqual(advertised, [], advertised.join('; '));
 });
 
 Promise.all(pending).then(() => {
