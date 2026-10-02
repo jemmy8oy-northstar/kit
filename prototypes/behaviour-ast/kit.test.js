@@ -2699,6 +2699,59 @@ test('main exits 2 on a port that is not a port', async () => {
   assert.strictEqual(await quiet(() => ui.main(['--dir', uiDir, '--port', 'banana'])), 2);
 });
 
+test('main refuses a forgotten flag value rather than serving what it was not given', async () => {
+  // The ASSEMBLY half of kit#103. `parseArgs` returning `{error}` is worth nothing if
+  // `main` never looks at it — that is a parser which is right and a server which
+  // still starts, on a corpus nobody named [[both-layers-right-assembly-broken]].
+  // The parser gate at the bottom of this file drives `parseArgs` and cannot see
+  // this; this test drives `main` and cannot see the parser's coverage of all seven
+  // flags. Both, or neither is useful.
+  //
+  // 🔴 THE EXIT CODE IS NOT A DISCRIMINATOR HERE, and asserting it alone is how the
+  // first draft of this test certified a `main` that ignored `opts.error` completely.
+  // `parseArgs` returns `{error}` and NOTHING ELSE on refusal, so a `main` that reads
+  // past it gets `opts.dir === undefined`, finds no corpora, and exits 2 for a reason
+  // that has nothing to do with the flag. My own control came back GREEN on that.
+  // Same shape as kit#101's `mutate-ui.js --zznotaflag`, which already exited 2 from
+  // its missing-install branch [[a-crash-that-echoes-your-input]]. So the SENTENCE is
+  // the assertion and the code is a secondary check: stderr must name the flag whose
+  // value was forgotten.
+  const refused = async (argv) => {
+    const said = [];
+    const err = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    let code;
+    try { code = await ui.main(argv.slice()); } finally { console.error = err; }
+    return { code, said: said.join('\n') };
+  };
+
+  for (const [argv, flag] of [
+    [['--port', '--host'], '--port'],
+    // The write path, and the one that reaches his repo: `refs/heads/--git-remote` is
+    // a ref name git accepts, so this used to push a branch called `--git-remote`.
+    [['--git', '--git-branch', '--git-remote'], '--git-branch'],
+    // The value forgotten at the END of the line, where there is no next token at all.
+    [['--repos'], '--repos'],
+  ]) {
+    const { code, said } = await refused(argv);
+    assert.strictEqual(code, 2, `ui.main(${argv.join(' ')}) must refuse, not serve`);
+    assert.ok(said.includes(`${flag} needs a value`),
+      `ui.main(${argv.join(' ')}) exited 2 but said ${JSON.stringify(said)} — which does not name `
+      + `${flag}, so it refused for some other reason and this flag is not held`);
+    // And it must print the usage line, so the operator is told what WOULD have worked
+    // — the degenerate guard this file's `cli:` gates exist to stop.
+    assert.ok(/usage: node ui\.js/.test(said), `and it must print the usage line — got ${said}`);
+  }
+  // CONTROL: the same shape with the value actually given must NOT be refused here.
+  // Driven through `parseArgs`, because the only way for `main` to accept it is to
+  // start a server and never return — which is the thing that made this file's
+  // earlier spawn attempt hang on `ui.js --git`.
+  const ok = ui.parseArgs(['--dir', uiDir, '--git', '--git-branch', 'dev', '--git-remote', 'origin']);
+  assert.ok(!ok.error, `CONTROL: a real value must be accepted — got ${ok.error}`);
+  assert.strictEqual(ok.git.branch, 'dev');
+  assert.strictEqual(ok.git.remote, 'origin');
+});
+
 // ── the delivery, over a real socket ────────────────────────────────────────
 // The tests above drive `route()`, which is a function. A handler returning the
 // right object and a server delivering it are different claims, and only the
@@ -6129,35 +6182,39 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
       const m = require('./writer');
       return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
     },
+    // The last tool kit#103 names, and the one with the worst reachable consequence:
+    // `--git-branch --git-remote upstream` gave `writeBack` a branch literally called
+    // `--git-remote`, which `git check-ref-format refs/heads/--git-remote` accepts —
+    // so `git-store.js:171` would have pushed it, and `upstream` would have vanished
+    // with no message. Seven value flags, no named positional.
+    'ui.js': () => {
+      const m = require('./ui');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
   };
 
-  // 🔴 The one way out, pinned to exactly one file and carrying its reason — the
-  // shape `UNSPAWNABLE` above uses, for the same purpose: a deferral belongs in the
-  // artefact, not in prose nobody re-reads. `ui.js` has the forgotten-value defect
-  // too (eight value flags, extracted the same unguarded way) and is NOT fixed here:
-  // it is the only entry point whose `main` starts a long-lived HTTP server, so its
-  // parser is not reachable by a unit test without one, and that is a change of its
-  // own. Tracked on kit#103.
-  const DEFERRED = {
-    'ui.js': 'eight value flags, and main() starts a server — kit#103',
-  };
-  for (const [f, why] of Object.entries(DEFERRED)) {
-    assert.ok(ENTRY_POINTS.includes(f), `${f} is deferred here but is not an entry point any more`);
-    assert.ok(why && why.length > 20, `${f}'s deferral must give a reason, not just a name`);
-    assert.ok(!(f in PARSERS), `${f} is both driven and deferred — pick one`);
-  }
+  // 🔴 There is NO `DEFERRED` map any more, and its deletion is the point. kit#105
+  // pinned `ui.js` in one, with the reason "main() starts a server, so its parser is
+  // not reachable by a unit test". **That reason was false when it was written**:
+  // `parseArgs` was already exported, and `main exits 2 on a port that is not a port`
+  // 3,400 lines above drives `ui.main` directly — the server only starts on the
+  // SUCCESS path, which a refusal never reaches. An exemption I wrote was the last
+  // place the bug was [[your-written-exemption-is-a-work-item]].
+  // So an empty map whose loop body can never run is left out rather than kept: the
+  // population assertion below is what actually holds the rule, and it names the two
+  // honest ways out (fix it, or declare it) in its own message.
 
   const exportsAParser = ENTRY_POINTS.filter((f) => {
     const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
     const exported = src.match(/module\.exports\s*=\s*\{[\s\S]*?\}/);
     return !!exported && /\bparse(Args|CliArgs)\b/.test(exported[0]);
   });
-  assert.deepStrictEqual(exportsAParser.slice().sort(),
-    [...Object.keys(PARSERS), ...Object.keys(DEFERRED)].sort(),
-    `these entry points export a parser: ${exportsAParser.join(', ')} — and this test accounts for `
-    + `${[...Object.keys(PARSERS), ...Object.keys(DEFERRED)].join(', ')}. Exporting a parser is what `
-    + 'makes this rule checkable, so one that is exported and neither driven nor deferred here is a '
-    + 'tool nothing holds to it');
+  assert.deepStrictEqual(exportsAParser.slice().sort(), Object.keys(PARSERS).sort(),
+    `these entry points export a parser: ${exportsAParser.join(', ')} — and this test drives `
+    + `${Object.keys(PARSERS).join(', ')}. Exporting a parser is what makes this rule checkable, so `
+    + 'one that is exported and not driven here is a tool nothing holds to it. Two ways out and no '
+    + 'third: add it to PARSERS, or — if it genuinely cannot be driven — declare it with its reason, '
+    + 'and make sure that reason is TRUE (kit#105 shipped one that was not)');
 
   const wrong = [];
   for (const [file, load] of Object.entries(PARSERS)) {
