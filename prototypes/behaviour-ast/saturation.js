@@ -170,6 +170,43 @@ function measureCorpus(file, text, textReader = nounsFromText) {
 function pct(x) { return x === null ? 'n/a' : (x * 100).toFixed(0) + '%'; }
 function num(x, d = 2) { return x === null ? 'n/a' : x.toFixed(d); }
 
+// The one flag that takes a VALUE. One set, used by `parseArgs` below and read by
+// `kit.test.js`'s parser gate — not a copy of the list. `--check` and `--record` are
+// booleans and are deliberately absent.
+const VALUE_FLAGS = new Set(['--dir']);
+
+/**
+ * The argument reader, split out of `main` and EXPORTED (kit#103). `main` used to do
+ * `argv.indexOf('--dir')` and take `argv[i + 1]` unchecked, so:
+ *
+ *   $ node saturation.js --dir --check
+ *   saturation: no behaviours directory at --check — could not look       rc=2
+ *
+ * It refused, which is why this survived — but it blamed a missing directory for what
+ * was a forgotten value, and `--check` (which gates a committed document) was eaten
+ * rather than honoured. `unknownFlag` cannot see it: both tokens are known.
+ *
+ * ⚠️ `only` keeps its original definition — the first token that is not a flag and
+ * does not follow `--dir`. It is NOT re-derived from this loop, because `--dir`'s
+ * value is excluded by position there and a second rule for "which token is the app"
+ * is the collision bug kit#105 fixed in `project.js`.
+ */
+function parseArgs(argv) {
+  const out = { dir: BEH_DIR, only: undefined };
+  for (let i = 0; i < argv.length; i++) {
+    if (!VALUE_FLAGS.has(argv[i])) continue;
+    const next = argv[i + 1];
+    if (next === undefined || require('./cli.js').looksLikeAFlag(next)) {
+      return { error: `${argv[i]} needs a value` };
+    }
+    // Compared by NAME so the ADVERTISE gate can still see it.
+    if (argv[i] === '--dir') out.dir = next;
+    i++;
+  }
+  out.only = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--dir')[0];
+  return out;
+}
+
 function main(argv = [], textReader = nounsFromText) {
   // An unknown flag is a refusal, not a silent drop (cli.js). `--check` gates a
   // COMMITTED document here, so a typo'd flag meant the gate passed judgement on
@@ -179,10 +216,14 @@ function main(argv = [], textReader = nounsFromText) {
     return require('./cli.js').refuse(bad,
       'usage: node saturation.js [<app>] [--dir <behaviours>] [--check] [--record]');
   }
+  const parsed = parseArgs(argv);
+  if (parsed.error) {
+    console.error(`cannot look: ${parsed.error}`);
+    console.error('usage: node saturation.js [<app>] [--dir <behaviours>] [--check] [--record]');
+    return 2;
+  }
   const checkMode = argv.includes('--check');
-  const dirArg = argv.indexOf('--dir');
-  const dir = dirArg >= 0 ? argv[dirArg + 1] : BEH_DIR;
-  const only = argv.filter((a, i) => !a.startsWith('--') && argv[i - 1] !== '--dir')[0];
+  const { dir, only } = parsed;
 
   if (!fs.existsSync(dir)) {
     console.error(`saturation: no behaviours directory at ${dir} — could not look`);
@@ -455,4 +496,4 @@ function main(argv = [], textReader = nounsFromText) {
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
 
-module.exports = { main, nounsOf, nounsFromText, marginal, halfRatio, measureCorpus, mulberry32 };
+module.exports = { main, parseArgs, VALUE_FLAGS, nounsOf, nounsFromText, marginal, halfRatio, measureCorpus, mulberry32 };
