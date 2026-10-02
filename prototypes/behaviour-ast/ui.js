@@ -1066,6 +1066,13 @@ function serve(opts = {}) {
   });
 }
 
+// The flags `parseArgs` below takes a VALUE for. One set, used by `parseArgs`
+// itself and read by `kit.test.js`'s parser gate — not a copy of the list. It is
+// deliberately NOT the same thing as `KNOWN_FLAGS` further down: that one answers
+// "is this a flag of mine", this one answers "does it consume the next token", and
+// `--git` is the member of the first that is not a member of the second.
+const VALUE_FLAGS = new Set(['--port', '--host', '--repos', '--dir', '--public-origin', '--git-remote', '--git-branch']);
+
 function parseArgs(argv, env = process.env) {
   // No `bindings` key: kit#66 deleted `--bindings` and made `--dir` isolate the
   // bindings too. It is left out rather than kept as a dead `null`, because the
@@ -1094,38 +1101,70 @@ function parseArgs(argv, env = process.env) {
   // and the container cannot be given different answers.
   opts.basePath = normaliseBasePath(env.KIT_BASE_PATH);
 
+  // ⚠️ Every comparison below is spelled `argv[i] === '--flag'` ON PURPOSE, and an
+  // `const a = argv[i]` alias here is NOT a tidy-up. `kit.test.js`'s gate `start:
+  // every flag --help advertises is one some tool actually consumes` reads
+  // /argv(?:\[i\])?\s*===\s*'(--[a-z-]+)'/ off THIS file to decide what `start.js
+  // --help` is allowed to offer — so aliasing makes all seven invisible to it and the
+  // gate then reports that start.js's help is lying, which is a true failure with a
+  // misleading cause. It caught exactly that on the first draft of this change.
   for (let i = 0; i < argv.length; i++) {
-    const next = argv[i + 1];
-    if (argv[i] === '--port') { opts.port = Number(next); i++; }
-    else if (argv[i] === '--host') { opts.host = next; i++; }
-    else if (argv[i] === '--repos') { opts.repos = next; i++; }
-    // ⚠️ `--dir` now isolates the BINDINGS TOO, and `--bindings` is gone with
-    // kit#66. It existed because the bind route WRITES, so a demo or a harness
-    // pointed at the repo dirtied the working tree of the thing it was measuring
-    // — and it could only name one file, which a run spanning several corpora
-    // cannot use. Bindings live beside the corpus, so copying the directory
-    // copies them: `selfhost/run.js` had to remember to do both and no longer
-    // can forget.
-    else if (argv[i] === '--dir') { opts.dir = next; i++; }
+    if (VALUE_FLAGS.has(argv[i])) {
+      const flag = argv[i];
+      const next = argv[i + 1];
+      // A value that is missing, or that is itself a flag, means the value was
+      // forgotten — so the NEXT flag gets eaten as it and the token after that is
+      // dropped on the floor. `main`'s `unknownFlag` guard cannot see this: both
+      // tokens are known, which is why every kit#67 gate passed over it (kit#103).
+      // The worst reachable form was `--git-branch --git-remote upstream`:
+      // `refs/heads/--git-remote` is a VALID git ref name, so `git-store.js:171`
+      // would have pushed a branch literally called `--git-remote` to his repo and
+      // `upstream` would have vanished without a word.
+      if (next === undefined || require('./cli.js').looksLikeAFlag(next)) {
+        return { error: `${flag} needs a value` };
+      }
+      // Assigned by comparing the NAME, not by index into this set, so that
+      // `cli: a guard cannot ADVERTISE a flag its own tool no longer implements`
+      // can still see all seven: that gate reads the flags this CODE compares
+      // against, and a `VALUE_FLAGS.has` test on its own makes every one of them
+      // invisible to it (`project.js` went red on exactly that in kit#105).
+      if (argv[i] === '--port') opts.port = Number(next);
+      else if (argv[i] === '--host') opts.host = next;
+      else if (argv[i] === '--repos') opts.repos = next;
+      // ⚠️ `--dir` now isolates the BINDINGS TOO, and `--bindings` is gone with
+      // kit#66. It existed because the bind route WRITES, so a demo or a harness
+      // pointed at the repo dirtied the working tree of the thing it was measuring
+      // — and it could only name one file, which a run spanning several corpora
+      // cannot use. Bindings live beside the corpus, so copying the directory
+      // copies them: `selfhost/run.js` had to remember to do both and no longer
+      // can forget.
+      else if (argv[i] === '--dir') opts.dir = next;
+      // Overrides KIT_PUBLIC_ORIGIN, so a flag beats the environment — the usual
+      // precedence, and the one that lets a test drive this without mutating
+      // process.env underneath every other test in the file.
+      else if (argv[i] === '--public-origin') {
+        opts.publicOrigin = next;
+        opts.secure = /^https:/i.test(next);
+      }
+      else if (argv[i] === '--git-remote') opts.git = { ...(opts.git || {}), remote: next };
+      else if (argv[i] === '--git-branch') opts.git = { ...(opts.git || {}), branch: next };
+      i++;
+    }
     // ── git write-back (kit#43) ──────────────────────────────────────────────
     // OFF unless asked for. Locally `docs/design/ui.md` decision 2 still holds:
     // the edit lands in the working tree and the author reviews the diff. This
     // flag is for the deployment James chose over a database on kit#41, where
     // there is no working tree anyone will ever look at.
-    // Overrides KIT_PUBLIC_ORIGIN, so a flag beats the environment — the usual
-    // precedence, and the one that lets a test drive this without mutating
-    // process.env underneath every other test in the file.
-    else if (argv[i] === '--public-origin') {
-      opts.publicOrigin = next;
-      opts.secure = /^https:/i.test(next || '');
-      i++;
-    }
-    else if (argv[i] === '--git') { opts.git = { ...(opts.git || {}), enabled: true }; }
-    else if (argv[i] === '--git-remote') { opts.git = { ...(opts.git || {}), remote: next }; i++; }
-    else if (argv[i] === '--git-branch') { opts.git = { ...(opts.git || {}), branch: next }; i++; }
+    // The one BOOLEAN flag, so it is outside the set above and takes no value.
+    else if (argv[i] === '--git') opts.git = { ...(opts.git || {}), enabled: true };
+    // No final `else`: a non-flag token is still ignored here, exactly as before.
+    // An unrecognised FLAG never reaches this function — `main` refuses it first —
+    // and whether `node ui.js somethingelse` should be refused is a separate
+    // question from kit#103, so it is deliberately not answered here.
   }
   return opts;
 }
+
 
 // Every flag `parseArgs` above recognises. Listed rather than derived, because the
 // chain is `else if`s over string literals and there is nothing to derive from —
@@ -1138,6 +1177,12 @@ function parseArgs(argv, env = process.env) {
 // silently ignored. That is the exact failure the guard exists to kill, arriving
 // through the guard's own list.
 const KNOWN_FLAGS = ['--port', '--host', '--repos', '--dir', '--public-origin', '--git', '--git-remote', '--git-branch'];
+
+// ONE copy, because `main` now prints it from two places — the unknown-flag refusal
+// and the forgotten-value refusal — and two literals would drift the moment a flag
+// is added. `kit.test.js`'s `flagLists` reads `usage:` string literals, so hoisting
+// it keeps that gate able to see every flag documented here.
+const USAGE = 'usage: node ui.js [--port <n>] [--host <h>] [--repos <dir>] [--dir <behaviours>] [--public-origin <url>] [--git] [--git-remote <r>] [--git-branch <b>]';
 
 async function main(argv) {
   // 🔑 The most consequential instance of kit#67's bug, and the last one found.
@@ -1153,11 +1198,20 @@ async function main(argv) {
   // the thing that goes stale.
   const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
   if (bad) {
-    return require('./cli.js').refuse(bad,
-      'usage: node ui.js [--port <n>] [--host <h>] [--repos <dir>] [--dir <behaviours>] [--public-origin <url>] [--git] [--git-remote <r>] [--git-branch <b>]');
+    return require('./cli.js').refuse(bad, USAGE);
   }
 
   const opts = parseArgs(argv);
+  // kit#103's other half, and the reason it is read HERE rather than trusted to be
+  // read: `parseArgs` returning `{error}` that nothing looks at is a parser that is
+  // right and a server that still starts on a directory nobody named
+  // [[both-layers-right-assembly-broken]]. Same wording as the unknown-flag refusal
+  // above, because to the operator it is the same mistake one token later.
+  if (opts.error) {
+    console.error(`cannot look: ${opts.error}`);
+    console.error(USAGE);
+    return 2;
+  }
 
   if (!Number.isInteger(opts.port) || opts.port < 1 || opts.port > 65535) {
     console.error('ui: --port must be an integer between 1 and 65535');
@@ -1233,7 +1287,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, main,
+  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
   // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
   // the suite: it is imported there so the build and the server derive the
