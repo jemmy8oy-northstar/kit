@@ -1,5 +1,4 @@
 fullnameOverride: "kit"
-
 # Shared with every other app in the estate: one host, one wildcard cert, one
 # namespace, and a path prefix per app. The ingress does NOT rewrite, so the app
 # has to know its own prefix — which is what `KIT_BASE_PATH` below is for.
@@ -15,7 +14,6 @@ ingress:
         - balenthiran.co.uk
       secretName: balenthiran-tls # shared wildcard cert — no per-project TLS setup
 registryPrefix: "lhr.ocir.io/lr7uc6l49odc" # shared OCIR namespace
-
 apps:
   # ONE entry, not the backend/frontend pair. Kit has neither: `ui.js` serves the
   # SPA and the API from the same process and the same port.
@@ -24,7 +22,7 @@ apps:
       repository: lhr.ocir.io/lr7uc6l49odc/kit
       # Patched by `docker-build-push.yml` on every push to main — GitOps, so
       # ArgoCD reads the new tag out of this file rather than watching OCIR.
-      tag: latest
+      tag: 0.1.0
       pullPolicy: Always
     containerPort: 8080
     replicas: 1
