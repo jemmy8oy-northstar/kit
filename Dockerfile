@@ -76,7 +76,15 @@ WORKDIR /app
 # EACCES that reaches the browser as a 500.
 COPY --from=build --chown=node:node /src/start.js ./start.js
 COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/*.js ./prototypes/behaviour-ast/
-COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/bindings.json ./prototypes/behaviour-ast/bindings.json
+# 🔴 There is deliberately NO `COPY … bindings.json` line here, and the reason is
+# the one defect that would have failed Kit's first real image build. A flat
+# `prototypes/behaviour-ast/bindings.json` has not existed since bindings moved to
+# per-corpus `behaviours/<app>.bindings.json` (`docs/design/ui.md`: "The flat
+# `bindings.json` is deleted"), but this file still named it explicitly. An
+# explicit COPY of an absent path is a HARD failure, not a skipped line — and it
+# fails LATE, after the two-minute frontend build and a successful registry login,
+# so it reads as a registry or credential problem rather than a missing file.
+# The per-corpus bindings arrive with the `behaviours` directory on the next line.
 COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/behaviours ./prototypes/behaviour-ast/behaviours
 COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/ui/dist ./prototypes/behaviour-ast/ui/dist
 
