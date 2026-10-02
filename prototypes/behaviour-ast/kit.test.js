@@ -2707,19 +2707,40 @@ test('main refuses a forgotten flag value rather than serving what it was not gi
   // this; this test drives `main` and cannot see the parser's coverage of all seven
   // flags. Both, or neither is useful.
   //
-  // `--dir <uiDir>` is passed FIRST in each case so that the only reason to exit 2 is
-  // the refusal: without it a real corpus is found anyway, so a "no corpora" exit 2
-  // would pass this test while proving nothing.
-  for (const argv of [
-    ['--dir', uiDir, '--port', '--host'],
+  // 🔴 THE EXIT CODE IS NOT A DISCRIMINATOR HERE, and asserting it alone is how the
+  // first draft of this test certified a `main` that ignored `opts.error` completely.
+  // `parseArgs` returns `{error}` and NOTHING ELSE on refusal, so a `main` that reads
+  // past it gets `opts.dir === undefined`, finds no corpora, and exits 2 for a reason
+  // that has nothing to do with the flag. My own control came back GREEN on that.
+  // Same shape as kit#101's `mutate-ui.js --zznotaflag`, which already exited 2 from
+  // its missing-install branch [[a-crash-that-echoes-your-input]]. So the SENTENCE is
+  // the assertion and the code is a secondary check: stderr must name the flag whose
+  // value was forgotten.
+  const refused = async (argv) => {
+    const said = [];
+    const err = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    let code;
+    try { code = await ui.main(argv.slice()); } finally { console.error = err; }
+    return { code, said: said.join('\n') };
+  };
+
+  for (const [argv, flag] of [
+    [['--port', '--host'], '--port'],
     // The write path, and the one that reaches his repo: `refs/heads/--git-remote` is
     // a ref name git accepts, so this used to push a branch called `--git-remote`.
-    ['--dir', uiDir, '--git', '--git-branch', '--git-remote'],
+    [['--git', '--git-branch', '--git-remote'], '--git-branch'],
     // The value forgotten at the END of the line, where there is no next token at all.
-    ['--dir', uiDir, '--repos'],
+    [['--repos'], '--repos'],
   ]) {
-    assert.strictEqual(await quiet(() => ui.main(argv.slice())), 2,
-      `ui.main(${argv.join(' ')}) must refuse, not serve`);
+    const { code, said } = await refused(argv);
+    assert.strictEqual(code, 2, `ui.main(${argv.join(' ')}) must refuse, not serve`);
+    assert.ok(said.includes(`${flag} needs a value`),
+      `ui.main(${argv.join(' ')}) exited 2 but said ${JSON.stringify(said)} — which does not name `
+      + `${flag}, so it refused for some other reason and this flag is not held`);
+    // And it must print the usage line, so the operator is told what WOULD have worked
+    // — the degenerate guard this file's `cli:` gates exist to stop.
+    assert.ok(/usage: node ui\.js/.test(said), `and it must print the usage line — got ${said}`);
   }
   // CONTROL: the same shape with the value actually given must NOT be refused here.
   // Driven through `parseArgs`, because the only way for `main` to accept it is to
