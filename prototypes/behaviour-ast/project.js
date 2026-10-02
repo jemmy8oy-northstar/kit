@@ -1,0 +1,314 @@
+#!/usr/bin/env node
+'use strict';
+//
+// project — the read model, as JSON
+// ─────────────────────────────────
+// One projection of everything Kit knows about one app, in the shape a UI
+// consumes. `docs/design/ui.md` calls this the option-invariant half: both open
+// decisions there (where the UI runs, whether it writes) need exactly this data
+// and neither changes its shape, so it can be built before either lands
+// ([[option-invariant-half]]).
+//
+//   node project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]
+//
+// It adds no analysis. Every field below is an existing kit.js export, renamed
+// only where the export's name would be meaningless outside kit.js. If you find
+// yourself computing something here, it belongs in kit.js where the suite and
+// the mutation harness can see it.
+//
+// Exit 0 = projected. Exit 2 = could not look — no corpus, or a corpus that
+// parsed to nothing. There is no exit 1: this reports, it does not judge. A
+// gate that says "0 covered" and a projection that says "coverage unavailable"
+// are different statements and only `check.js` is allowed to make the first.
+
+const fs = require('fs');
+const path = require('path');
+const kit = require('./kit.js');
+const requires = require('./requires.js');
+const writer = require('./writer.js');
+
+const BEH_DIR = path.join(__dirname, 'behaviours');
+
+// ⚠️ `available: false` with a reason, never an empty object or a zero. A UI
+// that cannot tell "no mapping exists" from "nothing is covered" will render
+// the second, and the second is an alarm ([[empty-means-two-things]]).
+function unavailable(reason) {
+  return { available: false, reason };
+}
+
+function readTests(repo) {
+  const SKIP = new Set(['node_modules', '.git', 'bin', 'obj', 'dist', 'build', '.next', 'coverage', 'playwright-report', 'test-results']);
+  const out = [];
+  const walk = (rel) => {
+    for (const e of fs.readdirSync(path.join(repo, rel), { withFileTypes: true })) {
+      if (e.isDirectory()) { if (!SKIP.has(e.name)) walk(path.join(rel, e.name)); }
+      else if (kit.TEST_FILE_RE.test(e.name)) out.push(path.join(rel, e.name));
+    }
+  };
+  walk('');
+  const titles = [];
+  const sources = [];
+  for (const f of out) {
+    const src = fs.readFileSync(path.join(repo, f), 'utf8');
+    sources.push(src);
+    const got = kit.testTitles(f, src);
+    const want = kit.expectedTestCount(f, src);
+    // The same refusal check.js makes. A projection built on a reader that is
+    // losing tests is wrong in the same direction everywhere, and quietly.
+    if (want !== null && got.length !== want) {
+      return { fatal: `${f}: read ${got.length} test(s) but the independent count says ${want} — the reader is losing or inventing tests` };
+    }
+    titles.push(...got);
+  }
+  return { files: out, titles, sources };
+}
+
+function project(app, { repo = null, behDir = BEH_DIR } = {}) {
+  const corpusPath = path.join(behDir, `${app}.beh`);
+  if (!fs.existsSync(corpusPath)) return { fatal: `no corpus at ${corpusPath}` };
+
+  const src = fs.readFileSync(corpusPath, 'utf8');
+  const { behaviours, conflicts, symbols } = kit.resolve(kit.parse(src, `${app}.beh`));
+  if (!behaviours.length) return { fatal: `${app}.beh parsed to zero behaviours` };
+
+  // 🔴 DERIVED FROM `behDir`, and the history is why that matters.
+  //
+  // `ui.js` once gained a separate `--bindings` so a demo or a harness could
+  // exercise the bind route without writing into the repo it was measuring. The
+  // WRITE honoured it and this READ did not, so a bind reported success, changed
+  // the file on disk, and the page re-read the *other* bindings file and showed
+  // the same refusal — the loop's whole payoff, silently absent. Every test
+  // passed throughout: the node suite asserts the file on disk after a write and
+  // never re-reads the projection, and the frontend suite reads a fixture.
+  //
+  // That was fixed by threading one parameter to both paths, which works only for
+  // as long as everyone keeps threading it. Under kit#66 there is nothing left to
+  // thread: bindings live beside the corpus, so `behDir` selects both and the two
+  // paths are no longer *able* to disagree. The bug is closed by construction
+  // rather than by care.
+  const bindings = require('./bindings.js').readFor(app, behDir);
+
+  // The output pane: one generated test per behaviour, with what it could not
+  // bind. This is the half of his loop that is "iterating on the output".
+  const generated = behaviours.map((b) => {
+    const g = kit.generate(b, bindings, symbols);
+    return { id: b.id, code: g.code, missing: g.missing, stats: g.stats };
+  });
+
+  let coverage = unavailable('no --repo given, so no test files were read');
+  const mapPath = path.join(behDir, `${app}.tests.json`);
+  if (repo) {
+    if (!fs.existsSync(repo)) {
+      coverage = unavailable(`--repo ${repo} does not exist`);
+    } else if (!fs.existsSync(mapPath)) {
+      coverage = unavailable(`no ${app}.tests.json — this app has no mapping, which is not the same as having no coverage`);
+    } else {
+      const read = readTests(repo);
+      if (read.fatal) {
+        coverage = unavailable(read.fatal);
+      } else {
+        // No `_`-key stripping here on purpose: `mapping()` already skips them
+        // (kit.js, "reserved for metadata"). A copy of that rule was written
+        // here first, and a mutation proved it was dead code — the rule would
+        // then have existed twice, free to drift, with only one of the two
+        // tested ([[a-refinement-can-silently-do-nothing]]).
+        const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+        const m = kit.mapping(behaviours, map, read.titles);
+        coverage = {
+          available: true,
+          via: 'mapping',
+          testFiles: read.files.length,
+          testsRead: read.titles.length,
+          covered: m.covered.map((b) => b.id),
+          uncovered: m.uncovered.map((b) => b.id),
+          errors: m.errors,
+          // ⚠️ Stated in the payload, not only in the docs. A number travels
+          // further than the page it was written on, and this one over-claims
+          // the moment it is quoted without this sentence.
+          proves: 'someone LINKED each covered behaviour to a test. NOT that the test asserts the behaviour.',
+        };
+      }
+    }
+  }
+
+  const adj = kit.adjudication(behaviours);
+  const surf = kit.surface(behaviours);
+  const qs = kit.questions(behaviours, conflicts);
+
+  // ── what each noun OWES, and who else would feel it being bound ───────────
+  // `requires.js` (kit#22) has always computed this and nothing in the UI has
+  // ever read it, so the behaviour page could say "these are why the steps
+  // above became comments" and not say what any of them needed. That is the
+  // whole distance between showing a refusal and being able to act on one.
+  //
+  // Two populations kept apart because collapsing them is the defect
+  // requires.js was written to expose: `missing` has no binding at all, while
+  // `insufficient` HAS one that does not carry what the verb needs — the
+  // second is invisible to `boundNouns()`, which counts the key.
+  //
+  // `sharedWith` is attached here rather than in requires.js because it is a
+  // property of the WRITE, not of the requirement.
+  //
+  // ⚠️ ITS MEANING CHANGED UNDER kit#66 AND THE FIELD DID NOT. It used to answer
+  // "if I bind this, what else changes" — a real hazard, because one flat map
+  // meant your bind silently became every other corpus's too. Now a corpus binds
+  // its own nouns, so binding here changes nothing anywhere else, and the honest
+  // reading is "these other corpora use this NAME, and bind it for themselves".
+  // Kept rather than retired because the information is still worth having when
+  // you are naming things; the warning wording it feeds is what had to change.
+  // Computed once for the directory, not per noun.
+  const req = requires.requirements(behaviours, bindings);
+  const corpusNouns = writer.corpusNouns(behDir);
+  const withShared = (n) => ({
+    noun: n.noun,
+    kind: n.kind,
+    name: n.name,
+    usedBy: n.usedBy,
+    bound: n.bound,
+    satisfied: n.satisfied,
+    needs: n.needs,
+    binding: n.bound ? bindings[n.noun] : null,
+    // Always an array. A UI reading `.length` must not have to distinguish
+    // "nothing collides" from "nobody looked" ([[empty-means-two-things]]).
+    sharedWith: writer.sharedWith(n.noun, corpusNouns, app),
+  });
+
+  return {
+    app,
+    corpus: path.relative(path.join(__dirname, '..', '..'), corpusPath),
+    // A corpus can describe an app that does not exist (a trial, cc-bot#92).
+    // The UI is a viewer, so it SHOWS these — hiding one would make the list
+    // lie about what corpora exist — but it must not present an invented app
+    // as indistinguishable from a shipped one. Read from the corpus, same
+    // directive saturation.js excludes on; declared in one place.
+    notReal: /^#\s*kit:not-a-real-app\b/m.test(src),
+    // A corpus can also describe an app that DOES exist and is already listed
+    // under another corpus (cc-bot#92's forward trials). `notReal` is false of
+    // it and would be a lie; but the list must still not show two entries that
+    // both look like the project itself. Names the app it duplicates rather than
+    // being a bare boolean, because "which one is the real project" is the only
+    // question a reader has on seeing it. `null`, never undefined — absent and
+    // not-a-duplicate must read differently.
+    duplicateOf: (/^#\s*kit:duplicate-corpus\s+(\S+)/m.exec(src) || [null, null])[1],
+    behaviours: behaviours.map((b) => ({
+      id: b.id,
+      title: b.title,
+      actor: b.actor,
+      steps: b.steps.map((s) => ({ kind: s.kind, verb: s.verb, text: s.text, refs: s.refs, holes: s.holes })),
+      open: b.open.map((h) => h.key),
+      filled: b.filled.map((f) => ({ key: f.key, value: f.value })),
+      source: b.source,
+      review: b.review,
+      asks: b.asks,
+      at: b.at,
+    })),
+    conflicts,
+    generated,
+    coverage,
+    adjudication: {
+      defined: adj.defined,
+      inferred: adj.inferred,
+      unreviewed: adj.unreviewed.map((b) => b.id),
+      approved: adj.approved.map((b) => b.id),
+      denied: adj.denied.map((b) => b.id),
+      untraceable: adj.untraceable.map((b) => b.id),
+    },
+    surface: { errors: surf.errors, served: surf.served.map((b) => b.id), unserved: surf.unserved.map((b) => b.id) },
+    questions: qs,
+    requires: {
+      nouns: req.nouns.map(withShared),
+      missing: req.missing.map(withShared),
+      insufficient: req.insufficient.map(withShared),
+      satisfied: req.satisfied.map((n) => n.noun),
+    },
+  };
+}
+
+// `--bindings` is NOT here, and its absence is the point: kit#70 deleted the flag
+// (bindings live beside the corpus), so advertising it meant `project.js
+// --bindings /x snip-it` was accepted, the flag ignored, and `/x` silently taken
+// as the app name. It is now refused by name like any other unknown flag, which
+// also retires the positional-guard bug this list used to create.
+const KNOWN_FLAGS = ['--repo', '--dir', '--pretty'];
+const VALUE_FLAGS = new Set(['--repo', '--dir']);
+const USAGE = 'usage: project.js <app> [--repo <path>] [--dir <behaviours>] [--pretty]';
+
+// Which positional is which, and nothing else.
+//
+// 🔑 **Deliberately not an unknown-flag guard.** `main` calls `cli.js`'s
+// `unknownFlag` before this runs and that is the only place a flag is refused by
+// name, so a branch for it here would be unreachable from the one caller — dead
+// code that reads as a second opinion. This function's whole job is the part
+// `unknownFlag` cannot do: tell an app name apart from a flag's value.
+//
+// ⚠️ It replaces a `find` + `indexOf` scan that had the exact bug the comment
+// above `check.js`'s `parseArgs` documents as fixed — "`argv.indexOf(a)` for the
+// index of a VALUE, which is the first index holding that string and not
+// necessarily this one". Measured on `dev` @ `50db472`:
+//
+//   $ node project.js --repo foo foo
+//   usage: project.js <app> [--repo <path>] ...     (exit 2)
+//
+// An app name WAS given. `indexOf('foo')` returned the index of the value, whose
+// predecessor is `--repo`, so the real positional was skipped and the tool
+// reported that none was given. `check.js` fixed this in its own parser and
+// nobody carried it here; two blind reviewers found it independently (kit#103).
+// This is the read model the UI is built on.
+function parseArgs(argv) {
+  const opts = { app: null, repo: null, behDir: BEH_DIR, pretty: false };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (VALUE_FLAGS.has(a)) {
+      const v = argv[i + 1];
+      // A value that is itself a flag means the value was forgotten. Taking it
+      // would point the read model at a directory nobody named (kit#103).
+      if (v === undefined || require('./cli.js').looksLikeAFlag(v)) {
+        return { error: `${a} needs a value` };
+      }
+      // Compared by name rather than `else`, because `cli: a guard cannot ADVERTISE
+      // a flag its own tool no longer implements` reads the flags this code COMPARES
+      // against — and an `else` branch makes `--dir` invisible to it. That gate went
+      // red on exactly this, which is the gate working.
+      if (a === '--repo') opts.repo = v;
+      else if (a === '--dir') opts.behDir = v;
+      i++;
+    } else if (a === '--pretty') {
+      opts.pretty = true;
+    } else if (opts.app === null) {
+      opts.app = a;
+    } else {
+      return { error: `two app names given, "${opts.app}" and "${a}" — this reports on one` };
+    }
+  }
+  return opts;
+}
+
+function main(argv) {
+  // An unknown flag is a refusal, not a silent drop (cli.js). This is the read
+  // model the UI is built on, so a dropped `--dir` here answers confidently about
+  // a different corpus than the one named.
+  const bad = require('./cli.js').unknownFlag(argv, KNOWN_FLAGS);
+  if (bad) return require('./cli.js').refuse(bad, USAGE);
+
+  const opts = parseArgs(argv);
+  if (opts.error) {
+    console.error(`cannot look: ${opts.error}`);
+    console.error(USAGE);
+    return 2;
+  }
+  if (!opts.app) {
+    console.error(USAGE);
+    return 2;
+  }
+  const out = project(opts.app, { repo: opts.repo, behDir: opts.behDir });
+  if (out.fatal) {
+    console.error(`project: ${out.fatal} — could not look`);
+    return 2;
+  }
+  console.log(JSON.stringify(out, null, opts.pretty ? 2 : 0));
+  return 0;
+}
+
+module.exports = { project, main, parseArgs, VALUE_FLAGS };
+
+if (require.main === module) process.exit(main(process.argv.slice(2)));

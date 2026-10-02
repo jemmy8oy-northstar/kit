@@ -1,0 +1,168 @@
+import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import WriteResultNote from './WriteResultNote'
+import type { BindResult, WriteResult } from '../api/types'
+
+/**
+ * Written because `mutate-ui.js` found the gap, and the gap was the last hop of
+ * the one mechanism `kit#32` exists to provide.
+ *
+ * `sharedWith` is pinned at the client↔server seam from BOTH sides already:
+ * `src/test/fixtures/write-contract.json` declares that binding `region:Shared`
+ * from `gamma` answers `sharedWith: ["epsilon"]`, `client.test.ts` asserts the
+ * client emits that request, and `kit.test.js` feeds the same literals to a
+ * running `ui.js`. Two suites, both green, neither of them able to notice that
+ * **the answer never reaches the screen** — `bindings.json` called its own
+ * safeguard "still a habit rather than a design", and a warning nobody renders
+ * is exactly that habit again.
+ *
+ * So these assert the hop the contract fixture cannot: response → visible text.
+ */
+
+const bind = (over: Partial<BindResult> = {}): BindResult => ({
+  ok: true,
+  app: 'gamma',
+  noun: 'region:Shared',
+  file: 'bindings.json',
+  committed: false,
+  note: 'bound',
+  sharedWith: [],
+  unreadableCorpora: [],
+  ...over,
+})
+
+const corpusWrite: WriteResult = {
+  ok: true,
+  app: 'snip-it',
+  behaviour: 'BEH-HOME-1',
+  file: 'behaviours/snip-it.beh',
+  committed: false,
+  note: 'added',
+}
+
+describe('WriteResultNote', () => {
+  it('says which file was written and that Kit did not commit it', () => {
+    render(<WriteResultNote result={corpusWrite} />)
+
+    const note = screen.getByRole('status')
+    expect(note).toHaveTextContent('behaviours/snip-it.beh')
+    expect(note).toHaveTextContent(/Not committed — Kit does not run git/)
+    expect(note).not.toHaveTextContent(/^Committed\.$/)
+  })
+
+  it('names the other corpora using this NAME, and says the write did not reach them', () => {
+    // ⚠️ This used to assert an `alert` reading "the noun namespace is global …
+    // which now generate against this binding too". Under kit#66 that sentence is
+    // FALSE — a bind reaches one corpus — so the assertion had to move with it
+    // rather than be deleted: a test still passing over a claim its own subject
+    // has abandoned is the theatre this suite is meant to catch.
+    render(<WriteResultNote result={bind({ sharedWith: ['epsilon', 'delta'] })} />)
+
+    const note = screen.getByText(/is a name also used by/)
+    expect(note).toHaveTextContent('epsilon')
+    expect(note).toHaveTextContent('delta')
+    // Not just the names: the sentence has to say what it MEANS, or it reads as
+    // a list of unrelated projects — and what it means now is the REASSURANCE.
+    expect(note).toHaveTextContent(/this write reaches only this project/)
+    // 🔴 And it is not an alert. A `role="alert"` interrupts a screen reader for
+    // a hazard that his decision removed, which is how the remaining alerts on
+    // this card get trained away.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('CONTROL: a bind that shares no name says nothing at all', () => {
+    // Without this, the assertion above would pass just as well if the sentence
+    // rendered on every bind — which would train him to ignore it.
+    render(<WriteResultNote result={bind({ sharedWith: [] })} />)
+
+    expect(screen.queryByText(/is a name also used by/)).not.toBeInTheDocument()
+  })
+
+  it('says a corpus could not be parsed, so "could not look" is not read as "nothing else uses it"', () => {
+    // `sharedWith` is computed by reading every other corpus. One that will not
+    // parse is a hole in that answer, and silence would turn an incomplete
+    // search into a clean bill of health ([[empty-means-two-things]]).
+    render(<WriteResultNote result={bind({ unreadableCorpora: ['broken'] })} />)
+
+    const alerts = screen.getAllByRole('alert')
+    const incomplete = alerts.find((a) => a.textContent?.includes('broken'))
+    expect(incomplete).toBeDefined()
+    expect(incomplete).toHaveTextContent(/could not be parsed/)
+    expect(incomplete).toHaveTextContent(/may be\s+incomplete/)
+  })
+
+  it('reports an incomplete search even when the collisions it DID find are empty', () => {
+    // The dangerous combination, and the reason the two alerts are independent:
+    // "no collisions found" plus "one corpus was unreadable" must not render as
+    // a silent success.
+    render(<WriteResultNote result={bind({ sharedWith: [], unreadableCorpora: ['broken'] })} />)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('broken')
+  })
+
+  // ── git write-back (kit#43) ────────────────────────────────────────────────
+  // James chose git over a database for a deployed Kit (kit#41). These pin the
+  // hop the server-side tests cannot: what the person who just clicked is told.
+
+  it('a pushed write names the commit and the branch it reached', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite, committed: true, pushed: true, commit: 'abc1234567', branch: 'main',
+    }} />)
+
+    const note = screen.getByRole('status')
+    expect(note).toHaveTextContent('abc1234567')
+    expect(note).toHaveTextContent('main')
+    // The local instruction must go away, or a deployed Kit tells him to run
+    // `git diff` against a working tree he has no access to.
+    expect(screen.queryByText(/commit it yourself/)).not.toBeInTheDocument()
+  })
+
+  // 🔴 The state this whole slice exists to make visible. The edit is committed
+  // to a disk that is about to be discarded, and every other signal on the page
+  // — `ok: true`, a file path, a commit sha — reads as success.
+  it('a commit that never reached the remote is an ALERT, not a quiet success', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite,
+      committed: true,
+      pushed: false,
+      commit: 'abc1234567',
+      branch: 'main',
+      note: 'git push exited 128: rejected',
+      warning: 'this edit is committed locally but did NOT reach origin: git push exited 128: rejected',
+    }} />)
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(/did NOT reach origin/)
+    // git's own words, not a summary of them — the kit#39 lesson.
+    expect(alert).toHaveTextContent(/128/)
+    // And it must say what that costs him, or it reads as a technicality.
+    expect(alert).toHaveTextContent(/lost if this Kit restarts/)
+  })
+
+  it('CONTROL: a clean push raises no alert, so the warning stays worth reading', () => {
+    render(<WriteResultNote result={{
+      ...corpusWrite, committed: true, pushed: true, commit: 'abc1234567', branch: 'main',
+    }} />)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('with git off the page says exactly what it always said', () => {
+    // Decision 2 unchanged for the local tool: nothing about the deployed case
+    // may leak into the run he does on his laptop.
+    render(<WriteResultNote result={corpusWrite} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Not committed — Kit does not run git/)
+    expect(screen.getByText(/commit it yourself/)).toBeInTheDocument()
+  })
+
+  it('a corpus write carries no shared-name note — it cannot have one', () => {
+    // `AnyWriteResult` is a union precisely so a bind cannot be rendered without
+    // its `sharedWith`. This pins the other direction: a behaviour write must
+    // not grow one.
+    render(<WriteResultNote result={corpusWrite} />)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByText(/is a name also used by/)).not.toBeInTheDocument()
+  })
+})

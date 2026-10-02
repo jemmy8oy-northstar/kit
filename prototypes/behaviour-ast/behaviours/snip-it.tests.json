@@ -1,0 +1,12 @@
+{
+  "_": "behaviour -> the test(s) that name it. Option C in docs/design/tagging.md: the corpus carries the mapping, so snip-it is never edited. Keyed on file + title because a title alone is not unique in this repo (GetJobAsync_UnknownId_ReturnsNull, Serialize_Deserialize_RoundTrips each appear twice).",
+  "_authored": "2026-09-03, by reading snip-it.beh against frontend/e2e/editor.spec.ts at origin/dev. These six are the pairs a human established by eye — the same six measure-tagging.js uses as its control.",
+  "_incomplete": "BEH-UP-2 and BEH-EDIT-0 are DELIBERATELY absent: no test names them. `kit check snip-it` therefore exits 1 today, which is the point — the gate was observed discriminating before it was ever observed passing.",
+
+  "BEH-HOME-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "landing page renders" }],
+  "BEH-EDIT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor loads the mock transcript" }],
+  "BEH-EDIT-2": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor renders in dark mode" }],
+  "BEH-CUT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "send-for-export submits a cut and surfaces the job" }],
+  "BEH-UP-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "uploading a file transcribes it and opens the editor" }],
+  "BEH-FILL-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "remove-filler-words changes the edit stats" }]
+}

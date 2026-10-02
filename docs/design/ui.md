@@ -1,0 +1,347 @@
+# The Kit UI — design
+
+_Written 2026-09-05, against James's ask on
+[claude-code-bot#89](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/89):_
+
+> A UI where I can manage my projects (including kit) by the spec and then iterating on the
+> output. Creating new assertions based on what I see and what the desired behaviour really is.
+> … Obviously you will be working in dev so the product that you are testing will be theoretical
+> right now. But also think about how kit looks as a kit managed project.
+
+_He asked for documented planning before code on kit (#68) and has not withdrawn that. **This
+document is planning. Two decisions in it are his, and both have a stated default I will act on if
+he stays silent** — see the queue at the bottom._
+
+---
+
+## 🔴 BOTH DECISIONS LANDED, 2026-09-08, BY LAPSE
+
+Neither question was answered by the acting date, and the decision queue's whole promise is that
+**silence becomes a decision rather than a blockage** (claude-code-bot#59). So, recorded here rather
+than left to be re-derived from a queue entry:
+
+| | question | **decision** | how |
+|---|---|---|---|
+| 1 | local tool or deployed app? | **local developer tool** — `node ui.js` → loopback | default, unanswered by 2026-09-08 |
+| 2 | does it write the corpus? | **write the file, never touch git** (option B) | default, unanswered by 2026-09-08 |
+
+## 🐱 Both defaults were later OVERRULED by James, and that is the queue working
+
+The table above is what **silence** decided on 2026-09-08. He has since answered both out loud, and
+the answers went the other way — which is the point of writing a default down rather than waiting.
+
+| | he said | where | what it changed |
+|---|---|---|---|
+| 1 | *"Oh I was thinking 2 so that I can use on my phone. I guess we will need some auth."* | kit#25, 2026-09-11 | **deployed**, not laptop-only. Release means a URL he opens on a phone. |
+| 2 | *"Ok let's stick to git for now and park db"* | kit#41, 2026-09-11 | Kit **does** touch git when deployed — see `git-store.js` (kit#43). |
+
+🔑 **Decision 2 was overruled against my stated default, and the reason is worth keeping.** He had
+said *"will need a db and some auth I guess"*, so the queued default was *build the db, as he said*.
+Once the **cost** was written where he could see it — a db means the corpus stops being a file in his
+repo that he reviews as a diff, which is Kit's central premise — he reversed inside ten minutes. The
+cheap default is what extracted the expensive answer.
+
+⚠️ **Decision 2 is overruled for the DEPLOYED case only.** Locally nothing changed: `node ui.js` with
+no flags still writes the file and never runs git, because the review step it protects still has
+somewhere to happen. `--git` is the difference between the two deployments, not a replacement of one
+by the other. `writer.js` itself still contains no path to git at all, and a test asserts it.
+
+⚠️ **Decision 1's auth half is NOT settled** — *"I guess we will need some auth"* is the same hedge
+the database turned out to be, so it is asked rather than assumed: **kit#44**, acting 2026-09-16.
+
+🔑 **Decision 1 had a third consequence nobody costed: Kit needs to know its own address** (kit#49).
+Every app in the estate shares `balenthiran.co.uk` behind an ingress that does **not** rewrite, so a
+deployed Kit is `balenthiran.co.uk/kit` and has to ask for its own JavaScript and its own API under
+that prefix. It did not — every URL in the UI was root-absolute.
+
+The reason this is worth a paragraph rather than a line is the failure mode. **Every unmatched path
+on that host answers 200 with the portfolio's SPA**, so none of these mistakes 404. A bundle built
+for the wrong prefix, a fetch that skips it, a router basename with one extra slash: each produces a
+page that loads and does nothing, with a clean access log on both sides. `ui.js` rule 8 is the
+answer — one value, `KIT_BASE_PATH`, read by vite's `base`, the router's `basename`, the API client
+and the server's routing, with the server reading the prefix back **out of the built bundle** at
+startup so the one half a restart cannot correct is checked rather than trusted.
+
+**Unset is the local tool, byte for byte.** A subdomain, if he ever picks one, needs none of it.
+Until it lands, a deployed Kit has no lock on its writes and must not be exposed.
+
+⚠️ **Re-measured before acting, not just re-quoted** ([[re-measure-a-lapsed-default]]). Nothing in
+the three days since changed either answer: a deployed UI still needs a GitHub App token in the
+cluster, an auth story and a clone layer, all of which are secrets-and-platform work that is never
+mine and could not be built in this window regardless. What the re-measure *did* find is that the
+two decisions are **not independent**, which the original write-up treated them as being: option B's
+writer is unauthenticated, so it is only safe under decision 1's answer. The code now refuses the
+combination rather than trusting a flag — `ui.js` serves a write route **only when bound to a
+loopback address**, and the CORS header stopped being `*` on the same reasoning.
+
+**Neither is irreversible and both can be revisited on a word from him.** Option C (write *and*
+commit) can still be added without rework; that was the reason to default to B rather than an
+argument against C.
+
+---
+
+## Why the UI is not cosmetic
+
+`docs/pilots/kit-self-hosting.md` measured the second half of his ask. Kit can describe itself
+completely — all ten behaviours in `behaviours/kit.beh` parse — and can **derive nothing** for
+itself. Binding every noun the corpus mentions, as generously as the format allows, moves the
+derived count from 0 to 0. The verbs are the wall: Kit's own behaviour needs `runs`, `exits`,
+`reports`, `raises`, and the generator's entire vocabulary is `activates, attaches, fills, lands,
+opens, sees, shows, state` — all browser verbs, because the emit target is Playwright.
+
+So the two halves of #89 are one thing. **A UI is what makes Kit self-hosting**, because it gives
+Kit a browser surface its own generator can address. Kit stops being a special case and becomes the
+next app in its own registry.
+
+## The loop he described
+
+Four verbs, in his order:
+
+1. **manage projects by the spec** — see a project's corpus: behaviours, what is covered, what
+   conflicts, what was inferred and never reviewed.
+2. **iterate on the output** — see the test Kit generates for a behaviour, next to the behaviour,
+   and change the behaviour until the test is right.
+3. **create new assertions based on what I see** — write a behaviour that did not exist.
+4. **… and what the desired behaviour really is** — the corpus is the thing being edited, not a
+   report about it.
+
+Steps 3 and 4 are the load-bearing ones and they are the reason this needs a decision from him:
+**nothing in Kit writes a `.beh` file today.** Every tool reads. Even the question sheet — the
+artefact closest to this loop — ends with a human transcribing their own answer into the corpus by
+hand. That is the gap the UI closes, and closing it changes what Kit is.
+
+## What already exists to build on
+
+Kit's exports are already the right shape for a read model; the UI needs no new analysis, only a
+projection. From `kit.js`:
+
+| export | returns | the panel it feeds |
+|---|---|---|
+| `parse` / `resolve` | `{behaviours, symbols, conflicts}` | the corpus list, and the conflict panel |
+| `generate(b, bindings, symbols)` | `{code, missing[], stats}` | **the output pane** — his "iterating on the output" |
+| `mapping` / `coverage` | `{covered, uncovered, errors[]}` | the coverage badge per behaviour |
+| `adjudication` | `{defined, inferred, unreviewed[], approved[], denied[], untraceable[]}` | the review queue |
+| `questions` + `renderSheet` | the decision/review packs | **the sheet, made clickable** |
+
+Six real corpora exist, 94 behaviours between them — measured 2026-09-16: `language-vocab` 27,
+`james-habits-app` 23, `kit` 20, `macro-metrics` 10, `snip-it` 8, `kit-ui` 6. Enough real material
+that the UI has something to show on day one rather than a fixture.
+
+⚠️ `behaviours/` holds **nine** `.beh` files; the other three are trials and declare themselves so
+in the corpus (`# kit:duplicate-corpus`, `# kit:not-a-real-app`). Read the directive, never a
+filename list — the directory is an implicit population for everything that reads it. _(This
+sentence said "Five corpora … `kit` 10" until 2026-09-16, having missed `kit-ui` entirely and
+frozen `kit` at its 2026-09-05 size. Unlike the tables in
+[`docs/pilots/kit-self-hosting.md`](../pilots/kit-self-hosting.md), nothing regenerates these
+numbers, so they are dated rather than trusted.)_
+
+## Decision 1 — where does it run?
+
+**This is a platform choice, so it is his** (claude-code-bot#58). The two shapes are not variations
+on one design; they are different products.
+
+**Option A — a local tool.** `node ui.js` serves `localhost:PORT`, reads corpora from the working
+tree, and runs checks against sibling clones in `/data/repos`. No cluster, no ingress, no auth, no
+secrets, nothing that costs money, nothing public-facing. It is a developer's instrument, opened
+when working on a spec and closed after.
+
+**Option B — a deployed app**, in the cluster alongside the other five. He can open it on his phone.
+But it must then read *other people's repositories* server-side, which means a GitHub App token in
+the cluster, an auth story so it is not world-writable, and a clone/cache layer. Every one of those
+is a secrets-and-platform change that is **never mine** under CLAUDE.md, so option B cannot be
+built during his absence even if he prefers it.
+
+**Default if he is silent: A.** It is the only one buildable in the window, and it is not a
+throwaway — the read model, the panels and the components are identical under B; only the transport
+and the auth differ. **A is the option-invariant half of B.**
+
+## Decision 2 — does the UI write the corpus, and how far does the write go?
+
+His "creating new assertions" only means something if the answer is yes. The question is where it
+stops.
+
+**Option A — propose only.** The UI shows the exact corpus edit and the human pastes it. This is
+today's sheet with better ergonomics. Safe, and it keeps the human as the writer — but it is also
+the thing that already exists, so it may not be worth a UI at all.
+
+**Option B — write the file, never touch git.** The UI edits `behaviours/<app>.beh` on disk. The
+human sees the change as a normal working-tree diff, reviews it, and commits it themselves. Kit
+gains a writer; git stays the review surface it already is.
+
+**Option C — write and commit, or open a PR.** The full loop, and the point at which Kit is
+committing to his repositories on his behalf.
+
+**Default if he is silent: B.** It gives him the loop he described, and it stops exactly where my
+own ground rules stop — I do not commit on his behalf without a PR, and neither should a tool I
+write. C can be added later without rework; going straight to C cannot be undone quietly.
+
+⚠️ **B has a real cost and it should be stated rather than discovered:** a corpus is currently a
+hand-authored document with comments explaining *why* each behaviour exists, and a program that
+rewrites it will not preserve that prose unless it is built to. **The writer must be a surgical
+edit — insert or replace one behaviour block — not a re-serialisation of the AST.** A round-trip
+through `parse()` and back would silently delete every comment in `snip-it.beh`, which is where its
+most important caveats live.
+
+## Stack
+
+Follow `web-template`, so this is not a third way of building a frontend: React 19, Vite,
+react-router 7. Skip Redux/RTK Query — there is no OpenAPI backend to generate a client from under
+option A.
+
+**Identity is not mine to invent.** Use `@jemmy8oy-northstar/design-system` (his call, 2026-08-16:
+*"Coral teal looks good"*), whose `Button`, `Card`, `Badge` and `Input` cover most of what the panels
+need.
+
+🔴 **CORRECTED 2026-09-05, later the same day. The paragraph that stood here said the git-URL route
+reaches "seven raw CSS files" and that the UI was therefore identity-constrained. That is wrong, and
+it was wrong because it was reasoned from `package.json` instead of measured.** One install settles
+it:
+
+```
+npm i github:jemmy8oy-northstar/design-system#dev      → added 4 packages in 22s
+node_modules/@jemmy8oy-northstar/design-system/dist/   → index.js, index.cjs, index.d.ts,
+                                                          design-system.css, components/*.d.ts
+exports                                                → Badge, Button, Card, Input, cn
+```
+
+**Why it works: `package.json` declares `"prepare": "npm run build"`, and npm runs `prepare` for a
+git dependency** (installing its devDependencies to do it). `dist/` is git-ignored in the repo and
+built at install time, so a consumer gets the compiled component library and the compiled stylesheet
+— not raw tokens. The `./tokens/*` export `#11` added is a bonus door, not the only one.
+
+What remains true of the earlier measurement:
+
+- **The package is published to no registry.** `.github/workflows` on `origin/dev` is `ci.yml` and
+  `check-source-branch.yml` — no publish workflow, no `publishConfig`. That fact is now *irrelevant*
+  to this UI rather than limiting for it.
+- `origin/main..origin/dev` differs by **`package.json` alone**, so pin `dev` (or a commit), not
+  `main`: the `exports` map is dev-only.
+
+⇒ **The Kit UI takes a git-URL dependency on `dev`** — same conclusion, better reasons. It costs one
+line, it consumes the real components, and it does not re-create the duplication `#11` exists to end
+(snip-it still vendors 603 lines). **Publishing the package properly is a packaging change and
+therefore his** (claude-code-bot#83); this document does not decide it, and the UI is not blocked
+on it.
+
+## Sequence
+
+1. **The read model** — one command emitting the whole projection as JSON. It is needed under every
+   option above, so it is the option-invariant half and it can be built before either decision
+   lands ([[option-invariant-half]]).
+2. ✅ **Done** — the read-only UI over that projection: corpus list → behaviour detail → generated
+   output. `prototypes/behaviour-ast/ui/`. Also invariant under both open decisions.
+3. ✅ **Done** — the writer, per decision 2: `prototypes/behaviour-ast/writer.js` plus the two POST
+   routes in `ui.js`. It is a **splice into one behaviour block**, never a re-serialisation, and a
+   test asserts every comment in the real `snip-it.beh` survives an edit byte for byte. It refuses
+   an edit that will not parse, refuses one that would change a *neighbouring* behaviour, and
+   contains no path to `child_process` at all — asserted from its own source, because "it cannot
+   commit" is a property of the file rather than of any one run.
+   🔑 **It was proved on Kit's own corpus:** the six `BEH-WRITE-*` behaviours in
+   `behaviours/kit.beh` were written by `writer.js`, not by hand. Doing that found the one gap a
+   read of the code would not have — the HTTP surface takes `source` in the body and the CLI could
+   not say it, so a human at a terminal could only write behaviours marked as a machine's
+   inference. `--source` exists because of that.
+
+   🔴 **The first version of this shipped a CSRF hole, and the code's own comment said it had not.**
+   `ui.js` reasoned that refusing a hostile page the `access-control-allow-origin` header closed the
+   "a page the developer has open edits their working tree" vector. It does not. A POST with
+   `content-type: text/plain` is a CORS **simple request**: the browser sends it with no preflight
+   and withholds only the *response*. For a write, the request is the damage — the corpus is already
+   edited by the time the browser refuses to show the reply. `<form method=POST enctype="text/plain">`
+   does it with no JavaScript at all.
+
+   **A probe found it, not a re-reading.** A sonnet security lens reviewing the same file the same
+   hour concluded the vector *was* closed, reasoning — as the comment did — that a JSON body forces a
+   preflight. It does, but the server never checked the content-type, and the attacker is the one who
+   picks it. Two careful readings agreed with each other and were both wrong; a twelve-line script
+   that sent the request settled it in one run [[reproduce-before-you-repair]].
+
+   Fixed by the rule that actually governs a write: **a POST carrying an `Origin` this server would
+   not itself serve is refused, before the body is looked at.** No `Origin` means a non-browser caller
+   (curl, the CLI, the suite) and is allowed. Three tests pin it and **each asserts the file on disk,
+   not the status code** — a 403 that still wrote is the precise failure being guarded against, and
+   the pre-existing test asserted only the header, which is why the hole was invisible to a green
+   suite. Two mutants cover it; the CORS mutant's description was corrected, since it claimed to
+   remove a protection CORS never provided.
+4. **Kit's own corpus rewritten in browser verbs**, at which point `kit check kit` gates a UI
+   Kit generated tests for, and the self-hosting claim is real rather than argued.
+
+## What this document does not decide
+
+Anything about what the UI is *for* beyond his four verbs.
+
+~~In particular: whether it manages **projects** (many repos, one place) or **one corpus at a
+time** is left open, because his sentence says "my projects" and every existing tool in Kit takes a
+single app. That is a product question, not an engineering one, and guessing it would shape
+everything downstream.~~ **ANSWERED by James on #52, 2026-09-12 — see below.**
+
+## The corpus lives in the project's repo — ANSWERED by James on #52, 2026-09-12
+
+> *"I feel like the projects spec should live in the projects repo"* — and, separately,
+> *"I think maybe we validate using kit before onboarding other repos and adding the specs etc"*
+
+**One corpus per project, in that project's own repository.** Recorded here rather than left on the
+thread, for the same reason as the four decisions in `process.md`: a decision that only exists in a
+comment is the thing this project exists to stop ([[artefacts-not-states]]).
+
+🔑 **It is the same decision as the branching one below**, not an independent preference. A spec
+change and the implementation it forces can only travel in *one* PR if they live in one repo, and
+he chose one PR. The two answers land or move together.
+
+### What this already is, rather than what it would cost
+
+Most of it is built, which was not obvious from the thread:
+
+- **Corpus location is already a flag on the server.** `ui.js` takes `--dir <path>`, defaulting to
+  `prototypes/behaviour-ast/behaviours`, and it flows to `corpora()`, `writer.corpusPath()` and the
+  coverage projection. There is no containment check, so an absolute path outside Kit works.
+- **The write-back already targets the corpus's own repository.** `git-store.js`'s `workTreeFor()`
+  resolves the work tree by running `git rev-parse --show-toplevel` *from the corpus file's own
+  directory*. Pointed at another repo's `behaviours/`, a write commits and pushes to **that** repo.
+  A directory in no git repo fails loudly rather than silently falling back to Kit's own.
+- **`--repos` exists but answers a different question:** where an app's *source* lives, so coverage
+  can be measured against its real tests. It expects `<reposDir>/<app>`, i.e. one parent directory
+  of checkouts named exactly like the corpus files.
+
+So for the *editing* surface this is configuration, not construction.
+
+### 🔴 The gate cannot follow, and that is the cost
+
+`kit.js` — the CLI behind the reports, the question sheets and **`kit check`, the coverage gate** —
+resolves its corpus as `path.join(__dirname, 'behaviours')`. There is no `--dir` and no path
+argument; its only positional filters *which files inside that fixed directory* load.
+
+`process.md` stage 7 calls that gate "the only part of the system that can go red, and therefore
+the only part that cannot be politely ignored". So under this decision the editing surface can point
+at a project's repo while the enforcing surface cannot see it: a corpus in `snip-it` would be
+viewable and writable from the UI and **ungated in CI**. That is the precise failure mode stage 7
+already warns about with its own table — two repos, byte-identical test scripts, only one of them
+actually gating.
+
+⇒ **Giving `kit.js` the `--dir` its sibling entry point already has is the enabling change for
+onboarding a second repo.** It is deliberately *not* done yet, because of his sequencing: Kit is
+validated on Kit first, and Kit's own corpus is already in Kit's own repo, so nothing moves.
+
+### What his sequencing makes free, and what it defers
+
+- **Free:** `behaviours/kit.beh` and `behaviours/kit-ui.beh` describe Kit and live in Kit's repo, so
+  they already satisfy the rule. Validating on Kit needs no corpus move and no new flag.
+- **~~Deferred by him~~ — ANSWERED 2026-09-25 (claude-code-bot#66):** onboarding another repo needs
+  the `kit.js` flag above, plus a decision about where bindings live. That second half is now made.
+  It read: *"today it is one flat map shared across every corpus and a per-repo corpus implies a
+  per-repo binding set. That is kit#23's territory and is not settled here."*
+  **His answer: the binding set goes with the corpus.** *"I think lives in a repo not shared in kit.
+  Imagine scaled to 1000 projects and 1000 project owners no need to share nouns."* A corpus's
+  bindings are now `behaviours/<app>.bindings.json`, beside its `.beh`, and a project owns its
+  vocabulary the same way it owns its spec (kit#52). The flat `bindings.json` is deleted; the
+  migration was lossless, 43 nouns splitting 16/13/14 across three corpora with none claimed twice
+  and none orphaned, so nothing had to be duplicated to get here.
+  ⚠️ **This removes a hazard, not a mechanism.** `sharedWith` still names the other corpora using a
+  noun NAME — it just reports a fact about naming instead of warning you that your bind reached
+  them.
+- ⚠️ **Of the nine corpora in `behaviours/` today, only two are Kit's own.** Four describe real
+  repos (`james-habits-app`, `language-vocab`, `macro-metrics`, `snip-it`) and would move under this
+  decision; three (`trial-habits-a`, `trial-habits-b`, `trial-lend`) are trials and an invented app
+  — **test data that stays put**. The UI lists all nine as "Projects", so three of those entries are
+  fixtures presented as projects. Anything that reasons over "the project list" must say which
+  population it means ([[a-directory-is-a-population]]).

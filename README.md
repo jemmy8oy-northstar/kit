@@ -1,99 +1,106 @@
-# .NET Repo Template
+# Kit
 
-A GitHub repository template for full-stack .NET + Node.js projects with CI, Docker builds, GitOps, and Claude Code integration pre-configured.
+> **Documented planning before code** — James, [claude-code-bot#68](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/68):
+> *"I think the place to start is planning. No coding yet. Documented planning."* That rule still
+> holds: every piece of code here was designed in a document first, and the documents are the
+> reading order below.
+>
+> He then asked for a UI ([claude-code-bot#89](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/89)):
+> *"a UI where I can manage my projects (including kit) by the spec and then iterating on the
+> output"* — designed in [`docs/design/ui.md`](docs/design/ui.md), built in
+> [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/).
 
-## Creating a New Project From This Template
+**Kit** (short for MakeIt; also ToolKit; also a kitten that helps you code) replaces
+`source code → application build` with **`user-defined behaviours → application build`**.
 
-Run the following command to scaffold a new project:
+A behaviour corpus is the artefact a human touches. It stays authoritative: unknowns are first-class,
+contradictions are detected and adjudicated, nouns bind to the app's vocabulary, and a behaviour with
+no test naming it **fails the build**.
+
+## Run it
 
 ```
-dotnet new web-template -n YourProjectName --appName your-project-name --no-includeWorkflows --force
+node start.js
 ```
 
-- `--no-includeWorkflows` skips the workflow files so the ones already in this repo are preserved as-is
-- `--force` allows the template to overwrite existing files — this README will be replaced, which is expected
+Then open **http://127.0.0.1:4321**. That is the whole thing: it installs and builds the UI the
+first time (about a minute), rebuilds when the bundle is older than the source, and serves.
 
-After scaffolding, push the generated code to a feature branch and raise a PR into `dev`. Do not raise PRs directly into `main` — the branch protection rules will block it.
+```
+node start.js --repos ~/code      # so Kit can find your tests and measure coverage
+node start.js --help              # ports, hosts, corpus directories
+```
 
-## Workflow Files
+Without `--repos`, every project reports **not measured** — which is not the same as *nothing is
+tested*, and Kit will not pretend otherwise.
 
-This template includes four pre-configured GitHub Actions workflows that are intentionally excluded from the scaffold command above.
+⚠️ **Kit writes to your corpus and never commits.** Edits land in the working tree as an ordinary
+diff for you to review. Writes are refused unless it is bound to loopback, so the default is a local
+tool; see [`docs/design/ui.md`](docs/design/ui.md) decision 2.
 
-| File | Purpose |
-|------|---------|
-| `ci.yml` | Builds **and tests** backend (.NET) and frontend (Node.js), plus Playwright e2e, on every pull request |
-| `check-source-branch.yml` | Enforces that PRs into `main` must come from `dev` |
-| `docker-build-push.yml` | Builds and pushes ARM64 Docker images to Oracle Container Registry (OCIR), then auto-bumps the Helm chart version via GitOps |
-| `claude.yml` | Enables `@claude` mentions in issues and PRs to trigger Claude Code |
+## Where to start reading
 
-### Note: Writing to `.github/workflows/` needs an explicit permission
+| | Document | What it answers |
+|---|---|---|
+| 1 | [`docs/analysis/strategic-position.md`](docs/analysis/strategic-position.md) | Is this worth building, and is it still differentiated? **Read this one first.** |
+| 2 | [`docs/design/process.md`](docs/design/process.md) | The loop, with no UI and no product in it |
+| 3 | [`docs/timeline.md`](docs/timeline.md) | Rough staging, gated rather than dated |
+| 4 | [`docs/analysis/what-we-can-leverage.md`](docs/analysis/what-we-can-leverage.md) | What already exists in our estate, and what's missing |
+| 5 | [`docs/research/competitive-landscape.md`](docs/research/competitive-landscape.md) | Lovable, Kiro, Tessl, Spec Kit and the rest |
+| 6 | [`docs/research/bdd-prior-art.md`](docs/research/bdd-prior-art.md) | Why BDD never became the default — the graveyard |
 
-A GitHub App can only create or update files under `.github/workflows/` if it has been granted
-**Workflows: Read & write**; without it the push is rejected outright. That is intentional GitHub
-security behaviour, not a bug — a token that can rewrite CI can change what runs against your
-secrets.
+## The one thing to know
 
-So unless that permission is currently granted, let Claude push everything else (source, configs,
-Dockerfiles, Helm charts) and hand you any workflow change as file contents to commit yourself. The
-workflows in this template are already correct and need no modification for a normal project.
+**"Spec before code" stopped being a differentiator on 17 November 2025**, when AWS Kiro went GA doing
+exactly that and GitHub Spec Kit passed 120K stars. What nobody ships is the *second* half: **automated
+contradiction detection over an accumulated spec corpus, with a supersede decision recorded so it is
+never re-litigated.** That is Kit.
 
-## Branch Protection Rules
+⚠️ **The limit of that claim, stated up front: detection is _same-noun_ only.** A contradiction is a
+`Map` collision on `kind:Name.slot`, so two behaviours only collide when they spell the noun
+identically. Two readings of the same feature that name one control `checkbox:HabitDone` and
+`checkbox:HabitItem` produce two keys, and Kit reports **no conflict** — silently, because there is
+nothing for it to compare. Measured in [`docs/trials/habits-forward-run.md`](docs/trials/habits-forward-run.md):
+two independent readings of the same brief agreed on **3 nouns out of 32**, and named the app's central
+control three different ways.
 
-Apply **two** rulesets in **Settings → Rules → Rulesets → New ruleset → Import a ruleset**,
-using the JSON checked into this template:
+**Kit does not fix this, by decision** — there is no canonical vocabulary and no reconciliation step,
+and none is planned. The forward path does not need one: `requires.js` emits a required-surface
+contract that *dictates* the noun names to whoever implements it, so the builder never guesses. The
+gap is real only when two corpora are written independently and then merged, which is not the
+workflow Kit is for. Semantic conflict — two behaviours that contradict in meaning without colliding
+on a slot — is a separate, later, model-shaped problem; see
+[`docs/design/process.md`](docs/design/process.md) stage 3.
 
-| File | Applies to | What it enforces |
-|------|------------|------------------|
-| [`docs/rulesets/protected-branches.json`](docs/rulesets/protected-branches.json) | `main` + `dev` | No deletion, no force-push, changes only via PR, **and CI must pass** |
-| [`docs/rulesets/main-promotion-gate.json`](docs/rulesets/main-promotion-gate.json) | `main` only | The PR must come from `dev` (`verify-branch`), **and it needs an approving review** |
+## The prototype
 
-They were inlined in this README until now, which meant two copies drifting apart. The files are
-the source of truth; see [`docs/rulesets/README.md`](docs/rulesets/README.md) for the full notes.
+[`prototypes/behaviour-ast/`](prototypes/behaviour-ast/) — the only part of this that runs. It answers one
+falsifiable question: *can a behaviour tree generate a runnable test with no hand-written glue?*
 
-Together these enforce:
-- `main` and `dev` cannot be deleted or force-pushed
-- All changes to either branch go through a pull request
-- Every PR is gated on the `backend`, `frontend` and `e2e` checks from `ci.yml`
-- PRs into `main` must come from `dev` (the `verify-branch` check) and be approved by a maintainer
+```
+node start.js                               # the UI — install, build, serve
+node prototypes/behaviour-ast/kit.js        # generated tests + measurements
+node prototypes/behaviour-ast/kit.test.js   # the suite
+node prototypes/behaviour-ast/ui.js         # the API alone, already built
+```
 
-### Import them only after CI has run once
+The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
+shows the test Kit generates from each behaviour, and **writes new steps and behaviours back into
+the `.beh` file**. It never commits: both decisions at the foot of
+[`docs/design/ui.md`](docs/design/ui.md) landed on their stated defaults, so it is a local tool
+whose edits you review as an ordinary working-tree diff.
 
-`protected-branches.json` requires the `backend`, `frontend` and `e2e` contexts. A required context
-that has never been reported does not fail — it sits at *"Expected — waiting for status to be
-reported"* forever, and there is no way to merge past it except an admin override. Merge a PR that
-runs `ci.yml` first, then import.
+Measured against snip-it's real `editor.spec.ts`: **8 behaviours → 28 generated lines, 22 byte-identical
+to lines a person actually wrote**, 3 more present but reflowed. 6 wire contracts are **refused and still
+counted** — dropping them would flatter the coverage number by deleting the steps that fail.
 
-The context strings must match the **job ids** in `ci.yml` exactly, and you should delete the ones a
-repo doesn't have — requiring `frontend` in a backend-only repo blocks every PR.
+## Repo setup
 
-### Why two rulesets
+This repo was created from `repo-template`. Its original README — CI workflows, the two branch-protection
+rulesets, the secrets the Docker build needs — is kept verbatim at
+[`docs/repo-setup.md`](docs/repo-setup.md). **The rulesets are not applied yet.**
 
-`check-source-branch.yml` only triggers `on: pull_request: branches: [main]`. It never runs for a
-PR into `dev`, so it never posts a `verify-branch` status there.
+## Status
 
-If a single ruleset requires the `verify-branch` context on `main` **and** `dev`, every
-`feature → dev` pull request waits forever on a check that will never report, and the only way to
-merge is an admin override. That is not a visible failure — the PR simply sits at "Expected —
-waiting for status to be reported" — so it reads as a flaky CI rather than a misconfiguration, and
-overriding it becomes routine.
-
-Splitting the required check onto a `main`-only ruleset removes the dead wait without weakening
-anything: `main` still cannot be reached except by a PR from `dev`, and `dev` still cannot be
-deleted, force-pushed, or written to outside a PR.
-
-Rulesets stack, and stacking only ever *adds* restrictions — which is why the split is necessary
-rather than merely tidy.
-
-## Required Secrets and Variables
-
-For the Docker build workflow to function, configure the following in **Settings → Secrets and variables**:
-
-| Type | Name | Value |
-|------|------|-------|
-| Variable | `OCIR_REGISTRY` | e.g. `lhr.ocir.io` |
-| Variable | `OCIR_NAMESPACE` | Your OCI tenancy namespace |
-| Secret | `OCIR_USERNAME` | e.g. `tenancy/oracleidentitycloudservice/you@email.com` |
-| Secret | `OCIR_AUTH_TOKEN` | OCI auth token (not your account password) |
-| Secret | `CLAUDE_CODE_OAUTH_TOKEN` | OAuth token for Claude Code GitHub Actions |
-
-The `GIT_OPS_APP_ID` variable and `GITOPS_APP_PRIVATE_KEY` secret are pulled from org-level settings and do not need to be set per-repo.
+Planning. Nothing here is a commitment. The open decisions are at the foot of
+[`docs/design/process.md`](docs/design/process.md) and they are James's, not the bot's.

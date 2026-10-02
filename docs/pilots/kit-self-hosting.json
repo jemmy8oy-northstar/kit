@@ -1,0 +1,57 @@
+{
+  "_": [
+    "Written by `node self-host.js --record`. The prose in kit-self-hosting.md",
+    "quotes these numbers; `node self-host.js --check` recomputes and exits 1 on",
+    "any difference. Re-record ONLY after deciding the write-up is wrong — a",
+    "re-record with no edit to the prose is the drift, not the fix."
+  ],
+  "behaviours": 20,
+  "steps": 60,
+  "contracts": 36,
+  "verbs": [
+    {
+      "verb": "state",
+      "steps": 20,
+      "known": true
+    },
+    {
+      "verb": "runs",
+      "steps": 20,
+      "known": false
+    },
+    {
+      "verb": "reports",
+      "steps": 13,
+      "known": false
+    },
+    {
+      "verb": "exits",
+      "steps": 4,
+      "known": false
+    },
+    {
+      "verb": "raises",
+      "steps": 3,
+      "known": false
+    }
+  ],
+  "generatorVerbs": [
+    "activates",
+    "attaches",
+    "fills",
+    "lands",
+    "opens",
+    "sees",
+    "shows",
+    "state"
+  ],
+  "unbound": {
+    "generated": 0,
+    "ungenerated": 60
+  },
+  "bound": {
+    "generated": 20,
+    "ungenerated": 40
+  },
+  "derived": 0
+}

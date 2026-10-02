@@ -1,0 +1,112 @@
+
+── Kit's own generated tests, against Kit's own UI on :4407 ──
+
+  6 test(s) generated from behaviours/kit-ui.beh
+  20 derived step(s), 9 prose contract(s), 1 refused
+
+
+Running 6 tests using 1 worker
+
+  ✘  1 specs/kit-ui.spec.ts:3:5 › [BEH-LIST-1] Every corpus Kit can read is listed as a project (4ms)
+  ✘  2 specs/kit-ui.spec.ts:10:5 › [BEH-SHEET-1] A project shows the question sheet Kit built for it (3ms)
+  ✘  3 specs/kit-ui.spec.ts:17:5 › [BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen (4ms)
+  ✘  4 specs/kit-ui.spec.ts:25:5 › [BEH-ADJ-1] An inference can be adjudicated from the browser (4ms)
+  ✘  5 specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry (3ms)
+  ✘  6 specs/kit-ui.spec.ts:44:5 › [BEH-STEP-1] A step can be added while the generated test is in view (3ms)
+
+
+  1) specs/kit-ui.spec.ts:3:5 › [BEH-LIST-1] Every corpus Kit can read is listed as a project ──────
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-LIST-1-Every-c-16cb4-read-is-listed-as-a-project/error-context.md
+
+  2) specs/kit-ui.spec.ts:10:5 › [BEH-SHEET-1] A project shows the question sheet Kit built for it ─
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-SHEET-1-A-proj-98ccb-tion-sheet-Kit-built-for-it/error-context.md
+
+  3) specs/kit-ui.spec.ts:17:5 › [BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen 
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-PAIR-1-A-behav-534b9-s-from-it-are-on-one-screen/error-context.md
+
+  4) specs/kit-ui.spec.ts:25:5 › [BEH-ADJ-1] An inference can be adjudicated from the browser ──────
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-ADJ-1-An-infer-7a379-djudicated-from-the-browser/error-context.md
+
+  5) specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry 
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-ADJ-2-Denying--f23f2-he-correction-it-must-carry/error-context.md
+
+  6) specs/kit-ui.spec.ts:44:5 › [BEH-STEP-1] A step can be added while the generated test is in view 
+
+    Error: browserType.launch: Executable doesn't exist at /ms-playwright/chromium_headless_shell-1228/chrome-linux/headless_shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+
+    Error Context: test-results/kit-ui--BEH-STEP-1-A-step--ec880-e-generated-test-is-in-view/error-context.md
+
+  6 failed
+    specs/kit-ui.spec.ts:3:5 › [BEH-LIST-1] Every corpus Kit can read is listed as a project ───────
+    specs/kit-ui.spec.ts:10:5 › [BEH-SHEET-1] A project shows the question sheet Kit built for it ──
+    specs/kit-ui.spec.ts:17:5 › [BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen 
+    specs/kit-ui.spec.ts:25:5 › [BEH-ADJ-1] An inference can be adjudicated from the browser ───────
+    specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry 
+    specs/kit-ui.spec.ts:44:5 › [BEH-STEP-1] A step can be added while the generated test is in view 
+
+selfhost: Playwright could not START a browser, so no test reached the app — could not look.
+  This is NOT a finding about Kit, and --check deliberately does not call it drift.
+  Pass --browsers <dir> if the install is not where Playwright looks by default.

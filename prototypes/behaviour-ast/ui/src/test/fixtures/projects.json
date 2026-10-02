@@ -1,0 +1,169 @@
+{
+  "projects": [
+    {
+      "app": "james-habits-app",
+      "corpus": "prototypes/behaviour-ast/behaviours/james-habits-app.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 23,
+      "conflicts": 1,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 11
+    },
+    {
+      "app": "kit",
+      "corpus": "prototypes/behaviour-ast/behaviours/kit.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 20,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "kit-hosted",
+      "corpus": "prototypes/behaviour-ast/behaviours/kit-hosted.beh",
+      "notReal": true,
+      "duplicateOf": null,
+      "behaviours": 14,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 2
+    },
+    {
+      "app": "kit-ui",
+      "corpus": "prototypes/behaviour-ast/behaviours/kit-ui.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 6,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "language-vocab",
+      "corpus": "prototypes/behaviour-ast/behaviours/language-vocab.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 27,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 15
+    },
+    {
+      "app": "longlist",
+      "corpus": "prototypes/behaviour-ast/behaviours/longlist.beh",
+      "notReal": true,
+      "duplicateOf": null,
+      "behaviours": 8,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "macro-metrics",
+      "corpus": "prototypes/behaviour-ast/behaviours/macro-metrics.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 10,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "snip-it",
+      "corpus": "prototypes/behaviour-ast/behaviours/snip-it.beh",
+      "notReal": false,
+      "duplicateOf": null,
+      "behaviours": 8,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "trial-habits-a",
+      "corpus": "prototypes/behaviour-ast/behaviours/trial-habits-a.beh",
+      "notReal": false,
+      "duplicateOf": "james-habits-app",
+      "behaviours": 10,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "trial-habits-b",
+      "corpus": "prototypes/behaviour-ast/behaviours/trial-habits-b.beh",
+      "notReal": false,
+      "duplicateOf": "james-habits-app",
+      "behaviours": 13,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    },
+    {
+      "app": "trial-lend",
+      "corpus": "prototypes/behaviour-ast/behaviours/trial-lend.beh",
+      "notReal": true,
+      "duplicateOf": null,
+      "behaviours": 8,
+      "conflicts": 0,
+      "coverage": {
+        "available": false,
+        "covered": null,
+        "uncovered": null,
+        "reason": "no --repo given, so no test files were read"
+      },
+      "unreviewed": 0
+    }
+  ]
+}
