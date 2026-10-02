@@ -234,6 +234,50 @@ function snapshot(m) {
   };
 }
 
+// The flags that take a VALUE. One set, used by `parseArgs` below and read by
+// `kit.test.js`'s parser gate — not a copy of the list. `--record` and `--check` are
+// the boolean members of the guard's list above and are deliberately absent here.
+const VALUE_FLAGS = new Set(['--corpus', '--writeup', '--findings']);
+
+/**
+ * The argument reader, split out of `main` and EXPORTED — which is the whole point
+ * (kit#103). `main` used to do `argv.indexOf('--findings')` then take `argv[i + 1]`
+ * with no check at all, so a forgotten value was swallowed in the tool here that
+ * WRITES:
+ *
+ *   $ node self-host.js --findings --record
+ *   recorded --record                                                    rc=0
+ *
+ * The findings JSON went to a file literally named `--record`, while the prose was
+ * rewritten from the fresh numbers — so the two halves disagreed, which is exactly
+ * the drift the comment at the `--record` branch below says this design exists to
+ * kill. `unknownFlag` cannot see it: both tokens are known.
+ *
+ * Exported because the gate's population was *"every entry point that exports a
+ * parser"*, which is a property of this file's SHAPE rather than of whether it has
+ * the defect — so parsing inline in `main` was an invisible opt-out. Three tools
+ * sat outside that population with the bug in them.
+ */
+function parseArgs(argv) {
+  const out = { corpus: BEH, writeupPath: WRITEUP, findingsPath: FINDINGS };
+  for (let i = 0; i < argv.length; i++) {
+    if (!VALUE_FLAGS.has(argv[i])) continue;
+    const next = argv[i + 1];
+    if (next === undefined || require('./cli.js').looksLikeAFlag(next)) {
+      return { error: `${argv[i]} needs a value` };
+    }
+    // Assigned by comparing the NAME, so the `cli: a guard cannot ADVERTISE a flag
+    // its own tool no longer implements` gate can still see all three — it reads the
+    // flags this CODE compares against, and a `VALUE_FLAGS.has` test alone makes
+    // every one of them invisible to it.
+    if (argv[i] === '--corpus') out.corpus = next;
+    else if (argv[i] === '--writeup') out.writeupPath = next;
+    else if (argv[i] === '--findings') out.findingsPath = next;
+    i++;
+  }
+  return out;
+}
+
 function main(argv) {
   // --corpus exists so the suite can drive this over a fixture. Without it the
   // only reachable input is the committed corpus, and the refusal paths below
@@ -260,12 +304,14 @@ function main(argv) {
     return require('./cli.js').refuse(bad,
       'usage: node self-host.js [--corpus <file>] [--writeup <file>] [--findings <file>] [--record] [--check]');
   }
-  const ci = argv.indexOf('--corpus');
-  const wi = argv.indexOf('--writeup');
-  const fi = argv.indexOf('--findings');
-  const findingsPath = fi >= 0 ? argv[fi + 1] : FINDINGS;
-  const writeupPath = wi >= 0 ? argv[wi + 1] : WRITEUP;
-  const beh = ci >= 0 ? argv[ci + 1] : BEH;
+
+  const parsed = parseArgs(argv);
+  if (parsed.error) {
+    console.error(`cannot look: ${parsed.error}`);
+    console.error('usage: node self-host.js [--corpus <file>] [--writeup <file>] [--findings <file>] [--record] [--check]');
+    return 2;
+  }
+  const { findingsPath, writeupPath, corpus: beh } = parsed;
   if (!beh || !fs.existsSync(beh)) {
     console.error(`self-host: no corpus at ${beh} — could not look`);
     return 2;
@@ -353,6 +399,6 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { measure, generatorVerbs, generousBindings, spliceBlocks, BLOCKS, main };
+module.exports = { measure, generatorVerbs, generousBindings, spliceBlocks, BLOCKS, parseArgs, VALUE_FLAGS, main };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

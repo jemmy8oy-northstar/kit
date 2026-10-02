@@ -6191,6 +6191,28 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
       const m = require('./ui');
       return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
     },
+    // The three a blind review found AFTER this gate was declared complete. All three
+    // parsed inline in `main()` and exported nothing, so they were outside the
+    // population by construction while the assertion stayed green — see the second
+    // derivation below, which is the actual fix.
+    // `self-host.js` is the one that mattered: `--findings --record` wrote a file
+    // literally named `--record` at exit 0, leaving the JSON and the prose
+    // disagreeing — the exact drift its own `--record` comment exists to prevent.
+    'self-host.js': () => {
+      const m = require('./self-host');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
+    'saturation.js': () => {
+      const m = require('./saturation');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
+    // `prose-audit.js`'s defect was ORDER, not absence: it checked `--source`'s value
+    // in the drift section, which `--demo-collision` returned 0 before reaching. A
+    // refusal another mode can jump over is not a refusal.
+    'prose-audit.js': () => {
+      const m = require('./prose-audit');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
   };
 
   // 🔴 There is NO `DEFERRED` map any more, and its deletion is the point. kit#105
@@ -6256,6 +6278,95 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
     }
   }
   assert.deepStrictEqual(wrong, [], wrong.join('; '));
+});
+
+test('cli: each tool SURFACES its own parser error, and self-host writes nothing first', () => {
+  // The ASSEMBLY half, and it exists because the identical test for `ui.js` passed a
+  // `main` that ignored `opts.error` completely: the parser was right, the tool still
+  // served, and `=== 2` could not tell the difference because a second branch produced
+  // the same code [[both-layers-right-assembly-broken]]. So the SENTENCE is asserted,
+  // never the exit code alone.
+  //
+  // 🔴 `self-host.js` gets a third assertion that the other two do not need, and it is
+  // the one that matters: `--findings --record` used to WRITE the findings JSON to a
+  // file literally named `--record` at exit 0, while rewriting the prose from the fresh
+  // numbers — so the two halves disagreed, which is the exact drift its `--record`
+  // branch exists to prevent. A message test would pass over a tool that printed the
+  // refusal AND wrote anyway, so the absence of the file is checked directly.
+  const cases = [
+    ['self-host.js', require('./self-host.js'), ['--findings', '--record'], '--findings'],
+    ['saturation.js', require('./saturation.js'), ['--dir', '--check'], '--dir'],
+    ['prose-audit.js', require('./prose-audit.js'), ['--source', '--demo-collision'], '--source'],
+  ];
+  for (const [file, mod, argv, flag] of cases) {
+    const said = [];
+    const err = console.error;
+    const log = console.log;
+    console.error = (...a) => said.push(a.join(' '));
+    console.log = () => {};
+    let code;
+    try { code = mod.main(argv.slice()); } finally { console.error = err; console.log = log; }
+    assert.strictEqual(code, 2, `${file} ${argv.join(' ')} must refuse`);
+    assert.ok(said.join('\n').includes(`${flag} needs a value`),
+      `${file} exited 2 but said ${JSON.stringify(said.join('\n'))} — which does not name ${flag}, so it `
+      + 'refused for some other reason and the forgotten value is not actually held');
+  }
+  // The consequence, measured rather than inferred. `findingsPath` was the literal
+  // string `--record`, so a regression writes it relative to the cwd the suite runs in.
+  assert.ok(!fsx.existsSync(pathx.join(__dirname, '--record')),
+    'self-host.js wrote a file named `--record` — the refusal printed but the write still happened');
+});
+
+test('cli: a tool that reads the token after a flag cannot opt out of the gate above', () => {
+  // 🔴 THE SECOND DERIVATION, and the reason the first one was not enough. A separate
+  // test because it is a separate rule and fails for a separate cause: the one above
+  // asks whether each driven parser is CORRECT, this one asks whether the set of
+  // driven parsers is COMPLETE.
+  //
+  // The gate above derives its population from `module.exports` — does the file export
+  // a parser. That is a property of the file's SHAPE, chosen because exporting is what
+  // makes a parser reachable; it is NOT the property that carries the defect. So a tool
+  // that extracted a flag value inline in `main()` and exported nothing sat outside the
+  // population BY CONSTRUCTION, with every assertion green. I told James the rule was
+  // enforced across the tools; a blind review of the branch then found THREE still
+  // carrying it — `self-host.js`, `saturation.js`, `prose-audit.js` — the first of
+  // which answered `--findings --record` by writing a file literally named `--record`
+  // at exit 0, leaving its JSON and its prose disagreeing.
+  //
+  // ⇒ Derive the population from the property that CARRIES the defect: reading the
+  // token after a flag. Then exporting a parser is the only way to satisfy it, which
+  // feeds the gate above, and there is no third state.
+  //
+  // Comments are stripped first — several of these files now DISCUSS `argv.indexOf` as
+  // the bug they fixed, and matching that prose would make the gate unfalsifiable.
+  const extractsAValue = ENTRY_POINTS.filter((f) => {
+    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+    const code = src.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('*')).join('\n');
+    return /argv\.indexOf\('--|argv\[\s*\w+\s*\+\s*1\s*\]/.test(code);
+  });
+
+  // THE CONTROL, and it is not a tautology. If the regex stops matching the code it is
+  // aimed at, every file passes and this test reports success while proving nothing —
+  // the shape that let `mutate-ui.js --zznotaflag` certify as guarded for months by
+  // exiting 2 from an unrelated branch [[a-crash-that-echoes-your-input]]. An empty
+  // population is the failure mode of every derived gate here, so it is refused
+  // explicitly rather than read as "nothing to check" [[empty-means-two-things]].
+  assert.ok(extractsAValue.length >= 5,
+    `the value-extraction scan matched only ${extractsAValue.length} entry point(s) `
+    + `(${extractsAValue.join(', ') || 'none'}) — it should match most of them, so the regex has `
+    + 'stopped matching the code it is aimed at and this gate is now inert');
+
+  const exportsAParser = (f) => {
+    const src = fsx.readFileSync(pathx.join(__dirname, f), 'utf8');
+    const exported = src.match(/module\.exports\s*=\s*\{[\s\S]*?\}/);
+    return !!exported && /\bparse(Args|CliArgs)\b/.test(exported[0]);
+  };
+  const unheld = extractsAValue.filter((f) => !exportsAParser(f));
+  assert.deepStrictEqual(unheld, [],
+    `${unheld.join(', ')} read(s) the token after a flag — \`argv.indexOf('--x')\` or \`argv[i + 1]\` `
+    + '— and export(s) no parser, so the gate above cannot see it. That is the invisible opt-out: a '
+    + 'tool can carry this exact defect and never join a population derived from what it EXPORTS. '
+    + 'Export the parser and declare it above; do not widen this scan to let it through');
 });
 
 Promise.all(pending).then(() => {

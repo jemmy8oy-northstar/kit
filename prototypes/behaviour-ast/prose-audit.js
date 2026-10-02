@@ -138,12 +138,54 @@ function demoCollision() {
   console.log('\n   A refusal that names the noun, instead of a green test against the wrong app.');
 }
 
+// The one flag that takes a VALUE. One set, used by `parseArgs` below and read by
+// `kit.test.js`'s parser gate — not a copy of the list. `--demo-collision` is a mode
+// and is deliberately absent.
+const VALUE_FLAGS = new Set(['--source']);
+
+/**
+ * The argument reader, split out of `main` and EXPORTED (kit#103) — exported because
+ * the gate's population was *"every entry point that exports a parser"*, which is a
+ * property of this file's SHAPE and not of whether it has the defect, so parsing
+ * inline in `main` was an invisible opt-out.
+ *
+ * `source` is `null` when the flag was not given, which is a different state from
+ * "given and empty" and the caller distinguishes them.
+ */
+function parseArgs(argv) {
+  const out = { source: null };
+  for (let i = 0; i < argv.length; i++) {
+    if (!VALUE_FLAGS.has(argv[i])) continue;
+    const next = argv[i + 1];
+    if (next === undefined || require('./cli.js').looksLikeAFlag(next)) {
+      return { error: `${argv[i]} needs a value` };
+    }
+    // Compared by NAME so the ADVERTISE gate can still see it.
+    if (argv[i] === '--source') out.source = next;
+    i++;
+  }
+  return out;
+}
+
 function main(argv) {
   // An unknown flag is a refusal, not a silent drop (cli.js). The numbers below are
   // quoted in `docs/pilots/macro-metrics-prose.md`; a dropped `--source` would
   // report "no drift" because it never looked, which reads identically to agreement.
   const bad = require('./cli.js').unknownFlag(argv, ['--demo-collision', '--source']);
   if (bad) return require('./cli.js').refuse(bad, 'usage: node prose-audit.js [--source <path>] [--demo-collision]');
+  // 🔑 BEFORE the mode branch below, and that ORDER is the fix (kit#103). The
+  // `--source` check used to live at the drift section further down, so
+  // `node prose-audit.js --source --demo-collision` ran the demo and exited **0**
+  // without ever looking at `--source` — its value forgotten, the next flag eaten as
+  // it, and no branch reached that could have said so. `unknownFlag` is blind to it:
+  // both tokens are known. A refusal that a different mode can jump over is not a
+  // refusal, so the parse happens first for every mode.
+  const parsed = parseArgs(argv);
+  if (parsed.error) {
+    console.error(`cannot look: ${parsed.error}`);
+    console.error('usage: node prose-audit.js [--source <path>] [--demo-collision]');
+    return 2;
+  }
   if (argv.includes('--demo-collision')) { demoCollision(); return 0; }
 
   if (!fs.existsSync(LEDGER)) { console.error(`cannot look: no ledger at ${LEDGER}`); return 2; }
@@ -162,11 +204,12 @@ function main(argv) {
   // Drift. The ledger vendors each AC's text so it is runnable with the source
   // repo absent; given the source it must still agree, or the accounting is of a
   // document that no longer exists.
-  const si = argv.indexOf('--source');
+  // `parsed.source` rather than a second `argv.indexOf` — the scan above is now the
+  // only place this file decides what `--source` was given.
+  const p = parsed.source;
   let drift = [];
-  if (si >= 0) {
-    const p = argv[si + 1];
-    if (!p || !fs.existsSync(p)) { console.error(`cannot look: --source ${p || '(missing)'} does not exist`); return 2; }
+  if (p !== null) {
+    if (!fs.existsSync(p)) { console.error(`cannot look: --source ${p} does not exist`); return 2; }
     const live = extractAcs(fs.readFileSync(p, 'utf8'));
     if (!live.length) { console.error(`cannot look: no acceptance criteria found in ${p}`); return 2; }
     if (live.length !== ledger.acs.length) {
@@ -191,7 +234,7 @@ function main(argv) {
   console.log(`   fully carried, nothing left over       ${tally.encoded || 0}/${ledger.acs.length}`);
   console.log('   ⚠️  "carried" counts partials and contracts. Read the ledger, not this line.');
 
-  if (si < 0) console.log('\n   (no --source given: the ledger was checked against itself, NOT against the live document)');
+  if (p === null) console.log('\n   (no --source given: the ledger was checked against itself, NOT against the live document)');
   else if (!drift.length) console.log('\n   ✅ the source document still matches the ledger.');
 
   if (problems.length || drift.length) {
@@ -205,4 +248,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
-module.exports = { main, audit, extractAcs, DISPOSITIONS, SHAPES };
+module.exports = { main, parseArgs, VALUE_FLAGS, audit, extractAcs, DISPOSITIONS, SHAPES };
