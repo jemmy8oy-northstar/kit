@@ -4862,6 +4862,94 @@ test('every tracked source file is plain text — one NUL byte makes grep skip t
     + `escape \\0 in a string literal — the runtime value is identical and the file stays text.`);
 });
 
+// A COPY source the build stage maps from the repo, and the ONLY paths allowed to
+// be absent from git: build outputs. The value is not decoration — the assertion
+// below checks that a RUN line in the same Dockerfile still produces each one, so
+// an exemption cannot outlive the step that earns it. That is the whole lesson of
+// the two deferrals whose stated reasons were false: an exemption's reason has to
+// be true OF THE PROPERTY BEING TESTED, and the only way to keep it true is to
+// measure it rather than to write it down.
+const DOCKERFILE_BUILD_OUTPUTS = {
+  'prototypes/behaviour-ast/ui/dist': 'npm --prefix prototypes/behaviour-ast/ui run build',
+};
+
+test('docker: every explicit COPY source exists, because an absent one fails the build LATE', () => {
+  // 🔴 This test exists because of the defect it is shipped with. `Dockerfile`
+  // named `prototypes/behaviour-ast/bindings.json` explicitly, and that file has
+  // not existed since bindings moved to per-corpus `behaviours/<app>.bindings.json`.
+  //
+  // Why a test rather than a one-line fix and a shrug — three reasons, and the
+  // third is the one that matters:
+  //  1. An explicit (non-glob) COPY of an absent path is a HARD docker failure,
+  //     where a glob that matches nothing is silently fine. The two look alike in
+  //     a diff and behave oppositely.
+  //  2. It fails LATE — after the ~2min frontend build and a successful registry
+  //     login — so it reads as a credential or registry fault, not a missing file.
+  //  3. NOTHING ELSE IN THIS REPO CAN CATCH IT. There is no container builder in
+  //     the environment the suite runs in, so the image is never built here; the
+  //     first execution of these lines is a push to `main`. A deleted file and the
+  //     Dockerfile line naming it are edited in different PRs months apart, and
+  //     the suite is the only thing that reads both.
+  // Read from DISK, not from `HEAD:Dockerfile`. Reading the committed copy would
+  // pass over an uncommitted bad COPY line — green at exactly the moment the
+  // defect is introduced, which is the one moment the author is looking. Safe to
+  // run mid-mutation anyway: `mutate.js`'s subjects are all `.js`, so nothing ever
+  // rewrites this file under the test.
+  const dockerfile = pathx.join(realMarker.ROOT, 'Dockerfile');
+  assert.ok(fsx.existsSync(dockerfile), `could not look: no Dockerfile at ${dockerfile}`);
+  const df = { out: fsx.readFileSync(dockerfile, 'utf8') };
+
+  // `/src` is the build stage's WORKDIR and it is populated by `COPY . .`, so a
+  // `--from=build /src/<p>` source is the repo's `<p>` — that mapping is what
+  // makes this checkable at all. Only the `build` stage has it; a COPY from any
+  // other stage is not a claim about this repo and is deliberately not checked.
+  const sources = [];
+  for (const line of df.out.split('\n')) {
+    const m = /^\s*COPY\s+--from=build\s+(?:--[^\s]+\s+)*(\/src\/\S+)/.exec(line);
+    if (m) sources.push(m[1].slice('/src/'.length));
+  }
+  // Could-not-look is never green, and a regex that stops matching is exactly how
+  // this gate would go quietly inert. The floor is deliberately close to the real
+  // count so a rewrite that drops most lines fails rather than passes.
+  assert.ok(sources.length >= 4,
+    `could not look: matched ${sources.length} COPY --from=build line(s) in Dockerfile — `
+    + `the regex has stopped matching and this gate is inert, which is not the same as passing`);
+
+  const missing = [];
+  for (const rel of sources) {
+    if (rel.includes('*')) continue;                       // a glob matching nothing is legal
+    if (rel in DOCKERFILE_BUILD_OUTPUTS) continue;         // checked separately, below
+    // `ls-files` rather than existsSync: the question is what a fresh clone gets,
+    // and an untracked file present only on this disk would pass a disk check and
+    // fail the build. A directory needs the trailing-slash form to match anything.
+    const listed = gitAtRoot('ls-files', '--', rel, `${rel}/`);
+    if (listed.out === '') missing.push(rel);
+  }
+  assert.deepStrictEqual(missing, [],
+    `Dockerfile COPYs these paths explicitly but git does not track them, so \`docker build\` `
+    + `fails with "lstat ...: no such file or directory" after the frontend build has already run: `
+    + `${missing.join(', ')}. Either restore the path or delete the COPY line — and if it is `
+    + `produced by the build rather than committed, add it to DOCKERFILE_BUILD_OUTPUTS with the `
+    + `RUN command that writes it.`);
+
+  // The other half: an exemption is only honest while the step it names still
+  // exists. Without this, deleting the frontend build would leave `ui/dist`
+  // permanently excused for a reason that had stopped being true.
+  const stale = Object.entries(DOCKERFILE_BUILD_OUTPUTS)
+    .filter(([, run]) => !df.out.includes(run))
+    .map(([p, run]) => `${p} (claims it is written by \`${run}\`, which the Dockerfile no longer runs)`);
+  assert.deepStrictEqual(stale, [],
+    `DOCKERFILE_BUILD_OUTPUTS excuses these paths from existing in git because the build writes `
+    + `them, but the command named is no longer in the Dockerfile: ${stale.join(', ')}`);
+
+  // And the exemptions must still be REACHED, or the map is dead weight that would
+  // hide a path someone later stops copying.
+  const unused = Object.keys(DOCKERFILE_BUILD_OUTPUTS).filter((p) => !sources.includes(p));
+  assert.deepStrictEqual(unused, [],
+    `DOCKERFILE_BUILD_OUTPUTS names paths the Dockerfile no longer COPYs, so these entries excuse `
+    + `nothing and would mask a real absence if the path came back: ${unused.join(', ')}`);
+});
+
 // ── one command to run Kit (kit#37) ──────────────────────────────────────────
 // The failure this guards is the quiet one. A fresh clone with no bundle serves
 // a 503, which at least says something is wrong; a bundle built before your
