@@ -5725,9 +5725,19 @@ section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
 // `auth.js` and `git-store.js` carried one by mistake: both are pure modules and
 // the line is deleted in the same change that starts believing it.
 //
-// `selfhost/run.js` is still excluded by not walking subdirectories: it drives
-// Playwright, and kit deliberately has no `@playwright/test` dependency to drive it
-// with (adding one is packaging, which is James's under #83).
+// ✅ `selfhost/run.js` IS IN THIS POPULATION since kit#107 (2026-10-03), and the walk
+// below descends to find it. This comment used to record it as excluded "by not
+// walking subdirectories: it drives Playwright, and kit deliberately has no
+// `@playwright/test` dependency to drive it with". The packaging half is still true
+// and still binding — kit has no such dependency and adding one is James's under #83.
+// 🔑 But it was never a reason to skip a GUARD, and kit#101 had already settled
+// exactly that for `mutate.js`: a flag guard reads argv and nothing else, so it is the
+// one step in any tool that neither touches the environment nor depends on it.
+// Refusing `--zznotaflag` needs no browser — measured, it exits 2 without one. The
+// exemption's reason was true of the tool in general and false of the property being
+// tested, which is the same way `kit#105` deferred `ui.js` for "`main` starts a
+// server" and `kit#106` then found the bug behind it. Unguarded, this file accepted
+// every typo in silence at exit 0, and the sentence above is what let it.
 //
 // Every `#!` file is therefore in exactly one of three places — this population,
 // `UNSPAWNABLE`, or `SANDBOXED` — and that sentence is TRUE BY CONSTRUCTION, not a
@@ -5767,15 +5777,46 @@ const SANDBOXED = {
   'mutate-ui.js': 'UI mutation harness: same as mutate.js, and it survives SIGTERM',
 };
 
+// 🔑 THE WALK STOPS AT A DIRECTORY THAT IS ITS OWN NPM PACKAGE, and that is a RULE
+// rather than a convenience. kit#107 made this descend (it used to read `__dirname`
+// only, which is the entire reason `selfhost/run.js` sat outside the population while
+// accepting every typo in silence). Descending finds a second `#!` file —
+// `ui/src/test/fixtures/generate.js` — and spawning THAT in CI is the one thing
+// `docs/` and my own notes say must never happen: it rewrites the fixtures it is
+// compared against, so a generator that ran before the comparison would report green
+// over a real regression. Its own guard happens to sit above the write, so a spawn is
+// safe today — but the RED CONTROL for it, deleting the guard to prove it bites, would
+// rewrite the working tree.
+//
+// `ui/` is a separate npm package: `kit-ui`, `"type": "module"`, its own vitest suite,
+// its own `package.json`. `behaviour-ast/` has NO `package.json` and is CommonJS. So
+// the boundary is load-bearing in both directions — `cli.js` is CommonJS, and an ESM
+// package cannot even `require()` the guard this section asserts without
+// `createRequire`. A package gates its own tools with its own runner.
+//
+// ⚠️ Deliberately NOT a skip-list of names (`node_modules`, `dist`, `fixtures`). The
+// package rule excludes `ui/node_modules` and the content-hashed `ui/dist` for free,
+// and a list of names is the thing that silently stops matching when one of them is
+// renamed — which is how this scan came to miss four tools for months
+// ([[a-parser-that-stopped-matching-may-be-protecting-you]]).
 const ENTRY_POINTS = (() => {
   const found = [];
-  for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
-    if (!e.isFile() || !e.name.endsWith('.js')) continue;
-    if (UNSPAWNABLE[e.name] || SANDBOXED[e.name]) continue;
-    const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
-    if (!src.startsWith('#!')) continue;
-    found.push(e.name);
-  }
+  const walk = (dir, prefix) => {
+    for (const e of fsx.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (fsx.existsSync(pathx.join(dir, e.name, 'package.json'))) continue;
+        walk(pathx.join(dir, e.name), rel);
+        continue;
+      }
+      if (!e.isFile() || !e.name.endsWith('.js')) continue;
+      if (UNSPAWNABLE[rel] || SANDBOXED[rel]) continue;
+      const src = fsx.readFileSync(pathx.join(dir, e.name), 'utf8');
+      if (!src.startsWith('#!')) continue;
+      found.push(rel);
+    }
+  };
+  walk(__dirname, '');
   return found.sort();
 })();
 
@@ -5787,8 +5828,13 @@ test('cli: the derived population is the real one, not a stale list', () => {
   // predicate, so a predicate that matched nothing would satisfy it vacuously.
   assert.ok(ENTRY_POINTS.length >= 8,
     `only ${ENTRY_POINTS.length} entry point(s) discovered — the scan has stopped matching: ${ENTRY_POINTS.join(', ')}`);
+  // `selfhost/run.js` is the one member reached only by DESCENDING, so it is the only
+  // name here whose absence means the walk itself regressed rather than a file moving.
+  // The `>= 8` floor above cannot catch that: drop the recursion and twelve top-level
+  // tools still satisfy it, which is exactly the vacuous-green shape this list exists
+  // to close ([[verified-the-greppable-half]]).
   for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js',
-    'compare.js', 'measure-tagging.js']) {
+    'compare.js', 'measure-tagging.js', 'selfhost/run.js']) {
     assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
   }
   // ⚠️ "Every `#!` file is in ENTRY_POINTS, UNSPAWNABLE or SANDBOXED" is NOT asserted
@@ -5962,6 +6008,65 @@ test('cli: a REFUSAL, not a default — the tool must not answer about its own c
   const out = (r.stdout || '') + (r.stderr || '');
   assert.strictEqual(r.status, 2, `a refusal is exit 2, never a verdict about something else; got ${r.status}`);
   assert.ok(!/nouns referenced/.test(out), `it answered anyway:\n${out}`);
+});
+
+test('cli: compare.js answers a repo it cannot read with a sentence, not a stack trace', () => {
+  // kit#107. Unguarded, `compare.js /no/such/repo` dumped a raw `spawnSync` result
+  // object and a Node stack trace at exit 1.
+  //
+  // 🔑 Exit 2 is the load-bearing part, not the tidier output. Every other tool here
+  // answers "could not look" at exit 2, and exit 1 is what a real comparison uses to
+  // mean something — so at exit 1 a caller could not tell "snip-it has drifted" from
+  // "I never found snip-it", and this was the one tool whose failure to measure was
+  // indistinguishable from a crash in the harness around it.
+  const bad = spawnx(process.execPath, ['compare.js', '/no/such/repo'],
+    { cwd: __dirname, encoding: 'utf8', timeout: 30000 });
+  const badOut = (bad.stdout || '') + (bad.stderr || '');
+  assert.strictEqual(bad.status, 2, `a refusal is exit 2, never exit 1; got ${bad.status}\n${badOut}`);
+  assert.ok(badOut.includes('cannot look:'), `it must say "cannot look":\n${badOut}`);
+  // A crash that quotes your input is indistinguishable from a refusal by status and
+  // flag alone, so the absence of the ANSWER is asserted too: it must not have printed
+  // the measured table [[a-crash-that-echoes-your-input]].
+  assert.ok(!/── measured ──/.test(badOut), `it refused and answered anyway:\n${badOut}`);
+  assert.ok(!/at \w+ \(node:/.test(badOut), `a stack trace is still leaking:\n${badOut}`);
+
+  // THE OTHER SIDE OF THE SEAM. "It exited 2" is cheap here — the tool exits 2 for a
+  // bad path, a missing `origin/dev` and a missing spec — so the refusal has to be
+  // attributed to the repo being unreadable rather than to the guard refusing always.
+  //
+  // Built rather than assumed: CI has no reason to carry a snip-it clone, and a test
+  // that skipped when one was absent would be a test that never ran. `origin/dev` is a
+  // remote-tracking ref, so `update-ref` writes it directly with no network.
+  const dir = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-compare-'));
+  try {
+    const spec = pathx.join(dir, 'frontend', 'e2e');
+    fsx.mkdirSync(spec, { recursive: true });
+    fsx.writeFileSync(pathx.join(spec, 'editor.spec.ts'),
+      "test('x', async ({ page }) => {\n  await page.goto('./editor/11111111-1111-1111-1111-111111111111');\n});\n");
+    const git = (...a) => spawnx('git', ['-C', dir, ...a], { encoding: 'utf8' });
+    git('init', '-q');
+    git('config', 'user.email', 't@t');
+    git('config', 'user.name', 't');
+    git('add', '-A');
+    git('commit', '-qm', 'spec');
+    const sha = git('rev-parse', 'HEAD').stdout.trim();
+    git('update-ref', 'refs/remotes/origin/dev', sha);
+
+    const good = spawnx(process.execPath, ['compare.js', dir],
+      { cwd: __dirname, encoding: 'utf8', timeout: 60000 });
+    const goodOut = (good.stdout || '') + (good.stderr || '');
+    assert.strictEqual(good.status, 0,
+      `a repo it CAN read must still be measured, not refused; got ${good.status}\n${goodOut}`);
+    assert.ok(!goodOut.includes('cannot look:'),
+      `it refuses a readable repo, so the guard fires always and the test above proves nothing:\n${goodOut}`);
+    // And it must have actually DONE the comparison, not merely exited 0.
+    assert.ok(/── measured ──/.test(goodOut), `no measured table:\n${goodOut}`);
+    assert.ok(/YES exact|YES in-file/.test(goodOut),
+      'the one line planted in the spec above must match SOMETHING, or this fixture no longer '
+      + `exercises the comparison it is here to keep alive:\n${goodOut}`);
+  } finally {
+    fsx.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () => {
@@ -6301,6 +6406,18 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
       const m = require('./prose-audit');
       return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
     },
+    // kit#107's member, and the first to arrive here by WALKING rather than by being
+    // remembered: it sat in a subdirectory the population scan did not descend into.
+    // Three value flags, no named positional. `--browsers` is the one with no
+    // validation of any kind before this — a forgotten value set
+    // `PLAYWRIGHT_BROWSERS_PATH` to the string `undefined` and a swallowed one pointed
+    // it at a flag, so Playwright could not launch and the harness answered "could not
+    // look — NOT a finding about Kit". A typo, reported as a broken environment, by the
+    // guard that exists to stop precisely that misreading.
+    'selfhost/run.js': () => {
+      const m = require('./selfhost/run.js');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
   };
 
   // 🔴 There is NO `DEFERRED` map any more, and its deletion is the point. kit#105
@@ -6403,6 +6520,61 @@ test('cli: each tool SURFACES its own parser error, and self-host writes nothing
   // string `--record`, so a regression writes it relative to the cwd the suite runs in.
   assert.ok(!fsx.existsSync(pathx.join(__dirname, '--record')),
     'self-host.js wrote a file named `--record` — the refusal printed but the write still happened');
+});
+
+test('cli: selfhost/run.js surfaces a forgotten value, and refuses BEFORE it reads a corpus', async () => {
+  // The async sibling of the `cases` gate above, which drives `main()` synchronously
+  // and therefore cannot reach this one: `selfhost/run.js`'s `main` is `async`, so
+  // `strictEqual(mod.main(...), 2)` would compare a Promise to 2 and fail for a reason
+  // that has nothing to do with the rule. A separate test rather than a widened one.
+  const mod = require('./selfhost/run.js');
+
+  // All three value flags, each paired with the NEXT FLAG as its value — the swallow,
+  // not merely the omission. `--playwright --check` used to answer "no Playwright
+  // binary" at exit 2: already a refusal, which is why the guard above did not catch
+  // it, and already the wrong diagnosis.
+  for (const flag of ['--playwright', '--port', '--browsers']) {
+    const said = [];
+    const err = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    let code;
+    try { code = await mod.main([flag, '--check']); } finally { console.error = err; }
+    assert.strictEqual(code, 2, `selfhost/run.js ${flag} --check must refuse`);
+    assert.ok(said.join('\n').includes(`${flag} needs a value`),
+      `selfhost/run.js ${flag} --check exited 2 but said ${JSON.stringify(said.join('\n'))} — which `
+      + `does not name ${flag}, so it refused for some other reason (a missing binary, an unparseable `
+      + 'port, a browser that would not launch) and the forgotten value is not actually held');
+  }
+
+  // And the omission at the end of argv, which reads `undefined` rather than a flag.
+  const said = [];
+  const err = console.error;
+  console.error = (...a) => said.push(a.join(' '));
+  let code;
+  try { code = await mod.main(['--browsers']); } finally { console.error = err; }
+  assert.strictEqual(code, 2, 'selfhost/run.js --browsers with nothing after it must refuse');
+  assert.ok(said.join('\n').includes('--browsers needs a value'), said.join('\n'));
+
+  // 🔑 THE OTHER SIDE OF THE SEAM, and the half that makes the three above mean
+  // something [[pin-a-seam-from-both-sides]]. A refusal is cheap to get by accident
+  // here — this tool exits 2 for a missing binary, a missing bundle and an unbuilt UI,
+  // so "it exited 2" attributes to almost anything. A flag it DOES have must still
+  // work, with no browser and no bundle in sight: `--emit-only` is the one path that
+  // needs neither, which is the same reason it is what proves the guard reads argv and
+  // nothing else.
+  const out = [];
+  const log = console.log;
+  const err2 = console.error;
+  console.log = (...a) => out.push(a.join(' '));
+  console.error = (...a) => out.push(a.join(' '));
+  let good;
+  try { good = await mod.main(['--emit-only']); } finally { console.log = log; console.error = err2; }
+  assert.strictEqual(good, 0, `--emit-only is a flag the tool HAS and must not fail:\n${out.join('\n')}`);
+  assert.ok(!out.join('\n').includes('unknown option'),
+    `selfhost/run.js refuses its own --emit-only, so the accept-list is wrong, not its refusal:\n${out.join('\n')}`);
+  assert.ok(out.join('\n').includes("import { expect, test } from '@playwright/test'"),
+    `--emit-only must still PRINT THE SPEC, not merely exit 0 — a guard that returned 0 early would `
+    + `satisfy the status alone:\n${out.join('\n')}`);
 });
 
 test('cli: a tool that reads the token after a flag cannot opt out of the gate above', () => {

@@ -36,6 +36,7 @@ const path = require('path');
 const http = require('http');
 const { spawn, spawnSync } = require('child_process');
 const kit = require('../kit.js');
+const cli = require('../cli.js');
 
 const ROOT = path.join(__dirname, '..');
 const CORPUS = path.join(ROOT, 'behaviours');
@@ -43,6 +44,65 @@ const SUBJECT = 'kit-ui.beh';
 const bindingsOf = require('../bindings.js');
 const DIST = path.join(ROOT, 'ui', 'dist', 'index.html');
 const EXPECTED = path.join(__dirname, 'expected.json');
+
+// The seven flags this tool HAS. kit#107: it had no guard at all, so every typo was
+// dropped in silence at exit 0 — kit#67's defect, surviving in the one entry point
+// kit#67's own scan could not see, because that scan did not walk subdirectories.
+//
+// ⚠️ DO NOT BUILD THIS LIST BY GREPPING FOR `'--…'` IN THIS FILE. Two of the quoted
+// flags here are a CHILD's, not this tool's: `--dir` and `--port` go to `ui.js` and
+// `--config` goes to the Playwright binary. Accepting them because they appear in
+// the source would make this tool answer 0 to `--dir /elsewhere` while doing nothing
+// with it — which is the exact shape of the bug being fixed, re-entered through the
+// fix. The list is what `main()` READS off its own argv, and nothing else.
+const KNOWN_FLAGS = [
+  '--playwright', '--emit-only', '--port', '--browsers', '--check', '--record', '--keep',
+];
+const USAGE = 'usage: selfhost/run.js [--playwright <bin>] [--browsers <dir>] [--port <n>] [--emit-only] [--check] [--record] [--keep]';
+
+// The three flags that take a VALUE. One set, used by `parseArgs` below and read by
+// `kit.test.js`'s parser gate — not a copy of the list. `--emit-only`, `--check`,
+// `--record` and `--keep` are booleans and are deliberately absent.
+const VALUE_FLAGS = new Set(['--playwright', '--port', '--browsers']);
+
+/**
+ * The argument reader, EXPORTED so `kit.test.js`'s parser gate can drive it (kit#107).
+ *
+ * 🔑 `unknownFlag` CANNOT see a FORGOTTEN value — both tokens are known flags — and
+ * every reader below took `argv[i + 1]` unchecked. So the guard added above does not
+ * cover this, and the failure it leaves behind blames the wrong thing:
+ *
+ *   $ node selfhost/run.js --playwright --check
+ *   selfhost: no Playwright binary — pass --playwright <bin> ...          rc=2
+ *
+ * That refusal is how this survived: it exits 2, so it LOOKS held, while blaming a
+ * missing binary for a forgotten value and eating `--check` — the flag that decides
+ * whether drift is reported at all.
+ *
+ * ⚠️ The worst of the three is `--browsers`, which had no validation anywhere: a
+ * forgotten value set `PLAYWRIGHT_BROWSERS_PATH` to the string `undefined`, and a
+ * swallowed one pointed it at a flag. Playwright then cannot launch, and
+ * `launchFailed()` correctly answers "could not look — NOT a finding about Kit". A
+ * typo, diagnosed as a broken environment, by the one guard written to stop exactly
+ * that misreading ([[a-tidy-report-from-a-broken-environment]]).
+ *
+ * ⚠️ This VALIDATES; it deliberately does NOT replace the readers below.
+ * `resolvePlaywright` also honours `PLAYWRIGHT_BIN` and is separately tested, and
+ * folding every reader into one is the parser consolidation `cli.js` defers to James
+ * (#58). Refusing here makes the invalid case unreachable for all three without
+ * moving where any of them reads from.
+ */
+function parseArgs(argv) {
+  for (let i = 0; i < argv.length; i++) {
+    if (!VALUE_FLAGS.has(argv[i])) continue;
+    const next = argv[i + 1];
+    if (next === undefined || cli.looksLikeAFlag(next)) {
+      return { error: `${argv[i]} needs a value` };
+    }
+    i++;
+  }
+  return {};
+}
 
 // Assemble the spec exactly as a consumer would: parse the corpus, resolve it,
 // and concatenate `generate()`'s output. Nothing here rewrites, reorders or
@@ -186,6 +246,27 @@ function parseResults(output) {
 }
 
 async function main(argv = []) {
+  // FIRST, before `emitSpec()` reads a corpus or anything else does work: a refusal
+  // that arrives after the tool has already acted is not a refusal.
+  //
+  // The exemption that kept this file out of the scan said it "drives Playwright, and
+  // kit deliberately has no `@playwright/test` dependency to drive it with". That is
+  // true of a full run and IRRELEVANT TO THIS LINE — a flag guard reads argv and
+  // nothing else, which is the ground kit#101 already settled for `mutate.js`.
+  // 🔑 An exemption's reason has to be true of the PROPERTY being tested, not of the
+  // tool in general; both times I got this wrong, the reason named the expensive
+  // thing the tool does while the test needed only the cheap one (kit#105/kit#106).
+  const bad = cli.unknownFlag(argv, KNOWN_FLAGS);
+  if (bad) return cli.refuse(bad, USAGE);
+
+  // A forgotten value, which the guard above is structurally blind to.
+  const parsed = parseArgs(argv);
+  if (parsed.error) {
+    console.error(`cannot look: ${parsed.error}`);
+    console.error(USAGE);
+    return 2;
+  }
+
   const spec = emitSpec();
 
   if (argv.includes('--emit-only')) {
@@ -328,6 +409,6 @@ async function main(argv = []) {
   return code;
 }
 
-module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, unreadable, launchFailed, drifted, main, SUBJECT, EXPECTED };
+module.exports = { emitSpec, refusals, resolvePlaywright, parseResults, unreadable, launchFailed, drifted, main, SUBJECT, EXPECTED, KNOWN_FLAGS, VALUE_FLAGS, parseArgs };
 
 if (require.main === module) main(process.argv.slice(2)).then((c) => process.exit(c));
