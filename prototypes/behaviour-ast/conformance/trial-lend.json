@@ -1,0 +1,855 @@
+{
+  "format": 1,
+  "corpus": "trial-lend",
+  "parse": [
+    {
+      "id": "BEH-SHELF-1",
+      "title": "The shelf lists everything currently lent out and who has it",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:36"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:LoanList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "LoanList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:37"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees column:Borrower",
+          "refs": [
+            {
+              "kind": "column",
+              "name": "Borrower"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:38"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:33",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SHELF-2",
+      "title": "An empty shelf says so rather than showing a blank page",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "shelf:Empty",
+          "refs": [
+            {
+              "kind": "shelf",
+              "name": "Empty"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:43"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:44"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:EmptyState",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "EmptyState"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:45"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:40",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SHELF-3",
+      "title": "Overdue loans are visibly marked",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "loan:Overdue",
+          "refs": [
+            {
+              "kind": "loan",
+              "name": "Overdue"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:50"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:51"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Overdue",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Overdue"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:52"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:47",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-LEND-1",
+      "title": "A new loan is recorded from the shelf",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:60"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:LendSomething",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "LendSomething"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:61"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:NewLoan",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewLoan"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:62"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:ItemName",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "ItemName"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:63"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:Borrower",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "Borrower"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:64"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:57",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-LEND-2",
+      "title": "Recording a loan puts it on the shelf",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:NewLoan",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewLoan"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:69"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:NewLoan with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "NewLoan"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "trial-lend.beh:70"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:ConfirmLoan",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "ConfirmLoan"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:71"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:72"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:LoanList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "LoanList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:73"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "trial-lend.beh:70"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:66",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-LEND-3",
+      "title": "The loan form takes an item, a borrower and a due date",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:NewLoan",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewLoan"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:78"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "NewLoan",
+          "slot": "fields",
+          "value": [
+            "ItemName",
+            "Borrower",
+            "DueDate"
+          ],
+          "from": "BEH-LEND-3",
+          "at": "trial-lend.beh:79"
+        }
+      ],
+      "serves": [],
+      "at": "trial-lend.beh:75",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#holes"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-RETURN-1",
+      "title": "A loan is marked returned from the shelf",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "loan:Outstanding",
+          "refs": [
+            {
+              "kind": "loan",
+              "name": "Outstanding"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:87"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:88"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:MarkReturned",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "MarkReturned"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:89"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:LoanList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "LoanList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:90"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:84",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-RETURN-2",
+      "title": "A returned loan is no longer on the shelf",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "loan:JustReturned",
+          "refs": [
+            {
+              "kind": "loan",
+              "name": "JustReturned"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:99"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Shelf",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Shelf"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:100"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:EmptyState",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "EmptyState"
+            }
+          ],
+          "holes": [],
+          "at": "trial-lend.beh:101"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-lend.beh:96",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/lend-brief.md#brief"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "form:NewLoan.fields",
+        {
+          "value": [
+            "ItemName",
+            "Borrower",
+            "DueDate"
+          ],
+          "contributors": [
+            "BEH-LEND-3"
+          ],
+          "at": "trial-lend.beh:79"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-SHELF-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SHELF-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SHELF-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-LEND-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-LEND-2",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "ItemName",
+                "Borrower",
+                "DueDate"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:NewLoan.fields",
+                "value": [
+                  "ItemName",
+                  "Borrower",
+                  "DueDate"
+                ],
+                "from": [
+                  "BEH-LEND-3"
+                ],
+                "at": "trial-lend.beh:70"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-LEND-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-RETURN-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-RETURN-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-SHELF-1",
+      "code": "test(\"[BEH-SHELF-1] The shelf lists everything currently lent out and who has it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees column:Borrower\" });\n  // UNGENERATED: then sees column:Borrower\n});",
+      "missing": [
+        "page:Shelf",
+        "region:LoanList",
+        "column:Borrower"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-SHELF-2",
+      "code": "test(\"[BEH-SHELF-2] An empty shelf says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given shelf:Empty\" });\n  // UNGENERATED: given shelf:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "missing": [
+        "shelf:Empty",
+        "page:Shelf",
+        "region:EmptyState"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-SHELF-3",
+      "code": "test(\"[BEH-SHELF-3] Overdue loans are visibly marked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Overdue\" });\n  // UNGENERATED: given loan:Overdue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Overdue\" });\n  // UNGENERATED: then sees badge:Overdue\n});",
+      "missing": [
+        "loan:Overdue",
+        "page:Shelf",
+        "badge:Overdue"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-LEND-1",
+      "code": "test(\"[BEH-LEND-1] A new loan is recorded from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:LendSomething\" });\n  // UNGENERATED: when activates button:LendSomething\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewLoan\" });\n  // UNGENERATED: then lands on page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:ItemName\" });\n  // UNGENERATED: then sees field:ItemName\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Borrower\" });\n  // UNGENERATED: then sees field:Borrower\n});",
+      "missing": [
+        "page:Shelf",
+        "button:LendSomething",
+        "page:NewLoan",
+        "field:ItemName",
+        "field:Borrower"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-LEND-2",
+      "code": "test(\"[BEH-LEND-2] Recording a loan puts it on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewLoan with ?fields\" });\n  // UNGENERATED: when fills form:NewLoan with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:ConfirmLoan\" });\n  // UNGENERATED: when activates button:ConfirmLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Shelf\" });\n  // UNGENERATED: then lands on page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+      "missing": [
+        "page:NewLoan",
+        "field:ItemName",
+        "field:Borrower",
+        "field:DueDate",
+        "button:ConfirmLoan",
+        "page:Shelf",
+        "region:LoanList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-LEND-3",
+      "code": "test(\"[BEH-LEND-3] The loan form takes an item, a borrower and a due date\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n});",
+      "missing": [
+        "page:NewLoan"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-RETURN-1",
+      "code": "test(\"[BEH-RETURN-1] A loan is marked returned from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Outstanding\" });\n  // UNGENERATED: given loan:Outstanding\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:MarkReturned\" });\n  // UNGENERATED: when activates button:MarkReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+      "missing": [
+        "loan:Outstanding",
+        "page:Shelf",
+        "button:MarkReturned",
+        "region:LoanList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-RETURN-2",
+      "code": "test(\"[BEH-RETURN-2] A returned loan is no longer on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:JustReturned\" });\n  // UNGENERATED: given loan:JustReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "missing": [
+        "loan:JustReturned",
+        "page:Shelf",
+        "region:EmptyState"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    }
+  ]
+}
