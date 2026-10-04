@@ -35,12 +35,16 @@ public sealed class CorpusParser : ICorpusParser
     //
     // So the class is written out: ECMA-262's WhiteSpace plus LineTerminator,
     // which is also exactly what `String.prototype.trim` removes. Stated once as
-    // regex source and once as characters, with a test asserting the two agree
-    // member-for-member, so the pair cannot drift apart.
+    // regex source and once as characters. `WhitespaceTests` drives every member
+    // through BOTH \u2014 as a separator (the regex and `FirstToken`) and as padding
+    // (`Trim`) \u2014 against the set Node itself reports, so the pair cannot drift
+    // apart from each other or from JavaScript. (This comment promised that test
+    // for a wake before it existed; a `\s` swap now fails exactly the two
+    // characters above and nothing else.)
     private const string Ws =
         @"\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff";
 
-    internal static readonly char[] WsChars =
+    private static readonly char[] WsChars =
     [
         '\t', '\n', '\v', '\f', '\r', ' ', '\u00a0', '\u1680',
         '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006',
@@ -287,7 +291,7 @@ public sealed class CorpusParser : ICorpusParser
     /// <c>String.prototype.trim</c>, not <see cref="string.Trim()"/> — see the
     /// <c>Ws</c> comment for the two codepoints they disagree about.
     /// </summary>
-    internal static string Trim(string s) => s.Trim(WsChars);
+    private static string Trim(string s) => s.Trim(WsChars);
 
     /// <summary>
     /// <c>s.split(/\s+/)[0]</c> on an already-trimmed string: the leading run of

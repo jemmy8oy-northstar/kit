@@ -381,7 +381,13 @@ own words. Three decisions and a sequencing rule:
    one-line way to overrule it.
    The Node layer is dropped only once the C# engine reproduces the goldens above byte-for-byte — which
    turns *"drop Node"* into a measurable finish line instead of an intention.
-   ✅ **`parse` is the first module and it is DONE and SCORED** (`backend/Kit.Engine`, `backend/Kit.Tests`):
+   🏗️ **Layout is the template's, by his ruling on `kit#120`** (2026-10-04: *"follow the same structure
+   as the other projects and all the same practices. The 6 defined projects and the 1 class per file"*):
+   `backend/Balenthiran.Kit.{Abstractions,DataModels,Database,DomainModels,EntityModels,Services,Tests}`,
+   StyleCop SA1402 as a build error, interfaces in `Abstractions`, no static classes in `Services`. This
+   overrode a "a pure library needs no web-app layers" call of mine — consistency across his apps is the
+   point, and empty layers fill as the engine grows (`Database` holds the git store once write-back lands).
+   ✅ **`parse` is the first module and it is DONE and SCORED** (`CorpusParser` in `Balenthiran.Kit.Services`):
    11 corpora, structure compared against each golden's `parse` section, plus a separate test pinning the
    serialiser against the goldens' own bytes. The second test exists because a red control proved the
    first one could not see the serialiser at all — both its sides share one `JsonSerializerOptions`, so an
