@@ -48,7 +48,19 @@ public static class EngineJson
             // The engine's keys are camelCase; the C# properties are PascalCase.
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         };
-        o.MakeReadOnly();
+        // ⚠️ `populateMissingResolver: true`, not the no-arg overload. The bare
+        // `MakeReadOnly()` THROWS unless a TypeInfoResolver has already been set
+        // ("JsonSerializerOptions instance must specify a TypeInfoResolver
+        // setting before being marked as read-only"), and because `Options` is a
+        // static initialiser that surfaces as a TypeInitializationException on
+        // first use — so every conformance case failed with a stack trace rather
+        // than a diff, and none of them had reached the parser at all.
+        //
+        // The settings above were measured against all eleven goldens in a
+        // throwaway probe project that never called MakeReadOnly. The VALUES were
+        // right and the DELIVERY was untested: a measurement of the options is
+        // not a measurement of the object the engine actually serialises with.
+        o.MakeReadOnly(populateMissingResolver: true);
         return o;
     }
 }

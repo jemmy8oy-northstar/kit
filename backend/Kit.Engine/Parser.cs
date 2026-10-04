@@ -265,7 +265,13 @@ public static class Parser
 
         var refs = new List<Reference>();
         var holes = new List<Hole>();
-        foreach (var m in RefOrHole.Matches(rest))
+        // ⚠️ `Match`, not `var`. `MatchCollection` implements both the generic and
+        // the non-generic `IEnumerable`, so `var` binds the loop variable to
+        // `object` and every `m.Groups[...]` below fails to compile. Nothing
+        // caught this until the test project gained a reference to this one:
+        // `dotnet test` on a test project that references nothing never builds
+        // the library, and reports exit 0 with zero tests discovered.
+        foreach (Match m in RefOrHole.Matches(rest))
         {
             if (m.Groups[1].Success) holes.Add(new Hole { Slot = m.Groups[1].Value });
             else if (m.Groups[2].Success) refs.Add(new Reference { Kind = m.Groups[2].Value, Name = m.Groups[3].Value });
