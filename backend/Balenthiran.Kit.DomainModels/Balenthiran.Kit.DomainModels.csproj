@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Empty until a parse result needs behaviour of its own (the template's
+       `DomainX : X` shape). Present now so the layering is the template's from
+       the first commit rather than retrofitted. -->
+  <ItemGroup>
+    <ProjectReference Include="../Balenthiran.Kit.DataModels/Balenthiran.Kit.DataModels.csproj" />
+    <ProjectReference Include="../Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <EnableDefaultResourceItems>false</EnableDefaultResourceItems>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

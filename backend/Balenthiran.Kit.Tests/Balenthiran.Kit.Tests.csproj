@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Kit.Engine\Kit.Engine.csproj" />
+    <ProjectReference Include="..\Balenthiran.Kit.Services\Balenthiran.Kit.Services.csproj" />
+    <ProjectReference Include="..\Balenthiran.Kit.Abstractions\Balenthiran.Kit.Abstractions.csproj" />
+    <ProjectReference Include="..\Balenthiran.Kit.DomainModels\Balenthiran.Kit.DomainModels.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,8 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using Balenthiran.Kit.Abstractions.Services;
 
-namespace Kit.Engine;
+namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// The one definition of how engine output is serialised.
@@ -11,9 +12,9 @@ namespace Kit.Engine;
 /// byte-for-byte, which is the only reason the committed conformance goldens can
 /// score this port at all. Measured over all eleven goldens before a line of the
 /// port was written, and each setting has a red control in
-/// <c>SerialisationTests</c> that turns the comparison red when it is changed.
+/// <c>ConformanceTests</c> that turns the comparison red when it is changed.
 /// </summary>
-public static class EngineJson
+public sealed class EngineJsonSerialiser : IEngineJsonSerialiser
 {
     /// <summary>
     /// ⚠️ <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/> is
@@ -25,14 +26,10 @@ public static class EngineJson
     /// corpora. "Unsafe" there means unsafe to interpolate into HTML, which is
     /// not what these bytes are for.
     /// </summary>
-    public static JsonSerializerOptions Options { get; } = Build();
+    public JsonSerializerOptions Options { get; } = Build();
 
-    /// <summary>
-    /// The serialised form, which is what is actually compared — including the
-    /// trailing newline, because <c>conformance.js</c> writes one and a file that
-    /// differs only in its last byte is still a file that differs.
-    /// </summary>
-    public static string Serialise<T>(T value) => JsonSerializer.Serialize(value, Options) + "\n";
+    /// <inheritdoc />
+    public string Serialise(object value) => JsonSerializer.Serialize(value, value.GetType(), Options) + "\n";
 
     private static JsonSerializerOptions Build()
     {
@@ -51,10 +48,10 @@ public static class EngineJson
         // ⚠️ `populateMissingResolver: true`, not the no-arg overload. The bare
         // `MakeReadOnly()` THROWS unless a TypeInfoResolver has already been set
         // ("JsonSerializerOptions instance must specify a TypeInfoResolver
-        // setting before being marked as read-only"), and because `Options` is a
-        // static initialiser that surfaces as a TypeInitializationException on
-        // first use — so every conformance case failed with a stack trace rather
-        // than a diff, and none of them had reached the parser at all.
+        // setting before being marked as read-only"). When this was a static
+        // initialiser that surfaced as a TypeInitializationException on first
+        // use — every conformance case failed with a stack trace rather than a
+        // diff, and none of them had reached the parser at all.
         //
         // The settings above were measured against all eleven goldens in a
         // throwaway probe project that never called MakeReadOnly. The VALUES were

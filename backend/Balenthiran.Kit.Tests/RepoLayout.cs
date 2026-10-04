@@ -1,9 +1,9 @@
-namespace Kit.Tests;
+namespace Balenthiran.Kit.Tests;
 
 /// <summary>
 /// Where the corpora and the goldens are, found rather than configured.
 ///
-/// The test binary runs from <c>backend/Kit.Tests/bin/&lt;cfg&gt;/net10.0/</c>, and
+/// The test binary runs from <c>backend/Balenthiran.Kit.Tests/bin/&lt;cfg&gt;/net10.0/</c>, and
 /// the fixtures it needs live under <c>prototypes/behaviour-ast/</c>. Copying them
 /// into the output directory would make a second copy of the oracle, which is the
 /// thing a golden-file harness most needs not to have — so the directory is

@@ -1,6 +1,11 @@
 using System.Text.RegularExpressions;
 
-namespace Kit.Engine;
+using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Exceptions;
+using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.DataModels.Models;
+
+namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// Stage 1 of the engine: text in, behaviour tree out.
@@ -14,7 +19,7 @@ namespace Kit.Engine;
 /// Line-based on purpose: James's requirement is that a human can write the tree
 /// by hand, and YAML and JSON both fail that on punctuation alone.
 /// </summary>
-public static class Parser
+public sealed class CorpusParser : ICorpusParser
 {
     private static readonly HashSet<string> StepKeys = ["given", "when", "then", "contract"];
 
@@ -58,16 +63,13 @@ public static class Parser
     private static readonly Regex BareNoun = new(@"^[a-z]+:[A-Za-z0-9_]+\z", RegexOptions.Compiled);
     private static readonly Regex RefOrHole = new(@"\?([a-zA-Z_]+)|([a-z]+):([A-Za-z0-9_]+)|""([^""]*)""", RegexOptions.Compiled);
 
-    /// <summary>
-    /// Parse a corpus. <paramref name="file"/> is used only to build the
-    /// <c>file:line</c> locator every node carries, and defaults to the same
-    /// <c>&lt;inline&gt;</c> the Node engine uses.
-    /// </summary>
-    /// <exception cref="KitParseException">
-    /// The corpus is not a corpus. The message is the Node engine's, verbatim,
-    /// because these strings are what a human writing a tree by hand reads.
-    /// </exception>
-    public static List<Behaviour> Parse(string text, string file = "<inline>")
+    /// <inheritdoc />
+    /// <remarks>
+    /// The list handed back is a <c>List&lt;Behaviour&gt;</c>, so its runtime
+    /// type carries the concrete shape and key order the goldens are scored on —
+    /// see <see cref="EngineJsonSerialiser.Serialise"/>.
+    /// </remarks>
+    public IReadOnlyList<IBehaviour> Parse(string text, string file = "<inline>")
     {
         var behaviours = new List<Behaviour>();
         Behaviour? cur = null;
@@ -91,7 +93,7 @@ public static class Parser
                 continue;
             }
 
-            if (cur is null) throw new KitParseException($"{at}: line outside a behaviour: {line}");
+            if (cur is null) throw new CorpusParseException($"{at}: line outside a behaviour: {line}");
 
             var kw = FirstToken(line);
             var rest = Trim(line[kw.Length..]);
@@ -108,7 +110,7 @@ public static class Parser
             if (kw == "source")
             {
                 var s = SourceRest.Match(rest);
-                if (!s.Success) throw new KitParseException($@"{at}: source wants ""defined""|""inferred"" [ref], got: {rest}");
+                if (!s.Success) throw new CorpusParseException($@"{at}: source wants ""defined""|""inferred"" [ref], got: {rest}");
                 cur.Source = new Source { Origin = s.Groups[1].Value, Ref = Opt(s.Groups[2]) };
 
                 // An inference is unreviewed until someone says otherwise.
@@ -129,7 +131,7 @@ public static class Parser
             if (kw == "review")
             {
                 var r = ReviewRest.Match(rest);
-                if (!r.Success) throw new KitParseException($@"{at}: review wants ""unreviewed""|""approved""|""denied"" [note], got: {rest}");
+                if (!r.Success) throw new CorpusParseException($@"{at}: review wants ""unreviewed""|""approved""|""denied"" [note], got: {rest}");
 
                 // A denial without a correction is a hole, not a decision — his
                 // #68 point that a deny must say what correct behaviour looks
@@ -137,7 +139,7 @@ public static class Parser
                 // compounds into the corpus.
                 if (r.Groups[1].Value == "denied" && !r.Groups[2].Success)
                 {
-                    throw new KitParseException($"{at}: a denied behaviour must state the correction");
+                    throw new CorpusParseException($"{at}: a denied behaviour must state the correction");
                 }
 
                 cur.Review = new Review { State = r.Groups[1].Value, Note = Opt(r.Groups[2]) };
@@ -155,7 +157,7 @@ public static class Parser
             if (kw == "serves")
             {
                 var s = ServesRest.Match(rest);
-                if (!s.Success) throw new KitParseException($"{at}: serves wants a behaviour id, got: {rest}");
+                if (!s.Success) throw new CorpusParseException($"{at}: serves wants a behaviour id, got: {rest}");
                 cur.Serves.Add(new IdRef { Id = s.Groups[1].Value, At = at });
                 continue;
             }
@@ -166,7 +168,7 @@ public static class Parser
             if (kw == "asks")
             {
                 var a = Quoted.Match(rest);
-                if (!a.Success) throw new KitParseException($"{at}: asks wants a quoted question, got: {rest}");
+                if (!a.Success) throw new CorpusParseException($"{at}: asks wants a quoted question, got: {rest}");
                 cur.Asks = a.Groups[1].Value;
                 continue;
             }
@@ -177,7 +179,7 @@ public static class Parser
             if (kw == "option")
             {
                 var o = LabelAndText.Match(rest);
-                if (!o.Success) throw new KitParseException($@"{at}: option wants ""<label>"" ""<what changes if taken>"", got: {rest}");
+                if (!o.Success) throw new CorpusParseException($@"{at}: option wants ""<label>"" ""<what changes if taken>"", got: {rest}");
                 cur.Options.Add(new Option { Label = o.Groups[1].Value, Consequence = o.Groups[2].Value, At = at });
                 continue;
             }
@@ -185,7 +187,7 @@ public static class Parser
             if (kw == "recommend")
             {
                 var r = LabelAndText.Match(rest);
-                if (!r.Success) throw new KitParseException($@"{at}: recommend wants ""<option label>"" ""<why>"", got: {rest}");
+                if (!r.Success) throw new CorpusParseException($@"{at}: recommend wants ""<option label>"" ""<why>"", got: {rest}");
                 cur.Recommend = new Recommendation { Label = r.Groups[1].Value, Why = r.Groups[2].Value, At = at };
                 continue;
             }
@@ -197,7 +199,7 @@ public static class Parser
             // one being the other's evidence, and only an author knows which.
             if (kw == "cites")
             {
-                if (!CitesRest.IsMatch(rest)) throw new KitParseException($"{at}: cites wants a behaviour id, got: {rest}");
+                if (!CitesRest.IsMatch(rest)) throw new CorpusParseException($"{at}: cites wants a behaviour id, got: {rest}");
                 cur.Cites.Add(new IdRef { Id = rest, At = at });
                 continue;
             }
@@ -209,7 +211,7 @@ public static class Parser
             if (kw == "against")
             {
                 var g = Quoted.Match(rest);
-                if (!g.Success) throw new KitParseException($"{at}: against wants a quoted counter-case, got: {rest}");
+                if (!g.Success) throw new CorpusParseException($"{at}: against wants a quoted counter-case, got: {rest}");
                 cur.Against = g.Groups[1].Value;
                 continue;
             }
@@ -221,7 +223,7 @@ public static class Parser
                 // LATER, and an inference that lives only in a chat message
                 // cannot be denied six weeks on.
                 var p = ProvidesRest.Match(rest);
-                if (!p.Success) throw new KitParseException($"{at}: provides wants <kind>:<Name>.<slot> = <value>, got: {rest}");
+                if (!p.Success) throw new CorpusParseException($"{at}: provides wants <kind>:<Name>.<slot> = <value>, got: {rest}");
                 cur.Provides.Add(new Provide
                 {
                     Kind = p.Groups[1].Value,
@@ -247,7 +249,7 @@ public static class Parser
                 continue;
             }
 
-            throw new KitParseException($@"{at}: unrecognised keyword ""{kw}""");
+            throw new CorpusParseException($@"{at}: unrecognised keyword ""{kw}""");
         }
 
         return behaviours;
@@ -307,6 +309,3 @@ public static class Parser
     /// </summary>
     private static string? Opt(Group g) => g.Success ? g.Value : null;
 }
-
-/// <summary>A corpus that is not a corpus. Carries the Node engine's message verbatim.</summary>
-public sealed class KitParseException(string message) : Exception(message);

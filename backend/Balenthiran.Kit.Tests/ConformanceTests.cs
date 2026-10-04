@@ -1,15 +1,16 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Kit.Engine;
+using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.Services;
 
-namespace Kit.Tests;
+namespace Balenthiran.Kit.Tests;
 
 /// <summary>
 /// The port's score, not its review.
 ///
 /// Every corpus in <c>prototypes/behaviour-ast/behaviours/</c> has a committed
 /// golden holding what the Node engine produces for it (kit#116). This drives the
-/// C# <see cref="Parser"/> over the same corpus and asserts the bytes match the
+/// C# <see cref="CorpusParser"/> over the same corpus and asserts the bytes match the
 /// golden's <c>parse</c> section exactly. The Node engine is the specification;
 /// a difference is this port being wrong, not the golden being stale.
 ///
@@ -21,6 +22,11 @@ namespace Kit.Tests;
 /// </summary>
 public class ConformanceTests
 {
+    // Constructed directly, as the template's own service tests do: there is no
+    // WebApi yet to own a DI container, and these are the real implementations.
+    private readonly ICorpusParser _parser = new CorpusParser();
+    private readonly IEngineJsonSerialiser _serialiser = new EngineJsonSerialiser();
+
     /// <summary>
     /// Both sides are put through ONE serialiser, so a formatting difference
     /// cannot be mistaken for a parsing difference.
@@ -31,8 +37,8 @@ public class ConformanceTests
     /// inside the document) — comparing the file's own bytes would fail on
     /// leading whitespace for every corpus and prove nothing about the parser.
     /// </summary>
-    private static string Canonical(JsonNode? node) =>
-        JsonSerializer.Serialize(node, EngineJson.Options);
+    private string Canonical(JsonNode? node) =>
+        JsonSerializer.Serialize(node, _serialiser.Options);
 
     public static TheoryData<string> Corpora()
     {
@@ -50,7 +56,7 @@ public class ConformanceTests
     /// comparison below CANNOT see it.
     ///
     /// 🔴 Found by a red control, not by reasoning: removing
-    /// <c>UnsafeRelaxedJsonEscaping</c> from <see cref="EngineJson"/> left
+    /// <c>UnsafeRelaxedJsonEscaping</c> from <see cref="EngineJsonSerialiser"/> left
     /// <see cref="Parse_reproduces_the_golden_structure"/> green. Both of its
     /// sides go through the same options, so any encoding difference applies to
     /// both and cancels out — that test proves the parser builds the right
@@ -73,7 +79,7 @@ public class ConformanceTests
         // Non-vacuity: a zero-length read would make any comparison trivial.
         Assert.True(golden.Length > 0, $"golden for {corpus} is EMPTY");
 
-        var roundTripped = EngineJson.Serialise(JsonNode.Parse(golden));
+        var roundTripped = _serialiser.Serialise(JsonNode.Parse(golden)!);
 
         Assert.Equal(golden, roundTripped);
     }
@@ -98,10 +104,10 @@ public class ConformanceTests
         var expectedCount = expectedNode!.AsArray().Count;
         Assert.True(expectedCount > 0, $"golden for {corpus} has an EMPTY parse section — this test would pass vacuously");
 
-        var actual = Parser.Parse(File.ReadAllText(behPath), $"{corpus}.beh");
+        var actual = _parser.Parse(File.ReadAllText(behPath), $"{corpus}.beh");
         Assert.Equal(expectedCount, actual.Count);
 
-        Assert.Equal(Canonical(expectedNode), Canonical(JsonSerializer.SerializeToNode(actual, EngineJson.Options)));
+        Assert.Equal(Canonical(expectedNode), Canonical(JsonNode.Parse(_serialiser.Serialise(actual))));
     }
 
     /// <summary>
