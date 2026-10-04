@@ -341,14 +341,29 @@ own words. Three decisions and a sequencing rule:
    pointing at is Docker/OCIR/Helm/ArgoCD, which does not inspect the language in the image, but
    "closer to my stack" and "scalable from the start" are preferences he is entitled to hold directly.
    🔑 **Why Node keeping running is load-bearing rather than sentimental.** Generation is **byte-for-byte
-   deterministic** — measured 2026-09-30 across four corpora and three entry points, with no timestamps,
-   PIDs or absolute paths leaking into the output. So the Node engine can serve as the **executable
-   specification** the C# implementation is verified against, via committed golden files. That is what
-   stops the port discarding the evidence the 181 mutants represent, and it is why the conformance
-   harness is built *before* any module is ported.
-   ⚠️ **The one thing here he has not decided** is whether Phase 1's hosted image carries both runtimes
-   (C# server, Node engine behind one interface) so the server ships before the engine is ported.
-   Queued with a default; it is an architecture call and therefore his.
+   deterministic** — measured 2026-09-30 across four corpora and three entry points, and **re-measured
+   2026-10-03 across seven entry points and all eleven committed corpora: 77 pairs, 77 identical, 0
+   differ**, each pair run in two separate processes so shared module state cannot hide an ordering
+   difference, with the exit code inside the hashed observation. No timestamps, PIDs or absolute paths
+   leak into the output. So the Node engine can serve as the **executable specification** the C#
+   implementation is verified against, via committed golden files. That is what stops the port discarding
+   the evidence the 181 mutants represent, and it is why the conformance harness is built *before* any
+   module is ported.
+   ✅ **That harness now exists: `prototypes/behaviour-ast/conformance.js` plus a committed golden per
+   corpus**, compared by `kit.test.js` on every CI run. It is sectioned by engine module — `parse`,
+   `resolve`, `generate` — so a C# `Parse` can be scored on its own while the other stages are still
+   JavaScript. One opaque blob per corpus could not score a half-ported engine, which is the same as
+   having no harness for the whole length of the port.
+   ✅ **Phase 1 carries BOTH runtimes — a C# server with the Node engine behind one engine interface.**
+   This was the last open architecture call inside his C# decision, and it is now settled rather than
+   queued. He said *"Can you work on migrating it to csharp next I feel like that's highest value"*
+   (`kit#88`, 2026-10-03), which is the event the queued question was waiting for: it was deliberately
+   dated into the future on the grounds that it was *"not answerable-and-needed until the port actually
+   starts"*. Before that, on 2026-10-02, he was told **"say otherwise and I will hold"** and did not.
+   The reason this is cheap to have settled rather than escalated: **Phase 1 is written against one
+   engine interface either way**, so what sits behind that interface can be swapped without
+   invalidating Phase 1. The Node layer is dropped only once the C# engine reproduces the goldens above
+   byte-for-byte — which turns *"drop Node"* into a measurable finish line instead of an intention.
 
 ### 🔴 The middle of that loop does not exist yet
 
