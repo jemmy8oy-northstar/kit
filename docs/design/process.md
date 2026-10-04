@@ -354,16 +354,38 @@ own words. Three decisions and a sequencing rule:
    `resolve`, `generate` — so a C# `Parse` can be scored on its own while the other stages are still
    JavaScript. One opaque blob per corpus could not score a half-ported engine, which is the same as
    having no harness for the whole length of the port.
-   ✅ **Phase 1 carries BOTH runtimes — a C# server with the Node engine behind one engine interface.**
-   This was the last open architecture call inside his C# decision, and it is now settled rather than
-   queued. He said *"Can you work on migrating it to csharp next I feel like that's highest value"*
-   (`kit#88`, 2026-10-03), which is the event the queued question was waiting for: it was deliberately
-   dated into the future on the grounds that it was *"not answerable-and-needed until the port actually
-   starts"*. Before that, on 2026-10-02, he was told **"say otherwise and I will hold"** and did not.
-   The reason this is cheap to have settled rather than escalated: **Phase 1 is written against one
-   engine interface either way**, so what sits behind that interface can be swapped without
-   invalidating Phase 1. The Node layer is dropped only once the C# engine reproduces the goldens above
-   byte-for-byte — which turns *"drop Node"* into a measurable finish line instead of an intention.
+   ✅ **THE ENGINE MOVES FIRST, and `ui.js` keeps serving until it is done.** He said *"Can you work on
+   migrating it to csharp next I feel like that's highest value"* (`kit#88`, 2026-10-03), which settled
+   that the port starts; this is the order it starts in.
+   ⚠️ **This REVERSES what this document said for one evening, and the reversal is kept rather than
+   overwritten, because the reasoning is the useful part.** Earlier on 2026-10-03 the answer here was
+   *"Phase 1 carries both runtimes — a C# server with the Node engine behind one engine interface"*. Then
+   the two halves were measured:
+
+   | | Engine (`kit.js` + `bindings.js`) | Server (`ui.js` + `auth.js` + `git-store.js`) |
+   | --- | --- | --- |
+   | Lines | 1,597 | **1,747 — the bigger half** |
+   | Module-level dependencies | **1** | 8 |
+   | An oracle for "correct"? | **yes** — the goldens above | **no** |
+   | What a wrong port does | a golden says so immediately | an unauthenticated write reaches a corpus on a public URL |
+
+   Porting the server first re-earns the session, the password gate, the cross-origin rule and the git
+   write-back in a second language **with nothing to score them against**, while leaving in Node the half
+   that is now cheap and provable. ⇒ **Rank a port by which half you can PROVE, not which half is wanted
+   sooner.**
+   🔴 **And the premise under the old answer had expired without its wording changing.** The dual-runtime
+   default was written on 2026-09-30 because the C# *server*, not the engine, was what would get him
+   phone access — true then, because Kit was not deployed. **Kit went live on 2026-10-03, so that reason
+   is spent.** The date had not lapsed; the *argument* had, which looks identical from outside because
+   the sentence is unchanged. Corrected on `kit#88` the same evening, before a line of C# existed, with a
+   one-line way to overrule it.
+   The Node layer is dropped only once the C# engine reproduces the goldens above byte-for-byte — which
+   turns *"drop Node"* into a measurable finish line instead of an intention.
+   ✅ **`parse` is the first module and it is DONE and SCORED** (`backend/Kit.Engine`, `backend/Kit.Tests`):
+   11 corpora, structure compared against each golden's `parse` section, plus a separate test pinning the
+   serialiser against the goldens' own bytes. The second test exists because a red control proved the
+   first one could not see the serialiser at all — both its sides share one `JsonSerializerOptions`, so an
+   encoding difference cancels out.
 
 ### 🔴 The middle of that loop does not exist yet
 
