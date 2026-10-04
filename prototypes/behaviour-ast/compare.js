@@ -41,7 +41,31 @@ const KNOWN_FLAGS = [];
   }
 }
 
-const real = execFileSync('git', ['-C', REPO, 'show', `origin/dev:${SPEC}`], { encoding: 'utf8' });
+// kit#107: this read used to be unguarded, so a repo path that does not exist — or a
+// clone with no `origin/dev`, or no such spec on it — dumped a raw `spawnSync` result
+// object and a Node stack trace at exit 1.
+//
+// 🔑 Why that mattered beyond tidiness: every OTHER tool here answers "could not look"
+// at exit 2, and the three-valued rule is that a refusal is never conflated with a
+// verdict. At exit 1 with a stack trace, this was the one tool whose "I could not
+// measure" was indistinguishable from a crash in the harness around it — and exit 1 is
+// also what a real comparison uses to mean something, so a caller reading the status
+// could not tell "snip-it has drifted" from "I never found snip-it".
+//
+// The three failures are deliberately NOT told apart. Each one means the same thing to
+// a caller — the named spec could not be read — and git's own stderr already says
+// which it was, so classifying them here would only add a way to be wrong about it.
+let real;
+try {
+  real = execFileSync('git', ['-C', REPO, 'show', `origin/dev:${SPEC}`],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+} catch (err) {
+  const said = String(err.stderr || err.message || '').trim().split('\n')[0];
+  process.stderr.write(`cannot look: could not read origin/dev:${SPEC} from ${REPO}\n`);
+  if (said) process.stderr.write(`  git said: ${said}\n`);
+  process.stderr.write('  pass a path to a snip-it clone, or set SNIPIT_REPO.\n');
+  process.exit(2);
+}
 
 // The first version of this comparator scored 18/28 and SEVEN of the ten misses
 // were its own fault, not the generator's: the spec reaches the same URL through
