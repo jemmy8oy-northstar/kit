@@ -6418,6 +6418,14 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
       const m = require('./selfhost/run.js');
       return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
     },
+    // The conformance harness. It joined this population by reading `argv[i + 1]`,
+    // which is what the second derivation below scans for — not by anyone deciding
+    // to add it. `positional: 'only'` because it names ONE corpus, so it carries
+    // the collision half as well as the forgotten-value half.
+    'conformance.js': () => {
+      const m = require('./conformance');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: 'only' };
+    },
   };
 
   // 🔴 There is NO `DEFERRED` map any more, and its deletion is the point. kit#105
@@ -6627,6 +6635,165 @@ test('cli: a tool that reads the token after a flag cannot opt out of the gate a
     + '— and export(s) no parser, so the gate above cannot see it. That is the invisible opt-out: a '
     + 'tool can carry this exact defect and never join a population derived from what it EXPORTS. '
     + 'Export the parser and declare it above; do not widen this scan to let it through');
+});
+
+section('conformance: the engine as an executable specification');
+const conformance = require('./conformance.js');
+const BEH_DIR = pathx.join(__dirname, 'behaviours');
+const GOLDEN_DIR = pathx.join(__dirname, 'conformance');
+
+// 🔑 THE GATE ITSELF. This is why the harness needs no workflow change: CI already
+// runs this file, so the comparison runs wherever the suite does.
+//
+// It compares and never writes — `conformance.js` does not export `main`, so the
+// regenerator is not reachable from here at all. A golden-file suite that can
+// rebuild its own fixture reports green over a real regression, which is why
+// `ui/src/test/fixtures/generate.js` is kept out of CI and why this is structural
+// rather than a flag.
+test('conformance: every corpus still reproduces its committed engine output', () => {
+  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+
+  // A MISSING golden is "could not look", and it is asserted separately from drift
+  // because they are different statements. Collapsed into one assertion, a first
+  // run with no goldens on disk would report the engine broken [[empty-means-two-things]].
+  assert.deepStrictEqual(r.missing, [],
+    `no committed golden for ${r.missing.join(', ')} — run \`node conformance.js --record\`. `
+    + 'This is COULD NOT LOOK, not a drifted engine.');
+
+  assert.deepStrictEqual(r.extra, [],
+    `golden(s) with no corpus: ${r.extra.join(', ')} — a renamed or deleted corpus leaves its `
+    + 'golden behind, and this test then goes on proving the engine reproduces output for '
+    + 'something that no longer exists [[a-thing-that-left-the-set-is-invisible]]');
+
+  assert.deepStrictEqual(r.drifted.map((d) => d.corpus), [],
+    `${r.drifted.map((d) => `${d.corpus} (${d.committedBytes} -> ${d.freshBytes} bytes)`).join(', ')} `
+    + 'no longer reproduce(s) committed output. If the change was intended, '
+    + '`node conformance.js --record` and commit the diff — the diff IS the review, and it is the '
+    + 'only place the behaviour change is visible.');
+
+  // The fail-safe every derived gate here needs: if `corporaIn` ever stops
+  // matching, `matched` is empty and all three assertions above pass over nothing
+  // while this test reports green [[empty-means-two-things]].
+  assert.ok(r.matched.length >= 10,
+    `only ${r.matched.length} corpus/corpora were compared (${r.matched.join(', ') || 'none'}) — `
+    + 'the scan has stopped matching and this gate is now inert');
+});
+
+test('conformance: the parse section is captured BEFORE resolve mutates it', () => {
+  // The trap this file is built around, pinned so a refactor cannot reintroduce it.
+  // `resolve` writes `step.resolved` back onto the steps `parse` returned
+  // (kit.js:283) — deliberately, so a hole filled by another behaviour actually
+  // generates. Capture the parse section afterwards and it silently contains
+  // resolve's additions, so a CORRECT C# `Parse` could never match the golden:
+  // the harness would score the port wrong rather than failing to score it.
+  const src = fsx.readFileSync(pathx.join(BEH_DIR, 'james-habits-app.beh'), 'utf8');
+  const parsed = parse(src, 'james-habits-app.beh');
+  const before = JSON.stringify(parsed);
+  resolve(parsed);
+  assert.notStrictEqual(JSON.stringify(parsed), before,
+    'resolve no longer mutates parse output — if that is intended the header of '
+    + 'conformance.js is now wrong, but check it is not the write-back being lost');
+
+  // And the golden's own parse section must be the pristine one. A step that
+  // resolve filled must NOT carry `resolved` in `parse`, and must carry it in the
+  // resolve delta — the two halves together are what prove the ordering.
+  const g = conformance.pipeline(BEH_DIR, 'james-habits-app');
+  const parseHasResolved = JSON.stringify(g.parse).includes('"resolved"');
+  assert.strictEqual(parseHasResolved, false,
+    'the parse section carries `resolved`, so it was snapshotted AFTER resolve ran');
+  const deltaPaths = g.resolve.changed.flatMap((c) => c.changes.map((ch) => ch.path));
+  assert.ok(deltaPaths.some((p) => /^steps\.\d+\.resolved$/.test(p)),
+    'no `steps.N.resolved` in the resolve delta — either the write-back is gone or the '
+    + 'delta has stopped seeing it, and both look identical from a green suite');
+});
+
+test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
+  // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
+  // whitelist. Measured when this was written: recording resolve's behaviours in
+  // full made 36.7% of the artefact a near-duplicate of another 35.6%, with 140 of
+  // 147 behaviours byte-identical once filled/open were stripped. A whitelist would
+  // have been smaller too — and would silently miss whatever resolve starts
+  // mutating next. A diff cannot [[an-unused-field-is-a-missing-rule]].
+  const d = conformance.delta(
+    { a: 1, keep: 'same', nested: { x: 1 } },
+    { a: 1, keep: 'same', nested: { x: 2 }, brandNew: 'appeared' },
+  );
+  assert.deepStrictEqual(d, [
+    { path: 'nested.x', from: 1, to: 2 },
+    { path: 'brandNew', from: null, to: 'appeared' },
+  ], 'the delta must report a changed nested value AND a key that only the after side has');
+
+  // Identical inputs must produce NO changes — otherwise every behaviour would
+  // report a delta and the 7-of-147 signal above would be noise.
+  assert.deepStrictEqual(conformance.delta({ a: [1, 2], b: null }, { a: [1, 2], b: null }), []);
+
+  // A removed key is a change too, in the direction a whitelist would miss.
+  assert.deepStrictEqual(conformance.delta({ gone: 'was here' }, {}),
+    [{ path: 'gone', from: 'was here', to: null }]);
+});
+
+test('conformance: nothing in a golden is sorted, timestamped or absolute-pathed', () => {
+  // Three separate ways a golden stops being checkable, all of them quiet.
+  const g = conformance.pipeline(BEH_DIR, 'snip-it');
+  const text = conformance.serialise(g);
+
+  // A date makes the golden differ every day for no reader's benefit, which is the
+  // kind of failing check that gets deleted rather than fixed. The committed sheet
+  // gate is checkable only because the sheet carries no timestamp.
+  assert.ok(!/\b20\d\d-\d\d-\d\dT\d\d:/.test(text), 'a golden carries an ISO timestamp');
+  // An absolute path makes it machine-specific, so it passes here and fails for him.
+  assert.ok(!text.includes(__dirname), 'a golden carries this machine\'s absolute path');
+
+  // 🔑 And the non-obvious one: `missing` must stay in ENGINE order, not sorted.
+  // Sorting would throw away a behaviour the C# port has to reproduce — the order
+  // is rendered straight into the generated `// unbound noun(s): ...` comment —
+  // and replace it with one the port cannot fail.
+  //
+  // ⚠️ The population is EVERY corpus, not one, because this assertion is only
+  // meaningful where engine order and sorted order actually differ. Written
+  // against `snip-it` first, it failed its own guard: snip-it binds nearly every
+  // noun, so all of its `missing` lists are short and happen to be sorted, and the
+  // check could not have told the two apart [[a-probe-must-join-the-population]].
+  // Measured across the committed corpora: 42 behaviours in 8 of 11 corpora have a
+  // genuinely unsorted list; kit, kit-ui and snip-it have none.
+  const unsorted = [];
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    for (const x of conformance.pipeline(BEH_DIR, corpus).generate) {
+      if (x.missing.length < 2) continue;
+      if (JSON.stringify(x.missing) !== JSON.stringify(x.missing.slice().sort())) unsorted.push({ corpus, ...x });
+    }
+  }
+  assert.ok(unsorted.length >= 10,
+    `only ${unsorted.length} behaviour(s) across every corpus have a \`missing\` list that is not `
+    + 'already in sorted order, so this test can barely tell engine order from sorted order. '
+    + 'Either the corpora changed shape or something has started sorting `missing`.');
+
+  // The delivery half: the order the golden records must be the order the
+  // generated comment actually carries. A golden that pinned an order the engine
+  // did not emit would score a correct port as wrong
+  // [[test-the-delivery-not-just-the-value]].
+  const wrongOrder = unsorted.filter((x) => x.code.includes('unbound noun(s)')
+    && !x.code.includes(x.missing.join(', ')));
+  assert.deepStrictEqual(wrongOrder.map((x) => `${x.corpus}/${x.id}`), [],
+    'the generated comment does not list `missing` in the order the golden records it, so the '
+    + 'golden has stopped pinning the order the port must reproduce');
+});
+
+test('conformance: the golden records which format wrote it', () => {
+  // A port verified against a golden written by a different shape of this file is
+  // verified against nothing, and the failure would look like a C# bug.
+  const g = conformance.pipeline(BEH_DIR, 'kit');
+  assert.strictEqual(g.format, conformance.FORMAT);
+  const committed = JSON.parse(fsx.readFileSync(conformance.goldenPath(GOLDEN_DIR, 'kit'), 'utf8'));
+  assert.strictEqual(committed.format, conformance.FORMAT,
+    `the committed goldens were written by format ${committed.format} and this code is `
+    + `${conformance.FORMAT} — re-record them, do not read across the change`);
+  // Sectioned by MODULE, so a half-ported engine can still be scored. One opaque
+  // blob could not verify a C# `Parse` until `Generate` also existed, which is the
+  // same as having no harness during the whole port.
+  assert.deepStrictEqual(Object.keys(g).sort(),
+    ['corpus', 'format', 'generate', 'parse', 'resolve'],
+    'the golden has stopped being sectioned by engine module');
 });
 
 Promise.all(pending).then(() => {
