@@ -45,9 +45,42 @@ public class ConformanceTests
         return data;
     }
 
+    /// <summary>
+    /// The serialiser half of the claim, and it needs its own test because the
+    /// comparison below CANNOT see it.
+    ///
+    /// 🔴 Found by a red control, not by reasoning: removing
+    /// <c>UnsafeRelaxedJsonEscaping</c> from <see cref="EngineJson"/> left
+    /// <see cref="Parse_reproduces_the_golden_structure"/> green. Both of its
+    /// sides go through the same options, so any encoding difference applies to
+    /// both and cancels out — that test proves the parser builds the right
+    /// STRUCTURE and says nothing at all about bytes.
+    ///
+    /// The port's actual claim is that C# output bytes equal Node output bytes,
+    /// so the serialiser is pinned here instead, against the one artefact that
+    /// is genuinely Node's: the golden file's own text. If
+    /// <c>System.Text.Json</c> under these options reproduces
+    /// <c>JSON.stringify(value, null, 2)</c>, re-serialising a golden must
+    /// return the golden.
+    /// </summary>
     [Theory]
     [MemberData(nameof(Corpora))]
-    public void Parse_reproduces_the_golden_byte_for_byte(string corpus)
+    public void The_serialiser_reproduces_JSON_stringify_byte_for_byte(string corpus)
+    {
+        var goldenPath = Path.Combine(RepoLayout.Conformance, $"{corpus}.json");
+        var golden = File.ReadAllText(goldenPath);
+
+        // Non-vacuity: a zero-length read would make any comparison trivial.
+        Assert.True(golden.Length > 0, $"golden for {corpus} is EMPTY");
+
+        var roundTripped = EngineJson.Serialise(JsonNode.Parse(golden));
+
+        Assert.Equal(golden, roundTripped);
+    }
+
+    [Theory]
+    [MemberData(nameof(Corpora))]
+    public void Parse_reproduces_the_golden_structure(string corpus)
     {
         var behPath = Path.Combine(RepoLayout.Behaviours, $"{corpus}.beh");
         var goldenPath = Path.Combine(RepoLayout.Conformance, $"{corpus}.json");
