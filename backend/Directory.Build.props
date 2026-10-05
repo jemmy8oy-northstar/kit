@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Shared build settings + convention enforcement for every backend project.
+    Applied automatically to all projects under backend/.
+
+    StyleCop.Analyzers is pulled in purely to enforce a small set of structural
+    conventions at build time (see backend/.editorconfig for which rules are on,
+    and docs/specs/backend-srp.md / .agents/rules/project.md for the rationale).
+  -->
+  <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

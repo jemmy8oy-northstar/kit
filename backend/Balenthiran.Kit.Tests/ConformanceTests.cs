@@ -1,0 +1,135 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.Services;
+
+namespace Balenthiran.Kit.Tests;
+
+/// <summary>
+/// The port's score, not its review.
+///
+/// Every corpus in <c>prototypes/behaviour-ast/behaviours/</c> has a committed
+/// golden holding what the Node engine produces for it (kit#116). This drives the
+/// C# <see cref="CorpusParser"/> over the same corpus and asserts the bytes match the
+/// golden's <c>parse</c> section exactly. The Node engine is the specification;
+/// a difference is this port being wrong, not the golden being stale.
+///
+/// ⚠️ Only the <c>parse</c> section is asserted here, because only <c>parse</c>
+/// has been ported. That is the whole reason kit#116 sectioned the goldens by
+/// engine stage: a single opaque blob per corpus could not score a half-done
+/// port, so the first C# module would have been unverifiable until the last one
+/// existed — the same as having no harness at all.
+/// </summary>
+public class ConformanceTests
+{
+    // Constructed directly, as the template's own service tests do: there is no
+    // WebApi yet to own a DI container, and these are the real implementations.
+    private readonly ICorpusParser _parser = new CorpusParser();
+    private readonly IEngineJsonSerialiser _serialiser = new EngineJsonSerialiser();
+
+    /// <summary>
+    /// Both sides are put through ONE serialiser, so a formatting difference
+    /// cannot be mistaken for a parsing difference.
+    ///
+    /// The golden's <c>parse</c> section is re-serialised from its
+    /// <see cref="JsonNode"/> rather than compared as raw substring bytes,
+    /// because the golden file holds it indented one level deeper (it is nested
+    /// inside the document) — comparing the file's own bytes would fail on
+    /// leading whitespace for every corpus and prove nothing about the parser.
+    /// </summary>
+    private string Canonical(JsonNode? node) =>
+        JsonSerializer.Serialize(node, _serialiser.Options);
+
+    public static TheoryData<string> Corpora()
+    {
+        var data = new TheoryData<string>();
+        foreach (var f in Directory.GetFiles(RepoLayout.Behaviours, "*.beh"))
+        {
+            data.Add(Path.GetFileNameWithoutExtension(f));
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// The serialiser half of the claim, and it needs its own test because the
+    /// comparison below CANNOT see it.
+    ///
+    /// 🔴 Found by a red control, not by reasoning: removing
+    /// <c>UnsafeRelaxedJsonEscaping</c> from <see cref="EngineJsonSerialiser"/> left
+    /// <see cref="Parse_reproduces_the_golden_structure"/> green. Both of its
+    /// sides go through the same options, so any encoding difference applies to
+    /// both and cancels out — that test proves the parser builds the right
+    /// STRUCTURE and says nothing at all about bytes.
+    ///
+    /// The port's actual claim is that C# output bytes equal Node output bytes,
+    /// so the serialiser is pinned here instead, against the one artefact that
+    /// is genuinely Node's: the golden file's own text. If
+    /// <c>System.Text.Json</c> under these options reproduces
+    /// <c>JSON.stringify(value, null, 2)</c>, re-serialising a golden must
+    /// return the golden.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Corpora))]
+    public void The_serialiser_reproduces_JSON_stringify_byte_for_byte(string corpus)
+    {
+        var goldenPath = Path.Combine(RepoLayout.Conformance, $"{corpus}.json");
+        var golden = File.ReadAllText(goldenPath);
+
+        // Non-vacuity: a zero-length read would make any comparison trivial.
+        Assert.True(golden.Length > 0, $"golden for {corpus} is EMPTY");
+
+        var roundTripped = _serialiser.Serialise(JsonNode.Parse(golden)!);
+
+        Assert.Equal(golden, roundTripped);
+    }
+
+    [Theory]
+    [MemberData(nameof(Corpora))]
+    public void Parse_reproduces_the_golden_structure(string corpus)
+    {
+        var behPath = Path.Combine(RepoLayout.Behaviours, $"{corpus}.beh");
+        var goldenPath = Path.Combine(RepoLayout.Conformance, $"{corpus}.json");
+
+        Assert.True(File.Exists(goldenPath), $"no golden for corpus {corpus} at {goldenPath}");
+
+        var golden = JsonNode.Parse(File.ReadAllText(goldenPath))!.AsObject();
+        var expectedNode = golden["parse"];
+        Assert.NotNull(expectedNode);
+
+        // 🔑 Vacuity guard. An empty expectation would make this test pass for a
+        // parser that returned nothing, which is the failure mode a golden-file
+        // harness is most prone to: the comparison runs, both sides are empty,
+        // and the suite reports green over a parser that does not work.
+        var expectedCount = expectedNode!.AsArray().Count;
+        Assert.True(expectedCount > 0, $"golden for {corpus} has an EMPTY parse section — this test would pass vacuously");
+
+        var actual = _parser.Parse(File.ReadAllText(behPath), $"{corpus}.beh");
+        Assert.Equal(expectedCount, actual.Count);
+
+        Assert.Equal(Canonical(expectedNode), Canonical(JsonNode.Parse(_serialiser.Serialise(actual))));
+    }
+
+    /// <summary>
+    /// The population itself is asserted, because the test above can only fail
+    /// for a corpus it is given. If <see cref="Corpora"/> silently returned
+    /// nothing — a moved directory, a changed extension — xunit reports zero
+    /// failures, and zero failures is what green looks like.
+    /// </summary>
+    [Fact]
+    public void Every_corpus_has_a_golden_and_the_population_is_not_empty()
+    {
+        var corpora = Directory.GetFiles(RepoLayout.Behaviours, "*.beh")
+            .Select(Path.GetFileNameWithoutExtension)
+            .OrderBy(c => c, StringComparer.Ordinal)
+            .ToList();
+
+        var goldens = Directory.GetFiles(RepoLayout.Conformance, "*.json")
+            .Select(Path.GetFileNameWithoutExtension)
+            .OrderBy(c => c, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.NotEmpty(corpora);
+        Assert.Equal(goldens, corpora);
+    }
+}

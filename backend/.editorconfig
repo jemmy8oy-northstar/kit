@@ -1,0 +1,18 @@
+# Backend analyzer configuration.
+#
+# We pull in StyleCop.Analyzers (via Directory.Build.props) purely to enforce a
+# small set of structural conventions at build time. Everything else StyleCop
+# ships is silenced so the build stays quiet — we opt in, rule by rule.
+
+root = true
+
+[*.cs]
+# Silence all analyzers by default, then opt in to the ones we enforce.
+dotnet_analyzer_diagnostic.severity = none
+
+# SA1402: a file may only contain a single (top-level) type.
+# Backs the "one class/interface/record/enum per file" convention.
+dotnet_diagnostic.SA1402.severity = error
+
+# SA0001 is a configuration notice (XML doc analysis off) — not a rule we enforce.
+dotnet_diagnostic.SA0001.severity = none
