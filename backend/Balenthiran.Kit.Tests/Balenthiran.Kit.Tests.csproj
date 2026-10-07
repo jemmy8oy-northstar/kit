@@ -22,6 +22,8 @@
     <ProjectReference Include="..\Balenthiran.Kit.Services\Balenthiran.Kit.Services.csproj" />
     <ProjectReference Include="..\Balenthiran.Kit.Abstractions\Balenthiran.Kit.Abstractions.csproj" />
     <ProjectReference Include="..\Balenthiran.Kit.DomainModels\Balenthiran.Kit.DomainModels.csproj" />
+    <ProjectReference Include="..\Balenthiran.Kit.Database\Balenthiran.Kit.Database.csproj" />
+    <ProjectReference Include="..\Balenthiran.Kit.WebApi\Balenthiran.Kit.WebApi.csproj" />
   </ItemGroup>
 
 </Project>
