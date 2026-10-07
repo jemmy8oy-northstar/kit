@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "snip-it",
   "parse": [
     {
@@ -931,5 +931,446 @@
         "ungenerated": 0
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 8,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-HOME-1",
+        "BEH-EDIT-1",
+        "BEH-EDIT-2",
+        "BEH-CUT-1",
+        "BEH-UP-1",
+        "BEH-FILL-1",
+        "BEH-UP-2",
+        "BEH-EDIT-0"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:RemoveFillerWords",
+          "kind": "button",
+          "name": "RemoveFillerWords",
+          "usedBy": [
+            "BEH-CUT-1",
+            "BEH-EDIT-1",
+            "BEH-FILL-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:SelectAll",
+          "kind": "button",
+          "name": "SelectAll",
+          "usedBy": [
+            "BEH-EDIT-1",
+            "BEH-EDIT-2",
+            "BEH-UP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:SendForExport",
+          "kind": "button",
+          "name": "SendForExport",
+          "usedBy": [
+            "BEH-CUT-1",
+            "BEH-EDIT-1",
+            "BEH-FILL-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:ToggleTheme",
+          "kind": "button",
+          "name": "ToggleTheme",
+          "usedBy": [
+            "BEH-EDIT-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:Transcribe",
+          "kind": "button",
+          "name": "Transcribe",
+          "usedBy": [
+            "BEH-UP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "field:VideoOrAudioFile",
+          "kind": "field",
+          "name": "VideoOrAudioFile",
+          "usedBy": [
+            "BEH-UP-1",
+            "BEH-UP-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": true
+            },
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "attaches"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "file:talk_mp4",
+          "kind": "file",
+          "name": "talk_mp4",
+          "usedBy": [
+            "BEH-UP-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "fixture",
+              "surface": "an upload fixture: a file name and a mime type",
+              "verbs": [
+                "attaches"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:TranscribeAVideo",
+          "kind": "heading",
+          "name": "TranscribeAVideo",
+          "usedBy": [
+            "BEH-UP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "link:Download",
+          "kind": "link",
+          "name": "Download",
+          "usedBy": [
+            "BEH-CUT-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:Home",
+          "kind": "page",
+          "name": "Home",
+          "usedBy": [
+            "BEH-HOME-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:TranscriptEditor",
+          "kind": "page",
+          "name": "TranscriptEditor",
+          "usedBy": [
+            "BEH-CUT-1",
+            "BEH-EDIT-1",
+            "BEH-EDIT-2",
+            "BEH-FILL-1",
+            "BEH-UP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            },
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:Upload",
+          "kind": "page",
+          "name": "Upload",
+          "usedBy": [
+            "BEH-UP-1",
+            "BEH-UP-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:CutStatus",
+          "kind": "region",
+          "name": "CutStatus",
+          "usedBy": [
+            "BEH-CUT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Main",
+          "kind": "region",
+          "name": "Main",
+          "usedBy": [
+            "BEH-HOME-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:WordTrack",
+          "kind": "region",
+          "name": "WordTrack",
+          "usedBy": [
+            "BEH-EDIT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "transcription:Completed",
+          "kind": "transcription",
+          "name": "Completed",
+          "usedBy": [
+            "BEH-CUT-1",
+            "BEH-EDIT-1",
+            "BEH-EDIT-2",
+            "BEH-FILL-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": true
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "region:CutStatus",
+          "kind": "region",
+          "name": "CutStatus",
+          "usedBy": [
+            "BEH-CUT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:WordTrack",
+          "kind": "region",
+          "name": "WordTrack",
+          "usedBy": [
+            "BEH-EDIT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": [
+        "button:RemoveFillerWords",
+        "button:SelectAll",
+        "button:SendForExport",
+        "button:ToggleTheme",
+        "button:Transcribe",
+        "field:VideoOrAudioFile",
+        "file:talk_mp4",
+        "heading:TranscribeAVideo",
+        "link:Download",
+        "page:Home",
+        "page:TranscriptEditor",
+        "page:Upload",
+        "region:Main",
+        "transcription:Completed"
+      ]
+    }
+  }
 }

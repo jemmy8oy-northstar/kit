@@ -6783,6 +6783,39 @@ test('conformance: the parse section is captured BEFORE resolve mutates it', () 
     + 'delta has stopped seeing it, and both look identical from a green suite');
 });
 
+test('conformance: the report section is what the project view serves, for every corpus', () => {
+  // The seam pinned from BOTH sides. `report` exists so the C# server is scored on
+  // what the page reads; if `project()` ever re-mapped a field itself, the golden
+  // would go on scoring a shape nothing serves. So every corpus's golden `report`
+  // is compared with the live view, minus only the two per-noun fields `project()`
+  // adds because they read other corpora (`binding`, `sharedWith`).
+  const { project } = require('./project.js');
+  let corpora = 0, nouns = 0;
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    const golden = JSON.parse(fsx.readFileSync(conformance.goldenPath(GOLDEN_DIR, corpus), 'utf8'));
+    const view = project(corpus, { behDir: BEH_DIR });
+    const strip = (n) => { const { binding, sharedWith, ...rest } = n; return rest; };
+    const served = {
+      adjudication: view.adjudication,
+      surface: view.surface,
+      questions: view.questions,
+      requires: {
+        nouns: view.requires.nouns.map(strip),
+        missing: view.requires.missing.map(strip),
+        insufficient: view.requires.insufficient.map(strip),
+        satisfied: view.requires.satisfied,
+      },
+    };
+    assert.strictEqual(JSON.stringify(golden.report), JSON.stringify(served),
+      `${corpus}: the golden's report section is not what project() serves`);
+    corpora++;
+    nouns += golden.report.requires.nouns.length;
+  }
+  // Fail-safe: a scan that matched nothing, or goldens with empty reports, would
+  // pass every comparison above over nothing [[empty-means-two-things]].
+  assert.ok(corpora >= 10 && nouns > 0, `compared ${corpora} corpora and ${nouns} nouns — the gate is inert`);
+});
+
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
   // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
   // whitelist. Measured when this was written: recording resolve's behaviours in
@@ -6868,7 +6901,7 @@ test('conformance: the golden records which format wrote it', () => {
   // blob could not verify a C# `Parse` until `Generate` also existed, which is the
   // same as having no harness during the whole port.
   assert.deepStrictEqual(Object.keys(g).sort(),
-    ['corpus', 'format', 'generate', 'parse', 'resolve'],
+    ['corpus', 'format', 'generate', 'parse', 'report', 'resolve'],
     'the golden has stopped being sectioned by engine module');
 });
 

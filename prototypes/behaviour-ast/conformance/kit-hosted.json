@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "kit-hosted",
   "parse": [
     {
@@ -1722,5 +1722,665 @@
         "ungenerated": 3
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 12,
+      "inferred": 2,
+      "unreviewed": [
+        "BEH-ACT-4",
+        "BEH-COMMIT-4"
+      ],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [
+        "BEH-COMMIT-4"
+      ],
+      "unserved": [
+        "BEH-ACT-4"
+      ]
+    },
+    "questions": [
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-ACT-4",
+        "id": "BEH-ACT-4",
+        "title": "Edits are held until Commit, so a half-described change never reaches a branch",
+        "source": {
+          "origin": "inferred",
+          "ref": "kit#88"
+        },
+        "serves": [],
+        "contracts": [],
+        "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
+        "options": [
+          {
+            "label": "Accumulate until Commit",
+            "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
+            "at": "kit-hosted.beh:196"
+          },
+          {
+            "label": "Write each edit straight through",
+            "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
+            "at": "kit-hosted.beh:197"
+          }
+        ],
+        "recommend": {
+          "label": "Accumulate until Commit",
+          "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
+          "at": "kit-hosted.beh:198"
+        },
+        "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-COMMIT-4",
+        "id": "BEH-COMMIT-4",
+        "title": "The branch a Commit produces is red, and the red is the work item",
+        "source": {
+          "origin": "inferred",
+          "ref": "kit#88"
+        },
+        "serves": [
+          "BEH-COMMIT-3"
+        ],
+        "contracts": [
+          "MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:",
+          "adding one unimplemented behaviour took `20/20 behaviour(s) have a test",
+          "naming them` to `20/21` and exit 0 to exit 1",
+          "so \"the tests are failing\" is the normal state of a fresh Kit branch, and",
+          "anything that treats a red branch as a fault will fight the workflow he",
+          "described rather than serve it"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      }
+    ],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "branch:Pushed",
+          "kind": "branch",
+          "name": "Pushed",
+          "usedBy": [
+            "BEH-COMMIT-3",
+            "BEH-COMMIT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedAddBehaviour",
+          "kind": "button",
+          "name": "KitHostedAddBehaviour",
+          "usedBy": [
+            "BEH-ACT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedCommit",
+          "kind": "button",
+          "name": "KitHostedCommit",
+          "usedBy": [
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedRemove",
+          "kind": "button",
+          "name": "KitHostedRemove",
+          "usedBy": [
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedSave",
+          "kind": "button",
+          "name": "KitHostedSave",
+          "usedBy": [
+            "BEH-ACT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "change:Pending",
+          "kind": "change",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-COMMIT-1",
+            "BEH-COMMIT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedBehaviour",
+          "kind": "page",
+          "name": "KitHostedBehaviour",
+          "usedBy": [
+            "BEH-ACT-2",
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedProject",
+          "kind": "page",
+          "name": "KitHostedProject",
+          "usedBy": [
+            "BEH-ACT-1",
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Private",
+          "kind": "project",
+          "name": "Private",
+          "usedBy": [
+            "BEH-PULL-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Public",
+          "kind": "project",
+          "name": "Public",
+          "usedBy": [
+            "BEH-PULL-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Remote",
+          "kind": "repo",
+          "name": "Remote",
+          "usedBy": [
+            "BEH-PULL-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Anonymous",
+          "kind": "request",
+          "name": "Anonymous",
+          "usedBy": [
+            "BEH-GATE-H1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Project",
+          "kind": "request",
+          "name": "Project",
+          "usedBy": [
+            "BEH-PULL-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unauthenticated",
+          "kind": "request",
+          "name": "Unauthenticated",
+          "usedBy": [
+            "BEH-GATE-H2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "branch:Pushed",
+          "kind": "branch",
+          "name": "Pushed",
+          "usedBy": [
+            "BEH-COMMIT-3",
+            "BEH-COMMIT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedAddBehaviour",
+          "kind": "button",
+          "name": "KitHostedAddBehaviour",
+          "usedBy": [
+            "BEH-ACT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedCommit",
+          "kind": "button",
+          "name": "KitHostedCommit",
+          "usedBy": [
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedRemove",
+          "kind": "button",
+          "name": "KitHostedRemove",
+          "usedBy": [
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedSave",
+          "kind": "button",
+          "name": "KitHostedSave",
+          "usedBy": [
+            "BEH-ACT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "change:Pending",
+          "kind": "change",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-COMMIT-1",
+            "BEH-COMMIT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedBehaviour",
+          "kind": "page",
+          "name": "KitHostedBehaviour",
+          "usedBy": [
+            "BEH-ACT-2",
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedProject",
+          "kind": "page",
+          "name": "KitHostedProject",
+          "usedBy": [
+            "BEH-ACT-1",
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Private",
+          "kind": "project",
+          "name": "Private",
+          "usedBy": [
+            "BEH-PULL-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Public",
+          "kind": "project",
+          "name": "Public",
+          "usedBy": [
+            "BEH-PULL-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Remote",
+          "kind": "repo",
+          "name": "Remote",
+          "usedBy": [
+            "BEH-PULL-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Anonymous",
+          "kind": "request",
+          "name": "Anonymous",
+          "usedBy": [
+            "BEH-GATE-H1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Project",
+          "kind": "request",
+          "name": "Project",
+          "usedBy": [
+            "BEH-PULL-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unauthenticated",
+          "kind": "request",
+          "name": "Unauthenticated",
+          "usedBy": [
+            "BEH-GATE-H2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
 }

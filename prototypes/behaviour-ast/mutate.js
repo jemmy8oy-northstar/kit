@@ -815,7 +815,7 @@ MUTANTS.push(
     'const file = bindingsOf.fileFor(app, dir);',
     'const file = bindingsOf.fileFor(app);', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',
-    'insufficient: req.insufficient.map(withShared),', 'insufficient: [],', 'project.js'],
+    'insufficient: req.insufficient.map(noun),', 'insufficient: [],', 'project.js'],
   ['the bind route is gone, so a POST to it falls through to the behaviours matcher',
     'if (bm) return postBinding(bm, body, opts, json);', '', 'ui.js'],
   ['the bind response drops sharedWith, so the namespace warning never reaches the screen',
