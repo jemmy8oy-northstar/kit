@@ -19167,6 +19167,172 @@
           "allow": "GET, POST"
         }
       }
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "no-store",
+        "rawText": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <!-- A fixture bundle for conformance.js's read routes: the shape vite emits, built for /kit. -->\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/kit/favicon.svg\" />\n    <title>Kit</title>\n    <script type=\"module\" crossorigin src=\"/kit/assets/index-Ab12Cd.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/kit/assets/index-Ef34Gh.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/projects/snip-it",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "no-store",
+        "rawText": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <!-- A fixture bundle for conformance.js's read routes: the shape vite emits, built for /kit. -->\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/kit/favicon.svg\" />\n    <title>Kit</title>\n    <script type=\"module\" crossorigin src=\"/kit/assets/index-Ab12Cd.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/kit/assets/index-Ef34Gh.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/assets",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "no-store",
+        "rawText": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <!-- A fixture bundle for conformance.js's read routes: the shape vite emits, built for /kit. -->\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/kit/favicon.svg\" />\n    <title>Kit</title>\n    <script type=\"module\" crossorigin src=\"/kit/assets/index-Ab12Cd.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/kit/assets/index-Ef34Gh.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/index.html",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "no-store",
+        "rawText": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <!-- A fixture bundle for conformance.js's read routes: the shape vite emits, built for /kit. -->\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/kit/favicon.svg\" />\n    <title>Kit</title>\n    <script type=\"module\" crossorigin src=\"/kit/assets/index-Ab12Cd.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/kit/assets/index-Ef34Gh.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index-Ab12Cd.js",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/javascript; charset=utf-8",
+        "cacheControl": "public, max-age=31536000, immutable",
+        "rawText": "// A fixture asset: content-hashed name, served immutable.\nexport const kit = 'fixture';\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index-Ef34Gh.css",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "text/css; charset=utf-8",
+        "cacheControl": "public, max-age=31536000, immutable",
+        "rawText": "#root { min-height: 100vh; }\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/assets/index-Missing.js",
+      "dist": true,
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "no-such-asset",
+          "reason": "no bundled asset named 'index-Missing.js' — the page asking for it was built against a different bundle"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/assets/nested/index-Ab12Cd.js",
+      "dist": true,
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "no-such-file",
+          "reason": "nothing named /assets/nested/index-Ab12Cd.js is in the bundle"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.svg",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "image/svg+xml",
+        "cacheControl": "no-store",
+        "rawText": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><rect width=\"16\" height=\"16\" rx=\"3\" fill=\"#2b6cb0\"/></svg>\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/notes.unknownext",
+      "dist": true,
+      "response": {
+        "status": 200,
+        "contentType": "application/octet-stream",
+        "cacheControl": "no-store",
+        "rawText": "An unmapped extension: served, as a download (application/octet-stream).\n"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/robots.txt",
+      "dist": true,
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "no-such-file",
+          "reason": "nothing named /robots.txt is in the bundle"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/%E0%A4%A",
+      "dist": true,
+      "response": {
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": "bad-request",
+          "reason": "the path is not valid percent-encoding"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/%2e%2e",
+      "dist": true,
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "no-such-file",
+          "reason": "a path segment of `..` names nothing in the bundle"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/a/..%2f..%2fetc",
+      "dist": true,
+      "response": {
+        "status": 404,
+        "contentType": "application/json",
+        "body": {
+          "error": "no-such-file",
+          "reason": "a path segment of `..` names nothing in the bundle"
+        }
+      }
     }
   ]
 }

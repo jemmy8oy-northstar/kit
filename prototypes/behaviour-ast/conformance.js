@@ -242,6 +242,35 @@ function readRoutes(dir) {
   ];
   const requests = get.map((p) => ({ method: 'GET', path: p, response: ui.route('GET', p, { dir }) }));
   requests.push({ method: 'PUT', path: '/api/projects', response: ui.route('PUT', '/api/projects', { dir }) });
+
+  // The built UI, served out of a committed FIXTURE bundle (`routes/dist`) — the
+  // real `ui/dist` is gitignored and absent in CI. Every path a browser sends that
+  // is not under /api: the shell for a client-side route, hashed assets, an
+  // unhashed root file, an unmapped extension, and each refusal — a missing asset,
+  // a missing file, a nested asset path, bad percent-encoding, and `..` both plain
+  // and encoded. `raw` is recorded as UTF-8 text (`rawText`), which every fixture
+  // file is, so the golden stays readable and language-neutral.
+  const dist = path.join(__dirname, 'conformance', 'routes', 'dist');
+  const bundlePaths = [
+    '/',
+    '/projects/snip-it',
+    '/assets',
+    '/index.html',
+    '/assets/index-Ab12Cd.js',
+    '/assets/index-Ef34Gh.css',
+    '/assets/index-Missing.js',
+    '/assets/nested/index-Ab12Cd.js',
+    '/favicon.svg',
+    '/notes.unknownext',
+    '/robots.txt',
+    '/%E0%A4%A',
+    '/%2e%2e',
+    '/a/..%2f..%2fetc',
+  ];
+  for (const p of bundlePaths) {
+    const { raw, ...rest } = ui.route('GET', p, { dir, dist });
+    requests.push({ method: 'GET', path: p, dist: true, response: raw === undefined ? rest : { ...rest, rawText: Buffer.from(raw).toString('utf8') } });
+  }
   return { format: FORMAT, requests };
 }
 

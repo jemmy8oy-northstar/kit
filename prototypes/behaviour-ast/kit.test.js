@@ -6836,6 +6836,16 @@ test('conformance: the read-routes golden is compared, and covers every corpus a
   assert.strictEqual(status('GET', '/api/projects/%2e%2e'), 404);
   assert.strictEqual(status('GET', '/api/no-such-route'), 404);
   assert.strictEqual(status('PUT', '/api/projects'), 405);
+
+  // The built UI, from the fixture bundle: the shell, an immutable asset, and the
+  // refusals a port could answer with its framework's static-file defaults.
+  const bundle = (p) => g.requests.find((q) => q.dist && q.path === p)?.response;
+  assert.strictEqual(bundle('/projects/snip-it').status, 200, 'a client-side route gets the shell');
+  assert.ok(bundle('/projects/snip-it').rawText.includes('<div id="root">'), 'the shell is index.html');
+  assert.strictEqual(bundle('/assets/index-Ab12Cd.js').cacheControl, 'public, max-age=31536000, immutable');
+  assert.strictEqual(bundle('/assets/index-Missing.js').status, 404);
+  assert.strictEqual(bundle('/%2e%2e').status, 404);
+  assert.strictEqual(bundle('/%E0%A4%A').status, 400);
 });
 
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
