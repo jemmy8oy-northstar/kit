@@ -1,0 +1,11 @@
+{
+  "page:b": { "route": "/b" },
+  "button:B": { "role": "button" },
+  "region:a-b": { "locator": "#ab" },
+  "region:Ab": { "label": "x" },
+  "region:Null": null,
+  "region:Bare": "a string, not an object",
+  "file:clip": { "fixture": { "name": "a.mp4" } },
+  "field:Upload": { "role": "textbox", "name": "Upload" },
+  "field:Name": { "role": "textbox", "name": "Name" }
+}
