@@ -22,7 +22,7 @@
               "slot": "count"
             }
           ],
-          "at": "resolve-edges.beh:15"
+          "at": "resolve-edges.beh:17"
         },
         {
           "kind": "then",
@@ -39,7 +39,7 @@
               "slot": "value"
             }
           ],
-          "at": "resolve-edges.beh:16"
+          "at": "resolve-edges.beh:18"
         },
         {
           "kind": "then",
@@ -56,21 +56,21 @@
               "slot": "other"
             }
           ],
-          "at": "resolve-edges.beh:17"
+          "at": "resolve-edges.beh:19"
         }
       ],
       "unknowns": [
         {
           "slot": "count",
-          "at": "resolve-edges.beh:15"
+          "at": "resolve-edges.beh:17"
         },
         {
           "slot": "value",
-          "at": "resolve-edges.beh:16"
+          "at": "resolve-edges.beh:18"
         },
         {
           "slot": "other",
-          "at": "resolve-edges.beh:17"
+          "at": "resolve-edges.beh:19"
         }
       ],
       "provides": [
@@ -83,11 +83,11 @@
             "2"
           ],
           "from": "BEH-A",
-          "at": "resolve-edges.beh:18"
+          "at": "resolve-edges.beh:20"
         }
       ],
       "serves": [],
-      "at": "resolve-edges.beh:14",
+      "at": "resolve-edges.beh:16",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -118,7 +118,18 @@
             "2"
           ],
           "from": "BEH-B",
-          "at": "resolve-edges.beh:21"
+          "at": "resolve-edges.beh:23"
+        },
+        {
+          "kind": "field",
+          "name": "F",
+          "slot": "value",
+          "value": [
+            "1",
+            "2"
+          ],
+          "from": "BEH-B",
+          "at": "resolve-edges.beh:24"
         },
         {
           "kind": "field",
@@ -128,11 +139,11 @@
             "z"
           ],
           "from": "BEH-B",
-          "at": "resolve-edges.beh:22"
+          "at": "resolve-edges.beh:25"
         }
       ],
       "serves": [],
-      "at": "resolve-edges.beh:20",
+      "at": "resolve-edges.beh:22",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -162,11 +173,11 @@
             "3"
           ],
           "from": "BEH-C",
-          "at": "resolve-edges.beh:25"
+          "at": "resolve-edges.beh:28"
         }
       ],
       "serves": [],
-      "at": "resolve-edges.beh:24",
+      "at": "resolve-edges.beh:27",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -193,16 +204,17 @@
           ],
           "contributors": [
             "BEH-A",
+            "BEH-B",
             "BEH-B"
           ],
-          "at": "resolve-edges.beh:18",
+          "at": "resolve-edges.beh:20",
           "conflict": [
             {
               "from": "BEH-C",
               "value": [
                 "3"
               ],
-              "at": "resolve-edges.beh:25"
+              "at": "resolve-edges.beh:28"
             }
           ]
         }
@@ -216,7 +228,7 @@
           "contributors": [
             "BEH-B"
           ],
-          "at": "resolve-edges.beh:22"
+          "at": "resolve-edges.beh:25"
         }
       ]
     ],
@@ -229,6 +241,7 @@
         ],
         "holders": [
           "BEH-A",
+          "BEH-B",
           "BEH-B"
         ],
         "challengers": [
@@ -237,7 +250,7 @@
             "value": [
               "3"
             ],
-            "at": "resolve-edges.beh:25"
+            "at": "resolve-edges.beh:28"
           }
         ]
       }
@@ -277,9 +290,10 @@
                 ],
                 "from": [
                   "BEH-A",
+                  "BEH-B",
                   "BEH-B"
                 ],
-                "at": "resolve-edges.beh:16"
+                "at": "resolve-edges.beh:18"
               },
               {
                 "key": "field:F.other",
@@ -289,7 +303,7 @@
                 "from": [
                   "BEH-B"
                 ],
-                "at": "resolve-edges.beh:17"
+                "at": "resolve-edges.beh:19"
               }
             ]
           },
@@ -300,7 +314,7 @@
               {
                 "slot": "count",
                 "key": "?count",
-                "at": "resolve-edges.beh:15"
+                "at": "resolve-edges.beh:17"
               }
             ]
           }

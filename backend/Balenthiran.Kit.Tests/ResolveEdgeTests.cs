@@ -25,7 +25,7 @@ public class ResolveEdgeTests
         // asserted on Node's side, so a regenerated fixture that lost a branch fails.
         var expectedText = expected.ToJsonString();
         Assert.Contains("\"key\":\"?count\"", expectedText, StringComparison.Ordinal);
-        Assert.Contains("\"contributors\":[\"BEH-A\",\"BEH-B\"]", expectedText, StringComparison.Ordinal);
+        Assert.Contains("\"contributors\":[\"BEH-A\",\"BEH-B\",\"BEH-B\"]", expectedText, StringComparison.Ordinal);
         Assert.Single(expected["conflicts"]!.AsArray());
 
         var actual = _scorer.Section(File.ReadAllText(Path.Combine(RepoLayout.Fixtures, "resolve-edges.beh")), "resolve-edges.beh");
