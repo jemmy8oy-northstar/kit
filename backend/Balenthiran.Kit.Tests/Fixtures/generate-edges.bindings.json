@@ -1,0 +1,26 @@
+{
+  "_comment": ["Values chosen to reach generate's JavaScript coercions; see generate-edges.beh."],
+  "page:Item": { "route": "/items/:itemId/:itemIdx" },
+  "page:Dollar": { "route": "/d/:a/:b" },
+  "page:Pattern": { "urlPattern": "/x/\\d+$" },
+  "button:Exact": { "role": "button", "name": "Go", "exact": true },
+  "button:NoName": { "role": "button" },
+  "button:Escapes": { "role": "button", "name": "a\"b\\c\u0001 é😀\t</script>&'" },
+  "field:Labelled": { "label": "Attach here" },
+  "field:NoLocator": {},
+  "field:NoLabel": { "role": "textbox", "name": "n" },
+  "region:Raw": { "locator": "locator('main')" },
+  "region:Number": { "locator": 42 },
+  "region:Falsy": { "locator": "" },
+  "region:Null": null,
+  "region:Bare": "a string, not an object",
+  "seed:Small": { "state": 1.5e-7 },
+  "seed:Big": { "state": 1e21 },
+  "seed:Whole": { "state": 100.0 },
+  "seed:Arr": { "state": [1, "a", null, [2, 3]] },
+  "seed:Obj": { "state": { "k": 1 } },
+  "seed:Bool": { "state": true },
+  "seed:Zero": { "state": 0 },
+  "file:NoFixture": { "fixture": "" },
+  "file:Fx": { "fixture": { "b": 1, "2": true, "1": [1.0, -0, 0.000001, 123456789012345680000], "a": null } }
+}

@@ -1,0 +1,133 @@
+{
+  "format": 1,
+  "corpus": "generate-nofixture",
+  "parse": [
+    {
+      "id": "BEH-FILL",
+      "title": "a fill with nothing to attach",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:Profile with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "Profile"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "generate-nofixture.beh:9"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "generate-nofixture.beh:9"
+        }
+      ],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "Profile",
+          "slot": "fields",
+          "value": [
+            "Name",
+            "Email"
+          ],
+          "from": "BEH-FILL",
+          "at": "generate-nofixture.beh:10"
+        }
+      ],
+      "serves": [],
+      "at": "generate-nofixture.beh:8",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "form:Profile.fields",
+        {
+          "value": [
+            "Name",
+            "Email"
+          ],
+          "contributors": [
+            "BEH-FILL"
+          ],
+          "at": "generate-nofixture.beh:10"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-FILL",
+        "changes": [
+          {
+            "path": "steps.0.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Name",
+                "Email"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:Profile.fields",
+                "value": [
+                  "Name",
+                  "Email"
+                ],
+                "from": [
+                  "BEH-FILL"
+                ],
+                "at": "generate-nofixture.beh:9"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-FILL",
+      "code": "test(\"[BEH-FILL] a fill with nothing to attach\", async ({ page }) => {\n  await page.getByLabel(\"Name\").fill('');\n  await page.getByLabel(\"Email\").fill('');\n});",
+      "missing": [],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    }
+  ]
+}

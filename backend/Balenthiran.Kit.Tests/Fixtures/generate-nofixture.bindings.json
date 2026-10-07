@@ -1,0 +1,5 @@
+{
+  "field:Name": { "label": "Name" },
+  "field:Email": { "label": "Email" },
+  "file:Unused": { "fixture": null }
+}

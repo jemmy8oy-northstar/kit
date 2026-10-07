@@ -1,0 +1,757 @@
+{
+  "format": 1,
+  "corpus": "generate-edges",
+  "parse": [
+    {
+      "id": "BEH-ROUTE",
+      "title": "a route opens only when every parameter is provided",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Item",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Item"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:18"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Dollar",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Dollar"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:19"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "page",
+          "name": "Item",
+          "slot": "itemId",
+          "value": [
+            "7"
+          ],
+          "from": "BEH-ROUTE",
+          "at": "generate-edges.beh:20"
+        },
+        {
+          "kind": "page",
+          "name": "Dollar",
+          "slot": "a",
+          "value": [
+            "x$&y$$z$`w$'v$1"
+          ],
+          "from": "BEH-ROUTE",
+          "at": "generate-edges.beh:21"
+        },
+        {
+          "kind": "page",
+          "name": "Dollar",
+          "slot": "b",
+          "value": [
+            ":a"
+          ],
+          "from": "BEH-ROUTE",
+          "at": "generate-edges.beh:22"
+        }
+      ],
+      "serves": [],
+      "at": "generate-edges.beh:17",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-LOC",
+      "title": "every way a binding can locate, or fail to",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:Exact",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Exact"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:25"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:Labelled",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "Labelled"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:26"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Raw",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Raw"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:27"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:NoName",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "NoName"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:28"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Number",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Number"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:29"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Falsy",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Falsy"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:30"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Null",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Null"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:31"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Bare",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Bare"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:32"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Unbound",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Unbound"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:33"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Unbound",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Unbound"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:34"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows button:Escapes \"said \\\"hi\\\"\"",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Escapes"
+            },
+            {
+              "kind": "literal",
+              "name": "said \\"
+            },
+            {
+              "kind": "literal",
+              "name": ""
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:35"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "generate-edges.beh:24",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-STATE",
+      "title": "a state reaches the test through String()",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Small",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Small"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:38"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Big",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Big"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:39"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Whole",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Whole"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:40"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Arr",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Arr"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:41"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Obj",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Obj"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:42"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Bool",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Bool"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:43"
+        },
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "seed:Zero",
+          "refs": [
+            {
+              "kind": "seed",
+              "name": "Zero"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:44"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:Pattern",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Pattern"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:45"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "generate-edges.beh:37",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-FILE",
+      "title": "attaches and fills refuse what they cannot write",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "attaches",
+          "text": "attaches file:NoFixture to field:Labelled",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "NoFixture"
+            },
+            {
+              "kind": "field",
+              "name": "Labelled"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:48"
+        },
+        {
+          "kind": "when",
+          "verb": "attaches",
+          "text": "attaches file:Fx to field:NoLocator",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "Fx"
+            },
+            {
+              "kind": "field",
+              "name": "NoLocator"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:49"
+        },
+        {
+          "kind": "when",
+          "verb": "attaches",
+          "text": "attaches file:Fx to field:Labelled",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "Fx"
+            },
+            {
+              "kind": "field",
+              "name": "Labelled"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:50"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:Both with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "Both"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "generate-edges.beh:51"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:One with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "One"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "generate-edges.beh:52"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:Anything",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "Anything"
+            }
+          ],
+          "holes": [],
+          "at": "generate-edges.beh:53"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "generate-edges.beh:51"
+        },
+        {
+          "slot": "fields",
+          "at": "generate-edges.beh:52"
+        }
+      ],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "Both",
+          "slot": "fields",
+          "value": [
+            "Labelled",
+            "NoLabel"
+          ],
+          "from": "BEH-FILE",
+          "at": "generate-edges.beh:54"
+        },
+        {
+          "kind": "form",
+          "name": "One",
+          "slot": "fields",
+          "value": [
+            "Labelled"
+          ],
+          "from": "BEH-FILE",
+          "at": "generate-edges.beh:55"
+        }
+      ],
+      "serves": [],
+      "at": "generate-edges.beh:47",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "page:Item.itemId",
+        {
+          "value": [
+            "7"
+          ],
+          "contributors": [
+            "BEH-ROUTE"
+          ],
+          "at": "generate-edges.beh:20"
+        }
+      ],
+      [
+        "page:Dollar.a",
+        {
+          "value": [
+            "x$&y$$z$`w$'v$1"
+          ],
+          "contributors": [
+            "BEH-ROUTE"
+          ],
+          "at": "generate-edges.beh:21"
+        }
+      ],
+      [
+        "page:Dollar.b",
+        {
+          "value": [
+            ":a"
+          ],
+          "contributors": [
+            "BEH-ROUTE"
+          ],
+          "at": "generate-edges.beh:22"
+        }
+      ],
+      [
+        "form:Both.fields",
+        {
+          "value": [
+            "Labelled",
+            "NoLabel"
+          ],
+          "contributors": [
+            "BEH-FILE"
+          ],
+          "at": "generate-edges.beh:54"
+        }
+      ],
+      [
+        "form:One.fields",
+        {
+          "value": [
+            "Labelled"
+          ],
+          "contributors": [
+            "BEH-FILE"
+          ],
+          "at": "generate-edges.beh:55"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-ROUTE",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-LOC",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-STATE",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-FILE",
+        "changes": [
+          {
+            "path": "steps.3.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Labelled",
+                "NoLabel"
+              ]
+            }
+          },
+          {
+            "path": "steps.4.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Labelled"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:Both.fields",
+                "value": [
+                  "Labelled",
+                  "NoLabel"
+                ],
+                "from": [
+                  "BEH-FILE"
+                ],
+                "at": "generate-edges.beh:51"
+              },
+              {
+                "key": "form:One.fields",
+                "value": [
+                  "Labelled"
+                ],
+                "from": [
+                  "BEH-FILE"
+                ],
+                "at": "generate-edges.beh:52"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-ROUTE",
+      "code": "test(\"[BEH-ROUTE] a route opens only when every parameter is provided\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Item\" });\n  // UNGENERATED: when opens page:Item\n  await page.goto(\"/d/x:ay$z/d/w/:av$1/:b\");\n});",
+      "missing": [],
+      "stats": {
+        "generated": 1,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-LOC",
+      "code": "test(\"[BEH-LOC] every way a binding can locate, or fail to\", async ({ page }) => {\n  await expect(page.getByRole(\"button\", { name: \"Go\", exact: true })).toBeVisible();\n  await expect(page.getByLabel(\"Attach here\")).toBeVisible();\n  await expect(page.locator('main')).toBeVisible();\n  await page.getByRole(\"button\", { name: undefined }).click();\n  await expect(page.42).toBeVisible();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Falsy\" });\n  // UNGENERATED: then sees region:Falsy\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Null\" });\n  // UNGENERATED: then sees region:Null\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Bare\" });\n  // UNGENERATED: then sees region:Bare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Unbound\" });\n  // UNGENERATED: then sees region:Unbound\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Unbound\" });\n  // UNGENERATED: then sees region:Unbound\n  await expect(page.getByRole(\"button\", { name: \"a\\\"b\\\\c\\u0001 é😀\\t</script>&'\" })).toContainText(\"said \\\\\");\n});",
+      "missing": [
+        "region:Null",
+        "region:Unbound"
+      ],
+      "stats": {
+        "generated": 6,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-STATE",
+      "code": "test(\"[BEH-STATE] a state reaches the test through String()\", async ({ page }) => {\n  await 1.5e-7;\n  await 1e+21;\n  await 100;\n  await 1,a,,2,3;\n  await [object Object];\n  await true;\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given seed:Zero\" });\n  // UNGENERATED: given seed:Zero\n  await expect(page).toHaveURL(new RegExp(\"/x/\\\\d+$\"));\n});",
+      "missing": [],
+      "stats": {
+        "generated": 7,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-FILE",
+      "code": "test(\"[BEH-FILE] attaches and fills refuse what they cannot write\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when attaches file:NoFixture to field:Labelled\" });\n  // UNGENERATED: when attaches file:NoFixture to field:Labelled\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when attaches file:Fx to field:NoLocator\" });\n  // UNGENERATED: when attaches file:Fx to field:NoLocator\n  await page.getByLabel(\"Attach here\").setInputFiles({\"1\":[1,0,0.000001,123456789012345680000],\"2\":true,\"b\":1,\"a\":null});\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:Both with ?fields\" });\n  // UNGENERATED: when fills form:Both with ?fields\n  await page.getByLabel(\"Attach here\").setInputFiles({\"1\":[1,0,0.000001,123456789012345680000],\"2\":true,\"b\":1,\"a\":null});\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:Anything\" });\n  // UNGENERATED: when runs command:Anything\n});",
+      "missing": [],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    }
+  ]
+}
