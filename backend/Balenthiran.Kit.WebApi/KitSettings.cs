@@ -1,10 +1,13 @@
+using Balenthiran.Kit.Services;
+
 namespace Balenthiran.Kit.WebApi;
 
 /// <summary>
 /// What the server is pointed at, read from the same environment <c>ui.js</c> reads.
 /// <c>RepoRoot</c> is the Kit checkout; every <c>corpus</c> path in a view is relative to it.
+/// <c>BasePath</c> is <c>KIT_BASE_PATH</c>, normalised; <c>PublicOrigin</c> is <c>KIT_PUBLIC_ORIGIN</c>.
 /// </summary>
-public sealed record KitSettings(string Dir, string RepoRoot, string? Password, string Dist)
+public sealed record KitSettings(string Dir, string RepoRoot, string? Password, string Dist, string BasePath = "", string? PublicOrigin = null)
 {
     /// <summary>
     /// From the environment. <c>KIT_DIR</c> overrides the corpus directory; otherwise
@@ -16,7 +19,13 @@ public sealed record KitSettings(string Dir, string RepoRoot, string? Password, 
     {
         var root = FindRoot(workingDirectory);
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
-        return new KitSettings(dir, root, env("KIT_PASSWORD"), Path.Combine(root, "prototypes", "behaviour-ast", "ui", "dist"));
+        return new KitSettings(
+            dir,
+            root,
+            env("KIT_PASSWORD"),
+            Path.Combine(root, "prototypes", "behaviour-ast", "ui", "dist"),
+            KitHost.NormaliseBasePath(env("KIT_BASE_PATH")),
+            env("KIT_PUBLIC_ORIGIN") is { Length: > 0 } o ? o : null);
     }
 
     private static string FindRoot(string from)

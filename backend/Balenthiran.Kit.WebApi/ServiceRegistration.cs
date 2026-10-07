@@ -23,6 +23,13 @@ public static class ServiceRegistration
             sp.GetRequiredService<IProjectViewer>(),
             sp.GetRequiredService<IUiBundle>(),
             settings.Password));
+        services.AddSingleton<IUrlParser, UrlParser>();
+        services.AddSingleton<IKitHost>(sp => new KitHost(
+            sp.GetRequiredService<IKitRouter>(),
+            sp.GetRequiredService<IUrlParser>(),
+            sp.GetRequiredService<IEngineJsonSerialiser>(),
+            settings.BasePath,
+            settings.PublicOrigin));
         return services;
     }
 }
