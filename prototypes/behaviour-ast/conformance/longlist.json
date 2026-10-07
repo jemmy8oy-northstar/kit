@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "longlist",
   "parse": [
     {
@@ -860,5 +860,789 @@
         "ungenerated": 3
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 8,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:Decision",
+          "kind": "badge",
+          "name": "Decision",
+          "usedBy": [
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "badge:Stale",
+          "kind": "badge",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Build",
+          "kind": "button",
+          "name": "Build",
+          "usedBy": [
+            "BEH-DECIDE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Capture",
+          "kind": "button",
+          "name": "Capture",
+          "usedBy": [
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Decline",
+          "kind": "button",
+          "name": "Decline",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:DeclineReason",
+          "kind": "field",
+          "name": "DeclineReason",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Idea",
+          "kind": "field",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:NewIdea",
+          "kind": "field",
+          "name": "NewIdea",
+          "usedBy": [
+            "BEH-CAPTURE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:WhyNow",
+          "kind": "field",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Captured",
+          "kind": "idea",
+          "name": "Captured",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Stale",
+          "kind": "idea",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:IdeaTitle",
+          "kind": "link",
+          "name": "IdeaTitle",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "longlist:Empty",
+          "kind": "longlist",
+          "name": "Empty",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Idea",
+          "kind": "page",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Longlist",
+          "kind": "page",
+          "name": "Longlist",
+          "usedBy": [
+            "BEH-AGE-1",
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2",
+            "BEH-CAPTURE-3",
+            "BEH-CAPTURE-4",
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:IdeaList",
+          "kind": "region",
+          "name": "IdeaList",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:WhyNow",
+          "kind": "region",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:Decision",
+          "kind": "badge",
+          "name": "Decision",
+          "usedBy": [
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "badge:Stale",
+          "kind": "badge",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Build",
+          "kind": "button",
+          "name": "Build",
+          "usedBy": [
+            "BEH-DECIDE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Capture",
+          "kind": "button",
+          "name": "Capture",
+          "usedBy": [
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Decline",
+          "kind": "button",
+          "name": "Decline",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:DeclineReason",
+          "kind": "field",
+          "name": "DeclineReason",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Idea",
+          "kind": "field",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:NewIdea",
+          "kind": "field",
+          "name": "NewIdea",
+          "usedBy": [
+            "BEH-CAPTURE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:WhyNow",
+          "kind": "field",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Captured",
+          "kind": "idea",
+          "name": "Captured",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Stale",
+          "kind": "idea",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:IdeaTitle",
+          "kind": "link",
+          "name": "IdeaTitle",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "longlist:Empty",
+          "kind": "longlist",
+          "name": "Empty",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Idea",
+          "kind": "page",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Longlist",
+          "kind": "page",
+          "name": "Longlist",
+          "usedBy": [
+            "BEH-AGE-1",
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2",
+            "BEH-CAPTURE-3",
+            "BEH-CAPTURE-4",
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:IdeaList",
+          "kind": "region",
+          "name": "IdeaList",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:WhyNow",
+          "kind": "region",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
 }

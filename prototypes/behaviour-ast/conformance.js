@@ -29,7 +29,7 @@
 // Phase 3 ports the engine module by module. One opaque blob per corpus could not
 // score a half-done port: the first C# module would be unverifiable until the last
 // one existed, which is the same as not having a harness at all. So each corpus's
-// golden has one section per engine stage — `parse`, `resolve`, `generate` — and a
+// golden has one section per engine stage — `parse`, `resolve`, `generate`, `report` — and a
 // C# `Parse` can be driven against the `parse` section on its own, with
 // `resolve`/`generate` still in JavaScript.
 //
@@ -74,6 +74,7 @@ const path = require('path');
 
 const kit = require('./kit.js');
 const bindingsOf = require('./bindings.js');
+const projectView = require('./project.js');
 const cliRules = require('./cli.js');
 
 // ⚠️ Every flag in KNOWN_FLAGS must appear in this sentence. `kit.test.js`'s
@@ -85,10 +86,11 @@ const USAGE = 'usage: node conformance.js [<corpus-name>] [--check|--record] [--
 const KNOWN_FLAGS = ['--check', '--record', '--dir', '--golden', '--help', '-h'];
 const VALUE_FLAGS = new Set(['--dir', '--golden']);
 
+// 2 (2026-10-07) added `report`, the project view's engine verdicts, for Phase 4.
 // The format version travels IN the golden. A port verified against a golden
 // written by a different shape of this file is verified against nothing, and the
 // failure would otherwise look like a C# bug.
-const FORMAT = 1;
+const FORMAT = 2;
 
 // ── the pure half ───────────────────────────────────────────────────────────
 
@@ -192,6 +194,11 @@ function pipeline(dir, corpus) {
       })),
     },
     generate: generateSection,
+    // What the project view serves about this corpus, through project.js's own
+    // `report` — the one definition of that shape — so the C# server is scored on
+    // what the page reads. Its own key because Phase 4 ports it function by
+    // function, exactly as Phase 3 ported the stages above.
+    report: projectView.report(behaviours, conflicts, bindings),
   };
 }
 

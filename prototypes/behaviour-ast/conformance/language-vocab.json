@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "language-vocab",
   "parse": [
     {
@@ -2197,5 +2197,848 @@
         "ungenerated": 0
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 12,
+      "inferred": 15,
+      "unreviewed": [
+        "BEH-GRADE-1",
+        "BEH-GRADE-2",
+        "BEH-GRADE-3",
+        "BEH-GRADE-4",
+        "BEH-STRENGTH-1",
+        "BEH-WEIGHT-1",
+        "BEH-UNLOCK-1",
+        "BEH-BOOTSTRAP-1",
+        "BEH-UNLOCK-2",
+        "BEH-SEED-1",
+        "BEH-SEED-2",
+        "BEH-SEED-3",
+        "BEH-LANG-1",
+        "BEH-ITEMTYPE-1",
+        "BEH-DETERMINISM-1"
+      ],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [
+        "BEH-GRADE-1",
+        "BEH-GRADE-2",
+        "BEH-GRADE-3",
+        "BEH-GRADE-4",
+        "BEH-STRENGTH-1",
+        "BEH-WEIGHT-1",
+        "BEH-UNLOCK-1",
+        "BEH-BOOTSTRAP-1",
+        "BEH-UNLOCK-2",
+        "BEH-SEED-1",
+        "BEH-SEED-2",
+        "BEH-SEED-3"
+      ],
+      "unserved": [
+        "BEH-LANG-1",
+        "BEH-ITEMTYPE-1",
+        "BEH-DETERMINISM-1"
+      ]
+    },
+    "questions": [
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-LANG-1",
+        "id": "BEH-LANG-1",
+        "title": "Every pool operation is scoped to one language",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_only_touches_the_requested_language"
+        },
+        "serves": [],
+        "contracts": [
+          "bootstrap for one language leaves another language's pool untouched",
+          "the loader throws when the language is missing"
+        ],
+        "asks": "DESIGN.md defers other languages but promises the data model is language-tagged from day one. It got more than a column: `language` is a required parameter on all three IPoolService methods, so every drill route in PR 4 has to carry it too. Is language a PARAMETER, or a setting the app is configured with?",
+        "options": [
+          {
+            "label": "Keep it threaded",
+            "consequence": "IPoolService.cs:17,24,31 keep `string language`, and the drill routes take it as a path segment or query param. The isolation property stays enforced. Adding Cantonese is then a seed file and a config value, with no signature to change and no migration. Cost: every route, client call and test in PR 4 carries an argument whose only possible value today is `zh`.",
+            "at": "language-vocab.beh:220"
+          },
+          {
+            "label": "Make it ambient",
+            "consequence": "Drop the parameter; one configured language, resolved from settings or an owner record. VocabItemEntity.cs:14 already defaults Language to \\\"zh\\\", so the column and the seed loader's per-language files survive untouched — the roadmap promise DESIGN.md actually makes is kept. The isolation test loses its subject, and language 2 becomes a signature change across the service, the routes and the client.",
+            "at": "language-vocab.beh:221"
+          }
+        ],
+        "recommend": {
+          "label": "Keep it threaded",
+          "why": "The parameter is not speculative surface — it is the roadmap promise DESIGN.md:36-37 states, made executable. And the moment to pay for it is now, before PR 4 exists: threading it through routes that are not written yet costs one argument each, where retrofitting it later means changing a shipped API and regenerating a client. A6-style single-user apps are also where an ambient global is hardest to unpick, because the assumption gets read into a dozen call sites first.",
+          "at": "language-vocab.beh:222"
+        },
+        "against": "The isolation test seeds a synthetic \\\"fr\\\" that exists nowhere else in the repo — 150 HSK1 entries in one file, one language, zero users asking for a second. So a required argument is being carried on every method and every future route to satisfy a property no caller can exercise, and the test proves the code does what it was written to do rather than anything about the product. \\\"Other languages\\\" is under **Explicitly deferred**, and a deferred feature that still shapes today's signatures has not really been deferred. The cheap version is to keep the Language COLUMN — which is all DESIGN.md literally promises — and let the parameter arrive with the second language, when its shape will be known rather than guessed.",
+        "cites": []
+      },
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-ITEMTYPE-1",
+        "id": "BEH-ITEMTYPE-1",
+        "title": "A vocabulary item has a type, defaulting to word",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_defaults_item_type_to_word"
+        },
+        "serves": [],
+        "contracts": [
+          "the schema reserves a Sentence type that nothing produces or consumes"
+        ],
+        "asks": "The string `Sentence` occurs exactly twice in this repo: the enum member, and the DESIGN.md line reserving it. No seed entry sets a type, no route exposes one, the frontend has no such field. Does the reservation stay, or does the type arrive with sentence mode?",
+        "options": [
+          {
+            "label": "Keep the reservation",
+            "consequence": "VocabItemType.cs keeps `Sentence = 1`. It pins `Word = 0` as the default, so the enum can be extended later without renumbering a persisted column, and it makes DESIGN.md:34-35's second phase legible in the code a reader actually opens.",
+            "at": "language-vocab.beh:230"
+          },
+          {
+            "label": "Drop it until it is built",
+            "consequence": "The enum becomes `Word = 0` alone. Adding a member back later is one line and no migration, since nothing has ever persisted a 1. The type column, the nullable SeedEntry.Type and the defaulting test all survive — only the unreachable value goes.",
+            "at": "language-vocab.beh:231"
+          }
+        ],
+        "recommend": {
+          "label": "Keep the reservation",
+          "why": "This is the cheapest kind of reserved surface there is: an enum member costs no route, no client field, no migration and no test, and it is the one place a persisted integer genuinely benefits from being fixed early — `Word = 0` is only guaranteed if nothing renumbers around it. It is also already documented, which is the distinction this corpus is built to draw: reserved-and-written-down is not the same as surface nobody asked for.",
+          "at": "language-vocab.beh:232"
+        },
+        "against": "You have one other behaviour in this corpus (BEH-LANG-1) making the same bet on the same deferred roadmap, and answering both the same way is how a v1 quietly acquires a v2's shape. `Word = 0` is the C# default for any enum whether or not a second member exists, so the renumbering argument protects against a hazard that only appears once someone adds a value — at which point they can append it. And a reserved member is not free in the way it looks: it is a branch every future `switch` has to handle or deliberately ignore, on a code path nothing can currently reach.",
+        "cites": []
+      },
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-DETERMINISM-1",
+        "id": "BEH-DETERMINISM-1",
+        "title": "Selection is deterministic for a given seed",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:SelectNext_is_deterministic_for_the_same_seed"
+        },
+        "serves": [],
+        "contracts": [
+          "the same seed picks the same word, so the sampler is testable"
+        ],
+        "asks": "SelectNextAsync takes a required `int seed` and NOTHING calls it outside the tests — the drill API is PR 4 and does not exist. So where the seed comes from in production has never been decided, and it is a user-visible choice, not an implementation detail. Which is it: the client sends a seed, or the server makes one?",
+        "options": [
+          {
+            "label": "The server generates it per request",
+            "consequence": "The drill route makes a fresh seed each call. Determinism reverts to what DESIGN.md:66-67 says it is for — unit-testability — and every draw is independent. A refresh gives a different card. Resuming a session mid-way is then a separate feature with its own state, not something the seed gives you.",
+            "at": "language-vocab.beh:240"
+          },
+          {
+            "label": "The client supplies it per session",
+            "consequence": "The frontend mints a seed when a drill starts and sends it with each draw. The same session replays the same sequence, so a refresh or a reconnect resumes where it was rather than reshuffling. It also makes the sequence reproducible from a bug report. Cost: the seed is now part of the public API contract, and a client that reuses one gets the same word forever.",
+            "at": "language-vocab.beh:241"
+          }
+        ],
+        "recommend": {
+          "label": "The server generates it per request",
+          "why": "DESIGN.md:66-67 says the determinism exists so the sampler is unit-testable, and that is a claim about the test suite, not a promise to a user. A4 says the picker samples weakness-weighted from the active pool — that is a property of the WEIGHTS, and it holds either way, so the seed is buying nothing the design asks for. Keeping it server-side also keeps the failure mode small: a client that mishandles a seed can pin itself to one word, and that bug is invisible until someone notices they keep seeing 好.",
+          "at": "language-vocab.beh:242"
+        },
+        "against": "You are deciding this now, in a corpus, for a route that will be written in PR 4 — and the version that is harder to add later is the one being rejected. Making the seed part of the request from day one costs one optional query parameter and no state; retrofitting it means changing a shipped drill endpoint and regenerating the client. Resume-after-refresh on a phone is also not an exotic want for a drill app, and the pinned-to-one-word failure is preventable by advancing the seed per draw rather than by hiding it. There is a third answer this question does not offer: derive the seed from something stable you already have — user plus date — which gives a reproducible day without either a client contract or a decision about session state.",
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-GRADE-1",
+        "id": "BEH-GRADE-1",
+        "title": "An answer is graded correct, almost, or wrong",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Grade_correct"
+        },
+        "serves": [
+          "BEH-TONE-2"
+        ],
+        "contracts": [
+          "the three verdicts are exhaustive"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-GRADE-2",
+        "id": "BEH-GRADE-2",
+        "title": "A toneless answer is reported as toneless, not merely wrong",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Toneless_answer_reports_flags"
+        },
+        "serves": [
+          "BEH-TONE-2"
+        ],
+        "contracts": [
+          "the result flags that no tones were supplied, distinct from supplying wrong ones"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-GRADE-3",
+        "id": "BEH-GRADE-3",
+        "title": "A wrong tone is reported as tones-provided-but-incorrect",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Wrong_tone_reports_tones_provided_but_incorrect"
+        },
+        "serves": [
+          "BEH-TONE-2"
+        ],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-GRADE-4",
+        "id": "BEH-GRADE-4",
+        "title": "The grade carries the canonical form of the answer",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Result_carries_the_canonical_form"
+        },
+        "serves": [
+          "BEH-CARD-1"
+        ],
+        "contracts": [
+          "the canonical form is what the amber and red feedback display"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-STRENGTH-1",
+        "id": "BEH-STRENGTH-1",
+        "title": "Strength moves by one and clamps to the 0..5 band",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:NextStrength_moves_and_clamps"
+        },
+        "serves": [
+          "BEH-STRENGTH-MVP"
+        ],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-WEIGHT-1",
+        "id": "BEH-WEIGHT-1",
+        "title": "Sampling weight favours weakness and never reaches zero",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:Weight_favours_weakness_and_stays_positive"
+        },
+        "serves": [
+          "BEH-POOL-MVP"
+        ],
+        "contracts": [
+          "a mastered word still has a positive chance of coming up"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-UNLOCK-1",
+        "id": "BEH-UNLOCK-1",
+        "title": "Unlocking fires at the threshold and not below it",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:ShouldUnlock_true_at_threshold"
+        },
+        "serves": [
+          "BEH-POOL-MVP"
+        ],
+        "contracts": [
+          "out-of-band strengths are clamped before the mean is taken"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-BOOTSTRAP-1",
+        "id": "BEH-BOOTSTRAP-1",
+        "title": "The pool bootstraps to the first ten by rank, and does so once",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_creates_first_ten_by_rank"
+        },
+        "serves": [
+          "BEH-POOL-MVP"
+        ],
+        "contracts": [
+          "a second bootstrap changes nothing",
+          "fewer than ten available takes all of them"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-UNLOCK-2",
+        "id": "BEH-UNLOCK-2",
+        "title": "Unlocking adds the next batch by rank and stops when nothing is left",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:TryUnlock_adds_next_batch_by_rank_when_mastered"
+        },
+        "serves": [
+          "BEH-POOL-MVP"
+        ],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-SEED-1",
+        "id": "BEH-SEED-1",
+        "title": "Seeding is idempotent and updates changed rows in place",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_is_idempotent_second_run_changes_nothing"
+        },
+        "serves": [
+          "BEH-SEEDDATA-1"
+        ],
+        "contracts": [
+          "a changed gloss updates the existing row rather than inserting a duplicate"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-SEED-2",
+        "id": "BEH-SEED-2",
+        "title": "The real HSK1 list is embedded and loads 150 words",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_the_real_hsk1_list_inserts_150_words"
+        },
+        "serves": [
+          "BEH-SEEDDATA-1"
+        ],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-SEED-3",
+        "id": "BEH-SEED-3",
+        "title": "The loader derives normalised pinyin through the grader",
+        "source": {
+          "origin": "inferred",
+          "ref": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_derives_normalised_pinyin_via_the_grader"
+        },
+        "serves": [
+          "BEH-NORMALISE-1"
+        ],
+        "contracts": [
+          "seed data and typed answers are normalised by the same code"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      }
+    ],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:PlayAudio",
+          "kind": "button",
+          "name": "PlayAudio",
+          "usedBy": [
+            "BEH-AUDIO-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Drill",
+          "kind": "page",
+          "name": "Drill",
+          "usedBy": [
+            "BEH-AUDIO-1",
+            "BEH-CARD-1",
+            "BEH-CHAR-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-1",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Stats",
+          "kind": "page",
+          "name": "Stats",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:AccuracyOverTime",
+          "kind": "region",
+          "name": "AccuracyOverTime",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EnglishPrompt",
+          "kind": "region",
+          "name": "EnglishPrompt",
+          "usedBy": [
+            "BEH-DRILL-ENZH"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HanziLarge",
+          "kind": "region",
+          "name": "HanziLarge",
+          "usedBy": [
+            "BEH-CHAR-1",
+            "BEH-DRILL-ZHEN"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PinyinUnderIt",
+          "kind": "region",
+          "name": "PinyinUnderIt",
+          "usedBy": [
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PoolSize",
+          "kind": "region",
+          "name": "PoolSize",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:StrengthBars",
+          "kind": "region",
+          "name": "StrengthBars",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Verdict",
+          "kind": "region",
+          "name": "Verdict",
+          "usedBy": [
+            "BEH-CARD-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "button:PlayAudio",
+          "kind": "button",
+          "name": "PlayAudio",
+          "usedBy": [
+            "BEH-AUDIO-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Drill",
+          "kind": "page",
+          "name": "Drill",
+          "usedBy": [
+            "BEH-AUDIO-1",
+            "BEH-CARD-1",
+            "BEH-CHAR-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-1",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Stats",
+          "kind": "page",
+          "name": "Stats",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:AccuracyOverTime",
+          "kind": "region",
+          "name": "AccuracyOverTime",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EnglishPrompt",
+          "kind": "region",
+          "name": "EnglishPrompt",
+          "usedBy": [
+            "BEH-DRILL-ENZH"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HanziLarge",
+          "kind": "region",
+          "name": "HanziLarge",
+          "usedBy": [
+            "BEH-CHAR-1",
+            "BEH-DRILL-ZHEN"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PinyinUnderIt",
+          "kind": "region",
+          "name": "PinyinUnderIt",
+          "usedBy": [
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PoolSize",
+          "kind": "region",
+          "name": "PoolSize",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:StrengthBars",
+          "kind": "region",
+          "name": "StrengthBars",
+          "usedBy": [
+            "BEH-STATS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Verdict",
+          "kind": "region",
+          "name": "Verdict",
+          "usedBy": [
+            "BEH-CARD-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
 }

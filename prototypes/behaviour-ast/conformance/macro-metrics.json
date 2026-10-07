@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "macro-metrics",
   "parse": [
     {
@@ -1076,5 +1076,523 @@
         "ungenerated": 1
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 10,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:Swap",
+          "kind": "button",
+          "name": "Swap",
+          "usedBy": [
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:TryAgain",
+          "kind": "button",
+          "name": "TryAgain",
+          "usedBy": [
+            "BEH-MM-ERR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "combobox:Denominator",
+          "kind": "combobox",
+          "name": "Denominator",
+          "usedBy": [
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "combobox:Numerator",
+          "kind": "combobox",
+          "name": "Numerator",
+          "usedBy": [
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:CustomComparison",
+          "kind": "heading",
+          "name": "CustomComparison",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:MacroIndicators",
+          "kind": "heading",
+          "name": "MacroIndicators",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:PresetRatios",
+          "kind": "heading",
+          "name": "PresetRatios",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "link:Compare",
+          "kind": "link",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Indicators",
+          "kind": "link",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Presets",
+          "kind": "link",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "option:Gold",
+          "kind": "option",
+          "name": "Gold",
+          "usedBy": [
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "option:UsCpi",
+          "kind": "option",
+          "name": "UsCpi",
+          "usedBy": [
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:MacroHome",
+          "kind": "page",
+          "name": "MacroHome",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1",
+            "BEH-MM-ISOLATION-1",
+            "BEH-MM-LOAD-1",
+            "BEH-MM-NAV-1",
+            "BEH-MM-PICK-0",
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "ratio:Errored",
+          "kind": "ratio",
+          "name": "Errored",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:OneErrored",
+          "kind": "ratio",
+          "name": "OneErrored",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Compare",
+          "kind": "region",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-PICK-0",
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:Indicators",
+          "kind": "region",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-IND-ERR-1",
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:Presets",
+          "kind": "region",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "link:Compare",
+          "kind": "link",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Indicators",
+          "kind": "link",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Presets",
+          "kind": "link",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:Errored",
+          "kind": "ratio",
+          "name": "Errored",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:OneErrored",
+          "kind": "ratio",
+          "name": "OneErrored",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": [
+        "button:Swap",
+        "button:TryAgain",
+        "combobox:Denominator",
+        "combobox:Numerator",
+        "heading:CustomComparison",
+        "heading:MacroIndicators",
+        "heading:PresetRatios",
+        "option:Gold",
+        "option:UsCpi",
+        "page:MacroHome",
+        "region:Compare",
+        "region:Indicators",
+        "region:Presets"
+      ]
+    }
+  }
 }

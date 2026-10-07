@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "trial-habits-a",
   "parse": [
     {
@@ -1022,5 +1022,745 @@
         "ungenerated": 3
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 10,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:AutoTicked",
+          "kind": "badge",
+          "name": "AutoTicked",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:AddHabit",
+          "kind": "button",
+          "name": "AddHabit",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveHabit",
+          "kind": "button",
+          "name": "SaveHabit",
+          "usedBy": [
+            "BEH-SETUP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveValue",
+          "kind": "button",
+          "name": "SaveValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitDone",
+          "kind": "checkbox",
+          "name": "HabitDone",
+          "usedBy": [
+            "BEH-TODAY-3",
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitName",
+          "kind": "field",
+          "name": "HabitName",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            },
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:LoggedToday",
+          "kind": "habit",
+          "name": "LoggedToday",
+          "usedBy": [
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:Pending",
+          "kind": "habit",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habits:None",
+          "kind": "habits",
+          "name": "None",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:ManageHabits",
+          "kind": "page",
+          "name": "ManageHabits",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:NewHabit",
+          "kind": "page",
+          "name": "NewHabit",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-SETUP-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-DERIVE-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3",
+            "BEH-TODAY-4",
+            "BEH-TODAY-5",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-SETUP-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:AutoTicked",
+          "kind": "badge",
+          "name": "AutoTicked",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:AddHabit",
+          "kind": "button",
+          "name": "AddHabit",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveHabit",
+          "kind": "button",
+          "name": "SaveHabit",
+          "usedBy": [
+            "BEH-SETUP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveValue",
+          "kind": "button",
+          "name": "SaveValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitDone",
+          "kind": "checkbox",
+          "name": "HabitDone",
+          "usedBy": [
+            "BEH-TODAY-3",
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitName",
+          "kind": "field",
+          "name": "HabitName",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            },
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:LoggedToday",
+          "kind": "habit",
+          "name": "LoggedToday",
+          "usedBy": [
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:Pending",
+          "kind": "habit",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habits:None",
+          "kind": "habits",
+          "name": "None",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:ManageHabits",
+          "kind": "page",
+          "name": "ManageHabits",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:NewHabit",
+          "kind": "page",
+          "name": "NewHabit",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-SETUP-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-DERIVE-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3",
+            "BEH-TODAY-4",
+            "BEH-TODAY-5",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-SETUP-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
 }

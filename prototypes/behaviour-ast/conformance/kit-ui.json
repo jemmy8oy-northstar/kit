@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "kit-ui",
   "parse": [
     {
@@ -722,5 +722,356 @@
         "ungenerated": 0
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 6,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-LIST-1",
+        "BEH-SHEET-1",
+        "BEH-PAIR-1",
+        "BEH-ADJ-1",
+        "BEH-ADJ-2",
+        "BEH-STEP-1"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:KitAddBehaviour",
+          "kind": "button",
+          "name": "KitAddBehaviour",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitAddStep",
+          "kind": "button",
+          "name": "KitAddStep",
+          "usedBy": [
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitApprove",
+          "kind": "button",
+          "name": "KitApprove",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitDeny",
+          "kind": "button",
+          "name": "KitDeny",
+          "usedBy": [
+            "BEH-ADJ-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitAddAStep",
+          "kind": "heading",
+          "name": "KitAddAStep",
+          "usedBy": [
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitAdjudication",
+          "kind": "heading",
+          "name": "KitAdjudication",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitBehaviourSteps",
+          "kind": "heading",
+          "name": "KitBehaviourSteps",
+          "usedBy": [
+            "BEH-PAIR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitGeneratedTest",
+          "kind": "heading",
+          "name": "KitGeneratedTest",
+          "usedBy": [
+            "BEH-PAIR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitNeverAdjudicated",
+          "kind": "heading",
+          "name": "KitNeverAdjudicated",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitProjectsTitle",
+          "kind": "heading",
+          "name": "KitProjectsTitle",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitQuestionSheet",
+          "kind": "heading",
+          "name": "KitQuestionSheet",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitBehaviour",
+          "kind": "page",
+          "name": "KitBehaviour",
+          "usedBy": [
+            "BEH-ADJ-1",
+            "BEH-ADJ-2",
+            "BEH-PAIR-1",
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitProject",
+          "kind": "page",
+          "name": "KitProject",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitProjects",
+          "kind": "page",
+          "name": "KitProjects",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:KitMain",
+          "kind": "region",
+          "name": "KitMain",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        }
+      ],
+      "missing": [],
+      "insufficient": [],
+      "satisfied": [
+        "button:KitAddBehaviour",
+        "button:KitAddStep",
+        "button:KitApprove",
+        "button:KitDeny",
+        "heading:KitAddAStep",
+        "heading:KitAdjudication",
+        "heading:KitBehaviourSteps",
+        "heading:KitGeneratedTest",
+        "heading:KitNeverAdjudicated",
+        "heading:KitProjectsTitle",
+        "heading:KitQuestionSheet",
+        "page:KitBehaviour",
+        "page:KitProject",
+        "page:KitProjects",
+        "region:KitMain"
+      ]
+    }
+  }
 }
