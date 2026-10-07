@@ -34,4 +34,10 @@ public interface IBehaviour
     IReview Review { get; }
 
     bool? ReviewExplicit { get; }
+
+    /// <summary>Holes another behaviour filled. Null until <c>resolve</c> has run.</summary>
+    IReadOnlyList<IFilled>? Filled { get; }
+
+    /// <summary>Holes nothing filled. Null until <c>resolve</c> has run.</summary>
+    IReadOnlyList<IOpenHole>? Open { get; }
 }

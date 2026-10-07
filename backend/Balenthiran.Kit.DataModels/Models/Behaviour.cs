@@ -86,6 +86,17 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? ReviewExplicit { get; set; }
 
+    // Written by `resolve` and absent before it, for the same reason as
+    // `Step.Resolved`. `kit.js` returns `{ ...b, filled, open }`, so they follow
+    // every parsed key — including `reviewExplicit` — in that order.
+    [JsonPropertyOrder(17)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<Filled>? Filled { get; set; }
+
+    [JsonPropertyOrder(18)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<OpenHole>? Open { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.
@@ -98,4 +109,6 @@ public sealed class Behaviour : IBehaviour
     IReadOnlyList<IIdRef> IBehaviour.Cites => Cites;
     ISource IBehaviour.Source => Source;
     IReview IBehaviour.Review => Review;
+    IReadOnlyList<IFilled>? IBehaviour.Filled => Filled;
+    IReadOnlyList<IOpenHole>? IBehaviour.Open => Open;
 }
