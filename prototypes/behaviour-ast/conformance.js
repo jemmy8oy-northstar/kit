@@ -274,6 +274,98 @@ function readRoutes(dir) {
   return { format: FORMAT, requests };
 }
 
+const HOST = 'routes/host';
+
+function hostPath(goldenDir) {
+  return path.join(goldenDir, 'routes', 'host.json');
+}
+
+/**
+ * The HOST layer, as `ui.js`'s `answer()` — the function `serve()` calls for
+ * every request — decides it: the raw request target through WHATWG `new URL`
+ * (dot segments, `%2e`, backslashes, absolute and `//` forms), the base-path
+ * strip, the preflight, and the CORS headers for each kind of Origin. Recorded
+ * under two configurations: a local Kit at the root, and the deployed shape
+ * (`/kit` behind `https://balenthiran.co.uk`).
+ *
+ * What it records is what goes on the wire: status, every header `serve()`
+ * writes, and the body. A POST under the prefix records `post` — the path whose
+ * body `serve()` would then read — because the writes are not ported yet.
+ */
+function hostRoutes(dir) {
+  const ui = require('./ui.js');
+  const dist = path.join(__dirname, 'conformance', 'routes', 'dist');
+  const PUBLIC = 'https://balenthiran.co.uk';
+  const configs = {
+    root: { basePath: '', opts: { dir, dist } },
+    deployed: { basePath: '/kit', opts: { dir, dist, publicOrigin: PUBLIC } },
+  };
+  const get = (url, origin = null) => ({ method: 'GET', url, origin });
+  const plan = {
+    root: [
+      get('/'), get('/api/health'), get('/api/../api/health'), get('/api/projects/%2e%2e'), get('/..%2f'),
+      get('/api/health', 'http://localhost:5173'), get('/api/health', PUBLIC),
+      { method: 'OPTIONS', url: '/api/projects', origin: 'http://localhost:5173' },
+      { method: 'POST', url: '/api/session', origin: null },
+    ],
+    deployed: [
+      // the prefix itself, its look-alikes, and paths it does not own
+      get('/kit'), get('/kit/'), get('/kitten'), get('/'), get('/api/health'), get('/%6Bit/api/health'),
+      get('/kit/api/health'), get('/kit/api/projects/no-such-app'), get('/kit/projects/snip-it'), get('/kit/assets/index-Ab12Cd.js'),
+      // WHATWG normalisation of the target, before the strip
+      get('/kit/../api/health'), get('/kit/%2e%2e/api/health'), get('/kit/%2E./kit/api/health'), get('/kit/api/./health'),
+      get('/kit/api/%2e/health'), get('/kit\\api\\health'), get('/kit/api/health?x=1'), get('//evil.com/kit/api/health'),
+      get('http://other:99/kit/api/health'), get('/kit//api/health'), get('/kit/..'), get('/../kit/api/health'),
+      get('/kit/api/projects/%2e%2e'), get('/kit/assets/..%2findex.html'), get('/kit/api/projects/a"b{c}`d<e>^f|g'),
+      // (Not `http:/x`, `http:x`, `https:\\x` or `foo:/x`: Node's HTTP parser refuses
+      // those with a bare 400 before `serve()` runs, so no answer here is reachable.)
+      get('*'), get('//user:pw@host:8080/kit/api/health'), get('//[::1]/kit/api/health'), get('//0x7f.1/kit/api/health'),
+      // targets `new URL` cannot parse: before the host layer, each one crashed the process
+      get('//x:99999/kit/api/health'), get('//x:abc/kit/api/health'), get('//%/kit'), get('//[/kit'), get('//exa%00mple/kit'),
+      get('//@/kit'), get('//1.2.3.4.5/kit'), get('//999.1.1.1/kit'), get('http://[::1/kit'),
+      // every kind of Origin, on a read
+      ...[PUBLIC, `${PUBLIC}:443`, 'http://balenthiran.co.uk', `${PUBLIC}.evil.com`, 'https://BALENTHIRAN.co.uk',
+        `${PUBLIC}:8443`, `${PUBLIC}/`, `https://user@balenthiran.co.uk`, 'https://evil.com#https://balenthiran.co.uk',
+        'http://localhost:5173', 'http://LOCALHOST:1', 'http://127.0.0.1:1', 'http://127.1', 'http://0x7f.0.0.1', 'http://127.000.000.001',
+        'http://2130706433', 'http://[::1]:3', 'http://[0:0::1]', 'http://localhost.evil.com', 'http://127.0.0.1.evil.com',
+        'http://localhost\\@evil.com', 'http://evil.com\\@localhost', 'foo://localhost', 'null', 'not a url', ''].map((o) => get('/kit/api/health', o)),
+      // preflights, inside and outside the prefix
+      { method: 'OPTIONS', url: '/kit/api/projects', origin: PUBLIC },
+      { method: 'OPTIONS', url: '/kit/api/projects', origin: 'https://evil.com' },
+      { method: 'OPTIONS', url: '/kit/api/projects', origin: null },
+      { method: 'OPTIONS', url: '/api/projects', origin: PUBLIC },
+      { method: 'OPTIONS', url: '*', origin: PUBLIC },
+      // other methods
+      { method: 'PUT', url: '/kit/api/projects', origin: null },
+      { method: 'DELETE', url: '/kit/api/health', origin: PUBLIC },
+      { method: 'POST', url: '/kit/api/session', origin: PUBLIC },
+      { method: 'POST', url: '/api/session', origin: PUBLIC },
+    ],
+  };
+
+  const requests = [];
+  for (const [config, list] of Object.entries(plan)) {
+    const { basePath, opts } = configs[config];
+    for (const { method, url, origin } of list) {
+      const a = ui.answer(method, url, origin, null, opts, basePath);
+      let response;
+      if (a.post !== undefined) response = { post: a.post };
+      else {
+        const headers = Object.fromEntries(Object.entries(a.headers).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)));
+        response = { status: a.status, headers };
+        if (a.raw !== undefined) response.rawText = Buffer.from(a.raw).toString('utf8');
+        else if (a.body !== '') response.body = JSON.parse(a.body);
+      }
+      requests.push({ config, method, url, origin, response });
+    }
+  }
+  return {
+    format: FORMAT,
+    configs: Object.fromEntries(Object.entries(configs).map(([k, c]) => [k, { basePath: c.basePath, publicOrigin: c.opts.publicOrigin ?? null }])),
+    requests,
+  };
+}
+
 // The serialised form, which is what is actually compared. One definition, so
 // `--record` and `--check` cannot disagree about formatting — the failure mode
 // where a check is permanently red because the writer indents differently.
@@ -319,13 +411,11 @@ function compare(dir, goldenDir, only) {
   // and through the same three outcomes as a corpus, so nothing downstream needs
   // a fourth state to report them.
   if (!only) {
-    const p = routesPath(goldenDir);
-    const fresh = serialise(readRoutes(dir));
-    if (!fs.existsSync(p)) out.missing.push(ROUTES);
-    else {
+    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))]]) {
+      if (!fs.existsSync(p)) { out.missing.push(name); continue; }
       const committed = fs.readFileSync(p, 'utf8');
-      if (committed === fresh) out.matched.push(ROUTES);
-      else out.drifted.push({ corpus: ROUTES, committedBytes: committed.length, freshBytes: fresh.length });
+      if (committed === fresh) out.matched.push(name);
+      else out.drifted.push({ corpus: name, committedBytes: committed.length, freshBytes: fresh.length });
     }
   }
 
@@ -358,7 +448,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, readRoutes, routesPath, ROUTES, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -440,6 +530,8 @@ function main(argv) {
       fs.mkdirSync(path.dirname(routesPath(goldenDir)), { recursive: true });
       fs.writeFileSync(routesPath(goldenDir), serialise(readRoutes(dir)));
       written.push(ROUTES);
+      fs.writeFileSync(hostPath(goldenDir), serialise(hostRoutes(dir)));
+      written.push(HOST);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;

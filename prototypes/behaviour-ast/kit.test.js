@@ -6848,6 +6848,55 @@ test('conformance: the read-routes golden is compared, and covers every corpus a
   assert.strictEqual(bundle('/%E0%A4%A').status, 400);
 });
 
+test('conformance: the host golden is compared, and is what a real socket delivers', async () => {
+  // Compared at all, beside the corpora and the read routes.
+  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  assert.ok(r.matched.includes(conformance.HOST), `the host golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // The seam pinned from the far side: `hostRoutes` records `answer()`, and this
+  // proves `serve()` puts exactly that on the wire — every header it records and
+  // no header it does not, beyond the ones Node's own http layer always adds. Raw
+  // targets (`//evil.com/…`, absolute-form, backslashes) go through `http.request`
+  // unaltered, so the socket sees what the golden names.
+  const g = JSON.parse(fsx.readFileSync(conformance.hostPath(GOLDEN_DIR), 'utf8'));
+  const dist = pathx.join(__dirname, 'conformance', 'routes', 'dist');
+  const NODE_OWN = new Set(['date', 'connection', 'keep-alive', 'content-length', 'transfer-encoding']);
+  const send = (port, { method, url, origin }) => new Promise((resolve, reject) => {
+    const req = require('http').request({ host: '127.0.0.1', port, path: url, method, headers: origin === null ? {} : { origin } }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  let compared = 0;
+  for (const [config, c] of Object.entries(g.configs)) {
+    const opts = { dir: BEH_DIR, dist, port: 0, host: '127.0.0.1', basePath: c.basePath };
+    if (c.publicOrigin) opts.publicOrigin = c.publicOrigin;
+    const server = await ui.serve(opts);
+    try {
+      const { port } = server.address();
+      for (const q of g.requests.filter((x) => x.config === config && x.response.post === undefined)) {
+        const label = `${config} ${q.method} ${q.url} origin=${q.origin}`;
+        const got = await send(port, q);
+        assert.strictEqual(got.status, q.response.status, label);
+        const extra = Object.keys(got.headers).filter((h) => !NODE_OWN.has(h) && !(h in q.response.headers));
+        assert.deepStrictEqual(extra, [], `${label}: headers the golden does not record`);
+        for (const [h, v] of Object.entries(q.response.headers)) assert.strictEqual(got.headers[h], v, `${label}: ${h}`);
+        if (q.response.rawText !== undefined) assert.strictEqual(got.text, q.response.rawText, label);
+        else if (q.response.body !== undefined) assert.deepStrictEqual(JSON.parse(got.text), q.response.body, label);
+        else assert.strictEqual(got.text, '', label);
+        compared++;
+      }
+    } finally {
+      server.close();
+    }
+  }
+  assert.ok(compared >= 40, `only ${compared} host requests went over the wire — the gate is inert`);
+});
+
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
   // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
   // whitelist. Measured when this was written: recording resolve's behaviours in

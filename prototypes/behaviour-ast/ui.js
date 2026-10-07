@@ -970,6 +970,77 @@ function cors(origin, opts = {}) {
   };
 }
 
+/**
+ * A result as it goes on the wire: status, the headers `serve()` writes, and
+ * either `raw` bytes or the serialised `body`. Split out of `serve()` so the
+ * conformance oracle records exactly what the socket sends (kit#119, Phase 4's
+ * host layer) without a socket.
+ */
+function delivered(result, origin, opts) {
+  const headers = { 'content-type': result.contentType, ...cors(origin, opts) };
+  if (result.cacheControl) headers['cache-control'] = result.cacheControl;
+  // Set only by the sign-in and sign-out routes. Checked for presence
+  // rather than truthiness so an empty string could never be sent as a
+  // header — though `clearCookieHeader` never returns one.
+  if (result.setCookie) headers['set-cookie'] = result.setCookie;
+  // `raw` is set only by `bundle()`, and its presence is what distinguishes
+  // bytes from a payload. Checked with `!== undefined` rather than for
+  // truthiness: an empty file is a legitimate asset, and `||` would serve it
+  // as the string "undefined" wearing its content-type.
+  return result.raw !== undefined
+    ? { status: result.status, headers, raw: result.raw }
+    : { status: result.status, headers, body: JSON.stringify(result.body) };
+}
+
+/**
+ * Everything `serve()` decides about a request before it reads a body, as a pure
+ * function: the delivered answer, or `{ post: pathname }` for a POST under our
+ * prefix, whose body `serve()` must read before `route()` can answer it.
+ *
+ * `url` is the raw request target. `basePath` must already be normalised.
+ */
+function answer(method, url, origin, cookie, opts, basePath) {
+  // `new URL` needs a base; the host header is untrusted input and is only
+  // ever used to satisfy the parser, never read back out.
+  //
+  // 🔴 It THROWS on a target such as `//x:99999/` (an authority with a bad port
+  // or host), and this runs inside the request listener, so before kit#119's host
+  // layer one unauthenticated request was an uncaught exception that took the
+  // whole process down. A target that is not a URL is the client's error.
+  let requested;
+  try {
+    ({ pathname: requested } = new URL(url, 'http://localhost'));
+  } catch {
+    return delivered({
+      status: 400,
+      contentType: 'application/json',
+      body: { error: 'bad-request', reason: 'the request target is not a valid URL' },
+    }, origin, opts);
+  }
+
+  // Rule 8, and it happens before everything below it on purpose: a request
+  // that is not under our prefix must not have its body read, its Origin
+  // consulted or a preflight answered. It is not ours, and saying so is the
+  // only honest response — a Kit at `/kit` that also answered `/api/projects`
+  // would be answering for whichever sibling app owns that path.
+  const pathname = stripBasePath(requested, basePath);
+  if (pathname === null) {
+    return delivered({
+      status: 404,
+      contentType: 'application/json',
+      body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
+    }, origin, opts);
+  }
+
+  // A preflight is answered by the same allowlist that answers the request, so
+  // the two can never disagree — an ACAO that permits an origin a preflight
+  // refuses is a bug that only shows up in a browser.
+  if (method === 'OPTIONS') return { status: 204, headers: cors(origin, opts), body: '' };
+
+  if (method !== 'POST') return delivered(route(method, pathname, opts, null, null, cookie), origin, opts);
+  return { post: pathname };
+}
+
 function serve(opts = {}) {
   // `?? ` and not `||`: port 0 is a REQUEST for an ephemeral port, and `||`
   // silently turns it into 4321 — which the suite met as two tests fighting
@@ -993,48 +1064,15 @@ function serve(opts = {}) {
   const basePath = normaliseBasePath(opts.basePath);
 
   const server = http.createServer((req, res) => {
-    // `new URL` needs a base; the host header is untrusted input and is only
-    // ever used to satisfy the parser, never read back out.
-    const { pathname: requested } = new URL(req.url, 'http://localhost');
-
-    const send = (result) => {
-      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin, opts) };
-      if (result.cacheControl) headers['cache-control'] = result.cacheControl;
-      // Set only by the sign-in and sign-out routes. Checked for presence
-      // rather than truthiness so an empty string could never be sent as a
-      // header — though `clearCookieHeader` never returns one.
-      if (result.setCookie) headers['set-cookie'] = result.setCookie;
-      res.writeHead(result.status, headers);
-      // `raw` is set only by `bundle()`, and its presence is what distinguishes
-      // bytes from a payload. Checked with `!== undefined` rather than for
-      // truthiness: an empty file is a legitimate asset, and `||` would serve it
-      // as the string "undefined" wearing its content-type.
-      res.end(result.raw !== undefined ? result.raw : JSON.stringify(result.body));
+    const deliver = (a) => {
+      res.writeHead(a.status, a.headers);
+      res.end(a.raw !== undefined ? a.raw : a.body);
     };
+    const send = (result) => deliver(delivered(result, req.headers.origin, opts));
 
-    // Rule 8, and it happens before everything below it on purpose: a request
-    // that is not under our prefix must not have its body read, its Origin
-    // consulted or a preflight answered. It is not ours, and saying so is the
-    // only honest response — a Kit at `/kit` that also answered `/api/projects`
-    // would be answering for whichever sibling app owns that path.
-    const pathname = stripBasePath(requested, basePath);
-    if (pathname === null) {
-      return send({
-        status: 404,
-        contentType: 'application/json',
-        body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
-      });
-    }
-
-    // A preflight is answered by the same allowlist that answers the request, so
-    // the two can never disagree — an ACAO that permits an origin a preflight
-    // refuses is a bug that only shows up in a browser.
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204, cors(req.headers.origin, opts));
-      return res.end();
-    }
-
-    if (req.method !== 'POST') return send(route(req.method, pathname, opts, null, null, req.headers.cookie ?? null));
+    const a = answer(req.method, req.url, req.headers.origin ?? null, req.headers.cookie ?? null, opts, basePath);
+    if (a.post === undefined) return deliver(a);
+    const pathname = a.post;
 
     let size = 0;
     const chunks = [];
@@ -1287,7 +1325,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
+  route, write, serve, answer, delivered, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
   // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
   // the suite: it is imported there so the build and the server derive the
