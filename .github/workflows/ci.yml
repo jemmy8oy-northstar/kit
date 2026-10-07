@@ -1,15 +1,16 @@
 name: CI
 
-# `kit` is documentation, a plain-Node prototype, and — since #19 — a Vite/React
-# UI under prototypes/behaviour-ast/ui. It still has no ./backend and no
-# ./frontend, so the repo-template scaffold this replaces asserted the build of
-# two directories that do not exist and failed on every pull request — a red
-# tick that meant nothing about the change under review.
+# `kit` is documentation, a plain-Node prototype, a Vite/React UI under
+# prototypes/behaviour-ast/ui (#19) and — since #120 — a C# engine port under
+# ./backend. It has no ./frontend, so the repo-template scaffold this replaces
+# asserted the build of directories that did not exist and failed on every pull
+# request — a red tick that meant nothing about the change under review.
 #
-# What runs here is the thing that exists: the behaviour-AST prototype's own
-# suite. When kit grows a real backend/frontend, take the scaffold's jobs back
-# out of repo-template rather than rewriting them from memory — they carry the
-# .NET/Playwright setup and the note on job ids below.
+# What runs here is the thing that exists. The `backend` job below is
+# repo-template's, taken back out of the scaffold VERBATIM as this header said to
+# do. ⚠️ It arrived late: #120 merged 48 C# tests that NO job ran, so the port's
+# whole score — byte-for-byte against the Node goldens — was something only ever
+# observed on the bot's machine ([[passing-is-not-gating]]), for two days.
 #
 # Job ids are the check context GitHub reports, and a branch ruleset requires
 # them by exact string. `kit` has no rulesets today; if one is added, require
@@ -96,6 +97,35 @@ jobs:
       # is not fixable by parsing — `docs/design/tagging.md`.
       - name: Stage-0 gate — every kit behaviour is named by a test
         run: node prototypes/behaviour-ast/check.js kit --repo .
+
+  # The C# engine port (#119). The goldens it is scored against live under
+  # prototypes/, so the tests find them by walking up from the test binary —
+  # which is why this needs the whole checkout and not just ./backend.
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore ./backend
+
+      - name: Build
+        run: dotnet build ./backend --no-restore --configuration Release
+
+      # Drop this step only if the solution genuinely has no test project.
+      # `dotnet test` over a solution containing none exits 0 having asserted
+      # nothing — a green tick that means the opposite of what it looks like.
+      - name: Test
+        run: >
+          dotnet test ./backend
+          --no-build
+          --configuration Release
+          --verbosity normal
 
   # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
   # suite quoted in a PR body but executed by no gating job is a claim, not a
