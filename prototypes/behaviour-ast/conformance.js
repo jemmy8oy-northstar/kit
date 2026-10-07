@@ -202,6 +202,49 @@ function pipeline(dir, corpus) {
   };
 }
 
+// The pseudo-corpus name the read routes are reported under, beside the corpora.
+const ROUTES = 'routes/read';
+
+function routesPath(goldenDir) {
+  return path.join(goldenDir, 'routes', 'read.json');
+}
+
+/**
+ * The READ half of the HTTP surface, as `ui.js`'s own pure `route()` answers it
+ * over `dir` with no password and no repos — exactly what hosted Kit serves to a
+ * reader. Phase 4's C# server is scored on this, request by request, the way the
+ * engine was scored on the corpus goldens.
+ *
+ * Cross-corpus, which is why it is one file and not a section of each golden:
+ * the list route reads every corpus, and every noun's `sharedWith` in a project
+ * view does too, so adding ANY corpus moves this file. That is the honest
+ * population, and `--record` after a corpus change already regenerates it.
+ *
+ * Includes the refusals — an unknown project, an undecodable name, an encoded
+ * `..`, an unknown route, a method nothing handles — because a port that serves
+ * the happy paths and answers the rest with a framework 404 page would pass
+ * every request a happy-path oracle makes.
+ */
+function readRoutes(dir) {
+  // Required here, not at the top: ui.js is the server, and the engine stages
+  // above need none of it.
+  const ui = require('./ui.js');
+  const get = [
+    '/api/health',
+    '/api/session',
+    '/api/projects',
+    ...corporaIn(dir).sort().map((app) => `/api/projects/${app}`),
+    '/api/projects/no-such-app',
+    '/api/projects/%E0%A4%A',
+    '/api/projects/%2e%2e',
+    '/api/no-such-route',
+    '/api',
+  ];
+  const requests = get.map((p) => ({ method: 'GET', path: p, response: ui.route('GET', p, { dir }) }));
+  requests.push({ method: 'PUT', path: '/api/projects', response: ui.route('PUT', '/api/projects', { dir }) });
+  return { format: FORMAT, requests };
+}
+
 // The serialised form, which is what is actually compared. One definition, so
 // `--record` and `--check` cannot disagree about formatting — the failure mode
 // where a check is permanently red because the writer indents differently.
@@ -243,6 +286,20 @@ function compare(dir, goldenDir, only) {
   // renamed, the golden stays, and the suite keeps proving the engine reproduces
   // output for something that no longer exists. Only reported on a full run,
   // because a single-corpus run has nothing to say about the others.
+  // The read routes span every corpus, so they are only compared on a full run —
+  // and through the same three outcomes as a corpus, so nothing downstream needs
+  // a fourth state to report them.
+  if (!only) {
+    const p = routesPath(goldenDir);
+    const fresh = serialise(readRoutes(dir));
+    if (!fs.existsSync(p)) out.missing.push(ROUTES);
+    else {
+      const committed = fs.readFileSync(p, 'utf8');
+      if (committed === fresh) out.matched.push(ROUTES);
+      else out.drifted.push({ corpus: ROUTES, committedBytes: committed.length, freshBytes: fresh.length });
+    }
+  }
+
   if (!only && fs.existsSync(goldenDir)) {
     const named = new Set(corpora);
     for (const f of fs.readdirSync(goldenDir)) {
@@ -272,7 +329,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, readRoutes, routesPath, ROUTES, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -349,6 +406,11 @@ function main(argv) {
     for (const corpus of (opts.only ? [opts.only] : corporaIn(dir))) {
       fs.writeFileSync(goldenPath(goldenDir, corpus), serialise(pipeline(dir, corpus)));
       written.push(corpus);
+    }
+    if (!opts.only) {
+      fs.mkdirSync(path.dirname(routesPath(goldenDir)), { recursive: true });
+      fs.writeFileSync(routesPath(goldenDir), serialise(readRoutes(dir)));
+      written.push(ROUTES);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;
