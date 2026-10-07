@@ -44,7 +44,7 @@ internal sealed class GenerateScorer(ICorpusParser parser, IBehaviourResolver re
     /// <c>bindings.js</c>'s <c>readFor</c>: the file beside the corpus, verbatim;
     /// no file binds nothing, which is a real state rather than an error.
     /// </summary>
-    private static JsonObject Bindings(string dir, string corpus)
+    internal static JsonObject Bindings(string dir, string corpus)
     {
         var file = Path.Combine(dir, $"{corpus}.bindings.json");
         return File.Exists(file) ? JsonNode.Parse(File.ReadAllText(file))!.AsObject() : [];
