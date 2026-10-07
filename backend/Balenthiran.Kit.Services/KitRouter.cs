@@ -12,12 +12,13 @@ namespace Balenthiran.Kit.Services;
 /// <c>/api</c> answers JSON to the end, its 404 included: falling back to a page
 /// would hand a broken fetch HTML and report it as a parse error three layers away.
 ///
-/// ⚠️ Not yet ported, and answered as such rather than guessed: the built UI
-/// (non-<c>/api</c> paths) and every write (<c>POST</c>). Both are the next PRs of
-/// the #119 stack; until then this server cannot replace <c>ui.js</c>.
+/// Everything else is the built UI (<see cref="IUiBundle"/>).
+///
+/// ⚠️ Not yet ported, and answered as such rather than guessed: every write
+/// (<c>POST</c>) — a later PR of the #119 stack.
 /// </summary>
 /// <param name="password"><c>KIT_PASSWORD</c>, or null.</param>
-public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, string? password) : IKitRouter
+public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, IUiBundle bundle, string? password) : IKitRouter
 {
     // `auth.enabled()`: a password that is more than JavaScript whitespace.
     private readonly bool lockRequired = password is not null && password.Trim(CorpusParser.WsChars).Length > 0;
@@ -45,7 +46,7 @@ public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, s
 
         if (!Api.IsMatch(pathname))
         {
-            return Json(501, new ApiError { Error = "not-implemented", Reason = "the built UI is not served by the C# server yet (#119)" });
+            return bundle.Serve(pathname);
         }
 
         if (pathname == "/api/health")

@@ -3,7 +3,10 @@ using Balenthiran.Kit.Abstractions.DataModels;
 
 namespace Balenthiran.Kit.DataModels.Models;
 
-/// <summary>What the router answers: a status, a content type and a body — the shape `ui.js`'s `route()` returns.</summary>
+/// <summary>
+/// What the router answers — the shape <c>ui.js</c>'s <c>route()</c> returns: a JSON
+/// payload in <see cref="Body"/>, or bytes from the bundle in <see cref="Raw"/>, never both.
+/// </summary>
 public sealed class KitResponse : IKitResponse
 {
     [JsonPropertyOrder(1)]
@@ -12,7 +15,16 @@ public sealed class KitResponse : IKitResponse
     [JsonPropertyOrder(2)]
     public required string ContentType { get; init; }
 
-    // `object`: System.Text.Json writes an object-typed value by its RUNTIME type.
     [JsonPropertyOrder(3)]
-    public required object Body { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CacheControl { get; init; }
+
+    // `object`: System.Text.Json writes an object-typed value by its RUNTIME type.
+    [JsonPropertyOrder(4)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Body { get; init; }
+
+    // Bytes are delivered as they are, never serialised.
+    [JsonIgnore]
+    public byte[]? Raw { get; init; }
 }

@@ -21,12 +21,15 @@ public class RoutesConformanceTests
 {
     private static readonly EngineJsonSerialiser Serialiser = new();
 
-    public static TheoryData<string, string> Requests()
+    /// <summary>The committed fixture bundle the golden's <c>dist</c> requests were served from.</summary>
+    private static string FixtureDist => Path.Combine(RepoLayout.Conformance, "routes", "dist");
+
+    public static TheoryData<string, string, bool> Requests()
     {
-        var data = new TheoryData<string, string>();
+        var data = new TheoryData<string, string, bool>();
         foreach (var r in Golden()["requests"]!.AsArray())
         {
-            data.Add(r!["method"]!.GetValue<string>(), r["path"]!.GetValue<string>());
+            data.Add(r!["method"]!.GetValue<string>(), r["path"]!.GetValue<string>(), r["dist"]?.GetValue<bool>() ?? false);
         }
 
         return data;
@@ -34,14 +37,74 @@ public class RoutesConformanceTests
 
     [Theory]
     [MemberData(nameof(Requests))]
-    public void The_router_answers_as_ui_js_does(string method, string path)
+    public void The_router_answers_as_ui_js_does(string method, string path, bool dist)
     {
-        var expected = Expected(method, path);
-        var actual = JsonNode.Parse(Serialiser.Serialise(Router().Route(method, path)))!;
+        var expected = Expected(method, path, dist);
+        var response = Router(dist ? FixtureDist : Path.Combine(RepoLayout.Root, "no-bundle-here")).Route(method, path);
+        var actual = JsonNode.Parse(Serialiser.Serialise(response))!;
+
+        // Bytes are scored as the golden records them: UTF-8 text, after the other keys.
+        if (response.Raw is not null)
+        {
+            actual["rawText"] = System.Text.Encoding.UTF8.GetString(response.Raw);
+        }
 
         // Status first, so a failure says WHICH answer differs before diffing bodies.
         Assert.Equal(expected["status"]!.GetValue<int>(), actual["status"]!.GetValue<int>());
         Assert.Equal(Canonical(expected), Canonical(actual));
+    }
+
+    /// <summary>
+    /// Node's <c>path.extname</c>, measured: the "names a file" test that decides
+    /// between a JSON 404 and the shell. Leading dots are not an extension; <c>...</c> is.
+    /// </summary>
+    [Theory]
+    [InlineData("/a/b.js", ".js")]
+    [InlineData("/a/.b", "")]
+    [InlineData("/a/b.", ".")]
+    [InlineData("/..", "")]
+    [InlineData("/a/..x", ".x")]
+    [InlineData("/a/.b.c", ".c")]
+    [InlineData("/assets", "")]
+    [InlineData("/", "")]
+    [InlineData("/a.b/c", "")]
+    [InlineData("/...", ".")]
+    [InlineData("/a/b.JS", ".JS")]
+    [InlineData("/a.b/", ".b")]
+    public void Extname_matches_Node(string path, string expected) =>
+        Assert.Equal(expected, UiBundle.Extname(path));
+
+    /// <summary>
+    /// The host delivers bundle BYTES and the cache header, not a JSON rendering of them:
+    /// the shell for a client-side route, and a hashed asset cached forever.
+    /// </summary>
+    [Fact]
+    public async Task The_host_delivers_the_bundle_as_bytes_with_its_cache_header()
+    {
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist));
+        await app.StartAsync();
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
+        using var http = new HttpClient();
+
+        using var shell = await http.GetAsync(address + "/projects/snip-it");
+        Assert.Equal("text/html; charset=utf-8", shell.Content.Headers.ContentType!.ToString());
+        Assert.Equal("no-store", shell.Headers.CacheControl!.ToString());
+        Assert.Equal(File.ReadAllBytes(Path.Combine(FixtureDist, "index.html")), await shell.Content.ReadAsByteArrayAsync());
+
+        using var asset = await http.GetAsync(address + "/assets/index-Ab12Cd.js");
+        Assert.Equal("public, max-age=31536000, immutable", asset.Headers.CacheControl!.ToString());
+        Assert.Equal(File.ReadAllBytes(Path.Combine(FixtureDist, "assets", "index-Ab12Cd.js")), await asset.Content.ReadAsByteArrayAsync());
+        await app.StopAsync();
+    }
+
+    /// <summary>No bundle is a 503 that says how to build one — never a 404 for every path.</summary>
+    [Fact]
+    public void With_no_bundle_every_page_says_it_has_not_been_built()
+    {
+        var r = Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/projects/snip-it");
+        Assert.Equal(503, r.Status);
+        Assert.Contains("The Kit UI has not been built", System.Text.Encoding.UTF8.GetString(r.Raw!), StringComparison.Ordinal);
+        Assert.Equal(200, Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/api/health").Status);
     }
 
     /// <summary>The golden is only a score if it holds what it claims: every corpus, and every refusal.</summary>
@@ -69,7 +132,7 @@ public class RoutesConformanceTests
     public async Task The_host_delivers_what_the_router_answers(string path)
     {
         var expected = Expected("GET", path);
-        var settings = new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null);
+        var settings = new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist);
         await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings);
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
@@ -92,7 +155,7 @@ public class RoutesConformanceTests
     [Fact]
     public async Task The_host_decodes_the_path_exactly_once()
     {
-        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null));
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist));
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
 
@@ -128,7 +191,7 @@ public class RoutesConformanceTests
     {
         var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
         string Session(string? password) => JsonSerializer.Serialize(
-            new KitRouter(corpora, Viewer(corpora), password).Route("GET", "/api/session").Body, Serialiser.Options);
+            new KitRouter(corpora, Viewer(corpora), new UiBundle(FixtureDist), password).Route("GET", "/api/session").Body, Serialiser.Options);
 
         Assert.Contains("\"required\": false", Session(" \ufeff\u2028"), StringComparison.Ordinal);
         Assert.Contains("\"required\": true", Session(" x "), StringComparison.Ordinal);
@@ -140,13 +203,14 @@ public class RoutesConformanceTests
     private static JsonNode Golden() =>
         JsonNode.Parse(File.ReadAllText(Path.Combine(RepoLayout.Conformance, "routes", "read.json")))!;
 
-    private static JsonNode Expected(string method, string path) =>
-        Golden()["requests"]!.AsArray().Single(r => r!["method"]!.GetValue<string>() == method && r["path"]!.GetValue<string>() == path)!["response"]!;
+    private static JsonNode Expected(string method, string path, bool dist = false) =>
+        Golden()["requests"]!.AsArray().Single(r => r!["method"]!.GetValue<string>() == method && r["path"]!.GetValue<string>() == path
+            && (r["dist"]?.GetValue<bool>() ?? false) == dist)!["response"]!;
 
-    private static KitRouter Router()
+    private static KitRouter Router(string dist)
     {
         var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
-        return new KitRouter(corpora, Viewer(corpora), null);
+        return new KitRouter(corpora, Viewer(corpora), new UiBundle(dist), null);
     }
 
     private static ProjectViewer Viewer(CorpusDirectory corpora) =>

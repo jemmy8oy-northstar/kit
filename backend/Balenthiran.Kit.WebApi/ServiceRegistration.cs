@@ -17,9 +17,11 @@ public static class ServiceRegistration
         services.AddSingleton<IProjectReporter, ProjectReporter>();
         services.AddSingleton<IEngineJsonSerialiser, EngineJsonSerialiser>();
         services.AddSingleton<IProjectViewer, ProjectViewer>();
+        services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
             sp.GetRequiredService<IProjectViewer>(),
+            sp.GetRequiredService<IUiBundle>(),
             settings.Password));
         return services;
     }

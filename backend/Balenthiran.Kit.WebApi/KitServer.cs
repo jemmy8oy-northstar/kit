@@ -35,7 +35,20 @@ public static class KitServer
             var r = router.Route(ctx.Request.Method, path);
             ctx.Response.StatusCode = r.Status;
             ctx.Response.ContentType = r.ContentType;
-            await ctx.Response.WriteAsync(JsonSerializer.Serialize(r.Body, r.Body.GetType(), json));
+            if (r.CacheControl is not null)
+            {
+                ctx.Response.Headers.CacheControl = r.CacheControl;
+            }
+
+            // Bytes from the bundle as they are; otherwise the JSON payload.
+            if (r.Raw is not null)
+            {
+                await ctx.Response.Body.WriteAsync(r.Raw);
+            }
+            else
+            {
+                await ctx.Response.WriteAsync(JsonSerializer.Serialize(r.Body, r.Body!.GetType(), json));
+            }
         });
 
         return app;
