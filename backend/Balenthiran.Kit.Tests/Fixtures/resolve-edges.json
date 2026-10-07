@@ -1,0 +1,375 @@
+{
+  "format": 1,
+  "corpus": "resolve-edges",
+  "parse": [
+    {
+      "id": "BEH-A",
+      "title": "a",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "types",
+          "text": "types \"x\" with ?count",
+          "refs": [
+            {
+              "kind": "literal",
+              "name": "x"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "count"
+            }
+          ],
+          "at": "resolve-edges.beh:15"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:F with ?value",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "F"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "value"
+            }
+          ],
+          "at": "resolve-edges.beh:16"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:F with ?other",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "F"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "other"
+            }
+          ],
+          "at": "resolve-edges.beh:17"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "count",
+          "at": "resolve-edges.beh:15"
+        },
+        {
+          "slot": "value",
+          "at": "resolve-edges.beh:16"
+        },
+        {
+          "slot": "other",
+          "at": "resolve-edges.beh:17"
+        }
+      ],
+      "provides": [
+        {
+          "kind": "field",
+          "name": "F",
+          "slot": "value",
+          "value": [
+            "1",
+            "2"
+          ],
+          "from": "BEH-A",
+          "at": "resolve-edges.beh:18"
+        }
+      ],
+      "serves": [],
+      "at": "resolve-edges.beh:14",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-B",
+      "title": "b",
+      "actor": null,
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "field",
+          "name": "F",
+          "slot": "value",
+          "value": [
+            "1",
+            "2"
+          ],
+          "from": "BEH-B",
+          "at": "resolve-edges.beh:21"
+        },
+        {
+          "kind": "field",
+          "name": "F",
+          "slot": "other",
+          "value": [
+            "z"
+          ],
+          "from": "BEH-B",
+          "at": "resolve-edges.beh:22"
+        }
+      ],
+      "serves": [],
+      "at": "resolve-edges.beh:20",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-C",
+      "title": "c",
+      "actor": null,
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "field",
+          "name": "F",
+          "slot": "value",
+          "value": [
+            "3"
+          ],
+          "from": "BEH-C",
+          "at": "resolve-edges.beh:25"
+        }
+      ],
+      "serves": [],
+      "at": "resolve-edges.beh:24",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "field:F.value",
+        {
+          "value": [
+            "1",
+            "2"
+          ],
+          "contributors": [
+            "BEH-A",
+            "BEH-B"
+          ],
+          "at": "resolve-edges.beh:18",
+          "conflict": [
+            {
+              "from": "BEH-C",
+              "value": [
+                "3"
+              ],
+              "at": "resolve-edges.beh:25"
+            }
+          ]
+        }
+      ],
+      [
+        "field:F.other",
+        {
+          "value": [
+            "z"
+          ],
+          "contributors": [
+            "BEH-B"
+          ],
+          "at": "resolve-edges.beh:22"
+        }
+      ]
+    ],
+    "conflicts": [
+      {
+        "key": "field:F.value",
+        "held": [
+          "1",
+          "2"
+        ],
+        "holders": [
+          "BEH-A",
+          "BEH-B"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-C",
+            "value": [
+              "3"
+            ],
+            "at": "resolve-edges.beh:25"
+          }
+        ]
+      }
+    ],
+    "changed": [
+      {
+        "id": "BEH-A",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "value": [
+                "1",
+                "2"
+              ]
+            }
+          },
+          {
+            "path": "steps.2.resolved",
+            "from": null,
+            "to": {
+              "other": [
+                "z"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "field:F.value",
+                "value": [
+                  "1",
+                  "2"
+                ],
+                "from": [
+                  "BEH-A",
+                  "BEH-B"
+                ],
+                "at": "resolve-edges.beh:16"
+              },
+              {
+                "key": "field:F.other",
+                "value": [
+                  "z"
+                ],
+                "from": [
+                  "BEH-B"
+                ],
+                "at": "resolve-edges.beh:17"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": [
+              {
+                "slot": "count",
+                "key": "?count",
+                "at": "resolve-edges.beh:15"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "BEH-B",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-C",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-A",
+      "code": "test(\"[BEH-A] a\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when types \\\"x\\\" with ?count\" });\n  // UNGENERATED: when types \"x\" with ?count\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:F with ?value\" });\n  // UNGENERATED: then sees field:F with ?value\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:F with ?other\" });\n  // UNGENERATED: then sees field:F with ?other\n});",
+      "missing": [
+        "field:F"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-B",
+      "code": "test(\"[BEH-B] b\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-C",
+      "code": "test(\"[BEH-C] c\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    }
+  ]
+}

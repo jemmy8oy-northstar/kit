@@ -1,0 +1,25 @@
+# kit:not-a-real-app
+#
+# The `resolve` branches NO committed golden reaches (measured 2026-10-07 over all
+# eleven): a hole whose step names only literals (0 of 5 open holes were unowned),
+# a symbol with TWO contributors, a value provided by a LATER behaviour, a step
+# with a second hole filled from a different slot, and a conflict alongside an
+# agreement. resolve-edges.json is Node's output for this file, written by
+# conformance.js's own `pipeline` — regenerate it with:
+#
+#   node -e "const c=require('./prototypes/behaviour-ast/conformance.js');
+#     process.stdout.write(c.serialise(c.pipeline('backend/Balenthiran.Kit.Tests/Fixtures','resolve-edges')))"
+#     > backend/Balenthiran.Kit.Tests/Fixtures/resolve-edges.json
+
+behaviour BEH-A "a"
+  when types "x" with ?count
+  then sees field:F with ?value
+  then sees field:F with ?other
+  provides field:F.value = 1, 2
+
+behaviour BEH-B "b"
+  provides field:F.value = 1, 2
+  provides field:F.other = z
+
+behaviour BEH-C "c"
+  provides field:F.value = 3

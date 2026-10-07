@@ -24,6 +24,8 @@ internal static class RepoLayout
     /// the failure mode where moving a directory makes the conformance check pass
     /// unconditionally instead of failing loudly.
     /// </summary>
+    internal static string Fixtures => Path.Combine(Root, "backend", "Balenthiran.Kit.Tests", "Fixtures");
+
     internal static string Root { get; } = FindRoot();
 
     private static string FindRoot()

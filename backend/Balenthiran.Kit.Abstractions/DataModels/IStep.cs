@@ -14,4 +14,7 @@ public interface IStep
     IReadOnlyList<IHole> Holes { get; }
 
     string At { get; }
+
+    /// <summary>Slot → value, set by <c>resolve</c> for each hole it filled; null until then.</summary>
+    IReadOnlyDictionary<string, IReadOnlyList<string>>? Resolved { get; }
 }
