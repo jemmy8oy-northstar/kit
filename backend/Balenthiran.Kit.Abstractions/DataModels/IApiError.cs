@@ -1,0 +1,13 @@
+namespace Balenthiran.Kit.Abstractions.DataModels;
+
+/// <summary>A refusal: a code, a reason, and — for two of them — what would have been accepted.</summary>
+public interface IApiError
+{
+    string Error { get; }
+
+    string Reason { get; }
+
+    string? Allow { get; }
+
+    IReadOnlyList<string>? Known { get; }
+}
