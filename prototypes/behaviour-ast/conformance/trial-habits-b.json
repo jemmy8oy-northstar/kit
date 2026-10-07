@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "corpus": "trial-habits-b",
   "parse": [
     {
@@ -1256,5 +1256,737 @@
         "ungenerated": 3
       }
     }
-  ]
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 13,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:Done",
+          "kind": "badge",
+          "name": "Done",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:ViewHistory",
+          "kind": "button",
+          "name": "ViewHistory",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:AteBreakfast",
+          "kind": "checkbox",
+          "name": "AteBreakfast",
+          "usedBy": [
+            "BEH-BREAKFAST-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitItem",
+          "kind": "checkbox",
+          "name": "HabitItem",
+          "usedBy": [
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-RUN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegDinner",
+          "kind": "checkbox",
+          "name": "VegDinner",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegLunch",
+          "kind": "checkbox",
+          "name": "VegLunch",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Count",
+          "kind": "field",
+          "name": "Count",
+          "usedBy": [
+            "BEH-DRINKS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            },
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Hours",
+          "kind": "field",
+          "name": "Hours",
+          "usedBy": [
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:NotDone",
+          "kind": "habit",
+          "name": "NotDone",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:History",
+          "kind": "page",
+          "name": "History",
+          "usedBy": [
+            "BEH-HISTORY-1",
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-BREAKFAST-1",
+            "BEH-DRINKS-1",
+            "BEH-DRINKS-2",
+            "BEH-HISTORY-1",
+            "BEH-MEALS-1",
+            "BEH-RUN-1",
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2",
+            "BEH-SLEEP-3",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-HISTORY-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PastDaysList",
+          "kind": "region",
+          "name": "PastDaysList",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:SleepRing",
+          "kind": "region",
+          "name": "SleepRing",
+          "usedBy": [
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "row:PastDay",
+          "kind": "row",
+          "name": "PastDay",
+          "usedBy": [
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:Done",
+          "kind": "badge",
+          "name": "Done",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:ViewHistory",
+          "kind": "button",
+          "name": "ViewHistory",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:AteBreakfast",
+          "kind": "checkbox",
+          "name": "AteBreakfast",
+          "usedBy": [
+            "BEH-BREAKFAST-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitItem",
+          "kind": "checkbox",
+          "name": "HabitItem",
+          "usedBy": [
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-RUN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegDinner",
+          "kind": "checkbox",
+          "name": "VegDinner",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegLunch",
+          "kind": "checkbox",
+          "name": "VegLunch",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Count",
+          "kind": "field",
+          "name": "Count",
+          "usedBy": [
+            "BEH-DRINKS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            },
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Hours",
+          "kind": "field",
+          "name": "Hours",
+          "usedBy": [
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:NotDone",
+          "kind": "habit",
+          "name": "NotDone",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:History",
+          "kind": "page",
+          "name": "History",
+          "usedBy": [
+            "BEH-HISTORY-1",
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-BREAKFAST-1",
+            "BEH-DRINKS-1",
+            "BEH-DRINKS-2",
+            "BEH-HISTORY-1",
+            "BEH-MEALS-1",
+            "BEH-RUN-1",
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2",
+            "BEH-SLEEP-3",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-HISTORY-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PastDaysList",
+          "kind": "region",
+          "name": "PastDaysList",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:SleepRing",
+          "kind": "region",
+          "name": "SleepRing",
+          "usedBy": [
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "row:PastDay",
+          "kind": "row",
+          "name": "PastDay",
+          "usedBy": [
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
 }
