@@ -1,0 +1,55 @@
+# kit:not-a-real-app
+#
+# The `generate` branches NO committed golden reaches (measured 2026-10-07 over all
+# eleven): a route parameter nothing provides, `$` patterns in a provided value, a
+# role with no name, a raw locator that is not a string, a binding that is null or
+# a bare string, every JavaScript coercion a `state` value can go through, a
+# control character and U+2028 in a quoted name, `fills` refusing on a field
+# with no label, `attaches` refusing on a missing fixture or locator, and a fixture
+# whose keys JSON.parse REORDERS. Every value is in generate-edges.bindings.json.
+# generate-edges.json is Node's output for this file, written by conformance.js's
+# own `pipeline` — regenerate it with:
+#
+#   node -e "const c=require('./prototypes/behaviour-ast/conformance.js');
+#     process.stdout.write(c.serialise(c.pipeline('backend/Balenthiran.Kit.Tests/Fixtures','generate-edges')))"
+#     > backend/Balenthiran.Kit.Tests/Fixtures/generate-edges.json
+
+behaviour BEH-ROUTE "a route opens only when every parameter is provided"
+  when opens page:Item
+  when opens page:Dollar
+  provides page:Item.itemId = 7
+  provides page:Dollar.a = x$&y$$z$`w$'v$1
+  provides page:Dollar.b = :a
+
+behaviour BEH-LOC "every way a binding can locate, or fail to"
+  then sees button:Exact
+  then sees field:Labelled
+  then sees region:Raw
+  when activates button:NoName
+  then sees region:Number
+  then sees region:Falsy
+  then sees region:Null
+  then sees region:Bare
+  then sees region:Unbound
+  then sees region:Unbound
+  then shows button:Escapes "said \"hi\""
+
+behaviour BEH-STATE "a state reaches the test through String()"
+  given seed:Small
+  given seed:Big
+  given seed:Whole
+  given seed:Arr
+  given seed:Obj
+  given seed:Bool
+  given seed:Zero
+  then lands on page:Pattern
+
+behaviour BEH-FILE "attaches and fills refuse what they cannot write"
+  when attaches file:NoFixture to field:Labelled
+  when attaches file:Fx to field:NoLocator
+  when attaches file:Fx to field:Labelled
+  when fills form:Both with ?fields
+  when fills form:One with ?fields
+  when runs command:Anything
+  provides form:Both.fields = Labelled, NoLabel
+  provides form:One.fields = Labelled
