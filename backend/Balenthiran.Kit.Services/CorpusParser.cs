@@ -41,10 +41,10 @@ public sealed class CorpusParser : ICorpusParser
     // apart from each other or from JavaScript. (This comment promised that test
     // for a wake before it existed; a `\s` swap now fails exactly the two
     // characters above and nothing else.)
-    private const string Ws =
+    internal const string Ws =
         @"\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff";
 
-    private static readonly char[] WsChars =
+    internal static readonly char[] WsChars =
     [
         '\t', '\n', '\v', '\f', '\r', ' ', '\u00a0', '\u1680',
         '\u2000', '\u2001', '\u2002', '\u2003', '\u2004', '\u2005', '\u2006',

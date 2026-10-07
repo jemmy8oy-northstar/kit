@@ -1,0 +1,90 @@
+# kit:not-a-real-app
+#
+# The `report` branches NO committed golden reaches (measured 2026-10-07 over all
+# eleven: 0 surface errors, 0 approved, 0 denied, 0 insufficient nouns, and every
+# noun list sorts the same ordinally and by locale). So this corpus has all three
+# surface errors, every review state, a conflict whose question is authored on the
+# CHALLENGING side and one nobody asks about, a citation of an id that does not exist, an `asks` promoting a
+# routine inference between two reviews (the sort must be stable), a null binding
+# and a bare-string one, and noun names whose locale order differs from ordinal.
+# report-edges.json is Node's output for this file, written by conformance.js's own
+# `pipeline` — regenerate it as generate-edges.beh's header says, with this name.
+
+behaviour BEH-DEF "a defined behaviour that wrongly serves"
+  source defined docs/x.md
+  serves BEH-INF-OK
+  when opens page:b
+  then lands on page:b
+  then sees button:B
+  when activates button:B
+
+behaviour BEH-INF-OK "an inference serving a defined behaviour"
+  source inferred tests/a.cs:one
+  review approved
+  serves BEH-DEF
+  then sees region:a-b
+
+behaviour BEH-INF-BAD "an inference serving an inference and a ghost"
+  source inferred tests/a.cs:two
+  review denied it is actually the other way round
+  serves BEH-INF-OK
+  serves BEH-GHOST
+  then sees region:a_b
+
+behaviour BEH-ROUTINE-1 "a routine inference"
+  source inferred tests/a.cs:three
+  review unreviewed
+  serves BEH-DEF
+  then sees region:ab
+  contract the first contract
+
+behaviour BEH-ASKED "an inference a human promoted"
+  source inferred tests/a.cs:four
+  review unreviewed
+  serves BEH-DEF
+  asks "Is this really routine?"
+  option "Yes" "nothing changes"
+  option "No" "it becomes a decision"
+  recommend "No" "because a person said so"
+  against "it looked routine"
+  then sees region:Ab
+  when attaches file:clip to field:Upload
+  when fills form:Profile with ?fields
+
+behaviour BEH-ROUTINE-2 "another routine inference, after the promoted one"
+  source inferred tests/a.cs:five
+  review unreviewed
+  serves BEH-DEF
+  cites BEH-CITED
+  cites BEH-NOWHERE
+  then sees region:Null
+  then sees region:Bare
+  when runs command:Anything
+
+behaviour BEH-CITED "an inference only ever seen as evidence"
+  source inferred tests/a.cs:six
+  review unreviewed
+  contract the cited contract
+  provides region:Third.n = 2
+
+behaviour BEH-UNTRACED "an inference with no reference"
+  source inferred
+  review unreviewed
+  provides region:Grid.days = 30
+  provides form:Profile.fields = Name, name
+
+behaviour BEH-HOLDER "holds a value nobody asks about"
+  source defined docs/y.md
+  provides region:Grid.days = 7
+  provides region:Other.size = 1
+  provides region:Third.n = 1
+
+behaviour BEH-CHALLENGER "challenges and carries the question"
+  source defined docs/z.md
+  provides region:Grid.days = 14
+  provides region:Other.size = 2
+  asks "Which window is right?"
+  option "Seven" "the holder wins"
+  recommend "Seven" "it was first"
+  against "first is not right"
+  cites BEH-HOLDER

@@ -45,21 +45,21 @@ public sealed class TestGenerator : ITestGenerator
         var missing = new List<string>();
         var stats = new GenerateStats();
 
-        Js Bind(IReference? r)
+        JsValue Bind(IReference? r)
         {
             if (r is null)
             {
-                return Js.Undefined;
+                return JsValue.Undefined;
             }
 
             var key = $"{r.Kind}:{r.Name}";
-            var b = Js.Prop(bindings, key);
+            var b = JsValue.Prop(bindings, key);
             if (!b.Truthy && !missing.Contains(key, StringComparer.Ordinal))
             {
                 missing.Add(key);
             }
 
-            return b.Truthy ? b : Js.Undefined;
+            return b.Truthy ? b : JsValue.Undefined;
         }
 
         foreach (var step in behaviour.Steps)
@@ -94,7 +94,7 @@ public sealed class TestGenerator : ITestGenerator
         return new GeneratedTest { Code = string.Join("\n", code), Missing = missing, Stats = stats };
     }
 
-    private static List<string>? Emit(IStep step, Func<IReference?, Js> bind, JsonObject bindings, IReadOnlyDictionary<string, ISymbol> symbols)
+    private static List<string>? Emit(IStep step, Func<IReference?, JsValue> bind, JsonObject bindings, IReadOnlyDictionary<string, ISymbol> symbols)
     {
         var nouns = step.Refs.Where(r => r.Kind != "literal").ToList();
         var literal = step.Refs.FirstOrDefault(r => r.Kind == "literal");
@@ -231,7 +231,7 @@ public sealed class TestGenerator : ITestGenerator
     }
 
     /// <summary><c>loc(b)</c>: a role, else a label, else a raw locator, else nothing.</summary>
-    private static string? Locate(Js b)
+    private static string? Locate(JsValue b)
     {
         if (!b.Truthy)
         {
@@ -259,9 +259,9 @@ public sealed class TestGenerator : ITestGenerator
     /// <c>Object.entries(bindings).find(([k, v]) =&gt; k.startsWith('file:') &amp;&amp; v.fixture)</c>
     /// — the first FILE binding with a fixture, in the object's own key order.
     /// </summary>
-    private static Js? FirstFileFixture(JsonObject bindings)
+    private static JsValue? FirstFileFixture(JsonObject bindings)
     {
-        foreach (var (key, value) in Js.Entries(bindings))
+        foreach (var (key, value) in JsValue.Entries(bindings))
         {
             if (!key.StartsWith("file:", StringComparison.Ordinal))
             {
@@ -270,7 +270,7 @@ public sealed class TestGenerator : ITestGenerator
 
             // `null.fixture` throws in Node.
             var v = value ?? throw new InvalidOperationException($"binding {key} is null");
-            var fixture = new Js(true, v).Get("fixture");
+            var fixture = new JsValue(true, v).Get("fixture");
             if (fixture.Truthy)
             {
                 return fixture;
@@ -317,178 +317,5 @@ public sealed class TestGenerator : ITestGenerator
     }
 
     /// <summary><c>JSON.stringify</c> of a string.</summary>
-    private static string Stringify(string s) => Js.Quote(s);
-
-    /// <summary>
-    /// A JavaScript value read out of a bindings file: <see cref="Defined"/> false is
-    /// <c>undefined</c>; a defined null <see cref="Node"/> is JSON <c>null</c>.
-    /// </summary>
-    private readonly record struct Js(bool Defined, JsonNode? Node)
-    {
-        public static readonly Js Undefined = new(false, null);
-
-        public bool Truthy => Defined && Node switch
-        {
-            null => false,
-            JsonValue v => v.GetValueKind() switch
-            {
-                JsonValueKind.String => v.GetValue<string>().Length > 0,
-                JsonValueKind.Number => v.GetValue<double>() is var d && d != 0 && !double.IsNaN(d),
-                JsonValueKind.True => true,
-                _ => false,
-            },
-            _ => true,
-        };
-
-        /// <summary><c>obj[key]</c>: an own property of an object; anything else reads as undefined.</summary>
-        public static Js Prop(JsonObject obj, string key) =>
-            obj.TryGetPropertyValue(key, out var v) ? new Js(true, v) : Undefined;
-
-        /// <summary>
-        /// The own keys in the order <c>JSON.parse</c> leaves them: canonical array
-        /// indices first, ascending, then every other key in source order.
-        /// </summary>
-        public static IEnumerable<KeyValuePair<string, JsonNode?>> Entries(JsonObject obj) =>
-            obj.Where(kv => IsIndex(kv.Key)).OrderBy(kv => uint.Parse(kv.Key, CultureInfo.InvariantCulture))
-                .Concat(obj.Where(kv => !IsIndex(kv.Key)));
-
-        /// <summary>
-        /// <c>JSON.stringify</c>. Only ever called on a defined value or an
-        /// <c>undefined</c> one, whose result interpolates as the text "undefined".
-        /// </summary>
-        public static string Quote(string s)
-        {
-            var sb = new StringBuilder(s.Length + 2).Append('"');
-            for (var i = 0; i < s.Length; i++)
-            {
-                var c = s[i];
-                switch (c)
-                {
-                    case '"': sb.Append("\\\""); break;
-                    case '\\': sb.Append("\\\\"); break;
-                    case '\b': sb.Append("\\b"); break;
-                    case '\f': sb.Append("\\f"); break;
-                    case '\n': sb.Append("\\n"); break;
-                    case '\r': sb.Append("\\r"); break;
-                    case '\t': sb.Append("\\t"); break;
-                    default:
-                        // Other controls in lowercase hex; everything else raw —
-                        // U+2028, `<`, `&` and `'` included, unlike System.Text.Json.
-                        // ES2019 also escapes a LONE surrogate, which no input here
-                        // can carry (see the test pinning the bindings-file case).
-                        if (c < 0x20)
-                        {
-                            sb.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
-                        }
-                        else
-                        {
-                            sb.Append(c);
-                        }
-
-                        break;
-                }
-            }
-
-            return sb.Append('"').ToString();
-        }
-
-        /// <summary><c>Number.prototype.toString()</c> for a finite double.</summary>
-        public static string Number(double d)
-        {
-            if (d == 0)
-            {
-                return "0";
-            }
-
-            var sign = d < 0 ? "-" : string.Empty;
-
-            // "R" is the shortest round-tripping form; only its LAYOUT differs from
-            // JavaScript's, so take its digits and exponent and lay them out again.
-            var r = Math.Abs(d).ToString("R", CultureInfo.InvariantCulture);
-            var parts = r.Split('E');
-            var exp = parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0;
-            var mant = parts[0].Split('.');
-            var digits = mant[0] + (mant.Length > 1 ? mant[1] : string.Empty);
-            var n = mant[0].Length + exp;
-            while (digits.Length > 1 && digits[0] == '0')
-            {
-                digits = digits[1..];
-                n--;
-            }
-
-            digits = digits.TrimEnd('0');
-            var k = digits.Length;
-
-            if (k <= n && n <= 21)
-            {
-                return sign + digits + new string('0', n - k);
-            }
-
-            if (n > 0 && n <= 21)
-            {
-                return sign + digits[..n] + "." + digits[n..];
-            }
-
-            if (n > -6 && n <= 0)
-            {
-                return sign + "0." + new string('0', -n) + digits;
-            }
-
-            var e = n - 1;
-            var es = (e >= 0 ? "+" : "-") + Math.Abs(e).ToString(CultureInfo.InvariantCulture);
-            return sign + digits[0] + (k > 1 ? "." + digits[1..] : string.Empty) + "e" + es;
-        }
-
-        /// <summary><c>v[key]</c> on this value: only an object has own properties to read.</summary>
-        public Js Get(string key) => Node is JsonObject o ? Prop(o, key) : Undefined;
-
-        /// <summary><c>JSON.stringify(v)</c> as it interpolates into a template literal.</summary>
-        public string Stringify() => Defined ? Json(Node) : "undefined";
-
-        /// <summary><c>String(v)</c> — what <c>${v}</c> writes.</summary>
-        public string AsString()
-        {
-            if (!Defined)
-            {
-                return "undefined";
-            }
-
-            return Node switch
-            {
-                null => "null",
-                JsonObject => "[object Object]",
-                JsonArray a => string.Join(",", a.Select(x => x is null ? string.Empty : new Js(true, x).AsString())),
-                JsonValue v => v.GetValueKind() switch
-                {
-                    JsonValueKind.String => v.GetValue<string>(),
-                    JsonValueKind.Number => Finite(v.GetValue<double>(), "Infinity"),
-                    JsonValueKind.True => "true",
-                    _ => "false",
-                },
-                _ => throw new InvalidOperationException("unreachable"),
-            };
-        }
-
-        private static bool IsIndex(string key) =>
-            uint.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out var i)
-            && i != uint.MaxValue && i.ToString(CultureInfo.InvariantCulture) == key;
-
-        private static string Finite(double d, string infinity) =>
-            double.IsInfinity(d) ? (d < 0 && infinity != "null" ? "-" : string.Empty) + infinity : Number(d);
-
-        private static string Json(JsonNode? node) => node switch
-        {
-            null => "null",
-            JsonObject o => "{" + string.Join(",", Entries(o).Select(kv => Quote(kv.Key) + ":" + Json(kv.Value))) + "}",
-            JsonArray a => "[" + string.Join(",", a.Select(Json)) + "]",
-            JsonValue v => v.GetValueKind() switch
-            {
-                JsonValueKind.String => Quote(v.GetValue<string>()),
-                JsonValueKind.Number => Finite(v.GetValue<double>(), "null"),
-                JsonValueKind.True => "true",
-                _ => "false",
-            },
-            _ => throw new InvalidOperationException("unreachable"),
-        };
-    }
+    private static string Stringify(string s) => JsValue.Quote(s);
 }
