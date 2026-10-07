@@ -412,9 +412,10 @@ MUTANTS.push(
     'kit.js'],
   // kit.js's own CLI. The first of these is the defect as it actually shipped:
   // every `--flag` this tool does not know was dropped in silence, so
-  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing.
+  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing
+  // (`--dir` is a real flag here since kit#71; the hazard is any flag it lacks).
   // The rest are the guards written alongside it (#67).
-  ['an unknown flag goes back to being silently dropped, so --dir reports on the wrong corpus',
+  ['an unknown flag goes back to being silently dropped, so a flag it lacks reports on the wrong corpus',
     '    } else if (looksLikeAFlag(a)) {\n      return { error: `unknown option ${a}` };\n',
     '    } else if (looksLikeAFlag(a)) {\n      continue;\n', 'kit.js'],
   ['--help stops being recognised, so asking for help runs the whole report',

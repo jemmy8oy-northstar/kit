@@ -312,29 +312,54 @@ function main(argv) {
   // naming yours, and `--dir /no/such/dir` exited 0 with a full report about a
   // directory that cannot exist. `--check` is a gate, so that is a gate passing
   // judgement on an artefact nobody named. See cli.js.
-  const bad = require('./cli.js').unknownFlag(args, ['--json', '--check']);
-  if (bad) return require('./cli.js').refuse(bad, 'usage: node requires.js <app> [--json] [--check]');
+  const cli = require('./cli.js');
+  const USAGE = 'usage: node requires.js <app> [--json] [--check] [--dir <corpus-dir>]';
+  const bad = cli.unknownFlag(args, ['--json', '--check', '--dir']);
+  if (bad) return cli.refuse(bad, USAGE);
   const asJson = args.includes('--json');
   const asCheck = args.includes('--check');
-  // Still `find` rather than a positional scan, but it can no longer be handed a
-  // flag's value: an unknown flag is gone by here, and no known flag takes one.
-  const app = args.find((a) => !a.startsWith('--'));
+  // A POSITIONAL scan now that a flag takes a value (kit#71): `find` would hand
+  // back `--dir`'s value as the app whenever `--dir` came first. A value-less
+  // `--dir` refuses rather than eating the next flag, as in `check.js`.
+  let app = null;
+  let dir = path.join(__dirname, 'behaviours');
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === '--dir') {
+      const v = args[i + 1];
+      if (v === undefined || cli.looksLikeAFlag(v)) {
+        process.stderr.write(`cannot look: --dir needs a value\n${USAGE}\n`);
+        return 2;
+      }
+      dir = path.resolve(v);
+      i++;
+    } else if (cli.looksLikeAFlag(a)) {
+      continue; // --json / --check, already read above
+    } else if (app === null) {
+      app = a;
+    } else {
+      process.stderr.write(`cannot look: two app names given, "${app}" and "${a}"\n${USAGE}\n`);
+      return 2;
+    }
+  }
 
   if (!app) {
     process.stdout.write([
-      'usage: node requires.js <app> [--json] [--check]',
+      USAGE,
       '',
       '  Prints what an application must provide for <app>\'s corpus to generate.',
       '',
       '  --json    machine-readable, for a UI or a generator',
       '  --check   exit 1 if any referenced noun is unsatisfied. Unlike the bound',
       '            count, this fails on a binding that exists but is too thin.',
+      '  --dir     read <app>.beh and its bindings from this directory instead of',
+      '            Kit\'s own behaviours/ — for a corpus that lives with its project.',
       '',
     ].join('\n') + '\n');
     return 2;
   }
 
-  const corpus = path.join(__dirname, 'behaviours', `${app}.beh`);
+  const corpus = path.join(dir, `${app}.beh`);
   if (!fs.existsSync(corpus)) {
     process.stderr.write(`requires: no corpus at ${corpus} — could not look\n`);
     return 2; // never conflated with a pass, same three-valued rule as check.js
@@ -342,8 +367,9 @@ function main(argv) {
 
   const behaviours = parse(fs.readFileSync(corpus, 'utf8'));
   resolve(behaviours); // fills each step's `resolved`, which `fills` needs
-  // This app's own bindings, from beside its corpus (kit#66).
-  const bindings = require('./bindings.js').readFor(app);
+  // This app's own bindings, from beside its corpus (kit#66) — the SAME `dir`,
+  // so a relocated corpus is never measured against Kit's copy of its nouns.
+  const bindings = require('./bindings.js').readFor(app, dir);
   const report = requirements(behaviours, bindings);
 
   if (asJson) {

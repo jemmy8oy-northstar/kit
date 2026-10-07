@@ -1042,18 +1042,94 @@ const { parseCliArgs } = require('./kit');
 test('parseCliArgs: an unknown flag refuses and NAMES it, rather than being dropped', () => {
   // ⚠️ THE FLAG IS LAST, WITH NO VALUE AFTER IT, and the assertion is on the
   // REASON — the same trap as `--behaviours` above ([[an-exit-code-two-rules-produce]]).
-  // Written as `['kit', '--dir', '/elsewhere']` this test would pass with the
+  // Written as `['kit', '--repo', '/elsewhere']` this test would pass with the
   // guard deleted: `/elsewhere` becomes a second corpus name and "two corpus
   // names" refuses too. With nothing after it there is no second rule to hide
   // behind — delete the guard and `only` is 'kit' with no error at all, which is
   // precisely the old behaviour: a full report on Kit's own corpus.
-  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, 'unknown option --dir');
+  //
+  // `--repo` because it is `check.js`'s flag and NOT this tool's — the same
+  // reader-carries-a-sibling's-flag case `--dir` was until kit#71 gave it here.
+  assert.strictEqual(parseCliArgs(['kit', '--repo']).error, 'unknown option --repo');
   // Both arrangements pinned anyway, because the value-carrying form is the one
   // a human actually types after reading check.js's docs.
-  assert.strictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']).error, 'unknown option --dir');
+  assert.strictEqual(parseCliArgs(['kit', '--repo', '/elsewhere']).error, 'unknown option --repo');
   // A single-dash typo is not a corpus name either. `-h` aside, nothing here
   // takes short flags, so `-dir` must refuse rather than become a positional.
   assert.strictEqual(parseCliArgs(['-dir']).error, 'unknown option -dir');
+});
+
+test('parseCliArgs: --dir takes a value in any position, and refuses without one (kit#71)', () => {
+  assert.deepStrictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']),
+    { sheet: false, only: 'kit', rev: '', dir: '/elsewhere', help: false });
+  // First position is the one a positional `find` would get wrong: it hands back
+  // the directory as the corpus name.
+  assert.strictEqual(parseCliArgs(['--dir', '/elsewhere', 'kit']).only, 'kit');
+  assert.strictEqual(parseCliArgs(['sheet', 'kit', '--dir', '/x', '--rev', 'abc']).dir, '/x');
+  assert.strictEqual(parseCliArgs(['sheet', 'kit', '--dir', '/x', '--rev', 'abc']).rev, 'abc');
+  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, '--dir needs a value');
+  assert.strictEqual(parseCliArgs(['kit', '--dir', '--rev', 'x']).error, '--dir needs a value');
+  // The default is null, NOT Kit's directory: `main` decides the default, so a
+  // caller can tell "not given" from "given Kit's own path".
+  assert.strictEqual(parseCliArgs(['kit']).dir, null);
+});
+
+test('kit.js --dir reads the corpus AND its bindings from that directory, and says so (kit#71)', () => {
+  // ⚠️ SPAWNED. The rule kit#66 sets is that bindings travel with their corpus;
+  // a `--dir` that moved the `.beh` but read Kit's `snip-it.bindings.json` would
+  // produce the SAME report as the default run — so the relocated copy's bindings
+  // are deliberately EMPTIED, and only a run that read them reports 0 bound.
+  const tmp = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-dir-'));
+  try {
+    fsx.copyFileSync(pathx.join(__dirname, 'behaviours', 'snip-it.beh'), pathx.join(tmp, 'snip-it.beh'));
+    fsx.writeFileSync(pathx.join(tmp, 'snip-it.bindings.json'), '{}');
+    const run = (...a) => require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'kit.js'), ...a], { encoding: 'utf8', maxBuffer: 1 << 26 });
+    const moved = run('snip-it', '--dir', tmp);
+    assert.strictEqual(moved.status, 0, `stderr: ${moved.stderr}`);
+    assert.match(moved.stdout, /nouns bound\s+0\/\d+/, 'the relocated run read bindings from somewhere other than --dir');
+    assert.ok(moved.stdout.includes(`read from             ${tmp}   (1 corpus: snip-it.beh)`),
+      `the report did not name the directory it read: ${moved.stdout.split('── measured ──')[1]}`);
+    // The control: the same corpus in Kit's own directory IS bound, so 0 above is
+    // the emptied file talking and not a corpus that binds nothing.
+    const home = run('snip-it');
+    assert.doesNotMatch(home.stdout, /nouns bound\s+0\//, 'control: Kit\'s snip-it binds nothing, so the assertion above proves nothing');
+    // A directory that is not there is could-not-look, never an ENOENT stack.
+    const gone = run('snip-it', '--dir', pathx.join(tmp, 'nope'));
+    assert.strictEqual(gone.status, 2);
+    assert.match(gone.stderr, /cannot look: no corpus directory /);
+    assert.strictEqual(gone.stdout, '');
+  } finally {
+    fsx.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('requires.js --dir reads the corpus AND its bindings from that directory (kit#71)', () => {
+  const tmp = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-dir-'));
+  try {
+    fsx.copyFileSync(pathx.join(__dirname, 'behaviours', 'snip-it.beh'), pathx.join(tmp, 'snip-it.beh'));
+    fsx.writeFileSync(pathx.join(tmp, 'snip-it.bindings.json'), '{}');
+    const run = (...a) => require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'requires.js'), ...a], { encoding: 'utf8' });
+    // `--dir` FIRST: a positional `find` would take the directory as the app.
+    const moved = JSON.parse(run('--dir', tmp, 'snip-it', '--json').stdout);
+    const home = JSON.parse(run('snip-it', '--json').stdout);
+    assert.strictEqual(moved.nouns.length, home.nouns.length, 'same corpus, so the same nouns are referenced');
+    assert.strictEqual(moved.satisfied.length, 0, 'the relocated run read bindings from somewhere other than --dir');
+    assert.ok(home.satisfied.length > 0, 'control: Kit\'s snip-it satisfies nothing, so the assertion above proves nothing');
+    for (const [args, re] of [
+      [['snip-it', '--dir'], /--dir needs a value/],
+      [['snip-it', '--dir', '--json'], /--dir needs a value/],
+      [['snip-it', 'kit'], /two app names given/],
+      [['snip-it', '--dir', pathx.join(tmp, 'nope')], /no corpus at .*could not look/],
+    ]) {
+      const r = run(...args);
+      assert.strictEqual(r.status, 2, `${args.join(' ')} exited ${r.status}`);
+      assert.match(r.stderr, re);
+    }
+  } finally {
+    fsx.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('parseCliArgs: --help is answered, and asking for help is not an error', () => {
@@ -1074,7 +1150,7 @@ test('parseCliArgs: a corpus named the same as the rev is still found', () => {
   // excluded every argument whose STRING equalled the rev — so this call found no
   // corpus at all and silently reported on all ten instead of the one asked for.
   assert.deepStrictEqual(parseCliArgs(['kit', '--rev', 'kit']),
-    { sheet: false, only: 'kit', rev: 'kit', help: false });
+    { sheet: false, only: 'kit', rev: 'kit', dir: null, help: false });
 });
 
 test('parseCliArgs: sheet is a subcommand in first position and a corpus name anywhere else', () => {
