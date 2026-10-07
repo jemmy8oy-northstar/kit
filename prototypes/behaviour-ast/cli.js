@@ -43,12 +43,12 @@
 // `requires.js snip-it --dir /no/such/dir`, which exits 0 with a full report about
 // a directory that cannot exist.
 //
-// ⚠️ This does NOT give any tool a flag it lacks. `kit.js:1187` deferred whether
-// `kit.js` should GAIN `--dir` to James, on the grounds that a relocated corpus
-// takes the noun namespace out of the only directory `sharedWith` can see, and
-// that deferral stands here: refusing a flag makes its absence loud and pre-empts
-// nothing. A tool that refuses `--dir` is telling you the truth; a tool that
-// swallows it is not.
+// ⚠️ This does NOT give any tool a flag it lacks: refusing a flag makes its absence
+// loud and pre-empts nothing. A tool that refuses a flag is telling you the truth; a
+// tool that swallows it is not. (`kit.js` and `requires.js` have since GAINED `--dir`
+// — kit#71, 2026-10-07 — on their own merits, after kit#66 adopted the per-corpus
+// namespace that had been the reason to defer it. The refusal was what made the
+// gap visible enough to decide.)
 //
 // Deliberately NOT a parser. `check.js:94` and `kit.js:1196` each have a full
 // positional parser with this rule inside it, and folding all three into one is

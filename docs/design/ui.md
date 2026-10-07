@@ -321,6 +321,8 @@ actually gating.
 ⇒ **Giving `kit.js` the `--dir` its sibling entry point already has is the enabling change for
 onboarding a second repo.** It is deliberately *not* done yet, because of his sequencing: Kit is
 validated on Kit first, and Kit's own corpus is already in Kit's own repo, so nothing moves.
+✅ *Done 2026-10-07 (kit#71): `kit.js` and `requires.js` both take `--dir`, reading the corpus and
+its bindings from the same directory.*
 
 ### What his sequencing makes free, and what it defers
 
