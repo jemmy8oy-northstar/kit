@@ -6816,6 +6816,28 @@ test('conformance: the report section is what the project view serves, for every
   assert.ok(corpora >= 10 && nouns > 0, `compared ${corpora} corpora and ${nouns} nouns — the gate is inert`);
 });
 
+test('conformance: the read-routes golden is compared, and covers every corpus and every refusal', () => {
+  // Compared at all: a full `compare` must report the routes beside the corpora,
+  // or the golden sits on disk scoring nothing.
+  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  assert.ok(r.matched.includes(conformance.ROUTES),
+    `the read routes were not compared (matched: ${r.matched.join(', ')})`);
+
+  // And not vacuous: one 200 project view per corpus, and each refusal a port
+  // could otherwise answer with a framework page — so a port serving only the
+  // happy paths cannot reproduce it.
+  const g = JSON.parse(fsx.readFileSync(conformance.routesPath(GOLDEN_DIR), 'utf8'));
+  const status = (method, p) => g.requests.find((q) => q.method === method && q.path === p)?.response.status;
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    assert.strictEqual(status('GET', `/api/projects/${corpus}`), 200, `no 200 project view for ${corpus}`);
+  }
+  assert.strictEqual(status('GET', '/api/projects/no-such-app'), 404);
+  assert.strictEqual(status('GET', '/api/projects/%E0%A4%A'), 400);
+  assert.strictEqual(status('GET', '/api/projects/%2e%2e'), 404);
+  assert.strictEqual(status('GET', '/api/no-such-route'), 404);
+  assert.strictEqual(status('PUT', '/api/projects'), 405);
+});
+
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
   // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
   // whitelist. Measured when this was written: recording resolve's behaviours in
