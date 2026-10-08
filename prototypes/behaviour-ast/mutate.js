@@ -23,7 +23,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
-const { unknownFlag, refuse } = require('./cli.js');
+const { unknownFlag, refuse, looksLikeAFlag } = require('./cli.js');
 
 // kit#67. The last two tools in this directory to take a flag they do not know
 // and run anyway — and the sharpest instance of it, because this one EDITS THE
@@ -47,10 +47,26 @@ const { unknownFlag, refuse } = require('./cli.js');
 // the key/value mixup untestable: `Object.values` still contained `--recover`, so
 // a guard built from the wrong half of the map refused nothing and the red control
 // for it came back green.
-const FLAGS = { '--recover': '' };
+const FLAGS = { '--recover': '', '--only': '<substring>' };
 const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
 if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
+
+// `--only` runs the mutants whose name or file contains the substring — the slice
+// a new rule needs, without the full ~2-hour run. It is `mutate-ui.js`'s flag with
+// the same two refusals. Until it existed here, proving a new mutant meant a
+// hand-rolled runner outside the repo, twice, and one of them could not see
+// SUBJECTS: a mutant on a file this list did not name looked killed locally and
+// was a survivor in CI.
+// Checked on argv alone, beside the guard, so the sandbox can prove it: a bare
+// `--only` would otherwise leave the filter empty and start the FULL run while
+// the operator believes they asked for a slice ([[empty-means-two-things]]).
+const onlyIdx = process.argv.indexOf('--only');
+const only = onlyIdx === -1 ? null : process.argv[onlyIdx + 1];
+if (onlyIdx !== -1 && (only === undefined || only === '' || looksLikeAFlag(only))) {
+  console.error('cannot look: --only needs a substring to match, e.g. `--only requires.js`');
+  process.exit(2);
+}
 
 // Recovery runs before anything reads the tree, so a run killed by an
 // uncatchable signal is undoable from either mutation tool.
@@ -80,7 +96,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
 // which was run RED first and named five defects. **Do not "finish the job" by
 // adding `cli.js` here — the test will tell you, but this says why.**
-const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
+const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
 // proves it. Two of the kit#66 mutants make a write land in THIS checkout's
@@ -187,6 +203,19 @@ const MUTANTS = [
     'if (!c.ref) errors.push', 'if (false) errors.push'],
   ['cites accepts prose instead of a behaviour id',
     'if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw', 'if (false) throw'],
+  // kit#73 / kit#93: a forward corpus is all `defined`
+  ['an author\'s question on a defined behaviour is dropped again — a forward corpus reports 0 decisions',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => false)"],
+  ['every defined behaviour is "asked", question or not — the sheet reprints the spec',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => b.source.origin === 'defined' && !owners.has(b.id) && !cited.has(b.id))"],
+  ['a conflict\'s question is asked twice, once as the conflict and once as authored',
+    'if (owner) owners.add(owner.id);', 'if (false) owners.add(owner.id);'],
+  ['an authored option list is answered with serves-or-delete again',
+    'if (q.options.length) {\n    return `the option you pick', 'if (false) {\n    return `the option you pick'],
+  ['an empty evidence block prints a bare heading again',
+    "if (!q.contracts.length && !q.serves.length) L.push('- _none recorded", "if (false) L.push('- _none recorded"],
 
   // reading an app's tests — the reader every number downstream rests on
   ['the [Theory] lookahead goes back to a fixed six lines — the 16% under-read',
@@ -416,6 +445,18 @@ MUTANTS.push(
     "const all = parse(fs.readFileSync(path.join(dir, CORPUS), 'utf8'), CORPUS);",
     "const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh')).flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));",
     'compare.js'],
+  // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
+  // by a different door — the field unnamed when the value refuses, a two-value
+  // `provides` re-joined into a guess, the obligation gone from requires.js.
+  ['a single-field fill binds only when it has a value, so an unbound field with an open hole goes unnamed again',
+    '        const fb = bind(field);',
+    '        const fb = (literal || providedValue(step) !== null) ? bind(field) : null;', 'kit.js'],
+  ['a provided value that split on a comma fills with its first half instead of refusing',
+    'return v && v.length === 1 ? v[0] : null;',
+    'return v && v.length ? v[0] : null;', 'kit.js'],
+  ['requires.js forgets the field a single-field fill names, so it leaves the contract',
+    "    if (field) return [{ nounKey: key(field), kind: 'field', name: field.name, req: LABEL, verb: 'fills', at: step.at }];",
+    '', 'requires.js'],
   // kit.js's own CLI. The first of these is the defect as it actually shipped:
   // every `--flag` this tool does not know was dropped in silence, so
   // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing
@@ -871,9 +912,17 @@ MUTANTS.push(
     '../../start.js'],
 );
 
+// Filters a derived list only: SUBJECTS and restoreAll() still cover every file.
+// A filter matching nothing is a typo, not a clean pass — exit 2, never `0/0 killed`.
+const RUN = only ? MUTANTS.filter(([name, , , file = 'kit.js']) => name.includes(only) || file.includes(only)) : MUTANTS;
+if (!RUN.length) {
+  console.error(`cannot look: --only ${JSON.stringify(only)} matched no mutants`);
+  process.exit(2);
+}
+
 let killed = 0;
 const survived = [];
-for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
+for (const [name, from, to, file = 'kit.js'] of RUN) {
   const original = SUBJECTS[file];
   // An anchor that stopped matching is a SURVIVOR, not a skip: it means the
   // mutation silently stopped being applied and the rule stopped being measured.
@@ -885,6 +934,6 @@ for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
   if (fails > 0) { killed++; console.log(`  killed (${fails} failing)  ${name}`); }
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
-console.log(`\n${killed}/${MUTANTS.length} killed, ${survived.length} survived`);
+console.log(`\n${killed}/${RUN.length} killed, ${survived.length} survived${only ? ` (--only ${JSON.stringify(only)}: ${RUN.length} of ${MUTANTS.length})` : ''}`);
 if (run() !== 0) { console.error('HARNESS BROKEN: suite is not green after restore'); process.exit(2); }
 process.exit(survived.length ? 1 : 0);

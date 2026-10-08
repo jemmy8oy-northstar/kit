@@ -190,6 +190,20 @@ public sealed class TestGenerator : ITestGenerator
 
             case "fills":
             {
+                // `fills field:X with "text"` / `with ?slot` — one field, one value
+                // (kit#151). Bind FIRST, so an unbound field is named even when the
+                // value is what refuses.
+                var one = nouns.FirstOrDefault(n => n.Kind == "field");
+                if (one is not null)
+                {
+                    var fb = bind(one);
+                    var label = fb.Get("label");
+                    var value = literal is not null ? literal.Name : ProvidedValue(step);
+                    return fb.Truthy && label.Truthy && value is not null
+                        ? [$"await page.getByLabel({label.Stringify()}).fill({Stringify(value)});"]
+                        : null;
+                }
+
                 // This step named no field: the fields come from what resolve wrote
                 // onto it, filled by ANOTHER behaviour's `provides`.
                 if (step.Resolved is null || !step.Resolved.TryGetValue("fields", out var fields))
@@ -253,6 +267,16 @@ public sealed class TestGenerator : ITestGenerator
 
         var locator = b.Get("locator");
         return locator.Truthy ? locator.AsString() : null;
+    }
+
+    /// <summary>
+    /// <c>providedValue(step)</c>: what the step's first hole resolved to, or null. Exactly
+    /// ONE value — <c>provides</c> splits on commas, and re-joining would guess the spacing.
+    /// </summary>
+    private static string? ProvidedValue(IStep step)
+    {
+        var hole = step.Holes.FirstOrDefault();
+        return hole is not null && step.Resolved?.GetValueOrDefault(hole.Slot) is { Count: 1 } v ? v[0] : null;
     }
 
     /// <summary>

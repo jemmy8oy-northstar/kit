@@ -29,7 +29,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
-const { unknownFlag, refuse } = require('./cli.js');
+const { unknownFlag, refuse, looksLikeAFlag } = require('./cli.js');
 
 const UI = path.join(__dirname, 'ui');
 const VITEST = path.join(UI, 'node_modules', '.bin', 'vitest');
@@ -47,6 +47,19 @@ const FLAGS = { '--recover': '', '--only': '<subject>' };
 const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const badFlag = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
 if (badFlag) process.exit(refuse(badFlag, `usage: node mutate-ui.js [${usage()}]`));
+
+// `--only` with nothing after it, or followed by another flag, would otherwise
+// leave `only` falsy and run the FULL suite while the operator believes they
+// asked for a slice — the same "absent and empty read identically" failure the
+// zero-match check below refuses ([[empty-means-two-things]]). Up here, on argv
+// alone, so the sandbox can prove it: below the install check it was unreachable
+// from any pod without `npm ci`, which is every sandbox.
+const onlyArgIdx = process.argv.indexOf('--only');
+const only = onlyArgIdx !== -1 ? process.argv[onlyArgIdx + 1] : null;
+if (onlyArgIdx !== -1 && (only === undefined || only === '' || looksLikeAFlag(only))) {
+  console.error('cannot look: --only needs a substring to match, e.g. `--only SignIn.tsx`');
+  process.exit(2);
+}
 
 // Recovery runs before the install check below: a tree left mutated by a killed
 // run must be restorable even from a pod where `npm ci` has never been run.
@@ -360,16 +373,7 @@ const MUTANTS = [
 // the full ~70-minute run. Filters a DERIVED list only: MUTANTS itself,
 // SUBJECT_FILES, SUBJECTS and restoreAll() are untouched, so restore still
 // covers every subject file even when this run only mutates one of them.
-const onlyArgIdx = process.argv.indexOf('--only');
-const only = onlyArgIdx !== -1 ? process.argv[onlyArgIdx + 1] : null;
-// `--only` with nothing after it, or followed by another flag, would otherwise
-// leave `only` falsy and run the FULL suite while the operator believes they
-// asked for a slice — the same "absent and empty read identically" failure the
-// zero-match check below refuses ([[empty-means-two-things]]).
-if (onlyArgIdx !== -1 && (only === undefined || only.startsWith('--'))) {
-  console.error('cannot look: --only needs a substring to match, e.g. `--only SignIn.tsx`');
-  process.exit(2);
-}
+// (`only` itself is read and checked beside the flag guard at the top.)
 const RUN_MUTANTS = only
   ? MUTANTS.filter(([name, , , file]) => name.includes(only) || file.includes(only))
   : MUTANTS;

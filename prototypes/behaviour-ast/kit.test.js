@@ -570,6 +570,79 @@ test('the committed sheet is byte-identical to what the generator produces now',
     'docs/sheets/james-habits-app.md is stale — re-run `node kit.js sheet james-habits --rev james-habits-app@e75de89`');
 });
 
+// kit#73. A corpus written BEFORE the code has nothing to infer from, so every
+// behaviour in it is defined — and questions() skips defined behaviours. The
+// trial corpus that found this reported "0 decisions · 0 reviews" while its
+// author had left a question on it.
+const { asked } = require('./kit');
+const FORWARD = 'behaviour BEH-SCREEN "documented screen"\n  source defined brief.md#1\n  when opens page:Home\n' +
+  'behaviour BEH-COUNT "the page shows a count"\n  source defined brief.md#2\n  serves BEH-SCREEN\n' +
+  '  asks "count pages or words?"\n' +
+  '  option "pages" "the count is per page"\n' +
+  '  option "words" "the count is per word"\n';
+
+test('a question its author wrote on a DEFINED behaviour reaches the sheet (kit#73)', () => {
+  const { behaviours, conflicts } = build(FORWARD);
+  const qs = questions(behaviours, conflicts);
+  // The population this exists for: questions() alone sees nothing to ask.
+  assert.deepStrictEqual(qs, [], 'control: an all-defined corpus has no inferred questions');
+  const authored = asked(behaviours, conflicts);
+  assert.deepStrictEqual(authored.map((q) => q.id), ['BEH-COUNT']);
+  assert.deepStrictEqual(questionErrors(authored), []);
+  const md = renderSheet('fwd', qs, { asked: authored });
+  assert.ok(md.includes('**0 decisions · 0 reviews · 1 asked by the author.**'), md.split('\n')[2]);
+  assert.ok(md.includes('## Asked by the author — 1'));
+  assert.ok(md.includes('### A1. count pages or words?'));
+  assert.ok(md.includes('becomes: the option you pick, made true on `BEH-COUNT`'));
+});
+
+test('a defined behaviour with no asks stays off the sheet, and no section appears', () => {
+  // The control for the test above: without it, an asked() returning every
+  // defined behaviour would pass, and the sheet would turn into his spec reprinted.
+  const { behaviours, conflicts } = build(FORWARD.replace(/^  (asks|option) .*\n/gm, ''));
+  assert.deepStrictEqual(asked(behaviours, conflicts), []);
+  const md = renderSheet('fwd', questions(behaviours, conflicts), { asked: [] });
+  assert.ok(!md.includes('Asked by the author') && !md.includes('asked by the author'),
+    'a corpus with no authored questions must keep the sheet it had');
+});
+
+test('an authored question on a defined behaviour faces the same gate as any other (kit#73)', () => {
+  const { behaviours, conflicts } = build(FORWARD.replace(/^  option "words" .*\n/m, ''));
+  const errs = questionErrors(asked(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('BEH-COUNT') && e.includes('at least 2 options')), errs.join(' | '));
+});
+
+test('a question a conflict already carries is not asked twice (kit#73)', () => {
+  // Conflicts take their question from whichever side wrote `asks`, and that one
+  // is on the sheet as D1 already. Repeating it under "asked" is the double-ask.
+  const src = 'behaviour BEH-A "a"\n  source defined d.md#1\n  when opens page:Home\n  provides region:Grid.days = 30\n' +
+    '  asks "which default?"\n  option "30" "x"\n  option "7" "y"\n' +
+    'behaviour BEH-B "b"\n  source defined d.md#2\n  when opens page:Home\n  provides region:Grid.days = 7\n';
+  const { behaviours, conflicts } = build(src);
+  assert.strictEqual(conflicts.length, 1, 'control: the fixture must actually collide');
+  assert.deepStrictEqual(asked(behaviours, conflicts), []);
+});
+
+test('the sheet no longer tells a forward corpus its surface "exists in the code" (kit#93)', () => {
+  // Every corpus the sheet was first written for was read out of a running app;
+  // a spec-first one is the mode he wants Kit driven in (kit#88).
+  const { behaviours, conflicts } = build(PACK);
+  const md = renderSheet('x', questions(behaviours, conflicts));
+  assert.ok(!md.includes('exists in the code'), 'the false sentence is back');
+  assert.ok(md.includes('Kit inferred this surface'));
+  // An authored option list is what an answer picks from — not serves-or-delete.
+  assert.ok(md.includes('becomes: the option you pick, made true on `BEH-LOOSE`'));
+});
+
+test('an evidence block with nothing in it says so instead of printing a bare heading (kit#93)', () => {
+  const { behaviours, conflicts } = build(PACK.replace(/^  contract .*\n/m, ''));
+  const md = renderSheet('x', questions(behaviours, conflicts));
+  assert.ok(md.includes('_none recorded: the behaviour carries no contract lines and serves no screen_'));
+  // Control: with a contract line, the placeholder must not appear.
+  const full = renderSheet('x', questions(...(({ behaviours: b, conflicts: c }) => [b, c])(build(PACK))));
+  assert.ok(!full.includes('_none recorded'));
+});
+
 section('reading an app\'s tests');
 const { testTitles, expectedTestCount } = require('./kit');
 
@@ -2090,7 +2163,7 @@ test('the recorded kit-ui numbers still come out of the real corpus', () => {
   assert.strictEqual(stats.ungenerated, want.ungenerated, 'refused steps');
 });
 
-test('and all 20 of them are DERIVED, not `state` strings copied out of bindings.json', () => {
+test('and all 21 of them are DERIVED, not `state` strings copied out of bindings.json', () => {
   // The distinction that made kit.beh's headline honest: `state` generates a
   // setup string a human wrote, so counting it as derived is how "0 derived"
   // would have become "14 generated". kit-ui's number needs the same audit, or
@@ -2100,22 +2173,45 @@ test('and all 20 of them are DERIVED, not `state` strings copied out of bindings
   assert.strictEqual(stats.derived, stats.generated);
 });
 
-test('THE FINDING, pinned: the refusal sits directly above the action that depends on it', () => {
-  // BEH-ADJ-2 fills a correction before clicking Deny. The generator correctly
-  // refuses to derive the fill, so the test runs straight on into a click on a
-  // button that is disabled *because the fill never happened*. It fails like an
-  // application bug.
-  //
-  // This test was written BEFORE the decision about what to do, as the half
-  // that is true under all four options: whatever was chosen, the suite has to
-  // be able to see a refused step sitting above an action that depends on it.
-  // The decision has since been made — kit#31's queue entry lapsed on
-  // 2026-09-24 to its stated default, ANNOTATE — and the adjacency survived it
-  // intact, which is why this still reads the same. The annotation is emitted
-  // ABOVE the comment precisely so that it would.
+// kit-ui.beh with field:KitCorrection unbound — the one refusal this corpus
+// had before kit#151, put back on purpose so the two invariants below still
+// have a real refused step to stand on.
+const refusingKitUi = () => {
+  const real = pathx.join(__dirname, 'behaviours');
+  const bindings = JSON.parse(fsx.readFileSync(pathx.join(real, 'kit-ui.bindings.json'), 'utf8'));
+  assert.ok(bindings['field:KitCorrection'], 'the field this copy unbinds is bound in the real file');
+  delete bindings['field:KitCorrection'];
+  const dir = fixture({
+    'kit-ui.beh': fsx.readFileSync(pathx.join(real, 'kit-ui.beh'), 'utf8'),
+    'kit-ui.bindings.json': JSON.stringify(bindings),
+  });
+  return pathx.join(dir, 'kit-ui.beh');
+};
+
+test('THE FINDING, resolved (kit#151): the fill is written, directly above the click that needed it', () => {
+  // BEH-ADJ-2 fills a correction before clicking Deny. Until kit#151 the
+  // generator could not read `fills field:X with "text"`, so it refused the
+  // fill and ran straight on into a click on a button that is disabled
+  // *because the fill never happened* — the one failure in the doc's 5 of 6,
+  // and it failed like an application bug.
   const { source } = selfrun.emitSpec();
+  assert.strictEqual(selfrun.refusals(source).length, 0, 'kit-ui.beh no longer refuses anything');
+  const lines = source.split('\n').map((l) => l.trim());
+  const i = lines.indexOf('await page.getByLabel("Correction (required to deny)").fill("the starter set is re-seeded whenever the list is empty");');
+  assert.ok(i > 0, "the correction is filled with the corpus's own text");
+  assert.match(lines[i + 1], /^await page\.getByRole\("button", \{ name: "Deny" \}\)\.click\(\)/,
+    'and Deny is clicked straight after it');
+});
+
+test("THE FINDING's adjacency still holds wherever a refusal remains", () => {
+  // Written before kit#31's decision as the half true under every option: the
+  // suite has to be able to see a refused step sitting above an action that
+  // depends on it. kit#31 chose ANNOTATE, emitted ABOVE the comment so this
+  // adjacency survives. kit#151 removed the real corpus's only refusal, so the
+  // copy unbinds the field, and the refusal — with its adjacency — must return.
+  const { source } = selfrun.emitSpec(refusingKitUi());
   const refused = selfrun.refusals(source);
-  assert.strictEqual(refused.length, 1, 'exactly one refusal in this corpus');
+  assert.strictEqual(refused.length, 1, 'exactly one refusal in this copy');
   assert.match(refused[0].step, /fills field:KitCorrection/, 'and it is the fill, not something else');
   assert.match(refused[0].next, /^await page\.getByRole\("button", \{ name: "Deny" \}\)\.click\(\)/,
     'the line after the refusal is the click that depends on it — this adjacency IS the defect');
@@ -2125,7 +2221,7 @@ test('a refused step now reaches the RUNNER, not just a reader', () => {
   // What changed on 2026-09-24. The comment on its own is inert: a reader sees
   // the refusal and a runner cannot, so a suite full of them reports itself
   // complete. The annotation puts it in the Playwright report.
-  const { source } = selfrun.emitSpec();
+  const { source } = selfrun.emitSpec(refusingKitUi());
   const lines = source.split('\n');
   const i = lines.findIndex((l) => l.includes('// UNGENERATED:'));
   assert.ok(i > 0, 'the refusal comment is still there for a reader');
@@ -2301,13 +2397,13 @@ test('the reporter PADS a failing name with ─, and the padding is not part of 
     '[BEH-STEP-1] A step can be added while the generated test is in view',
   ], 'every name clean, whether the reporter padded it or not');
 
-  // And the single-failure wording that IS recorded in expected.json still
-  // parses byte-identically — the fix must not move the number it is checked
-  // against.
+  // And the single-failure wording expected.json recorded until kit#151 still
+  // parses byte-identically — the fix must not move a number it is checked
+  // against. Spelled out now that the recorded list is empty.
   const one = '  1 failed\n    specs/kit-ui.spec.ts:35:5 › [BEH-ADJ-2] Denying an inference asks for the correction it must carry \n\n  5 passed (23.8s)\n';
   assert.deepStrictEqual(selfrun.parseResults(one).failing,
-    JSON.parse(fsx.readFileSync(selfrun.EXPECTED, 'utf8')).failing,
-    'the recorded expectation is still what the reporter produces');
+    ['[BEH-ADJ-2] Denying an inference asks for the correction it must carry'],
+    'the single-failure wording still parses to one clean name');
 });
 
 test('the write-up quotes the numbers the harness records — with the markdown stripped', () => {
@@ -4055,6 +4151,9 @@ const COUPLED = [
     ok:   { 'file:F': { fixture: { name: 'a.mp4', mimeType: 'video/mp4' } }, 'field:D': { label: 'File' } },
     thin: { 'file:F': { note: 'no fixture' },                                'field:D': { label: 'File' } },
   },
+  // kit#151: the single-field shape. Its own row, because it is the half of
+  // `fills` whose noun IS on the step, so the table reads it like any other verb.
+  { verb: 'fills (one field)', step: '  when fills field:Name with "Ada"', ok: { 'field:Name': { label: 'Name' } }, thin: { 'field:Name': { role: 'textbox', name: 'Name' } } },
 ];
 
 for (const c of COUPLED) {
@@ -4087,6 +4186,53 @@ test('requires: `fills` needs a label specifically, not any locator', () => {
   assert.ok(R.requirements(bs, roleOnly).insufficient.length > 0);
   // Positive control, so a version refusing every `fills` passes neither test.
   assert.ok(rqGen(body, { 'field:Item': { label: 'Item' } }).stats.generated > 0);
+});
+
+// ── kit#151: `fills field:X with …` — one field, one value ──
+
+test('fills: a quoted value fills the one field the step names', () => {
+  // A comma on purpose: a literal is taken whole, unlike a `provides` value.
+  const g = rqGen('  when fills field:Name with "Ada, the first"', { 'field:Name': { label: 'Your name' } });
+  assert.strictEqual(g.stats.generated, 1, g.code);
+  assert.match(g.code, /await page\.getByLabel\("Your name"\)\.fill\("Ada, the first"\);/);
+});
+
+test('fills: a hole fills once a behaviour provides it — and stays OPEN until then', () => {
+  // The value is test data, so it generates only from a `provides`. The point
+  // is that `OPEN unknown(s): field:Answer.english` was already printed for these
+  // steps; before kit#151 doing what it said changed nothing.
+  const bound = { 'field:Answer': { label: 'Answer' } };
+  const open = rqGen('  when fills field:Answer with ?english', bound);
+  assert.strictEqual(open.stats.ungenerated, 1, 'an unprovided value is refused, not guessed');
+  const filled = rqGen('  when fills field:Answer with ?english\n  provides field:Answer.english = hello', bound);
+  assert.match(filled.code, /await page\.getByLabel\("Answer"\)\.fill\("hello"\);/);
+});
+
+test('fills: a provided value that split into two is refused, not re-joined', () => {
+  // `provides` splits on commas; joining them back would guess the spacing.
+  const g = rqGen('  when fills field:Answer with ?pinyin\n  provides field:Answer.pinyin = ni hao, nihao', { 'field:Answer': { label: 'Answer' } });
+  assert.strictEqual(g.stats.generated, 0, g.code);
+});
+
+test('fills: no value at all is refused', () => {
+  assert.strictEqual(rqGen('  when fills field:Name', { 'field:Name': { label: 'Name' } }).stats.generated, 0);
+});
+
+test('fills: an unbound field is NAMED even when the value is what refuses', () => {
+  // The silent half of kit#151: field:Answer was missing from the unbound list
+  // and from requires.js, so a reader had no way to find it. bind() runs first.
+  const body = '  when fills field:Answer with ?english';
+  assert.deepStrictEqual(rqGen(body, {}).missing, ['field:Answer']);
+  const rep = R.requirements(rqBeh(body).bs, {});
+  assert.deepStrictEqual(rep.missing.map((n) => n.noun), ['field:Answer']);
+  assert.strictEqual(rep.missing[0].needs[0].id, 'label', 'and what it owes is a label, as under the form shape');
+});
+
+test('fills: the form shape is untouched by the single-field branch', () => {
+  // The field branch keys on a `field:` noun on the step. A form step names
+  // none, so it must still read its fields from the resolved `?fields`.
+  const g = rqGen('  when fills form:F with ?fields\n  provides form:F.fields = A, B', { 'field:A': { label: 'A' }, 'field:B': { label: 'B' } });
+  assert.strictEqual(g.stats.generated, 2, g.code);
 });
 
 test('requires: every verb emit() handles has a row in the requirement table', () => {
@@ -6154,6 +6300,27 @@ test('cli: the harness pair refuses an unknown flag, proved where it can do no d
         `${tool}: refuses its own --recover, so the guard's accept-list is wrong, not its refusal:\n${goodOut}`);
     } finally {
       fsx.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test('cli: a bare --only is refused before the run, in both mutation tools', () => {
+  // `--only` with no substring — or with the next flag where the substring should
+  // be — leaves the filter empty, and an empty filter is the FULL run. Refusing it
+  // must not depend on the tree, so it is proved in the sandbox, where an unguarded
+  // fall-through dies reading a subject instead of mutating one. Exit 2 alone would
+  // not separate the two, so the sentence is asserted too.
+  for (const tool of Object.keys(SANDBOXED)) {
+    for (const argv of [['--only'], ['--only', '--recover']]) {
+      const { dir, inner } = sandboxFor(tool);
+      try {
+        const r = spawnx(process.execPath, [tool, ...argv], { cwd: inner, encoding: 'utf8', timeout: 30000 });
+        const out = (r.stdout || '') + (r.stderr || '');
+        assert.strictEqual(r.status, 2, `${tool} ${argv.join(' ')}: expected the refusal's exit 2; got ${r.status}\n${out}`);
+        assert.match(out, /--only needs a substring/, `${tool} ${argv.join(' ')}: exit 2 for some other reason:\n${out}`);
+      } finally {
+        fsx.rmSync(dir, { recursive: true, force: true });
+      }
     }
   }
 });

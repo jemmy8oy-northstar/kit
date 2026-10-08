@@ -1675,6 +1675,7 @@
       "missing": [
         "habit:NumericSeeded",
         "page:Today",
+        "field:HabitValue",
         "badge:Streak"
       ],
       "stats": {
@@ -2408,6 +2409,26 @@
           ]
         },
         {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
           "noun": "habit:BooleanSeeded",
           "kind": "habit",
           "name": "BooleanSeeded",
@@ -2714,6 +2735,26 @@
               "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
               "verbs": [
                 "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
               ],
               "met": false
             }

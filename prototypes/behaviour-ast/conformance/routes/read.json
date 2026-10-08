@@ -1175,6 +1175,7 @@
               "missing": [
                 "habit:NumericSeeded",
                 "page:Today",
+                "field:HabitValue",
                 "badge:Streak"
               ],
               "stats": {
@@ -1927,6 +1928,30 @@
                 "sharedWith": []
               },
               {
+                "noun": "field:HabitValue",
+                "kind": "field",
+                "name": "HabitValue",
+                "usedBy": [
+                  "BEH-TODAY-3"
+                ],
+                "bound": false,
+                "satisfied": false,
+                "needs": [
+                  {
+                    "id": "label",
+                    "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+                    "verbs": [
+                      "fills"
+                    ],
+                    "met": false
+                  }
+                ],
+                "binding": null,
+                "sharedWith": [
+                  "trial-habits-a"
+                ]
+              },
+              {
                 "noun": "habit:BooleanSeeded",
                 "kind": "habit",
                 "name": "BooleanSeeded",
@@ -2277,6 +2302,30 @@
                 ],
                 "binding": null,
                 "sharedWith": []
+              },
+              {
+                "noun": "field:HabitValue",
+                "kind": "field",
+                "name": "HabitValue",
+                "usedBy": [
+                  "BEH-TODAY-3"
+                ],
+                "bound": false,
+                "satisfied": false,
+                "needs": [
+                  {
+                    "id": "label",
+                    "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+                    "verbs": [
+                      "fills"
+                    ],
+                    "met": false
+                  }
+                ],
+                "binding": null,
+                "sharedWith": [
+                  "trial-habits-a"
+                ]
               },
               {
                 "noun": "habit:BooleanSeeded",
@@ -7556,12 +7605,12 @@
             },
             {
               "id": "BEH-ADJ-2",
-              "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:KitCorrection with \\\"the starter set is re-seeded whenever the list is empty\\\"\" });\n  // UNGENERATED: when fills field:KitCorrection with \"the starter set is re-seeded whenever the list is empty\"\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
+              "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  await page.getByLabel(\"Correction (required to deny)\").fill(\"the starter set is re-seeded whenever the list is empty\");\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
               "missing": [],
               "stats": {
-                "generated": 3,
+                "generated": 4,
                 "contract": 2,
-                "ungenerated": 1
+                "ungenerated": 0
               }
             },
             {
@@ -7701,6 +7750,30 @@
                 "binding": {
                   "role": "button",
                   "name": "Deny"
+                },
+                "sharedWith": []
+              },
+              {
+                "noun": "field:KitCorrection",
+                "kind": "field",
+                "name": "KitCorrection",
+                "usedBy": [
+                  "BEH-ADJ-2"
+                ],
+                "bound": true,
+                "satisfied": true,
+                "needs": [
+                  {
+                    "id": "label",
+                    "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+                    "verbs": [
+                      "fills"
+                    ],
+                    "met": true
+                  }
+                ],
+                "binding": {
+                  "label": "Correction (required to deny)"
                 },
                 "sharedWith": []
               },
@@ -7988,6 +8061,7 @@
               "button:KitAddStep",
               "button:KitApprove",
               "button:KitDeny",
+              "field:KitCorrection",
               "heading:KitAddAStep",
               "heading:KitAdjudication",
               "heading:KitBehaviourSteps",
@@ -9048,6 +9122,7 @@
                 "page:Drill",
                 "region:HanziLarge",
                 "region:PinyinUnderIt",
+                "field:Answer",
                 "region:Verdict"
               ],
               "stats": {
@@ -9062,6 +9137,7 @@
               "missing": [
                 "page:Drill",
                 "region:EnglishPrompt",
+                "field:Answer",
                 "region:Verdict"
               ],
               "stats": {
@@ -9101,6 +9177,7 @@
               "code": "test(\"[BEH-TONE-2] Tones are graded softly — right syllables with wrong tones is 'almost'\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?toneless\" });\n  // UNGENERATED: when fills field:Answer with ?toneless\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): an 'almost' shows the correct tones and makes the card repeat sooner\n});",
               "missing": [
                 "page:Drill",
+                "field:Answer",
                 "region:Verdict"
               ],
               "stats": {
@@ -9172,6 +9249,7 @@
               "code": "test(\"[BEH-CARD-1] The card gives instant feedback and moves on with Enter\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?answer\" });\n  // UNGENERATED: when fills field:Answer with ?answer\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): feedback is green, amber with the correct tones, or red with the answer\n  // CONTRACT (not derivable from a behaviour): Enter advances to the next card\n});",
               "missing": [
                 "page:Drill",
+                "field:Answer",
                 "region:Verdict"
               ],
               "stats": {
@@ -9781,6 +9859,31 @@
                 "sharedWith": []
               },
               {
+                "noun": "field:Answer",
+                "kind": "field",
+                "name": "Answer",
+                "usedBy": [
+                  "BEH-CARD-1",
+                  "BEH-DRILL-ENZH",
+                  "BEH-DRILL-ZHEN",
+                  "BEH-TONE-2"
+                ],
+                "bound": false,
+                "satisfied": false,
+                "needs": [
+                  {
+                    "id": "label",
+                    "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+                    "verbs": [
+                      "fills"
+                    ],
+                    "met": false
+                  }
+                ],
+                "binding": null,
+                "sharedWith": []
+              },
+              {
                 "noun": "page:Drill",
                 "kind": "page",
                 "name": "Drill",
@@ -10006,6 +10109,31 @@
                     "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
                     "verbs": [
                       "activates"
+                    ],
+                    "met": false
+                  }
+                ],
+                "binding": null,
+                "sharedWith": []
+              },
+              {
+                "noun": "field:Answer",
+                "kind": "field",
+                "name": "Answer",
+                "usedBy": [
+                  "BEH-CARD-1",
+                  "BEH-DRILL-ENZH",
+                  "BEH-DRILL-ZHEN",
+                  "BEH-TONE-2"
+                ],
+                "bound": false,
+                "satisfied": false,
+                "needs": [
+                  {
+                    "id": "label",
+                    "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+                    "verbs": [
+                      "fills"
                     ],
                     "met": false
                   }

@@ -260,9 +260,17 @@ public sealed class ProjectReporter : IProjectReporter
     /// <summary><c>requirementsOf(step)</c>: every obligation one step places on the app.</summary>
     private static IEnumerable<(string Noun, string Kind, string Name, string Req)> RequirementsOf(Step step)
     {
-        // `fills` names the FORM; the obligation falls on the fields resolve wrote onto it.
+        // `fills form:X` names the FORM; the obligation falls on the fields resolve wrote
+        // onto it. `fills field:X with …` names its field, so the obligation is that noun's (kit#151).
         if (step.Verb == "fills")
         {
+            var field = step.Refs.FirstOrDefault(r => r.Kind == "field");
+            if (field is not null)
+            {
+                yield return ($"field:{field.Name}", "field", field.Name, "label");
+                yield break;
+            }
+
             foreach (var f in step.Resolved?.GetValueOrDefault("fields") ?? [])
             {
                 yield return ($"field:{f}", "field", f, "label");

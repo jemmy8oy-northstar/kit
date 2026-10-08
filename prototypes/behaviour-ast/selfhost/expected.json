@@ -6,11 +6,9 @@
     "wrong — a re-record with no edit to the prose is the drift, not the fix."
   ],
   "tests": 6,
-  "derived": 20,
-  "ungenerated": 1,
-  "passed": 5,
-  "failed": 1,
-  "failing": [
-    "[BEH-ADJ-2] Denying an inference asks for the correction it must carry"
-  ]
+  "derived": 21,
+  "ungenerated": 0,
+  "passed": 6,
+  "failed": 0,
+  "failing": []
 }

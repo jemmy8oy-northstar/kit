@@ -1905,6 +1905,7 @@
         "page:Drill",
         "region:HanziLarge",
         "region:PinyinUnderIt",
+        "field:Answer",
         "region:Verdict"
       ],
       "stats": {
@@ -1919,6 +1920,7 @@
       "missing": [
         "page:Drill",
         "region:EnglishPrompt",
+        "field:Answer",
         "region:Verdict"
       ],
       "stats": {
@@ -1958,6 +1960,7 @@
       "code": "test(\"[BEH-TONE-2] Tones are graded softly — right syllables with wrong tones is 'almost'\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?toneless\" });\n  // UNGENERATED: when fills field:Answer with ?toneless\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): an 'almost' shows the correct tones and makes the card repeat sooner\n});",
       "missing": [
         "page:Drill",
+        "field:Answer",
         "region:Verdict"
       ],
       "stats": {
@@ -2029,6 +2032,7 @@
       "code": "test(\"[BEH-CARD-1] The card gives instant feedback and moves on with Enter\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?answer\" });\n  // UNGENERATED: when fills field:Answer with ?answer\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): feedback is green, amber with the correct tones, or red with the answer\n  // CONTRACT (not derivable from a behaviour): Enter advances to the next card\n});",
       "missing": [
         "page:Drill",
+        "field:Answer",
         "region:Verdict"
       ],
       "stats": {
@@ -2633,6 +2637,29 @@
           ]
         },
         {
+          "noun": "field:Answer",
+          "kind": "field",
+          "name": "Answer",
+          "usedBy": [
+            "BEH-CARD-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
           "noun": "page:Drill",
           "kind": "page",
           "name": "Drill",
@@ -2840,6 +2867,29 @@
               "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
               "verbs": [
                 "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Answer",
+          "kind": "field",
+          "name": "Answer",
+          "usedBy": [
+            "BEH-CARD-1",
+            "BEH-DRILL-ENZH",
+            "BEH-DRILL-ZHEN",
+            "BEH-TONE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
               ],
               "met": false
             }
