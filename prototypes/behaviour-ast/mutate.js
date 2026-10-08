@@ -445,6 +445,14 @@ MUTANTS.push(
     "const all = parse(fs.readFileSync(path.join(dir, CORPUS), 'utf8'), CORPUS);",
     "const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh')).flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));",
     'compare.js'],
+  // kit#76: one population under `── measured ──`. The first mutant is the old
+  // denominator coming back (every noun a step names); the second hides the nouns
+  // no binding could satisfy, which is what made 0/43 read as 0% of the work.
+  ['the bound fraction counts every referenced noun again, so it no longer sums with the unbound list',
+    'for (const n of ownKeys) targets.add(`${app}\\0${n}`);',
+    'for (const n of [...ownKeys, ...boundNouns(bs, {}).referenced]) targets.add(`${app}\\0${n}`);', 'kit.js'],
+  ['the nouns no binding could satisfy stop being named',
+    'if (!ownKeys.has(n)) notBindable.add(n);', 'if (false) notBindable.add(n);', 'kit.js'],
   // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
   // by a different door — the field unnamed when the value refuses, a two-value
   // `provides` re-joined into a guess, the obligation gone from requires.js.

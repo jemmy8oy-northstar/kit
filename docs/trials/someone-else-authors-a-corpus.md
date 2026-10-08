@@ -211,6 +211,10 @@ binding Kit"; only 20 of those 43 are work a binding could ever do.
 move onto the binding targets, or the report could name all three populations. Raised rather than
 answered.
 
+_⏩ **Followed up 2026-10-08 ([kit#76](https://github.com/jemmy8oy-northstar/kit/issues/76)'s stated
+default):** the fraction moves onto the binding targets, and a `not bindable` line names the rest.
+Kit's corpus now reads `0/20` above 20 unbound nouns, with 23 not bindable. The section above is unchanged._
+
 ### One thing found while diagnosing it, and fixed
 
 Putting the two CLIs side by side over all ten corpora needed `node kit.js kit`, which turned out to

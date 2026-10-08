@@ -1505,6 +1505,30 @@ test('compare.js measures snip-it.beh against snip-it\'s spec, and no other corp
   }
 });
 
+test('`nouns bound X/Y` and `unbound nouns N` count ONE population: X + N = Y, in every corpus (kit#76)', () => {
+  // The two lines sat two apart and counted different things — the fraction over
+  // every noun a step names, the list over binding targets — so kit.beh read 0/43
+  // above a list of 20. The trial that found it asserted exactly this sum and was
+  // wrong at the time; now the report is built so that it holds.
+  const corpora = fsx.readdirSync(pathx.join(__dirname, 'behaviours')).filter((f) => f.endsWith('.beh'));
+  assert.ok(corpora.length >= 10, `read only ${corpora.length} corpora`);
+  for (const f of corpora) {
+    const r = require('child_process').spawnSync('node', [pathx.join(__dirname, 'kit.js'), f], { encoding: 'utf8', maxBuffer: 1 << 26 });
+    const frac = /nouns bound\s+(\d+)\/(\d+)/.exec(r.stdout);
+    const unbound = /unbound nouns\s+(\d+)/.exec(r.stdout);
+    assert.ok(frac && unbound, `${f}: the measured block did not print both lines`);
+    assert.strictEqual(Number(frac[1]) + Number(unbound[1]), Number(frac[2]), `${f}: ${frac[0]} beside ${unbound[0]}`);
+  }
+});
+
+test('the nouns no binding could satisfy are named on their own line, not hidden in the fraction (kit#76)', () => {
+  const run = (c) => require('child_process').spawnSync('node', [pathx.join(__dirname, 'kit.js'), c], { encoding: 'utf8', maxBuffer: 1 << 26 }).stdout;
+  // snip-it: the form whose fields are bound instead — and only it.
+  assert.match(run('snip-it'), /not bindable\s+1\s+form:Upload\s/);
+  // kit.beh: Kit's CLI corpus, whose `runs command:X` steps no emitter writes.
+  assert.match(run('kit'), /not bindable\s+\d+\s+.*command:KitCheck/);
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 
