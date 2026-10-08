@@ -135,6 +135,12 @@ const auth = require('./auth.js');
 const bindingsOf = require('./bindings.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
+// The Kit checkout. A write's `file` is reported relative to it, '/'-separated —
+// the same convention as a project view's `corpus` (project.js) — rather than to
+// the process's working directory, which made the answer depend on where the
+// server happened to be started.
+const REPO_ROOT = path.join(__dirname, '..', '..');
+const repoRelative = (file) => path.relative(REPO_ROOT, file).split(path.sep).join('/');
 const DIST_DIR = path.join(__dirname, 'ui', 'dist');
 const DEFAULT_PORT = 4321;
 const DEFAULT_HOST = '127.0.0.1';
@@ -561,6 +567,32 @@ function route(method, pathname, opts = {}, body = null, origin = null, cookie =
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
 /**
+ * What each write expects in its body, by type. `string` is required; `string?`
+ * may also be null or absent; `strings?` is an array of strings, null or absent.
+ *
+ * The writer calls `String()` on what it is given, so before this a missing
+ * `title` wrote a behaviour titled "undefined", and a numeric step wrote the
+ * digits as a step line. A body field of the wrong type is a malformed request,
+ * and saying so here keeps JavaScript's stringification rules out of the corpus
+ * (and out of what the C# port would have had to reproduce, kit#119).
+ */
+const CREATE_FIELDS = { id: 'string', title: 'string', actor: 'string?', steps: 'strings?', source: 'string?', ref: 'string?' };
+const STEP_FIELDS = { step: 'string' };
+const REVIEW_FIELDS = { state: 'string', note: 'string?' };
+const BIND_FIELDS = { noun: 'string' };
+
+function bodyTypeError(body, spec) {
+  for (const [field, type] of Object.entries(spec)) {
+    const v = body[field];
+    const absent = v === undefined || v === null;
+    if (type === 'string' && typeof v !== 'string') return `${field} must be a string`;
+    if (type === 'string?' && !absent && typeof v !== 'string') return `${field} must be a string`;
+    if (type === 'strings?' && !absent && !(Array.isArray(v) && v.every((s) => typeof s === 'string'))) return `${field} must be a list of strings`;
+  }
+  return null;
+}
+
+/**
  * Rule 4's refusal body for a write from a page this server does not serve, or
  * null when the Origin is absent (a non-browser caller) or allowed. One function
  * because two places ask: `write()`, and `answer()` BEFORE the body is read —
@@ -685,8 +717,20 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
     return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
   }
 
+  // 🔴 Decoded inside a try. It was not, and `decodeURIComponent('%E0')` throws a
+  // URIError — inside the POST's 'end' handler, so one malformed id from a caller
+  // past the lock was an uncaught exception that killed the process (kit#119).
+  let id;
+  try {
+    id = m[2] ? decodeURIComponent(m[2]) : body.id;
+  } catch {
+    return json(400, { error: 'bad-request', reason: 'the behaviour id is not valid percent-encoding' });
+  }
+
+  const wrongType = bodyTypeError(body, m[3] === 'review' ? REVIEW_FIELDS : m[2] ? STEP_FIELDS : CREATE_FIELDS);
+  if (wrongType) return json(400, { error: 'bad-request', reason: wrongType });
+
   const text = fs.readFileSync(file, 'utf8');
-  const id = m[2] ? decodeURIComponent(m[2]) : body.id;
 
   let result;
   if (m[3] === 'review') {
@@ -721,7 +765,7 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
     ok: true,
     app,
     behaviour: id,
-    file: path.relative(process.cwd(), file),
+    file: repoRelative(file),
     ...gitOutcome(file, opts, what, app),
   });
 }
@@ -813,6 +857,9 @@ function postBinding(match, body, opts, json) {
   // always existed, so its absence could only mean a broken checkout; per corpus,
   // absence means "nothing bound yet" and this write is what creates it. The
   // check that protects against a bad request is the corpus lookup above.
+  const wrongType = bodyTypeError(body, BIND_FIELDS);
+  if (wrongType) return json(400, { error: 'bad-request', reason: wrongType });
+
   const file = bindingsOf.fileFor(app, dir);
   const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '{}';
 
@@ -830,7 +877,7 @@ function postBinding(match, body, opts, json) {
     ok: true,
     app,
     noun: result.noun,
-    file: path.relative(process.cwd(), file),
+    file: repoRelative(file),
     ...gitOutcome(file, opts, `bind ${result.noun}`, app),
     // 🔴 The naming fact, in the response rather than only in a log — and it is
     // a FACT rather than a warning since kit#66. It used to mean "your bind just
