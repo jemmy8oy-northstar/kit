@@ -459,6 +459,22 @@ function authRoutes(dir) {
         session('kit_session=tok-2'),
         { advance: 1 },
         session('kit_session=tok-2'),
+        // JSON.parse's semantics, which a port's parser must match: duplicate keys are
+        // last-wins, a BOM is not whitespace, trailing text is an error, and depth is
+        // not capped at a framework default.
+        post('/api/session', { body: '{"password":"wrong","password":"correct horse"}' }),
+        post('/api/session', { body: `${String.fromCharCode(0xfeff)}{"password":"correct horse"}` }),
+        post('/api/session', { body: '{"password":"correct horse"} x' }),
+        post('/api/session', { body: '{"password":123}' }),
+        post('/api/session', { body: '["correct horse"]' }),
+        post('/api/session', { body: `{"password":${'['.repeat(1000)}${']'.repeat(1000)}}` }),
+        // Cookie parsing: a value runs to the end (it may contain `=`), names and
+        // values are trimmed, and a later duplicate wins.
+        session('kit_session=tok-3='),
+        session(' kit_session = tok-3 '),
+        session('kit_session=tok-3; kit_session=tok-1'),
+        session('kit_session=tok-1; kit_session=tok-3'),
+        session('=tok-3; kit_session'),
         post('/api/session/end'),
       ],
     },
