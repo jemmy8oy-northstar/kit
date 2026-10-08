@@ -22,7 +22,7 @@ apps:
       repository: lhr.ocir.io/lr7uc6l49odc/kit
       # Patched by `docker-build-push.yml` on every push to main — GitOps, so
       # ArgoCD reads the new tag out of this file rather than watching OCIR.
-      tag: 0.1.0
+      tag: 0.1.5
       pullPolicy: Always
     containerPort: 8080
     replicas: 1
