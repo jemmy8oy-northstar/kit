@@ -23,7 +23,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
-const { unknownFlag, refuse } = require('./cli.js');
+const { unknownFlag, refuse, looksLikeAFlag } = require('./cli.js');
 
 // kit#67. The last two tools in this directory to take a flag they do not know
 // and run anyway — and the sharpest instance of it, because this one EDITS THE
@@ -47,10 +47,26 @@ const { unknownFlag, refuse } = require('./cli.js');
 // the key/value mixup untestable: `Object.values` still contained `--recover`, so
 // a guard built from the wrong half of the map refused nothing and the red control
 // for it came back green.
-const FLAGS = { '--recover': '' };
+const FLAGS = { '--recover': '', '--only': '<substring>' };
 const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
 if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
+
+// `--only` runs the mutants whose name or file contains the substring — the slice
+// a new rule needs, without the full ~2-hour run. It is `mutate-ui.js`'s flag with
+// the same two refusals. Until it existed here, proving a new mutant meant a
+// hand-rolled runner outside the repo, twice, and one of them could not see
+// SUBJECTS: a mutant on a file this list did not name looked killed locally and
+// was a survivor in CI.
+// Checked on argv alone, beside the guard, so the sandbox can prove it: a bare
+// `--only` would otherwise leave the filter empty and start the FULL run while
+// the operator believes they asked for a slice ([[empty-means-two-things]]).
+const onlyIdx = process.argv.indexOf('--only');
+const only = onlyIdx === -1 ? null : process.argv[onlyIdx + 1];
+if (onlyIdx !== -1 && (only === undefined || only === '' || looksLikeAFlag(only))) {
+  console.error('cannot look: --only needs a substring to match, e.g. `--only requires.js`');
+  process.exit(2);
+}
 
 // Recovery runs before anything reads the tree, so a run killed by an
 // uncatchable signal is undoable from either mutation tool.
@@ -878,9 +894,17 @@ MUTANTS.push(
     '../../start.js'],
 );
 
+// Filters a derived list only: SUBJECTS and restoreAll() still cover every file.
+// A filter matching nothing is a typo, not a clean pass — exit 2, never `0/0 killed`.
+const RUN = only ? MUTANTS.filter(([name, , , file = 'kit.js']) => name.includes(only) || file.includes(only)) : MUTANTS;
+if (!RUN.length) {
+  console.error(`cannot look: --only ${JSON.stringify(only)} matched no mutants`);
+  process.exit(2);
+}
+
 let killed = 0;
 const survived = [];
-for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
+for (const [name, from, to, file = 'kit.js'] of RUN) {
   const original = SUBJECTS[file];
   // An anchor that stopped matching is a SURVIVOR, not a skip: it means the
   // mutation silently stopped being applied and the rule stopped being measured.
@@ -892,6 +916,6 @@ for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
   if (fails > 0) { killed++; console.log(`  killed (${fails} failing)  ${name}`); }
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
-console.log(`\n${killed}/${MUTANTS.length} killed, ${survived.length} survived`);
+console.log(`\n${killed}/${RUN.length} killed, ${survived.length} survived${only ? ` (--only ${JSON.stringify(only)}: ${RUN.length} of ${MUTANTS.length})` : ''}`);
 if (run() !== 0) { console.error('HARNESS BROKEN: suite is not green after restore'); process.exit(2); }
 process.exit(survived.length ? 1 : 0);
