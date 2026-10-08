@@ -1444,11 +1444,19 @@ if (require.main === module) {
     if (!perApp.has(app)) perApp.set(app, []);
     perApp.get(app).push(b);
   }
+  // kit#76: the fraction is over BINDING TARGETS — the nouns a generatable step
+  // needs bound, which is requires.js's population and the one the unbound list
+  // below is drawn from. It used to be over every noun a step names, so it sat two
+  // lines above a list over a different population: `0/43` on kit.beh, where only
+  // 20 of the 43 are work a binding could ever do. The rest are named separately.
+  const { requirements } = require('./requires.js');
   let boundCount = 0;
-  const referenced = new Set();
+  const targets = new Set();
+  const notBindable = new Set();
   for (const [app, bs] of perApp) {
-    const r = boundNouns(bs, byApp[app] || {});
-    boundCount += r.bound;
+    const own = requirements(bs, byApp[app] || {}).nouns;
+    boundCount += own.filter((n) => n.bound).length;
+    const ownKeys = new Set(own.map((n) => n.noun));
     // `\0` as an ESCAPE, never a literal NUL byte in the source. The separator
     // itself is right — no app name or noun can contain a NUL, so the composite
     // key cannot collide — but typing the byte rather than the escape made this
@@ -1456,7 +1464,8 @@ if (require.main === module) {
     // it and prints NOTHING, so a search across the prototype directory silently
     // skipped kit.js, the largest source file here. An empty grep result meant
     // "suppressed", not "absent" ([[empty-means-two-things]]).
-    for (const n of r.referenced) referenced.add(`${app}\0${n}`);
+    for (const n of ownKeys) targets.add(`${app}\0${n}`);
+    for (const n of boundNouns(bs, {}).referenced) if (!ownKeys.has(n)) notBindable.add(n);
   }
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
   const unbound = new Set();
@@ -1510,7 +1519,8 @@ if (require.main === module) {
   // run over one corpus says so, rather than leaving the reader to infer it.
   console.log(`  read from             ${dir}   (${files.length === 1 ? '1 corpus' : `${files.length} corpora`}: ${files.join(', ')})`);
   console.log(`  behaviours            ${behaviours.length}`);
-  console.log(`  nouns bound           ${boundCount}/${referenced.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
+  console.log(`  nouns bound           ${boundCount}/${targets.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
+  console.log(`  not bindable          ${notBindable.size}   ${[...notBindable].join(', ') || '—'}${notBindable.size ? '   named by a step, but no step Kit generates binds them (a form binds its fields)' : ''}`);
   console.log(`  generated lines       ${totals.generated}`);
   console.log(`  wire contracts        ${totals.contract}   not expressible as a behaviour — something else must own these`);
   console.log(`  ungenerated           ${totals.ungenerated}   refused rather than guessed`);
