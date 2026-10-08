@@ -6897,6 +6897,63 @@ test('conformance: the host golden is compared, and is what a real socket delive
   assert.ok(compared >= 40, `only ${compared} host requests went over the wire — the gate is inert`);
 });
 
+test('conformance: the auth golden is compared, and every scenario replays over a real socket', async () => {
+  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  assert.ok(r.matched.includes(conformance.AUTH), `the auth golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // The far side of the seam: each scenario against a real `serve()` sharing the
+  // golden's fake clock and token minting, so the throttle and expiry steps mean
+  // the same thing on the wire as in the recording. Bodies are sent as raw bytes,
+  // and `tooLarge` as MAX_BODY + 1 of them.
+  const g = JSON.parse(fsx.readFileSync(conformance.authPath(GOLDEN_DIR), 'utf8'));
+  const NODE_OWN = new Set(['date', 'connection', 'keep-alive', 'content-length', 'transfer-encoding']);
+  const auth = require('./auth.js');
+  let sent = 0;
+  for (const s of g.scenarios) {
+    let t = 1_700_000_000_000;
+    let n = 0;
+    const now = () => t;
+    const opts = { dir: BEH_DIR, port: 0, host: s.config.host, sessions: auth.sessions(now, () => `tok-${++n}`), throttle: auth.throttle(now) };
+    if (s.config.password !== null) opts.password = s.config.password;
+    if (s.config.publicOrigin) opts.publicOrigin = s.config.publicOrigin;
+    opts.secure = !!(s.config.publicOrigin && /^https:/i.test(s.config.publicOrigin));
+    const server = await ui.serve(opts);
+    try {
+      const { port } = server.address();
+      for (const step of s.steps) {
+        if (step.advance !== undefined) { t += step.advance; continue; }
+        const label = `${s.name}: ${step.method} ${step.path} cookie=${step.cookie} body=${step.body}`;
+        const data = step.tooLarge ? Buffer.alloc(g.maxBody + 1, 0x20) : step.body === null ? null : Buffer.from(step.body, 'utf8');
+        const headers = {};
+        if (step.origin !== null) headers.origin = step.origin;
+        if (step.cookie !== null) headers.cookie = step.cookie;
+        if (data) headers['content-length'] = data.length;
+        const got = await new Promise((resolve, reject) => {
+          const rq = require('http').request({ host: '127.0.0.1', port, path: step.path, method: step.method, headers }, (res) => {
+            const chunks = [];
+            res.on('data', (c) => chunks.push(c));
+            res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text: Buffer.concat(chunks).toString('utf8') }));
+          });
+          rq.on('error', reject);
+          rq.end(data ?? undefined);
+        });
+        sent++;
+        assert.strictEqual(got.status, step.response.status, label);
+        const extra = Object.keys(got.headers).filter((h) => !NODE_OWN.has(h) && !(h in step.response.headers));
+        assert.deepStrictEqual(extra, [], `${label}: headers the golden does not record`);
+        // Node's client always hands `set-cookie` back as an array; the server sends one.
+        const one = (v) => (Array.isArray(v) && v.length === 1 ? v[0] : v);
+        for (const [h, v] of Object.entries(step.response.headers)) assert.strictEqual(one(got.headers[h]), v, `${label}: ${h}`);
+        assert.deepStrictEqual(JSON.parse(got.text), step.response.body, label);
+      }
+    } finally {
+      server.close();
+    }
+  }
+  const recorded = g.scenarios.flatMap((s) => s.steps).filter((st) => st.advance === undefined).length;
+  assert.ok(sent === recorded && sent >= 40, `${sent} of ${recorded} auth steps went over the wire — the gate is inert`);
+});
+
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
   // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
   // whitelist. Measured when this was written: recording resolve's behaviours in

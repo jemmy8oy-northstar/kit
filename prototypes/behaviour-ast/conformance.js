@@ -366,6 +366,130 @@ function hostRoutes(dir) {
   };
 }
 
+const AUTH = 'routes/auth';
+
+function authPath(goldenDir) {
+  return path.join(goldenDir, 'routes', 'auth.json');
+}
+
+/**
+ * The write GATES, as scenarios: sign-in, the throttle, session expiry, sign-out,
+ * the lock, the loopback rule, and the CSRF Origin check — each request through
+ * `answer()` and then `received()`, the two pure functions `serve()` calls. State
+ * lives across a scenario's steps, so each runs on a fake clock (`advance`) with
+ * tokens minted as `tok-1`, `tok-2`… so a golden can name them.
+ *
+ * Every write here is refused or fails BEFORE a file is touched (an unknown
+ * project, a body that is not an object): the gates are the subject, and the
+ * writer is a later oracle.
+ */
+function authRoutes(dir) {
+  const ui = require('./ui.js');
+  const auth = require('./auth.js');
+  const PUBLIC = 'https://balenthiran.co.uk';
+  const W = '/api/projects/snip-it/behaviours';
+  const req = (method, p, extra = {}) => ({ method, path: p, origin: null, cookie: null, body: '{}', ...extra });
+  const post = (p, extra) => req('POST', p, extra);
+  const signIn = (password, extra = {}) => post('/api/session', { body: JSON.stringify(password === undefined ? {} : { password }), ...extra });
+  const session = (cookie) => req('GET', '/api/session', { cookie, body: null });
+
+  const scenarios = [
+    {
+      name: 'local: no password, loopback',
+      config: { host: '127.0.0.1', password: null, publicOrigin: null },
+      steps: [
+        session(null),
+        signIn('anything'),
+        post('/api/projects/no-such-app/behaviours'),
+        post(W, { body: 'null' }),
+        post(W, { body: '"a string"' }),
+        post(W, { body: '{' }),
+        post(W, { body: '' }),
+        post(W, { tooLarge: true, body: null }),
+        post(W, { origin: 'https://evil.com', body: '{' }),
+        post(W, { origin: 'https://evil.com', tooLarge: true, body: null }),
+        post(W, { origin: 'http://localhost:5173', body: 'null' }),
+        post('/api/nope'),
+        post('/api/projects/%E0%A4%A/behaviours'),
+        post('/api/projects/no-such-app/behaviours/b1/steps'),
+        post('/api/projects/no-such-app/behaviours/b1/review'),
+      ],
+    },
+    {
+      name: 'bound wide: no password, not loopback',
+      config: { host: '0.0.0.0', password: null, publicOrigin: null },
+      steps: [session(null), post(W), signIn('anything')],
+    },
+    {
+      name: 'a whitespace password is no password',
+      config: { host: '0.0.0.0', password: ' \t ', publicOrigin: null },
+      steps: [session(null), post(W), signIn(' \t ')],
+    },
+    {
+      name: 'locked: sign-in, throttle, expiry, sign-out',
+      config: { host: '0.0.0.0', password: 'correct horse', publicOrigin: PUBLIC },
+      steps: [
+        session(null),
+        post(W),
+        post(W, { cookie: 'kit_session=forged' }),
+        ...Array.from({ length: 5 }, () => signIn('wrong')),
+        signIn('correct horse'),
+        { advance: auth.COOLDOWN_BASE_MS - 1 },
+        signIn('correct horse'),
+        { advance: 1 },
+        signIn('wrong'),
+        { advance: 2 * auth.COOLDOWN_BASE_MS },
+        signIn(undefined),
+        { advance: 4 * auth.COOLDOWN_BASE_MS },
+        signIn(' correct horse'),
+        { advance: 8 * auth.COOLDOWN_BASE_MS },
+        signIn('correct horse', { origin: 'https://evil.com' }),
+        signIn('correct horse', { origin: PUBLIC }),
+        session('kit_session=tok-1'),
+        session('a=b; kit_session=tok-1; c=d='),
+        session('kit_session=tok-1x'),
+        post(W, { cookie: 'kit_session=tok-1', body: 'null' }),
+        post('/api/projects/no-such-app/behaviours', { cookie: 'kit_session=tok-1' }),
+        post(W, { cookie: 'kit_session=tok-1', origin: 'https://evil.com', body: 'null' }),
+        post('/api/session/end', { cookie: 'kit_session=tok-1' }),
+        session('kit_session=tok-1'),
+        post(W, { cookie: 'kit_session=tok-1', body: 'null' }),
+        signIn('correct horse'),
+        { advance: auth.TTL_MS - 1 },
+        session('kit_session=tok-2'),
+        { advance: 1 },
+        session('kit_session=tok-2'),
+        post('/api/session/end'),
+      ],
+    },
+  ];
+
+  for (const s of scenarios) {
+    let t = 1_700_000_000_000;
+    let n = 0;
+    const now = () => t;
+    const opts = {
+      dir,
+      host: s.config.host,
+      sessions: auth.sessions(now, () => `tok-${++n}`),
+      throttle: auth.throttle(now),
+    };
+    if (s.config.password !== null) opts.password = s.config.password;
+    if (s.config.publicOrigin) opts.publicOrigin = s.config.publicOrigin;
+    // As `parseArgs` derives it: an https public origin sets the cookie's Secure flag.
+    opts.secure = !!(s.config.publicOrigin && /^https:/i.test(s.config.publicOrigin));
+
+    for (const step of s.steps) {
+      if (step.advance !== undefined) { t += step.advance; continue; }
+      let a = ui.answer(step.method, step.path, step.origin, step.cookie, opts, '');
+      if (a.post !== undefined) a = ui.received(a.post, step.tooLarge ? null : Buffer.from(step.body, 'utf8'), step.origin, step.cookie, opts);
+      const headers = Object.fromEntries(Object.entries(a.headers).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)));
+      step.response = { status: a.status, headers, body: JSON.parse(a.body) };
+    }
+  }
+  return { format: FORMAT, maxBody: ui.MAX_BODY, scenarios };
+}
+
 // The serialised form, which is what is actually compared. One definition, so
 // `--record` and `--check` cannot disagree about formatting — the failure mode
 // where a check is permanently red because the writer indents differently.
@@ -411,7 +535,7 @@ function compare(dir, goldenDir, only) {
   // and through the same three outcomes as a corpus, so nothing downstream needs
   // a fourth state to report them.
   if (!only) {
-    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))]]) {
+    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))]]) {
       if (!fs.existsSync(p)) { out.missing.push(name); continue; }
       const committed = fs.readFileSync(p, 'utf8');
       if (committed === fresh) out.matched.push(name);
@@ -448,7 +572,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -532,6 +656,8 @@ function main(argv) {
       written.push(ROUTES);
       fs.writeFileSync(hostPath(goldenDir), serialise(hostRoutes(dir)));
       written.push(HOST);
+      fs.writeFileSync(authPath(goldenDir), serialise(authRoutes(dir)));
+      written.push(AUTH);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;
