@@ -1,0 +1,337 @@
+{
+  "format": 2,
+  "scenarios": [
+    {
+      "name": "pushed",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {},
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": true,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "committed as <sha> and pushed to main."
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "kit: add a step to BEH-A (alpha)",
+        "author": "kit <kit@users.noreply.github.com>",
+        "files": [
+          "behaviours/alpha.beh"
+        ]
+      },
+      "headMoved": true
+    },
+    {
+      "name": "unchanged",
+      "path": "/api/projects/alpha/behaviours/BEH-A/review",
+      "body": {
+        "state": "unreviewed"
+      },
+      "git": {},
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "pushed": false,
+          "commit": null,
+          "branch": "main",
+          "note": "the file is unchanged, so there was nothing to commit"
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "initial",
+        "author": "fixture <fixture@example.com>",
+        "files": [
+          "behaviours/alpha.beh",
+          "behaviours/alpha.bindings.json"
+        ]
+      },
+      "headMoved": false
+    },
+    {
+      "name": "bind",
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "noun": "page:Home",
+        "binding": {
+          "route": "/"
+        }
+      },
+      "git": {},
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "noun": "page:Home",
+          "file": "<dir>/alpha.bindings.json",
+          "committed": true,
+          "pushed": true,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "committed as <sha> and pushed to main.",
+          "sharedWith": [],
+          "unreadableCorpora": []
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "kit: bind page:Home (alpha)",
+        "author": "kit <kit@users.noreply.github.com>",
+        "files": [
+          "behaviours/alpha.bindings.json"
+        ]
+      },
+      "headMoved": true
+    },
+    {
+      "name": "new-behaviour",
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-E",
+        "title": "New"
+      },
+      "git": {
+        "name": "Someone",
+        "email": "someone@example.com"
+      },
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-E",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": true,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "committed as <sha> and pushed to main."
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "kit: add BEH-E (alpha)",
+        "author": "Someone <someone@example.com>",
+        "files": [
+          "behaviours/alpha.beh"
+        ]
+      },
+      "headMoved": true
+    },
+    {
+      "name": "explicit-branch",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {
+        "branch": "kit-edits"
+      },
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": true,
+          "commit": "<sha>",
+          "branch": "kit-edits",
+          "note": "committed as <sha> and pushed to kit-edits."
+        }
+      },
+      "remote": {
+        "branch": "kit-edits",
+        "subject": "kit: add a step to BEH-A (alpha)",
+        "author": "kit <kit@users.noreply.github.com>",
+        "files": [
+          "behaviours/alpha.beh"
+        ]
+      },
+      "headMoved": true
+    },
+    {
+      "name": "no-such-remote",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {
+        "remote": "nope"
+      },
+      "setup": null,
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": false,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "git push exited 128: fatal: 'nope' does not appear to be a git repository",
+          "warning": "this edit is committed locally but did NOT reach nope: git push exited 128: fatal: 'nope' does not appear to be a git repository"
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "initial",
+        "author": "fixture <fixture@example.com>",
+        "files": [
+          "behaviours/alpha.beh",
+          "behaviours/alpha.bindings.json"
+        ]
+      },
+      "headMoved": true
+    },
+    {
+      "name": "remote-gone",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {},
+      "setup": "remote-gone",
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": false,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "git push exited 128: fatal: '<tmp>/bare.git' does not appear to be a git repository",
+          "warning": "this edit is committed locally but did NOT reach origin: git push exited 128: fatal: '<tmp>/bare.git' does not appear to be a git repository"
+        }
+      },
+      "remote": null,
+      "headMoved": true
+    },
+    {
+      "name": "detached",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {},
+      "setup": "detached",
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "pushed": false,
+          "commit": null,
+          "branch": null,
+          "note": "HEAD is detached, so there is no branch to push to; pass a branch explicitly"
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "initial",
+        "author": "fixture <fixture@example.com>",
+        "files": [
+          "behaviours/alpha.beh",
+          "behaviours/alpha.bindings.json"
+        ]
+      },
+      "headMoved": false
+    },
+    {
+      "name": "not-a-work-tree",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {},
+      "setup": "not-a-work-tree",
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "pushed": false,
+          "commit": null,
+          "branch": null,
+          "note": "git write-back is on but <tmp>/loose is not inside a git work tree"
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "initial",
+        "author": "fixture <fixture@example.com>",
+        "files": [
+          "behaviours/alpha.beh",
+          "behaviours/alpha.bindings.json"
+        ]
+      },
+      "headMoved": false
+    },
+    {
+      "name": "dirty-tree",
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "git": {},
+      "setup": "dirty-tree",
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": true,
+          "pushed": true,
+          "commit": "<sha>",
+          "branch": "main",
+          "note": "committed as <sha> and pushed to main."
+        }
+      },
+      "remote": {
+        "branch": "main",
+        "subject": "kit: add a step to BEH-A (alpha)",
+        "author": "kit <kit@users.noreply.github.com>",
+        "files": [
+          "behaviours/alpha.beh"
+        ]
+      },
+      "headMoved": true
+    }
+  ]
+}

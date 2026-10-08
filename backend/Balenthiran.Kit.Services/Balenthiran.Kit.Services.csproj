@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Balenthiran.Kit.DomainModels/Balenthiran.Kit.DomainModels.csproj" />
+    <ProjectReference Include="../Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />
+    <ProjectReference Include="../Balenthiran.Kit.Database/Balenthiran.Kit.Database.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <EnableDefaultResourceItems>false</EnableDefaultResourceItems>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

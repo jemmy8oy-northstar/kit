@@ -1,0 +1,1598 @@
+{
+  "format": 2,
+  "corpus": "macro-metrics",
+  "parse": [
+    {
+      "id": "BEH-MM-LOAD-1",
+      "title": "The homepage renders its three sections",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:39"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:PresetRatios",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "PresetRatios"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:40"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:CustomComparison",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "CustomComparison"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:41"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:MacroIndicators",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "MacroIndicators"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:42"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "all 9 preset ratio fetches fire in parallel",
+          "refs": [],
+          "holes": [],
+          "at": "macro-metrics.beh:43"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "all 3 indicator fetches fire in parallel",
+          "refs": [],
+          "holes": [],
+          "at": "macro-metrics.beh:44"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:36",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-1"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-NAV-1",
+      "title": "The sticky mini-nav offers the three section anchors",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:51"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees link:Presets",
+          "refs": [
+            {
+              "kind": "link",
+              "name": "Presets"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:52"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees link:Compare",
+          "refs": [
+            {
+              "kind": "link",
+              "name": "Compare"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:53"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees link:Indicators",
+          "refs": [
+            {
+              "kind": "link",
+              "name": "Indicators"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:54"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:48",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-1"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-0",
+      "title": "With nothing chosen, the compare section says what to do",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:61"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Compare \"Select two metrics above to see a custom comparison\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Compare"
+            },
+            {
+              "kind": "literal",
+              "name": "Select two metrics above to see a custom comparison"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:62"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:58",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-1",
+      "title": "Choosing only a numerator asks for the denominator",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:67"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates combobox:Numerator",
+          "refs": [
+            {
+              "kind": "combobox",
+              "name": "Numerator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:68"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates option:Gold",
+          "refs": [
+            {
+              "kind": "option",
+              "name": "Gold"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:69"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Compare \"Now select a denominator\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Compare"
+            },
+            {
+              "kind": "literal",
+              "name": "Now select a denominator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:70"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:64",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-2",
+      "title": "Choosing both metrics renders the comparison chart",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:75"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates combobox:Numerator",
+          "refs": [
+            {
+              "kind": "combobox",
+              "name": "Numerator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:76"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates option:Gold",
+          "refs": [
+            {
+              "kind": "option",
+              "name": "Gold"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:77"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates combobox:Denominator",
+          "refs": [
+            {
+              "kind": "combobox",
+              "name": "Denominator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:78"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates option:UsCpi",
+          "refs": [
+            {
+              "kind": "option",
+              "name": "UsCpi"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:79"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Compare \"Gold / US CPI\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Compare"
+            },
+            {
+              "kind": "literal",
+              "name": "Gold / US CPI"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:80"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "GET /api/metrics/ratio is fired with both metric ids",
+          "refs": [],
+          "holes": [],
+          "at": "macro-metrics.beh:81"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:72",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-SWAP-1",
+      "title": "The swap control is offered next to the two pickers",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:86"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees combobox:Numerator",
+          "refs": [
+            {
+              "kind": "combobox",
+              "name": "Numerator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:87"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees combobox:Denominator",
+          "refs": [
+            {
+              "kind": "combobox",
+              "name": "Denominator"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:88"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:Swap",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Swap"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:89"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:83",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-METRICS-1",
+      "title": "Eleven metrics are comparable",
+      "actor": "visitor",
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "combobox",
+          "name": "Numerator",
+          "slot": "options",
+          "value": [
+            "UK House Prices",
+            "US House Prices",
+            "UK Wages",
+            "US Wages",
+            "UK CPI",
+            "US CPI",
+            "Gold",
+            "Oil",
+            "FTSE 100",
+            "S&P 500",
+            "Bitcoin"
+          ],
+          "from": "BEH-MM-METRICS-1",
+          "at": "macro-metrics.beh:98"
+        }
+      ],
+      "serves": [],
+      "at": "macro-metrics.beh:95",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-4"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-ERR-1",
+      "title": "A failed comparison fetch says so and offers a retry",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "ratio:Errored",
+          "refs": [
+            {
+              "kind": "ratio",
+              "name": "Errored"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:105"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:106"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Compare \"Could not load data.\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Compare"
+            },
+            {
+              "kind": "literal",
+              "name": "Could not load data."
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:107"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:TryAgain",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "TryAgain"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:108"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the Try again button re-fires only that card's fetch",
+          "refs": [],
+          "holes": [],
+          "at": "macro-metrics.beh:109"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:102",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-5"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-IND-ERR-1",
+      "title": "A failed indicator card says it is unavailable",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "ratio:Errored",
+          "refs": [
+            {
+              "kind": "ratio",
+              "name": "Errored"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:116"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:117"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Indicators \"Unavailable\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Indicators"
+            },
+            {
+              "kind": "literal",
+              "name": "Unavailable"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:118"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:113",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-6"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MM-ISOLATION-1",
+      "title": "One card's error leaves the others readable",
+      "actor": "visitor",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "ratio:OneErrored",
+          "refs": [
+            {
+              "kind": "ratio",
+              "name": "OneErrored"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:126"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:MacroHome",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "MacroHome"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:127"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Presets \"Could not load data.\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Presets"
+            },
+            {
+              "kind": "literal",
+              "name": "Could not load data."
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:128"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows region:Indicators \"Unavailable\"",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Indicators"
+            },
+            {
+              "kind": "literal",
+              "name": "Unavailable"
+            }
+          ],
+          "holes": [],
+          "at": "macro-metrics.beh:129"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "every other card still renders its value",
+          "refs": [],
+          "holes": [],
+          "at": "macro-metrics.beh:130"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "macro-metrics.beh:123",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/user-stories-frontend.md#story-7"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "combobox:Numerator.options",
+        {
+          "value": [
+            "UK House Prices",
+            "US House Prices",
+            "UK Wages",
+            "US Wages",
+            "UK CPI",
+            "US CPI",
+            "Gold",
+            "Oil",
+            "FTSE 100",
+            "S&P 500",
+            "Bitcoin"
+          ],
+          "contributors": [
+            "BEH-MM-METRICS-1"
+          ],
+          "at": "macro-metrics.beh:98"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-MM-LOAD-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-NAV-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-PICK-0",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-PICK-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-PICK-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-SWAP-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-METRICS-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-ERR-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-IND-ERR-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MM-ISOLATION-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-MM-LOAD-1",
+      "code": "test(\"[BEH-MM-LOAD-1] The homepage renders its three sections\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.getByRole(\"heading\", { name: \"Preset Ratios\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Custom Comparison\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Macro Indicators\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): all 9 preset ratio fetches fire in parallel\n  // CONTRACT (not derivable from a behaviour): all 3 indicator fetches fire in parallel\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 2,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-NAV-1",
+      "code": "test(\"[BEH-MM-NAV-1] The sticky mini-nav offers the three section anchors\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Presets\" });\n  // UNGENERATED: then sees link:Presets\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Compare\" });\n  // UNGENERATED: then sees link:Compare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Indicators\" });\n  // UNGENERATED: then sees link:Indicators\n});",
+      "missing": [
+        "link:Presets",
+        "link:Compare",
+        "link:Indicators"
+      ],
+      "stats": {
+        "generated": 1,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-0",
+      "code": "test(\"[BEH-MM-PICK-0] With nothing chosen, the compare section says what to do\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#compare')).toContainText(\"Select two metrics above to see a custom comparison\");\n});",
+      "missing": [],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-1",
+      "code": "test(\"[BEH-MM-PICK-1] Choosing only a numerator asks for the denominator\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await page.getByRole(\"combobox\", { name: \"Numerator\" }).click();\n  await page.getByRole(\"option\", { name: \"Gold\", exact: true }).click();\n  await expect(page.locator('#compare')).toContainText(\"Now select a denominator\");\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-PICK-2",
+      "code": "test(\"[BEH-MM-PICK-2] Choosing both metrics renders the comparison chart\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await page.getByRole(\"combobox\", { name: \"Numerator\" }).click();\n  await page.getByRole(\"option\", { name: \"Gold\", exact: true }).click();\n  await page.getByRole(\"combobox\", { name: \"Denominator\" }).click();\n  await page.getByRole(\"option\", { name: \"US CPI\" }).click();\n  await expect(page.locator('#compare')).toContainText(\"Gold / US CPI\");\n  // CONTRACT (not derivable from a behaviour): GET /api/metrics/ratio is fired with both metric ids\n});",
+      "missing": [],
+      "stats": {
+        "generated": 6,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-SWAP-1",
+      "code": "test(\"[BEH-MM-SWAP-1] The swap control is offered next to the two pickers\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.getByRole(\"combobox\", { name: \"Numerator\" })).toBeVisible();\n  await expect(page.getByRole(\"combobox\", { name: \"Denominator\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Swap\" })).toBeVisible();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-METRICS-1",
+      "code": "test(\"[BEH-MM-METRICS-1] Eleven metrics are comparable\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-MM-ERR-1",
+      "code": "test(\"[BEH-MM-ERR-1] A failed comparison fetch says so and offers a retry\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:Errored\" });\n  // UNGENERATED: given ratio:Errored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#compare')).toContainText(\"Could not load data.\");\n  await expect(page.getByRole(\"button\", { name: \"Try again\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the Try again button re-fires only that card's fetch\n});",
+      "missing": [
+        "ratio:Errored"
+      ],
+      "stats": {
+        "generated": 3,
+        "contract": 1,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-MM-IND-ERR-1",
+      "code": "test(\"[BEH-MM-IND-ERR-1] A failed indicator card says it is unavailable\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:Errored\" });\n  // UNGENERATED: given ratio:Errored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#indicators')).toContainText(\"Unavailable\");\n});",
+      "missing": [
+        "ratio:Errored"
+      ],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-MM-ISOLATION-1",
+      "code": "test(\"[BEH-MM-ISOLATION-1] One card's error leaves the others readable\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:OneErrored\" });\n  // UNGENERATED: given ratio:OneErrored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#presets')).toContainText(\"Could not load data.\");\n  await expect(page.locator('#indicators')).toContainText(\"Unavailable\");\n  // CONTRACT (not derivable from a behaviour): every other card still renders its value\n});",
+      "missing": [
+        "ratio:OneErrored"
+      ],
+      "stats": {
+        "generated": 3,
+        "contract": 1,
+        "ungenerated": 1
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 10,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:Swap",
+          "kind": "button",
+          "name": "Swap",
+          "usedBy": [
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:TryAgain",
+          "kind": "button",
+          "name": "TryAgain",
+          "usedBy": [
+            "BEH-MM-ERR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "combobox:Denominator",
+          "kind": "combobox",
+          "name": "Denominator",
+          "usedBy": [
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "combobox:Numerator",
+          "kind": "combobox",
+          "name": "Numerator",
+          "usedBy": [
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:CustomComparison",
+          "kind": "heading",
+          "name": "CustomComparison",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:MacroIndicators",
+          "kind": "heading",
+          "name": "MacroIndicators",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:PresetRatios",
+          "kind": "heading",
+          "name": "PresetRatios",
+          "usedBy": [
+            "BEH-MM-LOAD-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "link:Compare",
+          "kind": "link",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Indicators",
+          "kind": "link",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Presets",
+          "kind": "link",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "option:Gold",
+          "kind": "option",
+          "name": "Gold",
+          "usedBy": [
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "option:UsCpi",
+          "kind": "option",
+          "name": "UsCpi",
+          "usedBy": [
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:MacroHome",
+          "kind": "page",
+          "name": "MacroHome",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1",
+            "BEH-MM-ISOLATION-1",
+            "BEH-MM-LOAD-1",
+            "BEH-MM-NAV-1",
+            "BEH-MM-PICK-0",
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2",
+            "BEH-MM-SWAP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "ratio:Errored",
+          "kind": "ratio",
+          "name": "Errored",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:OneErrored",
+          "kind": "ratio",
+          "name": "OneErrored",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Compare",
+          "kind": "region",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-PICK-0",
+            "BEH-MM-PICK-1",
+            "BEH-MM-PICK-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:Indicators",
+          "kind": "region",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-IND-ERR-1",
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:Presets",
+          "kind": "region",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": true
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "link:Compare",
+          "kind": "link",
+          "name": "Compare",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Indicators",
+          "kind": "link",
+          "name": "Indicators",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:Presets",
+          "kind": "link",
+          "name": "Presets",
+          "usedBy": [
+            "BEH-MM-NAV-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:Errored",
+          "kind": "ratio",
+          "name": "Errored",
+          "usedBy": [
+            "BEH-MM-ERR-1",
+            "BEH-MM-IND-ERR-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "ratio:OneErrored",
+          "kind": "ratio",
+          "name": "OneErrored",
+          "usedBy": [
+            "BEH-MM-ISOLATION-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": [
+        "button:Swap",
+        "button:TryAgain",
+        "combobox:Denominator",
+        "combobox:Numerator",
+        "heading:CustomComparison",
+        "heading:MacroIndicators",
+        "heading:PresetRatios",
+        "option:Gold",
+        "option:UsCpi",
+        "page:MacroHome",
+        "region:Compare",
+        "region:Indicators",
+        "region:Presets"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+﻿# kit:not-a-real-app
+# A fixture for the writer oracle (kit#119) that starts with a byte-order mark,
+# which an edit must keep.
+
+behaviour BEH-Y "Starts after a BOM"
+  source defined
+  when opens page:Delta

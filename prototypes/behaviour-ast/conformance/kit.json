@@ -1,0 +1,2947 @@
+{
+  "format": 2,
+  "corpus": "kit",
+  "parse": [
+    {
+      "id": "BEH-GATE-1",
+      "title": "A behaviour with no test naming it fails the build",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:SnipIt",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "SnipIt"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:45"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCheck",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCheck"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:46"
+        },
+        {
+          "kind": "then",
+          "verb": "exits",
+          "text": "exits status:One",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "One"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:47"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "this is stage 0's stated deliverable in docs/timeline.md",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:48"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:43",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GATE-2",
+      "title": "Could-not-look is never reported as green",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "repo:WithNoTests",
+          "refs": [
+            {
+              "kind": "repo",
+              "name": "WithNoTests"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:52"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCheck",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCheck"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:53"
+        },
+        {
+          "kind": "then",
+          "verb": "exits",
+          "text": "exits status:Two",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "Two"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:54"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:55"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "exits 0 is indistinguishable in CI from a passing one",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:56"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:50",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GATE-3",
+      "title": "A mapping naming a test that no longer exists is a hard failure",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "mapping:Stale",
+          "refs": [
+            {
+              "kind": "mapping",
+              "name": "Stale"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:60"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCheck",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCheck"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:61"
+        },
+        {
+          "kind": "then",
+          "verb": "exits",
+          "text": "exits status:One",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "One"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:62"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "this checkability is the whole argument for option C over markers",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:63"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:58",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-READ-1",
+      "title": "The reader refuses when its two counts disagree",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "file:CountsDisagree",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "CountsDisagree"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:67"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCheck",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCheck"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:68"
+        },
+        {
+          "kind": "then",
+          "verb": "exits",
+          "text": "exits status:Two",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "Two"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:69"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the two counts must be different MECHANISMS — position versus lexical",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:70"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "structure — or agreement between them proves nothing",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:71"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:65",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GEN-1",
+      "title": "An unbound noun is refused, and the missing noun is named",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:UnboundNoun",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "UnboundNoun"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:75"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitGenerate",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitGenerate"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:76"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports marker:Ungenerated",
+          "refs": [
+            {
+              "kind": "marker",
+              "name": "Ungenerated"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:77"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "no locator is ever guessed from the noun's own name",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:78"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:73",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GEN-2",
+      "title": "An unsupplied route param is refused rather than truncated",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:RouteParam",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "RouteParam"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:82"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitGenerate",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitGenerate"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:83"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports marker:Ungenerated",
+          "refs": [
+            {
+              "kind": "marker",
+              "name": "Ungenerated"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:84"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "emitting ./editor/ would navigate to the wrong page and look correct",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:85"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:80",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-PARSE-1",
+      "title": "An unrecognised keyword is an error, not silently dropped",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:BadKeyword",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "BadKeyword"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:89"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitParse",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitParse"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:90"
+        },
+        {
+          "kind": "then",
+          "verb": "raises",
+          "text": "raises error:UnrecognisedKeyword",
+          "refs": [
+            {
+              "kind": "error",
+              "name": "UnrecognisedKeyword"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:91"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a spec language that ignores what it does not understand is how a",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:92"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "spec becomes descriptive",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:93"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:87",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-RESOLVE-1",
+      "title": "A hole in one behaviour is filled by a different behaviour",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:CrossBehaviourHole",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "CrossBehaviourHole"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:97"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitResolve",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitResolve"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:98"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports slot:Filled",
+          "refs": [
+            {
+              "kind": "slot",
+              "name": "Filled"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:99"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "this is the part no BDD tool has, and it needs ONE symbol table",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:100"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:95",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-RESOLVE-2",
+      "title": "Two behaviours disagreeing is a conflict, with both sides named",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:Disagreement",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "Disagreement"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:104"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitResolve",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitResolve"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:105"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports conflict:BothSides",
+          "refs": [
+            {
+              "kind": "conflict",
+              "name": "BothSides"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:106"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:102",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ADJ-1",
+      "title": "An inference is included by default and marked unreviewed",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:Inference",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "Inference"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:110"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitResolve",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitResolve"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:111"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports review:Unreviewed",
+          "refs": [
+            {
+              "kind": "review",
+              "name": "Unreviewed"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:112"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "James's call on claude-code-bot#68 — default-include, marked",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:113"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:108",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-UI-1",
+      "title": "A verb the server has no meaning for reaches no handler",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "request:Unsupported",
+          "refs": [
+            {
+              "kind": "request",
+              "name": "Unsupported"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:123"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:124"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports status:MethodNotAllowed",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "MethodNotAllowed"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:125"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "decision 2 landed on 2026-09-08, so POST now has a handler and this",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:126"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:127"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "one meaning each that nobody has decided, and a route accepting a verb it",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:128"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "cannot serve is a 405 waiting to be discovered as a 500",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:129"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:121",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-UI-2",
+      "title": "The server binds the loopback interface, not every interface",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "option:Default",
+          "refs": [
+            {
+              "kind": "option",
+              "name": "Default"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:133"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:134"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports host:Loopback",
+          "refs": [
+            {
+              "kind": "host",
+              "name": "Loopback"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:135"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "0.0.0.0 would publish every corpus in the working tree, and the absolute",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:136"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "path of every repo beside it, to anything that can reach the host",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:137"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:131",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-UI-3",
+      "title": "A traversal in an app name is refused rather than resolved to a path",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "request:Traversal",
+          "refs": [
+            {
+              "kind": "request",
+              "name": "Traversal"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:141"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:142"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports status:NotFound",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "NotFound"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:143"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the name is looked UP in the set of corpora that exist; it is never",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:144"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "joined to a path, so there is nothing to traverse with",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:145"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:139",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-UI-4",
+      "title": "Coverage that could not be read is null in the list, never zero",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "repo:Absent",
+          "refs": [
+            {
+              "kind": "repo",
+              "name": "Absent"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:149"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:150"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports coverage:Unavailable",
+          "refs": [
+            {
+              "kind": "coverage",
+              "name": "Unavailable"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:151"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "project.js's rule, carried through the transport — a UI that cannot tell",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:152"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "\"no mapping exists\" from \"nothing is covered\" renders the second",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:153"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:147",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-1",
+      "title": "An edit splices one block, so every comment in the corpus survives",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "corpus:WithComments",
+          "refs": [
+            {
+              "kind": "corpus",
+              "name": "WithComments"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:164"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitWrite",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitWrite"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:165"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports comment:Preserved",
+          "refs": [
+            {
+              "kind": "comment",
+              "name": "Preserved"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:166"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a round-trip through parse() would delete every comment in the file, and",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:167"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "snip-it.beh's nine opening lines are the caveat everything else rests on",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:168"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:161",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-2",
+      "title": "An edit that would not parse never reaches the disk",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "step:Malformed",
+          "refs": [
+            {
+              "kind": "step",
+              "name": "Malformed"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:173"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitWrite",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitWrite"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:174"
+        },
+        {
+          "kind": "then",
+          "verb": "raises",
+          "text": "raises error:WouldNotParse",
+          "refs": [
+            {
+              "kind": "error",
+              "name": "WouldNotParse"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:175"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the corpus is the source of truth for everything else Kit says, so a",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:176"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "writer that can corrupt it is worse than one that cannot write at all",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:177"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:170",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-3",
+      "title": "An edit that would change a neighbouring behaviour is refused",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "splice:OffByOne",
+          "refs": [
+            {
+              "kind": "splice",
+              "name": "OffByOne"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:182"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitWrite",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitWrite"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:183"
+        },
+        {
+          "kind": "then",
+          "verb": "raises",
+          "text": "raises error:CollateralChange",
+          "refs": [
+            {
+              "kind": "error",
+              "name": "CollateralChange"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:184"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a step landing in the next behaviour parses perfectly and is silently",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:185"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "wrong — the worst failure a writer can have",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:186"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:179",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-4",
+      "title": "The writer never touches git, and the file proves it rather than promising it",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "decision:LapsedDefault",
+          "refs": [
+            {
+              "kind": "decision",
+              "name": "LapsedDefault"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:191"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitWrite",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitWrite"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:192"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports commit:None",
+          "refs": [
+            {
+              "kind": "commit",
+              "name": "None"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:193"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a bot that commits to a spec repo cannot be un-added after the first",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:194"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "surprise, so the absence of child_process is asserted from source",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:195"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:188",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-5",
+      "title": "A write route is unreachable unless the server is bound to loopback",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "host:Routable",
+          "refs": [
+            {
+              "kind": "host",
+              "name": "Routable"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:200"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:201"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports status:Forbidden",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "Forbidden"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:202"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "decision 1 said local tool; combining reachable-from-the-network with",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:203"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "edits-files-in-the-working-tree is an unauthenticated remote write, and",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:204"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "it would arrive as a --host flag rather than as a decision of his",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:205"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:197",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-WRITE-6",
+      "title": "A hostile page gets no CORS header, so it cannot write through the browser",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "origin:Hostile",
+          "refs": [
+            {
+              "kind": "origin",
+              "name": "Hostile"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:210"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitUi",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitUi"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:211"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports header:Absent",
+          "refs": [
+            {
+              "kind": "header",
+              "name": "Absent"
+            }
+          ],
+          "holes": [],
+          "at": "kit.beh:212"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "access-control-allow-origin: * was defensible while the server could",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:213"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "not write; with a write route it means any page the developer has open",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:214"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "can edit their working tree",
+          "refs": [],
+          "holes": [],
+          "at": "kit.beh:215"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit.beh:207",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-GATE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GATE-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GATE-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-READ-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GEN-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GEN-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-PARSE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-RESOLVE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-RESOLVE-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ADJ-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-UI-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-UI-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-UI-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-UI-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-5",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-WRITE-6",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-GATE-1",
+      "code": "test(\"[BEH-GATE-1] A behaviour with no test naming it fails the build\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:SnipIt\" });\n  // UNGENERATED: given corpus:SnipIt\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this is stage 0's stated deliverable in docs/timeline.md\n});",
+      "missing": [
+        "corpus:SnipIt"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GATE-2",
+      "code": "test(\"[BEH-GATE-2] Could-not-look is never reported as green\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:WithNoTests\" });\n  // UNGENERATED: given repo:WithNoTests\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\n  // CONTRACT (not derivable from a behaviour): exits 0 is indistinguishable in CI from a passing one\n});",
+      "missing": [
+        "repo:WithNoTests"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GATE-3",
+      "code": "test(\"[BEH-GATE-3] A mapping naming a test that no longer exists is a hard failure\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given mapping:Stale\" });\n  // UNGENERATED: given mapping:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this checkability is the whole argument for option C over markers\n});",
+      "missing": [
+        "mapping:Stale"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-READ-1",
+      "code": "test(\"[BEH-READ-1] The reader refuses when its two counts disagree\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given file:CountsDisagree\" });\n  // UNGENERATED: given file:CountsDisagree\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): the two counts must be different MECHANISMS — position versus lexical\n  // CONTRACT (not derivable from a behaviour): structure — or agreement between them proves nothing\n});",
+      "missing": [
+        "file:CountsDisagree"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GEN-1",
+      "code": "test(\"[BEH-GEN-1] An unbound noun is refused, and the missing noun is named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:UnboundNoun\" });\n  // UNGENERATED: given corpus:UnboundNoun\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): no locator is ever guessed from the noun's own name\n});",
+      "missing": [
+        "corpus:UnboundNoun"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GEN-2",
+      "code": "test(\"[BEH-GEN-2] An unsupplied route param is refused rather than truncated\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:RouteParam\" });\n  // UNGENERATED: given corpus:RouteParam\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): emitting ./editor/ would navigate to the wrong page and look correct\n});",
+      "missing": [
+        "corpus:RouteParam"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-PARSE-1",
+      "code": "test(\"[BEH-PARSE-1] An unrecognised keyword is an error, not silently dropped\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:BadKeyword\" });\n  // UNGENERATED: given corpus:BadKeyword\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitParse\" });\n  // UNGENERATED: when runs command:KitParse\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:UnrecognisedKeyword\" });\n  // UNGENERATED: then raises error:UnrecognisedKeyword\n  // CONTRACT (not derivable from a behaviour): a spec language that ignores what it does not understand is how a\n  // CONTRACT (not derivable from a behaviour): spec becomes descriptive\n});",
+      "missing": [
+        "corpus:BadKeyword"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-RESOLVE-1",
+      "code": "test(\"[BEH-RESOLVE-1] A hole in one behaviour is filled by a different behaviour\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:CrossBehaviourHole\" });\n  // UNGENERATED: given corpus:CrossBehaviourHole\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports slot:Filled\" });\n  // UNGENERATED: then reports slot:Filled\n  // CONTRACT (not derivable from a behaviour): this is the part no BDD tool has, and it needs ONE symbol table\n});",
+      "missing": [
+        "corpus:CrossBehaviourHole"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-RESOLVE-2",
+      "code": "test(\"[BEH-RESOLVE-2] Two behaviours disagreeing is a conflict, with both sides named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Disagreement\" });\n  // UNGENERATED: given corpus:Disagreement\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports conflict:BothSides\" });\n  // UNGENERATED: then reports conflict:BothSides\n});",
+      "missing": [
+        "corpus:Disagreement"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-ADJ-1",
+      "code": "test(\"[BEH-ADJ-1] An inference is included by default and marked unreviewed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Inference\" });\n  // UNGENERATED: given corpus:Inference\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports review:Unreviewed\" });\n  // UNGENERATED: then reports review:Unreviewed\n  // CONTRACT (not derivable from a behaviour): James's call on claude-code-bot#68 — default-include, marked\n});",
+      "missing": [
+        "corpus:Inference"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-UI-1",
+      "code": "test(\"[BEH-UI-1] A verb the server has no meaning for reaches no handler\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Unsupported\" });\n  // UNGENERATED: given request:Unsupported\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:MethodNotAllowed\" });\n  // UNGENERATED: then reports status:MethodNotAllowed\n  // CONTRACT (not derivable from a behaviour): decision 2 landed on 2026-09-08, so POST now has a handler and this\n  // CONTRACT (not derivable from a behaviour): behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\n  // CONTRACT (not derivable from a behaviour): one meaning each that nobody has decided, and a route accepting a verb it\n  // CONTRACT (not derivable from a behaviour): cannot serve is a 405 waiting to be discovered as a 500\n});",
+      "missing": [
+        "request:Unsupported"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 4,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-UI-2",
+      "code": "test(\"[BEH-UI-2] The server binds the loopback interface, not every interface\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given option:Default\" });\n  // UNGENERATED: given option:Default\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports host:Loopback\" });\n  // UNGENERATED: then reports host:Loopback\n  // CONTRACT (not derivable from a behaviour): 0.0.0.0 would publish every corpus in the working tree, and the absolute\n  // CONTRACT (not derivable from a behaviour): path of every repo beside it, to anything that can reach the host\n});",
+      "missing": [
+        "option:Default"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-UI-3",
+      "code": "test(\"[BEH-UI-3] A traversal in an app name is refused rather than resolved to a path\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Traversal\" });\n  // UNGENERATED: given request:Traversal\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:NotFound\" });\n  // UNGENERATED: then reports status:NotFound\n  // CONTRACT (not derivable from a behaviour): the name is looked UP in the set of corpora that exist; it is never\n  // CONTRACT (not derivable from a behaviour): joined to a path, so there is nothing to traverse with\n});",
+      "missing": [
+        "request:Traversal"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-UI-4",
+      "code": "test(\"[BEH-UI-4] Coverage that could not be read is null in the list, never zero\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:Absent\" });\n  // UNGENERATED: given repo:Absent\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports coverage:Unavailable\" });\n  // UNGENERATED: then reports coverage:Unavailable\n  // CONTRACT (not derivable from a behaviour): project.js's rule, carried through the transport — a UI that cannot tell\n  // CONTRACT (not derivable from a behaviour): \"no mapping exists\" from \"nothing is covered\" renders the second\n});",
+      "missing": [
+        "repo:Absent"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-1",
+      "code": "test(\"[BEH-WRITE-1] An edit splices one block, so every comment in the corpus survives\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:WithComments\" });\n  // UNGENERATED: given corpus:WithComments\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports comment:Preserved\" });\n  // UNGENERATED: then reports comment:Preserved\n  // CONTRACT (not derivable from a behaviour): a round-trip through parse() would delete every comment in the file, and\n  // CONTRACT (not derivable from a behaviour): snip-it.beh's nine opening lines are the caveat everything else rests on\n});",
+      "missing": [
+        "corpus:WithComments"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-2",
+      "code": "test(\"[BEH-WRITE-2] An edit that would not parse never reaches the disk\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given step:Malformed\" });\n  // UNGENERATED: given step:Malformed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:WouldNotParse\" });\n  // UNGENERATED: then raises error:WouldNotParse\n  // CONTRACT (not derivable from a behaviour): the corpus is the source of truth for everything else Kit says, so a\n  // CONTRACT (not derivable from a behaviour): writer that can corrupt it is worse than one that cannot write at all\n});",
+      "missing": [
+        "step:Malformed"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-3",
+      "code": "test(\"[BEH-WRITE-3] An edit that would change a neighbouring behaviour is refused\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given splice:OffByOne\" });\n  // UNGENERATED: given splice:OffByOne\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:CollateralChange\" });\n  // UNGENERATED: then raises error:CollateralChange\n  // CONTRACT (not derivable from a behaviour): a step landing in the next behaviour parses perfectly and is silently\n  // CONTRACT (not derivable from a behaviour): wrong — the worst failure a writer can have\n});",
+      "missing": [
+        "splice:OffByOne"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-4",
+      "code": "test(\"[BEH-WRITE-4] The writer never touches git, and the file proves it rather than promising it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given decision:LapsedDefault\" });\n  // UNGENERATED: given decision:LapsedDefault\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports commit:None\" });\n  // UNGENERATED: then reports commit:None\n  // CONTRACT (not derivable from a behaviour): a bot that commits to a spec repo cannot be un-added after the first\n  // CONTRACT (not derivable from a behaviour): surprise, so the absence of child_process is asserted from source\n});",
+      "missing": [
+        "decision:LapsedDefault"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 2,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-5",
+      "code": "test(\"[BEH-WRITE-5] A write route is unreachable unless the server is bound to loopback\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given host:Routable\" });\n  // UNGENERATED: given host:Routable\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Forbidden\" });\n  // UNGENERATED: then reports status:Forbidden\n  // CONTRACT (not derivable from a behaviour): decision 1 said local tool; combining reachable-from-the-network with\n  // CONTRACT (not derivable from a behaviour): edits-files-in-the-working-tree is an unauthenticated remote write, and\n  // CONTRACT (not derivable from a behaviour): it would arrive as a --host flag rather than as a decision of his\n});",
+      "missing": [
+        "host:Routable"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-WRITE-6",
+      "code": "test(\"[BEH-WRITE-6] A hostile page gets no CORS header, so it cannot write through the browser\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given origin:Hostile\" });\n  // UNGENERATED: given origin:Hostile\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports header:Absent\" });\n  // UNGENERATED: then reports header:Absent\n  // CONTRACT (not derivable from a behaviour): access-control-allow-origin: * was defensible while the server could\n  // CONTRACT (not derivable from a behaviour): not write; with a write route it means any page the developer has open\n  // CONTRACT (not derivable from a behaviour): can edit their working tree\n});",
+      "missing": [
+        "origin:Hostile"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 3
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 20,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-GATE-1",
+        "BEH-GATE-2",
+        "BEH-GATE-3",
+        "BEH-READ-1",
+        "BEH-GEN-1",
+        "BEH-GEN-2",
+        "BEH-PARSE-1",
+        "BEH-RESOLVE-1",
+        "BEH-RESOLVE-2",
+        "BEH-ADJ-1",
+        "BEH-UI-1",
+        "BEH-UI-2",
+        "BEH-UI-3",
+        "BEH-UI-4",
+        "BEH-WRITE-1",
+        "BEH-WRITE-2",
+        "BEH-WRITE-3",
+        "BEH-WRITE-4",
+        "BEH-WRITE-5",
+        "BEH-WRITE-6"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "corpus:BadKeyword",
+          "kind": "corpus",
+          "name": "BadKeyword",
+          "usedBy": [
+            "BEH-PARSE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:CrossBehaviourHole",
+          "kind": "corpus",
+          "name": "CrossBehaviourHole",
+          "usedBy": [
+            "BEH-RESOLVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:Disagreement",
+          "kind": "corpus",
+          "name": "Disagreement",
+          "usedBy": [
+            "BEH-RESOLVE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:Inference",
+          "kind": "corpus",
+          "name": "Inference",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:RouteParam",
+          "kind": "corpus",
+          "name": "RouteParam",
+          "usedBy": [
+            "BEH-GEN-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:SnipIt",
+          "kind": "corpus",
+          "name": "SnipIt",
+          "usedBy": [
+            "BEH-GATE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:UnboundNoun",
+          "kind": "corpus",
+          "name": "UnboundNoun",
+          "usedBy": [
+            "BEH-GEN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:WithComments",
+          "kind": "corpus",
+          "name": "WithComments",
+          "usedBy": [
+            "BEH-WRITE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "decision:LapsedDefault",
+          "kind": "decision",
+          "name": "LapsedDefault",
+          "usedBy": [
+            "BEH-WRITE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "file:CountsDisagree",
+          "kind": "file",
+          "name": "CountsDisagree",
+          "usedBy": [
+            "BEH-READ-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "host:Routable",
+          "kind": "host",
+          "name": "Routable",
+          "usedBy": [
+            "BEH-WRITE-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "mapping:Stale",
+          "kind": "mapping",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-GATE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "option:Default",
+          "kind": "option",
+          "name": "Default",
+          "usedBy": [
+            "BEH-UI-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "origin:Hostile",
+          "kind": "origin",
+          "name": "Hostile",
+          "usedBy": [
+            "BEH-WRITE-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Absent",
+          "kind": "repo",
+          "name": "Absent",
+          "usedBy": [
+            "BEH-UI-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:WithNoTests",
+          "kind": "repo",
+          "name": "WithNoTests",
+          "usedBy": [
+            "BEH-GATE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Traversal",
+          "kind": "request",
+          "name": "Traversal",
+          "usedBy": [
+            "BEH-UI-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unsupported",
+          "kind": "request",
+          "name": "Unsupported",
+          "usedBy": [
+            "BEH-UI-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "splice:OffByOne",
+          "kind": "splice",
+          "name": "OffByOne",
+          "usedBy": [
+            "BEH-WRITE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "step:Malformed",
+          "kind": "step",
+          "name": "Malformed",
+          "usedBy": [
+            "BEH-WRITE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "corpus:BadKeyword",
+          "kind": "corpus",
+          "name": "BadKeyword",
+          "usedBy": [
+            "BEH-PARSE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:CrossBehaviourHole",
+          "kind": "corpus",
+          "name": "CrossBehaviourHole",
+          "usedBy": [
+            "BEH-RESOLVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:Disagreement",
+          "kind": "corpus",
+          "name": "Disagreement",
+          "usedBy": [
+            "BEH-RESOLVE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:Inference",
+          "kind": "corpus",
+          "name": "Inference",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:RouteParam",
+          "kind": "corpus",
+          "name": "RouteParam",
+          "usedBy": [
+            "BEH-GEN-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:SnipIt",
+          "kind": "corpus",
+          "name": "SnipIt",
+          "usedBy": [
+            "BEH-GATE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:UnboundNoun",
+          "kind": "corpus",
+          "name": "UnboundNoun",
+          "usedBy": [
+            "BEH-GEN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "corpus:WithComments",
+          "kind": "corpus",
+          "name": "WithComments",
+          "usedBy": [
+            "BEH-WRITE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "decision:LapsedDefault",
+          "kind": "decision",
+          "name": "LapsedDefault",
+          "usedBy": [
+            "BEH-WRITE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "file:CountsDisagree",
+          "kind": "file",
+          "name": "CountsDisagree",
+          "usedBy": [
+            "BEH-READ-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "host:Routable",
+          "kind": "host",
+          "name": "Routable",
+          "usedBy": [
+            "BEH-WRITE-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "mapping:Stale",
+          "kind": "mapping",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-GATE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "option:Default",
+          "kind": "option",
+          "name": "Default",
+          "usedBy": [
+            "BEH-UI-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "origin:Hostile",
+          "kind": "origin",
+          "name": "Hostile",
+          "usedBy": [
+            "BEH-WRITE-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Absent",
+          "kind": "repo",
+          "name": "Absent",
+          "usedBy": [
+            "BEH-UI-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:WithNoTests",
+          "kind": "repo",
+          "name": "WithNoTests",
+          "usedBy": [
+            "BEH-GATE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Traversal",
+          "kind": "request",
+          "name": "Traversal",
+          "usedBy": [
+            "BEH-UI-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unsupported",
+          "kind": "request",
+          "name": "Unsupported",
+          "usedBy": [
+            "BEH-UI-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "splice:OffByOne",
+          "kind": "splice",
+          "name": "OffByOne",
+          "usedBy": [
+            "BEH-WRITE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "step:Malformed",
+          "kind": "step",
+          "name": "Malformed",
+          "usedBy": [
+            "BEH-WRITE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

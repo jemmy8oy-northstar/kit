@@ -1,0 +1,1221 @@
+{
+  "format": 2,
+  "functions": [
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "then sees region:Done"
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-C",
+        "  then sees region:Settings  "
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n  then sees region:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-D",
+        "then sees region:Info"
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n  then sees region:Info\n\n\n"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "   "
+      ],
+      "result": {
+        "ok": false,
+        "error": "empty-step",
+        "reason": "a step line cannot be blank"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "then sees a:B\nthen sees c:D"
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-step",
+        "reason": "a step is one line; add them one at a time"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-Q",
+        "then sees a:B"
+      ],
+      "result": {
+        "ok": false,
+        "error": "no-such-behaviour",
+        "reason": "no behaviour BEH-Q in this corpus",
+        "known": [
+          "BEH-A",
+          "BEH-B",
+          "BEH-C",
+          "BEH-D"
+        ]
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "flies away"
+      ],
+      "result": {
+        "ok": false,
+        "error": "would-not-parse",
+        "reason": "after:14: unrecognised keyword \"flies\""
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "behaviour BEH-NEW \"sneaky\""
+      ],
+      "result": {
+        "ok": false,
+        "error": "collateral-change",
+        "reason": "BEH-NEW appeared, and only BEH-A was meant to"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "broken",
+      "args": [
+        "BEH-Z",
+        "then sees a:B"
+      ],
+      "result": {
+        "ok": false,
+        "error": "corpus-already-invalid",
+        "reason": "the file did not parse before this edit: before:6: source wants \"defined\"|\"inferred\" [ref], got: sideways"
+      }
+    },
+    {
+      "fn": "addStep",
+      "input": "indented",
+      "args": [
+        "BEH-F",
+        "then sees region:F"
+      ],
+      "result": {
+        "ok": false,
+        "error": "collateral-change",
+        "reason": "BEH-G changed, and only BEH-F was meant to"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Plain",
+        {}
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"Plain\"\n  source inferred\n"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Full",
+        {
+          "actor": "guest",
+          "steps": [
+            "when opens page:Home",
+            "  then sees region:Saved "
+          ],
+          "source": "defined",
+          "ref": "notes.md#e"
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"Full\"\n  actor guest\n  source defined notes.md#e\n  when opens page:Home\n  then sees region:Saved\n"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha-unterminated",
+      "args": [
+        "BEH-E",
+        "Plain",
+        {}
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"Plain\"\n  source inferred\n"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "beh-e",
+        "Lower",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-id",
+        "reason": "a behaviour id is uppercase letters, digits and hyphens, got: beh-e"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH E",
+        "Space",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-id",
+        "reason": "a behaviour id is uppercase letters, digits and hyphens, got: BEH E"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "Duplicate",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "duplicate-id",
+        "reason": "BEH-A is already in this corpus"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Say \"hi\"",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-title",
+        "reason": "a title cannot contain a double quote or a newline"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Two\nlines",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-title",
+        "reason": "a title cannot contain a double quote or a newline"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Bad step",
+        {
+          "steps": [
+            "flies away"
+          ]
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "would-not-parse",
+        "reason": "after:32: unrecognised keyword \"flies\""
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Bad source",
+        {
+          "source": "sideways"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "would-not-parse",
+        "reason": "after:31: source wants \"defined\"|\"inferred\" [ref], got: sideways"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "approved",
+        null
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review approved\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "denied",
+        "the guest does it"
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-B",
+        "approved",
+        null
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-C",
+        " approved ",
+        "  "
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  review approved\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-D",
+        "unreviewed",
+        null
+      ],
+      "result": {
+        "ok": true,
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  review unreviewed\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "empty-review",
+        "reason": "a review needs a state: unreviewed, approved or denied"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "approved\n",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-review",
+        "reason": "a review is one line; a state or a note cannot contain a newline"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "denied",
+        "x\ny"
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-review",
+        "reason": "a review is one line; a state or a note cannot contain a newline"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-Q",
+        "approved",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "no-such-behaviour",
+        "reason": "no behaviour BEH-Q in this corpus",
+        "known": [
+          "BEH-A",
+          "BEH-B",
+          "BEH-C",
+          "BEH-D"
+        ]
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "denied",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "would-not-parse",
+        "reason": "after:11: a denied behaviour must state the correction"
+      }
+    },
+    {
+      "fn": "setReview",
+      "input": "alpha",
+      "args": [
+        "BEH-A",
+        "maybe",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "would-not-parse",
+        "reason": "after:11: review wants \"unreviewed\"|\"approved\"|\"denied\" [note], got: maybe"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "page:Home",
+        {
+          "route": "/"
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"page:Home\": {\n    \"route\": \"/\"\n  }\n}\n",
+        "noun": "page:Home",
+        "sharedWith": [
+          "beta"
+        ]
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "  page:Settings ",
+        {
+          "route": "/settings"
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"page:Settings\": {\n    \"route\": \"/settings\"\n  }\n}\n",
+        "noun": "page:Settings",
+        "sharedWith": []
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "region:Saved",
+        {
+          "1": "a",
+          "2": "b",
+          "z": "c",
+          "nested": {
+            "9": 2,
+            "10": 1
+          }
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"region:Saved\": {\n    \"1\": \"a\",\n    \"2\": \"b\",\n    \"z\": \"c\",\n    \"nested\": {\n      \"9\": 2,\n      \"10\": 1\n    }\n  }\n}\n",
+        "noun": "region:Saved",
+        "sharedWith": [
+          "beta"
+        ]
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "region:Done",
+        {
+          "name": "Sparé   \"q\" \\ </"
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"region:Done\": {\n    \"name\": \"Sparé   \\\"q\\\" \\\\ </\"\n  }\n}\n",
+        "noun": "region:Done",
+        "sharedWith": []
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "button:Save",
+        {
+          "role": "link"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "already-bound",
+        "reason": "button:Save is already bound to {\"role\":\"button\",\"name\":\"Save\"} — rebinding changes every corpus that mentions it, so it is not a click",
+        "current": {
+          "role": "button",
+          "name": "Save"
+        }
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "Save",
+        {
+          "role": "link"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-noun",
+        "reason": "a noun is <kind>:<Name>, lowercase kind and a capitalised name, got: Save"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "button:Sa ve",
+        {
+          "role": "link"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-noun",
+        "reason": "a noun is <kind>:<Name>, lowercase kind and a capitalised name, got: button:Sa ve"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "_comment",
+        {
+          "role": "link"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-noun",
+        "reason": "a noun is <kind>:<Name>, lowercase kind and a capitalised name, got: _comment"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "page:Home",
+        null
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-binding",
+        "reason": "a binding is a JSON object, e.g. {\"role\":\"button\",\"name\":\"Add habit\"}"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "page:Home",
+        [
+          "/"
+        ]
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-binding",
+        "reason": "a binding is a JSON object, e.g. {\"role\":\"button\",\"name\":\"Add habit\"}"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "page:Home",
+        {}
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-binding",
+        "reason": "an empty binding binds nothing — it would satisfy no verb and still count as bound"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings",
+      "args": [
+        "page:Home",
+        "/"
+      ],
+      "result": {
+        "ok": false,
+        "error": "bad-binding",
+        "reason": "a binding is a JSON object, e.g. {\"role\":\"button\",\"name\":\"Add habit\"}"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings-empty",
+      "args": [
+        "page:Home",
+        {
+          "route": "/",
+          "n": 1.5,
+          "big": 1e+21,
+          "t": true,
+          "z": null
+        }
+      ],
+      "result": {
+        "ok": true,
+        "text": "{\n  \"page:Home\": {\n    \"route\": \"/\",\n    \"n\": 1.5,\n    \"big\": 1e+21,\n    \"t\": true,\n    \"z\": null\n  }\n}\n",
+        "noun": "page:Home",
+        "sharedWith": [
+          "beta"
+        ]
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings-array",
+      "args": [
+        "page:Home",
+        {
+          "route": "/"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "bindings-already-invalid",
+        "reason": "bindings.json is not a JSON object"
+      }
+    },
+    {
+      "fn": "addBinding",
+      "input": "bindings-bad",
+      "args": [
+        "page:Home",
+        {
+          "route": "/"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "bindings-already-invalid",
+        "reason": "bindings.json did not parse before this edit: it is not valid JSON"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Done"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-B/review",
+      "body": {
+        "state": "approved"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-B",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review unreviewed\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/review",
+      "body": {
+        "state": "denied",
+        "note": "the guest does it"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\n\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-E",
+        "title": "New",
+        "actor": "guest",
+        "steps": [
+          "when opens page:Home"
+        ],
+        "source": "defined",
+        "ref": "x.md"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-E",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"New\"\n  actor guest\n  source defined x.md\n  when opens page:Home\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-E",
+        "title": "Duplicate"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "duplicate-id",
+          "reason": "BEH-E is already in this corpus"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-Q/steps",
+      "body": {
+        "step": "then sees a:B"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "no-such-behaviour",
+          "reason": "no behaviour BEH-Q in this corpus",
+          "known": [
+            "BEH-A",
+            "BEH-B",
+            "BEH-C",
+            "BEH-D",
+            "BEH-E"
+          ]
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/%E0/steps",
+      "body": {
+        "step": "then sees a:B"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "the behaviour id is not valid percent-encoding"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH%2DA/steps",
+      "body": {
+        "step": "then sees a:C"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n  then sees a:C\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"New\"\n  actor guest\n  source defined x.md\n  when opens page:Home\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "title": "No id"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "id must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-F"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "title must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-F",
+        "title": "T",
+        "steps": "when opens page:Home"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "steps must be a list of strings"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-F",
+        "title": "T",
+        "steps": [
+          "when opens page:Home",
+          5
+        ]
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "steps must be a list of strings"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": {
+        "id": "BEH-F",
+        "title": "T",
+        "actor": null,
+        "source": null,
+        "ref": null,
+        "steps": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-F",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n  then sees a:C\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"New\"\n  actor guest\n  source defined x.md\n  when opens page:Home\n\nbehaviour BEH-F \"T\"\n  source inferred\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/behaviours",
+      "body": [
+        "BEH-G"
+      ],
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "id must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": 5
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "step must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {},
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "step must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/review",
+      "body": {
+        "note": "x"
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "state must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/review",
+      "body": {
+        "state": "approved",
+        "note": 7
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "note must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "noun": "page:Home",
+        "binding": {
+          "route": "/"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "noun": "page:Home",
+          "file": "<dir>/alpha.bindings.json",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself.",
+          "sharedWith": [
+            "beta"
+          ],
+          "unreadableCorpora": [
+            "broken"
+          ]
+        }
+      },
+      "written": {
+        "name": "alpha.bindings.json",
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"page:Home\": {\n    \"route\": \"/\"\n  }\n}\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "noun": "button:Save",
+        "binding": {
+          "role": "link"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "already-bound",
+          "reason": "button:Save is already bound to {\"role\":\"button\",\"name\":\"Save\"} — rebinding changes every corpus that mentions it, so it is not a click",
+          "current": {
+            "role": "button",
+            "name": "Save"
+          }
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "binding": {
+          "role": "link"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "noun must be a string"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "noun": "region:Saved",
+        "binding": {}
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "bad-binding",
+          "reason": "an empty binding binds nothing — it would satisfy no verb and still count as bound"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/beta/bindings",
+      "body": {
+        "noun": "page:Home",
+        "binding": {
+          "route": "/b"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "beta",
+          "noun": "page:Home",
+          "file": "<dir>/beta.bindings.json",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself.",
+          "sharedWith": [
+            "alpha"
+          ],
+          "unreadableCorpora": [
+            "broken"
+          ]
+        }
+      },
+      "written": {
+        "name": "beta.bindings.json",
+        "text": "{\n  \"page:Home\": {\n    \"route\": \"/b\"\n  }\n}\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": "{\"noun\":\"region:Done\",\"binding\":{\"b\":1,\"2\":\"x\",\"1\":\"y\",\"in\":{\"z\":0,\"10\":1,\"9\":2}}}",
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "noun": "region:Done",
+          "file": "<dir>/alpha.bindings.json",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself.",
+          "sharedWith": [],
+          "unreadableCorpora": [
+            "broken"
+          ]
+        }
+      },
+      "written": {
+        "name": "alpha.bindings.json",
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"page:Home\": {\n    \"route\": \"/\"\n  },\n  \"region:Done\": {\n    \"1\": \"y\",\n    \"2\": \"x\",\n    \"b\": 1,\n    \"in\": {\n      \"9\": 2,\n      \"10\": 1,\n      \"z\": 0\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "path": "/api/projects/broken/behaviours/BEH-Z/steps",
+      "body": {
+        "step": "then sees a:B"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": "corpus-already-invalid",
+          "reason": "the file did not parse before this edit: before:6: source wants \"defined\"|\"inferred\" [ref], got: sideways"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/delta/behaviours/BEH-Y/steps",
+      "body": {
+        "step": "then sees region:Delta"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "delta",
+          "behaviour": "BEH-Y",
+          "file": "<dir>/delta.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "delta.beh",
+        "text": "﻿# kit:not-a-real-app\n# A fixture for the writer oracle (kit#119) that starts with a byte-order mark,\n# which an edit must keep.\n\nbehaviour BEH-Y \"Starts after a BOM\"\n  source defined\n  when opens page:Delta\n  then sees region:Delta\n"
+      }
+    },
+    {
+      "path": "/api/projects/%E0/bindings",
+      "body": {
+        "noun": "page:Home",
+        "binding": {
+          "route": "/"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": "bad-request",
+          "reason": "the app name is not valid percent-encoding"
+        }
+      },
+      "written": null
+    },
+    {
+      "path": "/api/projects/gamma/bindings",
+      "body": {
+        "noun": "page:Home",
+        "binding": {
+          "route": "/"
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "error": "no-such-project",
+          "reason": "no corpus named 'gamma'",
+          "known": [
+            "alpha",
+            "beta",
+            "broken",
+            "delta"
+          ]
+        }
+      },
+      "written": null
+    }
+  ]
+}

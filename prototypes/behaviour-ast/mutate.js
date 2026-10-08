@@ -412,9 +412,10 @@ MUTANTS.push(
     'kit.js'],
   // kit.js's own CLI. The first of these is the defect as it actually shipped:
   // every `--flag` this tool does not know was dropped in silence, so
-  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing.
+  // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing
+  // (`--dir` is a real flag here since kit#71; the hazard is any flag it lacks).
   // The rest are the guards written alongside it (#67).
-  ['an unknown flag goes back to being silently dropped, so --dir reports on the wrong corpus',
+  ['an unknown flag goes back to being silently dropped, so a flag it lacks reports on the wrong corpus',
     '    } else if (looksLikeAFlag(a)) {\n      return { error: `unknown option ${a}` };\n',
     '    } else if (looksLikeAFlag(a)) {\n      continue;\n', 'kit.js'],
   ['--help stops being recognised, so asking for help runs the whole report',
@@ -626,7 +627,7 @@ MUTANTS.push(
   // CORS simple request — no preflight — so without this check the edit lands
   // and only the attacker's view of the *response* is blocked.
   ['the cross-origin write guard is gone — a hostile page can edit the corpus',
-    'if (origin !== null && origin !== undefined) {', 'if (false) {', 'ui.js'],
+    '  if (origin === null || origin === undefined || originAllowed(origin, opts)) return null;', '  return null;', 'ui.js'],
   // Same rule, same re-anchoring. The guard moved into `originAllowed`, and the
   // way to express "accepts anything it can parse" is now to make the function
   // return true for every parseable origin.
@@ -636,7 +637,7 @@ MUTANTS.push(
   ['the response claims the edit was committed',
     'committed: false,', 'committed: true,', 'ui.js'],
   ['an oversized body is parsed instead of refused',
-    'if (size > MAX_BODY) return send({ status: 413,', 'if (false) return send({ status: 413,', 'ui.js'],
+    'size > MAX_BODY ? null : Buffer.concat(chunks)', 'Buffer.concat(chunks)', 'ui.js'],
 );
 
 // converge (claude-code-bot#92). Its whole output is a claim about how far two
@@ -736,8 +737,8 @@ MUTANTS.push(
     '    for (const [token, expires] of live) if (false) live.delete(token);',
     'auth.js'],
   ['session tokens come from a predictable source and are short enough to guess',
-    "      const token = crypto.randomBytes(32).toString('hex');",
-    "      const token = Math.random().toString(36).slice(2);",
+    "mint = () => crypto.randomBytes(32).toString('hex')) {",
+    "mint = () => Math.random().toString(36).slice(2)) {",
     'auth.js'],
   ['the brute-force throttle never engages, so the password can be guessed at leisure',
     '      if (failures >= FREE_ATTEMPTS) {',
@@ -814,7 +815,7 @@ MUTANTS.push(
     'const file = bindingsOf.fileFor(app, dir);',
     'const file = bindingsOf.fileFor(app);', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',
-    'insufficient: req.insufficient.map(withShared),', 'insufficient: [],', 'project.js'],
+    'insufficient: req.insufficient.map(noun),', 'insufficient: [],', 'project.js'],
   ['the bind route is gone, so a POST to it falls through to the behaviours matcher',
     'if (bm) return postBinding(bm, body, opts, json);', '', 'ui.js'],
   ['the bind response drops sharedWith, so the namespace warning never reaches the screen',
@@ -835,7 +836,7 @@ MUTANTS.push(
   // On a shared host those belong to a SIBLING app, so Kit starts returning 200
   // for another application's URLs.
   ['a request outside the prefix is served anyway, so Kit answers for a sibling app',
-    '    if (pathname === null) {', '    if (false) {', 'ui.js'],
+    '  if (pathname === null) {', '  if (false) {', 'ui.js'],
   ['the prefix match accepts /kitten, so a different app\'s paths are treated as inside this one',
     'if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);',
     'if (pathname.startsWith(basePath)) return pathname.slice(basePath.length);', 'ui.js'],

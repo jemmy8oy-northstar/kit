@@ -1,0 +1,7 @@
+{
+  "_comment": "A fixture for the writer's conformance oracle (kit#119).",
+  "button:Save": {
+    "role": "button",
+    "name": "Save"
+  }
+}

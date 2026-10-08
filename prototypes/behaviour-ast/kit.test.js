@@ -1042,18 +1042,94 @@ const { parseCliArgs } = require('./kit');
 test('parseCliArgs: an unknown flag refuses and NAMES it, rather than being dropped', () => {
   // ⚠️ THE FLAG IS LAST, WITH NO VALUE AFTER IT, and the assertion is on the
   // REASON — the same trap as `--behaviours` above ([[an-exit-code-two-rules-produce]]).
-  // Written as `['kit', '--dir', '/elsewhere']` this test would pass with the
+  // Written as `['kit', '--repo', '/elsewhere']` this test would pass with the
   // guard deleted: `/elsewhere` becomes a second corpus name and "two corpus
   // names" refuses too. With nothing after it there is no second rule to hide
   // behind — delete the guard and `only` is 'kit' with no error at all, which is
   // precisely the old behaviour: a full report on Kit's own corpus.
-  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, 'unknown option --dir');
+  //
+  // `--repo` because it is `check.js`'s flag and NOT this tool's — the same
+  // reader-carries-a-sibling's-flag case `--dir` was until kit#71 gave it here.
+  assert.strictEqual(parseCliArgs(['kit', '--repo']).error, 'unknown option --repo');
   // Both arrangements pinned anyway, because the value-carrying form is the one
   // a human actually types after reading check.js's docs.
-  assert.strictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']).error, 'unknown option --dir');
+  assert.strictEqual(parseCliArgs(['kit', '--repo', '/elsewhere']).error, 'unknown option --repo');
   // A single-dash typo is not a corpus name either. `-h` aside, nothing here
   // takes short flags, so `-dir` must refuse rather than become a positional.
   assert.strictEqual(parseCliArgs(['-dir']).error, 'unknown option -dir');
+});
+
+test('parseCliArgs: --dir takes a value in any position, and refuses without one (kit#71)', () => {
+  assert.deepStrictEqual(parseCliArgs(['kit', '--dir', '/elsewhere']),
+    { sheet: false, only: 'kit', rev: '', dir: '/elsewhere', help: false });
+  // First position is the one a positional `find` would get wrong: it hands back
+  // the directory as the corpus name.
+  assert.strictEqual(parseCliArgs(['--dir', '/elsewhere', 'kit']).only, 'kit');
+  assert.strictEqual(parseCliArgs(['sheet', 'kit', '--dir', '/x', '--rev', 'abc']).dir, '/x');
+  assert.strictEqual(parseCliArgs(['sheet', 'kit', '--dir', '/x', '--rev', 'abc']).rev, 'abc');
+  assert.strictEqual(parseCliArgs(['kit', '--dir']).error, '--dir needs a value');
+  assert.strictEqual(parseCliArgs(['kit', '--dir', '--rev', 'x']).error, '--dir needs a value');
+  // The default is null, NOT Kit's directory: `main` decides the default, so a
+  // caller can tell "not given" from "given Kit's own path".
+  assert.strictEqual(parseCliArgs(['kit']).dir, null);
+});
+
+test('kit.js --dir reads the corpus AND its bindings from that directory, and says so (kit#71)', () => {
+  // ⚠️ SPAWNED. The rule kit#66 sets is that bindings travel with their corpus;
+  // a `--dir` that moved the `.beh` but read Kit's `snip-it.bindings.json` would
+  // produce the SAME report as the default run — so the relocated copy's bindings
+  // are deliberately EMPTIED, and only a run that read them reports 0 bound.
+  const tmp = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-dir-'));
+  try {
+    fsx.copyFileSync(pathx.join(__dirname, 'behaviours', 'snip-it.beh'), pathx.join(tmp, 'snip-it.beh'));
+    fsx.writeFileSync(pathx.join(tmp, 'snip-it.bindings.json'), '{}');
+    const run = (...a) => require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'kit.js'), ...a], { encoding: 'utf8', maxBuffer: 1 << 26 });
+    const moved = run('snip-it', '--dir', tmp);
+    assert.strictEqual(moved.status, 0, `stderr: ${moved.stderr}`);
+    assert.match(moved.stdout, /nouns bound\s+0\/\d+/, 'the relocated run read bindings from somewhere other than --dir');
+    assert.ok(moved.stdout.includes(`read from             ${tmp}   (1 corpus: snip-it.beh)`),
+      `the report did not name the directory it read: ${moved.stdout.split('── measured ──')[1]}`);
+    // The control: the same corpus in Kit's own directory IS bound, so 0 above is
+    // the emptied file talking and not a corpus that binds nothing.
+    const home = run('snip-it');
+    assert.doesNotMatch(home.stdout, /nouns bound\s+0\//, 'control: Kit\'s snip-it binds nothing, so the assertion above proves nothing');
+    // A directory that is not there is could-not-look, never an ENOENT stack.
+    const gone = run('snip-it', '--dir', pathx.join(tmp, 'nope'));
+    assert.strictEqual(gone.status, 2);
+    assert.match(gone.stderr, /cannot look: no corpus directory /);
+    assert.strictEqual(gone.stdout, '');
+  } finally {
+    fsx.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('requires.js --dir reads the corpus AND its bindings from that directory (kit#71)', () => {
+  const tmp = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-dir-'));
+  try {
+    fsx.copyFileSync(pathx.join(__dirname, 'behaviours', 'snip-it.beh'), pathx.join(tmp, 'snip-it.beh'));
+    fsx.writeFileSync(pathx.join(tmp, 'snip-it.bindings.json'), '{}');
+    const run = (...a) => require('child_process').spawnSync(
+      'node', [pathx.join(__dirname, 'requires.js'), ...a], { encoding: 'utf8' });
+    // `--dir` FIRST: a positional `find` would take the directory as the app.
+    const moved = JSON.parse(run('--dir', tmp, 'snip-it', '--json').stdout);
+    const home = JSON.parse(run('snip-it', '--json').stdout);
+    assert.strictEqual(moved.nouns.length, home.nouns.length, 'same corpus, so the same nouns are referenced');
+    assert.strictEqual(moved.satisfied.length, 0, 'the relocated run read bindings from somewhere other than --dir');
+    assert.ok(home.satisfied.length > 0, 'control: Kit\'s snip-it satisfies nothing, so the assertion above proves nothing');
+    for (const [args, re] of [
+      [['snip-it', '--dir'], /--dir needs a value/],
+      [['snip-it', '--dir', '--json'], /--dir needs a value/],
+      [['snip-it', 'kit'], /two app names given/],
+      [['snip-it', '--dir', pathx.join(tmp, 'nope')], /no corpus at .*could not look/],
+    ]) {
+      const r = run(...args);
+      assert.strictEqual(r.status, 2, `${args.join(' ')} exited ${r.status}`);
+      assert.match(r.stderr, re);
+    }
+  } finally {
+    fsx.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('parseCliArgs: --help is answered, and asking for help is not an error', () => {
@@ -1074,7 +1150,7 @@ test('parseCliArgs: a corpus named the same as the rev is still found', () => {
   // excluded every argument whose STRING equalled the rev — so this call found no
   // corpus at all and silently reported on all ten instead of the one asked for.
   assert.deepStrictEqual(parseCliArgs(['kit', '--rev', 'kit']),
-    { sheet: false, only: 'kit', rev: 'kit', help: false });
+    { sheet: false, only: 'kit', rev: 'kit', dir: null, help: false });
 });
 
 test('parseCliArgs: sheet is a subcommand in first position and a corpus name anywhere else', () => {
@@ -4910,8 +4986,10 @@ test('docker: every explicit COPY source exists, because an absent one fails the
   }
   // Could-not-look is never green, and a regex that stops matching is exactly how
   // this gate would go quietly inert. The floor is deliberately close to the real
-  // count so a rewrite that drops most lines fails rather than passes.
-  assert.ok(sources.length >= 4,
+  // count so a rewrite that drops most lines fails rather than passes. It is 2
+  // since kit#119 moved the server to C#: the runtime takes the corpora and the
+  // bundle from `build`, and everything else from the `api` stage's publish.
+  assert.ok(sources.length >= 2,
     `could not look: matched ${sources.length} COPY --from=build line(s) in Dockerfile — `
     + `the regex has stopped matching and this gate is inert, which is not the same as passing`);
 
@@ -5725,9 +5803,19 @@ section('cli: an unknown flag is a refusal at EVERY entry point (kit#67)');
 // `auth.js` and `git-store.js` carried one by mistake: both are pure modules and
 // the line is deleted in the same change that starts believing it.
 //
-// `selfhost/run.js` is still excluded by not walking subdirectories: it drives
-// Playwright, and kit deliberately has no `@playwright/test` dependency to drive it
-// with (adding one is packaging, which is James's under #83).
+// ✅ `selfhost/run.js` IS IN THIS POPULATION since kit#107 (2026-10-03), and the walk
+// below descends to find it. This comment used to record it as excluded "by not
+// walking subdirectories: it drives Playwright, and kit deliberately has no
+// `@playwright/test` dependency to drive it with". The packaging half is still true
+// and still binding — kit has no such dependency and adding one is James's under #83.
+// 🔑 But it was never a reason to skip a GUARD, and kit#101 had already settled
+// exactly that for `mutate.js`: a flag guard reads argv and nothing else, so it is the
+// one step in any tool that neither touches the environment nor depends on it.
+// Refusing `--zznotaflag` needs no browser — measured, it exits 2 without one. The
+// exemption's reason was true of the tool in general and false of the property being
+// tested, which is the same way `kit#105` deferred `ui.js` for "`main` starts a
+// server" and `kit#106` then found the bug behind it. Unguarded, this file accepted
+// every typo in silence at exit 0, and the sentence above is what let it.
 //
 // Every `#!` file is therefore in exactly one of three places — this population,
 // `UNSPAWNABLE`, or `SANDBOXED` — and that sentence is TRUE BY CONSTRUCTION, not a
@@ -5767,15 +5855,46 @@ const SANDBOXED = {
   'mutate-ui.js': 'UI mutation harness: same as mutate.js, and it survives SIGTERM',
 };
 
+// 🔑 THE WALK STOPS AT A DIRECTORY THAT IS ITS OWN NPM PACKAGE, and that is a RULE
+// rather than a convenience. kit#107 made this descend (it used to read `__dirname`
+// only, which is the entire reason `selfhost/run.js` sat outside the population while
+// accepting every typo in silence). Descending finds a second `#!` file —
+// `ui/src/test/fixtures/generate.js` — and spawning THAT in CI is the one thing
+// `docs/` and my own notes say must never happen: it rewrites the fixtures it is
+// compared against, so a generator that ran before the comparison would report green
+// over a real regression. Its own guard happens to sit above the write, so a spawn is
+// safe today — but the RED CONTROL for it, deleting the guard to prove it bites, would
+// rewrite the working tree.
+//
+// `ui/` is a separate npm package: `kit-ui`, `"type": "module"`, its own vitest suite,
+// its own `package.json`. `behaviour-ast/` has NO `package.json` and is CommonJS. So
+// the boundary is load-bearing in both directions — `cli.js` is CommonJS, and an ESM
+// package cannot even `require()` the guard this section asserts without
+// `createRequire`. A package gates its own tools with its own runner.
+//
+// ⚠️ Deliberately NOT a skip-list of names (`node_modules`, `dist`, `fixtures`). The
+// package rule excludes `ui/node_modules` and the content-hashed `ui/dist` for free,
+// and a list of names is the thing that silently stops matching when one of them is
+// renamed — which is how this scan came to miss four tools for months
+// ([[a-parser-that-stopped-matching-may-be-protecting-you]]).
 const ENTRY_POINTS = (() => {
   const found = [];
-  for (const e of fsx.readdirSync(__dirname, { withFileTypes: true })) {
-    if (!e.isFile() || !e.name.endsWith('.js')) continue;
-    if (UNSPAWNABLE[e.name] || SANDBOXED[e.name]) continue;
-    const src = fsx.readFileSync(pathx.join(__dirname, e.name), 'utf8');
-    if (!src.startsWith('#!')) continue;
-    found.push(e.name);
-  }
+  const walk = (dir, prefix) => {
+    for (const e of fsx.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (fsx.existsSync(pathx.join(dir, e.name, 'package.json'))) continue;
+        walk(pathx.join(dir, e.name), rel);
+        continue;
+      }
+      if (!e.isFile() || !e.name.endsWith('.js')) continue;
+      if (UNSPAWNABLE[rel] || SANDBOXED[rel]) continue;
+      const src = fsx.readFileSync(pathx.join(dir, e.name), 'utf8');
+      if (!src.startsWith('#!')) continue;
+      found.push(rel);
+    }
+  };
+  walk(__dirname, '');
   return found.sort();
 })();
 
@@ -5787,8 +5906,13 @@ test('cli: the derived population is the real one, not a stale list', () => {
   // predicate, so a predicate that matched nothing would satisfy it vacuously.
   assert.ok(ENTRY_POINTS.length >= 8,
     `only ${ENTRY_POINTS.length} entry point(s) discovered — the scan has stopped matching: ${ENTRY_POINTS.join(', ')}`);
+  // `selfhost/run.js` is the one member reached only by DESCENDING, so it is the only
+  // name here whose absence means the walk itself regressed rather than a file moving.
+  // The `>= 8` floor above cannot catch that: drop the recursion and twelve top-level
+  // tools still satisfy it, which is exactly the vacuous-green shape this list exists
+  // to close ([[verified-the-greppable-half]]).
   for (const f of ['kit.js', 'check.js', 'requires.js', 'project.js', 'ui.js', 'writer.js',
-    'compare.js', 'measure-tagging.js']) {
+    'compare.js', 'measure-tagging.js', 'selfhost/run.js']) {
     assert.ok(ENTRY_POINTS.includes(f), `${f} is an entry point and must be in the population`);
   }
   // ⚠️ "Every `#!` file is in ENTRY_POINTS, UNSPAWNABLE or SANDBOXED" is NOT asserted
@@ -5962,6 +6086,65 @@ test('cli: a REFUSAL, not a default — the tool must not answer about its own c
   const out = (r.stdout || '') + (r.stderr || '');
   assert.strictEqual(r.status, 2, `a refusal is exit 2, never a verdict about something else; got ${r.status}`);
   assert.ok(!/nouns referenced/.test(out), `it answered anyway:\n${out}`);
+});
+
+test('cli: compare.js answers a repo it cannot read with a sentence, not a stack trace', () => {
+  // kit#107. Unguarded, `compare.js /no/such/repo` dumped a raw `spawnSync` result
+  // object and a Node stack trace at exit 1.
+  //
+  // 🔑 Exit 2 is the load-bearing part, not the tidier output. Every other tool here
+  // answers "could not look" at exit 2, and exit 1 is what a real comparison uses to
+  // mean something — so at exit 1 a caller could not tell "snip-it has drifted" from
+  // "I never found snip-it", and this was the one tool whose failure to measure was
+  // indistinguishable from a crash in the harness around it.
+  const bad = spawnx(process.execPath, ['compare.js', '/no/such/repo'],
+    { cwd: __dirname, encoding: 'utf8', timeout: 30000 });
+  const badOut = (bad.stdout || '') + (bad.stderr || '');
+  assert.strictEqual(bad.status, 2, `a refusal is exit 2, never exit 1; got ${bad.status}\n${badOut}`);
+  assert.ok(badOut.includes('cannot look:'), `it must say "cannot look":\n${badOut}`);
+  // A crash that quotes your input is indistinguishable from a refusal by status and
+  // flag alone, so the absence of the ANSWER is asserted too: it must not have printed
+  // the measured table [[a-crash-that-echoes-your-input]].
+  assert.ok(!/── measured ──/.test(badOut), `it refused and answered anyway:\n${badOut}`);
+  assert.ok(!/at \w+ \(node:/.test(badOut), `a stack trace is still leaking:\n${badOut}`);
+
+  // THE OTHER SIDE OF THE SEAM. "It exited 2" is cheap here — the tool exits 2 for a
+  // bad path, a missing `origin/dev` and a missing spec — so the refusal has to be
+  // attributed to the repo being unreadable rather than to the guard refusing always.
+  //
+  // Built rather than assumed: CI has no reason to carry a snip-it clone, and a test
+  // that skipped when one was absent would be a test that never ran. `origin/dev` is a
+  // remote-tracking ref, so `update-ref` writes it directly with no network.
+  const dir = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-compare-'));
+  try {
+    const spec = pathx.join(dir, 'frontend', 'e2e');
+    fsx.mkdirSync(spec, { recursive: true });
+    fsx.writeFileSync(pathx.join(spec, 'editor.spec.ts'),
+      "test('x', async ({ page }) => {\n  await page.goto('./editor/11111111-1111-1111-1111-111111111111');\n});\n");
+    const git = (...a) => spawnx('git', ['-C', dir, ...a], { encoding: 'utf8' });
+    git('init', '-q');
+    git('config', 'user.email', 't@t');
+    git('config', 'user.name', 't');
+    git('add', '-A');
+    git('commit', '-qm', 'spec');
+    const sha = git('rev-parse', 'HEAD').stdout.trim();
+    git('update-ref', 'refs/remotes/origin/dev', sha);
+
+    const good = spawnx(process.execPath, ['compare.js', dir],
+      { cwd: __dirname, encoding: 'utf8', timeout: 60000 });
+    const goodOut = (good.stdout || '') + (good.stderr || '');
+    assert.strictEqual(good.status, 0,
+      `a repo it CAN read must still be measured, not refused; got ${good.status}\n${goodOut}`);
+    assert.ok(!goodOut.includes('cannot look:'),
+      `it refuses a readable repo, so the guard fires always and the test above proves nothing:\n${goodOut}`);
+    // And it must have actually DONE the comparison, not merely exited 0.
+    assert.ok(/── measured ──/.test(goodOut), `no measured table:\n${goodOut}`);
+    assert.ok(/YES exact|YES in-file/.test(goodOut),
+      'the one line planted in the spec above must match SOMETHING, or this fixture no longer '
+      + `exercises the comparison it is here to keep alive:\n${goodOut}`);
+  } finally {
+    fsx.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('cli: unknownFlag finds the flag, and a forgotten value counts as one', () => {
@@ -6301,6 +6484,26 @@ test('cli: an app name that EQUALS a flag value is still the app name', () => {
       const m = require('./prose-audit');
       return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
     },
+    // kit#107's member, and the first to arrive here by WALKING rather than by being
+    // remembered: it sat in a subdirectory the population scan did not descend into.
+    // Three value flags, no named positional. `--browsers` is the one with no
+    // validation of any kind before this — a forgotten value set
+    // `PLAYWRIGHT_BROWSERS_PATH` to the string `undefined` and a swallowed one pointed
+    // it at a flag, so Playwright could not launch and the harness answered "could not
+    // look — NOT a finding about Kit". A typo, reported as a broken environment, by the
+    // guard that exists to stop precisely that misreading.
+    'selfhost/run.js': () => {
+      const m = require('./selfhost/run.js');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: null };
+    },
+    // The conformance harness. It joined this population by reading `argv[i + 1]`,
+    // which is what the second derivation below scans for — not by anyone deciding
+    // to add it. `positional: 'only'` because it names ONE corpus, so it carries
+    // the collision half as well as the forgotten-value half.
+    'conformance.js': () => {
+      const m = require('./conformance');
+      return { parse: m.parseArgs, valueFlags: m.VALUE_FLAGS, positional: 'only' };
+    },
   };
 
   // 🔴 There is NO `DEFERRED` map any more, and its deletion is the point. kit#105
@@ -6405,6 +6608,61 @@ test('cli: each tool SURFACES its own parser error, and self-host writes nothing
     'self-host.js wrote a file named `--record` — the refusal printed but the write still happened');
 });
 
+test('cli: selfhost/run.js surfaces a forgotten value, and refuses BEFORE it reads a corpus', async () => {
+  // The async sibling of the `cases` gate above, which drives `main()` synchronously
+  // and therefore cannot reach this one: `selfhost/run.js`'s `main` is `async`, so
+  // `strictEqual(mod.main(...), 2)` would compare a Promise to 2 and fail for a reason
+  // that has nothing to do with the rule. A separate test rather than a widened one.
+  const mod = require('./selfhost/run.js');
+
+  // All three value flags, each paired with the NEXT FLAG as its value — the swallow,
+  // not merely the omission. `--playwright --check` used to answer "no Playwright
+  // binary" at exit 2: already a refusal, which is why the guard above did not catch
+  // it, and already the wrong diagnosis.
+  for (const flag of ['--playwright', '--port', '--browsers']) {
+    const said = [];
+    const err = console.error;
+    console.error = (...a) => said.push(a.join(' '));
+    let code;
+    try { code = await mod.main([flag, '--check']); } finally { console.error = err; }
+    assert.strictEqual(code, 2, `selfhost/run.js ${flag} --check must refuse`);
+    assert.ok(said.join('\n').includes(`${flag} needs a value`),
+      `selfhost/run.js ${flag} --check exited 2 but said ${JSON.stringify(said.join('\n'))} — which `
+      + `does not name ${flag}, so it refused for some other reason (a missing binary, an unparseable `
+      + 'port, a browser that would not launch) and the forgotten value is not actually held');
+  }
+
+  // And the omission at the end of argv, which reads `undefined` rather than a flag.
+  const said = [];
+  const err = console.error;
+  console.error = (...a) => said.push(a.join(' '));
+  let code;
+  try { code = await mod.main(['--browsers']); } finally { console.error = err; }
+  assert.strictEqual(code, 2, 'selfhost/run.js --browsers with nothing after it must refuse');
+  assert.ok(said.join('\n').includes('--browsers needs a value'), said.join('\n'));
+
+  // 🔑 THE OTHER SIDE OF THE SEAM, and the half that makes the three above mean
+  // something [[pin-a-seam-from-both-sides]]. A refusal is cheap to get by accident
+  // here — this tool exits 2 for a missing binary, a missing bundle and an unbuilt UI,
+  // so "it exited 2" attributes to almost anything. A flag it DOES have must still
+  // work, with no browser and no bundle in sight: `--emit-only` is the one path that
+  // needs neither, which is the same reason it is what proves the guard reads argv and
+  // nothing else.
+  const out = [];
+  const log = console.log;
+  const err2 = console.error;
+  console.log = (...a) => out.push(a.join(' '));
+  console.error = (...a) => out.push(a.join(' '));
+  let good;
+  try { good = await mod.main(['--emit-only']); } finally { console.log = log; console.error = err2; }
+  assert.strictEqual(good, 0, `--emit-only is a flag the tool HAS and must not fail:\n${out.join('\n')}`);
+  assert.ok(!out.join('\n').includes('unknown option'),
+    `selfhost/run.js refuses its own --emit-only, so the accept-list is wrong, not its refusal:\n${out.join('\n')}`);
+  assert.ok(out.join('\n').includes("import { expect, test } from '@playwright/test'"),
+    `--emit-only must still PRINT THE SPEC, not merely exit 0 — a guard that returned 0 early would `
+    + `satisfy the status alone:\n${out.join('\n')}`);
+});
+
 test('cli: a tool that reads the token after a flag cannot opt out of the gate above', () => {
   // 🔴 THE SECOND DERIVATION, and the reason the first one was not enough. A separate
   // test because it is a separate rule and fails for a separate cause: the one above
@@ -6455,6 +6713,377 @@ test('cli: a tool that reads the token after a flag cannot opt out of the gate a
     + '— and export(s) no parser, so the gate above cannot see it. That is the invisible opt-out: a '
     + 'tool can carry this exact defect and never join a population derived from what it EXPORTS. '
     + 'Export the parser and declare it above; do not widen this scan to let it through');
+});
+
+section('conformance: the engine as an executable specification');
+const conformance = require('./conformance.js');
+const BEH_DIR = pathx.join(__dirname, 'behaviours');
+const GOLDEN_DIR = pathx.join(__dirname, 'conformance');
+
+// ONE full comparison per process, shared by every test below. It is pure (it
+// never writes) and its inputs do not change mid-run, so recomputing it bought
+// nothing — and since the git golden builds ten real repos (~0.9s), five calls
+// per suite times 202 mutants doubled the CI mutation gate (11 → 25+ minutes).
+let comparedOnce = null;
+const comparison = () => comparedOnce || (comparedOnce = conformance.compare(BEH_DIR, GOLDEN_DIR, null));
+
+// 🔑 THE GATE ITSELF. This is why the harness needs no workflow change: CI already
+// runs this file, so the comparison runs wherever the suite does.
+//
+// It compares and never writes — `conformance.js` does not export `main`, so the
+// regenerator is not reachable from here at all. A golden-file suite that can
+// rebuild its own fixture reports green over a real regression, which is why
+// `ui/src/test/fixtures/generate.js` is kept out of CI and why this is structural
+// rather than a flag.
+test('conformance: every corpus still reproduces its committed engine output', () => {
+  const r = comparison();
+
+  // A MISSING golden is "could not look", and it is asserted separately from drift
+  // because they are different statements. Collapsed into one assertion, a first
+  // run with no goldens on disk would report the engine broken [[empty-means-two-things]].
+  assert.deepStrictEqual(r.missing, [],
+    `no committed golden for ${r.missing.join(', ')} — run \`node conformance.js --record\`. `
+    + 'This is COULD NOT LOOK, not a drifted engine.');
+
+  assert.deepStrictEqual(r.extra, [],
+    `golden(s) with no corpus: ${r.extra.join(', ')} — a renamed or deleted corpus leaves its `
+    + 'golden behind, and this test then goes on proving the engine reproduces output for '
+    + 'something that no longer exists [[a-thing-that-left-the-set-is-invisible]]');
+
+  assert.deepStrictEqual(r.drifted.map((d) => d.corpus), [],
+    `${r.drifted.map((d) => `${d.corpus} (${d.committedBytes} -> ${d.freshBytes} bytes)`).join(', ')} `
+    + 'no longer reproduce(s) committed output. If the change was intended, '
+    + '`node conformance.js --record` and commit the diff — the diff IS the review, and it is the '
+    + 'only place the behaviour change is visible.');
+
+  // The fail-safe every derived gate here needs: if `corporaIn` ever stops
+  // matching, `matched` is empty and all three assertions above pass over nothing
+  // while this test reports green [[empty-means-two-things]].
+  assert.ok(r.matched.length >= 10,
+    `only ${r.matched.length} corpus/corpora were compared (${r.matched.join(', ') || 'none'}) — `
+    + 'the scan has stopped matching and this gate is now inert');
+});
+
+test('conformance: the parse section is captured BEFORE resolve mutates it', () => {
+  // The trap this file is built around, pinned so a refactor cannot reintroduce it.
+  // `resolve` writes `step.resolved` back onto the steps `parse` returned
+  // (kit.js:283) — deliberately, so a hole filled by another behaviour actually
+  // generates. Capture the parse section afterwards and it silently contains
+  // resolve's additions, so a CORRECT C# `Parse` could never match the golden:
+  // the harness would score the port wrong rather than failing to score it.
+  const src = fsx.readFileSync(pathx.join(BEH_DIR, 'james-habits-app.beh'), 'utf8');
+  const parsed = parse(src, 'james-habits-app.beh');
+  const before = JSON.stringify(parsed);
+  resolve(parsed);
+  assert.notStrictEqual(JSON.stringify(parsed), before,
+    'resolve no longer mutates parse output — if that is intended the header of '
+    + 'conformance.js is now wrong, but check it is not the write-back being lost');
+
+  // And the golden's own parse section must be the pristine one. A step that
+  // resolve filled must NOT carry `resolved` in `parse`, and must carry it in the
+  // resolve delta — the two halves together are what prove the ordering.
+  const g = conformance.pipeline(BEH_DIR, 'james-habits-app');
+  const parseHasResolved = JSON.stringify(g.parse).includes('"resolved"');
+  assert.strictEqual(parseHasResolved, false,
+    'the parse section carries `resolved`, so it was snapshotted AFTER resolve ran');
+  const deltaPaths = g.resolve.changed.flatMap((c) => c.changes.map((ch) => ch.path));
+  assert.ok(deltaPaths.some((p) => /^steps\.\d+\.resolved$/.test(p)),
+    'no `steps.N.resolved` in the resolve delta — either the write-back is gone or the '
+    + 'delta has stopped seeing it, and both look identical from a green suite');
+});
+
+test('conformance: the report section is what the project view serves, for every corpus', () => {
+  // The seam pinned from BOTH sides. `report` exists so the C# server is scored on
+  // what the page reads; if `project()` ever re-mapped a field itself, the golden
+  // would go on scoring a shape nothing serves. So every corpus's golden `report`
+  // is compared with the live view, minus only the two per-noun fields `project()`
+  // adds because they read other corpora (`binding`, `sharedWith`).
+  const { project } = require('./project.js');
+  let corpora = 0, nouns = 0;
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    const golden = JSON.parse(fsx.readFileSync(conformance.goldenPath(GOLDEN_DIR, corpus), 'utf8'));
+    const view = project(corpus, { behDir: BEH_DIR });
+    const strip = (n) => { const { binding, sharedWith, ...rest } = n; return rest; };
+    const served = {
+      adjudication: view.adjudication,
+      surface: view.surface,
+      questions: view.questions,
+      requires: {
+        nouns: view.requires.nouns.map(strip),
+        missing: view.requires.missing.map(strip),
+        insufficient: view.requires.insufficient.map(strip),
+        satisfied: view.requires.satisfied,
+      },
+    };
+    assert.strictEqual(JSON.stringify(golden.report), JSON.stringify(served),
+      `${corpus}: the golden's report section is not what project() serves`);
+    corpora++;
+    nouns += golden.report.requires.nouns.length;
+  }
+  // Fail-safe: a scan that matched nothing, or goldens with empty reports, would
+  // pass every comparison above over nothing [[empty-means-two-things]].
+  assert.ok(corpora >= 10 && nouns > 0, `compared ${corpora} corpora and ${nouns} nouns — the gate is inert`);
+});
+
+test('conformance: the read-routes golden is compared, and covers every corpus and every refusal', () => {
+  // Compared at all: a full `compare` must report the routes beside the corpora,
+  // or the golden sits on disk scoring nothing.
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.ROUTES),
+    `the read routes were not compared (matched: ${r.matched.join(', ')})`);
+
+  // And not vacuous: one 200 project view per corpus, and each refusal a port
+  // could otherwise answer with a framework page — so a port serving only the
+  // happy paths cannot reproduce it.
+  const g = JSON.parse(fsx.readFileSync(conformance.routesPath(GOLDEN_DIR), 'utf8'));
+  const status = (method, p) => g.requests.find((q) => q.method === method && q.path === p)?.response.status;
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    assert.strictEqual(status('GET', `/api/projects/${corpus}`), 200, `no 200 project view for ${corpus}`);
+  }
+  assert.strictEqual(status('GET', '/api/projects/no-such-app'), 404);
+  assert.strictEqual(status('GET', '/api/projects/%E0%A4%A'), 400);
+  assert.strictEqual(status('GET', '/api/projects/%2e%2e'), 404);
+  assert.strictEqual(status('GET', '/api/no-such-route'), 404);
+  assert.strictEqual(status('PUT', '/api/projects'), 405);
+
+  // The built UI, from the fixture bundle: the shell, an immutable asset, and the
+  // refusals a port could answer with its framework's static-file defaults.
+  const bundle = (p) => g.requests.find((q) => q.dist && q.path === p)?.response;
+  assert.strictEqual(bundle('/projects/snip-it').status, 200, 'a client-side route gets the shell');
+  assert.ok(bundle('/projects/snip-it').rawText.includes('<div id="root">'), 'the shell is index.html');
+  assert.strictEqual(bundle('/assets/index-Ab12Cd.js').cacheControl, 'public, max-age=31536000, immutable');
+  assert.strictEqual(bundle('/assets/index-Missing.js').status, 404);
+  assert.strictEqual(bundle('/%2e%2e').status, 404);
+  assert.strictEqual(bundle('/%E0%A4%A').status, 400);
+});
+
+test('conformance: the host golden is compared, and is what a real socket delivers', async () => {
+  // Compared at all, beside the corpora and the read routes.
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.HOST), `the host golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // The seam pinned from the far side: `hostRoutes` records `answer()`, and this
+  // proves `serve()` puts exactly that on the wire — every header it records and
+  // no header it does not, beyond the ones Node's own http layer always adds. Raw
+  // targets (`//evil.com/…`, absolute-form, backslashes) go through `http.request`
+  // unaltered, so the socket sees what the golden names.
+  const g = JSON.parse(fsx.readFileSync(conformance.hostPath(GOLDEN_DIR), 'utf8'));
+  const dist = pathx.join(__dirname, 'conformance', 'routes', 'dist');
+  const NODE_OWN = new Set(['date', 'connection', 'keep-alive', 'content-length', 'transfer-encoding']);
+  const send = (port, { method, url, origin }) => new Promise((resolve, reject) => {
+    const req = require('http').request({ host: '127.0.0.1', port, path: url, method, headers: origin === null ? {} : { origin } }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text: Buffer.concat(chunks).toString('utf8') }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  let compared = 0;
+  for (const [config, c] of Object.entries(g.configs)) {
+    const opts = { dir: BEH_DIR, dist, port: 0, host: '127.0.0.1', basePath: c.basePath };
+    if (c.publicOrigin) opts.publicOrigin = c.publicOrigin;
+    const server = await ui.serve(opts);
+    try {
+      const { port } = server.address();
+      for (const q of g.requests.filter((x) => x.config === config && x.response.post === undefined)) {
+        const label = `${config} ${q.method} ${q.url} origin=${q.origin}`;
+        const got = await send(port, q);
+        assert.strictEqual(got.status, q.response.status, label);
+        const extra = Object.keys(got.headers).filter((h) => !NODE_OWN.has(h) && !(h in q.response.headers));
+        assert.deepStrictEqual(extra, [], `${label}: headers the golden does not record`);
+        for (const [h, v] of Object.entries(q.response.headers)) assert.strictEqual(got.headers[h], v, `${label}: ${h}`);
+        if (q.response.rawText !== undefined) assert.strictEqual(got.text, q.response.rawText, label);
+        else if (q.response.body !== undefined) assert.deepStrictEqual(JSON.parse(got.text), q.response.body, label);
+        else assert.strictEqual(got.text, '', label);
+        compared++;
+      }
+    } finally {
+      server.close();
+    }
+  }
+  assert.ok(compared >= 40, `only ${compared} host requests went over the wire — the gate is inert`);
+});
+
+test('conformance: the auth golden is compared, and every scenario replays over a real socket', async () => {
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.AUTH), `the auth golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // The far side of the seam: each scenario against a real `serve()` sharing the
+  // golden's fake clock and token minting, so the throttle and expiry steps mean
+  // the same thing on the wire as in the recording. Bodies are sent as raw bytes,
+  // and `tooLarge` as MAX_BODY + 1 of them.
+  const g = JSON.parse(fsx.readFileSync(conformance.authPath(GOLDEN_DIR), 'utf8'));
+  const NODE_OWN = new Set(['date', 'connection', 'keep-alive', 'content-length', 'transfer-encoding']);
+  const auth = require('./auth.js');
+  let sent = 0;
+  for (const s of g.scenarios) {
+    let t = 1_700_000_000_000;
+    let n = 0;
+    const now = () => t;
+    const opts = { dir: BEH_DIR, port: 0, host: s.config.host, sessions: auth.sessions(now, () => `tok-${++n}`), throttle: auth.throttle(now) };
+    if (s.config.password !== null) opts.password = s.config.password;
+    if (s.config.publicOrigin) opts.publicOrigin = s.config.publicOrigin;
+    opts.secure = !!(s.config.publicOrigin && /^https:/i.test(s.config.publicOrigin));
+    const server = await ui.serve(opts);
+    try {
+      const { port } = server.address();
+      for (const step of s.steps) {
+        if (step.advance !== undefined) { t += step.advance; continue; }
+        const label = `${s.name}: ${step.method} ${step.path} cookie=${step.cookie} body=${step.body}`;
+        const data = step.tooLarge ? Buffer.alloc(g.maxBody + 1, 0x20) : step.body === null ? null : Buffer.from(step.body, 'utf8');
+        const headers = {};
+        if (step.origin !== null) headers.origin = step.origin;
+        if (step.cookie !== null) headers.cookie = step.cookie;
+        if (data) headers['content-length'] = data.length;
+        const got = await new Promise((resolve, reject) => {
+          const rq = require('http').request({ host: '127.0.0.1', port, path: step.path, method: step.method, headers }, (res) => {
+            const chunks = [];
+            res.on('data', (c) => chunks.push(c));
+            res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text: Buffer.concat(chunks).toString('utf8') }));
+          });
+          rq.on('error', reject);
+          rq.end(data ?? undefined);
+        });
+        sent++;
+        assert.strictEqual(got.status, step.response.status, label);
+        const extra = Object.keys(got.headers).filter((h) => !NODE_OWN.has(h) && !(h in step.response.headers));
+        assert.deepStrictEqual(extra, [], `${label}: headers the golden does not record`);
+        // Node's client always hands `set-cookie` back as an array; the server sends one.
+        const one = (v) => (Array.isArray(v) && v.length === 1 ? v[0] : v);
+        for (const [h, v] of Object.entries(step.response.headers)) assert.strictEqual(one(got.headers[h]), v, `${label}: ${h}`);
+        assert.deepStrictEqual(JSON.parse(got.text), step.response.body, label);
+      }
+    } finally {
+      server.close();
+    }
+  }
+  const recorded = g.scenarios.flatMap((s) => s.steps).filter((st) => st.advance === undefined).length;
+  assert.ok(sent === recorded && sent >= 40, `${sent} of ${recorded} auth steps went over the wire — the gate is inert`);
+});
+
+test('conformance: the writes golden is compared, and reaches every refusal the writer has', () => {
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.WRITES), `the writes golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // Read from writer.js's SOURCE, so a refusal added later is a refusal the golden
+  // must reach before this passes — the population is the code, not a list here.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'writer.js'), 'utf8');
+  const codes = [...new Set([...src.matchAll(/error: '([a-z-]+)'/g)].map((m) => m[1]))];
+  assert.ok(codes.length >= 12, `only ${codes.length} refusal codes found in writer.js — the scan has stopped matching`);
+  const g = JSON.parse(fsx.readFileSync(conformance.writesPath(GOLDEN_DIR), 'utf8'));
+  const reached = new Set(g.functions.map((f) => f.result.error).filter(Boolean));
+  assert.deepStrictEqual(codes.filter((c) => !reached.has(c)), [], 'refusals the writes golden never reaches');
+
+  // And the routes really wrote: every 200 recorded the file it changed.
+  const ok = g.routes.filter((s) => s.response.status === 200);
+  assert.ok(ok.length >= 6 && ok.every((s) => s.written && s.written.text.length > 0), 'a 200 write with no file recorded');
+});
+
+test('conformance: the git golden is compared, and keeps pushed, stranded and untouched apart', () => {
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.GIT), `the git golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  const g = JSON.parse(fsx.readFileSync(conformance.gitPath(GOLDEN_DIR), 'utf8'));
+  assert.ok(g.scenarios.length >= 10, `only ${g.scenarios.length} git scenarios — the gate is inert`);
+  // The three states gitOutcome() exists to keep apart, each reached at least once.
+  const states = new Set(g.scenarios.map((s) => `${s.response.body.committed}/${s.response.body.pushed}`));
+  assert.deepStrictEqual([...states].sort(), ['false/false', 'true/false', 'true/true']);
+  // A stranded commit must carry a warning; a clean push must not.
+  for (const s of g.scenarios) {
+    const b = s.response.body;
+    assert.strictEqual(b.warning !== undefined, b.committed && !b.pushed, `${s.name}: warning present iff committed and not pushed`);
+  }
+});
+
+test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
+  // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
+  // whitelist. Measured when this was written: recording resolve's behaviours in
+  // full made 36.7% of the artefact a near-duplicate of another 35.6%, with 140 of
+  // 147 behaviours byte-identical once filled/open were stripped. A whitelist would
+  // have been smaller too — and would silently miss whatever resolve starts
+  // mutating next. A diff cannot [[an-unused-field-is-a-missing-rule]].
+  const d = conformance.delta(
+    { a: 1, keep: 'same', nested: { x: 1 } },
+    { a: 1, keep: 'same', nested: { x: 2 }, brandNew: 'appeared' },
+  );
+  assert.deepStrictEqual(d, [
+    { path: 'nested.x', from: 1, to: 2 },
+    { path: 'brandNew', from: null, to: 'appeared' },
+  ], 'the delta must report a changed nested value AND a key that only the after side has');
+
+  // Identical inputs must produce NO changes — otherwise every behaviour would
+  // report a delta and the 7-of-147 signal above would be noise.
+  assert.deepStrictEqual(conformance.delta({ a: [1, 2], b: null }, { a: [1, 2], b: null }), []);
+
+  // A removed key is a change too, in the direction a whitelist would miss.
+  assert.deepStrictEqual(conformance.delta({ gone: 'was here' }, {}),
+    [{ path: 'gone', from: 'was here', to: null }]);
+});
+
+test('conformance: nothing in a golden is sorted, timestamped or absolute-pathed', () => {
+  // Three separate ways a golden stops being checkable, all of them quiet.
+  const g = conformance.pipeline(BEH_DIR, 'snip-it');
+  const text = conformance.serialise(g);
+
+  // A date makes the golden differ every day for no reader's benefit, which is the
+  // kind of failing check that gets deleted rather than fixed. The committed sheet
+  // gate is checkable only because the sheet carries no timestamp.
+  assert.ok(!/\b20\d\d-\d\d-\d\dT\d\d:/.test(text), 'a golden carries an ISO timestamp');
+  // An absolute path makes it machine-specific, so it passes here and fails for him.
+  assert.ok(!text.includes(__dirname), 'a golden carries this machine\'s absolute path');
+
+  // 🔑 And the non-obvious one: `missing` must stay in ENGINE order, not sorted.
+  // Sorting would throw away a behaviour the C# port has to reproduce — the order
+  // is rendered straight into the generated `// unbound noun(s): ...` comment —
+  // and replace it with one the port cannot fail.
+  //
+  // ⚠️ The population is EVERY corpus, not one, because this assertion is only
+  // meaningful where engine order and sorted order actually differ. Written
+  // against `snip-it` first, it failed its own guard: snip-it binds nearly every
+  // noun, so all of its `missing` lists are short and happen to be sorted, and the
+  // check could not have told the two apart [[a-probe-must-join-the-population]].
+  // Measured across the committed corpora: 42 behaviours in 8 of 11 corpora have a
+  // genuinely unsorted list; kit, kit-ui and snip-it have none.
+  const unsorted = [];
+  for (const corpus of conformance.corporaIn(BEH_DIR)) {
+    for (const x of conformance.pipeline(BEH_DIR, corpus).generate) {
+      if (x.missing.length < 2) continue;
+      if (JSON.stringify(x.missing) !== JSON.stringify(x.missing.slice().sort())) unsorted.push({ corpus, ...x });
+    }
+  }
+  assert.ok(unsorted.length >= 10,
+    `only ${unsorted.length} behaviour(s) across every corpus have a \`missing\` list that is not `
+    + 'already in sorted order, so this test can barely tell engine order from sorted order. '
+    + 'Either the corpora changed shape or something has started sorting `missing`.');
+
+  // The delivery half: the order the golden records must be the order the
+  // generated comment actually carries. A golden that pinned an order the engine
+  // did not emit would score a correct port as wrong
+  // [[test-the-delivery-not-just-the-value]].
+  const wrongOrder = unsorted.filter((x) => x.code.includes('unbound noun(s)')
+    && !x.code.includes(x.missing.join(', ')));
+  assert.deepStrictEqual(wrongOrder.map((x) => `${x.corpus}/${x.id}`), [],
+    'the generated comment does not list `missing` in the order the golden records it, so the '
+    + 'golden has stopped pinning the order the port must reproduce');
+});
+
+test('conformance: the golden records which format wrote it', () => {
+  // A port verified against a golden written by a different shape of this file is
+  // verified against nothing, and the failure would look like a C# bug.
+  const g = conformance.pipeline(BEH_DIR, 'kit');
+  assert.strictEqual(g.format, conformance.FORMAT);
+  const committed = JSON.parse(fsx.readFileSync(conformance.goldenPath(GOLDEN_DIR, 'kit'), 'utf8'));
+  assert.strictEqual(committed.format, conformance.FORMAT,
+    `the committed goldens were written by format ${committed.format} and this code is `
+    + `${conformance.FORMAT} — re-record them, do not read across the change`);
+  // Sectioned by MODULE, so a half-ported engine can still be scored. One opaque
+  // blob could not verify a C# `Parse` until `Generate` also existed, which is the
+  // same as having no harness during the whole port.
+  assert.deepStrictEqual(Object.keys(g).sort(),
+    ['corpus', 'format', 'generate', 'parse', 'report', 'resolve'],
+    'the golden has stopped being sectioned by engine module');
 });
 
 Promise.all(pending).then(() => {

@@ -1,0 +1,5 @@
+# Build output. Scoped to backend/ rather than the repo root deliberately: this
+# repo has no root .gitignore, and adding one would quietly set a convention for
+# the whole tree. These two directories are the only thing the .NET build writes.
+bin/
+obj/

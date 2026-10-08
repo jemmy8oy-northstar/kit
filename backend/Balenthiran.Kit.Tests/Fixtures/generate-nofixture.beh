@@ -1,0 +1,10 @@
+# kit:not-a-real-app
+#
+# `fills` with NO file fixture anywhere in the bindings writes `.fill('')` — the one
+# `generate` branch generate-edges.beh cannot reach, because a fixture there is
+# visible to every `fills` in the corpus. Regenerate generate-nofixture.json as
+# generate-edges.beh's header says, with this corpus's name.
+
+behaviour BEH-FILL "a fill with nothing to attach"
+  when fills form:Profile with ?fields
+  provides form:Profile.fields = Name, Email

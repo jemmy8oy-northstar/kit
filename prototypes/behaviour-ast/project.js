@@ -131,9 +131,7 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
     }
   }
 
-  const adj = kit.adjudication(behaviours);
-  const surf = kit.surface(behaviours);
-  const qs = kit.questions(behaviours, conflicts);
+  const rep = report(behaviours, conflicts, bindings);
 
   // ── what each noun OWES, and who else would feel it being bound ───────────
   // `requires.js` (kit#22) has always computed this and nothing in the UI has
@@ -157,16 +155,9 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
   // Kept rather than retired because the information is still worth having when
   // you are naming things; the warning wording it feeds is what had to change.
   // Computed once for the directory, not per noun.
-  const req = requires.requirements(behaviours, bindings);
   const corpusNouns = writer.corpusNouns(behDir);
   const withShared = (n) => ({
-    noun: n.noun,
-    kind: n.kind,
-    name: n.name,
-    usedBy: n.usedBy,
-    bound: n.bound,
-    satisfied: n.satisfied,
-    needs: n.needs,
+    ...n,
     binding: n.bound ? bindings[n.noun] : null,
     // Always an array. A UI reading `.length` must not have to distinguish
     // "nothing collides" from "nobody looked" ([[empty-means-two-things]]).
@@ -205,6 +196,44 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
     conflicts,
     generated,
     coverage,
+    adjudication: rep.adjudication,
+    surface: rep.surface,
+    questions: rep.questions,
+    requires: {
+      nouns: rep.requires.nouns.map(withShared),
+      missing: rep.requires.missing.map(withShared),
+      insufficient: rep.requires.insufficient.map(withShared),
+      satisfied: rep.requires.satisfied,
+    },
+  };
+}
+
+/**
+ * The engine's verdicts on one resolved corpus, in the shape the project view
+ * serves them — and the ONLY definition of that shape. `conformance.js` records
+ * it as each golden's `report` section, so the C# server is scored on exactly
+ * what this view returns rather than on a second copy of the mapping that could
+ * drift from it.
+ *
+ * Deliberately leaves out what is not a function of the corpus alone: `binding`
+ * and `sharedWith` on each noun are added by `project()`, because `sharedWith`
+ * reads EVERY corpus in the directory — a per-corpus golden that included it
+ * would move whenever an unrelated corpus did.
+ */
+function report(behaviours, conflicts, bindings) {
+  const adj = kit.adjudication(behaviours);
+  const surf = kit.surface(behaviours);
+  const req = requires.requirements(behaviours, bindings);
+  const noun = (n) => ({
+    noun: n.noun,
+    kind: n.kind,
+    name: n.name,
+    usedBy: n.usedBy,
+    bound: n.bound,
+    satisfied: n.satisfied,
+    needs: n.needs,
+  });
+  return {
     adjudication: {
       defined: adj.defined,
       inferred: adj.inferred,
@@ -214,11 +243,11 @@ function project(app, { repo = null, behDir = BEH_DIR } = {}) {
       untraceable: adj.untraceable.map((b) => b.id),
     },
     surface: { errors: surf.errors, served: surf.served.map((b) => b.id), unserved: surf.unserved.map((b) => b.id) },
-    questions: qs,
+    questions: kit.questions(behaviours, conflicts),
     requires: {
-      nouns: req.nouns.map(withShared),
-      missing: req.missing.map(withShared),
-      insufficient: req.insufficient.map(withShared),
+      nouns: req.nouns.map(noun),
+      missing: req.missing.map(noun),
+      insufficient: req.insufficient.map(noun),
       satisfied: req.satisfied.map((n) => n.noun),
     },
   };
@@ -309,6 +338,6 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { project, main, parseArgs, VALUE_FLAGS };
+module.exports = { project, report, main, parseArgs, VALUE_FLAGS };
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));

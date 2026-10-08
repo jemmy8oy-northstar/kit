@@ -1171,8 +1171,8 @@ function boundNouns(behaviours, bindings) {
 }
 
 const { looksLikeAFlag } = require('./cli.js');
-const CLI_VALUE_FLAGS = new Set(['--rev']);
-const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>]';
+const CLI_VALUE_FLAGS = new Set(['--rev', '--dir']);
+const CLI_USAGE = 'usage: node kit.js [sheet] [<corpus-name>] [--rev <rev>] [--dir <corpus-dir>]';
 
 // 🔑 A NAME THAT NAMES TWO CORPORA IS A REFUSAL, never a silent merge.
 //
@@ -1270,9 +1270,10 @@ function selectCorpora(files, only) {
 // filter this file used to carry was folding `kit-ui.beh` in. `selectCorpora`
 // below is why the number in that sentence is now 20 and why it is not quoted.
 //
-// ⚠️ Whether `kit.js` should GAIN `--dir` is kit#66 and is James's: a relocated
-// corpus takes the noun namespace out of the only directory `sharedWith` can
-// see. This makes its absence loud; it does not pre-empt the answer.
+// ✅ `--dir` is now a flag this tool HAS (kit#71). Its deferral named one reason
+// — a relocated corpus leaves the noun namespace `sharedWith` could see — and
+// James's kit#66 adopted exactly that as the design: bindings live beside their
+// corpus and belong to it alone. The rule above still holds for every OTHER flag.
 //
 // Scans positionally rather than `indexOf`, for `check.js:84-88`'s reason: the
 // index of a VALUE is the first index holding that string, so a corpus named the
@@ -1280,7 +1281,7 @@ function selectCorpora(files, only) {
 // that bug, plus a second — a trailing `--rev` left `rev` undefined, and every
 // argument then compared unequal to it.
 function parseCliArgs(argv) {
-  const opts = { sheet: false, only: null, rev: '', help: false };
+  const opts = { sheet: false, only: null, rev: '', dir: null, help: false };
   let i = 0;
   // `sheet` is a subcommand, so it is only a subcommand in first position —
   // a corpus that happened to be called "sheet" anywhere else stays a corpus.
@@ -1296,7 +1297,8 @@ function parseCliArgs(argv) {
       // revision to `-h` and the sheet's provenance line said "over the app at
       // `-h`" at exit 0. Both now ask `cli.js`.
       if (v === undefined || looksLikeAFlag(v)) return { error: `${a} needs a value` };
-      opts.rev = v;
+      if (a === '--dir') opts.dir = v;
+      else opts.rev = v;
       i++;
     } else if (looksLikeAFlag(a)) {
       return { error: `unknown option ${a}` };
@@ -1320,7 +1322,6 @@ module.exports = {
 if (require.main === module) {
   const fs = require('fs');
   const path = require('path');
-  const dir = path.join(__dirname, 'behaviours');
   // `node kit.js <name>` scopes the run to one corpus. Needed the moment there
   // was more than one app in here: a measurement averaged over two unrelated
   // corpora tells you about neither.
@@ -1343,6 +1344,15 @@ if (require.main === module) {
   // whose corpus does not parse. It exits 0: asking for help is not an error.
   if (cli.help) { console.log(CLI_USAGE); process.exit(0); }
   const { sheet: sheetMode, only, rev } = cli;
+  // `--dir` reads a corpus that lives with its project (kit#52, kit#71). Its
+  // bindings come from the same directory, because `bindings.js` resolves them
+  // beside the `.beh` — so moving a corpus can never leave its nouns behind.
+  // A directory that does not exist is could-not-look, not an ENOENT stack.
+  const dir = cli.dir ? path.resolve(cli.dir) : path.join(__dirname, 'behaviours');
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    console.error(`cannot look: no corpus directory ${dir}`);
+    process.exit(2);
+  }
   const picked = selectCorpora(fs.readdirSync(dir), only);
   if (picked.error) {
     // The `kind` check is what stops "that names three corpora" acquiring a
@@ -1472,6 +1482,10 @@ if (require.main === module) {
 
   const steps = totals.generated + totals.contract + totals.ungenerated;
   console.log('── measured ──');
+  // Where it looked, and how many corpora that spans. Once `--dir` can point
+  // anywhere, a report that does not say where it read cannot be checked — and a
+  // run over one corpus says so, rather than leaving the reader to infer it.
+  console.log(`  read from             ${dir}   (${files.length === 1 ? '1 corpus' : `${files.length} corpora`}: ${files.join(', ')})`);
   console.log(`  behaviours            ${behaviours.length}`);
   console.log(`  nouns bound           ${boundCount}/${referenced.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
   console.log(`  generated lines       ${totals.generated}`);

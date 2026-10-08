@@ -1,0 +1,1992 @@
+{
+  "format": 2,
+  "corpus": "trial-habits-b",
+  "parse": [
+    {
+      "id": "BEH-TODAY-1",
+      "title": "Opening the app shows today's habits to track",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:53"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:54"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:50",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "title": "Each habit in today's list is shown as something to tick off",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:59"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:HabitItem",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitItem"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:60"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:56",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "title": "Ticking a habit marks it done for today",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:NotDone",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "NotDone"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:65"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:66"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates checkbox:HabitItem",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitItem"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:67"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Done",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Done"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:68"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:62",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-MEALS-1",
+      "title": "Veg with lunch and veg with dinner are two separate habits, not one",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:87"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:VegLunch",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "VegLunch"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:88"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:VegDinner",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "VegDinner"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:89"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:84",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-BREAKFAST-1",
+      "title": "Eating breakfast is tracked as a plain checkbox",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:94"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:AteBreakfast",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "AteBreakfast"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:95"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:91",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-RUN-1",
+      "title": "Logging a run also ticks off the exercised habit",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:NotDone",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "NotDone"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:100"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:101"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates checkbox:Ran",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "Ran"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:102"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Done",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Done"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:103"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are \"Exercised - auto ticked by running\"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule",
+          "refs": [],
+          "holes": [],
+          "at": "trial-habits-b.beh:104"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:97",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SLEEP-1",
+      "title": "Sleep is a logged quantity shown like an activity ring, not a checkbox",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:112"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:SleepRing",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "SleepRing"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:113"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the brief says \"take inspiration from the apple wheel\" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered",
+          "refs": [],
+          "holes": [],
+          "at": "trial-habits-b.beh:114"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:109",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SLEEP-2",
+      "title": "Sleep hours are entered for the day",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:119"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:SleepHours with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "SleepHours"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "trial-habits-b.beh:120"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:SleepRing",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "SleepRing"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:121"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "trial-habits-b.beh:120"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:116",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SLEEP-3",
+      "title": "The sleep form takes a single hours value",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:126"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "SleepHours",
+          "slot": "fields",
+          "value": [
+            "Hours"
+          ],
+          "from": "BEH-SLEEP-3",
+          "at": "trial-habits-b.beh:127"
+        }
+      ],
+      "serves": [],
+      "at": "trial-habits-b.beh:123",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DRINKS-1",
+      "title": "Drinks are entered as a count for the day, not a single tick",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:132"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:DrinksCount with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "DrinksCount"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "trial-habits-b.beh:133"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:Count",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "Count"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:134"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "trial-habits-b.beh:133"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:129",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DRINKS-2",
+      "title": "The drinks form takes a single count value",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:139"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "DrinksCount",
+          "slot": "fields",
+          "value": [
+            "Count"
+          ],
+          "from": "BEH-DRINKS-2",
+          "at": "trial-habits-b.beh:140"
+        }
+      ],
+      "serves": [],
+      "at": "trial-habits-b.beh:136",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-HISTORY-1",
+      "title": "Past days are reachable from today and listed",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:156"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:ViewHistory",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "ViewHistory"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:157"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:History",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "History"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:158"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:PastDaysList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "PastDaysList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:159"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:153",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-HISTORY-2",
+      "title": "Opening a past day shows which habits were done that day",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:History",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "History"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:164"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates row:PastDay",
+          "refs": [
+            {
+              "kind": "row",
+              "name": "PastDay"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:165"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-b.beh:166"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-b.beh:161",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#opening-post"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "form:SleepHours.fields",
+        {
+          "value": [
+            "Hours"
+          ],
+          "contributors": [
+            "BEH-SLEEP-3"
+          ],
+          "at": "trial-habits-b.beh:127"
+        }
+      ],
+      [
+        "form:DrinksCount.fields",
+        {
+          "value": [
+            "Count"
+          ],
+          "contributors": [
+            "BEH-DRINKS-2"
+          ],
+          "at": "trial-habits-b.beh:140"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-TODAY-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-MEALS-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-BREAKFAST-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-RUN-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SLEEP-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SLEEP-2",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Hours"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:SleepHours.fields",
+                "value": [
+                  "Hours"
+                ],
+                "from": [
+                  "BEH-SLEEP-3"
+                ],
+                "at": "trial-habits-b.beh:120"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SLEEP-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DRINKS-1",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Count"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:DrinksCount.fields",
+                "value": [
+                  "Count"
+                ],
+                "from": [
+                  "BEH-DRINKS-2"
+                ],
+                "at": "trial-habits-b.beh:133"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DRINKS-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-HISTORY-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-HISTORY-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-TODAY-1",
+      "code": "test(\"[BEH-TODAY-1] Opening the app shows today's habits to track\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "missing": [
+        "page:Today",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "code": "test(\"[BEH-TODAY-2] Each habit in today's list is shown as something to tick off\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitItem\" });\n  // UNGENERATED: then sees checkbox:HabitItem\n});",
+      "missing": [
+        "page:Today",
+        "checkbox:HabitItem"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "code": "test(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NotDone\" });\n  // UNGENERATED: given habit:NotDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitItem\" });\n  // UNGENERATED: when activates checkbox:HabitItem\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Done\" });\n  // UNGENERATED: then sees badge:Done\n});",
+      "missing": [
+        "habit:NotDone",
+        "page:Today",
+        "checkbox:HabitItem",
+        "badge:Done"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-MEALS-1",
+      "code": "test(\"[BEH-MEALS-1] Veg with lunch and veg with dinner are two separate habits, not one\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:VegLunch\" });\n  // UNGENERATED: then sees checkbox:VegLunch\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:VegDinner\" });\n  // UNGENERATED: then sees checkbox:VegDinner\n});",
+      "missing": [
+        "page:Today",
+        "checkbox:VegLunch",
+        "checkbox:VegDinner"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-BREAKFAST-1",
+      "code": "test(\"[BEH-BREAKFAST-1] Eating breakfast is tracked as a plain checkbox\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:AteBreakfast\" });\n  // UNGENERATED: then sees checkbox:AteBreakfast\n});",
+      "missing": [
+        "page:Today",
+        "checkbox:AteBreakfast"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-RUN-1",
+      "code": "test(\"[BEH-RUN-1] Logging a run also ticks off the exercised habit\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NotDone\" });\n  // UNGENERATED: given habit:NotDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:Ran\" });\n  // UNGENERATED: when activates checkbox:Ran\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Done\" });\n  // UNGENERATED: then sees badge:Done\n  // CONTRACT (not derivable from a behaviour): activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are \"Exercised - auto ticked by running\"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule\n});",
+      "missing": [
+        "habit:NotDone",
+        "page:Today",
+        "checkbox:Ran",
+        "badge:Done"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-SLEEP-1",
+      "code": "test(\"[BEH-SLEEP-1] Sleep is a logged quantity shown like an activity ring, not a checkbox\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:SleepRing\" });\n  // UNGENERATED: then sees region:SleepRing\n  // CONTRACT (not derivable from a behaviour): the brief says \"take inspiration from the apple wheel\" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered\n});",
+      "missing": [
+        "page:Today",
+        "region:SleepRing"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-SLEEP-2",
+      "code": "test(\"[BEH-SLEEP-2] Sleep hours are entered for the day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:SleepHours with ?fields\" });\n  // UNGENERATED: when fills form:SleepHours with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:SleepRing\" });\n  // UNGENERATED: then sees region:SleepRing\n});",
+      "missing": [
+        "page:Today",
+        "field:Hours",
+        "region:SleepRing"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-SLEEP-3",
+      "code": "test(\"[BEH-SLEEP-3] The sleep form takes a single hours value\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n});",
+      "missing": [
+        "page:Today"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-DRINKS-1",
+      "code": "test(\"[BEH-DRINKS-1] Drinks are entered as a count for the day, not a single tick\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:DrinksCount with ?fields\" });\n  // UNGENERATED: when fills form:DrinksCount with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Count\" });\n  // UNGENERATED: then sees field:Count\n});",
+      "missing": [
+        "page:Today",
+        "field:Count"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-DRINKS-2",
+      "code": "test(\"[BEH-DRINKS-2] The drinks form takes a single count value\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n});",
+      "missing": [
+        "page:Today"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-HISTORY-1",
+      "code": "test(\"[BEH-HISTORY-1] Past days are reachable from today and listed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:ViewHistory\" });\n  // UNGENERATED: when activates button:ViewHistory\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:History\" });\n  // UNGENERATED: then lands on page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:PastDaysList\" });\n  // UNGENERATED: then sees region:PastDaysList\n});",
+      "missing": [
+        "page:Today",
+        "button:ViewHistory",
+        "page:History",
+        "region:PastDaysList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-HISTORY-2",
+      "code": "test(\"[BEH-HISTORY-2] Opening a past day shows which habits were done that day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:History\" });\n  // UNGENERATED: when opens page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates row:PastDay\" });\n  // UNGENERATED: when activates row:PastDay\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "missing": [
+        "page:History",
+        "row:PastDay",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 13,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:Done",
+          "kind": "badge",
+          "name": "Done",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:ViewHistory",
+          "kind": "button",
+          "name": "ViewHistory",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:AteBreakfast",
+          "kind": "checkbox",
+          "name": "AteBreakfast",
+          "usedBy": [
+            "BEH-BREAKFAST-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitItem",
+          "kind": "checkbox",
+          "name": "HabitItem",
+          "usedBy": [
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-RUN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegDinner",
+          "kind": "checkbox",
+          "name": "VegDinner",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegLunch",
+          "kind": "checkbox",
+          "name": "VegLunch",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Count",
+          "kind": "field",
+          "name": "Count",
+          "usedBy": [
+            "BEH-DRINKS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            },
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Hours",
+          "kind": "field",
+          "name": "Hours",
+          "usedBy": [
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:NotDone",
+          "kind": "habit",
+          "name": "NotDone",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:History",
+          "kind": "page",
+          "name": "History",
+          "usedBy": [
+            "BEH-HISTORY-1",
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-BREAKFAST-1",
+            "BEH-DRINKS-1",
+            "BEH-DRINKS-2",
+            "BEH-HISTORY-1",
+            "BEH-MEALS-1",
+            "BEH-RUN-1",
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2",
+            "BEH-SLEEP-3",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-HISTORY-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PastDaysList",
+          "kind": "region",
+          "name": "PastDaysList",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:SleepRing",
+          "kind": "region",
+          "name": "SleepRing",
+          "usedBy": [
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "row:PastDay",
+          "kind": "row",
+          "name": "PastDay",
+          "usedBy": [
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:Done",
+          "kind": "badge",
+          "name": "Done",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:ViewHistory",
+          "kind": "button",
+          "name": "ViewHistory",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:AteBreakfast",
+          "kind": "checkbox",
+          "name": "AteBreakfast",
+          "usedBy": [
+            "BEH-BREAKFAST-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitItem",
+          "kind": "checkbox",
+          "name": "HabitItem",
+          "usedBy": [
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-RUN-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegDinner",
+          "kind": "checkbox",
+          "name": "VegDinner",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:VegLunch",
+          "kind": "checkbox",
+          "name": "VegLunch",
+          "usedBy": [
+            "BEH-MEALS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Count",
+          "kind": "field",
+          "name": "Count",
+          "usedBy": [
+            "BEH-DRINKS-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            },
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Hours",
+          "kind": "field",
+          "name": "Hours",
+          "usedBy": [
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:NotDone",
+          "kind": "habit",
+          "name": "NotDone",
+          "usedBy": [
+            "BEH-RUN-1",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:History",
+          "kind": "page",
+          "name": "History",
+          "usedBy": [
+            "BEH-HISTORY-1",
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-BREAKFAST-1",
+            "BEH-DRINKS-1",
+            "BEH-DRINKS-2",
+            "BEH-HISTORY-1",
+            "BEH-MEALS-1",
+            "BEH-RUN-1",
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2",
+            "BEH-SLEEP-3",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-HISTORY-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:PastDaysList",
+          "kind": "region",
+          "name": "PastDaysList",
+          "usedBy": [
+            "BEH-HISTORY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:SleepRing",
+          "kind": "region",
+          "name": "SleepRing",
+          "usedBy": [
+            "BEH-SLEEP-1",
+            "BEH-SLEEP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "row:PastDay",
+          "kind": "row",
+          "name": "PastDay",
+          "usedBy": [
+            "BEH-HISTORY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

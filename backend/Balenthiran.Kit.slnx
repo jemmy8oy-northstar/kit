@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />
+  <Project Path="Balenthiran.Kit.DataModels/Balenthiran.Kit.DataModels.csproj" />
+  <Project Path="Balenthiran.Kit.Database/Balenthiran.Kit.Database.csproj" />
+  <Project Path="Balenthiran.Kit.DomainModels/Balenthiran.Kit.DomainModels.csproj" />
+  <Project Path="Balenthiran.Kit.EntityModels/Balenthiran.Kit.EntityModels.csproj" />
+  <Project Path="Balenthiran.Kit.Services/Balenthiran.Kit.Services.csproj" />
+  <Project Path="Balenthiran.Kit.Tests/Balenthiran.Kit.Tests.csproj" />
+  <Project Path="Balenthiran.Kit.WebApi/Balenthiran.Kit.WebApi.csproj" />
+</Solution>

@@ -1,0 +1,1821 @@
+{
+  "format": 2,
+  "corpus": "report-edges",
+  "parse": [
+    {
+      "id": "BEH-DEF",
+      "title": "a defined behaviour that wrongly serves",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:b",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "b"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:16"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:b",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "b"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:17"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:B",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "B"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:18"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:B",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "B"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:19"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-INF-OK",
+          "at": "report-edges.beh:15"
+        }
+      ],
+      "at": "report-edges.beh:13",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/x.md"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-INF-OK",
+      "title": "an inference serving a defined behaviour",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:a-b",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "a"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:25"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-DEF",
+          "at": "report-edges.beh:24"
+        }
+      ],
+      "at": "report-edges.beh:21",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:one"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-INF-BAD",
+      "title": "an inference serving an inference and a ghost",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:a_b",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "a_b"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:32"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-INF-OK",
+          "at": "report-edges.beh:30"
+        },
+        {
+          "id": "BEH-GHOST",
+          "at": "report-edges.beh:31"
+        }
+      ],
+      "at": "report-edges.beh:27",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:two"
+      },
+      "review": {
+        "state": "denied",
+        "note": "it is actually the other way round"
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-ROUTINE-1",
+      "title": "a routine inference",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:ab",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "ab"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:38"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the first contract",
+          "refs": [],
+          "holes": [],
+          "at": "report-edges.beh:39"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-DEF",
+          "at": "report-edges.beh:37"
+        }
+      ],
+      "at": "report-edges.beh:34",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:three"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-ASKED",
+      "title": "an inference a human promoted",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Ab",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Ab"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:50"
+        },
+        {
+          "kind": "when",
+          "verb": "attaches",
+          "text": "attaches file:clip to field:Upload",
+          "refs": [
+            {
+              "kind": "file",
+              "name": "clip"
+            },
+            {
+              "kind": "field",
+              "name": "Upload"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:51"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:Profile with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "Profile"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "report-edges.beh:52"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "report-edges.beh:52"
+        }
+      ],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-DEF",
+          "at": "report-edges.beh:44"
+        }
+      ],
+      "at": "report-edges.beh:41",
+      "asks": "Is this really routine?",
+      "options": [
+        {
+          "label": "Yes",
+          "consequence": "nothing changes",
+          "at": "report-edges.beh:46"
+        },
+        {
+          "label": "No",
+          "consequence": "it becomes a decision",
+          "at": "report-edges.beh:47"
+        }
+      ],
+      "recommend": {
+        "label": "No",
+        "why": "because a person said so",
+        "at": "report-edges.beh:48"
+      },
+      "against": "it looked routine",
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:four"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-ROUTINE-2",
+      "title": "another routine inference, after the promoted one",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Null",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Null"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:60"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Bare",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Bare"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:61"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:Anything",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "Anything"
+            }
+          ],
+          "holes": [],
+          "at": "report-edges.beh:62"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-DEF",
+          "at": "report-edges.beh:57"
+        }
+      ],
+      "at": "report-edges.beh:54",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [
+        {
+          "id": "BEH-CITED",
+          "at": "report-edges.beh:58"
+        },
+        {
+          "id": "BEH-NOWHERE",
+          "at": "report-edges.beh:59"
+        }
+      ],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:five"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-CITED",
+      "title": "an inference only ever seen as evidence",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the cited contract",
+          "refs": [],
+          "holes": [],
+          "at": "report-edges.beh:67"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "region",
+          "name": "Third",
+          "slot": "n",
+          "value": [
+            "2"
+          ],
+          "from": "BEH-CITED",
+          "at": "report-edges.beh:68"
+        }
+      ],
+      "serves": [],
+      "at": "report-edges.beh:64",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "tests/a.cs:six"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-UNTRACED",
+      "title": "an inference with no reference",
+      "actor": null,
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "region",
+          "name": "Grid",
+          "slot": "days",
+          "value": [
+            "30"
+          ],
+          "from": "BEH-UNTRACED",
+          "at": "report-edges.beh:73"
+        },
+        {
+          "kind": "form",
+          "name": "Profile",
+          "slot": "fields",
+          "value": [
+            "Name",
+            "name"
+          ],
+          "from": "BEH-UNTRACED",
+          "at": "report-edges.beh:74"
+        }
+      ],
+      "serves": [],
+      "at": "report-edges.beh:70",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": null
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      },
+      "reviewExplicit": true
+    },
+    {
+      "id": "BEH-HOLDER",
+      "title": "holds a value nobody asks about",
+      "actor": null,
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "region",
+          "name": "Grid",
+          "slot": "days",
+          "value": [
+            "7"
+          ],
+          "from": "BEH-HOLDER",
+          "at": "report-edges.beh:78"
+        },
+        {
+          "kind": "region",
+          "name": "Other",
+          "slot": "size",
+          "value": [
+            "1"
+          ],
+          "from": "BEH-HOLDER",
+          "at": "report-edges.beh:79"
+        },
+        {
+          "kind": "region",
+          "name": "Third",
+          "slot": "n",
+          "value": [
+            "1"
+          ],
+          "from": "BEH-HOLDER",
+          "at": "report-edges.beh:80"
+        }
+      ],
+      "serves": [],
+      "at": "report-edges.beh:76",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/y.md"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-CHALLENGER",
+      "title": "challenges and carries the question",
+      "actor": null,
+      "steps": [],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "region",
+          "name": "Grid",
+          "slot": "days",
+          "value": [
+            "14"
+          ],
+          "from": "BEH-CHALLENGER",
+          "at": "report-edges.beh:84"
+        },
+        {
+          "kind": "region",
+          "name": "Other",
+          "slot": "size",
+          "value": [
+            "2"
+          ],
+          "from": "BEH-CHALLENGER",
+          "at": "report-edges.beh:85"
+        }
+      ],
+      "serves": [],
+      "at": "report-edges.beh:82",
+      "asks": "Which window is right?",
+      "options": [
+        {
+          "label": "Seven",
+          "consequence": "the holder wins",
+          "at": "report-edges.beh:87"
+        }
+      ],
+      "recommend": {
+        "label": "Seven",
+        "why": "it was first",
+        "at": "report-edges.beh:88"
+      },
+      "against": "first is not right",
+      "cites": [
+        {
+          "id": "BEH-HOLDER",
+          "at": "report-edges.beh:90"
+        }
+      ],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/z.md"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "region:Third.n",
+        {
+          "value": [
+            "2"
+          ],
+          "contributors": [
+            "BEH-CITED"
+          ],
+          "at": "report-edges.beh:68",
+          "conflict": [
+            {
+              "from": "BEH-HOLDER",
+              "value": [
+                "1"
+              ],
+              "at": "report-edges.beh:80"
+            }
+          ]
+        }
+      ],
+      [
+        "region:Grid.days",
+        {
+          "value": [
+            "30"
+          ],
+          "contributors": [
+            "BEH-UNTRACED"
+          ],
+          "at": "report-edges.beh:73",
+          "conflict": [
+            {
+              "from": "BEH-HOLDER",
+              "value": [
+                "7"
+              ],
+              "at": "report-edges.beh:78"
+            },
+            {
+              "from": "BEH-CHALLENGER",
+              "value": [
+                "14"
+              ],
+              "at": "report-edges.beh:84"
+            }
+          ]
+        }
+      ],
+      [
+        "form:Profile.fields",
+        {
+          "value": [
+            "Name",
+            "name"
+          ],
+          "contributors": [
+            "BEH-UNTRACED"
+          ],
+          "at": "report-edges.beh:74"
+        }
+      ],
+      [
+        "region:Other.size",
+        {
+          "value": [
+            "1"
+          ],
+          "contributors": [
+            "BEH-HOLDER"
+          ],
+          "at": "report-edges.beh:79",
+          "conflict": [
+            {
+              "from": "BEH-CHALLENGER",
+              "value": [
+                "2"
+              ],
+              "at": "report-edges.beh:85"
+            }
+          ]
+        }
+      ]
+    ],
+    "conflicts": [
+      {
+        "key": "region:Third.n",
+        "held": [
+          "2"
+        ],
+        "holders": [
+          "BEH-CITED"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-HOLDER",
+            "value": [
+              "1"
+            ],
+            "at": "report-edges.beh:80"
+          }
+        ]
+      },
+      {
+        "key": "region:Grid.days",
+        "held": [
+          "30"
+        ],
+        "holders": [
+          "BEH-UNTRACED"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-HOLDER",
+            "value": [
+              "7"
+            ],
+            "at": "report-edges.beh:78"
+          },
+          {
+            "from": "BEH-CHALLENGER",
+            "value": [
+              "14"
+            ],
+            "at": "report-edges.beh:84"
+          }
+        ]
+      },
+      {
+        "key": "region:Other.size",
+        "held": [
+          "1"
+        ],
+        "holders": [
+          "BEH-HOLDER"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-CHALLENGER",
+            "value": [
+              "2"
+            ],
+            "at": "report-edges.beh:85"
+          }
+        ]
+      }
+    ],
+    "changed": [
+      {
+        "id": "BEH-DEF",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-INF-OK",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-INF-BAD",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ROUTINE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ASKED",
+        "changes": [
+          {
+            "path": "steps.2.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Name",
+                "name"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:Profile.fields",
+                "value": [
+                  "Name",
+                  "name"
+                ],
+                "from": [
+                  "BEH-UNTRACED"
+                ],
+                "at": "report-edges.beh:52"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ROUTINE-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-CITED",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-UNTRACED",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-HOLDER",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-CHALLENGER",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-DEF",
+      "code": "test(\"[BEH-DEF] a defined behaviour that wrongly serves\", async ({ page }) => {\n  await page.goto(\"/b\");\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:b\" });\n  // UNGENERATED: then lands on page:b\n  await expect(page.getByRole(\"button\", { name: undefined })).toBeVisible();\n  await page.getByRole(\"button\", { name: undefined }).click();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 3,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-INF-OK",
+      "code": "test(\"[BEH-INF-OK] an inference serving a defined behaviour\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:a-b\" });\n  // UNGENERATED: then sees region:a-b\n});",
+      "missing": [
+        "region:a"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-INF-BAD",
+      "code": "test(\"[BEH-INF-BAD] an inference serving an inference and a ghost\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:a_b\" });\n  // UNGENERATED: then sees region:a_b\n});",
+      "missing": [
+        "region:a_b"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-ROUTINE-1",
+      "code": "test(\"[BEH-ROUTINE-1] a routine inference\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:ab\" });\n  // UNGENERATED: then sees region:ab\n  // CONTRACT (not derivable from a behaviour): the first contract\n});",
+      "missing": [
+        "region:ab"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-ASKED",
+      "code": "test(\"[BEH-ASKED] an inference a human promoted\", async ({ page }) => {\n  await expect(page.getByLabel(\"x\")).toBeVisible();\n  await page.getByRole(\"textbox\", { name: \"Upload\" }).setInputFiles({\"name\":\"a.mp4\"});\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:Profile with ?fields\" });\n  // UNGENERATED: when fills form:Profile with ?fields\n});",
+      "missing": [
+        "field:name"
+      ],
+      "stats": {
+        "generated": 2,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-ROUTINE-2",
+      "code": "test(\"[BEH-ROUTINE-2] another routine inference, after the promoted one\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Null\" });\n  // UNGENERATED: then sees region:Null\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Bare\" });\n  // UNGENERATED: then sees region:Bare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:Anything\" });\n  // UNGENERATED: when runs command:Anything\n});",
+      "missing": [
+        "region:Null"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-CITED",
+      "code": "test(\"[BEH-CITED] an inference only ever seen as evidence\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the cited contract\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-UNTRACED",
+      "code": "test(\"[BEH-UNTRACED] an inference with no reference\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-HOLDER",
+      "code": "test(\"[BEH-HOLDER] holds a value nobody asks about\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-CHALLENGER",
+      "code": "test(\"[BEH-CHALLENGER] challenges and carries the question\", async ({ page }) => {\n});",
+      "missing": [],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 3,
+      "inferred": 7,
+      "unreviewed": [
+        "BEH-ROUTINE-1",
+        "BEH-ASKED",
+        "BEH-ROUTINE-2",
+        "BEH-CITED",
+        "BEH-UNTRACED"
+      ],
+      "approved": [
+        "BEH-INF-OK"
+      ],
+      "denied": [
+        "BEH-INF-BAD"
+      ],
+      "untraceable": [
+        "BEH-UNTRACED"
+      ]
+    },
+    "surface": {
+      "errors": [
+        "report-edges.beh:15: BEH-DEF serves BEH-INF-OK, which is itself inferred — the chain must end at a defined behaviour",
+        "report-edges.beh:15: BEH-DEF is defined, so it is served rather than serving — drop the serves line",
+        "report-edges.beh:30: BEH-INF-BAD serves BEH-INF-OK, which is itself inferred — the chain must end at a defined behaviour",
+        "report-edges.beh:31: BEH-INF-BAD serves BEH-GHOST, which is not in the corpus"
+      ],
+      "served": [
+        "BEH-INF-OK",
+        "BEH-INF-BAD",
+        "BEH-ROUTINE-1",
+        "BEH-ASKED",
+        "BEH-ROUTINE-2"
+      ],
+      "unserved": [
+        "BEH-CITED",
+        "BEH-UNTRACED"
+      ]
+    },
+    "questions": [
+      {
+        "kind": "conflict",
+        "tier": "decision",
+        "key": "region:Third.n",
+        "title": "Two behaviours disagree about region:Third.n",
+        "sides": [
+          {
+            "id": "BEH-CITED",
+            "title": "an inference only ever seen as evidence",
+            "ref": "tests/a.cs:six",
+            "value": [
+              "2"
+            ]
+          },
+          {
+            "id": "BEH-HOLDER",
+            "title": "holds a value nobody asks about",
+            "ref": "docs/y.md",
+            "value": [
+              "1"
+            ]
+          }
+        ],
+        "held": [
+          "2"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-HOLDER",
+            "value": [
+              "1"
+            ],
+            "at": "report-edges.beh:80"
+          }
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "owner": null,
+        "cites": []
+      },
+      {
+        "kind": "conflict",
+        "tier": "decision",
+        "key": "region:Grid.days",
+        "title": "Two behaviours disagree about region:Grid.days",
+        "sides": [
+          {
+            "id": "BEH-UNTRACED",
+            "title": "an inference with no reference",
+            "ref": null,
+            "value": [
+              "30"
+            ]
+          },
+          {
+            "id": "BEH-HOLDER",
+            "title": "holds a value nobody asks about",
+            "ref": "docs/y.md",
+            "value": [
+              "7"
+            ]
+          },
+          {
+            "id": "BEH-CHALLENGER",
+            "title": "challenges and carries the question",
+            "ref": "docs/z.md",
+            "value": [
+              "14"
+            ]
+          }
+        ],
+        "held": [
+          "30"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-HOLDER",
+            "value": [
+              "7"
+            ],
+            "at": "report-edges.beh:78"
+          },
+          {
+            "from": "BEH-CHALLENGER",
+            "value": [
+              "14"
+            ],
+            "at": "report-edges.beh:84"
+          }
+        ],
+        "asks": "Which window is right?",
+        "options": [
+          {
+            "label": "Seven",
+            "consequence": "the holder wins",
+            "at": "report-edges.beh:87"
+          }
+        ],
+        "recommend": {
+          "label": "Seven",
+          "why": "it was first",
+          "at": "report-edges.beh:88"
+        },
+        "against": "first is not right",
+        "owner": "BEH-CHALLENGER",
+        "cites": [
+          {
+            "id": "BEH-HOLDER",
+            "title": "holds a value nobody asks about",
+            "ref": "docs/y.md",
+            "contracts": []
+          }
+        ]
+      },
+      {
+        "kind": "conflict",
+        "tier": "decision",
+        "key": "region:Other.size",
+        "title": "Two behaviours disagree about region:Other.size",
+        "sides": [
+          {
+            "id": "BEH-HOLDER",
+            "title": "holds a value nobody asks about",
+            "ref": "docs/y.md",
+            "value": [
+              "1"
+            ]
+          },
+          {
+            "id": "BEH-CHALLENGER",
+            "title": "challenges and carries the question",
+            "ref": "docs/z.md",
+            "value": [
+              "2"
+            ]
+          }
+        ],
+        "held": [
+          "1"
+        ],
+        "challengers": [
+          {
+            "from": "BEH-CHALLENGER",
+            "value": [
+              "2"
+            ],
+            "at": "report-edges.beh:85"
+          }
+        ],
+        "asks": "Which window is right?",
+        "options": [
+          {
+            "label": "Seven",
+            "consequence": "the holder wins",
+            "at": "report-edges.beh:87"
+          }
+        ],
+        "recommend": {
+          "label": "Seven",
+          "why": "it was first",
+          "at": "report-edges.beh:88"
+        },
+        "against": "first is not right",
+        "owner": "BEH-CHALLENGER",
+        "cites": [
+          {
+            "id": "BEH-HOLDER",
+            "title": "holds a value nobody asks about",
+            "ref": "docs/y.md",
+            "contracts": []
+          }
+        ]
+      },
+      {
+        "kind": "review",
+        "tier": "decision",
+        "key": "BEH-ASKED",
+        "id": "BEH-ASKED",
+        "title": "an inference a human promoted",
+        "source": {
+          "origin": "inferred",
+          "ref": "tests/a.cs:four"
+        },
+        "serves": [
+          "BEH-DEF"
+        ],
+        "contracts": [],
+        "asks": "Is this really routine?",
+        "options": [
+          {
+            "label": "Yes",
+            "consequence": "nothing changes",
+            "at": "report-edges.beh:46"
+          },
+          {
+            "label": "No",
+            "consequence": "it becomes a decision",
+            "at": "report-edges.beh:47"
+          }
+        ],
+        "recommend": {
+          "label": "No",
+          "why": "because a person said so",
+          "at": "report-edges.beh:48"
+        },
+        "against": "it looked routine",
+        "cites": []
+      },
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-UNTRACED",
+        "id": "BEH-UNTRACED",
+        "title": "an inference with no reference",
+        "source": {
+          "origin": "inferred",
+          "ref": null
+        },
+        "serves": [],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-ROUTINE-1",
+        "id": "BEH-ROUTINE-1",
+        "title": "a routine inference",
+        "source": {
+          "origin": "inferred",
+          "ref": "tests/a.cs:three"
+        },
+        "serves": [
+          "BEH-DEF"
+        ],
+        "contracts": [
+          "the first contract"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-ROUTINE-2",
+        "id": "BEH-ROUTINE-2",
+        "title": "another routine inference, after the promoted one",
+        "source": {
+          "origin": "inferred",
+          "ref": "tests/a.cs:five"
+        },
+        "serves": [
+          "BEH-DEF"
+        ],
+        "contracts": [],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": [
+          {
+            "id": "BEH-CITED",
+            "title": "an inference only ever seen as evidence",
+            "ref": "tests/a.cs:six",
+            "contracts": [
+              "the cited contract"
+            ]
+          },
+          {
+            "id": "BEH-NOWHERE",
+            "title": "BEH-NOWHERE",
+            "ref": null,
+            "contracts": []
+          }
+        ]
+      }
+    ],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:B",
+          "kind": "button",
+          "name": "B",
+          "usedBy": [
+            "BEH-DEF"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:name",
+          "kind": "field",
+          "name": "name",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Upload",
+          "kind": "field",
+          "name": "Upload",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "attaches"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "file:clip",
+          "kind": "file",
+          "name": "clip",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "fixture",
+              "surface": "an upload fixture: a file name and a mime type",
+              "verbs": [
+                "attaches"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:b",
+          "kind": "page",
+          "name": "b",
+          "usedBy": [
+            "BEH-DEF"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            },
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:a",
+          "kind": "region",
+          "name": "a",
+          "usedBy": [
+            "BEH-INF-OK"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:a_b",
+          "kind": "region",
+          "name": "a_b",
+          "usedBy": [
+            "BEH-INF-BAD"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:ab",
+          "kind": "region",
+          "name": "ab",
+          "usedBy": [
+            "BEH-ROUTINE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Ab",
+          "kind": "region",
+          "name": "Ab",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:Bare",
+          "kind": "region",
+          "name": "Bare",
+          "usedBy": [
+            "BEH-ROUTINE-2"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Null",
+          "kind": "region",
+          "name": "Null",
+          "usedBy": [
+            "BEH-ROUTINE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "field:name",
+          "kind": "field",
+          "name": "name",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:a",
+          "kind": "region",
+          "name": "a",
+          "usedBy": [
+            "BEH-INF-OK"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:a_b",
+          "kind": "region",
+          "name": "a_b",
+          "usedBy": [
+            "BEH-INF-BAD"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:ab",
+          "kind": "region",
+          "name": "ab",
+          "usedBy": [
+            "BEH-ROUTINE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Null",
+          "kind": "region",
+          "name": "Null",
+          "usedBy": [
+            "BEH-ROUTINE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [
+        {
+          "noun": "button:B",
+          "kind": "button",
+          "name": "B",
+          "usedBy": [
+            "BEH-DEF"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-ASKED"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:b",
+          "kind": "page",
+          "name": "b",
+          "usedBy": [
+            "BEH-DEF"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            },
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Bare",
+          "kind": "region",
+          "name": "Bare",
+          "usedBy": [
+            "BEH-ROUTINE-2"
+          ],
+          "bound": true,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "satisfied": [
+        "field:Upload",
+        "file:clip",
+        "region:Ab"
+      ]
+    }
+  }
+}

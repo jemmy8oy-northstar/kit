@@ -1,0 +1,1648 @@
+{
+  "format": 2,
+  "corpus": "longlist",
+  "parse": [
+    {
+      "id": "BEH-CAPTURE-1",
+      "title": "An idea is captured from anywhere in one field",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:34"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:NewIdea",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "NewIdea"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:35"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:Capture",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Capture"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:36"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:31",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#capture"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-2",
+      "title": "A captured idea joins the list without leaving the page",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:41"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:NewIdea with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "NewIdea"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "longlist.beh:42"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:Capture",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Capture"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:43"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:IdeaList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "IdeaList"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:44"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "longlist.beh:42"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:38",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#capture"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-3",
+      "title": "Capture asks for the idea and why it came up, and nothing else",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:49"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "NewIdea",
+          "slot": "fields",
+          "value": [
+            "Idea",
+            "WhyNow"
+          ],
+          "from": "BEH-CAPTURE-3",
+          "at": "longlist.beh:50"
+        }
+      ],
+      "serves": [],
+      "at": "longlist.beh:46",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#capture"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-4",
+      "title": "An empty longlist says so rather than showing a blank page",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "longlist:Empty",
+          "refs": [
+            {
+              "kind": "longlist",
+              "name": "Empty"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:55"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:56"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:EmptyState",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "EmptyState"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:57"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:52",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#capture"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DECIDE-1",
+      "title": "An idea can be opened to decide on it",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "idea:Captured",
+          "refs": [
+            {
+              "kind": "idea",
+              "name": "Captured"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:65"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:66"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates link:IdeaTitle",
+          "refs": [
+            {
+              "kind": "link",
+              "name": "IdeaTitle"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:67"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:Idea",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Idea"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:68"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:WhyNow",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "WhyNow"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:69"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:62",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#decide"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DECIDE-2",
+      "title": "Deciding to build an idea records the decision against it",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "idea:Captured",
+          "refs": [
+            {
+              "kind": "idea",
+              "name": "Captured"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:74"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Idea",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Idea"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:75"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:Build",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Build"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:76"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Decision",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Decision"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:77"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:71",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#decide"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DECIDE-3",
+      "title": "Declining an idea requires a reason, so the longlist teaches",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "idea:Captured",
+          "refs": [
+            {
+              "kind": "idea",
+              "name": "Captured"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:82"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Idea",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Idea"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:83"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:Decline",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Decline"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:84"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:DeclineReason",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "DeclineReason"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:85"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Decision",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Decision"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:86"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:79",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#decide"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-AGE-1",
+      "title": "An idea nobody has decided on for a long time is visibly stale",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "idea:Stale",
+          "refs": [
+            {
+              "kind": "idea",
+              "name": "Stale"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:94"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Longlist",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Longlist"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:95"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees badge:Stale",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "Stale"
+            }
+          ],
+          "holes": [],
+          "at": "longlist.beh:96"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "longlist.beh:91",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/longlist-brief.md#rot"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "form:NewIdea.fields",
+        {
+          "value": [
+            "Idea",
+            "WhyNow"
+          ],
+          "contributors": [
+            "BEH-CAPTURE-3"
+          ],
+          "at": "longlist.beh:50"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-CAPTURE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-CAPTURE-2",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "Idea",
+                "WhyNow"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:NewIdea.fields",
+                "value": [
+                  "Idea",
+                  "WhyNow"
+                ],
+                "from": [
+                  "BEH-CAPTURE-3"
+                ],
+                "at": "longlist.beh:42"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-CAPTURE-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-CAPTURE-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DECIDE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DECIDE-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DECIDE-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-AGE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-CAPTURE-1",
+      "code": "test(\"[BEH-CAPTURE-1] An idea is captured from anywhere in one field\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:NewIdea\" });\n  // UNGENERATED: then sees field:NewIdea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Capture\" });\n  // UNGENERATED: then sees button:Capture\n});",
+      "missing": [
+        "page:Longlist",
+        "field:NewIdea",
+        "button:Capture"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-2",
+      "code": "test(\"[BEH-CAPTURE-2] A captured idea joins the list without leaving the page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewIdea with ?fields\" });\n  // UNGENERATED: when fills form:NewIdea with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Capture\" });\n  // UNGENERATED: when activates button:Capture\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:IdeaList\" });\n  // UNGENERATED: then sees region:IdeaList\n});",
+      "missing": [
+        "page:Longlist",
+        "field:Idea",
+        "field:WhyNow",
+        "button:Capture",
+        "region:IdeaList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-3",
+      "code": "test(\"[BEH-CAPTURE-3] Capture asks for the idea and why it came up, and nothing else\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n});",
+      "missing": [
+        "page:Longlist"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-CAPTURE-4",
+      "code": "test(\"[BEH-CAPTURE-4] An empty longlist says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given longlist:Empty\" });\n  // UNGENERATED: given longlist:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "missing": [
+        "longlist:Empty",
+        "page:Longlist",
+        "region:EmptyState"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-DECIDE-1",
+      "code": "test(\"[BEH-DECIDE-1] An idea can be opened to decide on it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates link:IdeaTitle\" });\n  // UNGENERATED: when activates link:IdeaTitle\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Idea\" });\n  // UNGENERATED: then lands on page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:WhyNow\" });\n  // UNGENERATED: then sees region:WhyNow\n});",
+      "missing": [
+        "idea:Captured",
+        "page:Longlist",
+        "link:IdeaTitle",
+        "page:Idea",
+        "region:WhyNow"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-DECIDE-2",
+      "code": "test(\"[BEH-DECIDE-2] Deciding to build an idea records the decision against it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Build\" });\n  // UNGENERATED: when activates button:Build\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+      "missing": [
+        "idea:Captured",
+        "page:Idea",
+        "button:Build",
+        "badge:Decision"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-DECIDE-3",
+      "code": "test(\"[BEH-DECIDE-3] Declining an idea requires a reason, so the longlist teaches\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Decline\" });\n  // UNGENERATED: when activates button:Decline\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:DeclineReason\" });\n  // UNGENERATED: then sees field:DeclineReason\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+      "missing": [
+        "idea:Captured",
+        "page:Idea",
+        "button:Decline",
+        "field:DeclineReason",
+        "badge:Decision"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-AGE-1",
+      "code": "test(\"[BEH-AGE-1] An idea nobody has decided on for a long time is visibly stale\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Stale\" });\n  // UNGENERATED: given idea:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Stale\" });\n  // UNGENERATED: then sees badge:Stale\n});",
+      "missing": [
+        "idea:Stale",
+        "page:Longlist",
+        "badge:Stale"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 8,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:Decision",
+          "kind": "badge",
+          "name": "Decision",
+          "usedBy": [
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "badge:Stale",
+          "kind": "badge",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Build",
+          "kind": "button",
+          "name": "Build",
+          "usedBy": [
+            "BEH-DECIDE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Capture",
+          "kind": "button",
+          "name": "Capture",
+          "usedBy": [
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Decline",
+          "kind": "button",
+          "name": "Decline",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:DeclineReason",
+          "kind": "field",
+          "name": "DeclineReason",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Idea",
+          "kind": "field",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:NewIdea",
+          "kind": "field",
+          "name": "NewIdea",
+          "usedBy": [
+            "BEH-CAPTURE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:WhyNow",
+          "kind": "field",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Captured",
+          "kind": "idea",
+          "name": "Captured",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Stale",
+          "kind": "idea",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:IdeaTitle",
+          "kind": "link",
+          "name": "IdeaTitle",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "longlist:Empty",
+          "kind": "longlist",
+          "name": "Empty",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Idea",
+          "kind": "page",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Longlist",
+          "kind": "page",
+          "name": "Longlist",
+          "usedBy": [
+            "BEH-AGE-1",
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2",
+            "BEH-CAPTURE-3",
+            "BEH-CAPTURE-4",
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:IdeaList",
+          "kind": "region",
+          "name": "IdeaList",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:WhyNow",
+          "kind": "region",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:Decision",
+          "kind": "badge",
+          "name": "Decision",
+          "usedBy": [
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "badge:Stale",
+          "kind": "badge",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Build",
+          "kind": "button",
+          "name": "Build",
+          "usedBy": [
+            "BEH-DECIDE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Capture",
+          "kind": "button",
+          "name": "Capture",
+          "usedBy": [
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:Decline",
+          "kind": "button",
+          "name": "Decline",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:DeclineReason",
+          "kind": "field",
+          "name": "DeclineReason",
+          "usedBy": [
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Idea",
+          "kind": "field",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:NewIdea",
+          "kind": "field",
+          "name": "NewIdea",
+          "usedBy": [
+            "BEH-CAPTURE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:WhyNow",
+          "kind": "field",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Captured",
+          "kind": "idea",
+          "name": "Captured",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "idea:Stale",
+          "kind": "idea",
+          "name": "Stale",
+          "usedBy": [
+            "BEH-AGE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "link:IdeaTitle",
+          "kind": "link",
+          "name": "IdeaTitle",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "longlist:Empty",
+          "kind": "longlist",
+          "name": "Empty",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Idea",
+          "kind": "page",
+          "name": "Idea",
+          "usedBy": [
+            "BEH-DECIDE-1",
+            "BEH-DECIDE-2",
+            "BEH-DECIDE-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Longlist",
+          "kind": "page",
+          "name": "Longlist",
+          "usedBy": [
+            "BEH-AGE-1",
+            "BEH-CAPTURE-1",
+            "BEH-CAPTURE-2",
+            "BEH-CAPTURE-3",
+            "BEH-CAPTURE-4",
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-CAPTURE-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:IdeaList",
+          "kind": "region",
+          "name": "IdeaList",
+          "usedBy": [
+            "BEH-CAPTURE-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:WhyNow",
+          "kind": "region",
+          "name": "WhyNow",
+          "usedBy": [
+            "BEH-DECIDE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

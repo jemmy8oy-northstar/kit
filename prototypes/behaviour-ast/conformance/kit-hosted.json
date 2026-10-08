@@ -1,0 +1,2386 @@
+{
+  "format": 2,
+  "corpus": "kit-hosted",
+  "parse": [
+    {
+      "id": "BEH-PULL-1",
+      "title": "The project list comes from GitHub, not from the pod's working tree",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "repo:Remote",
+          "refs": [
+            {
+              "kind": "repo",
+              "name": "Remote"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:115"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitServe",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitServe"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:116"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports origin:GitHub",
+          "refs": [
+            {
+              "kind": "origin",
+              "name": "GitHub"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:117"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "today the list is readdirSync(behaviours/*.beh) against the checkout",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:118"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the process happens to sit in — correct for a laptop, meaningless for a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:119"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "pod whose clone is an implementation detail of its image",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:120"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:112",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-PULL-2",
+      "title": "A public project's behaviours are served without a token, on a request of their own",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "project:Public",
+          "refs": [
+            {
+              "kind": "project",
+              "name": "Public"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:125"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitServe",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitServe"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:126"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports auth:NotRequired",
+          "refs": [
+            {
+              "kind": "auth",
+              "name": "NotRequired"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:127"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "his instinct, quoted: \"obviously beh from public repos dont need to be",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:128"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "authenticated so maybe can be returned faster\" — so the split is not a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:129"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "performance tweak layered on later, it is which credential the request needs",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:130"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a public read that fails because a token could not be minted is a bug",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:131"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:122",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-PULL-3",
+      "title": "A private project is served only against a live installation token",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "project:Private",
+          "refs": [
+            {
+              "kind": "project",
+              "name": "Private"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:136"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitServe",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitServe"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:137"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports auth:InstallationToken",
+          "refs": [
+            {
+              "kind": "auth",
+              "name": "InstallationToken"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:138"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the kit-github secret he created on 2026-09-27 holds an app id, an",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:139"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "installation id and a private key — a credential that is EXCHANGED for a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:140"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "short-lived token, never sent as one",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:141"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "an expired token is re-minted rather than returned as a failed read, which",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:142"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "is what he meant by \"some similar refresh token mechanism to what you are using\"",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:143"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:133",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-PULL-4",
+      "title": "The backend parses, resolves and generates; the frontend renders what it is handed",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "request:Project",
+          "refs": [
+            {
+              "kind": "request",
+              "name": "Project"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:148"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitServe",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitServe"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:149"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports work:ServerSide",
+          "refs": [
+            {
+              "kind": "work",
+              "name": "ServerSide"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:150"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "\"I am envisioning, the frontend has the UI, keep it light let the backend",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:151"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "do the heavy lifting\" — so the generated test a screen shows is computed",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:152"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "server-side and arrives as data; the browser never carries the engine",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:153"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "this is also what makes the engine's language a private decision rather",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:154"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "than a public one",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:155"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:145",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ACT-1",
+      "title": "A behaviour is added to a project from a phone",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitHostedProject",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitHostedProject"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:165"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitHostedAddBehaviour",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitHostedAddBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:166"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "\"top priority now I think is deploying kit so that I can use it from my",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:167"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "phone\" — the phone is the requirement, not a nice-to-have, and it is why",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:168"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "nothing here may depend on a loopback bind",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:169"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:162",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ACT-2",
+      "title": "An existing behaviour is updated without rewriting the file around it",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitHostedBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitHostedBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:174"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitHostedSave",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitHostedSave"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:175"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "writer.js already splices one block so every comment survives",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:176"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "(kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:177"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "headers in this directory are where a corpus's caveats live",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:178"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:171",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ACT-3",
+      "title": "A behaviour is removed, and the removal is refused if anything still references it",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitHostedBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitHostedBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:183"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitHostedRemove",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitHostedRemove"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:184"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:185"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "writer.js can add a step and splice a block, and has no remove path",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:186"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a behaviour can be the target of `serves` or `cites` from another one, so",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:187"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "deleting it silently is how a corpus acquires a dangling reference",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:188"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:180",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ACT-4",
+      "title": "Edits are held until Commit, so a half-described change never reaches a branch",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitHostedProject",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitHostedProject"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:193"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitHostedCommit",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitHostedCommit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:194"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:190",
+      "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
+      "options": [
+        {
+          "label": "Accumulate until Commit",
+          "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
+          "at": "kit-hosted.beh:196"
+        },
+        {
+          "label": "Write each edit straight through",
+          "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
+          "at": "kit-hosted.beh:197"
+        }
+      ],
+      "recommend": {
+        "label": "Accumulate until Commit",
+        "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
+        "at": "kit-hosted.beh:198"
+      },
+      "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-COMMIT-1",
+      "title": "Commit creates a branch off dev, and never a commit on dev",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "change:Pending",
+          "refs": [
+            {
+              "kind": "change",
+              "name": "Pending"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:211"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCommit",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCommit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:212"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports branch:Created",
+          "refs": [
+            {
+              "kind": "branch",
+              "name": "Created"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:213"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "answering the question mark in his own sentence: it has to be a branch",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:214"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a spec written before its code exists makes check.js exit 1 BY DESIGN",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:215"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "(kit.beh BEH-GATE-1), so committing to dev would push a known-red tree",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:216"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "onto the branch every other PR is measured against",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:217"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "⚠️ UNBUILT: git-store.js defaults to `opts.branch || currentBranch(cwd)`,",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:218"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "so today a pod would push a phone edit onto whatever branch its clone sits on",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:219"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:208",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-COMMIT-2",
+      "title": "The commit is attributed to Kit, not to the person who pressed Commit",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "change:Pending",
+          "refs": [
+            {
+              "kind": "change",
+              "name": "Pending"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:224"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCommit",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCommit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:225"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports author:Kit",
+          "refs": [
+            {
+              "kind": "author",
+              "name": "Kit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:226"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "his override on kit#88, 2026-09-30: \"Let's let the commit belong to kit",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:227"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "for now… using the gh app speeds up timelines\"",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:228"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "⚠️ THIS IS A TRADE HE MADE KNOWINGLY, NOT A LIMITATION — commit",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:229"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "attribution was the argument that carried the earlier web-flow decision,",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:230"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "and he judged shipping sooner worth more while Kit has one user",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:231"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the condition for revisiting it is a SECOND USER, not a date",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:232"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:221",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/design/process.md#3"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-COMMIT-3",
+      "title": "A pull request is opened for the branch, because that is where the work is picked up",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "branch:Pushed",
+          "refs": [
+            {
+              "kind": "branch",
+              "name": "Pushed"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:237"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCommit",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCommit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:238"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports pull:Opened",
+          "refs": [
+            {
+              "kind": "pull",
+              "name": "Opened"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:239"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "\"Here the AI (you for now) can read the behaviour changes, update the",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:240"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "generated tests, update inferences etc, implement changes in the app to get",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:241"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the tests passing - raise a PR\"",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:242"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the PR is the handover: a pushed branch with no PR is invisible to every",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:243"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "instrument that looks for work",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:244"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:234",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-COMMIT-4",
+      "title": "The branch a Commit produces is red, and the red is the work item",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "branch:Pushed",
+          "refs": [
+            {
+              "kind": "branch",
+              "name": "Pushed"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:249"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCheck",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCheck"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:250"
+        },
+        {
+          "kind": "then",
+          "verb": "exits",
+          "text": "exits status:One",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "One"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:251"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:253"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "adding one unimplemented behaviour took `20/20 behaviour(s) have a test",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:254"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "naming them` to `20/21` and exit 0 to exit 1",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:255"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "so \"the tests are failing\" is the normal state of a fresh Kit branch, and",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:256"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "anything that treats a red branch as a fault will fight the workflow he",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:257"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "described rather than serve it",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:258"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [
+        {
+          "id": "BEH-COMMIT-3",
+          "at": "kit-hosted.beh:252"
+        }
+      ],
+      "at": "kit-hosted.beh:246",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "inferred",
+        "ref": "kit#88"
+      },
+      "review": {
+        "state": "unreviewed",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GATE-H1",
+      "title": "A read is served to anyone, and that stays true in every configuration",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "request:Anonymous",
+          "refs": [
+            {
+              "kind": "request",
+              "name": "Anonymous"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:269"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitServe",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitServe"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:270"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports status:Ok",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "Ok"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:271"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "kit is a public repo, so a corpus served to an unauthenticated caller",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:272"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "discloses nothing that `git clone` does not",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:273"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "gating reads would cost the thing he wants — glancing at a spec from a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:274"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "phone — to protect data that is already public",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:275"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:266",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/design/process.md"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-GATE-H2",
+      "title": "A write is refused unless the caller proved they are the operator",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "request:Unauthenticated",
+          "refs": [
+            {
+              "kind": "request",
+              "name": "Unauthenticated"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:280"
+        },
+        {
+          "kind": "when",
+          "verb": "runs",
+          "text": "runs command:KitCommit",
+          "refs": [
+            {
+              "kind": "command",
+              "name": "KitCommit"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:281"
+        },
+        {
+          "kind": "then",
+          "verb": "reports",
+          "text": "reports status:Forbidden",
+          "refs": [
+            {
+              "kind": "status",
+              "name": "Forbidden"
+            }
+          ],
+          "holes": [],
+          "at": "kit-hosted.beh:282"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "this is the half BEH-WRITE-5 used to hold by binding loopback, which a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:283"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "hosted service cannot do — so the gate moves from the interface to a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:284"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "credential, and kit#47's KIT_PASSWORD is the first one",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:285"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:286"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "App installation token is how KIT talks to GITHUB; the password is how a",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:287"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "PERSON is let into Kit. Neither substitutes for the other",
+          "refs": [],
+          "holes": [],
+          "at": "kit-hosted.beh:288"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-hosted.beh:277",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/design/process.md"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-PULL-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-PULL-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-PULL-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-PULL-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ACT-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ACT-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ACT-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ACT-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-COMMIT-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-COMMIT-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-COMMIT-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-COMMIT-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GATE-H1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-GATE-H2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-PULL-1",
+      "code": "test(\"[BEH-PULL-1] The project list comes from GitHub, not from the pod's working tree\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:Remote\" });\n  // UNGENERATED: given repo:Remote\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports origin:GitHub\" });\n  // UNGENERATED: then reports origin:GitHub\n  // CONTRACT (not derivable from a behaviour): today the list is readdirSync(behaviours/*.beh) against the checkout\n  // CONTRACT (not derivable from a behaviour): the process happens to sit in — correct for a laptop, meaningless for a\n  // CONTRACT (not derivable from a behaviour): pod whose clone is an implementation detail of its image\n});",
+      "missing": [
+        "repo:Remote"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-PULL-2",
+      "code": "test(\"[BEH-PULL-2] A public project's behaviours are served without a token, on a request of their own\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given project:Public\" });\n  // UNGENERATED: given project:Public\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports auth:NotRequired\" });\n  // UNGENERATED: then reports auth:NotRequired\n  // CONTRACT (not derivable from a behaviour): his instinct, quoted: \"obviously beh from public repos dont need to be\n  // CONTRACT (not derivable from a behaviour): authenticated so maybe can be returned faster\" — so the split is not a\n  // CONTRACT (not derivable from a behaviour): performance tweak layered on later, it is which credential the request needs\n  // CONTRACT (not derivable from a behaviour): a public read that fails because a token could not be minted is a bug\n});",
+      "missing": [
+        "project:Public"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 4,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-PULL-3",
+      "code": "test(\"[BEH-PULL-3] A private project is served only against a live installation token\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given project:Private\" });\n  // UNGENERATED: given project:Private\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports auth:InstallationToken\" });\n  // UNGENERATED: then reports auth:InstallationToken\n  // CONTRACT (not derivable from a behaviour): the kit-github secret he created on 2026-09-27 holds an app id, an\n  // CONTRACT (not derivable from a behaviour): installation id and a private key — a credential that is EXCHANGED for a\n  // CONTRACT (not derivable from a behaviour): short-lived token, never sent as one\n  // CONTRACT (not derivable from a behaviour): an expired token is re-minted rather than returned as a failed read, which\n  // CONTRACT (not derivable from a behaviour): is what he meant by \"some similar refresh token mechanism to what you are using\"\n});",
+      "missing": [
+        "project:Private"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 5,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-PULL-4",
+      "code": "test(\"[BEH-PULL-4] The backend parses, resolves and generates; the frontend renders what it is handed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Project\" });\n  // UNGENERATED: given request:Project\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports work:ServerSide\" });\n  // UNGENERATED: then reports work:ServerSide\n  // CONTRACT (not derivable from a behaviour): \"I am envisioning, the frontend has the UI, keep it light let the backend\n  // CONTRACT (not derivable from a behaviour): do the heavy lifting\" — so the generated test a screen shows is computed\n  // CONTRACT (not derivable from a behaviour): server-side and arrives as data; the browser never carries the engine\n  // CONTRACT (not derivable from a behaviour): this is also what makes the engine's language a private decision rather\n  // CONTRACT (not derivable from a behaviour): than a public one\n});",
+      "missing": [
+        "request:Project"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 5,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-ACT-1",
+      "code": "test(\"[BEH-ACT-1] A behaviour is added to a project from a phone\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedProject\" });\n  // UNGENERATED: when opens page:KitHostedProject\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedAddBehaviour\" });\n  // UNGENERATED: then sees button:KitHostedAddBehaviour\n  // CONTRACT (not derivable from a behaviour): \"top priority now I think is deploying kit so that I can use it from my\n  // CONTRACT (not derivable from a behaviour): phone\" — the phone is the requirement, not a nice-to-have, and it is why\n  // CONTRACT (not derivable from a behaviour): nothing here may depend on a loopback bind\n});",
+      "missing": [
+        "page:KitHostedProject",
+        "button:KitHostedAddBehaviour"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-ACT-2",
+      "code": "test(\"[BEH-ACT-2] An existing behaviour is updated without rewriting the file around it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedBehaviour\" });\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedSave\" });\n  // UNGENERATED: then sees button:KitHostedSave\n  // CONTRACT (not derivable from a behaviour): writer.js already splices one block so every comment survives\n  // CONTRACT (not derivable from a behaviour): (kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the\n  // CONTRACT (not derivable from a behaviour): headers in this directory are where a corpus's caveats live\n});",
+      "missing": [
+        "page:KitHostedBehaviour",
+        "button:KitHostedSave"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 3,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-ACT-3",
+      "code": "test(\"[BEH-ACT-3] A behaviour is removed, and the removal is refused if anything still references it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedBehaviour\" });\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedRemove\" });\n  // UNGENERATED: then sees button:KitHostedRemove\n  // CONTRACT (not derivable from a behaviour): ⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —\n  // CONTRACT (not derivable from a behaviour): writer.js can add a step and splice a block, and has no remove path\n  // CONTRACT (not derivable from a behaviour): a behaviour can be the target of `serves` or `cites` from another one, so\n  // CONTRACT (not derivable from a behaviour): deleting it silently is how a corpus acquires a dangling reference\n});",
+      "missing": [
+        "page:KitHostedBehaviour",
+        "button:KitHostedRemove"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 4,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-ACT-4",
+      "code": "test(\"[BEH-ACT-4] Edits are held until Commit, so a half-described change never reaches a branch\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedProject\" });\n  // UNGENERATED: when opens page:KitHostedProject\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedCommit\" });\n  // UNGENERATED: then sees button:KitHostedCommit\n});",
+      "missing": [
+        "page:KitHostedProject",
+        "button:KitHostedCommit"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-COMMIT-1",
+      "code": "test(\"[BEH-COMMIT-1] Commit creates a branch off dev, and never a commit on dev\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given change:Pending\" });\n  // UNGENERATED: given change:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports branch:Created\" });\n  // UNGENERATED: then reports branch:Created\n  // CONTRACT (not derivable from a behaviour): answering the question mark in his own sentence: it has to be a branch\n  // CONTRACT (not derivable from a behaviour): a spec written before its code exists makes check.js exit 1 BY DESIGN\n  // CONTRACT (not derivable from a behaviour): (kit.beh BEH-GATE-1), so committing to dev would push a known-red tree\n  // CONTRACT (not derivable from a behaviour): onto the branch every other PR is measured against\n  // CONTRACT (not derivable from a behaviour): ⚠️ UNBUILT: git-store.js defaults to `opts.branch || currentBranch(cwd)`,\n  // CONTRACT (not derivable from a behaviour): so today a pod would push a phone edit onto whatever branch its clone sits on\n});",
+      "missing": [
+        "change:Pending"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 6,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-COMMIT-2",
+      "code": "test(\"[BEH-COMMIT-2] The commit is attributed to Kit, not to the person who pressed Commit\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given change:Pending\" });\n  // UNGENERATED: given change:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports author:Kit\" });\n  // UNGENERATED: then reports author:Kit\n  // CONTRACT (not derivable from a behaviour): his override on kit#88, 2026-09-30: \"Let's let the commit belong to kit\n  // CONTRACT (not derivable from a behaviour): for now… using the gh app speeds up timelines\"\n  // CONTRACT (not derivable from a behaviour): ⚠️ THIS IS A TRADE HE MADE KNOWINGLY, NOT A LIMITATION — commit\n  // CONTRACT (not derivable from a behaviour): attribution was the argument that carried the earlier web-flow decision,\n  // CONTRACT (not derivable from a behaviour): and he judged shipping sooner worth more while Kit has one user\n  // CONTRACT (not derivable from a behaviour): the condition for revisiting it is a SECOND USER, not a date\n});",
+      "missing": [
+        "change:Pending"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 6,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-COMMIT-3",
+      "code": "test(\"[BEH-COMMIT-3] A pull request is opened for the branch, because that is where the work is picked up\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given branch:Pushed\" });\n  // UNGENERATED: given branch:Pushed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports pull:Opened\" });\n  // UNGENERATED: then reports pull:Opened\n  // CONTRACT (not derivable from a behaviour): \"Here the AI (you for now) can read the behaviour changes, update the\n  // CONTRACT (not derivable from a behaviour): generated tests, update inferences etc, implement changes in the app to get\n  // CONTRACT (not derivable from a behaviour): the tests passing - raise a PR\"\n  // CONTRACT (not derivable from a behaviour): the PR is the handover: a pushed branch with no PR is invisible to every\n  // CONTRACT (not derivable from a behaviour): instrument that looks for work\n});",
+      "missing": [
+        "branch:Pushed"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 5,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-COMMIT-4",
+      "code": "test(\"[BEH-COMMIT-4] The branch a Commit produces is red, and the red is the work item\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given branch:Pushed\" });\n  // UNGENERATED: given branch:Pushed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:\n  // CONTRACT (not derivable from a behaviour): adding one unimplemented behaviour took `20/20 behaviour(s) have a test\n  // CONTRACT (not derivable from a behaviour): naming them` to `20/21` and exit 0 to exit 1\n  // CONTRACT (not derivable from a behaviour): so \"the tests are failing\" is the normal state of a fresh Kit branch, and\n  // CONTRACT (not derivable from a behaviour): anything that treats a red branch as a fault will fight the workflow he\n  // CONTRACT (not derivable from a behaviour): described rather than serve it\n});",
+      "missing": [
+        "branch:Pushed"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 6,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GATE-H1",
+      "code": "test(\"[BEH-GATE-H1] A read is served to anyone, and that stays true in every configuration\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Anonymous\" });\n  // UNGENERATED: given request:Anonymous\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Ok\" });\n  // UNGENERATED: then reports status:Ok\n  // CONTRACT (not derivable from a behaviour): kit is a public repo, so a corpus served to an unauthenticated caller\n  // CONTRACT (not derivable from a behaviour): discloses nothing that `git clone` does not\n  // CONTRACT (not derivable from a behaviour): gating reads would cost the thing he wants — glancing at a spec from a\n  // CONTRACT (not derivable from a behaviour): phone — to protect data that is already public\n});",
+      "missing": [
+        "request:Anonymous"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 4,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-GATE-H2",
+      "code": "test(\"[BEH-GATE-H2] A write is refused unless the caller proved they are the operator\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Unauthenticated\" });\n  // UNGENERATED: given request:Unauthenticated\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Forbidden\" });\n  // UNGENERATED: then reports status:Forbidden\n  // CONTRACT (not derivable from a behaviour): this is the half BEH-WRITE-5 used to hold by binding loopback, which a\n  // CONTRACT (not derivable from a behaviour): hosted service cannot do — so the gate moves from the interface to a\n  // CONTRACT (not derivable from a behaviour): credential, and kit#47's KIT_PASSWORD is the first one\n  // CONTRACT (not derivable from a behaviour): ⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the\n  // CONTRACT (not derivable from a behaviour): App installation token is how KIT talks to GITHUB; the password is how a\n  // CONTRACT (not derivable from a behaviour): PERSON is let into Kit. Neither substitutes for the other\n});",
+      "missing": [
+        "request:Unauthenticated"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 6,
+        "ungenerated": 3
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 12,
+      "inferred": 2,
+      "unreviewed": [
+        "BEH-ACT-4",
+        "BEH-COMMIT-4"
+      ],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [
+        "BEH-COMMIT-4"
+      ],
+      "unserved": [
+        "BEH-ACT-4"
+      ]
+    },
+    "questions": [
+      {
+        "kind": "unserved",
+        "tier": "decision",
+        "key": "BEH-ACT-4",
+        "id": "BEH-ACT-4",
+        "title": "Edits are held until Commit, so a half-described change never reaches a branch",
+        "source": {
+          "origin": "inferred",
+          "ref": "kit#88"
+        },
+        "serves": [],
+        "contracts": [],
+        "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
+        "options": [
+          {
+            "label": "Accumulate until Commit",
+            "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
+            "at": "kit-hosted.beh:196"
+          },
+          {
+            "label": "Write each edit straight through",
+            "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
+            "at": "kit-hosted.beh:197"
+          }
+        ],
+        "recommend": {
+          "label": "Accumulate until Commit",
+          "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
+          "at": "kit-hosted.beh:198"
+        },
+        "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
+        "cites": []
+      },
+      {
+        "kind": "review",
+        "tier": "review",
+        "key": "BEH-COMMIT-4",
+        "id": "BEH-COMMIT-4",
+        "title": "The branch a Commit produces is red, and the red is the work item",
+        "source": {
+          "origin": "inferred",
+          "ref": "kit#88"
+        },
+        "serves": [
+          "BEH-COMMIT-3"
+        ],
+        "contracts": [
+          "MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:",
+          "adding one unimplemented behaviour took `20/20 behaviour(s) have a test",
+          "naming them` to `20/21` and exit 0 to exit 1",
+          "so \"the tests are failing\" is the normal state of a fresh Kit branch, and",
+          "anything that treats a red branch as a fault will fight the workflow he",
+          "described rather than serve it"
+        ],
+        "asks": null,
+        "options": [],
+        "recommend": null,
+        "against": null,
+        "cites": []
+      }
+    ],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "branch:Pushed",
+          "kind": "branch",
+          "name": "Pushed",
+          "usedBy": [
+            "BEH-COMMIT-3",
+            "BEH-COMMIT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedAddBehaviour",
+          "kind": "button",
+          "name": "KitHostedAddBehaviour",
+          "usedBy": [
+            "BEH-ACT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedCommit",
+          "kind": "button",
+          "name": "KitHostedCommit",
+          "usedBy": [
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedRemove",
+          "kind": "button",
+          "name": "KitHostedRemove",
+          "usedBy": [
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedSave",
+          "kind": "button",
+          "name": "KitHostedSave",
+          "usedBy": [
+            "BEH-ACT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "change:Pending",
+          "kind": "change",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-COMMIT-1",
+            "BEH-COMMIT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedBehaviour",
+          "kind": "page",
+          "name": "KitHostedBehaviour",
+          "usedBy": [
+            "BEH-ACT-2",
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedProject",
+          "kind": "page",
+          "name": "KitHostedProject",
+          "usedBy": [
+            "BEH-ACT-1",
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Private",
+          "kind": "project",
+          "name": "Private",
+          "usedBy": [
+            "BEH-PULL-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Public",
+          "kind": "project",
+          "name": "Public",
+          "usedBy": [
+            "BEH-PULL-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Remote",
+          "kind": "repo",
+          "name": "Remote",
+          "usedBy": [
+            "BEH-PULL-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Anonymous",
+          "kind": "request",
+          "name": "Anonymous",
+          "usedBy": [
+            "BEH-GATE-H1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Project",
+          "kind": "request",
+          "name": "Project",
+          "usedBy": [
+            "BEH-PULL-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unauthenticated",
+          "kind": "request",
+          "name": "Unauthenticated",
+          "usedBy": [
+            "BEH-GATE-H2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "branch:Pushed",
+          "kind": "branch",
+          "name": "Pushed",
+          "usedBy": [
+            "BEH-COMMIT-3",
+            "BEH-COMMIT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedAddBehaviour",
+          "kind": "button",
+          "name": "KitHostedAddBehaviour",
+          "usedBy": [
+            "BEH-ACT-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedCommit",
+          "kind": "button",
+          "name": "KitHostedCommit",
+          "usedBy": [
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedRemove",
+          "kind": "button",
+          "name": "KitHostedRemove",
+          "usedBy": [
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:KitHostedSave",
+          "kind": "button",
+          "name": "KitHostedSave",
+          "usedBy": [
+            "BEH-ACT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "change:Pending",
+          "kind": "change",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-COMMIT-1",
+            "BEH-COMMIT-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedBehaviour",
+          "kind": "page",
+          "name": "KitHostedBehaviour",
+          "usedBy": [
+            "BEH-ACT-2",
+            "BEH-ACT-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:KitHostedProject",
+          "kind": "page",
+          "name": "KitHostedProject",
+          "usedBy": [
+            "BEH-ACT-1",
+            "BEH-ACT-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Private",
+          "kind": "project",
+          "name": "Private",
+          "usedBy": [
+            "BEH-PULL-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "project:Public",
+          "kind": "project",
+          "name": "Public",
+          "usedBy": [
+            "BEH-PULL-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "repo:Remote",
+          "kind": "repo",
+          "name": "Remote",
+          "usedBy": [
+            "BEH-PULL-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Anonymous",
+          "kind": "request",
+          "name": "Anonymous",
+          "usedBy": [
+            "BEH-GATE-H1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Project",
+          "kind": "request",
+          "name": "Project",
+          "usedBy": [
+            "BEH-PULL-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "request:Unauthenticated",
+          "kind": "request",
+          "name": "Unauthenticated",
+          "usedBy": [
+            "BEH-GATE-H2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

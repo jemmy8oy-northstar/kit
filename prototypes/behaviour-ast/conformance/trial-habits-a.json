@@ -1,0 +1,1766 @@
+{
+  "format": 2,
+  "corpus": "trial-habits-a",
+  "parse": [
+    {
+      "id": "BEH-SETUP-1",
+      "title": "James opens habit setup to add something new to track",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:ManageHabits",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "ManageHabits"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:52"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:AddHabit",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "AddHabit"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:53"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:NewHabit",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewHabit"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:54"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:HabitName",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "HabitName"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:55"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:49",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SETUP-2",
+      "title": "Saving a new habit adds it to today's list",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:NewHabit",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewHabit"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:60"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:NewHabit with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "NewHabit"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "trial-habits-a.beh:61"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:SaveHabit",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SaveHabit"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:62"
+        },
+        {
+          "kind": "then",
+          "verb": "lands",
+          "text": "lands on page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:63"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:64"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "trial-habits-a.beh:61"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:57",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SETUP-3",
+      "title": "A new habit needs nothing more than a name to be saved",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:NewHabit",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "NewHabit"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:69"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "form",
+          "name": "NewHabit",
+          "slot": "fields",
+          "value": [
+            "HabitName"
+          ],
+          "from": "BEH-SETUP-3",
+          "at": "trial-habits-a.beh:70"
+        }
+      ],
+      "serves": [],
+      "at": "trial-habits-a.beh:66",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-comment-jemmy8oy-2026-07-05t120531z"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-1",
+      "title": "Today's page lists everything currently being tracked",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:78"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:HabitList",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "HabitList"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:79"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:75",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "title": "Before any habit is added, today's page says there is nothing to track yet",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habits:None",
+          "refs": [
+            {
+              "kind": "habits",
+              "name": "None"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:84"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:85"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:EmptyState",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "EmptyState"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:86"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:81",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "title": "Ticking a habit marks it done for today",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:Pending",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "Pending"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:91"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:92"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates checkbox:HabitDone",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitDone"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:93"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:HabitDone",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitDone"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:94"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "logging a habit is one tap, with no form or confirmation step in between",
+          "refs": [],
+          "holes": [],
+          "at": "trial-habits-a.beh:95"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:88",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-4",
+      "title": "A habit ticked off earlier today still shows as done when the page is reopened",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "given",
+          "verb": "state",
+          "text": "habit:LoggedToday",
+          "refs": [
+            {
+              "kind": "habit",
+              "name": "LoggedToday"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:100"
+        },
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:101"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees checkbox:HabitDone",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "HabitDone"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:102"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:97",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-5",
+      "title": "Habits like sleeping hours or drinks drunk are logged as a number, not a tick",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:107"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills form:LogValue with ?fields",
+          "refs": [
+            {
+              "kind": "form",
+              "name": "LogValue"
+            }
+          ],
+          "holes": [
+            {
+              "slot": "fields"
+            }
+          ],
+          "at": "trial-habits-a.beh:108"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:SaveValue",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "SaveValue"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:109"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:HabitValue",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "HabitValue"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:110"
+        }
+      ],
+      "unknowns": [
+        {
+          "slot": "fields",
+          "at": "trial-habits-a.beh:108"
+        }
+      ],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:104",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-TODAY-6",
+      "title": "Each row in today's list shows the habit's own name",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:115"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:HabitName",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "HabitName"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:116"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:112",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-DERIVE-1",
+      "title": "Logging a run also marks Exercised as done, without ticking it directly",
+      "actor": "owner",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Today",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Today"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:124"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates checkbox:Ran",
+          "refs": [
+            {
+              "kind": "checkbox",
+              "name": "Ran"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:125"
+        },
+        {
+          "kind": "then",
+          "verb": "shows",
+          "text": "shows badge:AutoTicked \"Auto\"",
+          "refs": [
+            {
+              "kind": "badge",
+              "name": "AutoTicked"
+            },
+            {
+              "kind": "literal",
+              "name": "Auto"
+            }
+          ],
+          "holes": [],
+          "at": "trial-habits-a.beh:126"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "trial-habits-a.beh:121",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": "docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05"
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "form:NewHabit.fields",
+        {
+          "value": [
+            "HabitName"
+          ],
+          "contributors": [
+            "BEH-SETUP-3"
+          ],
+          "at": "trial-habits-a.beh:70"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-SETUP-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SETUP-2",
+        "changes": [
+          {
+            "path": "steps.1.resolved",
+            "from": null,
+            "to": {
+              "fields": [
+                "HabitName"
+              ]
+            }
+          },
+          {
+            "path": "filled",
+            "from": null,
+            "to": [
+              {
+                "key": "form:NewHabit.fields",
+                "value": [
+                  "HabitName"
+                ],
+                "from": [
+                  "BEH-SETUP-3"
+                ],
+                "at": "trial-habits-a.beh:61"
+              }
+            ]
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SETUP-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-5",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": [
+              {
+                "key": "form:LogValue.fields",
+                "slot": "fields",
+                "at": "trial-habits-a.beh:108"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "BEH-TODAY-6",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-DERIVE-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-SETUP-1",
+      "code": "test(\"[BEH-SETUP-1] James opens habit setup to add something new to track\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:ManageHabits\" });\n  // UNGENERATED: when opens page:ManageHabits\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:AddHabit\" });\n  // UNGENERATED: when activates button:AddHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewHabit\" });\n  // UNGENERATED: then lands on page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+      "missing": [
+        "page:ManageHabits",
+        "button:AddHabit",
+        "page:NewHabit",
+        "field:HabitName"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-SETUP-2",
+      "code": "test(\"[BEH-SETUP-2] Saving a new habit adds it to today's list\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewHabit with ?fields\" });\n  // UNGENERATED: when fills form:NewHabit with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveHabit\" });\n  // UNGENERATED: when activates button:SaveHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Today\" });\n  // UNGENERATED: then lands on page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "missing": [
+        "page:NewHabit",
+        "field:HabitName",
+        "button:SaveHabit",
+        "page:Today",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 5
+      }
+    },
+    {
+      "id": "BEH-SETUP-3",
+      "code": "test(\"[BEH-SETUP-3] A new habit needs nothing more than a name to be saved\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n});",
+      "missing": [
+        "page:NewHabit"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-TODAY-1",
+      "code": "test(\"[BEH-TODAY-1] Today's page lists everything currently being tracked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "missing": [
+        "page:Today",
+        "region:HabitList"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-TODAY-2",
+      "code": "test(\"[BEH-TODAY-2] Before any habit is added, today's page says there is nothing to track yet\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habits:None\" });\n  // UNGENERATED: given habits:None\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "missing": [
+        "habits:None",
+        "page:Today",
+        "region:EmptyState"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-TODAY-3",
+      "code": "test(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:Pending\" });\n  // UNGENERATED: given habit:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitDone\" });\n  // UNGENERATED: when activates checkbox:HabitDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n  // CONTRACT (not derivable from a behaviour): logging a habit is one tap, with no form or confirmation step in between\n});",
+      "missing": [
+        "habit:Pending",
+        "page:Today",
+        "checkbox:HabitDone"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 1,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-TODAY-4",
+      "code": "test(\"[BEH-TODAY-4] A habit ticked off earlier today still shows as done when the page is reopened\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:LoggedToday\" });\n  // UNGENERATED: given habit:LoggedToday\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n});",
+      "missing": [
+        "habit:LoggedToday",
+        "page:Today",
+        "checkbox:HabitDone"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    },
+    {
+      "id": "BEH-TODAY-5",
+      "code": "test(\"[BEH-TODAY-5] Habits like sleeping hours or drinks drunk are logged as a number, not a tick\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:LogValue with ?fields\" });\n  // UNGENERATED: when fills form:LogValue with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveValue\" });\n  // UNGENERATED: when activates button:SaveValue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitValue\" });\n  // UNGENERATED: then sees field:HabitValue\n});",
+      "missing": [
+        "page:Today",
+        "button:SaveValue",
+        "field:HabitValue"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 4
+      }
+    },
+    {
+      "id": "BEH-TODAY-6",
+      "code": "test(\"[BEH-TODAY-6] Each row in today's list shows the habit's own name\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+      "missing": [
+        "page:Today",
+        "field:HabitName"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-DERIVE-1",
+      "code": "test(\"[BEH-DERIVE-1] Logging a run also marks Exercised as done, without ticking it directly\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:Ran\" });\n  // UNGENERATED: when activates checkbox:Ran\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows badge:AutoTicked \\\"Auto\\\"\" });\n  // UNGENERATED: then shows badge:AutoTicked \"Auto\"\n});",
+      "missing": [
+        "page:Today",
+        "checkbox:Ran",
+        "badge:AutoTicked"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 3
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 10,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": []
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "badge:AutoTicked",
+          "kind": "badge",
+          "name": "AutoTicked",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:AddHabit",
+          "kind": "button",
+          "name": "AddHabit",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveHabit",
+          "kind": "button",
+          "name": "SaveHabit",
+          "usedBy": [
+            "BEH-SETUP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveValue",
+          "kind": "button",
+          "name": "SaveValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitDone",
+          "kind": "checkbox",
+          "name": "HabitDone",
+          "usedBy": [
+            "BEH-TODAY-3",
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitName",
+          "kind": "field",
+          "name": "HabitName",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            },
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:LoggedToday",
+          "kind": "habit",
+          "name": "LoggedToday",
+          "usedBy": [
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:Pending",
+          "kind": "habit",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habits:None",
+          "kind": "habits",
+          "name": "None",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:ManageHabits",
+          "kind": "page",
+          "name": "ManageHabits",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:NewHabit",
+          "kind": "page",
+          "name": "NewHabit",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-SETUP-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-DERIVE-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3",
+            "BEH-TODAY-4",
+            "BEH-TODAY-5",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-SETUP-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "badge:AutoTicked",
+          "kind": "badge",
+          "name": "AutoTicked",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "shows"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:AddHabit",
+          "kind": "button",
+          "name": "AddHabit",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveHabit",
+          "kind": "button",
+          "name": "SaveHabit",
+          "usedBy": [
+            "BEH-SETUP-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "button:SaveValue",
+          "kind": "button",
+          "name": "SaveValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:HabitDone",
+          "kind": "checkbox",
+          "name": "HabitDone",
+          "usedBy": [
+            "BEH-TODAY-3",
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "checkbox:Ran",
+          "kind": "checkbox",
+          "name": "Ran",
+          "usedBy": [
+            "BEH-DERIVE-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitName",
+          "kind": "field",
+          "name": "HabitName",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            },
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:HabitValue",
+          "kind": "field",
+          "name": "HabitValue",
+          "usedBy": [
+            "BEH-TODAY-5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:LoggedToday",
+          "kind": "habit",
+          "name": "LoggedToday",
+          "usedBy": [
+            "BEH-TODAY-4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habit:Pending",
+          "kind": "habit",
+          "name": "Pending",
+          "usedBy": [
+            "BEH-TODAY-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "habits:None",
+          "kind": "habits",
+          "name": "None",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "state",
+              "surface": "a way to put the app into this state before the test acts — a seed, a fixture, or a route mock. This is a precondition, not a thing on screen",
+              "verbs": [
+                "state"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:ManageHabits",
+          "kind": "page",
+          "name": "ManageHabits",
+          "usedBy": [
+            "BEH-SETUP-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:NewHabit",
+          "kind": "page",
+          "name": "NewHabit",
+          "usedBy": [
+            "BEH-SETUP-1",
+            "BEH-SETUP-2",
+            "BEH-SETUP-3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Today",
+          "kind": "page",
+          "name": "Today",
+          "usedBy": [
+            "BEH-DERIVE-1",
+            "BEH-SETUP-2",
+            "BEH-TODAY-1",
+            "BEH-TODAY-2",
+            "BEH-TODAY-3",
+            "BEH-TODAY-4",
+            "BEH-TODAY-5",
+            "BEH-TODAY-6"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "urlPattern",
+              "surface": "a URL that a regex can recognise once navigation has settled — this is NOT the same obligation as the route, and a page reached by both `opens` and `lands` owes both",
+              "verbs": [
+                "lands"
+              ],
+              "met": false
+            },
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:EmptyState",
+          "kind": "region",
+          "name": "EmptyState",
+          "usedBy": [
+            "BEH-TODAY-2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:HabitList",
+          "kind": "region",
+          "name": "HabitList",
+          "usedBy": [
+            "BEH-SETUP-2",
+            "BEH-TODAY-1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

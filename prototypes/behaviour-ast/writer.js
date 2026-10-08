@@ -470,8 +470,11 @@ function addBinding(text, noun, value, opts = {}) {
   let bindings;
   try {
     bindings = JSON.parse(text);
-  } catch (e) {
-    return { ok: false, error: 'bindings-already-invalid', reason: `bindings.json did not parse before this edit: ${e.message}` };
+  } catch {
+    // A fixed sentence, not V8's `e.message`, which no other runtime (the C# port,
+    // kit#119) could reproduce. The corpus case above keeps its message because
+    // that one is Kit's own parser speaking, and the port says the same words.
+    return { ok: false, error: 'bindings-already-invalid', reason: 'bindings.json did not parse before this edit: it is not valid JSON' };
   }
   if (bindings === null || typeof bindings !== 'object' || Array.isArray(bindings)) {
     return { ok: false, error: 'bindings-already-invalid', reason: 'bindings.json is not a JSON object' };

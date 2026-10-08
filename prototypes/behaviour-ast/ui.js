@@ -135,6 +135,12 @@ const auth = require('./auth.js');
 const bindingsOf = require('./bindings.js');
 
 const BEH_DIR = path.join(__dirname, 'behaviours');
+// The Kit checkout. A write's `file` is reported relative to it, '/'-separated —
+// the same convention as a project view's `corpus` (project.js) — rather than to
+// the process's working directory, which made the answer depend on where the
+// server happened to be started.
+const REPO_ROOT = path.join(__dirname, '..', '..');
+const repoRelative = (file) => path.relative(REPO_ROOT, file).split(path.sep).join('/');
 const DIST_DIR = path.join(__dirname, 'ui', 'dist');
 const DEFAULT_PORT = 4321;
 const DEFAULT_HOST = '127.0.0.1';
@@ -560,6 +566,49 @@ function route(method, pathname, opts = {}, body = null, origin = null, cookie =
  * a time. Note the ORDER — the loopback refusal comes before the body is looked
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
+/**
+ * What each write expects in its body, by type. `string` is required; `string?`
+ * may also be null or absent; `strings?` is an array of strings, null or absent.
+ *
+ * The writer calls `String()` on what it is given, so before this a missing
+ * `title` wrote a behaviour titled "undefined", and a numeric step wrote the
+ * digits as a step line. A body field of the wrong type is a malformed request,
+ * and saying so here keeps JavaScript's stringification rules out of the corpus
+ * (and out of what the C# port would have had to reproduce, kit#119).
+ */
+const CREATE_FIELDS = { id: 'string', title: 'string', actor: 'string?', steps: 'strings?', source: 'string?', ref: 'string?' };
+const STEP_FIELDS = { step: 'string' };
+const REVIEW_FIELDS = { state: 'string', note: 'string?' };
+const BIND_FIELDS = { noun: 'string' };
+
+function bodyTypeError(body, spec) {
+  for (const [field, type] of Object.entries(spec)) {
+    const v = body[field];
+    const absent = v === undefined || v === null;
+    if (type === 'string' && typeof v !== 'string') return `${field} must be a string`;
+    if (type === 'string?' && !absent && typeof v !== 'string') return `${field} must be a string`;
+    if (type === 'strings?' && !absent && !(Array.isArray(v) && v.every((s) => typeof s === 'string'))) return `${field} must be a list of strings`;
+  }
+  return null;
+}
+
+/**
+ * Rule 4's refusal body for a write from a page this server does not serve, or
+ * null when the Origin is absent (a non-browser caller) or allowed. One function
+ * because two places ask: `write()`, and `answer()` BEFORE the body is read —
+ * so a cross-origin POST is refused as cross-origin, not as malformed JSON or as
+ * too large, and its body is never parsed at all.
+ */
+function crossOriginWrite(origin, opts) {
+  if (origin === null || origin === undefined || originAllowed(origin, opts)) return null;
+  return {
+    error: 'cross-origin-write',
+    reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
+      + 'Kit\'s UI is a local developer tool; a page on another origin editing your working '
+      + 'tree is CSRF, not a feature.',
+  };
+}
+
 function write(pathname, opts, body, json, origin = null, cookie = null) {
   // Rule 4, and it is checked FIRST because it is the only one that defends
   // against a caller who is not the developer.
@@ -584,16 +633,8 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
   // hostname suffix. A suffix test is how `balenthiran.co.uk.evil.com` passes
   // for `balenthiran.co.uk`, and it is the classic way this check is written
   // wrong.
-  if (origin !== null && origin !== undefined) {
-    if (!originAllowed(origin, opts)) {
-      return json(403, {
-        error: 'cross-origin-write',
-        reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
-          + 'Kit\'s UI is a local developer tool; a page on another origin editing your working '
-          + 'tree is CSRF, not a feature.',
-      });
-    }
-  }
+  const refused = crossOriginWrite(origin, opts);
+  if (refused) return json(403, refused);
 
   // ── sign in / sign out (kit#46) ──────────────────────────────────────────
   // Below the Origin check and above the lock, which is the only correct place
@@ -676,8 +717,20 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
     return json(400, { error: 'bad-request', reason: 'the body must be a JSON object' });
   }
 
+  // 🔴 Decoded inside a try. It was not, and `decodeURIComponent('%E0')` throws a
+  // URIError — inside the POST's 'end' handler, so one malformed id from a caller
+  // past the lock was an uncaught exception that killed the process (kit#119).
+  let id;
+  try {
+    id = m[2] ? decodeURIComponent(m[2]) : body.id;
+  } catch {
+    return json(400, { error: 'bad-request', reason: 'the behaviour id is not valid percent-encoding' });
+  }
+
+  const wrongType = bodyTypeError(body, m[3] === 'review' ? REVIEW_FIELDS : m[2] ? STEP_FIELDS : CREATE_FIELDS);
+  if (wrongType) return json(400, { error: 'bad-request', reason: wrongType });
+
   const text = fs.readFileSync(file, 'utf8');
-  const id = m[2] ? decodeURIComponent(m[2]) : body.id;
 
   let result;
   if (m[3] === 'review') {
@@ -712,7 +765,7 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
     ok: true,
     app,
     behaviour: id,
-    file: path.relative(process.cwd(), file),
+    file: repoRelative(file),
     ...gitOutcome(file, opts, what, app),
   });
 }
@@ -804,6 +857,9 @@ function postBinding(match, body, opts, json) {
   // always existed, so its absence could only mean a broken checkout; per corpus,
   // absence means "nothing bound yet" and this write is what creates it. The
   // check that protects against a bad request is the corpus lookup above.
+  const wrongType = bodyTypeError(body, BIND_FIELDS);
+  if (wrongType) return json(400, { error: 'bad-request', reason: wrongType });
+
   const file = bindingsOf.fileFor(app, dir);
   const before = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '{}';
 
@@ -821,7 +877,7 @@ function postBinding(match, body, opts, json) {
     ok: true,
     app,
     noun: result.noun,
-    file: path.relative(process.cwd(), file),
+    file: repoRelative(file),
     ...gitOutcome(file, opts, `bind ${result.noun}`, app),
     // 🔴 The naming fact, in the response rather than only in a log — and it is
     // a FACT rather than a warning since kit#66. It used to mean "your bind just
@@ -970,6 +1026,99 @@ function cors(origin, opts = {}) {
   };
 }
 
+/**
+ * A result as it goes on the wire: status, the headers `serve()` writes, and
+ * either `raw` bytes or the serialised `body`. Split out of `serve()` so the
+ * conformance oracle records exactly what the socket sends (kit#119, Phase 4's
+ * host layer) without a socket.
+ */
+function delivered(result, origin, opts) {
+  const headers = { 'content-type': result.contentType, ...cors(origin, opts) };
+  if (result.cacheControl) headers['cache-control'] = result.cacheControl;
+  // Set only by the sign-in and sign-out routes. Checked for presence
+  // rather than truthiness so an empty string could never be sent as a
+  // header — though `clearCookieHeader` never returns one.
+  if (result.setCookie) headers['set-cookie'] = result.setCookie;
+  // `raw` is set only by `bundle()`, and its presence is what distinguishes
+  // bytes from a payload. Checked with `!== undefined` rather than for
+  // truthiness: an empty file is a legitimate asset, and `||` would serve it
+  // as the string "undefined" wearing its content-type.
+  return result.raw !== undefined
+    ? { status: result.status, headers, raw: result.raw }
+    : { status: result.status, headers, body: JSON.stringify(result.body) };
+}
+
+/**
+ * Everything `serve()` decides about a request before it reads a body, as a pure
+ * function: the delivered answer, or `{ post: pathname }` for a POST under our
+ * prefix, whose body `serve()` must read before `route()` can answer it.
+ *
+ * `url` is the raw request target. `basePath` must already be normalised.
+ */
+function answer(method, url, origin, cookie, opts, basePath) {
+  // `new URL` needs a base; the host header is untrusted input and is only
+  // ever used to satisfy the parser, never read back out.
+  //
+  // 🔴 It THROWS on a target such as `//x:99999/` (an authority with a bad port
+  // or host), and this runs inside the request listener, so before kit#119's host
+  // layer one unauthenticated request was an uncaught exception that took the
+  // whole process down. A target that is not a URL is the client's error.
+  let requested;
+  try {
+    ({ pathname: requested } = new URL(url, 'http://localhost'));
+  } catch {
+    return delivered({
+      status: 400,
+      contentType: 'application/json',
+      body: { error: 'bad-request', reason: 'the request target is not a valid URL' },
+    }, origin, opts);
+  }
+
+  // Rule 8, and it happens before everything below it on purpose: a request
+  // that is not under our prefix must not have its body read, its Origin
+  // consulted or a preflight answered. It is not ours, and saying so is the
+  // only honest response — a Kit at `/kit` that also answered `/api/projects`
+  // would be answering for whichever sibling app owns that path.
+  const pathname = stripBasePath(requested, basePath);
+  if (pathname === null) {
+    return delivered({
+      status: 404,
+      contentType: 'application/json',
+      body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
+    }, origin, opts);
+  }
+
+  // A preflight is answered by the same allowlist that answers the request, so
+  // the two can never disagree — an ACAO that permits an origin a preflight
+  // refuses is a bug that only shows up in a browser.
+  if (method === 'OPTIONS') return { status: 204, headers: cors(origin, opts), body: '' };
+
+  if (method !== 'POST') return delivered(route(method, pathname, opts, null, null, cookie), origin, opts);
+
+  const refused = crossOriginWrite(origin, opts);
+  if (refused) return delivered({ status: 403, contentType: 'application/json', body: refused }, origin, opts);
+  return { post: pathname };
+}
+
+/**
+ * A POST's body has been read: `raw` is its bytes, or null when it ran past
+ * MAX_BODY (`serve()` stops buffering there, so the bytes are gone). Pure, like
+ * `answer()`, so the conformance oracle records exactly what `serve()` sends.
+ */
+function received(pathname, raw, origin, cookie, opts) {
+  const json = (status, body) => delivered({ status, contentType: 'application/json', body }, origin, opts);
+  if (raw === null) return json(413, { error: 'too-large', reason: `a request body over ${MAX_BODY} bytes is not a behaviour` });
+  let body;
+  try {
+    body = JSON.parse(raw.toString('utf8') || 'null');
+  } catch {
+    // A fixed sentence, not V8's `e.message`: that text is the engine's, and no
+    // other runtime (the C# port, kit#119) could reproduce it.
+    return json(400, { error: 'bad-json', reason: 'the request body is not valid JSON' });
+  }
+  return delivered(route('POST', pathname, opts, body, origin, cookie), origin, opts);
+}
+
 function serve(opts = {}) {
   // `?? ` and not `||`: port 0 is a REQUEST for an ephemeral port, and `||`
   // silently turns it into 4321 — which the suite met as two tests fighting
@@ -993,48 +1142,16 @@ function serve(opts = {}) {
   const basePath = normaliseBasePath(opts.basePath);
 
   const server = http.createServer((req, res) => {
-    // `new URL` needs a base; the host header is untrusted input and is only
-    // ever used to satisfy the parser, never read back out.
-    const { pathname: requested } = new URL(req.url, 'http://localhost');
-
-    const send = (result) => {
-      const headers = { 'content-type': result.contentType, ...cors(req.headers.origin, opts) };
-      if (result.cacheControl) headers['cache-control'] = result.cacheControl;
-      // Set only by the sign-in and sign-out routes. Checked for presence
-      // rather than truthiness so an empty string could never be sent as a
-      // header — though `clearCookieHeader` never returns one.
-      if (result.setCookie) headers['set-cookie'] = result.setCookie;
-      res.writeHead(result.status, headers);
-      // `raw` is set only by `bundle()`, and its presence is what distinguishes
-      // bytes from a payload. Checked with `!== undefined` rather than for
-      // truthiness: an empty file is a legitimate asset, and `||` would serve it
-      // as the string "undefined" wearing its content-type.
-      res.end(result.raw !== undefined ? result.raw : JSON.stringify(result.body));
+    const deliver = (a) => {
+      res.writeHead(a.status, a.headers);
+      res.end(a.raw !== undefined ? a.raw : a.body);
     };
 
-    // Rule 8, and it happens before everything below it on purpose: a request
-    // that is not under our prefix must not have its body read, its Origin
-    // consulted or a preflight answered. It is not ours, and saying so is the
-    // only honest response — a Kit at `/kit` that also answered `/api/projects`
-    // would be answering for whichever sibling app owns that path.
-    const pathname = stripBasePath(requested, basePath);
-    if (pathname === null) {
-      return send({
-        status: 404,
-        contentType: 'application/json',
-        body: { error: 'no-such-route', reason: `this Kit is served under ${basePath} — nothing is served at ${requested}` },
-      });
-    }
-
-    // A preflight is answered by the same allowlist that answers the request, so
-    // the two can never disagree — an ACAO that permits an origin a preflight
-    // refuses is a bug that only shows up in a browser.
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204, cors(req.headers.origin, opts));
-      return res.end();
-    }
-
-    if (req.method !== 'POST') return send(route(req.method, pathname, opts, null, null, req.headers.cookie ?? null));
+    const origin = req.headers.origin ?? null;
+    const cookie = req.headers.cookie ?? null;
+    const a = answer(req.method, req.url, origin, cookie, opts, basePath);
+    if (a.post === undefined) return deliver(a);
+    const pathname = a.post;
 
     let size = 0;
     const chunks = [];
@@ -1048,16 +1165,7 @@ function serve(opts = {}) {
       if (size > MAX_BODY) { chunks.length = 0; return; }
       chunks.push(c);
     });
-    req.on('end', () => {
-      if (size > MAX_BODY) return send({ status: 413, contentType: 'application/json', body: { error: 'too-large', reason: `a request body over ${MAX_BODY} bytes is not a behaviour` } });
-      let body;
-      try {
-        body = JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null');
-      } catch (e) {
-        return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
-      }
-      send(route('POST', pathname, opts, body, req.headers.origin ?? null, req.headers.cookie ?? null));
-    });
+    req.on('end', () => deliver(received(pathname, size > MAX_BODY ? null : Buffer.concat(chunks), origin, cookie, opts)));
   });
 
   return new Promise((resolve, reject) => {
@@ -1287,7 +1395,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  route, write, serve, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
+  route, write, serve, answer, delivered, received, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
   // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
   // the suite: it is imported there so the build and the server derive the

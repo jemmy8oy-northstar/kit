@@ -341,14 +341,57 @@ own words. Three decisions and a sequencing rule:
    pointing at is Docker/OCIR/Helm/ArgoCD, which does not inspect the language in the image, but
    "closer to my stack" and "scalable from the start" are preferences he is entitled to hold directly.
    🔑 **Why Node keeping running is load-bearing rather than sentimental.** Generation is **byte-for-byte
-   deterministic** — measured 2026-09-30 across four corpora and three entry points, with no timestamps,
-   PIDs or absolute paths leaking into the output. So the Node engine can serve as the **executable
-   specification** the C# implementation is verified against, via committed golden files. That is what
-   stops the port discarding the evidence the 181 mutants represent, and it is why the conformance
-   harness is built *before* any module is ported.
-   ⚠️ **The one thing here he has not decided** is whether Phase 1's hosted image carries both runtimes
-   (C# server, Node engine behind one interface) so the server ships before the engine is ported.
-   Queued with a default; it is an architecture call and therefore his.
+   deterministic** — measured 2026-09-30 across four corpora and three entry points, and **re-measured
+   2026-10-03 across seven entry points and all eleven committed corpora: 77 pairs, 77 identical, 0
+   differ**, each pair run in two separate processes so shared module state cannot hide an ordering
+   difference, with the exit code inside the hashed observation. No timestamps, PIDs or absolute paths
+   leak into the output. So the Node engine can serve as the **executable specification** the C#
+   implementation is verified against, via committed golden files. That is what stops the port discarding
+   the evidence the 181 mutants represent, and it is why the conformance harness is built *before* any
+   module is ported.
+   ✅ **That harness now exists: `prototypes/behaviour-ast/conformance.js` plus a committed golden per
+   corpus**, compared by `kit.test.js` on every CI run. It is sectioned by engine module — `parse`,
+   `resolve`, `generate` — so a C# `Parse` can be scored on its own while the other stages are still
+   JavaScript. One opaque blob per corpus could not score a half-ported engine, which is the same as
+   having no harness for the whole length of the port.
+   ✅ **THE ENGINE MOVES FIRST, and `ui.js` keeps serving until it is done.** He said *"Can you work on
+   migrating it to csharp next I feel like that's highest value"* (`kit#88`, 2026-10-03), which settled
+   that the port starts; this is the order it starts in.
+   ⚠️ **This REVERSES what this document said for one evening, and the reversal is kept rather than
+   overwritten, because the reasoning is the useful part.** Earlier on 2026-10-03 the answer here was
+   *"Phase 1 carries both runtimes — a C# server with the Node engine behind one engine interface"*. Then
+   the two halves were measured:
+
+   | | Engine (`kit.js` + `bindings.js`) | Server (`ui.js` + `auth.js` + `git-store.js`) |
+   | --- | --- | --- |
+   | Lines | 1,597 | **1,747 — the bigger half** |
+   | Module-level dependencies | **1** | 8 |
+   | An oracle for "correct"? | **yes** — the goldens above | **no** |
+   | What a wrong port does | a golden says so immediately | an unauthenticated write reaches a corpus on a public URL |
+
+   Porting the server first re-earns the session, the password gate, the cross-origin rule and the git
+   write-back in a second language **with nothing to score them against**, while leaving in Node the half
+   that is now cheap and provable. ⇒ **Rank a port by which half you can PROVE, not which half is wanted
+   sooner.**
+   🔴 **And the premise under the old answer had expired without its wording changing.** The dual-runtime
+   default was written on 2026-09-30 because the C# *server*, not the engine, was what would get him
+   phone access — true then, because Kit was not deployed. **Kit went live on 2026-10-03, so that reason
+   is spent.** The date had not lapsed; the *argument* had, which looks identical from outside because
+   the sentence is unchanged. Corrected on `kit#88` the same evening, before a line of C# existed, with a
+   one-line way to overrule it.
+   The Node layer is dropped only once the C# engine reproduces the goldens above byte-for-byte — which
+   turns *"drop Node"* into a measurable finish line instead of an intention.
+   🏗️ **Layout is the template's, by his ruling on `kit#120`** (2026-10-04: *"follow the same structure
+   as the other projects and all the same practices. The 6 defined projects and the 1 class per file"*):
+   `backend/Balenthiran.Kit.{Abstractions,DataModels,Database,DomainModels,EntityModels,Services,Tests}`,
+   StyleCop SA1402 as a build error, interfaces in `Abstractions`, no static classes in `Services`. This
+   overrode a "a pure library needs no web-app layers" call of mine — consistency across his apps is the
+   point, and empty layers fill as the engine grows (`Database` holds the git store once write-back lands).
+   ✅ **`parse` is the first module and it is DONE and SCORED** (`CorpusParser` in `Balenthiran.Kit.Services`):
+   11 corpora, structure compared against each golden's `parse` section, plus a separate test pinning the
+   serialiser against the goldens' own bytes. The second test exists because a red control proved the
+   first one could not see the serialiser at all — both its sides share one `JsonSerializerOptions`, so an
+   encoding difference cancels out.
 
 ### 🔴 The middle of that loop does not exist yet
 

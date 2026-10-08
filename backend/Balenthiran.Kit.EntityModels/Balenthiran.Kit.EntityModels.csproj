@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Empty, and deliberately WITHOUT the template's EF Core reference: Kit's
+       storage is git (kit#117), so what is persisted here is decided when the
+       write-back is built, not by a package added in advance. -->
+  <PropertyGroup>
+    <EnableDefaultResourceItems>false</EnableDefaultResourceItems>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

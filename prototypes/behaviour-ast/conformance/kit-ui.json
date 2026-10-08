@@ -1,0 +1,1077 @@
+{
+  "format": 2,
+  "corpus": "kit-ui",
+  "parse": [
+    {
+      "id": "BEH-LIST-1",
+      "title": "Every corpus Kit can read is listed as a project",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitProjects",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitProjects"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:64"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitProjectsTitle",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitProjectsTitle"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:65"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:KitMain",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "KitMain"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:66"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a corpus that will not parse is listed AS an error, not as zero behaviours",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:67"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-ui.beh:62",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-SHEET-1",
+      "title": "A project shows the question sheet Kit built for it",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitProject",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitProject"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:72"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitQuestionSheet",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitQuestionSheet"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:73"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitNeverAdjudicated",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitNeverAdjudicated"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:74"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitAddBehaviour",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitAddBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:75"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "page",
+          "name": "KitProject",
+          "slot": "app",
+          "value": [
+            "james-habits-app"
+          ],
+          "from": "BEH-SHEET-1",
+          "at": "kit-ui.beh:71"
+        }
+      ],
+      "serves": [],
+      "at": "kit-ui.beh:69",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-PAIR-1",
+      "title": "A behaviour and the test Kit generates from it are on one screen",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:81"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitBehaviourSteps",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitBehaviourSteps"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:82"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitGeneratedTest",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitGeneratedTest"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:83"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the two are side by side, not on separate screens — the output must be in view",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:84"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the test is regenerated on every read, never cached",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:85"
+        }
+      ],
+      "unknowns": [],
+      "provides": [
+        {
+          "kind": "page",
+          "name": "KitBehaviour",
+          "slot": "app",
+          "value": [
+            "james-habits-app"
+          ],
+          "from": "BEH-PAIR-1",
+          "at": "kit-ui.beh:79"
+        },
+        {
+          "kind": "page",
+          "name": "KitBehaviour",
+          "slot": "id",
+          "value": [
+            "BEH-SEED-1"
+          ],
+          "from": "BEH-PAIR-1",
+          "at": "kit-ui.beh:80"
+        }
+      ],
+      "serves": [],
+      "at": "kit-ui.beh:77",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ADJ-1",
+      "title": "An inference can be adjudicated from the browser",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:89"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitAdjudication",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitAdjudication"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:90"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitApprove",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitApprove"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:91"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:KitApprove",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitApprove"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:92"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the corpus file on disk gains `review approved` for this behaviour",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:93"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the existing `review unreviewed` line is REPLACED, not joined by a second",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:94"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "nothing is committed to git",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:95"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-ui.beh:87",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-ADJ-2",
+      "title": "Denying an inference asks for the correction it must carry",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:99"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitDeny",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitDeny"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:100"
+        },
+        {
+          "kind": "when",
+          "verb": "fills",
+          "text": "fills field:KitCorrection with \"the starter set is re-seeded whenever the list is empty\"",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "KitCorrection"
+            },
+            {
+              "kind": "literal",
+              "name": "the starter set is re-seeded whenever the list is empty"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:101"
+        },
+        {
+          "kind": "when",
+          "verb": "activates",
+          "text": "activates button:KitDeny",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitDeny"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:102"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "Deny is disabled while the correction is empty",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:103"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "a denial with no correction is refused by the parser, and its sentence reaches the screen",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:104"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-ui.beh:97",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    },
+    {
+      "id": "BEH-STEP-1",
+      "title": "A step can be added while the generated test is in view",
+      "actor": "engineer",
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:KitBehaviour",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "KitBehaviour"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:108"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees heading:KitAddAStep",
+          "refs": [
+            {
+              "kind": "heading",
+              "name": "KitAddAStep"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:109"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:KitAddStep",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "KitAddStep"
+            }
+          ],
+          "holes": [],
+          "at": "kit-ui.beh:110"
+        },
+        {
+          "kind": "contract",
+          "verb": "contract",
+          "text": "the page re-reads after the write, so the REGENERATED test is what is on screen",
+          "refs": [],
+          "holes": [],
+          "at": "kit-ui.beh:111"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "kit-ui.beh:106",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      }
+    }
+  ],
+  "resolve": {
+    "symbols": [
+      [
+        "page:KitProject.app",
+        {
+          "value": [
+            "james-habits-app"
+          ],
+          "contributors": [
+            "BEH-SHEET-1"
+          ],
+          "at": "kit-ui.beh:71"
+        }
+      ],
+      [
+        "page:KitBehaviour.app",
+        {
+          "value": [
+            "james-habits-app"
+          ],
+          "contributors": [
+            "BEH-PAIR-1"
+          ],
+          "at": "kit-ui.beh:79"
+        }
+      ],
+      [
+        "page:KitBehaviour.id",
+        {
+          "value": [
+            "BEH-SEED-1"
+          ],
+          "contributors": [
+            "BEH-PAIR-1"
+          ],
+          "at": "kit-ui.beh:80"
+        }
+      ]
+    ],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-LIST-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-SHEET-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-PAIR-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ADJ-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-ADJ-2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-STEP-1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-LIST-1",
+      "code": "test(\"[BEH-LIST-1] Every corpus Kit can read is listed as a project\", async ({ page }) => {\n  await page.goto(\"/\");\n  await expect(page.getByRole(\"heading\", { name: \"Projects\", exact: true })).toBeVisible();\n  await expect(page.locator('main')).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): a corpus that will not parse is listed AS an error, not as zero behaviours\n});",
+      "missing": [],
+      "stats": {
+        "generated": 3,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-SHEET-1",
+      "code": "test(\"[BEH-SHEET-1] A project shows the question sheet Kit built for it\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app\");\n  await expect(page.getByRole(\"heading\", { name: \"Question sheet\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Never adjudicated\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Add behaviour\" })).toBeVisible();\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-PAIR-1",
+      "code": "test(\"[BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Behaviour\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Generated test\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the two are side by side, not on separate screens — the output must be in view\n  // CONTRACT (not derivable from a behaviour): the test is regenerated on every read, never cached\n});",
+      "missing": [],
+      "stats": {
+        "generated": 3,
+        "contract": 2,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ADJ-1",
+      "code": "test(\"[BEH-ADJ-1] An inference can be adjudicated from the browser\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Adjudication\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Approve\" })).toBeVisible();\n  await page.getByRole(\"button\", { name: \"Approve\" }).click();\n  // CONTRACT (not derivable from a behaviour): the corpus file on disk gains `review approved` for this behaviour\n  // CONTRACT (not derivable from a behaviour): the existing `review unreviewed` line is REPLACED, not joined by a second\n  // CONTRACT (not derivable from a behaviour): nothing is committed to git\n});",
+      "missing": [],
+      "stats": {
+        "generated": 4,
+        "contract": 3,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-ADJ-2",
+      "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:KitCorrection with \\\"the starter set is re-seeded whenever the list is empty\\\"\" });\n  // UNGENERATED: when fills field:KitCorrection with \"the starter set is re-seeded whenever the list is empty\"\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
+      "missing": [],
+      "stats": {
+        "generated": 3,
+        "contract": 2,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-STEP-1",
+      "code": "test(\"[BEH-STEP-1] A step can be added while the generated test is in view\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Add a step\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Add step\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the page re-reads after the write, so the REGENERATED test is what is on screen\n});",
+      "missing": [],
+      "stats": {
+        "generated": 3,
+        "contract": 1,
+        "ungenerated": 0
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 6,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-LIST-1",
+        "BEH-SHEET-1",
+        "BEH-PAIR-1",
+        "BEH-ADJ-1",
+        "BEH-ADJ-2",
+        "BEH-STEP-1"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:KitAddBehaviour",
+          "kind": "button",
+          "name": "KitAddBehaviour",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitAddStep",
+          "kind": "button",
+          "name": "KitAddStep",
+          "usedBy": [
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitApprove",
+          "kind": "button",
+          "name": "KitApprove",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "button:KitDeny",
+          "kind": "button",
+          "name": "KitDeny",
+          "usedBy": [
+            "BEH-ADJ-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "activates",
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitAddAStep",
+          "kind": "heading",
+          "name": "KitAddAStep",
+          "usedBy": [
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitAdjudication",
+          "kind": "heading",
+          "name": "KitAdjudication",
+          "usedBy": [
+            "BEH-ADJ-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitBehaviourSteps",
+          "kind": "heading",
+          "name": "KitBehaviourSteps",
+          "usedBy": [
+            "BEH-PAIR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitGeneratedTest",
+          "kind": "heading",
+          "name": "KitGeneratedTest",
+          "usedBy": [
+            "BEH-PAIR-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitNeverAdjudicated",
+          "kind": "heading",
+          "name": "KitNeverAdjudicated",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitProjectsTitle",
+          "kind": "heading",
+          "name": "KitProjectsTitle",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "heading:KitQuestionSheet",
+          "kind": "heading",
+          "name": "KitQuestionSheet",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitBehaviour",
+          "kind": "page",
+          "name": "KitBehaviour",
+          "usedBy": [
+            "BEH-ADJ-1",
+            "BEH-ADJ-2",
+            "BEH-PAIR-1",
+            "BEH-STEP-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitProject",
+          "kind": "page",
+          "name": "KitProject",
+          "usedBy": [
+            "BEH-SHEET-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "page:KitProjects",
+          "kind": "page",
+          "name": "KitProjects",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "region:KitMain",
+          "kind": "region",
+          "name": "KitMain",
+          "usedBy": [
+            "BEH-LIST-1"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": true
+            }
+          ]
+        }
+      ],
+      "missing": [],
+      "insufficient": [],
+      "satisfied": [
+        "button:KitAddBehaviour",
+        "button:KitAddStep",
+        "button:KitApprove",
+        "button:KitDeny",
+        "heading:KitAddAStep",
+        "heading:KitAdjudication",
+        "heading:KitBehaviourSteps",
+        "heading:KitGeneratedTest",
+        "heading:KitNeverAdjudicated",
+        "heading:KitProjectsTitle",
+        "heading:KitQuestionSheet",
+        "page:KitBehaviour",
+        "page:KitProject",
+        "page:KitProjects",
+        "region:KitMain"
+      ]
+    }
+  }
+}
