@@ -198,6 +198,10 @@ const MUTANTS = [
     'if (owner) owners.add(owner.id);', 'if (false) owners.add(owner.id);'],
   ['an authored option list is answered with serves-or-delete again',
     'if (q.options.length) {\n    return `the option you pick', 'if (false) {\n    return `the option you pick'],
+  ['a corpus with no inferences is told Kit read its DESIGN.md and backend tests again',
+    'if (opts.inferred === 0) {', 'if (false) {'],
+  ['the CLI stops counting inferences, so its sheet always claims the code was read',
+    'renderSheet(app, qs, { rev, asked: authored, inferred })', 'renderSheet(app, qs, { rev, asked: authored })'],
   ['an empty evidence block prints a bare heading again',
     "if (!q.contracts.length && !q.serves.length) L.push('- _none recorded", "if (false) L.push('- _none recorded"],
 

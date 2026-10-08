@@ -576,7 +576,9 @@ test('the committed sheet is byte-identical to what the generator produces now',
 // author had left a question on it.
 const { asked } = require('./kit');
 const FORWARD = 'behaviour BEH-SCREEN "documented screen"\n  source defined brief.md#1\n  when opens page:Home\n' +
-  'behaviour BEH-COUNT "the page shows a count"\n  source defined brief.md#2\n  serves BEH-SCREEN\n' +
+  // No `serves`: a defined behaviour may not carry one, and the CLI's link check
+  // refuses it (kit#149 found this — the unit tests above never ran that check).
+  'behaviour BEH-COUNT "the page shows a count"\n  source defined brief.md#2\n  when opens page:Home\n' +
   '  asks "count pages or words?"\n' +
   '  option "pages" "the count is per page"\n' +
   '  option "words" "the count is per word"\n';
@@ -621,6 +623,33 @@ test('a question a conflict already carries is not asked twice (kit#73)', () => 
   const { behaviours, conflicts } = build(src);
   assert.strictEqual(conflicts.length, 1, 'control: the fixture must actually collide');
   assert.deepStrictEqual(asked(behaviours, conflicts), []);
+});
+
+test('a corpus with no inferences is not told Kit read its DESIGN.md and backend tests (kit#149)', () => {
+  const { behaviours, conflicts } = build(FORWARD);
+  const md = renderSheet('fwd', questions(behaviours, conflicts), { asked: asked(behaviours, conflicts), inferred: 0 });
+  assert.ok(md.includes('A human wrote every behaviour in this corpus.'));
+  assert.ok(!md.includes('DESIGN.md` and its backend test names'), 'the false provenance is back');
+  // Control: one inference and the reverse-engineered opening is right again.
+  const rev = renderSheet('x', questions(...(({ behaviours: b, conflicts: c }) => [b, c])(build(PACK))), { inferred: 1 });
+  assert.ok(rev.includes('DESIGN.md` and its backend test names'));
+  assert.ok(!rev.includes('A human wrote every behaviour'));
+});
+
+test('kit.js sheet counts the corpus\'s inferences itself — the CLI is the path he runs (kit#149)', () => {
+  // The renderer test above passes `inferred` by hand; this one proves the CLI does.
+  const fsx = require('fs');
+  const pathx = require('path');
+  const dir = fsx.mkdtempSync(pathx.join(require('os').tmpdir(), 'kit-fwd-'));
+  try {
+    fsx.writeFileSync(pathx.join(dir, 'fwd.beh'), FORWARD);
+    const r = require('child_process').spawnSync('node', [pathx.join(__dirname, 'kit.js'), 'sheet', 'fwd', '--dir', dir], { encoding: 'utf8' });
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.ok(r.stdout.includes('A human wrote every behaviour in this corpus.'), r.stdout.slice(0, 600));
+    assert.ok(r.stdout.includes('### A1. count pages or words?'), 'the author\'s question must reach the CLI sheet too');
+  } finally {
+    fsx.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('the sheet no longer tells a forward corpus its surface "exists in the code" (kit#93)', () => {

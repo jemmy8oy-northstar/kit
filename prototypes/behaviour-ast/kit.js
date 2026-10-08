@@ -1022,10 +1022,20 @@ function renderSheet(app, qs, opts = {}) {
   L.push('');
   L.push('## What this is');
   L.push('');
-  L.push('Kit read this app\'s `docs/DESIGN.md` and its backend test names and built one list of');
-  L.push('behaviours from both. Everything it read out of the **code** is marked unreviewed until a');
-  L.push('human rules on it, because an inference that quietly becomes a specification is the failure');
-  L.push('this whole thing exists to prevent.');
+  // kit#149: the paragraph below describes a corpus read out of a running app. A
+  // corpus written before the code has no inferences at all, and telling its reader
+  // Kit read a DESIGN.md and backend tests is the first false thing on the page.
+  // Only an explicit 0 switches it: a caller that does not say keeps the old text.
+  if (opts.inferred === 0) {
+    L.push('A human wrote every behaviour in this corpus. Kit inferred none of them, because there was');
+    L.push('no code to read them out of, so nothing here is an inference waiting for a ruling. What this');
+    L.push('sheet carries is the questions the author left open.');
+  } else {
+    L.push('Kit read this app\'s `docs/DESIGN.md` and its backend test names and built one list of');
+    L.push('behaviours from both. Everything it read out of the **code** is marked unreviewed until a');
+    L.push('human rules on it, because an inference that quietly becomes a specification is the failure');
+    L.push('this whole thing exists to prevent.');
+  }
   L.push('');
   L.push('The two sections below are not the same job and should not take the same effort:');
   L.push('');
@@ -1491,7 +1501,8 @@ if (require.main === module) {
       process.exit(1);
     }
     const app = (files.length === 1 ? files[0].replace(/\.beh$/, '') : only) || 'all';
-    process.stdout.write(renderSheet(app, qs, { rev, asked: authored }));
+    const inferred = behaviours.filter((b) => b.source.origin === 'inferred').length;
+    process.stdout.write(renderSheet(app, qs, { rev, asked: authored, inferred }));
     return;
   }
 
