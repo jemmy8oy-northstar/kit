@@ -6281,6 +6281,27 @@ test('cli: the harness pair refuses an unknown flag, proved where it can do no d
   }
 });
 
+test('cli: a bare --only is refused before the run, in both mutation tools', () => {
+  // `--only` with no substring — or with the next flag where the substring should
+  // be — leaves the filter empty, and an empty filter is the FULL run. Refusing it
+  // must not depend on the tree, so it is proved in the sandbox, where an unguarded
+  // fall-through dies reading a subject instead of mutating one. Exit 2 alone would
+  // not separate the two, so the sentence is asserted too.
+  for (const tool of Object.keys(SANDBOXED)) {
+    for (const argv of [['--only'], ['--only', '--recover']]) {
+      const { dir, inner } = sandboxFor(tool);
+      try {
+        const r = spawnx(process.execPath, [tool, ...argv], { cwd: inner, encoding: 'utf8', timeout: 30000 });
+        const out = (r.stdout || '') + (r.stderr || '');
+        assert.strictEqual(r.status, 2, `${tool} ${argv.join(' ')}: expected the refusal's exit 2; got ${r.status}\n${out}`);
+        assert.match(out, /--only needs a substring/, `${tool} ${argv.join(' ')}: exit 2 for some other reason:\n${out}`);
+      } finally {
+        fsx.rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  }
+});
+
 test('cli: the sandbox holds none of the files mutate.js mutates', () => {
   // The safety argument above is "the destructive path cannot start, because its
   // first act is to read a subject that is not there". That is a claim about a list
