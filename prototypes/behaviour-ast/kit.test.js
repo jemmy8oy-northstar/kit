@@ -6954,6 +6954,24 @@ test('conformance: the auth golden is compared, and every scenario replays over 
   assert.ok(sent === recorded && sent >= 40, `${sent} of ${recorded} auth steps went over the wire — the gate is inert`);
 });
 
+test('conformance: the writes golden is compared, and reaches every refusal the writer has', () => {
+  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  assert.ok(r.matched.includes(conformance.WRITES), `the writes golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  // Read from writer.js's SOURCE, so a refusal added later is a refusal the golden
+  // must reach before this passes — the population is the code, not a list here.
+  const src = fsx.readFileSync(pathx.join(__dirname, 'writer.js'), 'utf8');
+  const codes = [...new Set([...src.matchAll(/error: '([a-z-]+)'/g)].map((m) => m[1]))];
+  assert.ok(codes.length >= 12, `only ${codes.length} refusal codes found in writer.js — the scan has stopped matching`);
+  const g = JSON.parse(fsx.readFileSync(conformance.writesPath(GOLDEN_DIR), 'utf8'));
+  const reached = new Set(g.functions.map((f) => f.result.error).filter(Boolean));
+  assert.deepStrictEqual(codes.filter((c) => !reached.has(c)), [], 'refusals the writes golden never reaches');
+
+  // And the routes really wrote: every 200 recorded the file it changed.
+  const ok = g.routes.filter((s) => s.response.status === 200);
+  assert.ok(ok.length >= 6 && ok.every((s) => s.written && s.written.text.length > 0), 'a 200 write with no file recorded');
+});
+
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
   // Why the golden records a COMPUTED diff rather than a `{filled, open, resolved}`
   // whitelist. Measured when this was written: recording resolve's behaviours in

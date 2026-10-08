@@ -1,0 +1,6 @@
+# A fixture for the writer's conformance oracle (kit#119) that does NOT parse:
+# a bind must skip it and say so, and an edit to it must blame the file, not
+# the edit.
+
+behaviour BEH-Z "Fine"
+  source sideways
