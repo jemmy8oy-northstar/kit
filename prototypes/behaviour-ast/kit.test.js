@@ -5348,6 +5348,88 @@ test('git-store: the commit message describes the edit and names the app', () =>
   assert.strictEqual(gitStore.message('bind page:Home', null), 'kit: bind page:Home');
 });
 
+// ── the container entrypoint: a hosted edit survives a restart (kit#117) ─────
+// `docker-entrypoint.sh` clones the repo at startup and points Kit at the clone.
+// Run here against a REAL bare remote, with a fake `dotnet` first on PATH that
+// prints what the server would have been started with — so the assertions are
+// about the environment Kit actually receives, not about the script's text.
+const ENTRYPOINT = pathx.join(realMarker.ROOT, 'docker-entrypoint.sh');
+
+function startKit(env) {
+  const bin = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-bin-'));
+  fsx.writeFileSync(pathx.join(bin, 'dotnet'), [
+    '#!/bin/sh',
+    'echo "ARGS=$*"',
+    'echo "KIT_DIR=${KIT_DIR-}"',
+    'echo "KIT_GIT=${KIT_GIT-}"',
+    'echo "KIT_GIT_BRANCH=${KIT_GIT_BRANCH-}"',
+    // What git will hand a push to github.com, through the helper the entrypoint configured.
+    'printf "protocol=https\\nhost=github.com\\n\\n" | git credential fill 2>/dev/null | grep "^password=" || echo "password=<none>"',
+  ].join('\n'), { mode: 0o755 });
+  const r = spawnx('sh', [ENTRYPOINT, '--urls', 'x'], {
+    encoding: 'utf8',
+    env: { PATH: `${bin}:${process.env.PATH}`, HOME: fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-home-')), KIT_GIT_BASE: 'main', ...env },
+  });
+  const out = Object.fromEntries(r.stdout.split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+  return { ...r, out };
+}
+
+test('entrypoint: with no token it clones nothing and Kit starts exactly as before', () => {
+  const f = gitFixture();
+  const r = startKit({ KIT_GIT_CLONE: f.bare, KIT_GIT_WORKTREE: pathx.join(f.root, 'work') });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.out.ARGS, 'Balenthiran.Kit.WebApi.dll --urls x', 'the server must still be exec\'d, with its arguments');
+  assert.strictEqual(r.out.KIT_GIT, '');
+  assert.strictEqual(r.out.KIT_DIR, '');
+  assert.strictEqual(fsx.existsSync(pathx.join(f.root, 'work')), false);
+});
+
+test('entrypoint: the first start creates kit/hosted from the base, and the first edit pushes it', () => {
+  const f = gitFixture();
+  const work = pathx.join(f.root, 'work');
+  const r = startKit({ KIT_GIT_CLONE: f.bare, KIT_GIT_TOKEN: 'tok-123', KIT_GIT_WORKTREE: work });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.out.KIT_GIT, '1');
+  assert.strictEqual(r.out.KIT_GIT_BRANCH, 'kit/hosted');
+  assert.strictEqual(r.out.KIT_DIR, pathx.join(work, 'prototypes/behaviour-ast/behaviours'));
+  assert.strictEqual(f.sh(['-C', work, 'rev-parse', '--abbrev-ref', 'HEAD']).trim(), 'kit/hosted');
+  // The token reaches git through the helper — and is in no URL git could echo back.
+  assert.strictEqual(r.out.password, 'tok-123');
+  assert.ok(!f.sh(['-C', work, 'remote', 'get-url', 'origin']).includes('tok-123'));
+
+  // The edit, through the real write-back, against the clone the entrypoint made.
+  const file = pathx.join(work, 'behaviours', 'demo.beh');
+  fsx.appendFileSync(file, '  when opens page:Home\n');
+  const w = gitStore.writeBack(file, { enabled: true, branch: 'kit/hosted', summary: 'add a step to BEH-1', app: 'demo' });
+  assert.strictEqual(w.pushed, true, w.reason);
+  assert.ok(f.sh(['--git-dir', f.bare, 'branch', '--list', 'kit/hosted']).includes('kit/hosted'),
+    'the first push must create kit/hosted on the remote');
+});
+
+test('entrypoint: a restart clones kit/hosted, so an edit made before it is still there', () => {
+  const f = gitFixture();
+  f.sh(['-C', f.clone, 'checkout', '-q', '-b', 'kit/hosted']);
+  fsx.appendFileSync(f.file, '  review approved\n');
+  f.sh(['-C', f.clone, 'commit', '-q', '-am', 'kit: adjudicate BEH-1 (demo)']);
+  f.sh(['-C', f.clone, 'push', '-q', 'origin', 'kit/hosted']);
+
+  const work = pathx.join(f.root, 'work');
+  const r = startKit({ KIT_GIT_CLONE: f.bare, KIT_GIT_TOKEN: 't', KIT_GIT_WORKTREE: work });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.ok(fsx.readFileSync(pathx.join(work, 'behaviours', 'demo.beh'), 'utf8').includes('review approved'),
+    'the approval made before the restart must be in the corpus Kit serves after it');
+});
+
+test('entrypoint: a clone that fails still starts Kit, on the image corpus with write-back OFF', () => {
+  const f = gitFixture();
+  const r = startKit({ KIT_GIT_CLONE: pathx.join(f.root, 'no-such-remote.git'), KIT_GIT_TOKEN: 't', KIT_GIT_WORKTREE: pathx.join(f.root, 'work') });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual(r.out.ARGS, 'Balenthiran.Kit.WebApi.dll --urls x');
+  assert.strictEqual(r.out.KIT_GIT, '', 'write-back must be off when there is no clone to write into');
+  assert.strictEqual(r.out.KIT_DIR, '');
+  assert.ok(r.stderr.includes('write-back OFF'), r.stderr);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // auth.js — one password, so a write can be accepted from somewhere that is not
 // loopback (kit#46, executing James's choice on kit#44).

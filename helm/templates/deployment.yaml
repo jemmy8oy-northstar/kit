@@ -52,6 +52,9 @@ spec:
                 secretKeyRef:
                   name: {{ .valueFrom.secretKeyRef.name }}
                   key: {{ .valueFrom.secretKeyRef.key }}
+                  {{- if .valueFrom.secretKeyRef.optional }}
+                  optional: true
+                  {{- end }}
               {{- end }}
             {{- end }}
           {{- end }}
