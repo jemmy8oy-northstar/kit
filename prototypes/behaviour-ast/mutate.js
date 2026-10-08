@@ -80,7 +80,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
 // which was run RED first and named five defects. **Do not "finish the job" by
 // adding `cli.js` here — the test will tell you, but this says why.**
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
+const SUBJECTS = { 'kit.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
 // proves it. Two of the kit#66 mutants make a write land in THIS checkout's
