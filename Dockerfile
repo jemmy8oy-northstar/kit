@@ -104,9 +104,17 @@ ENV KIT_BASE_PATH=${KIT_BASE_PATH}
 ENV KIT_HOST=0.0.0.0
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 
-# No git in this image: write-back (`--git`) is off in the chart and not ported to
-# the C# server, so every write answers "not committed", as Node did here.
+# git, for hosted write-back (kit#117): the entrypoint clones the repo at startup
+# when a push credential is configured, and every edit is committed and pushed to
+# `kit/hosted`. With no credential the entrypoint does nothing and git sits unused.
+# ca-certificates because the clone is HTTPS.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/kit-start
+
 USER app
 EXPOSE 8080
 
-CMD ["dotnet", "Balenthiran.Kit.WebApi.dll"]
+ENTRYPOINT ["kit-start"]
