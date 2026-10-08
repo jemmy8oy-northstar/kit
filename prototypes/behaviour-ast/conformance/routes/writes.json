@@ -1216,6 +1216,63 @@
         }
       },
       "written": null
+    },
+    {
+      "path": "/api/projects/alpha/behaviours/BEH-A/steps",
+      "body": {
+        "step": "then sees region:Deployed"
+      },
+      "config": {
+        "publicOrigin": "https://balenthiran.co.uk"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "behaviour": "BEH-A",
+          "file": "<dir>/alpha.beh",
+          "committed": false,
+          "note": "written to this server's disk only. Git write-back is off, so the edit has reached no repository.",
+          "warning": "Git write-back is off on this deployed Kit."
+        }
+      },
+      "written": {
+        "name": "alpha.beh",
+        "text": "# kit:not-a-real-app\n#\n# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each\n# behaviour exists to put one of writer.js's splice rules under test: where a\n# step lands when comments trail a block, where a review line goes when there is\n# none, and which line it replaces when there is.\n\nbehaviour BEH-A \"Has an actor, a source and an explicit review\"\n  actor owner\n  source inferred notes.md#a\n  review denied the guest does it\n  when opens page:Home\n  then sees button:Save\n  then sees region:Done\n  then sees a:C\n  then sees region:Deployed\n# a comment trailing BEH-A, which a new step must land ABOVE\n\nbehaviour BEH-B \"Has a source and no review line\"\n  source defined\n  review approved\n  when presses button:Save\n  then sees region:Saved\n\nbehaviour BEH-C \"Has only an actor\"\n  actor owner\n  when opens page:Settings\n\n# this comment introduces BEH-D, so nothing may be appended under it\n\nbehaviour BEH-D \"Has no preamble at all\"\n  when opens page:About\n\nbehaviour BEH-E \"New\"\n  actor guest\n  source defined x.md\n  when opens page:Home\n\nbehaviour BEH-F \"T\"\n  source inferred\n"
+      }
+    },
+    {
+      "path": "/api/projects/alpha/bindings",
+      "body": {
+        "noun": "region:Deployed",
+        "binding": {
+          "role": "region"
+        }
+      },
+      "config": {
+        "publicOrigin": "https://balenthiran.co.uk"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "alpha",
+          "noun": "region:Deployed",
+          "file": "<dir>/alpha.bindings.json",
+          "committed": false,
+          "note": "written to this server's disk only. Git write-back is off, so the edit has reached no repository.",
+          "warning": "Git write-back is off on this deployed Kit.",
+          "sharedWith": [],
+          "unreadableCorpora": [
+            "broken"
+          ]
+        }
+      },
+      "written": {
+        "name": "alpha.bindings.json",
+        "text": "{\n  \"_comment\": \"A fixture for the writer's conformance oracle (kit#119).\",\n  \"button:Save\": {\n    \"role\": \"button\",\n    \"name\": \"Save\"\n  },\n  \"page:Home\": {\n    \"route\": \"/\"\n  },\n  \"region:Done\": {\n    \"1\": \"y\",\n    \"2\": \"x\",\n    \"b\": 1,\n    \"in\": {\n      \"9\": 2,\n      \"10\": 1,\n      \"z\": 0\n    }\n  },\n  \"region:Deployed\": {\n    \"role\": \"region\"\n  }\n}\n"
+      }
     }
   ]
 }

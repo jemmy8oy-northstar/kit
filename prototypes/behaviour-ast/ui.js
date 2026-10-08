@@ -788,7 +788,21 @@ function gitOutcome(file, opts, summary, app) {
 
   // Off is the local default and decision 2 unchanged: say exactly what the
   // response has always said, so nothing that reads this today breaks.
+  //
+  // 🔴 Except deployed. A public origin is how a deployed Kit is configured
+  // (`KIT_PUBLIC_ORIGIN`), and there "commit it yourself" names a working tree
+  // inside a pod nobody can reach, which has no volume and is discarded on
+  // restart. James lost an approval exactly this way (kit#117). So deployed, the
+  // answer says where the edit really is, as a `warning` the UI already renders
+  // as an alert.
   if (!(opts.git && opts.git.enabled)) {
+    if (opts.publicOrigin) {
+      return {
+        committed: false,
+        note: 'written to this server\'s disk only. Git write-back is off, so the edit has reached no repository.',
+        warning: 'Git write-back is off on this deployed Kit.',
+      };
+    }
     return {
       committed: false,
       note: 'written to the working tree. Kit does not run git — review the diff and commit it yourself.',

@@ -25,6 +25,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="host">The address the server is bound to: with no password, writes are served only on loopback.</param>
 /// <param name="secure">Set the cookie's <c>Secure</c> flag (an https public origin).</param>
 /// <param name="git">Write-back (<c>--git</c>); off when not given, as <c>ui.js</c> without the flag.</param>
+/// <param name="deployed">A public origin is configured (<c>KIT_PUBLIC_ORIGIN</c>): with write-back off, a write says the edit is on the server's disk only.</param>
 public sealed class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -36,7 +37,8 @@ public sealed class KitRouter(
     string host = "127.0.0.1",
     bool secure = false,
     ICorpusWriter? writer = null,
-    IGitStore? git = null) : IKitRouter
+    IGitStore? git = null,
+    bool deployed = false) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -271,7 +273,9 @@ public sealed class KitRouter(
     /// <summary>
     /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
     /// helper for both write paths, so they cannot describe the same outcome two ways. Off,
-    /// the answer is <paramref name="plain"/> unchanged (decision 2). On, it becomes a
+    /// the answer is <paramref name="plain"/> unchanged (decision 2) — except deployed, where
+    /// "commit it yourself" would name a working tree inside a pod nobody can reach (kit#117),
+    /// so the note says where the edit really is and a warning says it. On, it becomes a
     /// <see cref="GitWriteOutcome"/>, whose <c>note</c> is git's own reason whenever the edit
     /// did not reach the remote, never a summary of it.
     /// </summary>
@@ -280,7 +284,19 @@ public sealed class KitRouter(
         var g = git.WriteBack(file, summary, app);
         if (!git.Enabled)
         {
-            return plain;
+            return deployed
+                ? new WriteOutcome
+                {
+                    App = plain.App,
+                    Behaviour = plain.Behaviour,
+                    Noun = plain.Noun,
+                    File = plain.File,
+                    SharedWith = plain.SharedWith,
+                    UnreadableCorpora = plain.UnreadableCorpora,
+                    Note = DeployedNote,
+                    Warning = DeployedWarning,
+                }
+                : plain;
         }
 
         return new GitWriteOutcome
@@ -302,6 +318,10 @@ public sealed class KitRouter(
 
     // Decision 2: with write-back off, the answer says what was NOT done.
     private const string NotCommitted = "written to the working tree. Kit does not run git — review the diff and commit it yourself.";
+
+    private const string DeployedNote = "written to this server's disk only. Git write-back is off, so the edit has reached no repository.";
+
+    private const string DeployedWarning = "Git write-back is off on this deployed Kit.";
 
     // ui.js's bodyTypeError specs: `string` is required; `string?` may be null or absent;
     // `strings?` is an array of strings, null or absent.

@@ -62,13 +62,27 @@ apps:
           secretKeyRef:
             name: kit-auth
             key: password
+      # Hosted write-back (kit#117, kit#92). Read by `docker-entrypoint.sh`, which
+      # clones KIT_GIT_CLONE at KIT_GIT_BRANCH and points Kit at the clone, so
+      # every edit is committed and pushed there and a restart loses nothing.
+      # 🔑 The token is OPTIONAL on purpose: until the `kit-git` secret exists the
+      # entrypoint does nothing, and Kit runs exactly as before. Required, a
+      # missing secret would stop the pod starting at all.
+      - name: KIT_GIT_CLONE
+        value: "https://github.com/jemmy8oy-northstar/kit.git"
+      - name: KIT_GIT_BRANCH
+        value: "kit/hosted"
+      - name: KIT_GIT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: kit-git
+            key: token
+            optional: true
     resources: {}
     nodeSelector: {}
     tolerations: []
     affinity: {}
-# ⚠️ NOT SET, deliberately: `--git` write-back. A deployed Kit that commits your
-# edits needs a git credential to push them, and which kind that should be is
-# still open (kit#48). Until it is answered the pod accepts edits and shows
-# "Not committed — Kit does not run git." on every one, which is true. Turning
-# write-back on without the credential would produce the one state worth
-# avoiding: commits nobody can push, in a container that is wiped on restart.
+# Write-back switches itself on only when the `kit-git` secret holds a token (see
+# KIT_GIT_TOKEN above). Without one, every edit is answered "on this server's disk
+# only" (kit#142), which is true. Write-back with no credential would mean commits
+# nobody can push, in a container that is wiped on restart.
