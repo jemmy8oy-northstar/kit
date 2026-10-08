@@ -663,6 +663,129 @@ function writeRoutes() {
   }
 }
 
+const GIT = 'routes/git';
+
+function gitPath(goldenDir) {
+  return path.join(goldenDir, 'routes', 'git.json');
+}
+
+/**
+ * GIT WRITE-BACK (`git-store.js`), end to end: a write through `received()` with
+ * `opts.git` switched on, each in a fresh fixture — a REAL bare remote and a REAL
+ * clone holding `alpha.beh` and its bindings, as `kit.test.js`'s `gitFixture()`.
+ * Every outcome `gitOutcome()` can describe is reached: pushed, unchanged, no work
+ * tree, detached HEAD, a push the remote refuses, a remote that does not exist, an
+ * explicit branch, a bind, and a tree dirty with someone else's staged file.
+ *
+ * Recorded per scenario: the response, and what the REMOTE then holds — the last
+ * commit's subject, author and files on the pushed branch, or null — plus whether
+ * the clone's HEAD moved. The remote is the half that matters: a commit that never
+ * left the pod is the state this feature exists to report honestly.
+ *
+ * Three things differ per run and are masked, identically on both sides: the
+ * commit hash (`<sha>`), the fixture's absolute root (`<tmp>`), and the corpus
+ * path relative to the Kit repo (`<dir>/`).
+ */
+function gitRoutes() {
+  const ui = require('./ui.js');
+  const os = require('os');
+  const { spawnSync } = require('child_process');
+  const FIX = path.join(__dirname, 'conformance', 'writes');
+  const REPO = path.join(__dirname, '..', '..');
+  const sh = (args, cwd) => {
+    const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
+    if (r.status !== 0) throw new Error(`fixture: git ${args.join(' ')} — ${r.stderr}`);
+    return r.stdout;
+  };
+  const B = '/api/projects/alpha/behaviours';
+  const step = [`${B}/BEH-A/steps`, { step: 'then sees region:Done' }];
+  const scenarios = [
+    ['pushed', step, {}],
+    ['unchanged', [`${B}/BEH-A/review`, { state: 'unreviewed' }], {}],
+    ['bind', ['/api/projects/alpha/bindings', { noun: 'page:Home', binding: { route: '/' } }], {}],
+    ['new-behaviour', [B, { id: 'BEH-E', title: 'New' }], { name: 'Someone', email: 'someone@example.com' }],
+    ['explicit-branch', step, { branch: 'kit-edits' }],
+    ['no-such-remote', step, { remote: 'nope' }],
+    ['remote-gone', step, {}, 'remote-gone'],
+    ['detached', step, {}, 'detached'],
+    ['not-a-work-tree', step, {}, 'not-a-work-tree'],
+    ['dirty-tree', step, {}, 'dirty-tree'],
+  ];
+
+  return {
+    format: FORMAT,
+    scenarios: scenarios.map(([name, [p, body], git, setup]) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kit-git-'));
+      try {
+        const bare = path.join(root, 'bare.git');
+        const clone = path.join(root, 'clone');
+        sh(['init', '-q', '--bare', '-b', 'main', bare]);
+        sh(['clone', '-q', bare, clone]);
+        sh(['-C', clone, 'config', 'user.name', 'fixture']);
+        sh(['-C', clone, 'config', 'user.email', 'fixture@example.com']);
+        const dir = path.join(clone, 'behaviours');
+        fs.mkdirSync(dir);
+        for (const f of ['alpha.beh', 'alpha.bindings.json']) fs.copyFileSync(path.join(FIX, f), path.join(dir, f));
+        sh(['-C', clone, 'add', '-A']);
+        sh(['-C', clone, 'commit', '-q', '-m', 'initial']);
+        sh(['-C', clone, 'push', '-q', 'origin', 'main']);
+
+        let served = dir;
+        if (setup === 'remote-gone') fs.renameSync(bare, `${bare}.gone`);
+        if (setup === 'detached') sh(['-C', clone, 'checkout', '-q', '--detach', 'HEAD']);
+        if (setup === 'dirty-tree') {
+          fs.writeFileSync(path.join(dir, 'unrelated.txt'), 'not part of this edit\n');
+          sh(['-C', clone, 'add', '--', 'behaviours/unrelated.txt']);
+        }
+        if (setup === 'not-a-work-tree') {
+          served = path.join(root, 'loose');
+          fs.mkdirSync(served);
+          for (const f of ['alpha.beh', 'alpha.bindings.json']) fs.copyFileSync(path.join(FIX, f), path.join(served, f));
+        }
+
+        const before = sh(['-C', clone, 'rev-parse', 'HEAD']).trim();
+        const opts = { dir: served, host: '127.0.0.1', git: { enabled: true, ...git } };
+        const a = ui.received(p, Buffer.from(JSON.stringify(body), 'utf8'), null, null, opts);
+        const response = { status: a.status, body: maskGit(JSON.parse(a.body), root, path.relative(REPO, served)) };
+
+        const branch = git.branch || 'main';
+        const remote = !fs.existsSync(bare) || spawnSync('git', ['-C', bare, 'rev-parse', '--verify', '-q', `refs/heads/${branch}`]).status !== 0
+          ? null
+          : {
+            branch,
+            subject: sh(['-C', bare, 'log', '-1', '--format=%s', branch]).trim(),
+            author: sh(['-C', bare, 'log', '-1', '--format=%an <%ae>', branch]).trim(),
+            files: sh(['-C', bare, 'show', '--name-only', '--format=', branch]).trim().split('\n'),
+          };
+        const headMoved = sh(['-C', clone, 'rev-parse', 'HEAD']).trim() !== before;
+        return { name, path: p, body, git, setup: setup || null, response, remote, headMoved };
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    }),
+  };
+}
+
+/**
+ * The three per-run values out of a git write's answer: the commit hash, the
+ * fixture root, the corpus path. The C# test masks with the same three rules.
+ */
+function maskGit(body, root, relDir) {
+  const sha = typeof body.commit === 'string' && /^[0-9a-f]{10}$/.test(body.commit) ? body.commit : null;
+  const rel = relDir.split(path.sep).join('/');
+  const mask = (s) => {
+    let t = s;
+    if (sha) t = t.split(sha).join('<sha>');
+    return t.split(root).join('<tmp>');
+  };
+  const out = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (k === 'file' && typeof v === 'string' && v.startsWith(`${rel}/`)) out[k] = `<dir>/${v.slice(rel.length + 1)}`;
+    else out[k] = typeof v === 'string' ? mask(v) : v;
+  }
+  return out;
+}
+
 // The serialised form, which is what is actually compared. One definition, so
 // `--record` and `--check` cannot disagree about formatting — the failure mode
 // where a check is permanently red because the writer indents differently.
@@ -708,7 +831,7 @@ function compare(dir, goldenDir, only) {
   // and through the same three outcomes as a corpus, so nothing downstream needs
   // a fourth state to report them.
   if (!only) {
-    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))], [WRITES, writesPath(goldenDir), serialise(writeRoutes())]]) {
+    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))], [WRITES, writesPath(goldenDir), serialise(writeRoutes())], [GIT, gitPath(goldenDir), serialise(gitRoutes())]]) {
       if (!fs.existsSync(p)) { out.missing.push(name); continue; }
       const committed = fs.readFileSync(p, 'utf8');
       if (committed === fresh) out.matched.push(name);
@@ -745,7 +868,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, writeRoutes, writesPath, WRITES, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, writeRoutes, writesPath, WRITES, gitRoutes, gitPath, GIT, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -833,6 +956,8 @@ function main(argv) {
       written.push(AUTH);
       fs.writeFileSync(writesPath(goldenDir), serialise(writeRoutes()));
       written.push(WRITES);
+      fs.writeFileSync(gitPath(goldenDir), serialise(gitRoutes()));
+      written.push(GIT);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;

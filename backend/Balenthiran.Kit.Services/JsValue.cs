@@ -62,7 +62,9 @@ internal readonly record struct JsValue(bool Defined, JsonNode? Node)
                     // U+2028, `<`, `&` and `'` included, unlike System.Text.Json.
                     // ES2019 also escapes a LONE surrogate, which no input here
                     // can carry (see the test pinning the bindings-file case).
-                    if (c < 0x20)
+                    var lone = (char.IsHighSurrogate(c) && !(i + 1 < s.Length && char.IsLowSurrogate(s[i + 1])))
+                        || (char.IsLowSurrogate(c) && !(i > 0 && char.IsHighSurrogate(s[i - 1])));
+                    if (c < 0x20 || lone)
                     {
                         sb.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
                     }
@@ -124,6 +126,112 @@ internal readonly record struct JsValue(bool Defined, JsonNode? Node)
         var es = (e >= 0 ? "+" : "-") + Math.Abs(e).ToString(CultureInfo.InvariantCulture);
         return sign + digits[0] + (k > 1 ? "." + digits[1..] : string.Empty) + "e" + es;
     }
+
+    /// <summary>
+    /// <c>JSON.parse</c>'s object model, built from a parsed element: a duplicate key
+    /// keeps its FIRST position and its LAST value, as a JavaScript object does.
+    /// </summary>
+    public static JsonNode? FromElement(JsonElement e)
+    {
+        switch (e.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var o = new JsonObject();
+                foreach (var p in e.EnumerateObject())
+                {
+                    o[p.Name] = FromElement(p.Value);
+                }
+
+                return o;
+            case JsonValueKind.Array:
+                var a = new JsonArray();
+                foreach (var x in e.EnumerateArray())
+                {
+                    a.Add(FromElement(x));
+                }
+
+                return a;
+            case JsonValueKind.Null:
+                return null;
+            case JsonValueKind.True:
+                return JsonValue.Create(true);
+            case JsonValueKind.False:
+                return JsonValue.Create(false);
+            case JsonValueKind.Number:
+                // A JavaScript number is a double: `1.50` and `1.5` are one value.
+                return JsonValue.Create(e.GetDouble());
+            default:
+                // Materialised, never `JsonValue.Create(e)`: that keeps a reference into
+                // the document, which is disposed long before this node is written.
+                return JsonValue.Create(StringOf(e));
+        }
+    }
+
+    /// <summary>
+    /// A JSON string's value. <c>GetString</c> refuses an escaped LONE surrogate, which
+    /// <c>JSON.parse</c> accepts, so that case is unescaped by hand.
+    /// </summary>
+    private static string StringOf(JsonElement e)
+    {
+        try
+        {
+            return e.GetString()!;
+        }
+        catch (InvalidOperationException)
+        {
+            var raw = e.GetRawText();
+            var sb = new StringBuilder();
+            for (var i = 1; i < raw.Length - 1; i++)
+            {
+                if (raw[i] != '\\')
+                {
+                    sb.Append(raw[i]);
+                    continue;
+                }
+
+                var c = raw[++i];
+                sb.Append(c switch
+                {
+                    'b' => "\b",
+                    'f' => "\f",
+                    'n' => "\n",
+                    'r' => "\r",
+                    't' => "\t",
+                    'u' => ((char)Convert.ToInt32(raw.Substring(i + 1, 4), 16)).ToString(),
+                    _ => c.ToString(),
+                });
+                if (c == 'u')
+                {
+                    i += 4;
+                }
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    /// <summary><c>JSON.stringify(v, null, 2)</c>, at a starting indent.</summary>
+    public static string Indented(JsonNode? node, string indent = "")
+    {
+        var inner = indent + "  ";
+        switch (node)
+        {
+            case JsonObject o:
+                var props = Entries(o).ToList();
+                return props.Count == 0
+                    ? "{}"
+                    : "{\n" + string.Join(",\n", props.Select(kv => inner + Quote(kv.Key) + ": " + Indented(kv.Value, inner))) + "\n" + indent + "}";
+            case JsonArray a:
+                return a.Count == 0
+                    ? "[]"
+                    : "[\n" + string.Join(",\n", a.Select(x => inner + Indented(x, inner))) + "\n" + indent + "]";
+            default:
+                return Json(node);
+        }
+    }
+
+    /// <summary>Compact <c>JSON.stringify(v)</c> of a defined value.</summary>
+    public static string Compact(JsonNode? node) => Json(node);
 
     /// <summary><c>v[key]</c> on this value: only an object has own properties to read.</summary>
     public JsValue Get(string key) => Node is JsonObject o ? Prop(o, key) : Undefined;

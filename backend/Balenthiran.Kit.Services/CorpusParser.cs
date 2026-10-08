@@ -264,7 +264,7 @@ public sealed class CorpusParser : ICorpusParser
     /// noun with no verb (<c>given transcription:Completed</c>) is a state
     /// precondition, and its verb is the literal string <c>state</c>.
     /// </summary>
-    private static Step ParseStep(string kind, string rest, string at)
+    internal static Step ParseStep(string kind, string rest, string at)
     {
         var first = FirstToken(rest);
         var verb = BareNoun.IsMatch(first) ? "state" : first;

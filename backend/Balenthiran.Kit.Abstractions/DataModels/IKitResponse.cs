@@ -17,4 +17,7 @@ public interface IKitResponse
 
     /// <summary>The bytes to send, set only by the bundle — its presence is what distinguishes bytes from a payload.</summary>
     byte[]? Raw { get; }
+
+    /// <summary>The <c>Set-Cookie</c> header value; set only by sign-in and sign-out.</summary>
+    string? SetCookie { get; }
 }

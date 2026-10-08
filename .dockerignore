@@ -19,3 +19,8 @@ prototypes/behaviour-ast/ui/dist
 .github
 docs
 *.md
+
+# The C# build's own output: a host bin/obj copied over the publish input would
+# feed it whatever the build machine last compiled.
+backend/**/bin
+backend/**/obj

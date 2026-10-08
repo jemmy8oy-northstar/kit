@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.DataModels.Models;
+using Balenthiran.Kit.Database;
 
 namespace Balenthiran.Kit.Services;
 
@@ -14,24 +17,49 @@ namespace Balenthiran.Kit.Services;
 ///
 /// Everything else is the built UI (<see cref="IUiBundle"/>).
 ///
-/// ⚠️ Not yet ported, and answered as such rather than guessed: every write
-/// (<c>POST</c>) — a later PR of the #119 stack.
+/// Every POST passes <c>write()</c>'s gates in its order — the CSRF Origin check, sign-in
+/// and sign-out, the lock (a session when a password is set, else a loopback bind), the
+/// route, the app, the body — then the edit, and git write-back when it is switched on.
 /// </summary>
 /// <param name="password"><c>KIT_PASSWORD</c>, or null.</param>
-public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, IUiBundle bundle, string? password) : IKitRouter
+/// <param name="host">The address the server is bound to: with no password, writes are served only on loopback.</param>
+/// <param name="secure">Set the cookie's <c>Secure</c> flag (an https public origin).</param>
+/// <param name="git">Write-back (<c>--git</c>); off when not given, as <c>ui.js</c> without the flag.</param>
+public sealed class KitRouter(
+    ICorpusDirectory corpora,
+    IProjectViewer viewer,
+    IUiBundle bundle,
+    string? password,
+    IOriginPolicy? origins = null,
+    ISessionStore? sessions = null,
+    ISignInThrottle? throttle = null,
+    string host = "127.0.0.1",
+    bool secure = false,
+    ICorpusWriter? writer = null,
+    IGitStore? git = null) : IKitRouter
 {
+    private const string Cookie = "kit_session";
+
     // `auth.enabled()`: a password that is more than JavaScript whitespace.
     private readonly bool lockRequired = password is not null && password.Trim(CorpusParser.WsChars).Length > 0;
 
+    private readonly IOriginPolicy origins = origins ?? new OriginPolicy(new UrlParser(), null);
+
+    private readonly ICorpusWriter writer = writer ?? new CorpusWriter(new CorpusParser());
+
+    private readonly IGitStore git = git ?? new GitStore(enabled: false);
+
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
+    private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review))?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
-    public IKitResponse Route(string method, string pathname)
+    public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
     {
         if (method == "POST")
         {
-            return Json(501, new ApiError { Error = "not-implemented", Reason = "writes are not ported to the C# server yet (#119)" });
+            return Write(pathname, cookie, origin, body);
         }
 
         if (method != "GET")
@@ -54,11 +82,10 @@ public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, I
             return Json(200, new Health { Ok = true });
         }
 
-        // Readable without a session: it reveals only whether a lock exists. Nobody
-        // can be signed in until the write half (sign-in) is ported.
+        // Readable without a session: it reveals only whether a lock exists.
         if (pathname == "/api/session")
         {
-            return Json(200, new SessionState { Required = lockRequired, SignedIn = !lockRequired });
+            return Json(200, new SessionState { Required = lockRequired, SignedIn = !lockRequired || SignedIn(cookie) });
         }
 
         if (pathname == "/api/projects")
@@ -95,6 +122,314 @@ public sealed class KitRouter(ICorpusDirectory corpora, IProjectViewer viewer, I
 
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
     }
+
+    /// <summary><c>ui.js</c>'s <c>write()</c>, up to the write itself.</summary>
+    private KitResponse Write(string pathname, string? cookie, string? origin, JsonElement? body)
+    {
+        // Rule 4 FIRST: the only gate that defends against a caller who is not the developer.
+        if (origins.RefuseWrite(origin) is { } refused)
+        {
+            return Json(403, refused);
+        }
+
+        // Below the Origin check (else any page could run a guessing loop through his
+        // browser) and above the lock (else the key is locked inside the box it opens).
+        if (pathname is "/api/session" or "/api/session/end")
+        {
+            return Session(pathname, cookie, body);
+        }
+
+        // Exclusive on purpose: with a password the session decides and the bind address
+        // is irrelevant — there is no "loopback, so allow" while a password is set.
+        if (lockRequired)
+        {
+            if (!SignedIn(cookie))
+            {
+                return Json(401, new ApiError
+                {
+                    Error = "not-signed-in",
+                    Reason = "this Kit is password-protected and this request carries no valid session. POST the password to /api/session first.",
+                });
+            }
+        }
+        else if (!OriginPolicy.IsLoopback(host))
+        {
+            return Json(403, new ApiError
+            {
+                Error = "not-loopback",
+                Reason = $"writes are served only to loopback; this server is bound to {host}. "
+                    + "docs/design/ui.md decision 1: Kit's UI is a local developer tool, and an "
+                    + "unauthenticated write API on a routable interface is not that.",
+            });
+        }
+
+        var bm = Bindings.Match(pathname);
+        var m = bm.Success ? bm : Behaviours.Match(pathname);
+        if (!m.Success)
+        {
+            return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
+        }
+
+        if (DecodeUriComponent(m.Groups[1].Value) is not { } app)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+        }
+
+        // Rule 3: looked UP in the listing, never joined to a path.
+        var known = corpora.Corpora();
+        if (!known.Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
+        // `!body || typeof body !== 'object'`: an object or an array; null and scalars are not.
+        if (body is not { ValueKind: JsonValueKind.Object or JsonValueKind.Array })
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the body must be a JSON object" });
+        }
+
+        var b = body.Value;
+        return bm.Success ? Bind(app, b) : Edit(app, m, b);
+    }
+
+    /// <summary><c>write()</c> past its gates: create a behaviour, add a step, or adjudicate.</summary>
+    private KitResponse Edit(string app, Match m, JsonElement body)
+    {
+        var review = m.Groups[3].Value == "review";
+        var step = m.Groups[2].Success && !review;
+
+        // Decoded with a refusal, never a throw — in ui.js this once crashed the process.
+        string? id;
+        if (m.Groups[2].Success)
+        {
+            if (DecodeUriComponent(m.Groups[2].Value) is not { } decoded)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the behaviour id is not valid percent-encoding" });
+            }
+
+            id = decoded;
+        }
+        else
+        {
+            id = Field(body, "id") is { ValueKind: JsonValueKind.String } v ? v.GetString() : null;
+        }
+
+        if (TypeError(body, review ? ReviewFields : step ? StepFields : CreateFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var text = corpora.ReadText(app);
+        var result = review
+            ? writer.SetReview(text, id!, Str(body, "state")!, Str(body, "note"))
+            : step
+                ? writer.AddStep(text, id!, Str(body, "step")!)
+                : writer.AddBehaviour(text, id!, Str(body, "title")!, Str(body, "actor"), Field(body, "steps") is { ValueKind: JsonValueKind.Array } s ? s.EnumerateArray().Select(x => x.GetString()!).ToList() : null, Str(body, "source"), Str(body, "ref"));
+
+        // 409, not 500: every refusal is a statement about the request.
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason!, Known = result.Known?.ToList() });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        var what = review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary><c>postBinding()</c> past its gates: add one binding to the app's bindings file.</summary>
+    private KitResponse Bind(string app, JsonElement body)
+    {
+        if (TypeError(body, BindFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        // No bindings file yet is the NORMAL first bind, not an error.
+        var before = corpora.ReadBindingsText(app) ?? "{}";
+        var skipped = new List<string>();
+        var nouns = writer.CorpusNouns(corpora.Corpora().ToDictionary(a => a, corpora.ReadText, StringComparer.Ordinal), skipped);
+        var value = Field(body, "binding") ?? JsonSerializer.SerializeToElement<object?>(null);
+        var result = writer.AddBinding(before, Str(body, "noun")!, value, nouns, app);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason!, Current = result.Current });
+        }
+
+        corpora.WriteBindingsText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullBindingsPath(app), $"bind {result.Noun}", app, new WriteOutcome
+        {
+            App = app,
+            Noun = result.Noun,
+            File = corpora.RelativeBindingsPath(app),
+            Note = NotCommitted,
+            SharedWith = result.SharedWith!.ToList(),
+            UnreadableCorpora = skipped,
+        }));
+    }
+
+    /// <summary>
+    /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
+    /// helper for both write paths, so they cannot describe the same outcome two ways. Off,
+    /// the answer is <paramref name="plain"/> unchanged (decision 2). On, it becomes a
+    /// <see cref="GitWriteOutcome"/>, whose <c>note</c> is git's own reason whenever the edit
+    /// did not reach the remote, never a summary of it.
+    /// </summary>
+    private WriteOutcome GitOutcome(string file, string summary, string app, WriteOutcome plain)
+    {
+        var g = git.WriteBack(file, summary, app);
+        if (!git.Enabled)
+        {
+            return plain;
+        }
+
+        return new GitWriteOutcome
+        {
+            App = plain.App,
+            Behaviour = plain.Behaviour,
+            Noun = plain.Noun,
+            File = plain.File,
+            SharedWith = plain.SharedWith,
+            UnreadableCorpora = plain.UnreadableCorpora,
+            Committed = g.Committed,
+            Pushed = g.Pushed,
+            Commit = g.Commit,
+            Branch = g.Branch,
+            Note = g.Pushed ? $"committed as {g.Commit} and pushed to {g.Branch}." : g.Reason!,
+            Warning = g.Committed && !g.Pushed ? $"this edit is committed locally but did NOT reach {git.Remote}: {g.Reason}" : null,
+        };
+    }
+
+    // Decision 2: with write-back off, the answer says what was NOT done.
+    private const string NotCommitted = "written to the working tree. Kit does not run git — review the diff and commit it yourself.";
+
+    // ui.js's bodyTypeError specs: `string` is required; `string?` may be null or absent;
+    // `strings?` is an array of strings, null or absent.
+    private static readonly (string Field, string Type)[] CreateFields = [("id", "string"), ("title", "string"), ("actor", "string?"), ("steps", "strings?"), ("source", "string?"), ("ref", "string?")];
+    private static readonly (string Field, string Type)[] StepFields = [("step", "string")];
+    private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
+    private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
+
+    private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
+    {
+        foreach (var (field, type) in spec)
+        {
+            var v = Field(body, field);
+            var absent = v is null || v.Value.ValueKind == JsonValueKind.Null;
+            var isString = v is { ValueKind: JsonValueKind.String };
+            if (type == "string" && !isString)
+            {
+                return $"{field} must be a string";
+            }
+
+            if (type == "string?" && !absent && !isString)
+            {
+                return $"{field} must be a string";
+            }
+
+            if (type == "strings?" && !absent && !(v!.Value.ValueKind == JsonValueKind.Array && v.Value.EnumerateArray().All(x => x.ValueKind == JsonValueKind.String)))
+            {
+                return $"{field} must be a list of strings";
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary><c>body[field]</c>: an own property of an object (last duplicate wins); an array has none.</summary>
+    private static JsonElement? Field(JsonElement body, string field) =>
+        body.ValueKind == JsonValueKind.Object && body.TryGetProperty(field, out var v) ? v : null;
+
+    private static string? Str(JsonElement body, string field) =>
+        Field(body, field) is { ValueKind: JsonValueKind.String } v ? v.GetString() : null;
+
+    /// <summary><c>ui.js</c>'s <c>session()</c>: sign in, sign out.</summary>
+    private KitResponse Session(string pathname, string? cookie, JsonElement? body)
+    {
+        // A Kit with no password has no such route — the page learns that from GET /api/session.
+        if (!lockRequired)
+        {
+            return Json(404, new ApiError { Error = "no-such-route", Reason = "this Kit has no password configured, so there is nothing to sign in to" });
+        }
+
+        if (pathname == "/api/session/end")
+        {
+            sessions?.Destroy(ParseCookies(cookie).GetValueOrDefault(Cookie));
+
+            // Cleared even if the token was already unknown, or the page believes it is
+            // signed in and every write 401s with no way back to the form.
+            return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = false }, SetCookie = ClearCookie() };
+        }
+
+        var wait = throttle?.RetryAfterMs() ?? 0;
+        if (wait > 0)
+        {
+            var seconds = (int)Math.Ceiling(wait / 1000.0);
+            return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
+        }
+
+        // `typeof given === 'string' ? given : ''` — a missing, numeric or array password is ''.
+        var given = body is { ValueKind: JsonValueKind.Object } b && b.TryGetProperty("password", out var p) && p.ValueKind == JsonValueKind.String
+            ? p.GetString()!
+            : string.Empty;
+        if (!SecretsMatch(given, password!))
+        {
+            throttle?.Fail();
+
+            // One message for missing and wrong: telling them apart helps a guesser.
+            return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
+        }
+
+        throttle?.Succeed();
+        var token = sessions!.Create();
+
+        // The token goes out ONLY as an HttpOnly cookie, never in the body.
+        return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
+    }
+
+    /// <summary>Fails closed: no store means nobody is signed in.</summary>
+    private bool SignedIn(string? cookie) => sessions is not null && sessions.Valid(ParseCookies(cookie).GetValueOrDefault(Cookie));
+
+    private string CookieFor(string token) =>
+        $"{Cookie}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SessionStore.TtlMs / 1000}" + (secure ? "; Secure" : string.Empty);
+
+    private string ClearCookie() => $"{Cookie}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0" + (secure ? "; Secure" : string.Empty);
+
+    /// <summary>
+    /// <c>auth.js</c>'s <c>parseCookies</c>: tolerant, never throws; a value may contain
+    /// <c>=</c> (a base64 token ends in one), and a later duplicate wins.
+    /// </summary>
+    private static Dictionary<string, string> ParseCookies(string? header)
+    {
+        var output = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (string.IsNullOrEmpty(header))
+        {
+            return output;
+        }
+
+        foreach (var part in header.Split(';'))
+        {
+            var eq = part.IndexOf('=', StringComparison.Ordinal);
+            if (eq < 1)
+            {
+                continue;
+            }
+
+            var name = part[..eq].Trim(CorpusParser.WsChars);
+            if (name.Length == 0)
+            {
+                continue;
+            }
+
+            output[name] = part[(eq + 1)..].Trim(CorpusParser.WsChars);
+        }
+
+        return output;
+    }
+
+    /// <summary>Constant-time over inputs of any length: both sides hashed to 32 bytes first.</summary>
+    private static bool SecretsMatch(string a, string b) =>
+        CryptographicOperations.FixedTimeEquals(SHA256.HashData(Encoding.UTF8.GetBytes(a)), SHA256.HashData(Encoding.UTF8.GetBytes(b)));
 
     /// <summary>
     /// JavaScript's <c>decodeURIComponent</c>, or null where it would throw a URIError:
