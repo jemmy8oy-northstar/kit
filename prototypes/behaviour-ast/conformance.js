@@ -540,6 +540,10 @@ function writeRoutes() {
     'bindings-empty': '{}',
     'bindings-array': '[]',
     'bindings-bad': '{',
+    // Not a `.beh`, so it stays out of every corpus population: an INDENTED header
+    // the parser treats as a new behaviour and the splice does not, which is the one
+    // way an edit lands in a NEIGHBOUR and rule 3's "changed" branch must catch it.
+    indented: read('indented.txt'),
   };
   const corpora = writer.corpusNouns(FIX);
 
@@ -553,6 +557,7 @@ function writeRoutes() {
     ['addStep', 'alpha', ['BEH-A', 'flies away']],
     ['addStep', 'alpha', ['BEH-A', 'behaviour BEH-NEW "sneaky"']],
     ['addStep', 'broken', ['BEH-Z', 'then sees a:B']],
+    ['addStep', 'indented', ['BEH-F', 'then sees region:F']],
     ['addBehaviour', 'alpha', ['BEH-E', 'Plain', {}]],
     ['addBehaviour', 'alpha', ['BEH-E', 'Full', { actor: 'guest', steps: ['when opens page:Home', '  then sees region:Saved '], source: 'defined', ref: 'notes.md#e' }]],
     ['addBehaviour', 'alpha-unterminated', ['BEH-E', 'Plain', {}]],
@@ -635,6 +640,8 @@ function writeRoutes() {
       // the bindings file is written in that order.
       ['/api/projects/alpha/bindings', '{"noun":"region:Done","binding":{"b":1,"2":"x","1":"y","in":{"z":0,"10":1,"9":2}}}'],
       ['/api/projects/broken/behaviours/BEH-Z/steps', { step: 'then sees a:B' }],
+      // A corpus that starts with a byte-order mark keeps it through an edit.
+      ['/api/projects/delta/behaviours/BEH-Y/steps', { step: 'then sees region:Delta' }],
       ['/api/projects/%E0/bindings', { noun: 'page:Home', binding: { route: '/' } }],
       ['/api/projects/gamma/bindings', { noun: 'page:Home', binding: { route: '/' } }],
     ];

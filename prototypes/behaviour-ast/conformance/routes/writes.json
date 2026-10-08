@@ -122,6 +122,19 @@
       }
     },
     {
+      "fn": "addStep",
+      "input": "indented",
+      "args": [
+        "BEH-F",
+        "then sees region:F"
+      ],
+      "result": {
+        "ok": false,
+        "error": "collateral-change",
+        "reason": "BEH-G changed, and only BEH-F was meant to"
+      }
+    },
+    {
       "fn": "addBehaviour",
       "input": "alpha",
       "args": [
@@ -1144,6 +1157,27 @@
       "written": null
     },
     {
+      "path": "/api/projects/delta/behaviours/BEH-Y/steps",
+      "body": {
+        "step": "then sees region:Delta"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "app": "delta",
+          "behaviour": "BEH-Y",
+          "file": "<dir>/delta.beh",
+          "committed": false,
+          "note": "written to the working tree. Kit does not run git — review the diff and commit it yourself."
+        }
+      },
+      "written": {
+        "name": "delta.beh",
+        "text": "﻿# kit:not-a-real-app\n# A fixture for the writer oracle (kit#119) that starts with a byte-order mark,\n# which an edit must keep.\n\nbehaviour BEH-Y \"Starts after a BOM\"\n  source defined\n  when opens page:Delta\n  then sees region:Delta\n"
+      }
+    },
+    {
       "path": "/api/projects/%E0/bindings",
       "body": {
         "noun": "page:Home",
@@ -1176,7 +1210,8 @@
           "known": [
             "alpha",
             "beta",
-            "broken"
+            "broken",
+            "delta"
           ]
         }
       },
