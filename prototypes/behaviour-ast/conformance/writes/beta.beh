@@ -1,0 +1,8 @@
+# kit:not-a-real-app
+# A fixture for the writer's conformance oracle (kit#119): a second corpus that
+# uses some of alpha's noun names, so a bind reports who else uses the name.
+
+behaviour BEH-X "Shares page:Home with alpha"
+  source defined
+  when opens page:Home
+  then sees region:Saved
