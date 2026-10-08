@@ -41,6 +41,12 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     public string RelativeBindingsPath(string app) => Relative(BindingsFile(app));
 
     /// <inheritdoc />
+    public string FullPath(string app) => Path.GetFullPath(Path.Combine(dir, app + Suffix));
+
+    /// <inheritdoc />
+    public string FullBindingsPath(string app) => Path.GetFullPath(BindingsFile(app));
+
+    /// <inheritdoc />
     public string ReadText(string app) => Utf8.GetString(File.ReadAllBytes(Path.Combine(dir, app + Suffix)));
 
     /// <inheritdoc />

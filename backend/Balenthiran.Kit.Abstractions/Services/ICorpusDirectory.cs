@@ -24,6 +24,12 @@ public interface ICorpusDirectory
     /// <summary>The bindings file's path, as <see cref="RelativePath"/> gives the corpus's.</summary>
     string RelativeBindingsPath(string app);
 
+    /// <summary>The corpus file, absolute — what a git write-back commits.</summary>
+    string FullPath(string app);
+
+    /// <summary>The bindings file, absolute, as <see cref="FullPath"/>.</summary>
+    string FullBindingsPath(string app);
+
     /// <summary>The corpus text exactly as stored — a BOM included — for an edit to splice.</summary>
     string ReadText(string app);
 

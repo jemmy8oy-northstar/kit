@@ -27,6 +27,7 @@ public static class ServiceRegistration
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
         services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
+        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
             sp.GetRequiredService<IProjectViewer>(),
@@ -37,7 +38,8 @@ public static class ServiceRegistration
             sp.GetRequiredService<ISignInThrottle>(),
             settings.Host,
             settings.Secure,
-            sp.GetRequiredService<ICorpusWriter>()));
+            sp.GetRequiredService<ICorpusWriter>(),
+            sp.GetRequiredService<IGitStore>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

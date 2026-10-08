@@ -6,6 +6,7 @@ using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.DataModels.Models;
+using Balenthiran.Kit.Database;
 
 namespace Balenthiran.Kit.Services;
 
@@ -18,12 +19,12 @@ namespace Balenthiran.Kit.Services;
 ///
 /// Every POST passes <c>write()</c>'s gates in its order — the CSRF Origin check, sign-in
 /// and sign-out, the lock (a session when a password is set, else a loopback bind), the
-/// route, the app, the body. ⚠️ The write itself is not ported yet and answers 501: a
-/// later PR of #119.
+/// route, the app, the body — then the edit, and git write-back when it is switched on.
 /// </summary>
 /// <param name="password"><c>KIT_PASSWORD</c>, or null.</param>
 /// <param name="host">The address the server is bound to: with no password, writes are served only on loopback.</param>
 /// <param name="secure">Set the cookie's <c>Secure</c> flag (an https public origin).</param>
+/// <param name="git">Write-back (<c>--git</c>); off when not given, as <c>ui.js</c> without the flag.</param>
 public sealed class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -34,7 +35,8 @@ public sealed class KitRouter(
     ISignInThrottle? throttle = null,
     string host = "127.0.0.1",
     bool secure = false,
-    ICorpusWriter? writer = null) : IKitRouter
+    ICorpusWriter? writer = null,
+    IGitStore? git = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -44,6 +46,8 @@ public sealed class KitRouter(
     private readonly IOriginPolicy origins = origins ?? new OriginPolicy(new UrlParser(), null);
 
     private readonly ICorpusWriter writer = writer ?? new CorpusWriter(new CorpusParser());
+
+    private readonly IGitStore git = git ?? new GitStore(enabled: false);
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
@@ -229,7 +233,8 @@ public sealed class KitRouter(
         }
 
         corpora.WriteText(app, result.Text!);
-        return Json(200, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted });
+        var what = review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary><c>postBinding()</c> past its gates: add one binding to the app's bindings file.</summary>
@@ -252,7 +257,7 @@ public sealed class KitRouter(
         }
 
         corpora.WriteBindingsText(app, result.Text!);
-        return Json(200, new WriteOutcome
+        return Json(200, GitOutcome(corpora.FullBindingsPath(app), $"bind {result.Noun}", app, new WriteOutcome
         {
             App = app,
             Noun = result.Noun,
@@ -260,10 +265,42 @@ public sealed class KitRouter(
             Note = NotCommitted,
             SharedWith = result.SharedWith!.ToList(),
             UnreadableCorpora = skipped,
-        });
+        }));
     }
 
-    // Decision 2, unchanged while git write-back is not ported: the answer says what was NOT done.
+    /// <summary>
+    /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
+    /// helper for both write paths, so they cannot describe the same outcome two ways. Off,
+    /// the answer is <paramref name="plain"/> unchanged (decision 2). On, it becomes a
+    /// <see cref="GitWriteOutcome"/>, whose <c>note</c> is git's own reason whenever the edit
+    /// did not reach the remote, never a summary of it.
+    /// </summary>
+    private WriteOutcome GitOutcome(string file, string summary, string app, WriteOutcome plain)
+    {
+        var g = git.WriteBack(file, summary, app);
+        if (!git.Enabled)
+        {
+            return plain;
+        }
+
+        return new GitWriteOutcome
+        {
+            App = plain.App,
+            Behaviour = plain.Behaviour,
+            Noun = plain.Noun,
+            File = plain.File,
+            SharedWith = plain.SharedWith,
+            UnreadableCorpora = plain.UnreadableCorpora,
+            Committed = g.Committed,
+            Pushed = g.Pushed,
+            Commit = g.Commit,
+            Branch = g.Branch,
+            Note = g.Pushed ? $"committed as {g.Commit} and pushed to {g.Branch}." : g.Reason!,
+            Warning = g.Committed && !g.Pushed ? $"this edit is committed locally but did NOT reach {git.Remote}: {g.Reason}" : null,
+        };
+    }
+
+    // Decision 2: with write-back off, the answer says what was NOT done.
     private const string NotCommitted = "written to the working tree. Kit does not run git — review the diff and commit it yourself.";
 
     // ui.js's bodyTypeError specs: `string` is required; `string?` may be null or absent;
