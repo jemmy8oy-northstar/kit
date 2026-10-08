@@ -120,7 +120,7 @@ function shape(b) {
     steps: b.steps.map((s) => [s.kind, s.verb, s.noun, s.text].join('|')),
     provides: b.provides.map((p) => `${p.kind}:${p.name}.${p.slot}=${p.value.join(',')}`),
     serves: b.serves.map((s) => s.id),
-    source: b.source, review: b.review,
+    source: b.source, review: b.review, pending: b.pending,
     asks: b.asks, options: b.options.map((o) => `${o.label}|${o.consequence}`),
     recommend: b.recommend && `${b.recommend.label}|${b.recommend.why}`,
     against: b.against, cites: b.cites.map((c) => c.id),

@@ -104,6 +104,18 @@ public sealed class CorpusParser : ICorpusParser
 
             if (kw == "actor") { cur.Actor = rest; continue; }
 
+            // ── James, kit#155 (2026-10-08) ─────────────────────────────────
+            // A spec can land on `dev` ahead of its code, and `pending` says so.
+            // It lives in the corpus so the CLI sees it too (kit#148). Bare on
+            // purpose: an argument would invite a second state the gate would
+            // then need an opinion about.
+            if (kw == "pending")
+            {
+                if (rest.Length > 0) throw new CorpusParseException($"{at}: pending takes nothing after it, got: {rest}");
+                cur.Pending = true;
+                continue;
+            }
+
             // ── James's #68 decision, 2026-08-30 ────────────────────────────
             // "I like this default included but marked unreviewed."
             //

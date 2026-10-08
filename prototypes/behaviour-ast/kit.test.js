@@ -1034,6 +1034,62 @@ test('--dir: without it the same corpus is invisible — exit 2, not a pass', ()
   assert.strictEqual(quiet(() => check.main([OUTSIDE_APP, '--repo', repo, '--via', 'markers'])), 2);
 });
 
+// kit#155: Commit puts a spec on `dev` ahead of its code, marked `pending`, and a
+// normal feature branch builds it later. The gate has to tell "not built yet"
+// from "built and untested", and catch the marker outliving the build.
+const PENDING_APP = 'pending-gate';
+const pendingCorpus = (aPending) => fixture({
+  [`${PENDING_APP}.beh`]: `behaviour BEH-A "spec'd today"\n${aPending ? '  pending\n' : ''}  then sees field:F\n`
+    + 'behaviour BEH-B "already built"\n  then sees field:F\n',
+});
+const gateOutput = (argv) => {
+  const lines = [];
+  const code = quiet(() => {
+    const log = console.log;
+    console.log = (...a) => lines.push(a.join(' '));
+    try { return check.main(argv); } finally { console.log = log; }
+  });
+  return { code, out: lines.join('\n') };
+};
+
+test('pending: the parser reads the marker on its own behaviour only, and refuses an argument (kit#155)', () => {
+  const [a, b] = parse('behaviour BEH-A "a"\n  pending\nbehaviour BEH-B "b"\n', 't.beh');
+  assert.strictEqual(a.pending, true);
+  assert.strictEqual(b.pending, false);
+  assert.throws(() => parse('behaviour BEH-A "a"\n  pending later\n', 't.beh'), /t\.beh:2: pending takes nothing after it, got: later/);
+});
+
+test('pending: an untested pending behaviour is "spec\'d, not built", and the gate stays green (kit#155)', () => {
+  const repo = fixture({ 'a.spec.ts': "test('[BEH-B] covers it', () => {});" });
+  const { code, out } = gateOutput([PENDING_APP, '--repo', repo, '--via', 'markers', '--dir', pendingCorpus(true)]);
+  assert.strictEqual(code, 0, out);
+  assert.match(out, /1\/1 behaviour\(s\) have a test naming them/);
+  assert.match(out, /◌ BEH-A: pending — spec'd, not built/);
+});
+
+test('pending: the control — the same corpus without the marker goes red (kit#155)', () => {
+  // Without this, the green above could be the gate reading nothing at all.
+  const repo = fixture({ 'a.spec.ts': "test('[BEH-B] covers it', () => {});" });
+  const { code, out } = gateOutput([PENDING_APP, '--repo', repo, '--via', 'markers', '--dir', pendingCorpus(false)]);
+  assert.strictEqual(code, 1, out);
+  assert.match(out, /✗ BEH-A: no test names this behaviour/);
+});
+
+test('pending: a marker that outlived its build is a failure, so the pending list cannot lie (kit#155)', () => {
+  const repo = fixture({ 'a.spec.ts': "test('[BEH-A] built', () => {});\ntest('[BEH-B] covers it', () => {});" });
+  const { code, out } = gateOutput([PENDING_APP, '--repo', repo, '--via', 'markers', '--dir', pendingCorpus(true)]);
+  assert.strictEqual(code, 1, out);
+  assert.match(out, /✗ BEH-A: a test names this behaviour, but it is still marked pending/);
+});
+
+test('pending: a writer edit to one behaviour cannot strip another\'s marker (kit#155)', () => {
+  const before = 'behaviour BEH-A "a"\n  pending\nbehaviour BEH-B "b"\n';
+  const after = 'behaviour BEH-A "a"\nbehaviour BEH-B "b"\n  then sees field:F\n';
+  const r = require('./writer').validate(before, after, 'BEH-B');
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error, 'collateral-change');
+});
+
 test('--dir: the mapping is read from --dir too, so a project is not half-relocated', () => {
   // The plausible wrong fix: move the .beh lookup and leave `${app}.tests.json`
   // on `__dirname`. Under the DEFAULT --via that version reads one repo's

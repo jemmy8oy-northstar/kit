@@ -98,7 +98,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-DRILL-ENZH",
@@ -183,7 +184,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-CHAR-1",
@@ -241,7 +243,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-TONE-1",
@@ -307,7 +310,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-TONE-2",
@@ -400,7 +404,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-NORMALISE-1",
@@ -448,7 +453,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-AUDIO-1",
@@ -506,7 +512,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-POOL-MVP",
@@ -569,7 +576,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-STRENGTH-MVP",
@@ -612,7 +620,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-STATS-1",
@@ -688,7 +697,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-CARD-1",
@@ -776,7 +786,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-SEEDDATA-1",
@@ -816,7 +827,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-GRADE-1",
@@ -854,6 +866,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -892,6 +905,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -921,6 +935,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -959,6 +974,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -988,6 +1004,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1026,6 +1043,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1064,6 +1082,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1110,6 +1129,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1139,6 +1159,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1177,6 +1198,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1206,6 +1228,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1244,6 +1267,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1300,6 +1324,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1348,6 +1373,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     },
     {
@@ -1396,6 +1422,7 @@
         "state": "unreviewed",
         "note": null
       },
+      "pending": false,
       "reviewExplicit": true
     }
   ],

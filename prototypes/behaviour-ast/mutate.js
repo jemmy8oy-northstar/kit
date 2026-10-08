@@ -453,6 +453,19 @@ MUTANTS.push(
     'for (const n of [...ownKeys, ...boundNouns(bs, {}).referenced]) targets.add(`${app}\\0${n}`);', 'kit.js'],
   ['the nouns no binding could satisfy stop being named',
     'if (!ownKeys.has(n)) notBindable.add(n);', 'if (false) notBindable.add(n);', 'kit.js'],
+  // kit#155: the `pending` marker. Each is one half of "not built yet" going
+  // missing — the parser dropping it, the gate ignoring it in either direction,
+  // or the writer's collateral rule no longer seeing it.
+  ['the parser reads `pending` and drops it, so a spec\'d behaviour fails the gate as untested',
+    '      cur.pending = true;\n', '', 'kit.js'],
+  ['`pending` accepts an argument, inviting a second state the gate has no opinion on',
+    "if (rest) throw new Error(`${at}: pending takes", "if (false) throw new Error(`${at}: pending takes", 'kit.js'],
+  ['the gate counts a pending behaviour as uncovered again',
+    'const uncovered = result.uncovered.filter((b) => !b.pending);', 'const uncovered = result.uncovered;', 'check.js'],
+  ['a pending marker that outlived its build passes the gate',
+    'for (const b of result.covered.filter((x) => x.pending)) {', 'for (const b of [].filter((x) => x.pending)) {', 'check.js'],
+  ['the writer\'s collateral rule stops seeing `pending`, so an edit can strip another behaviour\'s marker',
+    'review: b.review, pending: b.pending,', 'review: b.review,', 'writer.js'],
   // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
   // by a different door — the field unnamed when the value refuses, a two-value
   // `provides` re-joined into a guess, the obligation gone from requires.js.

@@ -33,6 +33,9 @@ public interface IBehaviour
 
     IReview Review { get; }
 
+    /// <summary>Spec'd on <c>dev</c> ahead of its code (kit#155); a <c>pending</c> line.</summary>
+    bool Pending { get; }
+
     bool? ReviewExplicit { get; }
 
     /// <summary>Holes another behaviour filled. Null until <c>resolve</c> has run.</summary>
