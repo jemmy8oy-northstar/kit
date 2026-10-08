@@ -86,9 +86,14 @@ const norm = (s) => s
 const realLines = new Set(expand(real).split('\n').map(norm));
 const realBlob = norm(expand(real));
 
+// ONE corpus, because the spec above is snip-it's. This read every `.beh` in the
+// directory until kit#78, so each new corpus added its lines to the denominator —
+// kit-ui's headings reported "absent" from snip-it's spec — and the score fell
+// from 26 of 28 matched to 26 of 77 with no commit touching this file. The
+// directory is a population that grows; the subject is not.
 const dir = path.join(__dirname, 'behaviours');
-const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh'))
-  .flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));
+const CORPUS = 'snip-it.beh';
+const all = parse(fs.readFileSync(path.join(dir, CORPUS), 'utf8'), CORPUS);
 // Each behaviour generates against ITS OWN corpus's bindings (kit#66), never a
 // merged map — the same rule kit.js follows, so this comparison and the report
 // cannot disagree about what a corpus binds.

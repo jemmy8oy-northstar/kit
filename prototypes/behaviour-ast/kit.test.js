@@ -1409,6 +1409,29 @@ test('🔴 the all-corpora run generates each behaviour against ITS OWN corpus\x
     'a corpus binding nothing emitted a navigation, which can only have come from another project');
 });
 
+test('compare.js measures snip-it.beh against snip-it\'s spec, and no other corpus (kit#78)', () => {
+  // It read every `.beh` in behaviours/, so Kit's own UI headings were reported
+  // "absent" from snip-it's e2e spec and the score sank as corpora were added.
+  // A throwaway repo stands in for snip-it: an origin/dev carrying a spec, so the
+  // tool gets past its "cannot look" exit and actually measures.
+  const cp = require('child_process');
+  const repo = fixture({ 'frontend/e2e/editor.spec.ts': "await page.goto('/');\n" });
+  const git = (...a) => cp.spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
+  git('init', '-q');
+  git('add', '-A');
+  git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'spec');
+  git('update-ref', 'refs/remotes/origin/dev', 'HEAD');
+  const r = cp.spawnSync('node', [pathx.join(__dirname, 'compare.js'), repo], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.strictEqual(r.status, 0, `it did not measure: ${r.stderr}`);
+  // Positive control: snip-it's own upload line is measured, so an empty run
+  // cannot pass the absence check below.
+  assert.match(r.stdout, /NO {2}absent {4}await page\.getByLabel\("Video or audio file"\)/);
+  // The discriminator: lines only other corpora generate.
+  for (const other of ['"Add behaviour"', '/macro-metrics/', '"Preset Ratios"']) {
+    assert.ok(!r.stdout.includes(other), `${other} is from another corpus and reached snip-it's comparison`);
+  }
+});
+
 section('prose-audit: does the corpus account for the whole document?');
 const pa = require('./prose-audit');
 
