@@ -6720,6 +6720,13 @@ const conformance = require('./conformance.js');
 const BEH_DIR = pathx.join(__dirname, 'behaviours');
 const GOLDEN_DIR = pathx.join(__dirname, 'conformance');
 
+// ONE full comparison per process, shared by every test below. It is pure (it
+// never writes) and its inputs do not change mid-run, so recomputing it bought
+// nothing — and since the git golden builds ten real repos (~0.9s), five calls
+// per suite times 202 mutants doubled the CI mutation gate (11 → 25+ minutes).
+let comparedOnce = null;
+const comparison = () => comparedOnce || (comparedOnce = conformance.compare(BEH_DIR, GOLDEN_DIR, null));
+
 // 🔑 THE GATE ITSELF. This is why the harness needs no workflow change: CI already
 // runs this file, so the comparison runs wherever the suite does.
 //
@@ -6729,7 +6736,7 @@ const GOLDEN_DIR = pathx.join(__dirname, 'conformance');
 // `ui/src/test/fixtures/generate.js` is kept out of CI and why this is structural
 // rather than a flag.
 test('conformance: every corpus still reproduces its committed engine output', () => {
-  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  const r = comparison();
 
   // A MISSING golden is "could not look", and it is asserted separately from drift
   // because they are different statements. Collapsed into one assertion, a first
@@ -6821,7 +6828,7 @@ test('conformance: the report section is what the project view serves, for every
 test('conformance: the read-routes golden is compared, and covers every corpus and every refusal', () => {
   // Compared at all: a full `compare` must report the routes beside the corpora,
   // or the golden sits on disk scoring nothing.
-  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  const r = comparison();
   assert.ok(r.matched.includes(conformance.ROUTES),
     `the read routes were not compared (matched: ${r.matched.join(', ')})`);
 
@@ -6852,7 +6859,7 @@ test('conformance: the read-routes golden is compared, and covers every corpus a
 
 test('conformance: the host golden is compared, and is what a real socket delivers', async () => {
   // Compared at all, beside the corpora and the read routes.
-  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  const r = comparison();
   assert.ok(r.matched.includes(conformance.HOST), `the host golden was not compared (matched: ${r.matched.join(', ')})`);
 
   // The seam pinned from the far side: `hostRoutes` records `answer()`, and this
@@ -6900,7 +6907,7 @@ test('conformance: the host golden is compared, and is what a real socket delive
 });
 
 test('conformance: the auth golden is compared, and every scenario replays over a real socket', async () => {
-  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  const r = comparison();
   assert.ok(r.matched.includes(conformance.AUTH), `the auth golden was not compared (matched: ${r.matched.join(', ')})`);
 
   // The far side of the seam: each scenario against a real `serve()` sharing the
@@ -6957,7 +6964,7 @@ test('conformance: the auth golden is compared, and every scenario replays over 
 });
 
 test('conformance: the writes golden is compared, and reaches every refusal the writer has', () => {
-  const r = conformance.compare(BEH_DIR, GOLDEN_DIR, null);
+  const r = comparison();
   assert.ok(r.matched.includes(conformance.WRITES), `the writes golden was not compared (matched: ${r.matched.join(', ')})`);
 
   // Read from writer.js's SOURCE, so a refusal added later is a refusal the golden
@@ -6972,6 +6979,22 @@ test('conformance: the writes golden is compared, and reaches every refusal the 
   // And the routes really wrote: every 200 recorded the file it changed.
   const ok = g.routes.filter((s) => s.response.status === 200);
   assert.ok(ok.length >= 6 && ok.every((s) => s.written && s.written.text.length > 0), 'a 200 write with no file recorded');
+});
+
+test('conformance: the git golden is compared, and keeps pushed, stranded and untouched apart', () => {
+  const r = comparison();
+  assert.ok(r.matched.includes(conformance.GIT), `the git golden was not compared (matched: ${r.matched.join(', ')})`);
+
+  const g = JSON.parse(fsx.readFileSync(conformance.gitPath(GOLDEN_DIR), 'utf8'));
+  assert.ok(g.scenarios.length >= 10, `only ${g.scenarios.length} git scenarios — the gate is inert`);
+  // The three states gitOutcome() exists to keep apart, each reached at least once.
+  const states = new Set(g.scenarios.map((s) => `${s.response.body.committed}/${s.response.body.pushed}`));
+  assert.deepStrictEqual([...states].sort(), ['false/false', 'true/false', 'true/true']);
+  // A stranded commit must carry a warning; a clean push must not.
+  for (const s of g.scenarios) {
+    const b = s.response.body;
+    assert.strictEqual(b.warning !== undefined, b.committed && !b.pushed, `${s.name}: warning present iff committed and not pushed`);
+  }
 });
 
 test('conformance: the resolve delta cannot miss a field nobody told it about', () => {
