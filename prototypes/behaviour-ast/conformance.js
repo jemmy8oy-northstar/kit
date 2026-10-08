@@ -506,6 +506,156 @@ function authRoutes(dir) {
   return { format: FORMAT, maxBody: ui.MAX_BODY, scenarios };
 }
 
+const WRITES = 'routes/writes';
+
+function writesPath(goldenDir) {
+  return path.join(goldenDir, 'routes', 'writes.json');
+}
+
+/**
+ * The WRITER, at two levels, over the fixture corpora in `conformance/writes/`.
+ *
+ * `functions`: `writer.js`'s pure edits — addStep, addBehaviour, setReview,
+ * addBinding — each on a named fixture text, recording the whole text after the
+ * edit or the refusal. Every splice rule and every refusal code is reached:
+ * where a step lands when comments trail a block, where a review line goes when
+ * there is none, the collateral-change guard, a corpus that was already broken.
+ *
+ * `routes`: the same edits as POSTs through `answer()` + `received()` against a
+ * temporary COPY of the fixtures (git write-back off), recording each response
+ * and the file it wrote. A write's `file` names the copy, so it is recorded as
+ * `<dir>/<name>`.
+ */
+function writeRoutes() {
+  const ui = require('./ui.js');
+  const writer = require('./writer.js');
+  const os = require('os');
+  const FIX = path.join(__dirname, 'conformance', 'writes');
+  const read = (f) => fs.readFileSync(path.join(FIX, f), 'utf8');
+  const texts = {
+    alpha: read('alpha.beh'),
+    broken: read('broken.beh'),
+    'alpha-unterminated': read('alpha.beh').replace(/\s*$/, ''),
+    bindings: read('alpha.bindings.json'),
+    'bindings-empty': '{}',
+    'bindings-array': '[]',
+    'bindings-bad': '{',
+  };
+  const corpora = writer.corpusNouns(FIX);
+
+  const calls = [
+    ['addStep', 'alpha', ['BEH-A', 'then sees region:Done']],
+    ['addStep', 'alpha', ['BEH-C', '  then sees region:Settings  ']],
+    ['addStep', 'alpha', ['BEH-D', 'then sees region:Info']],
+    ['addStep', 'alpha', ['BEH-A', '   ']],
+    ['addStep', 'alpha', ['BEH-A', 'then sees a:B\nthen sees c:D']],
+    ['addStep', 'alpha', ['BEH-Q', 'then sees a:B']],
+    ['addStep', 'alpha', ['BEH-A', 'flies away']],
+    ['addStep', 'alpha', ['BEH-A', 'behaviour BEH-NEW "sneaky"']],
+    ['addStep', 'broken', ['BEH-Z', 'then sees a:B']],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Plain', {}]],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Full', { actor: 'guest', steps: ['when opens page:Home', '  then sees region:Saved '], source: 'defined', ref: 'notes.md#e' }]],
+    ['addBehaviour', 'alpha-unterminated', ['BEH-E', 'Plain', {}]],
+    ['addBehaviour', 'alpha', ['beh-e', 'Lower', {}]],
+    ['addBehaviour', 'alpha', ['BEH E', 'Space', {}]],
+    ['addBehaviour', 'alpha', ['BEH-A', 'Duplicate', {}]],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Say "hi"', {}]],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Two\nlines', {}]],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Bad step', { steps: ['flies away'] }]],
+    ['addBehaviour', 'alpha', ['BEH-E', 'Bad source', { source: 'sideways' }]],
+    ['setReview', 'alpha', ['BEH-A', 'approved', null]],
+    ['setReview', 'alpha', ['BEH-A', 'denied', 'the guest does it']],
+    ['setReview', 'alpha', ['BEH-B', 'approved', null]],
+    ['setReview', 'alpha', ['BEH-C', ' approved ', '  ']],
+    ['setReview', 'alpha', ['BEH-D', 'unreviewed', null]],
+    ['setReview', 'alpha', ['BEH-A', '', null]],
+    ['setReview', 'alpha', ['BEH-A', 'approved\n', null]],
+    ['setReview', 'alpha', ['BEH-A', 'denied', 'x\ny']],
+    ['setReview', 'alpha', ['BEH-Q', 'approved', null]],
+    ['setReview', 'alpha', ['BEH-A', 'denied', null]],
+    ['setReview', 'alpha', ['BEH-A', 'maybe', null]],
+    ['addBinding', 'bindings', ['page:Home', { route: '/' }]],
+    ['addBinding', 'bindings', ['  page:Settings ', { route: '/settings' }]],
+    ['addBinding', 'bindings', ['region:Saved', { 2: 'b', 1: 'a', z: 'c', nested: { 10: 1, 9: 2 } }]],
+    ['addBinding', 'bindings', ['region:Done', { name: `Spar${String.fromCharCode(0xe9)} ${String.fromCharCode(0x2028)} "q" \\ </` }]],
+    ['addBinding', 'bindings', ['button:Save', { role: 'link' }]],
+    ['addBinding', 'bindings', ['Save', { role: 'link' }]],
+    ['addBinding', 'bindings', ['button:Sa ve', { role: 'link' }]],
+    ['addBinding', 'bindings', ['_comment', { role: 'link' }]],
+    ['addBinding', 'bindings', ['page:Home', null]],
+    ['addBinding', 'bindings', ['page:Home', ['/']]],
+    ['addBinding', 'bindings', ['page:Home', {}]],
+    ['addBinding', 'bindings', ['page:Home', '/']],
+    ['addBinding', 'bindings-empty', ['page:Home', { route: '/', n: 1.5, big: 1e21, t: true, z: null }]],
+    ['addBinding', 'bindings-array', ['page:Home', { route: '/' }]],
+    ['addBinding', 'bindings-bad', ['page:Home', { route: '/' }]],
+  ];
+
+  const functions = calls.map(([fn, input, args]) => {
+    const text = texts[input];
+    const r = fn === 'addStep' ? writer.addStep(text, ...args)
+      : fn === 'addBehaviour' ? writer.addBehaviour(text, ...args)
+        : fn === 'setReview' ? writer.setReview(text, ...args)
+          : writer.addBinding(text, args[0], args[1], { corpora, app: 'alpha' });
+    return { fn, input, args, result: r };
+  });
+
+  // ── the routes, on a copy ─────────────────────────────────────────────────
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kit-writes-'));
+  try {
+    for (const f of fs.readdirSync(FIX)) fs.copyFileSync(path.join(FIX, f), path.join(tmp, f));
+    const opts = { dir: tmp, host: '127.0.0.1' };
+    const B = '/api/projects/alpha/behaviours';
+    const steps = [
+      [`${B}/BEH-A/steps`, { step: 'then sees region:Done' }],
+      [`${B}/BEH-B/review`, { state: 'approved' }],
+      [`${B}/BEH-A/review`, { state: 'denied', note: 'the guest does it' }],
+      [B, { id: 'BEH-E', title: 'New', actor: 'guest', steps: ['when opens page:Home'], source: 'defined', ref: 'x.md' }],
+      [B, { id: 'BEH-E', title: 'Duplicate' }],
+      [`${B}/BEH-Q/steps`, { step: 'then sees a:B' }],
+      [`${B}/%E0/steps`, { step: 'then sees a:B' }],
+      [`${B}/BEH%2DA/steps`, { step: 'then sees a:C' }],
+      [B, { title: 'No id' }],
+      [B, { id: 'BEH-F' }],
+      [B, { id: 'BEH-F', title: 'T', steps: 'when opens page:Home' }],
+      [B, { id: 'BEH-F', title: 'T', steps: ['when opens page:Home', 5] }],
+      [B, { id: 'BEH-F', title: 'T', actor: null, source: null, ref: null, steps: null }],
+      [B, ['BEH-G']],
+      [`${B}/BEH-A/steps`, { step: 5 }],
+      [`${B}/BEH-A/steps`, {}],
+      [`${B}/BEH-A/review`, { note: 'x' }],
+      [`${B}/BEH-A/review`, { state: 'approved', note: 7 }],
+      ['/api/projects/alpha/bindings', { noun: 'page:Home', binding: { route: '/' } }],
+      ['/api/projects/alpha/bindings', { noun: 'button:Save', binding: { role: 'link' } }],
+      ['/api/projects/alpha/bindings', { binding: { role: 'link' } }],
+      ['/api/projects/alpha/bindings', { noun: 'region:Saved', binding: {} }],
+      ['/api/projects/beta/bindings', { noun: 'page:Home', binding: { route: '/b' } }],
+      // Sent as RAW TEXT, because a JS object literal would already have reordered
+      // it: JSON.parse moves integer-like keys first, ascending, at every depth, and
+      // the bindings file is written in that order.
+      ['/api/projects/alpha/bindings', '{"noun":"region:Done","binding":{"b":1,"2":"x","1":"y","in":{"z":0,"10":1,"9":2}}}'],
+      ['/api/projects/broken/behaviours/BEH-Z/steps', { step: 'then sees a:B' }],
+      ['/api/projects/%E0/bindings', { noun: 'page:Home', binding: { route: '/' } }],
+      ['/api/projects/gamma/bindings', { noun: 'page:Home', binding: { route: '/' } }],
+    ];
+    const relTmp = path.relative(path.join(__dirname, '..', '..'), tmp).split(path.sep).join('/');
+    const routes = steps.map(([p, body]) => {
+      const a = ui.received(p, Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8'), null, null, opts);
+      const response = { status: a.status, body: JSON.parse(a.body) };
+      let written = null;
+      if (typeof response.body.file === 'string' && response.body.file.startsWith(`${relTmp}/`)) {
+        const name = response.body.file.slice(relTmp.length + 1);
+        response.body.file = `<dir>/${name}`;
+        written = { name, text: fs.readFileSync(path.join(tmp, name), 'utf8') };
+      }
+      return { path: p, body, response, written };
+    });
+    return { format: FORMAT, functions, routes };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 // The serialised form, which is what is actually compared. One definition, so
 // `--record` and `--check` cannot disagree about formatting — the failure mode
 // where a check is permanently red because the writer indents differently.
@@ -551,7 +701,7 @@ function compare(dir, goldenDir, only) {
   // and through the same three outcomes as a corpus, so nothing downstream needs
   // a fourth state to report them.
   if (!only) {
-    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))]]) {
+    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))], [WRITES, writesPath(goldenDir), serialise(writeRoutes())]]) {
       if (!fs.existsSync(p)) { out.missing.push(name); continue; }
       const committed = fs.readFileSync(p, 'utf8');
       if (committed === fresh) out.matched.push(name);
@@ -588,7 +738,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, writeRoutes, writesPath, WRITES, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -674,6 +824,8 @@ function main(argv) {
       written.push(HOST);
       fs.writeFileSync(authPath(goldenDir), serialise(authRoutes(dir)));
       written.push(AUTH);
+      fs.writeFileSync(writesPath(goldenDir), serialise(writeRoutes()));
+      written.push(WRITES);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;

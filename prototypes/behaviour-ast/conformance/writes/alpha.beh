@@ -1,0 +1,30 @@
+# kit:not-a-real-app
+#
+# A FIXTURE for the writer's conformance oracle (kit#119), not an app. Each
+# behaviour exists to put one of writer.js's splice rules under test: where a
+# step lands when comments trail a block, where a review line goes when there is
+# none, and which line it replaces when there is.
+
+behaviour BEH-A "Has an actor, a source and an explicit review"
+  actor owner
+  source inferred notes.md#a
+  review unreviewed
+  when opens page:Home
+  then sees button:Save
+# a comment trailing BEH-A, which a new step must land ABOVE
+
+behaviour BEH-B "Has a source and no review line"
+  source defined
+  when presses button:Save
+  then sees region:Saved
+
+behaviour BEH-C "Has only an actor"
+  actor owner
+  when opens page:Settings
+
+# this comment introduces BEH-D, so nothing may be appended under it
+
+behaviour BEH-D "Has no preamble at all"
+  when opens page:About
+
+
