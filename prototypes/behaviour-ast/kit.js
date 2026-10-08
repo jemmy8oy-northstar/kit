@@ -433,6 +433,18 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       return b && b.urlPattern ? [`await expect(page).toHaveURL(new RegExp(${JSON.stringify(b.urlPattern)}));`] : null;
     }
     case 'fills': {
+      // `fills field:X with "text"` / `with ?slot` — one field, one value. Six
+      // steps in three committed corpora were written this way before Kit could
+      // read it, and every one vanished: no line, no obligation, and field:X
+      // missing from the unbound list (kit#151). Bind FIRST, so an unbound field
+      // is named even when the value is what refuses.
+      const field = nouns.find((n) => n.kind === 'field');
+      if (field) {
+        const fb = bind(field);
+        const value = literal ? literal.name : providedValue(step);
+        if (!fb || !fb.label || value === null) return null;
+        return [`await page.getByLabel(${JSON.stringify(fb.label)}).fill(${JSON.stringify(value)});`];
+      }
       // The payoff of the whole unknowns mechanism: this step named no field,
       // and the field it generates against came from a DIFFERENT behaviour.
       const fields = step.resolved && step.resolved.fields;
@@ -470,6 +482,17 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
     default:
       return null;
   }
+}
+
+// The value a `?slot` on a single-field `fills` resolved to, or null. A hole is
+// test data — the English the learner types — so it generates only once some
+// behaviour `provides` it, which is exactly what `OPEN unknown(s)` already tells
+// the reader to do. Exactly ONE value: `provides` splits on commas, and joining
+// them back would be a guess at the spacing the author meant.
+function providedValue(step) {
+  const hole = step.holes[0];
+  const v = hole && step.resolved && step.resolved[hole.slot];
+  return v && v.length === 1 ? v[0] : null;
 }
 
 // ─────────────────────────── 4. coverage ───────────────────────────

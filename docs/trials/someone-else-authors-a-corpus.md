@@ -102,6 +102,10 @@ This is the same **shape** as [kit#62](https://github.com/jemmy8oy-northstar/kit
 two obligations the UI listed), which fixed `fills`'s resolved *fields*. It did not ask what happens
 when the hole is not `?fields` at all.
 
+_⏩ **Followed up 2026-10-08 as [kit#151](https://github.com/jemmy8oy-northstar/kit/issues/151).** Counted
+across every committed corpus rather than this one: `fills field:X with …` is written six times in
+three of them, and it was Kit's own self-hosting run's one failure. The section above is unchanged._
+
 ## 3. 🔴 The question sheet states how it was built, and is wrong
 
 Every sheet prints, unconditionally (`kit.js:986`):
