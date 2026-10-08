@@ -187,6 +187,19 @@ const MUTANTS = [
     'if (!c.ref) errors.push', 'if (false) errors.push'],
   ['cites accepts prose instead of a behaviour id',
     'if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw', 'if (false) throw'],
+  // kit#73 / kit#93: a forward corpus is all `defined`
+  ['an author\'s question on a defined behaviour is dropped again — a forward corpus reports 0 decisions',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => false)"],
+  ['every defined behaviour is "asked", question or not — the sheet reprints the spec',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => b.source.origin === 'defined' && !owners.has(b.id) && !cited.has(b.id))"],
+  ['a conflict\'s question is asked twice, once as the conflict and once as authored',
+    'if (owner) owners.add(owner.id);', 'if (false) owners.add(owner.id);'],
+  ['an authored option list is answered with serves-or-delete again',
+    'if (q.options.length) {\n    return `the option you pick', 'if (false) {\n    return `the option you pick'],
+  ['an empty evidence block prints a bare heading again',
+    "if (!q.contracts.length && !q.serves.length) L.push('- _none recorded", "if (false) L.push('- _none recorded"],
 
   // reading an app's tests — the reader every number downstream rests on
   ['the [Theory] lookahead goes back to a fixed six lines — the 16% under-read',

@@ -41,8 +41,8 @@ drops the question. Nothing here is answered by silence.
 **`BEH-LANG-1` — Every pool operation is scoped to one language**
 
 **Why this is a decision:** you said the API layer is inferred from what the UI needs to
-display. This surface exists in the code and **no documented screen displays it**, so either
-the design is missing a screen or the surface should go. Those are opposite edits.
+display. Kit inferred this surface and **no documented screen displays it**, so either the
+design is missing a screen or the surface should go. Those are opposite edits.
 
 **Evidence** — read out of `backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_only_touches_the_requested_language`:
 
@@ -58,7 +58,7 @@ the design is missing a screen or the surface should go. Those are opposite edit
 
 **The strongest case against that:** The isolation test seeds a synthetic \"fr\" that exists nowhere else in the repo — 150 HSK1 entries in one file, one language, zero users asking for a second. So a required argument is being carried on every method and every future route to satisfy a property no caller can exercise, and the test proves the code does what it was written to do rather than anything about the product. \"Other languages\" is under **Explicitly deferred**, and a deferred feature that still shapes today's signatures has not really been deferred. The cheap version is to keep the Language COLUMN — which is all DESIGN.md literally promises — and let the parameter arrive with the second language, when its shape will be known rather than guessed.
 
-**Your answer** — becomes: `serves BEH-…` added to `BEH-LANG-1` (with the screen written into `DESIGN.md`), or `BEH-LANG-1` deleted along with the surface it describes.
+**Your answer** — becomes: the option you pick, made true on `BEH-LANG-1` — the edit that option describes above.
 
 > 
 
@@ -67,8 +67,8 @@ the design is missing a screen or the surface should go. Those are opposite edit
 **`BEH-ITEMTYPE-1` — A vocabulary item has a type, defaulting to word**
 
 **Why this is a decision:** you said the API layer is inferred from what the UI needs to
-display. This surface exists in the code and **no documented screen displays it**, so either
-the design is missing a screen or the surface should go. Those are opposite edits.
+display. Kit inferred this surface and **no documented screen displays it**, so either the
+design is missing a screen or the surface should go. Those are opposite edits.
 
 **Evidence** — read out of `backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_defaults_item_type_to_word`:
 
@@ -83,7 +83,7 @@ the design is missing a screen or the surface should go. Those are opposite edit
 
 **The strongest case against that:** You have one other behaviour in this corpus (BEH-LANG-1) making the same bet on the same deferred roadmap, and answering both the same way is how a v1 quietly acquires a v2's shape. `Word = 0` is the C# default for any enum whether or not a second member exists, so the renumbering argument protects against a hazard that only appears once someone adds a value — at which point they can append it. And a reserved member is not free in the way it looks: it is a branch every future `switch` has to handle or deliberately ignore, on a code path nothing can currently reach.
 
-**Your answer** — becomes: `serves BEH-…` added to `BEH-ITEMTYPE-1` (with the screen written into `DESIGN.md`), or `BEH-ITEMTYPE-1` deleted along with the surface it describes.
+**Your answer** — becomes: the option you pick, made true on `BEH-ITEMTYPE-1` — the edit that option describes above.
 
 > 
 
@@ -92,8 +92,8 @@ the design is missing a screen or the surface should go. Those are opposite edit
 **`BEH-DETERMINISM-1` — Selection is deterministic for a given seed**
 
 **Why this is a decision:** you said the API layer is inferred from what the UI needs to
-display. This surface exists in the code and **no documented screen displays it**, so either
-the design is missing a screen or the surface should go. Those are opposite edits.
+display. Kit inferred this surface and **no documented screen displays it**, so either the
+design is missing a screen or the surface should go. Those are opposite edits.
 
 **Evidence** — read out of `backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:SelectNext_is_deterministic_for_the_same_seed`:
 
@@ -108,7 +108,7 @@ the design is missing a screen or the surface should go. Those are opposite edit
 
 **The strongest case against that:** You are deciding this now, in a corpus, for a route that will be written in PR 4 — and the version that is harder to add later is the one being rejected. Making the seed part of the request from day one costs one optional query parameter and no state; retrofitting it means changing a shipped drill endpoint and regenerating the client. Resume-after-refresh on a phone is also not an exotic want for a drill app, and the pinned-to-one-word failure is preventable by advancing the seed per draw rather than by hiding it. There is a third answer this question does not offer: derive the seed from something stable you already have — user plus date — which gives a reproducible day without either a client contract or a decision about session state.
 
-**Your answer** — becomes: `serves BEH-…` added to `BEH-DETERMINISM-1` (with the screen written into `DESIGN.md`), or `BEH-DETERMINISM-1` deleted along with the surface it describes.
+**Your answer** — becomes: the option you pick, made true on `BEH-DETERMINISM-1` — the edit that option describes above.
 
 > 
 
