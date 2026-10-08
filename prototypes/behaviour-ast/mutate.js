@@ -410,6 +410,18 @@ MUTANTS.push(
     "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
     "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
     'kit.js'],
+  // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
+  // by a different door — the field unnamed when the value refuses, a two-value
+  // `provides` re-joined into a guess, the obligation gone from requires.js.
+  ['a single-field fill binds only when it has a value, so an unbound field with an open hole goes unnamed again',
+    '        const fb = bind(field);',
+    '        const fb = (literal || providedValue(step) !== null) ? bind(field) : null;', 'kit.js'],
+  ['a provided value that split on a comma fills with its first half instead of refusing',
+    'return v && v.length === 1 ? v[0] : null;',
+    'return v && v.length ? v[0] : null;', 'kit.js'],
+  ['requires.js forgets the field a single-field fill names, so it leaves the contract',
+    "    if (field) return [{ nounKey: key(field), kind: 'field', name: field.name, req: LABEL, verb: 'fills', at: step.at }];",
+    '', 'requires.js'],
   // kit.js's own CLI. The first of these is the defect as it actually shipped:
   // every `--flag` this tool does not know was dropped in silence, so
   // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing

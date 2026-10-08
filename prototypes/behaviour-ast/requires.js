@@ -149,6 +149,10 @@ function requirementsOf(step) {
   // those: boundNouns() walks step refs, so `field:DueDate` in trial-lend is
   // invisible to every measurement while being something the app must have.
   if (step.verb === 'fills') {
+    // `fills field:X with …` names its field on the step, so the obligation is
+    // that noun's — mirrors the single-field branch of emit() (kit#151).
+    const field = nouns.find((n) => n.kind === 'field');
+    if (field) return [{ nounKey: key(field), kind: 'field', name: field.name, req: LABEL, verb: 'fills', at: step.at }];
     const fields = (step.resolved && step.resolved.fields) || [];
     for (const f of fields) {
       out.push({ nounKey: `field:${f}`, kind: 'field', name: f, req: LABEL, verb: 'fills', at: step.at });

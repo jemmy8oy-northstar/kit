@@ -5,7 +5,8 @@
 # role with no name, a raw locator that is not a string, a binding that is null or
 # a bare string, every JavaScript coercion a `state` value can go through, a
 # control character and U+2028 in a quoted name, `fills` refusing on a field
-# with no label, `attaches` refusing on a missing fixture or locator, and a fixture
+# with no label, `attaches` refusing on a missing fixture or locator, `fills field:X` with a
+# literal, a provided value, two values, none, no label and no binding (kit#151), and a fixture
 # whose keys JSON.parse REORDERS. Every value is in generate-edges.bindings.json.
 # generate-edges.json is Node's output for this file, written by conformance.js's
 # own `pipeline` — regenerate it with:
@@ -53,3 +54,14 @@ behaviour BEH-FILE "attaches and fills refuse what they cannot write"
   when runs command:Anything
   provides form:Both.fields = Labelled, NoLabel
   provides form:One.fields = Labelled
+
+behaviour BEH-FILLS-ONE "fills one named field: a literal, a provided hole, and every refusal (kit#151)"
+  when fills field:Labelled with "Ada, the first"
+  when fills field:Labelled with ?answer
+  when fills field:Labelled with ?pair
+  when fills field:Labelled with ?nothing
+  when fills field:NoLabel with "x"
+  when fills field:NotBound with "x"
+  when fills field:Labelled
+  provides field:Labelled.answer = ni hao
+  provides field:Labelled.pair = a, b
