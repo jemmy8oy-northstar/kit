@@ -99,7 +99,9 @@ function parseCookies(header) {
  * test. Shared mutable state across tests is how a suite starts passing because
  * an earlier test signed in, which would make every assertion here meaningless.
  */
-function sessions(now = () => Date.now()) {
+function sessions(now = () => Date.now(), mint = () => crypto.randomBytes(32).toString('hex')) {
+  // `mint` is injectable for the conformance oracle only, which needs tokens it can
+  // name in a golden. Every real caller takes the default.
   const live = new Map();
 
   /** Drop what has expired. Called on every read, so nothing accumulates. */
@@ -114,7 +116,7 @@ function sessions(now = () => Date.now()) {
      * seeded predictably enough that tokens could be guessed from each other.
      */
     create() {
-      const token = crypto.randomBytes(32).toString('hex');
+      const token = mint();
       live.set(token, now() + TTL_MS);
       return token;
     },
