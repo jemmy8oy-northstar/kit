@@ -71,8 +71,8 @@ in the review list below:
 **`BEH-ARCHIVE-2` — Archived habits can be asked for explicitly**
 
 **Why this is a decision:** you said the API layer is inferred from what the UI needs to
-display. This surface exists in the code and **no documented screen displays it**, so either
-the design is missing a screen or the surface should go. Those are opposite edits.
+display. Kit inferred this surface and **no documented screen displays it**, so either the
+design is missing a screen or the surface should go. Those are opposite edits.
 
 **Evidence** — read out of `backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked`:
 
@@ -87,7 +87,7 @@ the design is missing a screen or the surface should go. Those are opposite edit
 
 **The strongest case against that:** MVP 4 promises archiving, not un-archiving, and none of the three screens exists yet — this adds scope to an app whose Today screen is not built. Deleting the flag costs one test, and the day you want the view you write it then against a design that states it. Keeping unused surface because it might be needed is exactly how an API grows features nobody asked for.
 
-**Your answer** — becomes: `serves BEH-…` added to `BEH-ARCHIVE-2` (with the screen written into `DESIGN.md`), or `BEH-ARCHIVE-2` deleted along with the surface it describes.
+**Your answer** — becomes: the option you pick, made true on `BEH-ARCHIVE-2` — the edit that option describes above.
 
 > 
 
@@ -96,8 +96,8 @@ the design is missing a screen or the surface should go. Those are opposite edit
 **`BEH-ERROR-1` — An unknown habit is a 404 carrying a machine-readable error code**
 
 **Why this is a decision:** you said the API layer is inferred from what the UI needs to
-display. This surface exists in the code and **no documented screen displays it**, so either
-the design is missing a screen or the surface should go. Those are opposite edits.
+display. Kit inferred this surface and **no documented screen displays it**, so either the
+design is missing a screen or the surface should go. Those are opposite edits.
 
 **Evidence** — read out of `backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code`:
 
@@ -114,7 +114,7 @@ the design is missing a screen or the surface should go. Those are opposite edit
 
 **The strongest case against that:** A6 says single user, and a single user on a single device reaches that stale-id race close to never — so the case above is largely hypothetical, and it is being used to add scope to an app whose Today screen is not built. There is also a cheaper middle this question does not offer: document ONE generic error state, leave the code in the payload unconsumed, and decide per-code copy on the day a second code actually distinguishes something. Picking the full version now spends design effort on branches that may never be rendered.
 
-**Your answer** — becomes: `serves BEH-…` added to `BEH-ERROR-1` (with the screen written into `DESIGN.md`), or `BEH-ERROR-1` deleted along with the surface it describes.
+**Your answer** — becomes: the option you pick, made true on `BEH-ERROR-1` — the edit that option describes above.
 
 > 
 

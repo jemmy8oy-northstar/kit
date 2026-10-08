@@ -570,6 +570,79 @@ test('the committed sheet is byte-identical to what the generator produces now',
     'docs/sheets/james-habits-app.md is stale — re-run `node kit.js sheet james-habits --rev james-habits-app@e75de89`');
 });
 
+// kit#73. A corpus written BEFORE the code has nothing to infer from, so every
+// behaviour in it is defined — and questions() skips defined behaviours. The
+// trial corpus that found this reported "0 decisions · 0 reviews" while its
+// author had left a question on it.
+const { asked } = require('./kit');
+const FORWARD = 'behaviour BEH-SCREEN "documented screen"\n  source defined brief.md#1\n  when opens page:Home\n' +
+  'behaviour BEH-COUNT "the page shows a count"\n  source defined brief.md#2\n  serves BEH-SCREEN\n' +
+  '  asks "count pages or words?"\n' +
+  '  option "pages" "the count is per page"\n' +
+  '  option "words" "the count is per word"\n';
+
+test('a question its author wrote on a DEFINED behaviour reaches the sheet (kit#73)', () => {
+  const { behaviours, conflicts } = build(FORWARD);
+  const qs = questions(behaviours, conflicts);
+  // The population this exists for: questions() alone sees nothing to ask.
+  assert.deepStrictEqual(qs, [], 'control: an all-defined corpus has no inferred questions');
+  const authored = asked(behaviours, conflicts);
+  assert.deepStrictEqual(authored.map((q) => q.id), ['BEH-COUNT']);
+  assert.deepStrictEqual(questionErrors(authored), []);
+  const md = renderSheet('fwd', qs, { asked: authored });
+  assert.ok(md.includes('**0 decisions · 0 reviews · 1 asked by the author.**'), md.split('\n')[2]);
+  assert.ok(md.includes('## Asked by the author — 1'));
+  assert.ok(md.includes('### A1. count pages or words?'));
+  assert.ok(md.includes('becomes: the option you pick, made true on `BEH-COUNT`'));
+});
+
+test('a defined behaviour with no asks stays off the sheet, and no section appears', () => {
+  // The control for the test above: without it, an asked() returning every
+  // defined behaviour would pass, and the sheet would turn into his spec reprinted.
+  const { behaviours, conflicts } = build(FORWARD.replace(/^  (asks|option) .*\n/gm, ''));
+  assert.deepStrictEqual(asked(behaviours, conflicts), []);
+  const md = renderSheet('fwd', questions(behaviours, conflicts), { asked: [] });
+  assert.ok(!md.includes('Asked by the author') && !md.includes('asked by the author'),
+    'a corpus with no authored questions must keep the sheet it had');
+});
+
+test('an authored question on a defined behaviour faces the same gate as any other (kit#73)', () => {
+  const { behaviours, conflicts } = build(FORWARD.replace(/^  option "words" .*\n/m, ''));
+  const errs = questionErrors(asked(behaviours, conflicts));
+  assert.ok(errs.some((e) => e.includes('BEH-COUNT') && e.includes('at least 2 options')), errs.join(' | '));
+});
+
+test('a question a conflict already carries is not asked twice (kit#73)', () => {
+  // Conflicts take their question from whichever side wrote `asks`, and that one
+  // is on the sheet as D1 already. Repeating it under "asked" is the double-ask.
+  const src = 'behaviour BEH-A "a"\n  source defined d.md#1\n  when opens page:Home\n  provides region:Grid.days = 30\n' +
+    '  asks "which default?"\n  option "30" "x"\n  option "7" "y"\n' +
+    'behaviour BEH-B "b"\n  source defined d.md#2\n  when opens page:Home\n  provides region:Grid.days = 7\n';
+  const { behaviours, conflicts } = build(src);
+  assert.strictEqual(conflicts.length, 1, 'control: the fixture must actually collide');
+  assert.deepStrictEqual(asked(behaviours, conflicts), []);
+});
+
+test('the sheet no longer tells a forward corpus its surface "exists in the code" (kit#93)', () => {
+  // Every corpus the sheet was first written for was read out of a running app;
+  // a spec-first one is the mode he wants Kit driven in (kit#88).
+  const { behaviours, conflicts } = build(PACK);
+  const md = renderSheet('x', questions(behaviours, conflicts));
+  assert.ok(!md.includes('exists in the code'), 'the false sentence is back');
+  assert.ok(md.includes('Kit inferred this surface'));
+  // An authored option list is what an answer picks from — not serves-or-delete.
+  assert.ok(md.includes('becomes: the option you pick, made true on `BEH-LOOSE`'));
+});
+
+test('an evidence block with nothing in it says so instead of printing a bare heading (kit#93)', () => {
+  const { behaviours, conflicts } = build(PACK.replace(/^  contract .*\n/m, ''));
+  const md = renderSheet('x', questions(behaviours, conflicts));
+  assert.ok(md.includes('_none recorded: the behaviour carries no contract lines and serves no screen_'));
+  // Control: with a contract line, the placeholder must not appear.
+  const full = renderSheet('x', questions(...(({ behaviours: b, conflicts: c }) => [b, c])(build(PACK))));
+  assert.ok(!full.includes('_none recorded'));
+});
+
 section('reading an app\'s tests');
 const { testTitles, expectedTestCount } = require('./kit');
 
