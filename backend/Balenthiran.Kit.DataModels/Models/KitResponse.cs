@@ -27,4 +27,8 @@ public sealed class KitResponse : IKitResponse
     // Bytes are delivered as they are, never serialised.
     [JsonIgnore]
     public byte[]? Raw { get; init; }
+
+    // A header, not part of the payload the read golden records.
+    [JsonIgnore]
+    public string? SetCookie { get; init; }
 }

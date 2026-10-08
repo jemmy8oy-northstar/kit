@@ -1,5 +1,5 @@
+using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.DataModels.Models;
@@ -7,19 +7,16 @@ using Balenthiran.Kit.DataModels.Models;
 namespace Balenthiran.Kit.Services;
 
 /// <summary>
-/// Ported from <c>ui.js</c>'s <c>answer()</c>, <c>delivered()</c>, <c>cors()</c> and
-/// <c>originAllowed()</c>: the raw target through WHATWG parsing, the base-path strip
-/// (rule 8), the preflight, and who may read a reply. Scored by
-/// <c>conformance/routes/host.json</c>.
-///
-/// ⚠️ CORS governs who may READ a reply. It never stopped a cross-origin write — that is
-/// the Origin check the write half carries, which is not ported yet.
+/// Ported from <c>ui.js</c>'s <c>answer()</c>, <c>received()</c>, <c>delivered()</c> and
+/// <c>cors()</c>: the raw target through WHATWG parsing, the base-path strip (rule 8), the
+/// preflight, the CSRF refusal before a body is read, the body's size and JSON, and who
+/// may read a reply. Scored by <c>conformance/routes/host.json</c> and <c>auth.json</c>.
 /// </summary>
 /// <param name="basePath">Already normalised (<see cref="NormaliseBasePath"/>).</param>
-/// <param name="publicOrigin"><c>KIT_PUBLIC_ORIGIN</c>, or null.</param>
-public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSerialiser serialiser, string basePath, string? publicOrigin) : IKitHost
+public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSerialiser serialiser, IOriginPolicy origins, string basePath) : IKitHost
 {
-    private static readonly Regex Ipv4Loopback = new(@"^127\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\z", RegexOptions.Compiled);
+    /// <summary>A request body over this many bytes is not a behaviour.</summary>
+    public const int MaxBody = 64 * 1024;
 
     // `JSON.stringify(body)`: the engine's settings, unindented.
     private readonly JsonSerializerOptions json = new(serialiser.Options) { WriteIndented = false };
@@ -35,7 +32,7 @@ public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSeria
     }
 
     /// <inheritdoc />
-    public IHostAnswer Answer(string method, string target, string? origin)
+    public IHostAnswer Answer(string method, string target, string? origin, string? cookie)
     {
         // `new URL` throws on a target such as `//x:99999/`; in ui.js that once crashed
         // the process. Here, as there now, it is the client's error.
@@ -58,12 +55,46 @@ public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSeria
             return new HostAnswer { Status = 204, Headers = Cors(origin), Body = string.Empty };
         }
 
-        if (method == "POST")
+        if (method != "POST")
         {
-            return new HostAnswer { Post = pathname };
+            return Deliver(router.Route(method, pathname, cookie: cookie), origin);
         }
 
-        return Deliver(router.Route(method, pathname), origin);
+        // Refused as cross-origin BEFORE the body is read — not as bad JSON or too large.
+        if (origins.RefuseWrite(origin) is { } refused)
+        {
+            return Deliver(Json(403, refused), origin);
+        }
+
+        return new HostAnswer { Post = pathname };
+    }
+
+    /// <inheritdoc />
+    public IHostAnswer Received(string pathname, byte[]? raw, string? origin, string? cookie)
+    {
+        if (raw is null)
+        {
+            return Deliver(Json(413, new ApiError { Error = "too-large", Reason = $"a request body over {MaxBody} bytes is not a behaviour" }), origin);
+        }
+
+        // `JSON.parse(buf.toString('utf8') || 'null')`: decoded with replacement first, as
+        // Node's toString does; a BOM stays and is refused; duplicate keys are last-wins;
+        // depth is bounded only by the body limit, as V8's is in practice.
+        var text = Encoding.UTF8.GetString(raw);
+        JsonDocument body;
+        try
+        {
+            body = JsonDocument.Parse(text.Length == 0 ? "null" : text, new JsonDocumentOptions { MaxDepth = MaxBody });
+        }
+        catch (JsonException)
+        {
+            return Deliver(Json(400, new ApiError { Error = "bad-json", Reason = "the request body is not valid JSON" }), origin);
+        }
+
+        using (body)
+        {
+            return Deliver(router.Route("POST", pathname, cookie, origin, body.RootElement), origin);
+        }
     }
 
     /// <inheritdoc />
@@ -80,52 +111,19 @@ public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSeria
             headers["cache-control"] = response.CacheControl;
         }
 
+        if (!string.IsNullOrEmpty(response.SetCookie))
+        {
+            headers["set-cookie"] = response.SetCookie;
+        }
+
         return response.Raw is not null
             ? new HostAnswer { Status = response.Status, Headers = headers, Raw = response.Raw }
             : new HostAnswer { Status = response.Status, Headers = headers, Body = JsonSerializer.Serialize(response.Body, response.Body!.GetType(), json) };
     }
 
-    /// <summary>
-    /// May a page at <paramref name="origin"/> read this Kit's replies? Loopback always;
-    /// otherwise only the configured public origin, compared as a WHOLE parsed origin —
-    /// never a substring, which has a famous bypass in each direction.
-    /// </summary>
-    public bool OriginAllowed(string origin)
-    {
-        // A malformed Origin is refused, never treated as "no origin".
-        if (urls.Parse(origin, againstLocalhost: false) is not { } url)
-        {
-            return false;
-        }
-
-        if (IsLoopback(url.Host))
-        {
-            return true;
-        }
-
-        if (string.IsNullOrEmpty(publicOrigin) || urls.Parse(publicOrigin, againstLocalhost: false) is not { } want)
-        {
-            return false;
-        }
-
-        return url.Origin == want.Origin;
-    }
-
-    /// <summary><c>ui.js</c>'s <c>isLoopback</c>, on a serialised hostname.</summary>
-    public static bool IsLoopback(string host)
-    {
-        if (host is "localhost" or "::1" or "[::1]")
-        {
-            return true;
-        }
-
-        var m = Ipv4Loopback.Match(host);
-        return m.Success && Enumerable.Range(1, 3).All(g => int.Parse(m.Groups[g].Value, System.Globalization.CultureInfo.InvariantCulture) <= 255);
-    }
-
     private Dictionary<string, string> Cors(string? origin)
     {
-        if (string.IsNullOrEmpty(origin) || !OriginAllowed(origin))
+        if (string.IsNullOrEmpty(origin) || !origins.Allowed(origin))
         {
             return new Dictionary<string, string>(StringComparer.Ordinal);
         }

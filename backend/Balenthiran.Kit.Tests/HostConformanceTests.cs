@@ -62,7 +62,7 @@ public class HostConformanceTests
         var (basePath, publicOrigin) = Config(q["config"]!.GetValue<string>());
         var expected = q["response"]!;
 
-        var a = Host(basePath, publicOrigin).Answer(q["method"]!.GetValue<string>(), q["url"]!.GetValue<string>(), q["origin"]?.GetValue<string>());
+        var a = Host(basePath, publicOrigin).Answer(q["method"]!.GetValue<string>(), q["url"]!.GetValue<string>(), q["origin"]?.GetValue<string>(), null);
 
         if (expected["post"] is { } post)
         {
@@ -170,7 +170,8 @@ public class HostConformanceTests
     {
         var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-        return new KitHost(new KitRouter(corpora, viewer, new UiBundle(FixtureDist), null), new UrlParser(), Serialiser, basePath, publicOrigin);
+        var policy = new OriginPolicy(new UrlParser(), publicOrigin);
+        return new KitHost(new KitRouter(corpora, viewer, new UiBundle(FixtureDist), null, policy), new UrlParser(), Serialiser, policy, basePath);
     }
 
     private static async Task<(int Status, Dictionary<string, string> Headers, string Text)> Send(int port, string method, string target, string? origin)

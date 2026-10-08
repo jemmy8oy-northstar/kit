@@ -20,5 +20,9 @@ public sealed class ApiError : IApiError
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? Known { get; init; }
 
+    [JsonPropertyOrder(5)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? RetryAfterSeconds { get; init; }
+
     IReadOnlyList<string>? IApiError.Known => Known;
 }

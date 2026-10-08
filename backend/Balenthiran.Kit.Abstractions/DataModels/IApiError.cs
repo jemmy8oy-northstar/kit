@@ -10,4 +10,7 @@ public interface IApiError
     string? Allow { get; }
 
     IReadOnlyList<string>? Known { get; }
+
+    /// <summary>Set only on a throttled sign-in.</summary>
+    int? RetryAfterSeconds { get; }
 }
