@@ -4,13 +4,13 @@
 #
 # The rest of the estate builds two — a .NET backend and an nginx frontend — and
 # `docker-build-push.yml` asserted exactly that for months against a repo that has
-# neither, which is why Kit's OCIR build "has never once succeeded". Kit is a
-# single Node process: `ui.js` serves the built SPA *and* the API on one port, and
-# `start.js --no-build` exists so a container can serve a bundle built here rather
-# than rebuilding one at boot.
+# neither, which is why Kit's OCIR build "has never once succeeded". Kit is still
+# ONE process serving the built SPA *and* the API on one port — but since kit#119
+# that process is the C# server (`backend/Balenthiran.Kit.WebApi`), scored request
+# by request against `ui.js` by the conformance goldens. Node is now build-time only:
+# it builds the bundle and nothing in the running container needs it.
 #
-# node:20-alpine because CI pins Node 20, and an image on a different major from
-# the one the suite runs on is an untested runtime.
+# node:20-alpine for the bundle because CI pins Node 20.
 
 # ── build the bundle ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS build
@@ -56,56 +56,57 @@ RUN set -eu; \
       exit 1; \
     fi
 
-# ── serve ────────────────────────────────────────────────────────────────────
-FROM node:20-alpine
+# ── build the server ─────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api
+WORKDIR /src
 
-# git again, for a different reason: `git-store.js` shells out to it to commit
-# and push a write back to the corpus repo. Write-back is off in this chart until
-# the credential question on kit#48 is answered, but the binary being absent
-# would turn "not configured" into "crashed", and those must stay different.
-RUN apk add --no-cache git
+# The whole `backend/` rather than one COPY per project: a project added to the
+# solution and missing from a per-project list fails restore ONLY here, after the
+# merge — which is how balenthiran.co.uk's image went two days without building.
+COPY backend/ ./backend/
+RUN dotnet publish backend/Balenthiran.Kit.WebApi/Balenthiran.Kit.WebApi.csproj -c Release -o /out
+
+# ── serve ────────────────────────────────────────────────────────────────────
+# The Debian aspnet image, not Alpine: it ships ICU, and the project view sorts
+# with `localeCompare` order (`ProjectReporter`), which invariant globalization
+# would silently change.
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
 WORKDIR /app
 
-# Only what the server actually loads. Copying `prototypes/behaviour-ast` whole
-# would drag in `ui/node_modules` — a few hundred MB of build-time dependencies
-# that the runtime never requires.
+COPY --from=api /out ./
+
+# The server finds its corpora by walking up from the working directory to the
+# folder holding `prototypes/behaviour-ast/behaviours` (`KitSettings`), and serves
+# the bundle from `prototypes/behaviour-ast/ui/dist` beside it — so that is the
+# layout, under /app.
 #
-# `--chown=node:node` because the corpus is WRITTEN to: a write lands in the .beh
+# `--chown=app:app` because the corpus is WRITTEN to: a write lands in the .beh
 # file, and root-owned files under a non-root user would refuse every edit with an
 # EACCES that reaches the browser as a 500.
-COPY --from=build --chown=node:node /src/start.js ./start.js
-COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/*.js ./prototypes/behaviour-ast/
-# 🔴 There is deliberately NO `COPY … bindings.json` line here, and the reason is
-# the one defect that would have failed Kit's first real image build. A flat
-# `prototypes/behaviour-ast/bindings.json` has not existed since bindings moved to
-# per-corpus `behaviours/<app>.bindings.json` (`docs/design/ui.md`: "The flat
-# `bindings.json` is deleted"), but this file still named it explicitly. An
-# explicit COPY of an absent path is a HARD failure, not a skipped line — and it
-# fails LATE, after the two-minute frontend build and a successful registry login,
-# so it reads as a registry or credential problem rather than a missing file.
-# The per-corpus bindings arrive with the `behaviours` directory on the next line.
-COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/behaviours ./prototypes/behaviour-ast/behaviours
-COPY --from=build --chown=node:node /src/prototypes/behaviour-ast/ui/dist ./prototypes/behaviour-ast/ui/dist
+#
+# 🔴 Still no `COPY … bindings.json`: the flat file has not existed since bindings
+# moved per corpus, and an explicit COPY of an absent path fails the build LATE.
+# The per-corpus bindings arrive with the `behaviours` directory.
+COPY --from=build --chown=app:app /src/prototypes/behaviour-ast/behaviours ./prototypes/behaviour-ast/behaviours
+COPY --from=build --chown=app:app /src/prototypes/behaviour-ast/ui/dist ./prototypes/behaviour-ast/ui/dist
 
-# Set at runtime as well as at build time, and both are read. The build used it to
-# write the asset URLs; the server uses it to strip the prefix off incoming
-# requests. `ui.js` reads the prefix back out of the bundle at startup and says so
-# loudly if the two disagree, which is the check that catches an image built
-# before this value changed.
+# Read at runtime too: the build wrote it into the asset URLs, the server strips
+# it off incoming requests.
 ARG KIT_BASE_PATH=""
 ENV KIT_BASE_PATH=${KIT_BASE_PATH}
 
-USER node
+# `KIT_HOST` is the bind address the write gate asks about — `ui.js`'s `--host`.
+# 0.0.0.0 is safe here and only here: with no password a non-loopback Kit refuses
+# every write (READ-ONLY, degraded rather than open); the chart sets a password
+# from a secret, and then the session decides. `ASPNETCORE_URLS` is where Kestrel
+# actually listens, and the two must agree.
+ENV KIT_HOST=0.0.0.0
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+
+# No git in this image: write-back (`--git`) is off in the chart and not ported to
+# the C# server, so every write answers "not committed", as Node did here.
+USER app
 EXPOSE 8080
 
-# `--host 0.0.0.0` is safe here and only here. `ui.js`'s loopback rule refuses
-# every write from a non-loopback address UNLESS a password is set — and the chart
-# sets one from a secret. Password set means the session decides and the bind
-# address stops being the gate; password unset on 0.0.0.0 means a READ-ONLY Kit,
-# which is a degraded state rather than an open one.
-#
-# `--no-build` because the bundle was built above. Without it `start.js` would try
-# to npm-install in a container that has no dev dependencies and no writable
-# node_modules.
-CMD ["node", "start.js", "--no-build", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["dotnet", "Balenthiran.Kit.WebApi.dll"]

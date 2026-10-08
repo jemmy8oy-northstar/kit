@@ -4986,8 +4986,10 @@ test('docker: every explicit COPY source exists, because an absent one fails the
   }
   // Could-not-look is never green, and a regex that stops matching is exactly how
   // this gate would go quietly inert. The floor is deliberately close to the real
-  // count so a rewrite that drops most lines fails rather than passes.
-  assert.ok(sources.length >= 4,
+  // count so a rewrite that drops most lines fails rather than passes. It is 2
+  // since kit#119 moved the server to C#: the runtime takes the corpora and the
+  // bundle from `build`, and everything else from the `api` stage's publish.
+  assert.ok(sources.length >= 2,
     `could not look: matched ${sources.length} COPY --from=build line(s) in Dockerfile — `
     + `the regex has stopped matching and this gate is inert, which is not the same as passing`);
 
