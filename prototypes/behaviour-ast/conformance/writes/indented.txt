@@ -1,0 +1,6 @@
+behaviour BEH-F "The writer's splice and the parser disagree about where this block ends"
+  source defined
+  when opens page:F
+  behaviour BEH-G "An INDENTED header: the parser starts a behaviour here, the splice does not"
+  source defined
+  when opens page:G
