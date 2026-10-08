@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import WriteResultNote from './WriteResultNote'
 import type { BindResult, WriteResult } from '../api/types'
+import writesGolden from '../../../conformance/routes/writes.json'
 
 /**
  * Written because `mutate-ui.js` found the gap, and the gap was the last hop of
@@ -154,6 +155,20 @@ describe('WriteResultNote', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent(/Not committed — Kit does not run git/)
     expect(screen.getByText(/commit it yourself/)).toBeInTheDocument()
+  })
+
+  // kit#117: deployed with git off, the working tree is inside a pod he cannot
+  // reach. Fed the server's RECORDED answer (the conformance golden, which both
+  // ui.js and the C# server are scored against), so a change on either side of
+  // the seam reaches this test.
+  it('deployed with git off: an alert says the edit can be lost, and no "commit it yourself"', () => {
+    const row = writesGolden.routes.find((r: { config?: unknown }) => r.config)!
+    render(<WriteResultNote result={row.response.body as WriteResult} />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(/Not committed\./)
+    expect(screen.getByRole('status')).not.toHaveTextContent(/Kit does not run git/)
+    expect(screen.getByRole('alert')).toHaveTextContent(/Git write-back is off on this deployed Kit\..*lost if this Kit restarts/)
+    expect(screen.queryByText(/commit it yourself/)).not.toBeInTheDocument()
   })
 
   it('a corpus write carries no shared-name note — it cannot have one', () => {

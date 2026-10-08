@@ -20,8 +20,4 @@ public sealed class GitWriteOutcome : WriteOutcome, IGitWriteOutcome
     [JsonPropertyOrder(9)]
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
     public string? Branch { get; init; }
-
-    [JsonPropertyOrder(11)]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Warning { get; init; }
 }

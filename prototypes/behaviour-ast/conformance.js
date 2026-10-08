@@ -645,9 +645,16 @@ function writeRoutes() {
       ['/api/projects/%E0/bindings', { noun: 'page:Home', binding: { route: '/' } }],
       ['/api/projects/gamma/bindings', { noun: 'page:Home', binding: { route: '/' } }],
     ];
+    // DEPLOYED (a public origin set, as the chart sets it): with write-back off, a
+    // write must say the edit is on the server's disk only, never "commit it
+    // yourself" (kit#117). One corpus write and one bind, on the same copy.
+    steps.push(
+      [`${B}/BEH-A/steps`, { step: 'then sees region:Deployed' }, { publicOrigin: 'https://balenthiran.co.uk' }],
+      ['/api/projects/alpha/bindings', { noun: 'region:Deployed', binding: { role: 'region' } }, { publicOrigin: 'https://balenthiran.co.uk' }],
+    );
     const relTmp = path.relative(path.join(__dirname, '..', '..'), tmp).split(path.sep).join('/');
-    const routes = steps.map(([p, body]) => {
-      const a = ui.received(p, Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8'), null, null, opts);
+    const routes = steps.map(([p, body, config]) => {
+      const a = ui.received(p, Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8'), null, null, { ...opts, ...config });
       const response = { status: a.status, body: JSON.parse(a.body) };
       let written = null;
       if (typeof response.body.file === 'string' && response.body.file.startsWith(`${relTmp}/`)) {
@@ -655,7 +662,7 @@ function writeRoutes() {
         response.body.file = `<dir>/${name}`;
         written = { name, text: fs.readFileSync(path.join(tmp, name), 'utf8') };
       }
-      return { path: p, body, response, written };
+      return config ? { path: p, body, config, response, written } : { path: p, body, response, written };
     });
     return { format: FORMAT, functions, routes };
   } finally {

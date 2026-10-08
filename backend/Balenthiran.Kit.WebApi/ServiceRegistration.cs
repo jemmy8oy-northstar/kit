@@ -39,7 +39,8 @@ public static class ServiceRegistration
             settings.Host,
             settings.Secure,
             sp.GetRequiredService<ICorpusWriter>(),
-            sp.GetRequiredService<IGitStore>()));
+            sp.GetRequiredService<IGitStore>(),
+            deployed: settings.PublicOrigin is not null));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
