@@ -627,7 +627,7 @@ MUTANTS.push(
   // CORS simple request — no preflight — so without this check the edit lands
   // and only the attacker's view of the *response* is blocked.
   ['the cross-origin write guard is gone — a hostile page can edit the corpus',
-    'if (origin !== null && origin !== undefined) {', 'if (false) {', 'ui.js'],
+    '  if (origin === null || origin === undefined || originAllowed(origin, opts)) return null;', '  return null;', 'ui.js'],
   // Same rule, same re-anchoring. The guard moved into `originAllowed`, and the
   // way to express "accepts anything it can parse" is now to make the function
   // return true for every parseable origin.
@@ -637,7 +637,7 @@ MUTANTS.push(
   ['the response claims the edit was committed',
     'committed: false,', 'committed: true,', 'ui.js'],
   ['an oversized body is parsed instead of refused',
-    'if (size > MAX_BODY) return send({ status: 413,', 'if (false) return send({ status: 413,', 'ui.js'],
+    'size > MAX_BODY ? null : Buffer.concat(chunks)', 'Buffer.concat(chunks)', 'ui.js'],
 );
 
 // converge (claude-code-bot#92). Its whole output is a claim about how far two
@@ -737,8 +737,8 @@ MUTANTS.push(
     '    for (const [token, expires] of live) if (false) live.delete(token);',
     'auth.js'],
   ['session tokens come from a predictable source and are short enough to guess',
-    "      const token = crypto.randomBytes(32).toString('hex');",
-    "      const token = Math.random().toString(36).slice(2);",
+    "mint = () => crypto.randomBytes(32).toString('hex')) {",
+    "mint = () => Math.random().toString(36).slice(2)) {",
     'auth.js'],
   ['the brute-force throttle never engages, so the password can be guessed at leisure',
     '      if (failures >= FREE_ATTEMPTS) {',

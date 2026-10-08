@@ -560,6 +560,23 @@ function route(method, pathname, opts = {}, body = null, origin = null, cookie =
  * a time. Note the ORDER — the loopback refusal comes before the body is looked
  * at, so a remote caller cannot even learn whether an app or a behaviour exists.
  */
+/**
+ * Rule 4's refusal body for a write from a page this server does not serve, or
+ * null when the Origin is absent (a non-browser caller) or allowed. One function
+ * because two places ask: `write()`, and `answer()` BEFORE the body is read —
+ * so a cross-origin POST is refused as cross-origin, not as malformed JSON or as
+ * too large, and its body is never parsed at all.
+ */
+function crossOriginWrite(origin, opts) {
+  if (origin === null || origin === undefined || originAllowed(origin, opts)) return null;
+  return {
+    error: 'cross-origin-write',
+    reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
+      + 'Kit\'s UI is a local developer tool; a page on another origin editing your working '
+      + 'tree is CSRF, not a feature.',
+  };
+}
+
 function write(pathname, opts, body, json, origin = null, cookie = null) {
   // Rule 4, and it is checked FIRST because it is the only one that defends
   // against a caller who is not the developer.
@@ -584,16 +601,8 @@ function write(pathname, opts, body, json, origin = null, cookie = null) {
   // hostname suffix. A suffix test is how `balenthiran.co.uk.evil.com` passes
   // for `balenthiran.co.uk`, and it is the classic way this check is written
   // wrong.
-  if (origin !== null && origin !== undefined) {
-    if (!originAllowed(origin, opts)) {
-      return json(403, {
-        error: 'cross-origin-write',
-        reason: `a write carrying Origin '${origin}' came from a page this server does not serve. `
-          + 'Kit\'s UI is a local developer tool; a page on another origin editing your working '
-          + 'tree is CSRF, not a feature.',
-      });
-    }
-  }
+  const refused = crossOriginWrite(origin, opts);
+  if (refused) return json(403, refused);
 
   // ── sign in / sign out (kit#46) ──────────────────────────────────────────
   // Below the Origin check and above the lock, which is the only correct place
@@ -1038,7 +1047,29 @@ function answer(method, url, origin, cookie, opts, basePath) {
   if (method === 'OPTIONS') return { status: 204, headers: cors(origin, opts), body: '' };
 
   if (method !== 'POST') return delivered(route(method, pathname, opts, null, null, cookie), origin, opts);
+
+  const refused = crossOriginWrite(origin, opts);
+  if (refused) return delivered({ status: 403, contentType: 'application/json', body: refused }, origin, opts);
   return { post: pathname };
+}
+
+/**
+ * A POST's body has been read: `raw` is its bytes, or null when it ran past
+ * MAX_BODY (`serve()` stops buffering there, so the bytes are gone). Pure, like
+ * `answer()`, so the conformance oracle records exactly what `serve()` sends.
+ */
+function received(pathname, raw, origin, cookie, opts) {
+  const json = (status, body) => delivered({ status, contentType: 'application/json', body }, origin, opts);
+  if (raw === null) return json(413, { error: 'too-large', reason: `a request body over ${MAX_BODY} bytes is not a behaviour` });
+  let body;
+  try {
+    body = JSON.parse(raw.toString('utf8') || 'null');
+  } catch {
+    // A fixed sentence, not V8's `e.message`: that text is the engine's, and no
+    // other runtime (the C# port, kit#119) could reproduce it.
+    return json(400, { error: 'bad-json', reason: 'the request body is not valid JSON' });
+  }
+  return delivered(route('POST', pathname, opts, body, origin, cookie), origin, opts);
 }
 
 function serve(opts = {}) {
@@ -1068,9 +1099,10 @@ function serve(opts = {}) {
       res.writeHead(a.status, a.headers);
       res.end(a.raw !== undefined ? a.raw : a.body);
     };
-    const send = (result) => deliver(delivered(result, req.headers.origin, opts));
 
-    const a = answer(req.method, req.url, req.headers.origin ?? null, req.headers.cookie ?? null, opts, basePath);
+    const origin = req.headers.origin ?? null;
+    const cookie = req.headers.cookie ?? null;
+    const a = answer(req.method, req.url, origin, cookie, opts, basePath);
     if (a.post === undefined) return deliver(a);
     const pathname = a.post;
 
@@ -1086,16 +1118,7 @@ function serve(opts = {}) {
       if (size > MAX_BODY) { chunks.length = 0; return; }
       chunks.push(c);
     });
-    req.on('end', () => {
-      if (size > MAX_BODY) return send({ status: 413, contentType: 'application/json', body: { error: 'too-large', reason: `a request body over ${MAX_BODY} bytes is not a behaviour` } });
-      let body;
-      try {
-        body = JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null');
-      } catch (e) {
-        return send({ status: 400, contentType: 'application/json', body: { error: 'bad-json', reason: e.message } });
-      }
-      send(route('POST', pathname, opts, body, req.headers.origin ?? null, req.headers.cookie ?? null));
-    });
+    req.on('end', () => deliver(received(pathname, size > MAX_BODY ? null : Buffer.concat(chunks), origin, cookie, opts)));
   });
 
   return new Promise((resolve, reject) => {
@@ -1325,7 +1348,7 @@ async function main(argv) {
 }
 
 module.exports = {
-  route, write, serve, answer, delivered, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
+  route, write, serve, answer, delivered, received, cors, isLoopback, originAllowed, session, corpora, repoFor, summary, parseArgs, VALUE_FLAGS, main,
   bundle, filesIn, contentTypeFor, MAX_BODY, BUILD_CMD, DIST_DIR,
   // Rule 8. `normaliseBasePath` is exported for `vite.config.ts`, not only for
   // the suite: it is imported there so the build and the server derive the
