@@ -836,7 +836,7 @@ MUTANTS.push(
   // On a shared host those belong to a SIBLING app, so Kit starts returning 200
   // for another application's URLs.
   ['a request outside the prefix is served anyway, so Kit answers for a sibling app',
-    '    if (pathname === null) {', '    if (false) {', 'ui.js'],
+    '  if (pathname === null) {', '  if (false) {', 'ui.js'],
   ['the prefix match accepts /kitten, so a different app\'s paths are treated as inside this one',
     'if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);',
     'if (pathname.startsWith(basePath)) return pathname.slice(basePath.length);', 'ui.js'],
