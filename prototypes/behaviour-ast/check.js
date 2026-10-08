@@ -20,9 +20,11 @@
 // default is unchanged, so every existing invocation means what it did.
 //
 // Exit codes, and the distinction matters more than the gate:
-//   0  every behaviour in the corpus has a test naming it
-//   1  it looked, and something is wrong — uncovered behaviours, or a mapping
-//      entry naming a test that does not exist
+//   0  every behaviour in the corpus has a test naming it, except those marked
+//      `pending` (kit#155: spec'd on `dev`, not built yet), which have none
+//   1  it looked, and something is wrong — uncovered behaviours, a mapping
+//      entry naming a test that does not exist, or a `pending` behaviour that
+//      a test already names
 //   2  IT COULD NOT LOOK — no corpus, no repo, or zero test files read. Not the
 //      same as "it looked and was fine", and never reported as green. A gate
 //      that reads nothing and exits 0 is worse than no gate, because it is
@@ -163,24 +165,39 @@ function main(argv) {
     errors = result.errors;
   }
 
+  // kit#155: a `pending` behaviour is on `dev` ahead of its code, so having no
+  // test yet is the expected state and not a failure. A pending behaviour that
+  // DOES have a test is the opposite slip — the branch that built it forgot to
+  // delete the marker — and it fails, because otherwise it would sit in the
+  // pending list as unbuilt work forever.
+  const notBuilt = result.uncovered.filter((b) => b.pending);
+  const uncovered = result.uncovered.filter((b) => !b.pending);
+  for (const b of result.covered.filter((x) => x.pending)) {
+    errors.push(`${b.id}: a test names this behaviour, but it is still marked pending — delete the \`pending\` line`);
+  }
+  const built = behaviours.length - notBuilt.length;
+
   console.log(`── kit check: ${app} (via ${via}) ──`);
   // Name the corpus that was read, not just the app. Once two directories can
   // answer to one app name, "kit check: snip-it ✅" no longer says which one
   // went green, and the reader of a CI log has no way to find out.
   console.log(`   ${behaviours.length} behaviour(s) read from ${behPath}`);
   console.log(`   ${read.files.length} test file(s), ${read.titles.length} test(s) read from ${repo}`);
-  console.log(`   ${result.covered.length}/${behaviours.length} behaviour(s) have a test naming them\n`);
+  console.log(`   ${built - uncovered.length}/${built} behaviour(s) have a test naming them`);
+  if (notBuilt.length) console.log(`   ${notBuilt.length} pending behaviour(s): spec'd, not built — not counted above`);
+  console.log('');
 
   for (const e of errors) console.log(`   ✗ ${e}`);
-  for (const b of result.uncovered) console.log(`   ✗ ${b.id}: no test names this behaviour — "${b.title}"`);
+  for (const b of uncovered) console.log(`   ✗ ${b.id}: no test names this behaviour — "${b.title}"`);
+  for (const b of notBuilt) console.log(`   ◌ ${b.id}: pending — spec'd, not built — "${b.title}"`);
 
-  if (!errors.length && !result.uncovered.length) {
-    console.log('   ✅ every behaviour is named by a test.');
+  if (!errors.length && !uncovered.length) {
+    console.log(notBuilt.length ? '   ✅ every built behaviour is named by a test.' : '   ✅ every behaviour is named by a test.');
     console.log('   ⚠️  this proves someone LINKED each behaviour to a test, not that the test');
     console.log('      asserts it. See docs/design/tagging.md before quoting this as coverage.');
     return 0;
   }
-  console.log(`\n   ${errors.length + result.uncovered.length} problem(s). This is what "fails the build" means.`);
+  console.log(`\n   ${errors.length + uncovered.length} problem(s). This is what "fails the build" means.`);
   return 1;
 }
 

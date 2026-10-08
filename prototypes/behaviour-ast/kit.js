@@ -41,6 +41,10 @@ function parse(text, file = '<inline>') {
         // because the whole risk is an inference passing itself off as a
         // requirement. Silence means a human wrote it.
         source: { origin: 'defined', ref: null }, review: { state: 'approved', note: null },
+        // In the literal rather than assigned when the line is met, so the key
+        // sits in one place whatever line order the corpus uses — the goldens are
+        // compared byte-for-byte, key order included, against the C# port.
+        pending: false,
       };
       behaviours.push(cur);
       continue;
@@ -51,6 +55,25 @@ function parse(text, file = '<inline>') {
     const rest = line.slice(kw.length).trim();
 
     if (kw === 'actor') { cur.actor = rest; continue; }
+
+    // ── James, kit#155 (2026-10-08) ───────────────────────────────────────
+    // "clicking commit should add the spec changes as pending ... on the dev
+    // branch so that it is viewable. And then the feature branches can behave as
+    // normal feature branches do."
+    //
+    // So a spec can land on `dev` ahead of its code, and `pending` is what says
+    // so. It lives in the `.beh` file rather than in a label or a store because
+    // the CLI has to see it too (kit#148: Kit stays repo-only). The feature
+    // branch that builds the behaviour deletes the line in the same PR.
+    //
+    // Bare on purpose. A reason would be prose nothing reads, and an argument
+    // would invite a second state (`pending blocked`, `pending later`) that the
+    // gate in check.js would then have to have an opinion about.
+    if (kw === 'pending') {
+      if (rest) throw new Error(`${at}: pending takes nothing after it, got: ${rest}`);
+      cur.pending = true;
+      continue;
+    }
 
     // ── James's #68 decision, 2026-08-30 ──────────────────────────────────
     // "I like this default included but marked unreviewed."

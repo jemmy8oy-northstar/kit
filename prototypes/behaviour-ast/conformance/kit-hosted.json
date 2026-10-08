@@ -87,7 +87,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-PULL-2",
@@ -182,7 +183,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-PULL-3",
@@ -285,7 +287,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-PULL-4",
@@ -388,7 +391,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ACT-1",
@@ -462,7 +466,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ACT-2",
@@ -536,7 +541,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ACT-3",
@@ -618,7 +624,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ACT-4",
@@ -683,7 +690,8 @@
       "review": {
         "state": "unreviewed",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-COMMIT-1",
@@ -794,7 +802,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-COMMIT-2",
@@ -905,7 +914,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-COMMIT-3",
@@ -1008,7 +1018,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-COMMIT-4",
@@ -1124,7 +1135,8 @@
       "review": {
         "state": "unreviewed",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-GATE-H1",
@@ -1219,7 +1231,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-GATE-H2",
@@ -1330,7 +1343,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     }
   ],
   "resolve": {

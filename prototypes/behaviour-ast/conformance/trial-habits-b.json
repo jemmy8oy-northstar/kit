@@ -50,7 +50,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-TODAY-2",
@@ -100,7 +101,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-TODAY-3",
@@ -176,7 +178,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-MEALS-1",
@@ -239,7 +242,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-BREAKFAST-1",
@@ -289,7 +293,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-RUN-1",
@@ -373,7 +378,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-SLEEP-1",
@@ -431,7 +437,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-SLEEP-2",
@@ -503,7 +510,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-SLEEP-3",
@@ -551,7 +559,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-DRINKS-1",
@@ -623,7 +632,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-DRINKS-2",
@@ -671,7 +681,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-HISTORY-1",
@@ -747,7 +758,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-HISTORY-2",
@@ -810,7 +822,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     }
   ],
   "resolve": {
