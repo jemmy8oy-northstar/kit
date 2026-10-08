@@ -277,7 +277,12 @@ const MUTANTS = [
   ['an id named by a test but absent from the corpus is not reported',
     'errors = result.orphanTests.map(', 'errors = [].map(', 'check.js'],
   ['uncovered behaviours no longer affect the exit code',
-    'if (!errors.length && !result.uncovered.length) {', 'if (true) {', 'check.js'],
+    'if (!errors.length && !uncovered.length) {', 'if (true) {', 'check.js'],
+  // kit#155's `pending` marker is an excuse the gate grants. The mutants further
+  // down catch it granting too little; this one catches it excusing everything.
+  ['every uncovered behaviour counts as pending, so a missing test reads as unbuilt work',
+    'const uncovered = result.uncovered.filter((b) => !b.pending);',
+    'const uncovered = [];', 'check.js'],
 
   // --dir. The gate can now read a corpus that lives with its project (kit#52),
   // which means it can also read the WRONG one and report a confident verdict
