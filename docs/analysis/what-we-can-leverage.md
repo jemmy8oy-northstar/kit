@@ -24,8 +24,10 @@ is either **verified** (I read the file / ran the command) or **inferred** (labe
   e2e do. `snip-it`'s identical setup **does** gate `npm run test` in CI. This is exactly the failure mode Kit's
   coverage check is meant to make structurally impossible.
 - The Kit prototype (`prototypes/behaviour-ast/`) is real and runs clean — `node kit.test.js` and
-  `node mutate.js` are green, and `node compare.js` shows most generated lines matching snip-it's
-  actual hand-written Playwright spec on `origin/dev` exactly or near-exactly. It is a prototype
+  `node mutate.js` are green, and `node compare.js` shows most of `snip-it.beh`'s generated lines
+  matching snip-it's actual hand-written Playwright spec on `origin/dev` exactly or near-exactly.
+  (Until kit#78 it compared every corpus in `behaviours/` against that one spec, and this sentence
+  went false as the directory grew. No commit touched either file.) It is a prototype
   answering falsifiable questions, not a product — see gaps below for what it deliberately does not do.
   ⚠️ **The counts that used to sit in this bullet have been removed on purpose.** It said 19/19
   tests for two weeks while the suite grew to 72, was corrected, and then said 86 while it grew to

@@ -96,7 +96,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
 // which was run RED first and named five defects. **Do not "finish the job" by
 // adding `cli.js` here — the test will tell you, but this says why.**
-const SUBJECTS = { 'kit.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
+const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
 // proves it. Two of the kit#66 mutants make a write land in THIS checkout's
@@ -439,6 +439,12 @@ MUTANTS.push(
     "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
     "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
     'kit.js'],
+  // kit#78: the comparison's subject is snip-it, and the directory is a population
+  // that grows underneath it.
+  ['compare.js reads every corpus again, so other apps\' lines are scored against snip-it\'s spec',
+    "const all = parse(fs.readFileSync(path.join(dir, CORPUS), 'utf8'), CORPUS);",
+    "const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh')).flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));",
+    'compare.js'],
   // kit#76: one population under `── measured ──`. The first mutant is the old
   // denominator coming back (every noun a step names); the second hides the nouns
   // no binding could satisfy, which is what made 0/43 read as 0% of the work.
