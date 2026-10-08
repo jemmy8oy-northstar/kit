@@ -20,4 +20,19 @@ public interface ICorpusDirectory
 
     /// <summary>Where the corpus is, relative to the repository root, <c>/</c>-separated — the view's <c>corpus</c>.</summary>
     string RelativePath(string app);
+
+    /// <summary>The bindings file's path, as <see cref="RelativePath"/> gives the corpus's.</summary>
+    string RelativeBindingsPath(string app);
+
+    /// <summary>The corpus text exactly as stored — a BOM included — for an edit to splice.</summary>
+    string ReadText(string app);
+
+    /// <summary>The bindings file's text exactly as stored, or null when there is none yet.</summary>
+    string? ReadBindingsText(string app);
+
+    /// <summary>Replace an app's corpus. Only ever called with a writer's validated result.</summary>
+    void WriteText(string app, string text);
+
+    /// <summary>Replace (or create) an app's bindings file. Only ever called with a writer's validated result.</summary>
+    void WriteBindingsText(string app, string text);
 }

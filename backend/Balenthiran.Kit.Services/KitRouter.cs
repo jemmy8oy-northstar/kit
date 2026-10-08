@@ -33,7 +33,8 @@ public sealed class KitRouter(
     ISessionStore? sessions = null,
     ISignInThrottle? throttle = null,
     string host = "127.0.0.1",
-    bool secure = false) : IKitRouter
+    bool secure = false,
+    ICorpusWriter? writer = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -41,6 +42,8 @@ public sealed class KitRouter(
     private readonly bool lockRequired = password is not null && password.Trim(CorpusParser.WsChars).Length > 0;
 
     private readonly IOriginPolicy origins = origins ?? new OriginPolicy(new UrlParser(), null);
+
+    private readonly ICorpusWriter writer = writer ?? new CorpusWriter(new CorpusParser());
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
@@ -181,8 +184,127 @@ public sealed class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = "the body must be a JSON object" });
         }
 
-        return Json(501, new ApiError { Error = "not-implemented", Reason = "the write itself is not ported to the C# server yet (#119)" });
+        var b = body.Value;
+        return bm.Success ? Bind(app, b) : Edit(app, m, b);
     }
+
+    /// <summary><c>write()</c> past its gates: create a behaviour, add a step, or adjudicate.</summary>
+    private KitResponse Edit(string app, Match m, JsonElement body)
+    {
+        var review = m.Groups[3].Value == "review";
+        var step = m.Groups[2].Success && !review;
+
+        // Decoded with a refusal, never a throw — in ui.js this once crashed the process.
+        string? id;
+        if (m.Groups[2].Success)
+        {
+            if (DecodeUriComponent(m.Groups[2].Value) is not { } decoded)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the behaviour id is not valid percent-encoding" });
+            }
+
+            id = decoded;
+        }
+        else
+        {
+            id = Field(body, "id") is { ValueKind: JsonValueKind.String } v ? v.GetString() : null;
+        }
+
+        if (TypeError(body, review ? ReviewFields : step ? StepFields : CreateFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var text = corpora.ReadText(app);
+        var result = review
+            ? writer.SetReview(text, id!, Str(body, "state")!, Str(body, "note"))
+            : step
+                ? writer.AddStep(text, id!, Str(body, "step")!)
+                : writer.AddBehaviour(text, id!, Str(body, "title")!, Str(body, "actor"), Field(body, "steps") is { ValueKind: JsonValueKind.Array } s ? s.EnumerateArray().Select(x => x.GetString()!).ToList() : null, Str(body, "source"), Str(body, "ref"));
+
+        // 409, not 500: every refusal is a statement about the request.
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason!, Known = result.Known?.ToList() });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted });
+    }
+
+    /// <summary><c>postBinding()</c> past its gates: add one binding to the app's bindings file.</summary>
+    private KitResponse Bind(string app, JsonElement body)
+    {
+        if (TypeError(body, BindFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        // No bindings file yet is the NORMAL first bind, not an error.
+        var before = corpora.ReadBindingsText(app) ?? "{}";
+        var skipped = new List<string>();
+        var nouns = writer.CorpusNouns(corpora.Corpora().ToDictionary(a => a, corpora.ReadText, StringComparer.Ordinal), skipped);
+        var value = Field(body, "binding") ?? JsonSerializer.SerializeToElement<object?>(null);
+        var result = writer.AddBinding(before, Str(body, "noun")!, value, nouns, app);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason!, Current = result.Current });
+        }
+
+        corpora.WriteBindingsText(app, result.Text!);
+        return Json(200, new WriteOutcome
+        {
+            App = app,
+            Noun = result.Noun,
+            File = corpora.RelativeBindingsPath(app),
+            Note = NotCommitted,
+            SharedWith = result.SharedWith!.ToList(),
+            UnreadableCorpora = skipped,
+        });
+    }
+
+    // Decision 2, unchanged while git write-back is not ported: the answer says what was NOT done.
+    private const string NotCommitted = "written to the working tree. Kit does not run git — review the diff and commit it yourself.";
+
+    // ui.js's bodyTypeError specs: `string` is required; `string?` may be null or absent;
+    // `strings?` is an array of strings, null or absent.
+    private static readonly (string Field, string Type)[] CreateFields = [("id", "string"), ("title", "string"), ("actor", "string?"), ("steps", "strings?"), ("source", "string?"), ("ref", "string?")];
+    private static readonly (string Field, string Type)[] StepFields = [("step", "string")];
+    private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
+    private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
+
+    private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
+    {
+        foreach (var (field, type) in spec)
+        {
+            var v = Field(body, field);
+            var absent = v is null || v.Value.ValueKind == JsonValueKind.Null;
+            var isString = v is { ValueKind: JsonValueKind.String };
+            if (type == "string" && !isString)
+            {
+                return $"{field} must be a string";
+            }
+
+            if (type == "string?" && !absent && !isString)
+            {
+                return $"{field} must be a string";
+            }
+
+            if (type == "strings?" && !absent && !(v!.Value.ValueKind == JsonValueKind.Array && v.Value.EnumerateArray().All(x => x.ValueKind == JsonValueKind.String)))
+            {
+                return $"{field} must be a list of strings";
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary><c>body[field]</c>: an own property of an object (last duplicate wins); an array has none.</summary>
+    private static JsonElement? Field(JsonElement body, string field) =>
+        body.ValueKind == JsonValueKind.Object && body.TryGetProperty(field, out var v) ? v : null;
+
+    private static string? Str(JsonElement body, string field) =>
+        Field(body, field) is { ValueKind: JsonValueKind.String } v ? v.GetString() : null;
 
     /// <summary><c>ui.js</c>'s <c>session()</c>: sign in, sign out.</summary>
     private KitResponse Session(string pathname, string? cookie, JsonElement? body)

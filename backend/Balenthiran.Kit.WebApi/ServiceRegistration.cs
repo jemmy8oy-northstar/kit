@@ -21,6 +21,7 @@ public static class ServiceRegistration
         services.AddSingleton<IProjectReporter, ProjectReporter>();
         services.AddSingleton<IEngineJsonSerialiser, EngineJsonSerialiser>();
         services.AddSingleton<IProjectViewer, ProjectViewer>();
+        services.AddSingleton<ICorpusWriter, CorpusWriter>();
         services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IUrlParser, UrlParser>();
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
@@ -35,7 +36,8 @@ public static class ServiceRegistration
             sp.GetRequiredService<ISessionStore>(),
             sp.GetRequiredService<ISignInThrottle>(),
             settings.Host,
-            settings.Secure));
+            settings.Secure,
+            sp.GetRequiredService<ICorpusWriter>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

@@ -35,6 +35,29 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     }
 
     /// <inheritdoc />
-    public string RelativePath(string app) =>
-        Path.GetRelativePath(repoRoot, Path.Combine(dir, app + Suffix)).Replace('\\', '/');
+    public string RelativePath(string app) => Relative(Path.Combine(dir, app + Suffix));
+
+    /// <inheritdoc />
+    public string RelativeBindingsPath(string app) => Relative(BindingsFile(app));
+
+    /// <inheritdoc />
+    public string ReadText(string app) => Utf8.GetString(File.ReadAllBytes(Path.Combine(dir, app + Suffix)));
+
+    /// <inheritdoc />
+    public string? ReadBindingsText(string app) => File.Exists(BindingsFile(app)) ? Utf8.GetString(File.ReadAllBytes(BindingsFile(app))) : null;
+
+    /// <inheritdoc />
+    public void WriteText(string app, string text) => File.WriteAllBytes(Path.Combine(dir, app + Suffix), Utf8.GetBytes(text));
+
+    /// <inheritdoc />
+    public void WriteBindingsText(string app, string text) => File.WriteAllBytes(BindingsFile(app), Utf8.GetBytes(text));
+
+    // `readFileSync(f, 'utf8')` / `writeFileSync(f, s)`: a BOM is a character like any
+    // other, kept on the way in and written back on the way out. File.ReadAllText would
+    // strip it, so a write would silently change a line no one asked it to.
+    private static readonly System.Text.UTF8Encoding Utf8 = new(false);
+
+    private string BindingsFile(string app) => Path.Combine(dir, app + ".bindings.json");
+
+    private string Relative(string file) => Path.GetRelativePath(repoRoot, file).Replace('\\', '/');
 }
