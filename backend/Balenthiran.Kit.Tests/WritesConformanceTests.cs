@@ -102,7 +102,7 @@ public class WritesConformanceTests
                 Assert.Equal(Canonical(expected["body"]), Canonical(actual));
                 if (s["written"] is JsonObject written)
                 {
-                    Assert.Equal(written["text"]!.GetValue<string>(), File.ReadAllText(Path.Combine(tmp, written["name"]!.GetValue<string>())));
+                    Assert.Equal(written["text"]!.GetValue<string>(), Bytes(Path.Combine(tmp, written["name"]!.GetValue<string>())));
                 }
             }
         }
@@ -123,7 +123,7 @@ public class WritesConformanceTests
     /// <summary>The recorder's named inputs, derived exactly as <c>conformance.js</c> derives them.</summary>
     private static Dictionary<string, string> Texts()
     {
-        string Read(string f) => File.ReadAllText(Path.Combine(Fixtures, f));
+        string Read(string f) => Bytes(Path.Combine(Fixtures, f));
         return new Dictionary<string, string>
         {
             ["alpha"] = Read("alpha.beh"),
@@ -133,15 +133,19 @@ public class WritesConformanceTests
             ["bindings-empty"] = "{}",
             ["bindings-array"] = "[]",
             ["bindings-bad"] = "{",
+            ["indented"] = Read("indented.txt"),
         };
     }
 
     private static IReadOnlyDictionary<string, IReadOnlyList<string>> Nouns(CorpusWriter writer)
     {
         var corpora = Directory.GetFiles(Fixtures, "*.beh").OrderBy(f => f, StringComparer.Ordinal)
-            .ToDictionary(f => Path.GetFileNameWithoutExtension(f), File.ReadAllText);
+            .ToDictionary(f => Path.GetFileNameWithoutExtension(f), Bytes);
         return writer.CorpusNouns(corpora, []);
     }
+
+    /// <summary>A file's text with any BOM KEPT — <c>File.ReadAllText</c> would hide the very thing one fixture tests.</summary>
+    private static string Bytes(string path) => new System.Text.UTF8Encoding(false).GetString(File.ReadAllBytes(path));
 
     /// <summary>The result as <c>writer.js</c> returns it: only the fields it sets, in its order.</summary>
     private static JsonObject Actual(IWriteResult r)
