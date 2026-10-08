@@ -22,6 +22,12 @@ public interface IWriteOutcome
 
     string Note { get; }
 
+    /// <summary>
+    /// Set when the edit is on a disk that will not survive: committed locally but NOT pushed,
+    /// or — deployed, with write-back off — never committed at all. A UI renders it as an alert.
+    /// </summary>
+    string? Warning { get; }
+
     IReadOnlyList<string>? SharedWith { get; }
 
     /// <summary>Corpora skipped because they will not parse — so <see cref="SharedWith"/> is incomplete, and says so.</summary>

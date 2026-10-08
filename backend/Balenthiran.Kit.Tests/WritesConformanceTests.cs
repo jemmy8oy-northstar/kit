@@ -1,7 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.Services;
+using Balenthiran.Kit.WebApi;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Balenthiran.Kit.Tests;
 
@@ -82,14 +85,23 @@ public class WritesConformanceTests
             var host = new KitHost(new KitRouter(corpora, viewer, new UiBundle(tmp), null, policy), new UrlParser(), Serialiser, policy, string.Empty);
             var relTmp = Path.GetRelativePath(RepoLayout.Root, tmp).Replace('\\', '/');
 
+            // A step recorded with `config.publicOrigin` ran on a DEPLOYED server, as the chart configures one.
+            KitHost Deployed(string origin)
+            {
+                var p = new OriginPolicy(new UrlParser(), origin);
+                return new KitHost(new KitRouter(corpora, viewer, new UiBundle(tmp), null, p, deployed: true), new UrlParser(), Serialiser, p, string.Empty);
+            }
+
             var steps = Golden()["routes"]!.AsArray();
             Assert.True(steps.Count >= 20, $"only {steps.Count} route steps — the gate is inert");
+            Assert.True(steps.Count(s => s!["config"] is not null) >= 2, "no deployed route steps — the deployed note is unscored");
             foreach (var s in steps)
             {
                 var body = s!["body"]!;
                 var raw = body.GetValueKind() == JsonValueKind.String ? body.GetValue<string>() : body.ToJsonString();
                 var label = $"{s["path"]} {raw}";
-                var a = host.Received(s["path"]!.GetValue<string>(), System.Text.Encoding.UTF8.GetBytes(raw), null, null);
+                var server = s["config"]?["publicOrigin"]?.GetValue<string>() is { } origin ? Deployed(origin) : host;
+                var a = server.Received(s["path"]!.GetValue<string>(), System.Text.Encoding.UTF8.GetBytes(raw), null, null);
 
                 var actual = JsonNode.Parse(a.Body!)!.AsObject();
                 if (actual["file"]?.GetValue<string>() is { } file && file.StartsWith(relTmp + "/", StringComparison.Ordinal))
@@ -104,6 +116,45 @@ public class WritesConformanceTests
                 {
                     Assert.Equal(written["text"]!.GetValue<string>(), Bytes(Path.Combine(tmp, written["name"]!.GetValue<string>())));
                 }
+            }
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// The deployed rows again, through the server <c>KIT_PUBLIC_ORIGIN</c> actually builds —
+    /// the replay above constructs its router by hand, so it cannot see the registration drop
+    /// the <c>deployed</c> flag. That is the drift that would put "commit it yourself" back in
+    /// front of him on his phone.
+    /// </summary>
+    [Fact]
+    public async Task The_registered_server_answers_deployed_writes_as_ui_js_does()
+    {
+        var tmp = Directory.CreateTempSubdirectory("kit-writes-").FullName;
+        try
+        {
+            foreach (var f in Directory.GetFiles(Fixtures))
+            {
+                File.Copy(f, Path.Combine(tmp, Path.GetFileName(f)));
+            }
+
+            var deployed = Golden()["routes"]!.AsArray().Where(s => s!["config"] is not null).ToList();
+            Assert.NotEmpty(deployed);
+            var origin = deployed[0]!["config"]!["publicOrigin"]!.GetValue<string>();
+            await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(tmp, RepoLayout.Root, null, Path.Combine(RepoLayout.Root, "no-bundle-here"), string.Empty, origin));
+            var host = app.Services.GetRequiredService<IKitHost>();
+            var relTmp = Path.GetRelativePath(RepoLayout.Root, tmp).Replace('\\', '/');
+
+            foreach (var s in deployed)
+            {
+                var a = host.Received(s!["path"]!.GetValue<string>(), System.Text.Encoding.UTF8.GetBytes(s["body"]!.ToJsonString()), null, null);
+                var actual = JsonNode.Parse(a.Body!)!.AsObject();
+                actual["file"] = "<dir>/" + actual["file"]!.GetValue<string>()[(relTmp.Length + 1)..];
+                Assert.Equal(s["response"]!["status"]!.GetValue<int>(), a.Status);
+                Assert.Equal(Canonical(s["response"]!["body"]), Canonical(actual));
             }
         }
         finally

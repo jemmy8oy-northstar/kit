@@ -32,6 +32,10 @@ public class WriteOutcome : IWriteOutcome
     [JsonPropertyOrder(10)]
     public required string Note { get; init; }
 
+    [JsonPropertyOrder(11)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Warning { get; init; }
+
     [JsonPropertyOrder(12)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<string>? SharedWith { get; init; }

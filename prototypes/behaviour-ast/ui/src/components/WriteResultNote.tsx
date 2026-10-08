@@ -49,7 +49,9 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
           ? result.pushed
             ? `Committed as ${result.commit} and pushed to ${result.branch}.`
             : `Committed as ${result.commit}.`
-          : 'Not committed — Kit does not run git.'}
+          : result.warning
+            ? 'Not committed.'
+            : 'Not committed — Kit does not run git.'}
       </p>
 
       {result.warning && (
@@ -73,7 +75,9 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
         </p>
       )}
 
-      {!result.committed && (
+      {/* Deployed, the working tree is inside a pod he cannot reach (kit#117): the
+          warning above says where the edit is, and this instruction would be false. */}
+      {!result.committed && !result.warning && (
         <p className="muted">
           Review it as a working-tree diff (<code>git diff</code>) and commit it yourself.
         </p>
