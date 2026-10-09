@@ -152,7 +152,7 @@ describe('Projects', () => {
     )
     renderProjects()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('node ui.js')
+    expect(await screen.findByRole('alert')).toHaveTextContent('dotnet run --project backend/Balenthiran.Kit.WebApi')
   })
 
   it('shows the server’s own reason on a non-OK response', async () => {

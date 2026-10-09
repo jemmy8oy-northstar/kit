@@ -1,5 +1,5 @@
 {
-  "_comment": "Which fixtures in this directory are a recording of the real read API, and which are hand-written. Read by BOTH `generate.js` (which writes the generated ones) and `fixtures.test.ts` (which asserts they still match). One list, two consumers, so neither side can gain a fixture the other does not know about. A JSON file cannot carry a `# kit:` marker the way a corpus can, so membership is declared here instead — with a reason, never as a bare filename.",
+  "_comment": "Which fixtures in this directory are a recording of the real read API, and which are hand-written. Read by `fixtures.test.ts`, which asserts each recorded one still equals the conformance golden (conformance/routes/read.json) — what the C# server is scored on. One list, so neither side can gain a fixture the other does not know about. A JSON file cannot carry a `# kit:` marker the way a corpus can, so membership is declared here instead — with a reason, never as a bare filename. (\"generated\" is the old name: the Node generator that wrote them is deleted, kit#153, and they are edited by hand together with the golden.)",
   "generated": [
     {
       "route": "/api/projects",

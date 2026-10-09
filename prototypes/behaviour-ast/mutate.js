@@ -53,8 +53,7 @@ const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
 if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
 
 // `--only` runs the mutants whose name or file contains the substring — the slice
-// a new rule needs, without the full ~2-hour run. It is `mutate-ui.js`'s flag with
-// the same two refusals. Until it existed here, proving a new mutant meant a
+// a new rule needs, without the full ~2-hour run. Until it existed here, proving a new mutant meant a
 // hand-rolled runner outside the repo, twice, and one of them could not see
 // SUBJECTS: a mutant on a file this list did not name looked killed locally and
 // was a survivor in CI.
@@ -78,11 +77,6 @@ const T = path.join(__dirname, 'kit.test.js');
 // until `check.js` existed. A gate whose rules are never mutated is exactly the
 // unbacked claim this harness exists to catch, so the harness had to grow rather
 // than the gate go unmeasured.
-// `../../start.js` is the repo-root entry point (kit#37). It joined this list in
-// kit#49, when it stopped being pure plumbing and gained a rule of its own: the
-// bundle is stale if it was built for a different path prefix, which no mtime can
-// see. A file with a rule and no mutant is the unbacked claim this harness exists
-// to catch, whichever directory it happens to live in.
 // 🔴 `cli.js` is DELIBERATELY NOT A SUBJECT, and the reason is a conflict rather
 // than an oversight. `looksLikeAFlag` is now one line deciding whether twelve tools
 // refuse a flag or swallow it, so a mutant over it is exactly what you would want —
@@ -96,7 +90,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
 // which was run RED first and named five defects. **Do not "finish the job" by
 // adding `cli.js` here — the test will tell you, but this says why.**
-const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
+const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
 // proves it. Two of the kit#66 mutants make a write land in THIS checkout's
@@ -564,74 +558,15 @@ MUTANTS.push(
     'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: false,', 'project.js'],
   ['notReal goes undefined rather than false, so "absent" and "real" become the same reading',
     'notReal: /^#\\s*kit:not-a-real-app\\b/m.test(src),', 'notReal: undefined,', 'project.js'],
-  ['the list endpoint drops notReal, so the marker never reaches the UI',
-    'notReal: p.notReal,', '', 'ui.js'],
   ['a duplicate corpus is projected with no marker, so a trial and its subject list as two equal projects',
     "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],", 'duplicateOf: null,', 'project.js'],
   ['duplicateOf names nothing, so the reader cannot tell WHICH app is doubled',
     "duplicateOf: (/^#\\s*kit:duplicate-corpus\\s+(\\S+)/m.exec(src) || [null, null])[1],",
     "duplicateOf: /^#\\s*kit:duplicate-corpus\\b/m.test(src) ? true : null,", 'project.js'],
-  ['the list endpoint drops duplicateOf, so the marker never reaches the UI',
-    'duplicateOf: p.duplicateOf,', '', 'ui.js'],
   // ⚠️ There is deliberately NO mutant here for stripping `_` metadata keys.
   // project.js had that rule, a mutation removing it survived, and the reason
   // was that `mapping()` in kit.js already skips them — the copy was dead code.
   // The rule is mutated where it actually lives.
-);
-
-// ui (docs/design/ui.md). Two of these four are security properties, and a
-// security property that is only asserted in a comment is a wish. The other two
-// are the read model's honesty rules surviving the trip through the transport.
-MUTANTS.push(
-  ['a verb the server has no meaning for reaches a handler anyway',
-    "if (method !== 'GET') {", 'if (false) {', 'ui.js'],
-  ['the server binds every interface, publishing every corpus on the network',
-    "const host = opts.host ?? DEFAULT_HOST;", "const host = opts.host ?? '0.0.0.0';", 'ui.js'],
-  ['an app name is joined to a path instead of looked up, so ../ traverses',
-    'if (!known.includes(app)) {', 'if (false) {', 'ui.js'],
-  ['the list reports unavailable coverage as zero covered',
-    ': { available: false, covered: null, uncovered: null, reason: cov.reason },',
-    ': { available: false, covered: 0, uncovered: 0, reason: cov.reason },', 'ui.js'],
-  ['a corpus that will not parse is listed as an app with no behaviours',
-    'if (p.fatal) {', 'if (false) {', 'ui.js'],
-  // The sibling of the rule two mutants above, one layer further out: rule 4
-  // says unavailable is never zero, and this says an unavailable must not blame
-  // the wrong cause. Discarding the candidate path collapses "no --repos was
-  // given" into "this app has no checkout under the one you gave", and the
-  // second is then reported as the first — to the user, as the tooltip on
-  // `not measured`.
-  ['a missing checkout is reported as a missing --repos flag',
-    '  return path.join(reposDir, app);',
-    '  const c = path.join(reposDir, app);\n  return fs.existsSync(c) ? c : null;', 'ui.js'],
-);
-
-// ui, serving the built bundle (rules 5–7). Every mutant here makes the server
-// answer 200 with the app shell for something that is not there. That is the
-// direction worth mutating because it is the direction nothing notices: a shell
-// served for a missing asset renders a blank page, and a shell served for
-// /api/nope is a JSON parse error three layers from the cause. It is also the
-// shape of a live outage this org has already had — every unmatched path on
-// balenthiran.co.uk answered 200 with the portfolio SPA for the life of the
-// site, so the status code could not tell an app apart from its absence.
-MUTANTS.push(
-  ['the SPA fallback swallows a missing FILE, so a dead asset renders a blank page instead of a 404',
-    'if (path.extname(p)) {', 'if (false) {', 'ui.js'],
-  ['/api falls back to the shell, so a broken fetch is handed HTML instead of its error',
-    "if (!/^\\/api(\\/|$)/.test(pathname)) {", 'if (true) {', 'ui.js'],
-  ['the asset name is trusted instead of looked up in the listing — rule 5 undone',
-    "return filesIn(path.join(distDir, 'assets')).includes(asset[1])", 'return true', 'ui.js'],
-  ['the `..` refusal goes, leaving only the lookup to hold rule 5',
-    "if (p.split('/').includes('..')) {", 'if (false) {', 'ui.js'],
-  ['a bundle that was never built is treated as present, so the 503 becomes a crash',
-    'if (!fs.existsSync(index)) {', 'if (false) {', 'ui.js'],
-  ['the shell is cached like a hashed asset, so a rebuild leaves a cached page asking for deleted files',
-    "return html(200, fs.readFileSync(index), 'no-store');",
-    "return html(200, fs.readFileSync(index), 'public, max-age=31536000, immutable');", 'ui.js'],
-  ['the cache-control the router computed is dropped on the way out — invisible to every test of `route()` alone',
-    "if (result.cacheControl) headers['cache-control'] = result.cacheControl;", '', 'ui.js'],
-  ['every bundled file is served as a download, so the browser refuses to execute the module',
-    "return CONTENT_TYPES[path.extname(name).toLowerCase()] || 'application/octet-stream';",
-    "return 'application/octet-stream';", 'ui.js'],
 );
 
 // writer + the write path (docs/design/ui.md decision 2, lapsed 2026-09-08).
@@ -676,41 +611,6 @@ MUTANTS.push(
   ['setReview ignores the note entirely, so a denial silently loses its correction',
     'const line = INDENT + (nt ? `review ${st} ${nt}` : `review ${st}`);',
     'const line = INDENT + `review ${st}`;', 'writer.js'],
-  ['the review route falls through to addStep, so adjudicating appends a step instead',
-    "if (m[3] === 'review') {", 'if (false) {', 'ui.js'],
-  ['the write path is served on a routable interface — an unauthenticated remote write',
-    'if (!isLoopback(opts.host ?? DEFAULT_HOST)) {', 'if (false) {', 'ui.js'],
-  ['isLoopback loses its start anchor, so a hostile name ENDING in a loopback address passes',
-    'return /^127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))',
-    'return /127\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/.test(String(host))', 'ui.js'],
-  // ⚠️ This mutant's description USED to read "…so any page the developer has
-  // open can write to the tree". That was false, and believing it is what left
-  // the hole below open for a day: CORS never governed whether the write landed,
-  // only who could read the reply. The description now says what the mutant
-  // actually does, because a mutant is also a claim about the rule it removes.
-  // ⚠️ RE-ANCHORED for kit#46. `cors()` used to inline its own hostname parse;
-  // it now asks `originAllowed`, so the old anchor stopped matching and the
-  // harness reported ANCHOR MISSING rather than a kill. That report is the
-  // feature — a mutant whose anchor has rotted proves nothing and must not be
-  // allowed to keep counting as a kill [[editing-a-tool-invalidates-its-mutants]].
-  ['CORS goes back to `*`, so any page can READ a local corpus off the socket',
-    '  if (!originAllowed(origin, opts)) return {};',
-    "  if (!originAllowed(origin, opts)) return { 'access-control-allow-origin': '*' };", 'ui.js'],
-  // The rule that does govern the write. A cross-origin `text/plain` POST is a
-  // CORS simple request — no preflight — so without this check the edit lands
-  // and only the attacker's view of the *response* is blocked.
-  ['the cross-origin write guard is gone — a hostile page can edit the corpus',
-    '  if (origin === null || origin === undefined || originAllowed(origin, opts)) return null;', '  return null;', 'ui.js'],
-  // Same rule, same re-anchoring. The guard moved into `originAllowed`, and the
-  // way to express "accepts anything it can parse" is now to make the function
-  // return true for every parseable origin.
-  ['the cross-origin guard accepts any origin it can parse a hostname out of',
-    '  if (isLoopback(url.hostname)) return true;',
-    '  if (url.hostname) return true;', 'ui.js'],
-  ['the response claims the edit was committed',
-    'committed: false,', 'committed: true,', 'ui.js'],
-  ['an oversized body is parsed instead of refused',
-    'size > MAX_BODY ? null : Buffer.concat(chunks)', 'Buffer.concat(chunks)', 'ui.js'],
 );
 
 // converge (claude-code-bot#92). Its whole output is a claim about how far two
@@ -743,97 +643,6 @@ MUTANTS.push(
 // corpus at once, a collision report that quietly says "nothing". None of them
 // throws, and all of them read as success on screen — which is why they are
 // mutated rather than trusted to the tests that were written beside them.
-// git write-back (kit#43). Every failure here is in the FLATTERING direction:
-// each one makes Kit report that an edit reached his repository when it did
-// not. That is the direction that loses work silently, because the person who
-// wrote the behaviour has already closed the tab.
-//
-// ⚠️ `git-store.js` is new to SUBJECTS. Adding the file is half the work — a
-// hand-written list that does not grow with the repo is why `requires.js` and
-// the whole UI went unmeasured for weeks [[a-score-is-scoped-to-a-population]].
-MUTANTS.push(
-  ['a failed push is reported as a successful one, so a stranded commit reads as saved',
-    'if (!pushed.ok) {', 'if (false) {', 'git-store.js'],
-  ['git write-back ignores its own switch, so the local tool starts committing unasked',
-    'if (!opts.enabled) {', 'if (false) {', 'git-store.js'],
-  ['the commit loses its pathspec and sweeps up whatever else the tree was dirty with',
-    "const committed = git([...ident, 'commit', '-m', message(opts.summary, opts.app), '--', rel], cwd);",
-    "const committed = git([...ident, 'commit', '-a', '-m', message(opts.summary, opts.app)], cwd);",
-    'git-store.js'],
-  ['a write that changed nothing still makes a commit, filling his history with noise',
-    'if (!staged.stdout.trim()) {', 'if (false) {', 'git-store.js'],
-  ['a detached HEAD is pushed to a guessed branch instead of refused',
-    'if (!branch) {', 'if (false) {', 'git-store.js'],
-  // The kit#39 lesson, on a different child process: a failure that does not
-  // name its layer sends three sessions looking in three wrong places.
-  ['a failed git call stops naming its exit status, so every failure reads alike',
-    'const first = reasonLine(r.stderr) || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
-    'return { ok: false, failure: \'git did not succeed\', stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
-    'git-store.js'],
-  // kit#165: a rejected push prints `To <remote>` first, so the first line said where, never why.
-  ['a rejected push names only the remote again, not why it was rejected',
-    "return lines.find((l) => l.startsWith('!') || l.startsWith('fatal:') || l.startsWith('error:')) ?? lines[0];",
-    'return lines[0];',
-    'git-store.js'],
-);
-
-// ⚠️ `auth.js` is new to SUBJECTS (kit#46). Every mutant below describes a way
-// the LOCK fails open, because that is the only failure mode of this file worth
-// the name: a lock that wrongly refuses is a bug someone reports in a minute,
-// and a lock that wrongly opens is one nobody ever notices.
-MUTANTS.push(
-  // The whole gate. If this survives, nothing in the suite proves a deployed
-  // Kit is protected at all.
-  ['the password gate is skipped entirely, so any caller writes to a deployed Kit',
-    '  if (auth.enabled(opts)) {\n    if (!auth.signedIn(opts.sessions, cookie)) {',
-    '  if (false) {\n    if (!auth.signedIn(opts.sessions, cookie)) {',
-    'ui.js'],
-  ['an empty password counts as a lock, so an empty secret admits everyone who sends nothing',
-    "  return typeof opts.password === 'string' && opts.password.trim().length > 0;",
-    "  return typeof opts.password === 'string';",
-    'auth.js'],
-  ['the password comparison always succeeds, so every guess is the right one',
-    '  return crypto.timingSafeEqual(ha, hb);',
-    '  return true;',
-    'auth.js'],
-  ['a missing session store fails OPEN instead of closed',
-    "  if (!store || typeof store.valid !== 'function') return false;",
-    "  if (!store || typeof store.valid !== 'function') return true;",
-    'auth.js'],
-  // 🔴 The classic origin bypass, written as a mutant so the suite has to prove
-  // it rejects `balenthiran.co.uk.evil.com`.
-  ['the origin check becomes a suffix match, so a lookalike domain may write',
-    '  return url.origin === want.origin;',
-    '  return url.origin.endsWith(want.hostname);',
-    'ui.js'],
-  ['signing out stops ending the session server-side, so the old token still writes',
-    '      return live.delete(token);',
-    '      return true;',
-    'auth.js'],
-  ['sessions never expire, so a token is valid forever',
-    '    for (const [token, expires] of live) if (expires <= t) live.delete(token);',
-    '    for (const [token, expires] of live) if (false) live.delete(token);',
-    'auth.js'],
-  ['session tokens come from a predictable source and are short enough to guess',
-    "mint = () => crypto.randomBytes(32).toString('hex')) {",
-    "mint = () => Math.random().toString(36).slice(2)) {",
-    'auth.js'],
-  ['the brute-force throttle never engages, so the password can be guessed at leisure',
-    '      if (failures >= FREE_ATTEMPTS) {',
-    '      if (false) {',
-    'auth.js'],
-  // HttpOnly is the reason an XSS in the bundle cannot steal a durable
-  // credential; a cookie without it is one line of script away from theft.
-  ['the session cookie drops HttpOnly, so page script can read the token',
-    "  const parts = [\n    `${COOKIE}=${token}`,\n    'HttpOnly',\n    'SameSite=Strict',",
-    "  const parts = [\n    `${COOKIE}=${token}`,\n    'SameSite=Strict',",
-    'auth.js'],
-  ['the sign-in reply hands the token to page script as well, undoing HttpOnly',
-    '    body: { ok: true, signedIn: true },',
-    '    body: { ok: true, signedIn: true, token },',
-    'ui.js'],
-);
-
 MUTANTS.push(
   // The guard that was inert in its first draft. Reinstating the original
   // spelling is the point: `JSON.stringify(value)` compares the damage to
@@ -883,64 +692,14 @@ MUTANTS.push(
   // is given a file, because bindings live beside the corpus and `dir` selects
   // both. So the split can only be reopened by DROPPING THE DIRECTORY — a read
   // or a write that falls back to this checkout's own `behaviours/` while its
-  // counterpart uses the one it was pointed at. Both mutants below do exactly
-  // that, one on each side, because a guarantee that holds in one direction only
-  // is the bug wearing the fix's name ([[one-sided-assertion-blesses-the-wrong-fix]]).
+  // counterpart uses the one it was pointed at. The write side lived in the Node
+  // server (deleted, kit#153) and is held by the C# tests now; the READ side's
+  // mutant is what remains here ([[one-sided-assertion-blesses-the-wrong-fix]]).
   ['the projection reads THIS checkout\x27s bindings instead of the corpus directory it was given',
     'const bindings = require(\x27./bindings.js\x27).readFor(app, behDir);',
     'const bindings = require(\x27./bindings.js\x27).readFor(app);', 'project.js'],
-  ['the bind WRITES to this checkout\x27s bindings while the read uses the directory it was given',
-    'const file = bindingsOf.fileFor(app, dir);',
-    'const file = bindingsOf.fileFor(app);', 'ui.js'],
   ['missing and insufficient are collapsed, hiding the binding that satisfies no verb',
     'insufficient: req.insufficient.map(noun),', 'insufficient: [],', 'project.js'],
-  ['the bind route is gone, so a POST to it falls through to the behaviours matcher',
-    'if (bm) return postBinding(bm, body, opts, json);', '', 'ui.js'],
-  ['the bind response drops sharedWith, so the namespace warning never reaches the screen',
-    'sharedWith: result.sharedWith,', 'sharedWith: [],', 'ui.js'],
-  ['a bind names an app that has no corpus, so sharedWith compares against nothing',
-    'if (!writer.corpusPath(app, dir)) {', 'if (false) {', 'ui.js'],
-
-  // ── rule 8, the path Kit is served under (kit#49) ───────────────────────────
-  // Four of the five describe the SAME consequence, which is why they are worth
-  // this many: Kit deployed at `/kit` shares a host with four other apps behind
-  // an ingress that does not rewrite, and every unmatched path on that host
-  // answers **200 with the portfolio's SPA**. Every one of these failures
-  // therefore presents as a working page that loads nothing, with no 404 and no
-  // log line anywhere ([[green-over-the-clients-question]]).
-  ['the prefix is never stripped, so a Kit mounted at /kit 404s every one of its own routes',
-    'const pathname = stripBasePath(requested, basePath);', 'const pathname = requested;', 'ui.js'],
-  // The dangerous direction of the same line: answering paths that are not ours.
-  // On a shared host those belong to a SIBLING app, so Kit starts returning 200
-  // for another application's URLs.
-  ['a request outside the prefix is served anyway, so Kit answers for a sibling app',
-    '  if (pathname === null) {', '  if (false) {', 'ui.js'],
-  ['the prefix match accepts /kitten, so a different app\'s paths are treated as inside this one',
-    'if (pathname.startsWith(`${basePath}/`)) return pathname.slice(basePath.length);',
-    'if (pathname.startsWith(basePath)) return pathname.slice(basePath.length);', 'ui.js'],
-  ['the bare prefix stops serving the shell, so the URL he types is the one that 404s',
-    "  if (pathname === basePath) return '/';", '', 'ui.js'],
-  // The normaliser is the single source the server AND vite's `base` derive from,
-  // so a trailing slash surviving here desynchronises the two.
-  ['the normaliser keeps a trailing slash, so the server and the build disagree by one character',
-    "const trimmed = String(value ?? '').trim().replace(/^\\/+/, '').replace(/\\/+$/, '');",
-    "const trimmed = String(value ?? '').trim().replace(/^\\/+/, '');", 'ui.js'],
-  // The build-time half, which no restart can correct. Reading `null` as a match
-  // would silence the one warning that catches an image built for the wrong path.
-  ['a bundle built for the wrong prefix is read as matching, so the only warning about it never prints',
-    'return m ? normaliseBasePath(m[1]) : null;', 'return null;', 'ui.js'],
-  // Changing KIT_BASE_PATH touches no source file, so without this line every
-  // mtime in the tree says "fresh" and `start.js` serves a bundle built for a
-  // different prefix — a blank page that no rebuild is ever triggered to fix.
-  ['changing the path prefix does not trigger a rebuild, so start.js serves a bundle built for somewhere else',
-    "if (builtFor !== null && builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;", '',
-    '../../start.js'],
-  // And the other direction: "cannot tell what it was built for" must not mean
-  // "stale", or an index.html naming no asset rebuilds on every single run.
-  ['a bundle whose prefix cannot be read is treated as stale, so every run rebuilds forever',
-    "if (builtFor !== null && builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;",
-    "if (builtFor !== ui.normaliseBasePath(env.KIT_BASE_PATH)) return true;",
-    '../../start.js'],
 );
 
 // Filters a derived list only: SUBJECTS and restoreAll() still cover every file.

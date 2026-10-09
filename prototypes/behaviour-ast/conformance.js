@@ -24,6 +24,15 @@
 // It is deliberately useful before any C# exists, because a harness whose only
 // payoff is in four weeks is a harness nobody keeps green.
 //
+// ── The server goldens are FROZEN (kit#153) ─────────────────────────────────
+//
+// `conformance/routes/{read,host,auth,git}.json` and the `routes` section of
+// `writes.json` were recorded from the Node server (`ui.js`, `auth.js`,
+// `git-store.js`), which has been deleted: production serves the C# server. They
+// are now the C# server's specification, read by `backend/Balenthiran.Kit.Tests`,
+// and nothing in this file can re-record or compare them. Change one only by
+// editing the C# tests and the golden together, in a PR that says why.
+//
 // ── Sectioned BY MODULE, and that is the load-bearing decision ──────────────
 //
 // Phase 3 ports the engine module by module. One opaque blob per corpus could not
@@ -202,310 +211,6 @@ function pipeline(dir, corpus) {
   };
 }
 
-// The pseudo-corpus name the read routes are reported under, beside the corpora.
-const ROUTES = 'routes/read';
-
-function routesPath(goldenDir) {
-  return path.join(goldenDir, 'routes', 'read.json');
-}
-
-/**
- * The READ half of the HTTP surface, as `ui.js`'s own pure `route()` answers it
- * over `dir` with no password and no repos — exactly what hosted Kit serves to a
- * reader. Phase 4's C# server is scored on this, request by request, the way the
- * engine was scored on the corpus goldens.
- *
- * Cross-corpus, which is why it is one file and not a section of each golden:
- * the list route reads every corpus, and every noun's `sharedWith` in a project
- * view does too, so adding ANY corpus moves this file. That is the honest
- * population, and `--record` after a corpus change already regenerates it.
- *
- * Includes the refusals — an unknown project, an undecodable name, an encoded
- * `..`, an unknown route, a method nothing handles — because a port that serves
- * the happy paths and answers the rest with a framework 404 page would pass
- * every request a happy-path oracle makes.
- */
-function readRoutes(dir) {
-  // Required here, not at the top: ui.js is the server, and the engine stages
-  // above need none of it.
-  const ui = require('./ui.js');
-  const get = [
-    '/api/health',
-    '/api/session',
-    '/api/projects',
-    ...corporaIn(dir).sort().map((app) => `/api/projects/${app}`),
-    '/api/projects/no-such-app',
-    '/api/projects/%E0%A4%A',
-    '/api/projects/%2e%2e',
-    '/api/no-such-route',
-    '/api',
-  ];
-  const requests = get.map((p) => ({ method: 'GET', path: p, response: ui.route('GET', p, { dir }) }));
-  requests.push({ method: 'PUT', path: '/api/projects', response: ui.route('PUT', '/api/projects', { dir }) });
-
-  // The built UI, served out of a committed FIXTURE bundle (`routes/dist`) — the
-  // real `ui/dist` is gitignored and absent in CI. Every path a browser sends that
-  // is not under /api: the shell for a client-side route, hashed assets, an
-  // unhashed root file, an unmapped extension, and each refusal — a missing asset,
-  // a missing file, a nested asset path, bad percent-encoding, and `..` both plain
-  // and encoded. `raw` is recorded as UTF-8 text (`rawText`), which every fixture
-  // file is, so the golden stays readable and language-neutral.
-  const dist = path.join(__dirname, 'conformance', 'routes', 'dist');
-  const bundlePaths = [
-    '/',
-    '/projects/snip-it',
-    '/assets',
-    '/index.html',
-    '/assets/index-Ab12Cd.js',
-    '/assets/index-Ef34Gh.css',
-    '/assets/index-Missing.js',
-    '/assets/nested/index-Ab12Cd.js',
-    '/favicon.svg',
-    '/notes.unknownext',
-    '/robots.txt',
-    '/%E0%A4%A',
-    '/%2e%2e',
-    '/a/..%2f..%2fetc',
-  ];
-  for (const p of bundlePaths) {
-    const { raw, ...rest } = ui.route('GET', p, { dir, dist });
-    requests.push({ method: 'GET', path: p, dist: true, response: raw === undefined ? rest : { ...rest, rawText: Buffer.from(raw).toString('utf8') } });
-  }
-  return { format: FORMAT, requests };
-}
-
-const HOST = 'routes/host';
-
-function hostPath(goldenDir) {
-  return path.join(goldenDir, 'routes', 'host.json');
-}
-
-/**
- * The HOST layer, as `ui.js`'s `answer()` — the function `serve()` calls for
- * every request — decides it: the raw request target through WHATWG `new URL`
- * (dot segments, `%2e`, backslashes, absolute and `//` forms), the base-path
- * strip, the preflight, and the CORS headers for each kind of Origin. Recorded
- * under two configurations: a local Kit at the root, and the deployed shape
- * (`/kit` behind `https://balenthiran.co.uk`).
- *
- * What it records is what goes on the wire: status, every header `serve()`
- * writes, and the body. A POST under the prefix records `post` — the path whose
- * body `serve()` would then read — because the writes are not ported yet.
- */
-function hostRoutes(dir) {
-  const ui = require('./ui.js');
-  const dist = path.join(__dirname, 'conformance', 'routes', 'dist');
-  const PUBLIC = 'https://balenthiran.co.uk';
-  const configs = {
-    root: { basePath: '', opts: { dir, dist } },
-    deployed: { basePath: '/kit', opts: { dir, dist, publicOrigin: PUBLIC } },
-  };
-  const get = (url, origin = null) => ({ method: 'GET', url, origin });
-  const plan = {
-    root: [
-      get('/'), get('/api/health'), get('/api/../api/health'), get('/api/projects/%2e%2e'), get('/..%2f'),
-      get('/api/health', 'http://localhost:5173'), get('/api/health', PUBLIC),
-      { method: 'OPTIONS', url: '/api/projects', origin: 'http://localhost:5173' },
-      { method: 'POST', url: '/api/session', origin: null },
-    ],
-    deployed: [
-      // the prefix itself, its look-alikes, and paths it does not own
-      get('/kit'), get('/kit/'), get('/kitten'), get('/'), get('/api/health'), get('/%6Bit/api/health'),
-      get('/kit/api/health'), get('/kit/api/projects/no-such-app'), get('/kit/projects/snip-it'), get('/kit/assets/index-Ab12Cd.js'),
-      // WHATWG normalisation of the target, before the strip
-      get('/kit/../api/health'), get('/kit/%2e%2e/api/health'), get('/kit/%2E./kit/api/health'), get('/kit/api/./health'),
-      get('/kit/api/%2e/health'), get('/kit\\api\\health'), get('/kit/api/health?x=1'), get('//evil.com/kit/api/health'),
-      get('http://other:99/kit/api/health'), get('/kit//api/health'), get('/kit/..'), get('/../kit/api/health'),
-      get('/kit/api/projects/%2e%2e'), get('/kit/assets/..%2findex.html'), get('/kit/api/projects/a"b{c}`d<e>^f|g'),
-      // (Not `http:/x`, `http:x`, `https:\\x` or `foo:/x`: Node's HTTP parser refuses
-      // those with a bare 400 before `serve()` runs, so no answer here is reachable.)
-      get('*'), get('//user:pw@host:8080/kit/api/health'), get('//[::1]/kit/api/health'), get('//0x7f.1/kit/api/health'),
-      // targets `new URL` cannot parse: before the host layer, each one crashed the process
-      get('//x:99999/kit/api/health'), get('//x:abc/kit/api/health'), get('//%/kit'), get('//[/kit'), get('//exa%00mple/kit'),
-      get('//@/kit'), get('//1.2.3.4.5/kit'), get('//999.1.1.1/kit'), get('http://[::1/kit'),
-      // every kind of Origin, on a read
-      ...[PUBLIC, `${PUBLIC}:443`, 'http://balenthiran.co.uk', `${PUBLIC}.evil.com`, 'https://BALENTHIRAN.co.uk',
-        `${PUBLIC}:8443`, `${PUBLIC}/`, `https://user@balenthiran.co.uk`, 'https://evil.com#https://balenthiran.co.uk',
-        'http://localhost:5173', 'http://LOCALHOST:1', 'http://127.0.0.1:1', 'http://127.1', 'http://0x7f.0.0.1', 'http://127.000.000.001',
-        'http://2130706433', 'http://[::1]:3', 'http://[0:0::1]', 'http://localhost.evil.com', 'http://127.0.0.1.evil.com',
-        'http://localhost\\@evil.com', 'http://evil.com\\@localhost', 'foo://localhost', 'null', 'not a url', ''].map((o) => get('/kit/api/health', o)),
-      // preflights, inside and outside the prefix
-      { method: 'OPTIONS', url: '/kit/api/projects', origin: PUBLIC },
-      { method: 'OPTIONS', url: '/kit/api/projects', origin: 'https://evil.com' },
-      { method: 'OPTIONS', url: '/kit/api/projects', origin: null },
-      { method: 'OPTIONS', url: '/api/projects', origin: PUBLIC },
-      { method: 'OPTIONS', url: '*', origin: PUBLIC },
-      // other methods
-      { method: 'PUT', url: '/kit/api/projects', origin: null },
-      { method: 'DELETE', url: '/kit/api/health', origin: PUBLIC },
-      { method: 'POST', url: '/kit/api/session', origin: PUBLIC },
-      { method: 'POST', url: '/api/session', origin: PUBLIC },
-    ],
-  };
-
-  const requests = [];
-  for (const [config, list] of Object.entries(plan)) {
-    const { basePath, opts } = configs[config];
-    for (const { method, url, origin } of list) {
-      const a = ui.answer(method, url, origin, null, opts, basePath);
-      let response;
-      if (a.post !== undefined) response = { post: a.post };
-      else {
-        const headers = Object.fromEntries(Object.entries(a.headers).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)));
-        response = { status: a.status, headers };
-        if (a.raw !== undefined) response.rawText = Buffer.from(a.raw).toString('utf8');
-        else if (a.body !== '') response.body = JSON.parse(a.body);
-      }
-      requests.push({ config, method, url, origin, response });
-    }
-  }
-  return {
-    format: FORMAT,
-    configs: Object.fromEntries(Object.entries(configs).map(([k, c]) => [k, { basePath: c.basePath, publicOrigin: c.opts.publicOrigin ?? null }])),
-    requests,
-  };
-}
-
-const AUTH = 'routes/auth';
-
-function authPath(goldenDir) {
-  return path.join(goldenDir, 'routes', 'auth.json');
-}
-
-/**
- * The write GATES, as scenarios: sign-in, the throttle, session expiry, sign-out,
- * the lock, the loopback rule, and the CSRF Origin check — each request through
- * `answer()` and then `received()`, the two pure functions `serve()` calls. State
- * lives across a scenario's steps, so each runs on a fake clock (`advance`) with
- * tokens minted as `tok-1`, `tok-2`… so a golden can name them.
- *
- * Every write here is refused or fails BEFORE a file is touched (an unknown
- * project, a body that is not an object): the gates are the subject, and the
- * writer is a later oracle.
- */
-function authRoutes(dir) {
-  const ui = require('./ui.js');
-  const auth = require('./auth.js');
-  const PUBLIC = 'https://balenthiran.co.uk';
-  const W = '/api/projects/snip-it/behaviours';
-  const req = (method, p, extra = {}) => ({ method, path: p, origin: null, cookie: null, body: '{}', ...extra });
-  const post = (p, extra) => req('POST', p, extra);
-  const signIn = (password, extra = {}) => post('/api/session', { body: JSON.stringify(password === undefined ? {} : { password }), ...extra });
-  const session = (cookie) => req('GET', '/api/session', { cookie, body: null });
-
-  const scenarios = [
-    {
-      name: 'local: no password, loopback',
-      config: { host: '127.0.0.1', password: null, publicOrigin: null },
-      steps: [
-        session(null),
-        signIn('anything'),
-        post('/api/projects/no-such-app/behaviours'),
-        post(W, { body: 'null' }),
-        post(W, { body: '"a string"' }),
-        post(W, { body: '{' }),
-        post(W, { body: '' }),
-        post(W, { tooLarge: true, body: null }),
-        post(W, { origin: 'https://evil.com', body: '{' }),
-        post(W, { origin: 'https://evil.com', tooLarge: true, body: null }),
-        post(W, { origin: 'http://localhost:5173', body: 'null' }),
-        post('/api/nope'),
-        post('/api/projects/%E0%A4%A/behaviours'),
-        post('/api/projects/no-such-app/behaviours/b1/steps'),
-        post('/api/projects/no-such-app/behaviours/b1/review'),
-      ],
-    },
-    {
-      name: 'bound wide: no password, not loopback',
-      config: { host: '0.0.0.0', password: null, publicOrigin: null },
-      steps: [session(null), post(W), signIn('anything')],
-    },
-    {
-      name: 'a whitespace password is no password',
-      config: { host: '0.0.0.0', password: ' \t ', publicOrigin: null },
-      steps: [session(null), post(W), signIn(' \t ')],
-    },
-    {
-      name: 'locked: sign-in, throttle, expiry, sign-out',
-      config: { host: '0.0.0.0', password: 'correct horse', publicOrigin: PUBLIC },
-      steps: [
-        session(null),
-        post(W),
-        post(W, { cookie: 'kit_session=forged' }),
-        ...Array.from({ length: 5 }, () => signIn('wrong')),
-        signIn('correct horse'),
-        { advance: auth.COOLDOWN_BASE_MS - 1 },
-        signIn('correct horse'),
-        { advance: 1 },
-        signIn('wrong'),
-        { advance: 2 * auth.COOLDOWN_BASE_MS },
-        signIn(undefined),
-        { advance: 4 * auth.COOLDOWN_BASE_MS },
-        signIn(' correct horse'),
-        { advance: 8 * auth.COOLDOWN_BASE_MS },
-        signIn('correct horse', { origin: 'https://evil.com' }),
-        signIn('correct horse', { origin: PUBLIC }),
-        session('kit_session=tok-1'),
-        session('a=b; kit_session=tok-1; c=d='),
-        session('kit_session=tok-1x'),
-        post(W, { cookie: 'kit_session=tok-1', body: 'null' }),
-        post('/api/projects/no-such-app/behaviours', { cookie: 'kit_session=tok-1' }),
-        post(W, { cookie: 'kit_session=tok-1', origin: 'https://evil.com', body: 'null' }),
-        post('/api/session/end', { cookie: 'kit_session=tok-1' }),
-        session('kit_session=tok-1'),
-        post(W, { cookie: 'kit_session=tok-1', body: 'null' }),
-        signIn('correct horse'),
-        { advance: auth.TTL_MS - 1 },
-        session('kit_session=tok-2'),
-        { advance: 1 },
-        session('kit_session=tok-2'),
-        // JSON.parse's semantics, which a port's parser must match: duplicate keys are
-        // last-wins, a BOM is not whitespace, trailing text is an error, and depth is
-        // not capped at a framework default.
-        post('/api/session', { body: '{"password":"wrong","password":"correct horse"}' }),
-        post('/api/session', { body: `${String.fromCharCode(0xfeff)}{"password":"correct horse"}` }),
-        post('/api/session', { body: '{"password":"correct horse"} x' }),
-        post('/api/session', { body: '{"password":123}' }),
-        post('/api/session', { body: '["correct horse"]' }),
-        post('/api/session', { body: `{"password":${'['.repeat(1000)}${']'.repeat(1000)}}` }),
-        // Cookie parsing: a value runs to the end (it may contain `=`), names and
-        // values are trimmed, and a later duplicate wins.
-        session('kit_session=tok-3='),
-        session(' kit_session = tok-3 '),
-        session('kit_session=tok-3; kit_session=tok-1'),
-        session('kit_session=tok-1; kit_session=tok-3'),
-        session('=tok-3; kit_session'),
-        post('/api/session/end'),
-      ],
-    },
-  ];
-
-  for (const s of scenarios) {
-    let t = 1_700_000_000_000;
-    let n = 0;
-    const now = () => t;
-    const opts = {
-      dir,
-      host: s.config.host,
-      sessions: auth.sessions(now, () => `tok-${++n}`),
-      throttle: auth.throttle(now),
-    };
-    if (s.config.password !== null) opts.password = s.config.password;
-    if (s.config.publicOrigin) opts.publicOrigin = s.config.publicOrigin;
-    // As `parseArgs` derives it: an https public origin sets the cookie's Secure flag.
-    opts.secure = !!(s.config.publicOrigin && /^https:/i.test(s.config.publicOrigin));
-
-    for (const step of s.steps) {
-      if (step.advance !== undefined) { t += step.advance; continue; }
-      let a = ui.answer(step.method, step.path, step.origin, step.cookie, opts, '');
-      if (a.post !== undefined) a = ui.received(a.post, step.tooLarge ? null : Buffer.from(step.body, 'utf8'), step.origin, step.cookie, opts);
-      const headers = Object.fromEntries(Object.entries(a.headers).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)));
-      step.response = { status: a.status, headers, body: JSON.parse(a.body) };
-    }
-  }
-  return { format: FORMAT, maxBody: ui.MAX_BODY, scenarios };
-}
-
 const WRITES = 'routes/writes';
 
 function writesPath(goldenDir) {
@@ -513,23 +218,21 @@ function writesPath(goldenDir) {
 }
 
 /**
- * The WRITER, at two levels, over the fixture corpora in `conformance/writes/`.
+ * The WRITER's pure edits over the fixture corpora in `conformance/writes/` —
+ * addStep, addBehaviour, setReview, addBinding — each on a named fixture text,
+ * recording the whole text after the edit or the refusal. Every splice rule and
+ * every refusal code is reached: where a step lands when comments trail a block,
+ * where a review line goes when there is none, the collateral-change guard, a
+ * corpus that was already broken.
  *
- * `functions`: `writer.js`'s pure edits — addStep, addBehaviour, setReview,
- * addBinding — each on a named fixture text, recording the whole text after the
- * edit or the refusal. Every splice rule and every refusal code is reached:
- * where a step lands when comments trail a block, where a review line goes when
- * there is none, the collateral-change guard, a corpus that was already broken.
- *
- * `routes`: the same edits as POSTs through `answer()` + `received()` against a
- * temporary COPY of the fixtures (git write-back off), recording each response
- * and the file it wrote. A write's `file` names the copy, so it is recorded as
- * `<dir>/<name>`.
+ * ⚠️ The committed `routes/writes.json` also holds a `routes` section (the same
+ * edits as POSTs through the Node server, which no longer exists) and `compare`
+ * ignores it. That section, and the read, host, auth and git goldens, are a
+ * FROZEN SPEC now: the C# tests read them, nothing here can re-record them, and
+ * only this `functions` section is still compared against live Node output.
  */
-function writeRoutes() {
-  const ui = require('./ui.js');
+function writeFunctions() {
   const writer = require('./writer.js');
-  const os = require('os');
   const FIX = path.join(__dirname, 'conformance', 'writes');
   const read = (f) => fs.readFileSync(path.join(FIX, f), 'utf8');
   const texts = {
@@ -608,193 +311,7 @@ function writeRoutes() {
           : writer.addBinding(text, args[0], args[1], { corpora, app: 'alpha' });
     return { fn, input, args, result: r };
   });
-
-  // ── the routes, on a copy ─────────────────────────────────────────────────
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kit-writes-'));
-  try {
-    for (const f of fs.readdirSync(FIX)) fs.copyFileSync(path.join(FIX, f), path.join(tmp, f));
-    const opts = { dir: tmp, host: '127.0.0.1' };
-    const B = '/api/projects/alpha/behaviours';
-    const steps = [
-      [`${B}/BEH-A/steps`, { step: 'then sees region:Done' }],
-      [`${B}/BEH-B/review`, { state: 'approved' }],
-      [`${B}/BEH-A/review`, { state: 'denied', note: 'the guest does it' }],
-      [B, { id: 'BEH-E', title: 'New', actor: 'guest', steps: ['when opens page:Home'], source: 'defined', ref: 'x.md' }],
-      [B, { id: 'BEH-E', title: 'Duplicate' }],
-      [`${B}/BEH-Q/steps`, { step: 'then sees a:B' }],
-      [`${B}/%E0/steps`, { step: 'then sees a:B' }],
-      [`${B}/BEH%2DA/steps`, { step: 'then sees a:C' }],
-      [B, { title: 'No id' }],
-      [B, { id: 'BEH-F' }],
-      [B, { id: 'BEH-F', title: 'T', steps: 'when opens page:Home' }],
-      [B, { id: 'BEH-F', title: 'T', steps: ['when opens page:Home', 5] }],
-      [B, { id: 'BEH-F', title: 'T', actor: null, source: null, ref: null, steps: null }],
-      [B, ['BEH-G']],
-      [`${B}/BEH-A/steps`, { step: 5 }],
-      [`${B}/BEH-A/steps`, {}],
-      [`${B}/BEH-A/review`, { note: 'x' }],
-      [`${B}/BEH-A/review`, { state: 'approved', note: 7 }],
-      ['/api/projects/alpha/bindings', { noun: 'page:Home', binding: { route: '/' } }],
-      ['/api/projects/alpha/bindings', { noun: 'button:Save', binding: { role: 'link' } }],
-      ['/api/projects/alpha/bindings', { binding: { role: 'link' } }],
-      ['/api/projects/alpha/bindings', { noun: 'region:Saved', binding: {} }],
-      ['/api/projects/beta/bindings', { noun: 'page:Home', binding: { route: '/b' } }],
-      // Sent as RAW TEXT, because a JS object literal would already have reordered
-      // it: JSON.parse moves integer-like keys first, ascending, at every depth, and
-      // the bindings file is written in that order.
-      ['/api/projects/alpha/bindings', '{"noun":"region:Done","binding":{"b":1,"2":"x","1":"y","in":{"z":0,"10":1,"9":2}}}'],
-      ['/api/projects/broken/behaviours/BEH-Z/steps', { step: 'then sees a:B' }],
-      // A corpus that starts with a byte-order mark keeps it through an edit.
-      ['/api/projects/delta/behaviours/BEH-Y/steps', { step: 'then sees region:Delta' }],
-      ['/api/projects/%E0/bindings', { noun: 'page:Home', binding: { route: '/' } }],
-      ['/api/projects/gamma/bindings', { noun: 'page:Home', binding: { route: '/' } }],
-    ];
-    // DEPLOYED (a public origin set, as the chart sets it): with write-back off, a
-    // write must say the edit is on the server's disk only, never "commit it
-    // yourself" (kit#117). One corpus write and one bind, on the same copy.
-    steps.push(
-      [`${B}/BEH-A/steps`, { step: 'then sees region:Deployed' }, { publicOrigin: 'https://balenthiran.co.uk' }],
-      ['/api/projects/alpha/bindings', { noun: 'region:Deployed', binding: { role: 'region' } }, { publicOrigin: 'https://balenthiran.co.uk' }],
-    );
-    const relTmp = path.relative(path.join(__dirname, '..', '..'), tmp).split(path.sep).join('/');
-    const routes = steps.map(([p, body, config]) => {
-      const a = ui.received(p, Buffer.from(typeof body === 'string' ? body : JSON.stringify(body), 'utf8'), null, null, { ...opts, ...config });
-      const response = { status: a.status, body: JSON.parse(a.body) };
-      let written = null;
-      if (typeof response.body.file === 'string' && response.body.file.startsWith(`${relTmp}/`)) {
-        const name = response.body.file.slice(relTmp.length + 1);
-        response.body.file = `<dir>/${name}`;
-        written = { name, text: fs.readFileSync(path.join(tmp, name), 'utf8') };
-      }
-      return config ? { path: p, body, config, response, written } : { path: p, body, response, written };
-    });
-    return { format: FORMAT, functions, routes };
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-}
-
-const GIT = 'routes/git';
-
-function gitPath(goldenDir) {
-  return path.join(goldenDir, 'routes', 'git.json');
-}
-
-/**
- * GIT WRITE-BACK (`git-store.js`), end to end: a write through `received()` with
- * `opts.git` switched on, each in a fresh fixture — a REAL bare remote and a REAL
- * clone holding `alpha.beh` and its bindings, as `kit.test.js`'s `gitFixture()`.
- * Every outcome `gitOutcome()` can describe is reached: pushed, unchanged, no work
- * tree, detached HEAD, a push the remote refuses, a remote that does not exist, an
- * explicit branch, a bind, and a tree dirty with someone else's staged file.
- *
- * Recorded per scenario: the response, and what the REMOTE then holds — the last
- * commit's subject, author and files on the pushed branch, or null — plus whether
- * the clone's HEAD moved. The remote is the half that matters: a commit that never
- * left the pod is the state this feature exists to report honestly.
- *
- * Three things differ per run and are masked, identically on both sides: the
- * commit hash (`<sha>`), the fixture's absolute root (`<tmp>`), and the corpus
- * path relative to the Kit repo (`<dir>/`).
- */
-function gitRoutes() {
-  const ui = require('./ui.js');
-  const os = require('os');
-  const { spawnSync } = require('child_process');
-  const FIX = path.join(__dirname, 'conformance', 'writes');
-  const REPO = path.join(__dirname, '..', '..');
-  const sh = (args, cwd) => {
-    const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
-    if (r.status !== 0) throw new Error(`fixture: git ${args.join(' ')} — ${r.stderr}`);
-    return r.stdout;
-  };
-  const B = '/api/projects/alpha/behaviours';
-  const step = [`${B}/BEH-A/steps`, { step: 'then sees region:Done' }];
-  const scenarios = [
-    ['pushed', step, {}],
-    ['unchanged', [`${B}/BEH-A/review`, { state: 'unreviewed' }], {}],
-    ['bind', ['/api/projects/alpha/bindings', { noun: 'page:Home', binding: { route: '/' } }], {}],
-    ['new-behaviour', [B, { id: 'BEH-E', title: 'New' }], { name: 'Someone', email: 'someone@example.com' }],
-    ['explicit-branch', step, { branch: 'kit-edits' }],
-    ['no-such-remote', step, { remote: 'nope' }],
-    ['remote-gone', step, {}, 'remote-gone'],
-    ['detached', step, {}, 'detached'],
-    ['not-a-work-tree', step, {}, 'not-a-work-tree'],
-    ['dirty-tree', step, {}, 'dirty-tree'],
-  ];
-
-  return {
-    format: FORMAT,
-    scenarios: scenarios.map(([name, [p, body], git, setup]) => {
-      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'kit-git-'));
-      try {
-        const bare = path.join(root, 'bare.git');
-        const clone = path.join(root, 'clone');
-        sh(['init', '-q', '--bare', '-b', 'main', bare]);
-        sh(['clone', '-q', bare, clone]);
-        sh(['-C', clone, 'config', 'user.name', 'fixture']);
-        sh(['-C', clone, 'config', 'user.email', 'fixture@example.com']);
-        const dir = path.join(clone, 'behaviours');
-        fs.mkdirSync(dir);
-        for (const f of ['alpha.beh', 'alpha.bindings.json']) fs.copyFileSync(path.join(FIX, f), path.join(dir, f));
-        sh(['-C', clone, 'add', '-A']);
-        sh(['-C', clone, 'commit', '-q', '-m', 'initial']);
-        sh(['-C', clone, 'push', '-q', 'origin', 'main']);
-
-        let served = dir;
-        if (setup === 'remote-gone') fs.renameSync(bare, `${bare}.gone`);
-        if (setup === 'detached') sh(['-C', clone, 'checkout', '-q', '--detach', 'HEAD']);
-        if (setup === 'dirty-tree') {
-          fs.writeFileSync(path.join(dir, 'unrelated.txt'), 'not part of this edit\n');
-          sh(['-C', clone, 'add', '--', 'behaviours/unrelated.txt']);
-        }
-        if (setup === 'not-a-work-tree') {
-          served = path.join(root, 'loose');
-          fs.mkdirSync(served);
-          for (const f of ['alpha.beh', 'alpha.bindings.json']) fs.copyFileSync(path.join(FIX, f), path.join(served, f));
-        }
-
-        const before = sh(['-C', clone, 'rev-parse', 'HEAD']).trim();
-        const opts = { dir: served, host: '127.0.0.1', git: { enabled: true, ...git } };
-        const a = ui.received(p, Buffer.from(JSON.stringify(body), 'utf8'), null, null, opts);
-        const response = { status: a.status, body: maskGit(JSON.parse(a.body), root, path.relative(REPO, served)) };
-
-        const branch = git.branch || 'main';
-        const remote = !fs.existsSync(bare) || spawnSync('git', ['-C', bare, 'rev-parse', '--verify', '-q', `refs/heads/${branch}`]).status !== 0
-          ? null
-          : {
-            branch,
-            subject: sh(['-C', bare, 'log', '-1', '--format=%s', branch]).trim(),
-            author: sh(['-C', bare, 'log', '-1', '--format=%an <%ae>', branch]).trim(),
-            files: sh(['-C', bare, 'show', '--name-only', '--format=', branch]).trim().split('\n'),
-          };
-        const headMoved = sh(['-C', clone, 'rev-parse', 'HEAD']).trim() !== before;
-        return { name, path: p, body, git, setup: setup || null, response, remote, headMoved };
-      } finally {
-        fs.rmSync(root, { recursive: true, force: true });
-      }
-    }),
-  };
-}
-
-/**
- * The three per-run values out of a git write's answer: the commit hash, the
- * fixture root, the corpus path. The C# test masks with the same three rules.
- */
-function maskGit(body, root, relDir) {
-  const sha = typeof body.commit === 'string' && /^[0-9a-f]{10}$/.test(body.commit) ? body.commit : null;
-  const rel = relDir.split(path.sep).join('/');
-  const mask = (s) => {
-    let t = s;
-    if (sha) t = t.split(sha).join('<sha>');
-    return t.split(root).join('<tmp>');
-  };
-  const out = {};
-  for (const [k, v] of Object.entries(body)) {
-    if (k === 'file' && typeof v === 'string' && v.startsWith(`${rel}/`)) out[k] = `<dir>/${v.slice(rel.length + 1)}`;
-    else out[k] = typeof v === 'string' ? mask(v) : v;
-  }
-  return out;
+  return functions;
 }
 
 // The serialised form, which is what is actually compared. One definition, so
@@ -842,11 +359,15 @@ function compare(dir, goldenDir, only) {
   // and through the same three outcomes as a corpus, so nothing downstream needs
   // a fourth state to report them.
   if (!only) {
-    for (const [name, p, fresh] of [[ROUTES, routesPath(goldenDir), serialise(readRoutes(dir))], [HOST, hostPath(goldenDir), serialise(hostRoutes(dir))], [AUTH, authPath(goldenDir), serialise(authRoutes(dir))], [WRITES, writesPath(goldenDir), serialise(writeRoutes())], [GIT, gitPath(goldenDir), serialise(gitRoutes())]]) {
-      if (!fs.existsSync(p)) { out.missing.push(name); continue; }
-      const committed = fs.readFileSync(p, 'utf8');
-      if (committed === fresh) out.matched.push(name);
-      else out.drifted.push({ corpus: name, committedBytes: committed.length, freshBytes: fresh.length });
+    const p = writesPath(goldenDir);
+    if (!fs.existsSync(p)) out.missing.push(WRITES);
+    else {
+      // Only the `functions` section: the file's `routes` section is frozen (see
+      // `writeFunctions`), so it is neither compared nor rewritten.
+      const committed = serialise(JSON.parse(fs.readFileSync(p, 'utf8')).functions);
+      const fresh = serialise(writeFunctions());
+      if (committed === fresh) out.matched.push(WRITES);
+      else out.drifted.push({ corpus: WRITES, committedBytes: committed.length, freshBytes: fresh.length });
     }
   }
 
@@ -879,7 +400,7 @@ function compare(dir, goldenDir, only) {
 // `require.main === module`, so `require('./conformance.js').main` is `undefined`
 // and no test can regenerate a golden however it is edited. The CI env-var guard
 // is the belt; this is the braces, and it is the half to trust.
-module.exports = { pipeline, readRoutes, routesPath, ROUTES, hostRoutes, hostPath, HOST, authRoutes, authPath, AUTH, writeRoutes, writesPath, WRITES, gitRoutes, gitPath, GIT, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
+module.exports = { pipeline, writeFunctions, writesPath, WRITES, serialise, compare, corporaIn, goldenPath, withoutSymbols, pairs, delta, parseArgs, FORMAT, USAGE, KNOWN_FLAGS, VALUE_FLAGS };
 
 // ── the CLI, which is the only thing that can write ─────────────────────────
 
@@ -957,18 +478,12 @@ function main(argv) {
       fs.writeFileSync(goldenPath(goldenDir, corpus), serialise(pipeline(dir, corpus)));
       written.push(corpus);
     }
-    if (!opts.only) {
-      fs.mkdirSync(path.dirname(routesPath(goldenDir)), { recursive: true });
-      fs.writeFileSync(routesPath(goldenDir), serialise(readRoutes(dir)));
-      written.push(ROUTES);
-      fs.writeFileSync(hostPath(goldenDir), serialise(hostRoutes(dir)));
-      written.push(HOST);
-      fs.writeFileSync(authPath(goldenDir), serialise(authRoutes(dir)));
-      written.push(AUTH);
-      fs.writeFileSync(writesPath(goldenDir), serialise(writeRoutes()));
+    if (!opts.only && fs.existsSync(writesPath(goldenDir))) {
+      // Replace ONLY `functions`; the frozen `routes` section is carried through.
+      const g = JSON.parse(fs.readFileSync(writesPath(goldenDir), 'utf8'));
+      g.functions = writeFunctions();
+      fs.writeFileSync(writesPath(goldenDir), serialise(g));
       written.push(WRITES);
-      fs.writeFileSync(gitPath(goldenDir), serialise(gitRoutes()));
-      written.push(GIT);
     }
     process.stdout.write(`conformance --record: wrote ${written.length} golden(s) to ${path.relative(process.cwd(), goldenDir)}\n`);
     return 0;

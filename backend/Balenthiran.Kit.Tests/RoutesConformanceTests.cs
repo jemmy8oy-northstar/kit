@@ -107,6 +107,27 @@ public class RoutesConformanceTests
         Assert.Equal(200, Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/api/health").Status);
     }
 
+    /// <summary>
+    /// BEH-UI-4: coverage the list could not read is <c>null</c>, never zero. With no repos given the
+    /// list cannot measure anything, so every row must say so rather than report an empty list — a UI
+    /// that cannot tell "no mapping exists" from "nothing is covered" renders the second.
+    /// </summary>
+    [Fact]
+    public void Unavailable_coverage_is_null_in_the_list_never_zero()
+    {
+        var list = JsonNode.Parse(Serialiser.Serialise(Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/api/projects")))!;
+        var projects = list["body"]!["projects"]!.AsArray();
+        Assert.NotEmpty(projects);
+        foreach (var p in projects)
+        {
+            var coverage = p!["coverage"]!;
+            Assert.False(coverage["available"]!.GetValue<bool>(), $"{p["app"]}: coverage claims to be available with no repos");
+            Assert.Null(coverage["covered"]);
+            Assert.Null(coverage["uncovered"]);
+            Assert.False(string.IsNullOrEmpty(coverage["reason"]?.GetValue<string>()), $"{p["app"]}: unavailable coverage must say why");
+        }
+    }
+
     /// <summary>The golden is only a score if it holds what it claims: every corpus, and every refusal.</summary>
     [Fact]
     public void The_golden_covers_every_corpus_and_every_refusal()

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * The shared safety marker for `mutate.js` and `mutate-ui.js`.
+ * The shared safety marker for `mutate.js` (it also served the Node UI's `mutate-ui.js`, deleted in kit#153).
  *
  * Both tools deliberately write wrong code to the working tree and put it back
  * afterwards, and both announce that window with the same untracked file at the

@@ -64,26 +64,26 @@
   ],
   "BEH-UI-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "POST and GET are the whole surface — every other verb reaches no handler"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
     }
   ],
   "BEH-UI-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "the server binds the loopback interface and not every interface"
+      "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
+      "title": "The_default_host_is_loopback_not_every_interface"
     }
   ],
   "BEH-UI-3": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a traversal in the app name is a 404, not a read outside the corpus dir"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
     }
   ],
   "BEH-UI-4": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "unavailable coverage is null in the list, never zero"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "Unavailable_coverage_is_null_in_the_list_never_zero"
     }
   ],
   "BEH-WRITE-1": [
@@ -114,28 +114,28 @@
       "title": "writer: it contains no path to git at all — decision 2, checked not promised"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a POST appends a step to the real file on disk, and says it did not commit"
+      "file": "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs",
+      "title": "Every_route_answers_and_writes_as_ui_js_does"
     }
   ],
   "BEH-WRITE-5": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "the write path is refused when the server is not bound to loopback"
+      "file": "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs",
+      "title": "Every_step_answers_as_ui_js_does"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "isLoopback accepts the loopback range and nothing that merely looks like it"
+      "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
+      "title": "IsLoopback_accepts_the_loopback_range_and_nothing_that_merely_looks_like_it"
     }
   ],
   "BEH-WRITE-6": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a cross-origin POST from a hostile page gets no CORS header from the socket"
+      "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
+      "title": "The_host_answers_as_ui_js_does"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "CORS: a loopback origin is reflected, and any other origin gets no header"
+      "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
+      "title": "Kestrel_delivers_every_answer_over_a_real_socket"
     }
   ]
 }

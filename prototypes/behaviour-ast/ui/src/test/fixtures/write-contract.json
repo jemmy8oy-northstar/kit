@@ -1,15 +1,16 @@
 {
   "why": [
-    "The seam between the browser client and ui.js, pinned from BOTH sides against these literals.",
+    "The seam between the browser client and the server, written down ONCE as literals.",
     "",
-    "The frontend suite stubs fetch and the node suite drives a real socket, so neither can",
-    "see the two disagreeing: the client could build /api/projects/x/behaviour/ID/steps",
-    "(singular) and both suites would stay green — one over its own stub, the other over its",
-    "own hand-typed path. A green suite over a mock proves the mock.",
+    "The frontend suite stubs fetch, so on its own it can only prove the client emits what the",
+    "client believes: it could build /api/projects/x/behaviour/ID/steps (singular) and stay",
+    "green over its own stub. A green suite over a mock proves the mock.",
     "",
-    "So the paths and bodies below are written down ONCE. client.test.ts asserts the client",
-    "emits exactly these; kit.test.js feeds exactly these to a running ui.js and asserts the",
-    "file on disk changed. Drift on either side turns one of them red."
+    "client.test.ts asserts the client emits exactly these; kit.test.js asserts the paths are",
+    "what the client builds. HISTORY: kit.test.js also fed exactly these to a running Node",
+    "server (ui.js) and asserted the file on disk changed. That server is deleted (kit#153) and",
+    "these requests are NOT replayed against the C# server today - its answers are held by the",
+    "writes golden (conformance/routes/writes.json) instead."
   ],
   "corpus": {
     "gamma.beh": "# a comment that must survive\nbehaviour BEH-G \"gamma\"\n  actor engineer\n  when opens page:Home\n  then sees region:Shared\n",
