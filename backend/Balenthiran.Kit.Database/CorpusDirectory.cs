@@ -53,10 +53,28 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     public string? ReadBindingsText(string app) => File.Exists(BindingsFile(app)) ? Utf8.GetString(File.ReadAllBytes(BindingsFile(app))) : null;
 
     /// <inheritdoc />
-    public void WriteText(string app, string text) => File.WriteAllBytes(Path.Combine(dir, app + Suffix), Utf8.GetBytes(text));
+    public void WriteText(string app, string text) => Replace(Path.Combine(dir, app + Suffix), text);
 
     /// <inheritdoc />
-    public void WriteBindingsText(string app, string text) => File.WriteAllBytes(BindingsFile(app), Utf8.GetBytes(text));
+    public void WriteBindingsText(string app, string text) => Replace(BindingsFile(app), text);
+
+    // Write beside the file, then rename over it. File.WriteAllBytes truncates first, and
+    // Kestrel serves reads while a write is in flight (no GET takes the edit lock), so a page
+    // could read an empty or half-written corpus — or throw, when the file shrank mid-read.
+    // A rename within one directory is atomic, so a reader sees the old file or the new one.
+    private static void Replace(string file, string text)
+    {
+        var temp = Path.Combine(Path.GetDirectoryName(file)!, "." + Path.GetFileName(file) + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        try
+        {
+            File.WriteAllBytes(temp, Utf8.GetBytes(text));
+            File.Move(temp, file, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(temp);
+        }
+    }
 
     // `readFileSync(f, 'utf8')` / `writeFileSync(f, s)`: a BOM is a character like any
     // other, kept on the way in and written back on the way out. File.ReadAllText would
