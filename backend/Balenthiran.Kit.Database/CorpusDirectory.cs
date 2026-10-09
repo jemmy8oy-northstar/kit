@@ -31,7 +31,9 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
         var file = Path.Combine(dir, app + ".bindings.json");
 
         // A file that exists and will not parse still throws: that is could-not-look.
-        return File.Exists(file) ? JsonNode.Parse(File.ReadAllText(file))!.AsObject() : [];
+        return !File.Exists(file) ? []
+            : JsonNode.Parse(File.ReadAllText(file)) as JsonObject
+                ?? throw new InvalidOperationException("bindings.json is not a JSON object");
     }
 
     /// <inheritdoc />

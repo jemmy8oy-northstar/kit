@@ -37,17 +37,33 @@ public sealed class ProjectViewer(
     /// <inheritdoc />
     public IProjectView View(string app)
     {
-        var src = corpora.Read(app);
-        IReadOnlyList<IBehaviour> parsed;
+        // ui.js's projectOf reports ANY throw from project() as this project's could-not-look.
+        // Each narrower catch this port tried left a door: a binding the write route accepted
+        // (a non-string route, a lone surrogate) or a bindings file that arrived by git took
+        // down GET /api/projects for every reader. An I/O error's message names a server path,
+        // and the list is unauthenticated, so that reason is said without it.
         try
         {
-            parsed = parser.Parse(src, $"{app}.beh");
+            return Project(app);
         }
-        catch (CorpusParseException e)
+        catch (ProjectionFailedException)
+        {
+            throw;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            throw new ProjectionFailedException($"{app}: the corpus or its bindings could not be read", e);
+        }
+        catch (Exception e)
         {
             throw new ProjectionFailedException(e.Message, e);
         }
+    }
 
+    private ProjectView Project(string app)
+    {
+        var src = corpora.Read(app);
+        var parsed = parser.Parse(src, $"{app}.beh");
         var resolution = resolver.Resolve(parsed);
         var behaviours = resolution.Behaviours.Cast<Behaviour>().ToList();
         if (behaviours.Count == 0)
@@ -57,26 +73,13 @@ public sealed class ProjectViewer(
 
         var bindings = corpora.Bindings(app);
         var symbols = resolution.Symbols.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
-        // A binding the write route accepted can still be one the engine cannot read: a route
-        // that is not a string, or a lone surrogate escaped in the JSON. ui.js reports any throw
-        // from project() as this project's could-not-look; uncaught here, it took down
-        // GET /api/projects for every reader until the bindings file was hand-edited.
-        List<GeneratedView> generated;
-        EngineReport report;
-        try
+        var generated = behaviours.Select(b =>
         {
-            generated = behaviours.Select(b =>
-            {
-                var g = generator.Generate(b, bindings, symbols);
-                return new GeneratedView { Id = b.Id, Code = g.Code, Missing = g.Missing.ToList(), Stats = (GenerateStats)g.Stats };
-            }).ToList();
+            var g = generator.Generate(b, bindings, symbols);
+            return new GeneratedView { Id = b.Id, Code = g.Code, Missing = g.Missing.ToList(), Stats = (GenerateStats)g.Stats };
+        }).ToList();
 
-            report = (EngineReport)reporter.Report(resolution.Behaviours, resolution.Conflicts, bindings);
-        }
-        catch (InvalidOperationException e)
-        {
-            throw new ProjectionFailedException(e.Message, e);
-        }
+        var report = (EngineReport)reporter.Report(resolution.Behaviours, resolution.Conflicts, bindings);
         var corpusNouns = CorpusNouns();
         NounView Decorate(NounRequirement n) => new()
         {
@@ -169,7 +172,9 @@ public sealed class ProjectViewer(
                     .Where(r => r.Kind != "literal").Select(r => $"{r.Kind}:{r.Name}");
                 found.Add((app, new HashSet<string>(nouns, StringComparer.Ordinal)));
             }
-            catch (CorpusParseException)
+            // Another corpus that will not parse, or that a git pull removed between the listing
+            // and the read, is skipped — as writer.js's corpusNouns does — not this project's failure.
+            catch (Exception e) when (e is CorpusParseException or IOException or UnauthorizedAccessException)
             {
             }
         }
