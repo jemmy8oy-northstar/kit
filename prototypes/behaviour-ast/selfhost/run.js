@@ -330,7 +330,15 @@ async function main(argv = []) {
     return 2;
   }
 
-  const server = spawn(process.execPath, [path.join(ROOT, 'ui.js'), '--port', String(port), '--dir', corpus], { stdio: 'ignore' });
+  // The C# server (the Node one, ui.js, is deleted — kit#153). KIT_DIR points it at
+  // the copy; it finds ui/dist by walking up from its cwd, so run it from the repo root.
+  const repo = path.join(ROOT, '..', '..');
+  const server = spawn('dotnet', ['run', '--project', path.join(repo, 'backend', 'Balenthiran.Kit.WebApi'), '--', '--urls', `http://127.0.0.1:${port}`], {
+    cwd: repo,
+    env: { ...process.env, KIT_DIR: corpus },
+    stdio: 'ignore',
+    detached: true,
+  });
   let code = 0;
   try {
     if (!(await waitForServer(port))) {
@@ -402,7 +410,9 @@ async function main(argv = []) {
       console.log(`\nrecorded ${path.relative(process.cwd(), EXPECTED)}`);
     }
   } finally {
-    server.kill();
+    // The whole group: `dotnet run` is a parent of the server it starts, and killing
+    // only the parent leaves the server holding the port.
+    try { process.kill(-server.pid); } catch { server.kill(); }
     if (!argv.includes('--keep')) fs.rmSync(tmp, { recursive: true, force: true });
     else console.log(`\n  kept ${tmp}`);
   }
