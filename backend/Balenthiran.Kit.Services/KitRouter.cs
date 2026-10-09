@@ -292,14 +292,23 @@ public sealed class KitRouter(
         }
 
         // Sync over async, as GitStore runs git synchronously: the host has no synchronisation
-        // context to deadlock on, and one request at a time is all Commit ever sees.
-        var r = pulls.OpenAsync(head, baseBranch, $"kit: hosted edits ({head} → {baseBranch})", CommitBody).GetAwaiter().GetResult();
+        // context to deadlock on. SERIALISED, because Kestrel is not: two presses at once would
+        // both find no open pull request and both create one, and the second would come back as
+        // GitHub's 422 instead of "already open" (kit#160's blind review). Behind the lock the
+        // second press finds the first one's pull request.
+        IPullRequestResult r;
+        lock (commitGate)
+        {
+            r = pulls.OpenAsync(head, baseBranch, $"kit: hosted edits ({head} → {baseBranch})", CommitBody).GetAwaiter().GetResult();
+        }
         return r.Reason is { } reason
             ? Json(409, new ApiError { Error = "no-pull-request", Reason = reason })
             : Json(200, r);
     }
 
-    private const string CommitBody = "Edits made in the hosted Kit. Each one was committed and pushed as it was made; merging this lands them on the base branch.";
+    private readonly object commitGate = new();
+
+    private const string CommitBody ="Edits made in the hosted Kit. Each one was committed and pushed as it was made; merging this lands them on the base branch.";
 
     /// <summary><c>postBinding()</c> past its gates: add one binding to the app's bindings file.</summary>
     private KitResponse Bind(string app, JsonElement body)

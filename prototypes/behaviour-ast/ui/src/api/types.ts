@@ -360,3 +360,16 @@ export interface SessionState {
   required: boolean
   signedIn: boolean
 }
+
+/**
+ * What `POST /api/commit` returns (kit#155): the pull request that proposes every
+ * pushed edit to the base branch. `opened` and `alreadyOpen` are both success and
+ * kept apart, so a second press reads as "still waiting on review" rather than as
+ * a second proposal. A refusal is a 409 whose `reason` the client throws.
+ */
+export interface ProposeResult {
+  opened: boolean
+  alreadyOpen: boolean
+  number: number | null
+  url: string | null
+}
