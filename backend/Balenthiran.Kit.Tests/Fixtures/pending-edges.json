@@ -1,0 +1,579 @@
+{
+  "format": 2,
+  "corpus": "pending-edges",
+  "parse": [
+    {
+      "id": "BEH-P1",
+      "title": "pending straight after the header",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:18"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Main",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Main"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:19"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "pending-edges.beh:16",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": true
+    },
+    {
+      "id": "BEH-B1",
+      "title": "a built behaviour between two pending ones",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:22"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:Save",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Save"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:23"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "pending-edges.beh:21",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false
+    },
+    {
+      "id": "BEH-P2",
+      "title": "pending after its steps",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:26"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:Name",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "Name"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:27"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "pending-edges.beh:25",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": true
+    },
+    {
+      "id": "BEH-P3",
+      "title": "pending with a trailing tab",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:32"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "pending-edges.beh:30",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": true
+    },
+    {
+      "id": "BEH-P4",
+      "title": "pending written twice",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "pending-edges.beh:37"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "pending-edges.beh:34",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": true
+    }
+  ],
+  "resolve": {
+    "symbols": [],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-P1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-B1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-P2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-P3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-P4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-P1",
+      "code": "test(\"[BEH-P1] pending straight after the header\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Main\" });\n  // UNGENERATED: then sees region:Main\n});",
+      "missing": [
+        "page:Home",
+        "region:Main"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-B1",
+      "code": "test(\"[BEH-B1] a built behaviour between two pending ones\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
+      "missing": [
+        "page:Home",
+        "button:Save"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-P2",
+      "code": "test(\"[BEH-P2] pending after its steps\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Name\" });\n  // UNGENERATED: then sees field:Name\n});",
+      "missing": [
+        "page:Home",
+        "field:Name"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-P3",
+      "code": "test(\"[BEH-P3] pending with a trailing tab\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "missing": [
+        "page:Home"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    },
+    {
+      "id": "BEH-P4",
+      "code": "test(\"[BEH-P4] pending written twice\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "missing": [
+        "page:Home"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 5,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-P1",
+        "BEH-B1",
+        "BEH-P2",
+        "BEH-P3",
+        "BEH-P4"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:Save",
+          "kind": "button",
+          "name": "Save",
+          "usedBy": [
+            "BEH-B1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-P2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Home",
+          "kind": "page",
+          "name": "Home",
+          "usedBy": [
+            "BEH-B1",
+            "BEH-P1",
+            "BEH-P2",
+            "BEH-P3",
+            "BEH-P4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Main",
+          "kind": "region",
+          "name": "Main",
+          "usedBy": [
+            "BEH-P1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "button:Save",
+          "kind": "button",
+          "name": "Save",
+          "usedBy": [
+            "BEH-B1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-P2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Home",
+          "kind": "page",
+          "name": "Home",
+          "usedBy": [
+            "BEH-B1",
+            "BEH-P1",
+            "BEH-P2",
+            "BEH-P3",
+            "BEH-P4"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Main",
+          "kind": "region",
+          "name": "Main",
+          "usedBy": [
+            "BEH-P1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}
