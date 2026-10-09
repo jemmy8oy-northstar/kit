@@ -1052,6 +1052,23 @@ const gateOutput = (argv) => {
   return { code, out: lines.join('\n') };
 };
 
+// kit#89: a behaviour's layer — `ux` unless a `layer` line or the file's
+// `# kit:layer` directive says otherwise.
+test('layer: ux by default, the file directive applies wherever it sits, a line overrides it (kit#89)', () => {
+  assert.strictEqual(parse('behaviour BEH-A "a"\n', 't.beh')[0].layer, 'ux');
+  const [a, b, c] = parse('behaviour BEH-A "a"\n# kit:layer technical\nbehaviour BEH-B "b"\n  layer ui\nbehaviour BEH-C "c"\n  layer ux\n', 't.beh');
+  assert.deepStrictEqual([a.layer, b.layer, c.layer], ['technical', 'ui', 'ux']);
+  assert.strictEqual(parse('# kit:layers are on kit#89\n# see kit:layer\nbehaviour BEH-A "a"\n', 't.beh')[0].layer, 'ux');
+});
+
+test('layer: a value Kit does not know, a bare directive and a second directive are refused (kit#89)', () => {
+  const refused = (text, re) => assert.throws(() => parse(text, 't.beh'), re);
+  refused('behaviour BEH-A "a"\n  layer visual\n', /^Error: t\.beh:2: layer wants "ux"\|"technical"\|"ui", got: visual$/);
+  refused('# kit:layer backend\nbehaviour BEH-A "a"\n', /^Error: t\.beh:1: kit:layer wants "ux"\|"technical"\|"ui", got: backend$/);
+  refused('# kit:layer\nbehaviour BEH-A "a"\n', /^Error: t\.beh:1: kit:layer wants "ux"\|"technical"\|"ui", got: $/);
+  refused('# kit:layer ux\n#kit:layer technical\nbehaviour BEH-A "a"\n', /^Error: t\.beh:2: kit:layer is already set at t\.beh:1$/);
+});
+
 test('pending: the parser reads the marker on its own behaviour only, and refuses an argument (kit#155)', () => {
   const [a, b] = parse('behaviour BEH-A "a"\n  pending\nbehaviour BEH-B "b"\n', 't.beh');
   assert.strictEqual(a.pending, true);

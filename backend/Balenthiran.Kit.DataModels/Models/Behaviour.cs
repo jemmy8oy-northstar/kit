@@ -16,7 +16,7 @@ namespace Balenthiran.Kit.DataModels.Models;
 // corpora), not read off `kit.js`:
 //
 //   behaviour   id,title,actor,steps,unknowns,provides,serves,at,asks,options,
-//               recommend,against,cites,source,review,pending[,reviewExplicit]
+//               recommend,against,cites,source,review,pending,layer[,reviewExplicit]
 //   step        kind,verb,text,refs,holes,at
 //   ref         kind,name          hole      slot
 //   unknown     slot,at            provide   kind,name,slot,value,from,at
@@ -86,19 +86,24 @@ public sealed class Behaviour : IBehaviour
     [JsonPropertyOrder(16)]
     public bool Pending { get; set; }
 
-    // Absent, not null, when no `review` line was written — see the header.
+    // kit#89. Always written, after `pending`, for the same reason: `ux` unless
+    // a `layer` line or a `# kit:layer` file directive says otherwise.
     [JsonPropertyOrder(17)]
+    public string Layer { get; set; } = "ux";
+
+    // Absent, not null, when no `review` line was written — see the header.
+    [JsonPropertyOrder(18)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? ReviewExplicit { get; set; }
 
     // Written by `resolve` and absent before it, for the same reason as
     // `Step.Resolved`. `kit.js` returns `{ ...b, filled, open }`, so they follow
     // every parsed key — including `reviewExplicit` — in that order.
-    [JsonPropertyOrder(18)]
+    [JsonPropertyOrder(19)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<Filled>? Filled { get; set; }
 
-    [JsonPropertyOrder(19)]
+    [JsonPropertyOrder(20)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<OpenHole>? Open { get; set; }
 

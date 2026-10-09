@@ -465,6 +465,19 @@ MUTANTS.push(
     'for (const b of result.covered.filter((x) => x.pending)) {', 'for (const b of [].filter((x) => x.pending)) {', 'check.js'],
   ['the writer\'s collateral rule stops seeing `pending`, so an edit can strip another behaviour\'s marker',
     'review: b.review, pending: b.pending,', 'review: b.review,', 'writer.js'],
+  // kit#89: layers. The parser dropping a `layer` line or the file directive,
+  // either one accepting a value the gate will have no rule for, and a second
+  // directive silently winning.
+  ['the parser reads `layer` and drops it, so every behaviour stays ux (kit#89)',
+    '      cur.layer = rest;\n', '', 'kit.js'],
+  ['`layer` accepts any word, inviting a layer the gate has no rule for (kit#89)',
+    'if (!LAYERS.includes(rest)) throw', 'if (false) throw', 'kit.js'],
+  ['the `# kit:layer` directive is read and ignored (kit#89)',
+    'pending: false, layer: defaultLayer,', "pending: false, layer: 'ux',", 'kit.js'],
+  ['`# kit:layer` accepts any word (kit#89)',
+    'if (!LAYERS.includes(v)) throw', 'if (false) throw', 'kit.js'],
+  ['a second `# kit:layer` directive silently wins (kit#89)',
+    'if (setAt) throw new Error', 'if (false) throw new Error', 'kit.js'],
   // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
   // by a different door — the field unnamed when the value refuses, a two-value
   // `provides` re-joined into a guess, the obligation gone from requires.js.

@@ -88,7 +88,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-PULL-2",
@@ -184,7 +185,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-PULL-3",
@@ -288,7 +290,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-PULL-4",
@@ -392,7 +395,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ACT-1",
@@ -467,7 +471,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ACT-2",
@@ -542,7 +547,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ACT-3",
@@ -625,7 +631,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ACT-4",
@@ -691,7 +698,8 @@
         "state": "unreviewed",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-COMMIT-1",
@@ -803,7 +811,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-COMMIT-2",
@@ -915,7 +924,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-COMMIT-3",
@@ -1019,7 +1029,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-COMMIT-4",
@@ -1136,7 +1147,8 @@
         "state": "unreviewed",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-GATE-H1",
@@ -1232,7 +1244,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-GATE-H2",
@@ -1344,7 +1357,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "resolve": {
