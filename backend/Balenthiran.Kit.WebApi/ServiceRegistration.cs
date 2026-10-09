@@ -27,7 +27,7 @@ public static class ServiceRegistration
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
         services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
-        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch));
+        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
         // (token, repository, base) by the request GitHub would have received.

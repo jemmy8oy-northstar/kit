@@ -15,13 +15,20 @@ namespace Balenthiran.Kit.Database;
 /// <param name="push">Commit only, without pushing.</param>
 /// <param name="name">Commit identity, passed with <c>-c</c> rather than written into the clone's config.</param>
 /// <param name="email">As <paramref name="name"/>.</param>
+/// <param name="baseBranch">
+/// The branch Commit proposes INTO (<c>KIT_GIT_BASE</c>). A write whose target is this branch is
+/// refused before anything is committed — <c>kit-hosted.beh</c> BEH-COMMIT-1, "never a commit on
+/// dev". Until this the only guard was the entrypoint checking out <c>kit/hosted</c>; a clone left on
+/// <c>dev</c> with write-back on pushed every phone edit straight onto it. Null: no branch is refused.
+/// </param>
 public sealed class GitStore(
     bool enabled,
     string? remote = null,
     string? branch = null,
     bool push = true,
     string? name = null,
-    string? email = null) : IGitStore
+    string? email = null,
+    string? baseBranch = null) : IGitStore
 {
     /// <summary>Identity used when the pod has no git config of its own.</summary>
     public const string DefaultName = "kit";
@@ -137,6 +144,11 @@ public sealed class GitStore(
         if (target is null)
         {
             return new GitWriteBack { Reason = "HEAD is detached, so there is no branch to push to; pass a branch explicitly" };
+        }
+
+        if (target == baseBranch)
+        {
+            return new GitWriteBack { Branch = target, Reason = $"{target} is the branch Commit proposes into, so an edit is never committed onto it; set KIT_GIT_BRANCH to an edits branch" };
         }
 
         var rel = Path.GetRelativePath(cwd, Path.GetFullPath(file));
