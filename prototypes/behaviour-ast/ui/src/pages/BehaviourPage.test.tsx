@@ -339,6 +339,70 @@ describe('adding a step from the page that shows the output', () => {
   })
 })
 
+// ── BEH-ACT-3: removing the behaviour on screen ─────────────────────────────
+
+describe('removing a behaviour', () => {
+  it('asks once, naming the id, before it sends anything', async () => {
+    // The only write on this page that leaves nothing on screen to correct, so
+    // the first click must not be the write.
+    const calls = renderScripted([{ ok: true, status: 200, body: snipIt }], 'snip-it', 'BEH-HOME-1')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }))
+
+    expect(screen.getByRole('button', { name: 'Remove BEH-HOME-1 for good' })).toBeEnabled()
+    expect(calls).toHaveLength(1)
+
+    // And backing out puts the page back as it was, still without a write.
+    fireEvent.click(screen.getByRole('button', { name: 'Keep it' }))
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
+    expect(calls).toHaveLength(1)
+  })
+
+  it('POSTs an empty body to the remove route, then says it is gone and what git did', async () => {
+    const calls = renderScripted(
+      [{ ok: true, status: 200, body: snipIt }, wrote],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove BEH-HOME-1 for good' }))
+
+    expect(await screen.findByRole('heading', { name: 'Removed BEH-HOME-1', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/Not committed/)
+    expect(screen.getByRole('link', { name: 'Back to snip-it' })).toHaveAttribute('href', '/projects/snip-it')
+
+    // Exactly two calls: no re-read after a removal, because the corpus it
+    // would fetch no longer has this id and the page would say "No such
+    // behaviour" — true, and the same words as a mistyped URL.
+    expect(calls.map((c) => c.init?.method ?? 'GET')).toEqual(['GET', 'POST'])
+    expect(calls[1].url).toBe('/api/projects/snip-it/behaviours/BEH-HOME-1/remove')
+    // `{}`, not null and not the id: the server refuses any field at all.
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({})
+    expect(screen.queryByText(/No such behaviour/)).not.toBeInTheDocument()
+  })
+
+  it('shows the server’s refusal when something still references it, and keeps the behaviour', async () => {
+    // Whether removal is safe is the server's call — it reads `serves`/`cites`
+    // across the corpus. The page's job is to put that sentence on screen.
+    renderScripted(
+      [
+        { ok: true, status: 200, body: snipIt },
+        { ok: false, status: 409, body: { error: 'referenced', reason: 'BEH-HOME-2 serves BEH-HOME-1' } },
+      ],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove BEH-HOME-1 for good' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('BEH-HOME-2 serves BEH-HOME-1')
+    expect(screen.getByRole('heading', { name: 'The landing page renders', level: 1 })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
 // ── his step 4: "what the desired behaviour really is" ──────────────────────
 
 const typeCorrection = (text: string) =>
