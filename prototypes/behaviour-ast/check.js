@@ -40,7 +40,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { parse, resolve, coverage, mapping, testTitles, expectedTestCount, TEST_FILE_RE } = require('./kit');
+const { parse, resolve, coverage, mapping, testTitles, expectedTestCount, TEST_FILE_RE, LAYERS } = require('./kit');
 
 const SKIP_DIR = new Set(['node_modules', '.git', 'bin', 'obj', 'dist', 'build', '.next', 'coverage', 'playwright-report', 'test-results']);
 
@@ -78,6 +78,29 @@ function readTests(repo) {
     titles.push(...got);
   }
   return { files, titles, sources };
+}
+
+// A Playwright spec — the suite that walks the app in a browser. Everything else
+// `TEST_FILE_RE` reads (`*.test.*`, `*Tests.cs`) is a unit test.
+const E2E_FILE_RE = /\.spec\.(ts|tsx|js|jsx)$/;
+
+// kit#89. What each layer refuses, given the files whose tests name a behaviour.
+// A pending behaviour is exempt: it is not built, so it has no evidence to judge.
+function layerProblems(behaviours, covered, filesOf) {
+  const problems = [];
+  const coveredIds = new Set(covered.map((b) => b.id));
+  for (const b of behaviours) {
+    if (b.pending) continue;
+    if (b.layer === 'ui') {
+      problems.push(`${b.id}: a ui behaviour cannot be satisfied yet — visual checks are not designed (kit#89). Mark it pending, or give it another layer`);
+    } else if (b.layer === 'technical' && coveredIds.has(b.id)) {
+      const files = filesOf(b.id);
+      if (files.every((f) => E2E_FILE_RE.test(f))) {
+        problems.push(`${b.id}: a technical behaviour needs a unit test, but only e2e specs name it (${files.join(', ')})`);
+      }
+    }
+  }
+  return problems;
 }
 
 const VALUE_FLAGS = new Set(['--repo', '--via', '--dir']);
@@ -177,6 +200,17 @@ function main(argv) {
   }
   const built = behaviours.length - notBuilt.length;
 
+  // kit#89: the layer decides which suite's evidence counts. `ux` is unchanged —
+  // any test, as before layers existed. A `technical` behaviour is an
+  // implementation detail, which a browser walking the app cannot prove, so a
+  // Playwright spec alone does not satisfy it. `ui` has no evidence at all yet.
+  const filesOf = (id) => (via === 'markers'
+    ? read.files.filter((f, i) => read.sources[i].includes(`[${id}]`))
+    : (result.linked.get(id) || []).map((e) => e.file));
+  errors.push(...layerProblems(behaviours, result.covered, filesOf));
+  const uiRefused = new Set(behaviours.filter((b) => b.layer === 'ui' && !b.pending).map((b) => b.id));
+  const layers = LAYERS.map((l) => [l, behaviours.filter((b) => b.layer === l).length]).filter(([, n]) => n);
+
   console.log(`── kit check: ${app} (via ${via}) ──`);
   // Name the corpus that was read, not just the app. Once two directories can
   // answer to one app name, "kit check: snip-it ✅" no longer says which one
@@ -185,10 +219,15 @@ function main(argv) {
   console.log(`   ${read.files.length} test file(s), ${read.titles.length} test(s) read from ${repo}`);
   console.log(`   ${built - uncovered.length}/${built} behaviour(s) have a test naming them`);
   if (notBuilt.length) console.log(`   ${notBuilt.length} pending behaviour(s): spec'd, not built — not counted above`);
+  // Only once a corpus uses a layer, so every all-ux corpus prints as before.
+  if (layers.some(([l]) => l !== 'ux')) console.log(`   layers: ${layers.map(([l, n]) => `${l} ${n}`).join(', ')}`);
   console.log('');
 
   for (const e of errors) console.log(`   ✗ ${e}`);
-  for (const b of uncovered) console.log(`   ✗ ${b.id}: no test names this behaviour — "${b.title}"`);
+  // A `ui` behaviour already has its own line above; "no test names it" would
+  // send the reader to write a test that cannot satisfy it.
+  const untested = uncovered.filter((b) => !uiRefused.has(b.id));
+  for (const b of untested) console.log(`   ✗ ${b.id}: no test names this behaviour — "${b.title}"`);
   for (const b of notBuilt) console.log(`   ◌ ${b.id}: pending — spec'd, not built — "${b.title}"`);
 
   if (!errors.length && !uncovered.length) {
@@ -197,7 +236,7 @@ function main(argv) {
     console.log('      asserts it. See docs/design/tagging.md before quoting this as coverage.');
     return 0;
   }
-  console.log(`\n   ${errors.length + uncovered.length} problem(s). This is what "fails the build" means.`);
+  console.log(`\n   ${errors.length + untested.length} problem(s). This is what "fails the build" means.`);
   return 1;
 }
 
@@ -205,4 +244,4 @@ if (require.main === module) process.exit(main(process.argv.slice(2)));
 // `VALUE_FLAGS` is exported so the gate on the flag predicate can read the tool's
 // OWN set rather than keep a copy of it — a copy would be a fourth list free to
 // drift, which is the defect the three gates above this one exist for.
-module.exports = { main, readTests, walk, parseArgs, VALUE_FLAGS, DEFAULT_DIR };
+module.exports = { main, readTests, walk, parseArgs, layerProblems, VALUE_FLAGS, DEFAULT_DIR };

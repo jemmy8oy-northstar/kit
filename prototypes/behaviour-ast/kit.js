@@ -1483,7 +1483,7 @@ function parseCliArgs(argv) {
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, asked, questionErrors, renderSheet, nounsOf, boundNouns,
-  testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
+  testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE, LAYERS,
   UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, CLI_VALUE_FLAGS, selectCorpora,
 };
 

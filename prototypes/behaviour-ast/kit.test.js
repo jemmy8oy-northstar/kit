@@ -1099,6 +1099,55 @@ test('pending: a marker that outlived its build is a failure, so the pending lis
   assert.match(out, /✗ BEH-A: a test names this behaviour, but it is still marked pending/);
 });
 
+// kit#89: the layer decides which suite's evidence counts.
+const LAYER_APP = 'layer-gate';
+const layerCorpus = (lines) => fixture({ [`${LAYER_APP}.beh`]: `behaviour BEH-T "an implementation detail"\n${lines}  then sees field:F\n` });
+
+test('layer: a technical behaviour named by a unit test passes, and the layers are counted (kit#89)', () => {
+  for (const file of ['a.test.js', 'ATests.cs']) {
+    const src = file.endsWith('.cs') ? '[Fact]\npublic void Covers_BEH_T() { } // [BEH-T]\n' : "test('[BEH-T] covers it', () => {});";
+    const { code, out } = gateOutput([LAYER_APP, '--repo', fixture({ [file]: src }), '--via', 'markers', '--dir', layerCorpus('  layer technical\n')]);
+    assert.strictEqual(code, 0, `${file}\n${out}`);
+    assert.match(out, /layers: technical 1/);
+  }
+});
+
+test('layer: a technical behaviour named ONLY by an e2e spec fails, and the same spec still satisfies ux (kit#89)', () => {
+  // The unit test beside it names nothing: only the files carrying the marker count.
+  const repo = fixture({ 'e2e/a.spec.ts': "test('[BEH-T] walks it', () => {});", 'b.test.js': "test('unrelated', () => {});" });
+  const tech = gateOutput([LAYER_APP, '--repo', repo, '--via', 'markers', '--dir', layerCorpus('  layer technical\n')]);
+  assert.strictEqual(tech.code, 1, tech.out);
+  assert.match(tech.out, /✗ BEH-T: a technical behaviour needs a unit test, but only e2e specs name it \(e2e\/a\.spec\.ts\)/);
+  // The control: ux is unchanged by layers — any test still counts.
+  const ux = gateOutput([LAYER_APP, '--repo', repo, '--via', 'markers', '--dir', layerCorpus('')]);
+  assert.strictEqual(ux.code, 0, ux.out);
+  assert.doesNotMatch(ux.out, /layers:/);
+});
+
+test('layer: the mapping path judges a technical behaviour by its mapped file too (kit#89)', () => {
+  const repo = fixture({ 'e2e/a.spec.ts': "test('walks it', () => {});", 'a.test.js': "test('unit', () => {});" });
+  const dir = (file, title) => {
+    const d = layerCorpus('  layer technical\n');
+    fsx.writeFileSync(pathx.join(d, `${LAYER_APP}.tests.json`), JSON.stringify({ 'BEH-T': [{ file, title }] }));
+    return d;
+  };
+  assert.strictEqual(gateOutput([LAYER_APP, '--repo', repo, '--dir', dir('e2e/a.spec.ts', 'walks it')]).code, 1);
+  assert.strictEqual(gateOutput([LAYER_APP, '--repo', repo, '--dir', dir('a.test.js', 'unit')]).code, 0);
+});
+
+test('layer: a ui behaviour is refused as not designed yet, even with a test, unless it is pending (kit#89)', () => {
+  const repo = fixture({ 'a.test.js': "test('unrelated', () => {});" });
+  const ui = gateOutput([LAYER_APP, '--repo', repo, '--via', 'markers', '--dir', layerCorpus('  layer ui\n')]);
+  assert.strictEqual(ui.code, 1, ui.out);
+  assert.match(ui.out, /✗ BEH-T: a ui behaviour cannot be satisfied yet/);
+  assert.doesNotMatch(ui.out, /no test names this behaviour/);
+  assert.match(ui.out, /1 problem\(s\)/);
+  const tested = gateOutput([LAYER_APP, '--repo', fixture({ 'a.test.js': "test('[BEH-T] it', () => {});" }), '--via', 'markers', '--dir', layerCorpus('  layer ui\n')]);
+  assert.strictEqual(tested.code, 1, tested.out);
+  const pending = gateOutput([LAYER_APP, '--repo', repo, '--via', 'markers', '--dir', layerCorpus('  layer ui\n  pending\n')]);
+  assert.strictEqual(pending.code, 0, pending.out);
+});
+
 test('pending: a writer edit to one behaviour cannot strip another\'s marker (kit#155)', () => {
   const before = 'behaviour BEH-A "a"\n  pending\nbehaviour BEH-B "b"\n';
   const after = 'behaviour BEH-A "a"\nbehaviour BEH-B "b"\n  then sees field:F\n';

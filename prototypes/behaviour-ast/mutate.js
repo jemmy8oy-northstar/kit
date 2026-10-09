@@ -478,6 +478,18 @@ MUTANTS.push(
     'if (!LAYERS.includes(v)) throw', 'if (false) throw', 'kit.js'],
   ['a second `# kit:layer` directive silently wins (kit#89)',
     'if (setAt) throw new Error', 'if (false) throw new Error', 'kit.js'],
+  ['the gate never applies a layer rule (kit#89)',
+    'errors.push(...layerProblems(behaviours, result.covered, filesOf));', '', 'check.js'],
+  ['an e2e spec satisfies a technical behaviour (kit#89)',
+    'if (files.every((f) => E2E_FILE_RE.test(f))) {', 'if (false) {', 'check.js'],
+  ['the markers path attributes every marker to every file, so an e2e marker hides behind a unit file (kit#89)',
+    "? read.files.filter((f, i) => read.sources[i].includes(`[${id}]`))", '? read.files', 'check.js'],
+  ['a ui behaviour passes once a test names it (kit#89)',
+    "if (b.layer === 'ui') {", "if (b.layer === 'ui' && !coveredIds.has(b.id)) {", 'check.js'],
+  ['a pending ui behaviour is refused, so ui can never be spec\'d ahead (kit#89)',
+    '    if (b.pending) continue;\n    if (b.layer', "    if (b.layer", 'check.js'],
+  ['an untested ui behaviour is ALSO reported as "no test names it" (kit#89)',
+    'const untested = uncovered.filter((b) => !uiRefused.has(b.id));', 'const untested = uncovered;', 'check.js'],
   // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
   // by a different door — the field unnamed when the value refuses, a two-value
   // `provides` re-joined into a guess, the obligation gone from requires.js.
