@@ -170,6 +170,63 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         return Validate(text, string.Join('\n', lines), id);
     }
 
+    /// <summary>
+    /// Removes lines <c>Start..End</c> of the block and nothing else: comments and blanks that
+    /// precede or trail it belong to neighbours and survive. Exactly ONE separator blank goes
+    /// with it — the one after it when a block follows, else the one before it — so
+    /// <see cref="AddBehaviour"/> (which writes one blank, then the block) and this are inverses
+    /// and neither accumulates nor eats blank lines.
+    /// </summary>
+    public IWriteResult RemoveBehaviour(string text, string id)
+    {
+        if (Block(text, id) is not { } b)
+        {
+            return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
+        }
+
+        IReadOnlyList<IBehaviour> ast;
+        try
+        {
+            ast = parser.Parse(text, "corpus");
+        }
+        catch (CorpusParseException e)
+        {
+            return WriteResult.Refuse("corpus-already-invalid", $"the file did not parse before this edit: {e.Message}");
+        }
+
+        // A behaviour naming itself is not a dangling reference once it is gone.
+        var referrers = new List<string>();
+        foreach (var other in ast.Where(o => o.Id != id))
+        {
+            foreach (var r in other.Serves.Concat(other.Cites).Where(r => r.Id == id))
+            {
+                referrers.Add($"{other.Id} (line {r.At[(r.At.LastIndexOf(':') + 1)..]})");
+            }
+        }
+
+        if (referrers.Count > 0)
+        {
+            return WriteResult.Refuse("still-referenced", $"{id} is still referenced by {string.Join(", ", referrers)}; remove those references first");
+        }
+
+        var lines = text.Split('\n').ToList();
+        var from = b.Start;
+        var count = b.End - b.Start + 1;
+        var next = b.End + 1;
+        if (next < lines.Count - 1 && Trim(lines[next]).Length == 0)
+        {
+            count++;
+        }
+        else if (b.Start > 0 && Trim(lines[b.Start - 1]).Length == 0)
+        {
+            from--;
+            count++;
+        }
+
+        lines.RemoveRange(from, count);
+        return Validate(text, string.Join('\n', lines), id);
+    }
+
     /// <inheritdoc />
     public IWriteResult AddBinding(string text, string noun, JsonElement value, IReadOnlyDictionary<string, IReadOnlyList<string>> corpora, string app)
     {

@@ -60,7 +60,7 @@ public sealed class KitRouter(
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
-    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review))?\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove))?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
@@ -219,7 +219,8 @@ public sealed class KitRouter(
     private KitResponse Edit(string app, Match m, JsonElement body)
     {
         var review = m.Groups[3].Value == "review";
-        var step = m.Groups[2].Success && !review;
+        var remove = m.Groups[3].Value == "remove";
+        var step = m.Groups[2].Success && !review && !remove;
 
         // Decoded with a refusal, never a throw — in ui.js this once crashed the process.
         string? id;
@@ -237,13 +238,22 @@ public sealed class KitRouter(
             id = Field(body, "id") is { ValueKind: JsonValueKind.String } v ? v.GetString() : null;
         }
 
-        if (TypeError(body, review ? ReviewFields : step ? StepFields : CreateFields) is { } wrongType)
+        // Removal takes no fields (the id is in the path): any property at all is refused, so a
+        // client that thinks it can say more than "remove this" finds out rather than being ignored.
+        if (remove && body.ValueKind == JsonValueKind.Object && body.EnumerateObject().Any())
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "removing a behaviour takes an empty body: the id is in the path" });
+        }
+
+        if (!remove && TypeError(body, review ? ReviewFields : step ? StepFields : CreateFields) is { } wrongType)
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
         }
 
         var text = corpora.ReadText(app);
-        var result = review
+        var result = remove
+            ? writer.RemoveBehaviour(text, id!)
+            : review
             ? writer.SetReview(text, id!, Str(body, "state")!, Str(body, "note"))
             : step
                 ? writer.AddStep(text, id!, Str(body, "step")!)
@@ -256,7 +266,7 @@ public sealed class KitRouter(
         }
 
         corpora.WriteText(app, result.Text!);
-        var what = review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        var what = remove ? $"remove {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
         return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 

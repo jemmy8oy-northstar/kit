@@ -21,6 +21,12 @@ public interface ICorpusWriter
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
     /// <summary>
+    /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
+    /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
+    /// </summary>
+    IWriteResult RemoveBehaviour(string text, string id);
+
+    /// <summary>
     /// Add one binding to a bindings file's text. Refuses to overwrite one, or to change any
     /// other. <paramref name="corpora"/> is every corpus's noun names, for <c>sharedWith</c>.
     /// </summary>
