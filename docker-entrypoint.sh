@@ -42,9 +42,16 @@ if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
   export GIT_CONFIG_VALUE_0='!f() { echo username=x-access-token; echo "password=${KIT_GIT_TOKEN}"; }; f'
 
   rm -rf "$work"
+  # Start from the base ONLY when the remote says the branch is absent (ls-remote
+  # exits 2). Any other failure of the first clone, such as a network blip, used to
+  # fall through to the base and fork a fresh branch beside the real one, so every
+  # edit after it was a rejected push, lost on the next restart (kit#165).
   if git clone --quiet --single-branch --branch "$branch" "$KIT_GIT_CLONE" "$work" 2>/dev/null; then
     echo "kit-start: serving ${branch} from a fresh clone; edits are pushed back to it"
-  elif git clone --quiet --single-branch --branch "$base" "$KIT_GIT_CLONE" "$work" \
+  elif git ls-remote --exit-code --heads "$KIT_GIT_CLONE" "$branch" >/dev/null 2>&1; then
+    rm -rf "$work"
+    echo "kit-start: ${branch} exists on ${KIT_GIT_CLONE} but could not be cloned; serving the image's own corpus with write-back OFF rather than forking it" >&2
+  elif [ $? -eq 2 ] && git clone --quiet --single-branch --branch "$base" "$KIT_GIT_CLONE" "$work" \
     && git -C "$work" checkout --quiet -b "$branch"; then
     echo "kit-start: ${branch} does not exist yet; started it from ${base}. The first edit creates it"
   else
