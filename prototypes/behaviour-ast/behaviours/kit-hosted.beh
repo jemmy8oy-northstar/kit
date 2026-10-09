@@ -1,7 +1,12 @@
 # kit:not-a-real-app
 #
 # ─────────────────────────────────────────────────────────────────────────────
-# HOSTED KIT — the app James described on kit#88, which DOES NOT EXIST YET
+# HOSTED KIT — the app James described on kit#88
+#
+# ✅ UPDATE 2026-10-09 (claude-code-bot#105): most of this now EXISTS — it is the
+# deployed C# server. `kit-hosted.tests.json` maps the behaviours a test asserts,
+# BEH-PULL-1..3 are `pending`, and `check.js kit-hosted` lists the rest by id.
+# The paragraphs below are the 2026-09-30 reasoning, kept as written.
 #
 # James, kit#88 (2026-09-27), after the paragraphs describing the workflow:
 #
@@ -83,6 +88,8 @@
 # both true. That is why nobody has to reach for a `supersede` keyword — which
 # does not exist, and whose addition would be a change to the corpus LANGUAGE
 # and therefore his (claude-code-bot#58).
+# ⚠️ The Node server was deleted in kit#179 (2026-10-09), so the "local dev"
+# half of that argument no longer has a server to be true of.
 #
 # ── WHAT IS DELIBERATELY ABSENT ─────────────────────────────────────────────
 # * **No caching behaviour.** I proposed a per-repo shallow clone on kit#88 and
@@ -110,6 +117,7 @@
 # "The backend can pull the projects and serve the behaviours to the frontend."
 
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
+  pending
   source defined kit#88
   actor engineer
   given repo:Remote
@@ -120,6 +128,7 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
   contract pod whose clone is an implementation detail of its image
 
 behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
+  pending
   source defined kit#88
   actor engineer
   given project:Public
@@ -131,6 +140,7 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
   contract a public read that fails because a token could not be minted is a bug
 
 behaviour BEH-PULL-3 "A private project is served only against a live installation token"
+  pending
   source defined kit#88
   actor engineer
   given project:Private

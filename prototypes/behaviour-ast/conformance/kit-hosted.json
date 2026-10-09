@@ -18,7 +18,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:115"
+          "at": "kit-hosted.beh:123"
         },
         {
           "kind": "when",
@@ -31,7 +31,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:116"
+          "at": "kit-hosted.beh:124"
         },
         {
           "kind": "then",
@@ -44,7 +44,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:117"
+          "at": "kit-hosted.beh:125"
         },
         {
           "kind": "contract",
@@ -52,7 +52,7 @@
           "text": "today the list is readdirSync(behaviours/*.beh) against the checkout",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:118"
+          "at": "kit-hosted.beh:126"
         },
         {
           "kind": "contract",
@@ -60,7 +60,7 @@
           "text": "the process happens to sit in — correct for a laptop, meaningless for a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:119"
+          "at": "kit-hosted.beh:127"
         },
         {
           "kind": "contract",
@@ -68,13 +68,13 @@
           "text": "pod whose clone is an implementation detail of its image",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:120"
+          "at": "kit-hosted.beh:128"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:112",
+      "at": "kit-hosted.beh:119",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -88,7 +88,7 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": true
     },
     {
       "id": "BEH-PULL-2",
@@ -106,7 +106,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:125"
+          "at": "kit-hosted.beh:134"
         },
         {
           "kind": "when",
@@ -119,7 +119,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:126"
+          "at": "kit-hosted.beh:135"
         },
         {
           "kind": "then",
@@ -132,7 +132,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:127"
+          "at": "kit-hosted.beh:136"
         },
         {
           "kind": "contract",
@@ -140,7 +140,7 @@
           "text": "his instinct, quoted: \"obviously beh from public repos dont need to be",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:128"
+          "at": "kit-hosted.beh:137"
         },
         {
           "kind": "contract",
@@ -148,7 +148,7 @@
           "text": "authenticated so maybe can be returned faster\" — so the split is not a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:129"
+          "at": "kit-hosted.beh:138"
         },
         {
           "kind": "contract",
@@ -156,7 +156,7 @@
           "text": "performance tweak layered on later, it is which credential the request needs",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:130"
+          "at": "kit-hosted.beh:139"
         },
         {
           "kind": "contract",
@@ -164,13 +164,13 @@
           "text": "a public read that fails because a token could not be minted is a bug",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:131"
+          "at": "kit-hosted.beh:140"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:122",
+      "at": "kit-hosted.beh:130",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -184,7 +184,7 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": true
     },
     {
       "id": "BEH-PULL-3",
@@ -202,7 +202,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:136"
+          "at": "kit-hosted.beh:146"
         },
         {
           "kind": "when",
@@ -215,7 +215,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:137"
+          "at": "kit-hosted.beh:147"
         },
         {
           "kind": "then",
@@ -228,7 +228,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:138"
+          "at": "kit-hosted.beh:148"
         },
         {
           "kind": "contract",
@@ -236,7 +236,7 @@
           "text": "the kit-github secret he created on 2026-09-27 holds an app id, an",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:139"
+          "at": "kit-hosted.beh:149"
         },
         {
           "kind": "contract",
@@ -244,7 +244,7 @@
           "text": "installation id and a private key — a credential that is EXCHANGED for a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:140"
+          "at": "kit-hosted.beh:150"
         },
         {
           "kind": "contract",
@@ -252,7 +252,7 @@
           "text": "short-lived token, never sent as one",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:141"
+          "at": "kit-hosted.beh:151"
         },
         {
           "kind": "contract",
@@ -260,7 +260,7 @@
           "text": "an expired token is re-minted rather than returned as a failed read, which",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:142"
+          "at": "kit-hosted.beh:152"
         },
         {
           "kind": "contract",
@@ -268,13 +268,13 @@
           "text": "is what he meant by \"some similar refresh token mechanism to what you are using\"",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:143"
+          "at": "kit-hosted.beh:153"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:133",
+      "at": "kit-hosted.beh:142",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -288,7 +288,7 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": true
     },
     {
       "id": "BEH-PULL-4",
@@ -306,7 +306,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:148"
+          "at": "kit-hosted.beh:158"
         },
         {
           "kind": "when",
@@ -319,7 +319,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:149"
+          "at": "kit-hosted.beh:159"
         },
         {
           "kind": "then",
@@ -332,7 +332,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:150"
+          "at": "kit-hosted.beh:160"
         },
         {
           "kind": "contract",
@@ -340,7 +340,7 @@
           "text": "\"I am envisioning, the frontend has the UI, keep it light let the backend",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:151"
+          "at": "kit-hosted.beh:161"
         },
         {
           "kind": "contract",
@@ -348,7 +348,7 @@
           "text": "do the heavy lifting\" — so the generated test a screen shows is computed",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:152"
+          "at": "kit-hosted.beh:162"
         },
         {
           "kind": "contract",
@@ -356,7 +356,7 @@
           "text": "server-side and arrives as data; the browser never carries the engine",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:153"
+          "at": "kit-hosted.beh:163"
         },
         {
           "kind": "contract",
@@ -364,7 +364,7 @@
           "text": "this is also what makes the engine's language a private decision rather",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:154"
+          "at": "kit-hosted.beh:164"
         },
         {
           "kind": "contract",
@@ -372,13 +372,13 @@
           "text": "than a public one",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:155"
+          "at": "kit-hosted.beh:165"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:145",
+      "at": "kit-hosted.beh:155",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -410,7 +410,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:165"
+          "at": "kit-hosted.beh:175"
         },
         {
           "kind": "then",
@@ -423,7 +423,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:166"
+          "at": "kit-hosted.beh:176"
         },
         {
           "kind": "contract",
@@ -431,7 +431,7 @@
           "text": "\"top priority now I think is deploying kit so that I can use it from my",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:167"
+          "at": "kit-hosted.beh:177"
         },
         {
           "kind": "contract",
@@ -439,7 +439,7 @@
           "text": "phone\" — the phone is the requirement, not a nice-to-have, and it is why",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:168"
+          "at": "kit-hosted.beh:178"
         },
         {
           "kind": "contract",
@@ -447,13 +447,13 @@
           "text": "nothing here may depend on a loopback bind",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:169"
+          "at": "kit-hosted.beh:179"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:162",
+      "at": "kit-hosted.beh:172",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -485,7 +485,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:174"
+          "at": "kit-hosted.beh:184"
         },
         {
           "kind": "then",
@@ -498,7 +498,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:175"
+          "at": "kit-hosted.beh:185"
         },
         {
           "kind": "contract",
@@ -506,7 +506,7 @@
           "text": "writer.js already splices one block so every comment survives",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:176"
+          "at": "kit-hosted.beh:186"
         },
         {
           "kind": "contract",
@@ -514,7 +514,7 @@
           "text": "(kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:177"
+          "at": "kit-hosted.beh:187"
         },
         {
           "kind": "contract",
@@ -522,13 +522,13 @@
           "text": "headers in this directory are where a corpus's caveats live",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:178"
+          "at": "kit-hosted.beh:188"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:171",
+      "at": "kit-hosted.beh:181",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -560,7 +560,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:183"
+          "at": "kit-hosted.beh:193"
         },
         {
           "kind": "then",
@@ -573,7 +573,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:184"
+          "at": "kit-hosted.beh:194"
         },
         {
           "kind": "contract",
@@ -581,7 +581,7 @@
           "text": "⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:185"
+          "at": "kit-hosted.beh:195"
         },
         {
           "kind": "contract",
@@ -589,7 +589,7 @@
           "text": "writer.js can add a step and splice a block, and has no remove path",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:186"
+          "at": "kit-hosted.beh:196"
         },
         {
           "kind": "contract",
@@ -597,7 +597,7 @@
           "text": "a behaviour can be the target of `serves` or `cites` from another one, so",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:187"
+          "at": "kit-hosted.beh:197"
         },
         {
           "kind": "contract",
@@ -605,13 +605,13 @@
           "text": "deleting it silently is how a corpus acquires a dangling reference",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:188"
+          "at": "kit-hosted.beh:198"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:180",
+      "at": "kit-hosted.beh:190",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -643,7 +643,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:193"
+          "at": "kit-hosted.beh:203"
         },
         {
           "kind": "then",
@@ -656,30 +656,30 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:194"
+          "at": "kit-hosted.beh:204"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:190",
+      "at": "kit-hosted.beh:200",
       "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
       "options": [
         {
           "label": "Accumulate until Commit",
           "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
-          "at": "kit-hosted.beh:196"
+          "at": "kit-hosted.beh:206"
         },
         {
           "label": "Write each edit straight through",
           "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
-          "at": "kit-hosted.beh:197"
+          "at": "kit-hosted.beh:207"
         }
       ],
       "recommend": {
         "label": "Accumulate until Commit",
         "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
-        "at": "kit-hosted.beh:198"
+        "at": "kit-hosted.beh:208"
       },
       "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
       "cites": [],
@@ -709,7 +709,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:211"
+          "at": "kit-hosted.beh:221"
         },
         {
           "kind": "when",
@@ -722,7 +722,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:212"
+          "at": "kit-hosted.beh:222"
         },
         {
           "kind": "then",
@@ -735,7 +735,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:213"
+          "at": "kit-hosted.beh:223"
         },
         {
           "kind": "contract",
@@ -743,7 +743,7 @@
           "text": "answering the question mark in his own sentence: it has to be a branch",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:214"
+          "at": "kit-hosted.beh:224"
         },
         {
           "kind": "contract",
@@ -751,7 +751,7 @@
           "text": "a spec written before its code exists makes check.js exit 1 BY DESIGN",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:215"
+          "at": "kit-hosted.beh:225"
         },
         {
           "kind": "contract",
@@ -759,7 +759,7 @@
           "text": "(kit.beh BEH-GATE-1), so committing to dev would push a known-red tree",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:216"
+          "at": "kit-hosted.beh:226"
         },
         {
           "kind": "contract",
@@ -767,7 +767,7 @@
           "text": "onto the branch every other PR is measured against",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:217"
+          "at": "kit-hosted.beh:227"
         },
         {
           "kind": "contract",
@@ -775,7 +775,7 @@
           "text": "⚠️ UNBUILT: git-store.js defaults to `opts.branch || currentBranch(cwd)`,",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:218"
+          "at": "kit-hosted.beh:228"
         },
         {
           "kind": "contract",
@@ -783,13 +783,13 @@
           "text": "so today a pod would push a phone edit onto whatever branch its clone sits on",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:219"
+          "at": "kit-hosted.beh:229"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:208",
+      "at": "kit-hosted.beh:218",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -821,7 +821,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:224"
+          "at": "kit-hosted.beh:234"
         },
         {
           "kind": "when",
@@ -834,7 +834,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:225"
+          "at": "kit-hosted.beh:235"
         },
         {
           "kind": "then",
@@ -847,7 +847,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:226"
+          "at": "kit-hosted.beh:236"
         },
         {
           "kind": "contract",
@@ -855,7 +855,7 @@
           "text": "his override on kit#88, 2026-09-30: \"Let's let the commit belong to kit",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:227"
+          "at": "kit-hosted.beh:237"
         },
         {
           "kind": "contract",
@@ -863,7 +863,7 @@
           "text": "for now… using the gh app speeds up timelines\"",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:228"
+          "at": "kit-hosted.beh:238"
         },
         {
           "kind": "contract",
@@ -871,7 +871,7 @@
           "text": "⚠️ THIS IS A TRADE HE MADE KNOWINGLY, NOT A LIMITATION — commit",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:229"
+          "at": "kit-hosted.beh:239"
         },
         {
           "kind": "contract",
@@ -879,7 +879,7 @@
           "text": "attribution was the argument that carried the earlier web-flow decision,",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:230"
+          "at": "kit-hosted.beh:240"
         },
         {
           "kind": "contract",
@@ -887,7 +887,7 @@
           "text": "and he judged shipping sooner worth more while Kit has one user",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:231"
+          "at": "kit-hosted.beh:241"
         },
         {
           "kind": "contract",
@@ -895,13 +895,13 @@
           "text": "the condition for revisiting it is a SECOND USER, not a date",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:232"
+          "at": "kit-hosted.beh:242"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:221",
+      "at": "kit-hosted.beh:231",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -933,7 +933,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:237"
+          "at": "kit-hosted.beh:247"
         },
         {
           "kind": "when",
@@ -946,7 +946,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:238"
+          "at": "kit-hosted.beh:248"
         },
         {
           "kind": "then",
@@ -959,7 +959,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:239"
+          "at": "kit-hosted.beh:249"
         },
         {
           "kind": "contract",
@@ -967,7 +967,7 @@
           "text": "\"Here the AI (you for now) can read the behaviour changes, update the",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:240"
+          "at": "kit-hosted.beh:250"
         },
         {
           "kind": "contract",
@@ -975,7 +975,7 @@
           "text": "generated tests, update inferences etc, implement changes in the app to get",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:241"
+          "at": "kit-hosted.beh:251"
         },
         {
           "kind": "contract",
@@ -983,7 +983,7 @@
           "text": "the tests passing - raise a PR\"",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:242"
+          "at": "kit-hosted.beh:252"
         },
         {
           "kind": "contract",
@@ -991,7 +991,7 @@
           "text": "the PR is the handover: a pushed branch with no PR is invisible to every",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:243"
+          "at": "kit-hosted.beh:253"
         },
         {
           "kind": "contract",
@@ -999,13 +999,13 @@
           "text": "instrument that looks for work",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:244"
+          "at": "kit-hosted.beh:254"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:234",
+      "at": "kit-hosted.beh:244",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -1037,7 +1037,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:249"
+          "at": "kit-hosted.beh:259"
         },
         {
           "kind": "when",
@@ -1050,7 +1050,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:250"
+          "at": "kit-hosted.beh:260"
         },
         {
           "kind": "then",
@@ -1063,7 +1063,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:251"
+          "at": "kit-hosted.beh:261"
         },
         {
           "kind": "contract",
@@ -1071,7 +1071,7 @@
           "text": "MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:253"
+          "at": "kit-hosted.beh:263"
         },
         {
           "kind": "contract",
@@ -1079,7 +1079,7 @@
           "text": "adding one unimplemented behaviour took `20/20 behaviour(s) have a test",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:254"
+          "at": "kit-hosted.beh:264"
         },
         {
           "kind": "contract",
@@ -1087,7 +1087,7 @@
           "text": "naming them` to `20/21` and exit 0 to exit 1",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:255"
+          "at": "kit-hosted.beh:265"
         },
         {
           "kind": "contract",
@@ -1095,7 +1095,7 @@
           "text": "so \"the tests are failing\" is the normal state of a fresh Kit branch, and",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:256"
+          "at": "kit-hosted.beh:266"
         },
         {
           "kind": "contract",
@@ -1103,7 +1103,7 @@
           "text": "anything that treats a red branch as a fault will fight the workflow he",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:257"
+          "at": "kit-hosted.beh:267"
         },
         {
           "kind": "contract",
@@ -1111,7 +1111,7 @@
           "text": "described rather than serve it",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:258"
+          "at": "kit-hosted.beh:268"
         }
       ],
       "unknowns": [],
@@ -1119,10 +1119,10 @@
       "serves": [
         {
           "id": "BEH-COMMIT-3",
-          "at": "kit-hosted.beh:252"
+          "at": "kit-hosted.beh:262"
         }
       ],
-      "at": "kit-hosted.beh:246",
+      "at": "kit-hosted.beh:256",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -1154,7 +1154,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:269"
+          "at": "kit-hosted.beh:279"
         },
         {
           "kind": "when",
@@ -1167,7 +1167,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:270"
+          "at": "kit-hosted.beh:280"
         },
         {
           "kind": "then",
@@ -1180,7 +1180,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:271"
+          "at": "kit-hosted.beh:281"
         },
         {
           "kind": "contract",
@@ -1188,7 +1188,7 @@
           "text": "kit is a public repo, so a corpus served to an unauthenticated caller",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:272"
+          "at": "kit-hosted.beh:282"
         },
         {
           "kind": "contract",
@@ -1196,7 +1196,7 @@
           "text": "discloses nothing that `git clone` does not",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:273"
+          "at": "kit-hosted.beh:283"
         },
         {
           "kind": "contract",
@@ -1204,7 +1204,7 @@
           "text": "gating reads would cost the thing he wants — glancing at a spec from a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:274"
+          "at": "kit-hosted.beh:284"
         },
         {
           "kind": "contract",
@@ -1212,13 +1212,13 @@
           "text": "phone — to protect data that is already public",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:275"
+          "at": "kit-hosted.beh:285"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:266",
+      "at": "kit-hosted.beh:276",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -1250,7 +1250,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:280"
+          "at": "kit-hosted.beh:290"
         },
         {
           "kind": "when",
@@ -1263,7 +1263,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:281"
+          "at": "kit-hosted.beh:291"
         },
         {
           "kind": "then",
@@ -1276,7 +1276,7 @@
             }
           ],
           "holes": [],
-          "at": "kit-hosted.beh:282"
+          "at": "kit-hosted.beh:292"
         },
         {
           "kind": "contract",
@@ -1284,7 +1284,7 @@
           "text": "this is the half BEH-WRITE-5 used to hold by binding loopback, which a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:283"
+          "at": "kit-hosted.beh:293"
         },
         {
           "kind": "contract",
@@ -1292,7 +1292,7 @@
           "text": "hosted service cannot do — so the gate moves from the interface to a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:284"
+          "at": "kit-hosted.beh:294"
         },
         {
           "kind": "contract",
@@ -1300,7 +1300,7 @@
           "text": "credential, and kit#47's KIT_PASSWORD is the first one",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:285"
+          "at": "kit-hosted.beh:295"
         },
         {
           "kind": "contract",
@@ -1308,7 +1308,7 @@
           "text": "⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:286"
+          "at": "kit-hosted.beh:296"
         },
         {
           "kind": "contract",
@@ -1316,7 +1316,7 @@
           "text": "App installation token is how KIT talks to GITHUB; the password is how a",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:287"
+          "at": "kit-hosted.beh:297"
         },
         {
           "kind": "contract",
@@ -1324,13 +1324,13 @@
           "text": "PERSON is let into Kit. Neither substitutes for the other",
           "refs": [],
           "holes": [],
-          "at": "kit-hosted.beh:288"
+          "at": "kit-hosted.beh:298"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "kit-hosted.beh:277",
+      "at": "kit-hosted.beh:287",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -1776,18 +1776,18 @@
           {
             "label": "Accumulate until Commit",
             "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
-            "at": "kit-hosted.beh:196"
+            "at": "kit-hosted.beh:206"
           },
           {
             "label": "Write each edit straight through",
             "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
-            "at": "kit-hosted.beh:197"
+            "at": "kit-hosted.beh:207"
           }
         ],
         "recommend": {
           "label": "Accumulate until Commit",
           "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
-          "at": "kit-hosted.beh:198"
+          "at": "kit-hosted.beh:208"
         },
         "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
         "cites": []

@@ -5150,7 +5150,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:112"
+              "at": "kit-hosted.beh:119"
             },
             {
               "id": "BEH-PULL-2",
@@ -5233,7 +5233,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:122"
+              "at": "kit-hosted.beh:130"
             },
             {
               "id": "BEH-PULL-3",
@@ -5323,7 +5323,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:133"
+              "at": "kit-hosted.beh:142"
             },
             {
               "id": "BEH-PULL-4",
@@ -5413,7 +5413,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:145"
+              "at": "kit-hosted.beh:155"
             },
             {
               "id": "BEH-ACT-1",
@@ -5477,7 +5477,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:162"
+              "at": "kit-hosted.beh:172"
             },
             {
               "id": "BEH-ACT-2",
@@ -5541,7 +5541,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:171"
+              "at": "kit-hosted.beh:181"
             },
             {
               "id": "BEH-ACT-3",
@@ -5612,7 +5612,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:180"
+              "at": "kit-hosted.beh:190"
             },
             {
               "id": "BEH-ACT-4",
@@ -5655,7 +5655,7 @@
                 "note": null
               },
               "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
-              "at": "kit-hosted.beh:190"
+              "at": "kit-hosted.beh:200"
             },
             {
               "id": "BEH-COMMIT-1",
@@ -5752,7 +5752,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:208"
+              "at": "kit-hosted.beh:218"
             },
             {
               "id": "BEH-COMMIT-2",
@@ -5849,7 +5849,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:221"
+              "at": "kit-hosted.beh:231"
             },
             {
               "id": "BEH-COMMIT-3",
@@ -5939,7 +5939,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:234"
+              "at": "kit-hosted.beh:244"
             },
             {
               "id": "BEH-COMMIT-4",
@@ -6036,7 +6036,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:246"
+              "at": "kit-hosted.beh:256"
             },
             {
               "id": "BEH-GATE-H1",
@@ -6119,7 +6119,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:266"
+              "at": "kit-hosted.beh:276"
             },
             {
               "id": "BEH-GATE-H2",
@@ -6216,7 +6216,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:277"
+              "at": "kit-hosted.beh:287"
             }
           ],
           "conflicts": [],
@@ -6436,18 +6436,18 @@
                 {
                   "label": "Accumulate until Commit",
                   "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
-                  "at": "kit-hosted.beh:196"
+                  "at": "kit-hosted.beh:206"
                 },
                 {
                   "label": "Write each edit straight through",
                   "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
-                  "at": "kit-hosted.beh:197"
+                  "at": "kit-hosted.beh:207"
                 }
               ],
               "recommend": {
                 "label": "Accumulate until Commit",
                 "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
-                "at": "kit-hosted.beh:198"
+                "at": "kit-hosted.beh:208"
               },
               "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
               "cites": []
