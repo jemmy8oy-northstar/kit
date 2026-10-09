@@ -36,9 +36,31 @@ public sealed class TestGenerator : ITestGenerator
     // `/:(\w+)/g`. JavaScript's `\w` is ASCII-only; .NET's is Unicode, so it is spelled out.
     private static readonly Regex RouteParam = new(":([A-Za-z0-9_]+)", RegexOptions.CultureInvariant);
 
+    // kit#89: `NOT_A_BROWSER_WALK` in kit.js. Only a `ux` behaviour is a browser
+    // walk; the others get a skipped test naming the suite that owes the evidence,
+    // with no steps and no missing nouns.
+    private static readonly Dictionary<string, string> NotABrowserWalk = new()
+    {
+        ["technical"] = "a technical behaviour is proven by a unit test, not by a browser",
+        ["ui"] = "a ui behaviour needs a visual check, and none is designed yet",
+    };
+
     /// <inheritdoc />
     public IGeneratedTest Generate(IBehaviour behaviour, JsonObject bindings, IReadOnlyDictionary<string, ISymbol> symbols)
     {
+        if (NotABrowserWalk.TryGetValue(behaviour.Layer, out var why))
+        {
+            return new GeneratedTest
+            {
+                Code = string.Join("\n",
+                    $"test.skip({Stringify($"[{behaviour.Id}] {behaviour.Title}")}, async () => {{",
+                    $"  // NOT GENERATED: {why} (kit#89)",
+                    "});"),
+                Missing = [],
+                Stats = new GenerateStats(),
+            };
+        }
+
         var body = new List<string>();
 
         // A Set in `kit.js`: insertion order, no repeats.

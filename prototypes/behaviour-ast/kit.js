@@ -375,10 +375,30 @@ function sameValue(a, b) {
 // both sides agreeing with each other.
 const UNGENERATED_ANNOTATION = 'kit-ungenerated';
 
+// kit#89: only a `ux` behaviour is a browser walk. The others still get a test
+// — skipped, under their id, saying which suite owes the evidence — so the
+// generated spec lists every behaviour and none of them is silently missing.
+// No step is emitted and no noun is reported missing: binding a technical
+// behaviour's nouns to locators is exactly the guess this file refuses.
+const NOT_A_BROWSER_WALK = {
+  technical: 'a technical behaviour is proven by a unit test, not by a browser',
+  ui: 'a ui behaviour needs a visual check, and none is designed yet',
+};
+
 function generate(behaviour, bindings, symbols = new Map()) {
   const body = [];
   const missing = new Set();
   const stats = { generated: 0, contract: 0, ungenerated: 0 };
+
+  const why = NOT_A_BROWSER_WALK[behaviour.layer];
+  if (why) {
+    const code = [
+      `test.skip(${JSON.stringify(`[${behaviour.id}] ${behaviour.title}`)}, async () => {`,
+      `  // NOT GENERATED: ${why} (kit#89)`,
+      '});',
+    ].join('\n');
+    return { code, missing: [], stats };
+  }
 
   const bind = (ref) => {
     if (!ref) return null;

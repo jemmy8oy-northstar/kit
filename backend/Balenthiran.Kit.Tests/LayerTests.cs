@@ -38,6 +38,22 @@ public class LayerTests
             JsonSerializer.Serialize(JsonNode.Parse(_serialiser.Serialise(actual)), _serialiser.Options));
     }
 
+    /// <summary>
+    /// <c>GenerateConformanceTests</c> scores this fixture's <c>generate</c> section against
+    /// Node; this holds that the section still reaches both refusals and a real walk.
+    /// </summary>
+    [Fact]
+    public void Only_a_ux_behaviour_is_generated_as_a_browser_walk()
+    {
+        var generated = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoLayout.Fixtures, "layer-edges.json")))!["generate"]!
+            .AsArray().Select(g => g!["code"]!.GetValue<string>()).ToList();
+
+        Assert.Equal(3, generated.Count(c => c.StartsWith("test.skip(", StringComparison.Ordinal)));
+        Assert.Contains(generated, c => c.Contains("// NOT GENERATED: a technical behaviour is proven by a unit test", StringComparison.Ordinal));
+        Assert.Contains(generated, c => c.Contains("// NOT GENERATED: a ui behaviour needs a visual check", StringComparison.Ordinal));
+        Assert.Equal(2, generated.Count(c => c.StartsWith("test(", StringComparison.Ordinal) && c.Contains("async ({ page })", StringComparison.Ordinal)));
+    }
+
     [Fact]
     public void Without_a_line_or_a_directive_a_behaviour_is_ux()
     {

@@ -321,15 +321,12 @@
   "generate": [
     {
       "id": "BEH-L1",
-      "code": "test(\"[BEH-L1] before the directive, still inherits it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Main\" });\n  // UNGENERATED: then sees region:Main\n});",
-      "missing": [
-        "page:Home",
-        "region:Main"
-      ],
+      "code": "test.skip(\"[BEH-L1] before the directive, still inherits it\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
+      "missing": [],
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 2
+        "ungenerated": 0
       }
     },
     {
@@ -347,27 +344,22 @@
     },
     {
       "id": "BEH-L3",
-      "code": "test(\"[BEH-L3] ui, after its steps\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Name\" });\n  // UNGENERATED: then sees field:Name\n});",
-      "missing": [
-        "page:Home",
-        "field:Name"
-      ],
+      "code": "test.skip(\"[BEH-L3] ui, after its steps\", async () => {\n  // NOT GENERATED: a ui behaviour needs a visual check, and none is designed yet (kit#89)\n});",
+      "missing": [],
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 2
+        "ungenerated": 0
       }
     },
     {
       "id": "BEH-L4",
-      "code": "test(\"[BEH-L4] technical with a trailing tab\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
-      "missing": [
-        "page:Home"
-      ],
+      "code": "test.skip(\"[BEH-L4] technical with a trailing tab\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
+      "missing": [],
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 1
+        "ungenerated": 0
       }
     },
     {

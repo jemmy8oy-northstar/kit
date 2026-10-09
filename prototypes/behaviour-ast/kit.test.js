@@ -1061,6 +1061,17 @@ test('layer: ux by default, the file directive applies wherever it sits, a line 
   assert.strictEqual(parse('# kit:layers are on kit#89\n# see kit:layer\nbehaviour BEH-A "a"\n', 't.beh')[0].layer, 'ux');
 });
 
+test('layer: only a ux behaviour is generated as a browser walk; the others are skipped under their id (kit#89)', () => {
+  const [ux, tech, ui] = parse('behaviour BEH-U "u"\n  when opens page:Home\nbehaviour BEH-T "t"\n  layer technical\n  when opens page:Home\nbehaviour BEH-I "i"\n  layer ui\n  when opens page:Home\n', 't.beh');
+  const bindings = { 'page:Home': { route: '/' } };
+  assert.match(generate(ux, bindings).code, /^test\("\[BEH-U\] u", async \(\{ page \}\) => \{\n  await page\.goto/);
+  const t = generate(tech, {});
+  assert.strictEqual(t.code, 'test.skip("[BEH-T] t", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});');
+  // An unbound noun on a behaviour no browser walks is not a missing binding.
+  assert.deepStrictEqual(t.missing, []);
+  assert.match(generate(ui, {}).code, /^test\.skip\("\[BEH-I\] i"[^]*NOT GENERATED: a ui behaviour needs a visual check/);
+});
+
 test('layer: a value Kit does not know, a bare directive and a second directive are refused (kit#89)', () => {
   const refused = (text, re) => assert.throws(() => parse(text, 't.beh'), re);
   refused('behaviour BEH-A "a"\n  layer visual\n', /^Error: t\.beh:2: layer wants "ux"\|"technical"\|"ui", got: visual$/);
