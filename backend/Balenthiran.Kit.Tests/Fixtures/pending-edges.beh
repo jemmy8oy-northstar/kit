@@ -1,0 +1,37 @@
+# kit:not-a-real-app
+#
+# `pending: true`, which NO committed golden contains (measured 2026-10-09: every one
+# of the 147 behaviours in the goldens is `false`), so until this file the C# parser's
+# true branch was never compared with Node's. A blind review of kit#158 found the gap.
+# It covers a pending line right after the header, one after the steps, one with a
+# trailing tab, one written twice (accepted, still one state), and a built behaviour
+# between them so `false` sits beside `true` in the same section.
+# pending-edges.json is Node's output for this file, written by conformance.js's own
+# `pipeline` — regenerate it with:
+#
+#   node -e "const c=require('./prototypes/behaviour-ast/conformance.js');
+#     process.stdout.write(c.serialise(c.pipeline('backend/Balenthiran.Kit.Tests/Fixtures','pending-edges')))"
+#     > backend/Balenthiran.Kit.Tests/Fixtures/pending-edges.json
+
+behaviour BEH-P1 "pending straight after the header"
+  pending
+  when opens page:Home
+  then sees region:Main
+
+behaviour BEH-B1 "a built behaviour between two pending ones"
+  when opens page:Home
+  then sees button:Save
+
+behaviour BEH-P2 "pending after its steps"
+  when opens page:Home
+  then sees field:Name
+  pending
+
+behaviour BEH-P3 "pending with a trailing tab"
+  pending	
+  when opens page:Home
+
+behaviour BEH-P4 "pending written twice"
+  pending
+  pending
+  when opens page:Home
