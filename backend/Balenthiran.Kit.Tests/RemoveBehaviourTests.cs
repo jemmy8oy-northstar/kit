@@ -208,6 +208,38 @@ public class RemoveBehaviourTests
         Assert.Equal(Corpus, System.IO.File.ReadAllText(rig.File));
     }
 
+    [Fact]
+    public void The_removal_is_committed_and_pushed_with_the_remove_message()
+    {
+        var root = Directory.CreateTempSubdirectory("kit-remove-git-").FullName;
+        try
+        {
+            var bare = Path.Combine(root, "remote.git");
+            var clone = Path.Combine(root, "clone");
+            GitStore.Git(["init", "-q", "--bare", "-b", "main", bare], root);
+            GitStore.Git(["clone", "-q", bare, clone], root);
+            var dir = Path.Combine(clone, "behaviours");
+            Directory.CreateDirectory(dir);
+            System.IO.File.WriteAllText(Path.Combine(dir, "demo.beh"), Corpus);
+            GitStore.Git(["add", "-A"], clone);
+            GitStore.Git(["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "seed"], clone);
+            GitStore.Git(["push", "-q", "origin", "HEAD:main"], clone);
+
+            var corpora = new CorpusDirectory(dir, clone);
+            var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
+            var router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, git: new GitStore(enabled: true, branch: "main"));
+
+            Assert.Equal(200, router.Route("POST", Path1, body: JsonDocument.Parse("{}").RootElement).Status);
+            var subject = GitStore.Git(["--git-dir", bare, "log", "-1", "--format=%s", "main"], root).Stdout.Trim();
+            Assert.Contains("remove BEH-B2", subject);
+            Assert.DoesNotContain("BEH-B2", GitStore.Git(["--git-dir", bare, "show", "main:behaviours/demo.beh"], root).Stdout);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>Removals are read-modify-write on one file: without the edit lock a parallel one resurrects another's block.</summary>
     [Fact]
     public async Task Removals_made_at_the_same_moment_all_land()
