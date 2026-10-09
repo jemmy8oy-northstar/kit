@@ -286,6 +286,73 @@
       }
     },
     {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Forged step",
+        {
+          "steps": [
+            "when opens page:Home\n  review approved"
+          ]
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-step",
+        "reason": "a step is one line; add them one at a time"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Forged actor",
+        {
+          "actor": "guest\n  review approved"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-field",
+        "reason": "a behaviour's actor is one line; it cannot contain a newline"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Forged source",
+        {
+          "source": "inferred\n  review approved"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-field",
+        "reason": "a behaviour's source is one line; it cannot contain a newline"
+      }
+    },
+    {
+      "fn": "addBehaviour",
+      "input": "alpha",
+      "args": [
+        "BEH-E",
+        "Forged ref",
+        {
+          "source": "inferred",
+          "ref": "notes.md\n  review approved"
+        }
+      ],
+      "result": {
+        "ok": false,
+        "error": "multiline-field",
+        "reason": "a behaviour's ref is one line; it cannot contain a newline"
+      }
+    },
+    {
       "fn": "setReview",
       "input": "alpha",
       "args": [

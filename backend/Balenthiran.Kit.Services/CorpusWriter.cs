@@ -69,6 +69,21 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             return WriteResult.Refuse("bad-title", "a title cannot contain a double quote or a newline");
         }
 
+        // 🔴 SetReview's note guard, on the route that creates: rule 3 exempts the TARGET, and
+        // here that is the new block, so `x\n  review approved` would arrive pre-approved.
+        if ((steps ?? []).Any(s => s.Contains('\n', StringComparison.Ordinal)))
+        {
+            return WriteResult.Refuse("multiline-step", "a step is one line; add them one at a time");
+        }
+
+        foreach (var (field, value) in new[] { ("actor", actor), ("source", source), ("ref", reference) })
+        {
+            if (value?.Contains('\n', StringComparison.Ordinal) ?? false)
+            {
+                return WriteResult.Refuse("multiline-field", $"a behaviour's {field} is one line; it cannot contain a newline");
+            }
+        }
+
         var output = new List<string> { $"behaviour {id} \"{title}\"" };
         if (!string.IsNullOrEmpty(actor))
         {

@@ -3566,6 +3566,22 @@ test('writer: a newline in the note is refused — rule 3 exempts the TARGET', (
   assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approved\n  actor attacker').error, 'multiline-review');
 });
 
+test('writer: a newline anywhere in a NEW behaviour is refused — the new block is the target', () => {
+  // The create route had the note's hole on four fields: each landed a
+  // `review approved` line inside an inference that must arrive unreviewed.
+  const forge = '\n  review approved';
+  assert.strictEqual(W.addBehaviour(VOCAB_CORPUS, 'BEH-NEW', 'x', { steps: [`when opens page:Home${forge}`] }).error, 'multiline-step');
+  for (const field of ['actor', 'source', 'ref']) {
+    const r = W.addBehaviour(VOCAB_CORPUS, 'BEH-NEW', 'x', { source: 'inferred', [field]: `ok${forge}` });
+    assert.strictEqual(r.error, 'multiline-field', field);
+    assert.match(r.reason, new RegExp(`'s ${field} is one line`));
+    assert.strictEqual(r.text, undefined, 'a refusal must not hand back text to write');
+  }
+  // The control: the same fields on one line still write, and stay unreviewed.
+  const ok = W.addBehaviour(VOCAB_CORPUS, 'BEH-NEW', 'x', { actor: 'guest', steps: ['when opens page:Home'], ref: 'notes.md' });
+  assert.strictEqual(ok.ok, true, ok.reason);
+});
+
 test('writer: a state outside the three is refused, and the vocabulary is not restated here', () => {
   assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', 'approvedd').error, 'would-not-parse');
   assert.strictEqual(W.setReview(VOCAB_CORPUS, 'BEH-GRADE-1', '').error, 'empty-review');
