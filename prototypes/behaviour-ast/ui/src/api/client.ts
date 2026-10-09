@@ -48,7 +48,7 @@ async function get<T>(requested: string): Promise<T> {
     // the most likely failure by far when the UI is a local tool, so it gets
     // the sentence that tells you what to do about it.
     throw new ApiError(
-      `Could not reach the Kit read API at ${path}. Start it with \`node ui.js\`.`,
+      `Could not reach the Kit read API at ${path}. Start it with \`dotnet run --project backend/Balenthiran.Kit.WebApi\` from the repo root.`,
       null,
     )
   }
@@ -88,7 +88,7 @@ async function post<T>(requested: string, body: unknown): Promise<T> {
     })
   } catch {
     throw new ApiError(
-      `Could not reach the Kit write API at ${path}. Start it with \`node ui.js\`.`,
+      `Could not reach the Kit write API at ${path}. Start it with \`dotnet run --project backend/Balenthiran.Kit.WebApi\` from the repo root.`,
       null,
     )
   }

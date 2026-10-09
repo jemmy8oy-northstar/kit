@@ -52,9 +52,11 @@ function invoke(req: (typeof contract.requests)[number]) {
 }
 
 describe('the write contract, from the client side', () => {
-  // Half of a two-sided pin. kit.test.js sends these same literals down a real
-  // socket into ui.js and asserts the file on disk; this half asserts the client
-  // is what produces them. Either side drifting reddens exactly one of the two.
+  // Half of a two-sided pin that is now ONE-sided. kit.test.js used to send these
+  // same literals down a real socket into the Node server and assert the file on
+  // disk; that server is deleted (kit#153) and the C# server's answers are held by
+  // the writes golden, not by these literals. This half asserts the client is what
+  // produces them, and kit.test.js still pins the paths to what the client builds.
   for (const req of contract.requests) {
     it(`sends ${req.method} ${req.path} — ${req.what}`, async () => {
       const calls = recorder(
@@ -139,7 +141,7 @@ describe('what a refusal does to the caller', () => {
     // fixes; the failure that must never occur is either one reading as success.
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed') }))
 
-    await expect(addStep('gamma', 'BEH-G', 'then sees region:Main')).rejects.toThrow(/node ui\.js/)
+    await expect(addStep('gamma', 'BEH-G', 'then sees region:Main')).rejects.toThrow(/dotnet run --project backend\/Balenthiran\.Kit\.WebApi/)
     await expect(addStep('gamma', 'BEH-G', 'then sees region:Main')).rejects.toBeInstanceOf(ApiError)
   })
 })

@@ -163,10 +163,10 @@ function resolvePlaywright(argv = [], env = {}) {
 }
 
 // Wait for the server's own API to answer, not for the process to exist. A
-// spawned node process is "up" long before it is listening, and a Playwright
+// spawned process is "up" long before it is listening (`dotnet run` builds first, hence 60s), and a Playwright
 // run that starts too early fails with connection errors that look exactly like
 // a broken locator.
-function waitForServer(port, tries = 100) {
+function waitForServer(port, tries = 600) {
   return new Promise((resolve) => {
     let n = 0;
     const poll = () => {
