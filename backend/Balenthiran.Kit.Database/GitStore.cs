@@ -81,12 +81,25 @@ public sealed class GitStore(
             var (o, err) = (stdout.Result, stderr.Result);
             if (process.ExitCode != 0)
             {
-                var first = err.Trim().Split('\n')[0];
+                var first = ReasonLine(err);
                 return new Call(false, $"git {args[0]} exited {process.ExitCode}: {(first.Length > 0 ? first : $"exit {process.ExitCode}")}", o, err);
             }
 
             return new Call(true, null, o, err);
         }
+    }
+
+    /// <summary>
+    /// The line of git's stderr that says WHY: the first marked <c>!</c> (a rejected ref), <c>fatal:</c>
+    /// or <c>error:</c>, else the first line. A rejected push prints <c>To &lt;remote&gt;</c> first, so
+    /// "the first line" told the user where the push went and never why it failed (kit#165).
+    /// Same rule as <c>git-store.js</c>'s <c>reasonLine</c>.
+    /// </summary>
+    public static string ReasonLine(string stderr)
+    {
+        var lines = stderr.Trim().Split('\n').Select(l => l.Trim()).ToList();
+        return lines.FirstOrDefault(l => l.StartsWith('!') || l.StartsWith("fatal:", StringComparison.Ordinal) || l.StartsWith("error:", StringComparison.Ordinal))
+            ?? lines[0];
     }
 
     /// <summary>The top of the work tree containing <paramref name="file"/>, or null — every local run is not in one, and that is not an error.</summary>

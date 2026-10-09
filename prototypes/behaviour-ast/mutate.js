@@ -767,8 +767,13 @@ MUTANTS.push(
   // The kit#39 lesson, on a different child process: a failure that does not
   // name its layer sends three sessions looking in three wrong places.
   ['a failed git call stops naming its exit status, so every failure reads alike',
-    'const first = String(r.stderr || \'\').trim().split(\'\\n\')[0] || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'const first = reasonLine(r.stderr) || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
     'return { ok: false, failure: \'git did not succeed\', stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'git-store.js'],
+  // kit#165: a rejected push prints `To <remote>` first, so the first line said where, never why.
+  ['a rejected push names only the remote again, not why it was rejected',
+    "return lines.find((l) => l.startsWith('!') || l.startsWith('fatal:') || l.startsWith('error:')) ?? lines[0];",
+    'return lines[0];',
     'git-store.js'],
 );
 

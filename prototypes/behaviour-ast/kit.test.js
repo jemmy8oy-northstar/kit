@@ -5549,6 +5549,36 @@ test('git-store: when the push fails the commit still happened, and both facts a
   assert.ok(r.reason.includes('128') || r.reason.includes('exited'), r.reason);
 });
 
+test('git-store: a push rejected because the branch moved ahead says WHY, not just where (kit#165)', () => {
+  // A rejected push prints `To <remote>` first and the reason second, so "the
+  // first line" showed the user a URL, which reads as an auth problem.
+  const f = gitFixture();
+  const other = pathx.join(f.root, 'other');
+  f.sh(['clone', '-q', f.bare, other]);
+  fsx.writeFileSync(pathx.join(other, 'ahead.txt'), 'theirs\n');
+  f.sh(['-C', other, 'add', 'ahead.txt']);
+  f.sh(['-C', other, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'ahead']);
+  f.sh(['-C', other, 'push', '-q', 'origin', 'HEAD']);
+  fsx.appendFileSync(f.file, '  when opens page:Home\n');
+  const r = gitStore.writeBack(f.file, { enabled: true, summary: 'add a step' });
+
+  assert.strictEqual(r.committed, true);
+  assert.strictEqual(r.pushed, false);
+  assert.ok(r.reason.includes('[rejected]'), r.reason);
+  assert.ok(!r.reason.includes('To '), r.reason);
+});
+
+test('git-store: the reason line is the one git marks, else the first — the same table as GitStoreTests.cs', () => {
+  const cases = [
+    ["To /x/remote.git\n ! [rejected]        HEAD -> main (fetch first)\nerror: failed to push some refs to '/x'\nhint: Updates were rejected", '! [rejected]        HEAD -> main (fetch first)'],
+    ["fatal: 'nope' does not appear to be a git repository\nfatal: Could not read from remote repository.", "fatal: 'nope' does not appear to be a git repository"],
+    ["hint: something\nerror: pathspec 'x' did not match", "error: pathspec 'x' did not match"],
+    ['just one line', 'just one line'],
+    ['', ''],
+  ];
+  for (const [stderr, want] of cases) assert.strictEqual(gitStore.reasonLine(stderr), want, JSON.stringify(stderr));
+});
+
 test('git-store: the commit carries only the corpus, not whatever else the tree was dirty with', () => {
   const f = gitFixture();
   fsx.appendFileSync(f.file, '  when opens page:Home\n');
