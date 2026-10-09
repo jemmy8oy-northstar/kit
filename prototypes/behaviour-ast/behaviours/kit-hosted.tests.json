@@ -1,0 +1,17 @@
+{
+  "_": "behaviour -> the test(s) that name it. Same shape as kit.tests.json: the corpus carries the mapping, keyed on file + title (a C# test's title is its method name).",
+  "_authored": "2026-10-09, from the kit spec audit (claude-code-bot#105). Only behaviours whose `then` line a test ASSERTS are mapped. Built-but-unasserted ones stay unmapped on purpose, so `check.js kit-hosted` keeps naming them.",
+  "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. check.js proves the test exists, not what it asserts.",
+  "BEH-COMMIT-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/CommitRouteTests.cs",
+      "title": "Opens_one_pull_request_from_the_edits_branch_into_the_base"
+    }
+  ],
+  "BEH-GATE-H1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
+      "title": "Locked_a_write_needs_a_session_and_a_read_still_does_not"
+    }
+  ]
+}
