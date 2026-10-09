@@ -230,7 +230,20 @@ function addBehaviour(text, id, title, opts = {}) {
     return { ok: false, error: 'bad-title', reason: 'a title cannot contain a double quote or a newline' };
   }
 
+  // 🔴 The same hole setReview's note guard closes, on the route that creates: rule 3
+  // exempts the TARGET, and here the target is the new block. A step, actor, source or
+  // ref of `x\n  review approved` would write an inference that arrives pre-approved —
+  // the one thing defaulting `source` to `inferred` exists to prevent.
   const steps = Array.isArray(opts.steps) ? opts.steps : [];
+  if (steps.some((s) => /\n/.test(String(s)))) {
+    return { ok: false, error: 'multiline-step', reason: 'a step is one line; add them one at a time' };
+  }
+  for (const field of ['actor', 'source', 'ref']) {
+    if (/\n/.test(String(opts[field] ?? ''))) {
+      return { ok: false, error: 'multiline-field', reason: `a behaviour's ${field} is one line; it cannot contain a newline` };
+    }
+  }
+
   const out = [`behaviour ${id} "${title}"`];
   if (opts.actor) out.push(`${INDENT}actor ${opts.actor}`);
   out.push(`${INDENT}source ${opts.source || 'inferred'}${opts.ref ? ` ${opts.ref}` : ''}`);
