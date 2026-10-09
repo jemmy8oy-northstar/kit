@@ -31,9 +31,13 @@ public static class ServiceRegistration
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
         // (token, repository, base) by the request GitHub would have received.
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IGitHubTokenSource>(sp => settings.GitHubApp
+            ? new GitHubAppTokenSource(GitHubClient(sp), settings.GitHubAppId!, settings.GitHubInstallationId!, settings.PrivateKey()!, sp.GetRequiredService<TimeProvider>())
+            : new StaticGitHubTokenSource(settings.Token()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
-            new HttpClient(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) },
-            settings.Token(),
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
@@ -59,4 +63,7 @@ public static class ServiceRegistration
             settings.BasePath));
         return services;
     }
+
+    private static HttpClient GitHubClient(IServiceProvider sp) =>
+        new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };
 }

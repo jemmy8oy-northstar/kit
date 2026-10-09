@@ -41,6 +41,31 @@ public sealed record KitSettings(
     /// <summary>The token, for the pull-request opener only.</summary>
     internal string? Token() => gitToken;
 
+    /// <summary>
+    /// <c>KIT_GITHUB_APP_ID</c> and <c>KIT_GITHUB_INSTALLATION_ID</c>: with the key below, the GitHub
+    /// App installation process.md settles on (kit#88). All three or none — <see cref="FromEnvironment"/>
+    /// throws for a partial set, because quietly falling back to <c>KIT_GIT_TOKEN</c> would hide the
+    /// half-configured credential until a Commit failed on his phone.
+    /// </summary>
+    public string? GitHubAppId { get; init; }
+
+    /// <inheritdoc cref="GitHubAppId" />
+    public string? GitHubInstallationId { get; init; }
+
+    /// <summary><c>KIT_GITHUB_PRIVATE_KEY</c>, PEM. WRITE-ONLY for the same reason as <see cref="GitToken"/>.</summary>
+    public string? GitHubPrivateKey
+    {
+        init => gitHubPrivateKey = value;
+    }
+
+    private readonly string? gitHubPrivateKey;
+
+    /// <summary>The key, for the token source only.</summary>
+    internal string? PrivateKey() => gitHubPrivateKey;
+
+    /// <summary>True when the App credential is set; <see cref="FromEnvironment"/> has already refused a partial one.</summary>
+    public bool GitHubApp => GitHubAppId is not null;
+
     /// <summary><c>owner/name</c> of the repository the edits branch lives in, from <c>KIT_GIT_CLONE</c>; null for anything not on github.com.</summary>
     public string? GitRepository { get; init; }
 
@@ -59,6 +84,14 @@ public sealed record KitSettings(
     public static KitSettings FromEnvironment(Func<string, string?> env, string workingDirectory)
     {
         var root = FindRoot(workingDirectory);
+        var app = new[] { "KIT_GITHUB_APP_ID", "KIT_GITHUB_INSTALLATION_ID", "KIT_GITHUB_PRIVATE_KEY" }
+            .ToDictionary(n => n, n => env(n) is { } v && !string.IsNullOrWhiteSpace(v) ? v : null);
+        var missing = app.Where(kv => kv.Value is null).Select(kv => kv.Key).ToList();
+        if (missing.Count is > 0 and < 3)
+        {
+            throw new InvalidOperationException($"the GitHub App credential is half set: {string.Join(" and ", missing)} missing — set all three, or none to use KIT_GIT_TOKEN");
+        }
+
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
         return new KitSettings(
             dir,
@@ -75,6 +108,9 @@ public sealed record KitSettings(
             GitToken = env("KIT_GIT_TOKEN") is { Length: > 0 } t ? t : null,
             GitRepository = GitHubPullRequestOpener.RepositoryFromRemote(env("KIT_GIT_CLONE")),
             GitBase = env("KIT_GIT_BASE") is { Length: > 0 } g ? g : "dev",
+            GitHubAppId = app["KIT_GITHUB_APP_ID"],
+            GitHubInstallationId = app["KIT_GITHUB_INSTALLATION_ID"],
+            GitHubPrivateKey = app["KIT_GITHUB_PRIVATE_KEY"],
         };
     }
 
