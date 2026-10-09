@@ -1,5 +1,6 @@
 import { Card } from '@jemmy8oy-northstar/design-system'
 import type { AnyWriteResult } from '../api/types'
+import ProposeEdits from './ProposeEdits'
 
 /**
  * What a write did, and — the part that matters — what it deliberately did not
@@ -74,6 +75,9 @@ export default function WriteResultNote({ result }: { result: AnyWriteResult }) 
           incomplete — this is &ldquo;could not look&rdquo;, not &ldquo;nothing else uses it&rdquo;.
         </p>
       )}
+
+      {/* Only a pushed edit is on the edits branch, so only then is there anything to propose (kit#155). */}
+      {result.pushed && <ProposeEdits />}
 
       {/* Deployed, the working tree is inside a pod he cannot reach (kit#117): the
           warning above says where the edit is, and this instruction would be false. */}
