@@ -19,6 +19,9 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 {
     private const string Indent = "  ";
 
+    /// <summary>The deepest binding <see cref="AddBinding"/> writes: well under the ~60 at which reading the project back fails.</summary>
+    public const int MaxBindingDepth = 16;
+
     private static readonly string Ws = CorpusParser.Ws;
 
     // `/^behaviour\s+([A-Z][A-Z0-9-]*)\s+"/` — JavaScript's `\s`, which is not .NET's.
@@ -67,6 +70,21 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         if (title.Contains('"', StringComparison.Ordinal) || title.Contains('\n', StringComparison.Ordinal))
         {
             return WriteResult.Refuse("bad-title", "a title cannot contain a double quote or a newline");
+        }
+
+        // 🔴 SetReview's note guard, on the route that creates: rule 3 exempts the TARGET, and
+        // here that is the new block, so `x\n  review approved` would arrive pre-approved.
+        if ((steps ?? []).Any(s => s.Contains('\n', StringComparison.Ordinal)))
+        {
+            return WriteResult.Refuse("multiline-step", "a step is one line; add them one at a time");
+        }
+
+        foreach (var (field, value) in new[] { ("actor", actor), ("source", source), ("ref", reference) })
+        {
+            if (value?.Contains('\n', StringComparison.Ordinal) ?? false)
+            {
+                return WriteResult.Refuse("multiline-field", $"a behaviour's {field} is one line; it cannot contain a newline");
+            }
         }
 
         var output = new List<string> { $"behaviour {id} \"{title}\"" };
@@ -197,6 +215,14 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         if (!value.EnumerateObject().Any())
         {
             return WriteResult.Refuse("bad-binding", "an empty binding binds nothing — it would satisfy no verb and still count as bound");
+        }
+
+        // C# only: V8 takes any depth, but here a binding nested ~60 deep is written and then
+        // breaks every later read of the project, and ~17,000 deep overflows the stack inside
+        // FromElement and kills the server. A real binding nests 3 deep at most.
+        if (JsValue.Depth(value) > MaxBindingDepth)
+        {
+            return WriteResult.Refuse("bad-binding", $"a binding nests at most {MaxBindingDepth} levels deep — e.g. {{\"role\":\"button\",\"name\":\"Add habit\"}} is 1");
         }
 
         // writer.js's round-trip and collateral checks guard against values JSON cannot

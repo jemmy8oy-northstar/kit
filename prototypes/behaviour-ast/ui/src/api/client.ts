@@ -1,6 +1,6 @@
 import type {
-  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ReviewState, SessionState,
-  WriteResult,
+  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ProposeResult, ReviewState,
+  SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -186,6 +186,15 @@ export function setReview(
  */
 export function addBinding(app: string, noun: string, binding: Binding): Promise<BindResult> {
   return post<BindResult>(`/api/projects/${encodeURIComponent(app)}/bindings`, { noun, binding })
+}
+
+/**
+ * Propose every pushed edit for merging, as one pull request from the edits
+ * branch (kit#155). There is nothing to choose, so the body is empty: the server
+ * knows the one edits branch and the one base.
+ */
+export function proposeEdits(): Promise<ProposeResult> {
+  return post<ProposeResult>('/api/commit', {})
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {

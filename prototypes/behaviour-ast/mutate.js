@@ -23,7 +23,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const marker = require('./mutation-marker');
-const { unknownFlag, refuse } = require('./cli.js');
+const { unknownFlag, refuse, looksLikeAFlag } = require('./cli.js');
 
 // kit#67. The last two tools in this directory to take a flag they do not know
 // and run anyway — and the sharpest instance of it, because this one EDITS THE
@@ -47,10 +47,26 @@ const { unknownFlag, refuse } = require('./cli.js');
 // the key/value mixup untestable: `Object.values` still contained `--recover`, so
 // a guard built from the wrong half of the map refused nothing and the red control
 // for it came back green.
-const FLAGS = { '--recover': '' };
+const FLAGS = { '--recover': '', '--only': '<substring>' };
 const usage = () => Object.entries(FLAGS).map(([f, v]) => (v ? `${f} ${v}` : f)).join('] [');
 const bad = unknownFlag(process.argv.slice(2), Object.keys(FLAGS));
 if (bad) process.exit(refuse(bad, `usage: node mutate.js [${usage()}]`));
+
+// `--only` runs the mutants whose name or file contains the substring — the slice
+// a new rule needs, without the full ~2-hour run. It is `mutate-ui.js`'s flag with
+// the same two refusals. Until it existed here, proving a new mutant meant a
+// hand-rolled runner outside the repo, twice, and one of them could not see
+// SUBJECTS: a mutant on a file this list did not name looked killed locally and
+// was a survivor in CI.
+// Checked on argv alone, beside the guard, so the sandbox can prove it: a bare
+// `--only` would otherwise leave the filter empty and start the FULL run while
+// the operator believes they asked for a slice ([[empty-means-two-things]]).
+const onlyIdx = process.argv.indexOf('--only');
+const only = onlyIdx === -1 ? null : process.argv[onlyIdx + 1];
+if (onlyIdx !== -1 && (only === undefined || only === '' || looksLikeAFlag(only))) {
+  console.error('cannot look: --only needs a substring to match, e.g. `--only requires.js`');
+  process.exit(2);
+}
 
 // Recovery runs before anything reads the tree, so a run killed by an
 // uncatchable signal is undoable from either mutation tool.
@@ -80,7 +96,7 @@ const T = path.join(__dirname, 'kit.test.js');
 // the mutant: the predicate is gated by "ONE dash makes a token a flag" instead,
 // which was run RED first and named five defects. **Do not "finish the job" by
 // adding `cli.js` here — the test will tell you, but this says why.**
-const SUBJECTS = { 'kit.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
+const SUBJECTS = { 'kit.js': null, 'compare.js': null, 'requires.js': null, 'check.js': null, 'prose-audit.js': null, 'saturation.js': null, 'self-host.js': null, 'project.js': null, 'ui.js': null, 'converge.js': null, 'writer.js': null, 'selfhost/run.js': null, 'git-store.js': null, 'auth.js': null, '../../start.js': null };
 for (const f of Object.keys(SUBJECTS)) SUBJECTS[f] = fs.readFileSync(path.join(__dirname, f), 'utf8');
 // 🔴 RESTORING THE SOURCE IS NOT RESTORING THE TREE, and a whole class of mutant
 // proves it. Two of the kit#66 mutants make a write land in THIS checkout's
@@ -187,6 +203,19 @@ const MUTANTS = [
     'if (!c.ref) errors.push', 'if (false) errors.push'],
   ['cites accepts prose instead of a behaviour id',
     'if (!/^BEH-[A-Z0-9-]+$/.test(rest)) throw', 'if (false) throw'],
+  // kit#73 / kit#93: a forward corpus is all `defined`
+  ['an author\'s question on a defined behaviour is dropped again — a forward corpus reports 0 decisions',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => false)"],
+  ['every defined behaviour is "asked", question or not — the sheet reprints the spec',
+    ".filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))",
+    ".filter((b) => b.source.origin === 'defined' && !owners.has(b.id) && !cited.has(b.id))"],
+  ['a conflict\'s question is asked twice, once as the conflict and once as authored',
+    'if (owner) owners.add(owner.id);', 'if (false) owners.add(owner.id);'],
+  ['an authored option list is answered with serves-or-delete again',
+    'if (q.options.length) {\n    return `the option you pick', 'if (false) {\n    return `the option you pick'],
+  ['an empty evidence block prints a bare heading again',
+    "if (!q.contracts.length && !q.serves.length) L.push('- _none recorded", "if (false) L.push('- _none recorded"],
 
   // reading an app's tests — the reader every number downstream rests on
   ['the [Theory] lookahead goes back to a fixed six lines — the 16% under-read',
@@ -248,7 +277,12 @@ const MUTANTS = [
   ['an id named by a test but absent from the corpus is not reported',
     'errors = result.orphanTests.map(', 'errors = [].map(', 'check.js'],
   ['uncovered behaviours no longer affect the exit code',
-    'if (!errors.length && !result.uncovered.length) {', 'if (true) {', 'check.js'],
+    'if (!errors.length && !uncovered.length) {', 'if (true) {', 'check.js'],
+  // kit#155's `pending` marker is an excuse the gate grants. The mutants further
+  // down catch it granting too little; this one catches it excusing everything.
+  ['every uncovered behaviour counts as pending, so a missing test reads as unbuilt work',
+    'const uncovered = result.uncovered.filter((b) => !b.pending);',
+    'const uncovered = [];', 'check.js'],
 
   // --dir. The gate can now read a corpus that lives with its project (kit#52),
   // which means it can also read the WRONG one and report a confident verdict
@@ -410,6 +444,45 @@ MUTANTS.push(
     "const bound = fields.map((f) => bind({ kind: 'field', name: f }));\n      if (bound.some((fb) => !fb)) return null;",
     "const bound = []; for (const f of fields) { const fb = bind({ kind: 'field', name: f }); if (!fb) return null; bound.push(fb); }",
     'kit.js'],
+  // kit#78: the comparison's subject is snip-it, and the directory is a population
+  // that grows underneath it.
+  ['compare.js reads every corpus again, so other apps\' lines are scored against snip-it\'s spec',
+    "const all = parse(fs.readFileSync(path.join(dir, CORPUS), 'utf8'), CORPUS);",
+    "const all = fs.readdirSync(dir).filter((f) => f.endsWith('.beh')).flatMap((f) => parse(fs.readFileSync(path.join(dir, f), 'utf8'), f));",
+    'compare.js'],
+  // kit#76: one population under `── measured ──`. The first mutant is the old
+  // denominator coming back (every noun a step names); the second hides the nouns
+  // no binding could satisfy, which is what made 0/43 read as 0% of the work.
+  ['the bound fraction counts every referenced noun again, so it no longer sums with the unbound list',
+    'for (const n of ownKeys) targets.add(`${app}\\0${n}`);',
+    'for (const n of [...ownKeys, ...boundNouns(bs, {}).referenced]) targets.add(`${app}\\0${n}`);', 'kit.js'],
+  ['the nouns no binding could satisfy stop being named',
+    'if (!ownKeys.has(n)) notBindable.add(n);', 'if (false) notBindable.add(n);', 'kit.js'],
+  // kit#155: the `pending` marker. Each is one half of "not built yet" going
+  // missing — the parser dropping it, the gate ignoring it in either direction,
+  // or the writer's collateral rule no longer seeing it.
+  ['the parser reads `pending` and drops it, so a spec\'d behaviour fails the gate as untested',
+    '      cur.pending = true;\n', '', 'kit.js'],
+  ['`pending` accepts an argument, inviting a second state the gate has no opinion on',
+    "if (rest) throw new Error(`${at}: pending takes", "if (false) throw new Error(`${at}: pending takes", 'kit.js'],
+  ['the gate counts a pending behaviour as uncovered again',
+    'const uncovered = result.uncovered.filter((b) => !b.pending);', 'const uncovered = result.uncovered;', 'check.js'],
+  ['a pending marker that outlived its build passes the gate',
+    'for (const b of result.covered.filter((x) => x.pending)) {', 'for (const b of [].filter((x) => x.pending)) {', 'check.js'],
+  ['the writer\'s collateral rule stops seeing `pending`, so an edit can strip another behaviour\'s marker',
+    'review: b.review, pending: b.pending,', 'review: b.review,', 'writer.js'],
+  // kit#151: `fills field:X with …`. Each of these is the silent drop coming back
+  // by a different door — the field unnamed when the value refuses, a two-value
+  // `provides` re-joined into a guess, the obligation gone from requires.js.
+  ['a single-field fill binds only when it has a value, so an unbound field with an open hole goes unnamed again',
+    '        const fb = bind(field);',
+    '        const fb = (literal || providedValue(step) !== null) ? bind(field) : null;', 'kit.js'],
+  ['a provided value that split on a comma fills with its first half instead of refusing',
+    'return v && v.length === 1 ? v[0] : null;',
+    'return v && v.length ? v[0] : null;', 'kit.js'],
+  ['requires.js forgets the field a single-field fill names, so it leaves the contract',
+    "    if (field) return [{ nounKey: key(field), kind: 'field', name: field.name, req: LABEL, verb: 'fills', at: step.at }];",
+    '', 'requires.js'],
   // kit.js's own CLI. The first of these is the defect as it actually shipped:
   // every `--flag` this tool does not know was dropped in silence, so
   // `kit.js kit --dir /elsewhere` reported on Kit's own corpus and said nothing
@@ -694,8 +767,13 @@ MUTANTS.push(
   // The kit#39 lesson, on a different child process: a failure that does not
   // name its layer sends three sessions looking in three wrong places.
   ['a failed git call stops naming its exit status, so every failure reads alike',
-    'const first = String(r.stderr || \'\').trim().split(\'\\n\')[0] || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'const first = reasonLine(r.stderr) || `exit ${r.status}`;\n    return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
     'return { ok: false, failure: \'git did not succeed\', stdout: r.stdout || \'\', stderr: r.stderr || \'\' };',
+    'git-store.js'],
+  // kit#165: a rejected push prints `To <remote>` first, so the first line said where, never why.
+  ['a rejected push names only the remote again, not why it was rejected',
+    "return lines.find((l) => l.startsWith('!') || l.startsWith('fatal:') || l.startsWith('error:')) ?? lines[0];",
+    'return lines[0];',
     'git-store.js'],
 );
 
@@ -865,9 +943,17 @@ MUTANTS.push(
     '../../start.js'],
 );
 
+// Filters a derived list only: SUBJECTS and restoreAll() still cover every file.
+// A filter matching nothing is a typo, not a clean pass — exit 2, never `0/0 killed`.
+const RUN = only ? MUTANTS.filter(([name, , , file = 'kit.js']) => name.includes(only) || file.includes(only)) : MUTANTS;
+if (!RUN.length) {
+  console.error(`cannot look: --only ${JSON.stringify(only)} matched no mutants`);
+  process.exit(2);
+}
+
 let killed = 0;
 const survived = [];
-for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
+for (const [name, from, to, file = 'kit.js'] of RUN) {
   const original = SUBJECTS[file];
   // An anchor that stopped matching is a SURVIVOR, not a skip: it means the
   // mutation silently stopped being applied and the rule stopped being measured.
@@ -879,6 +965,6 @@ for (const [name, from, to, file = 'kit.js'] of MUTANTS) {
   if (fails > 0) { killed++; console.log(`  killed (${fails} failing)  ${name}`); }
   else { survived.push(name); console.log(`  SURVIVED             ${name}`); }
 }
-console.log(`\n${killed}/${MUTANTS.length} killed, ${survived.length} survived`);
+console.log(`\n${killed}/${RUN.length} killed, ${survived.length} survived${only ? ` (--only ${JSON.stringify(only)}: ${RUN.length} of ${MUTANTS.length})` : ''}`);
 if (run() !== 0) { console.error('HARNESS BROKEN: suite is not green after restore'); process.exit(2); }
 process.exit(survived.length ? 1 : 0);

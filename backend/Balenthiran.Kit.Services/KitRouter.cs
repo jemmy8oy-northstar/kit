@@ -26,6 +26,9 @@ namespace Balenthiran.Kit.Services;
 /// <param name="secure">Set the cookie's <c>Secure</c> flag (an https public origin).</param>
 /// <param name="git">Write-back (<c>--git</c>); off when not given, as <c>ui.js</c> without the flag.</param>
 /// <param name="deployed">A public origin is configured (<c>KIT_PUBLIC_ORIGIN</c>): with write-back off, a write says the edit is on the server's disk only.</param>
+/// <param name="pulls">Commit's door to <c>dev</c> (kit#155): proposes the edits branch as a pull request. None means Commit says so.</param>
+/// <param name="head">The branch every edit is pushed to (<c>KIT_GIT_BRANCH</c>, <c>kit/hosted</c> when deployed) — Commit's pull request is FROM it.</param>
+/// <param name="baseBranch">What Commit proposes the edits INTO: <c>KIT_GIT_BASE</c>, default <c>dev</c>, the branch the entrypoint starts <paramref name="head"/> from.</param>
 public sealed class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -38,7 +41,10 @@ public sealed class KitRouter(
     bool secure = false,
     ICorpusWriter? writer = null,
     IGitStore? git = null,
-    bool deployed = false) : IKitRouter
+    bool deployed = false,
+    IPullRequestOpener? pulls = null,
+    string? head = null,
+    string baseBranch = "dev") : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -165,6 +171,12 @@ public sealed class KitRouter(
             });
         }
 
+        // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.
+        if (pathname == "/api/commit")
+        {
+            return Commit();
+        }
+
         var bm = Bindings.Match(pathname);
         var m = bm.Success ? bm : Behaviours.Match(pathname);
         if (!m.Success)
@@ -191,8 +203,17 @@ public sealed class KitRouter(
         }
 
         var b = body.Value;
-        return bm.Success ? Bind(app, b) : Edit(app, m, b);
+
+        // ONE edit at a time: read the file, write it, commit, push. Kestrel serves requests in
+        // parallel, where ui.js never could (one thread, synchronous git), so two edits at once
+        // would race on the same corpus text and on git's index lock (kit#165).
+        lock (writeGate)
+        {
+            return bm.Success ? Bind(app, b) : Edit(app, m, b);
+        }
     }
+
+    private readonly object writeGate = new();
 
     /// <summary><c>write()</c> past its gates: create a behaviour, add a step, or adjudicate.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
@@ -238,6 +259,56 @@ public sealed class KitRouter(
         var what = review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
         return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
+
+    /// <summary>
+    /// Commit (kit#155 slice 2): propose every edit on the edits branch to <c>dev</c> as ONE pull
+    /// request, for him or CI to merge. Nothing here touches the corpus or git — each edit was
+    /// already pushed when it was made, so Commit only asks GitHub. A second press finds the
+    /// open pull request rather than opening another. The body is not read: there is nothing
+    /// to choose, because there is one edits branch and one base.
+    ///
+    /// Every refusal is 409 with the opener's own sentence — GitHub's words where GitHub spoke —
+    /// so the UI shows one shape and the reason names the layer.
+    /// </summary>
+    private KitResponse Commit()
+    {
+        if (!git.Enabled)
+        {
+            return Json(409, new ApiError
+            {
+                Error = "git-off",
+                Reason = "git write-back is off, so no edit has been pushed anywhere and there is nothing to propose to " + baseBranch,
+            });
+        }
+
+        if (string.IsNullOrEmpty(head))
+        {
+            return Json(409, new ApiError { Error = "no-edits-branch", Reason = "Kit was not told which branch its edits are pushed to (KIT_GIT_BRANCH), so it cannot propose them" });
+        }
+
+        if (pulls is null)
+        {
+            return Json(409, new ApiError { Error = "no-pull-request", Reason = "this Kit has no way to open a pull request" });
+        }
+
+        // Sync over async, as GitStore runs git synchronously: the host has no synchronisation
+        // context to deadlock on. SERIALISED, because Kestrel is not: two presses at once would
+        // both find no open pull request and both create one, and the second would come back as
+        // GitHub's 422 instead of "already open" (kit#160's blind review). Behind the lock the
+        // second press finds the first one's pull request.
+        IPullRequestResult r;
+        lock (commitGate)
+        {
+            r = pulls.OpenAsync(head, baseBranch, $"kit: hosted edits ({head} → {baseBranch})", CommitBody).GetAwaiter().GetResult();
+        }
+        return r.Reason is { } reason
+            ? Json(409, new ApiError { Error = "no-pull-request", Reason = reason })
+            : Json(200, r);
+    }
+
+    private readonly object commitGate = new();
+
+    private const string CommitBody ="Edits made in the hosted Kit. Each one was committed and pushed as it was made; merging this lands them on the base branch.";
 
     /// <summary><c>postBinding()</c> past its gates: add one binding to the app's bindings file.</summary>
     private KitResponse Bind(string app, JsonElement body)
@@ -381,31 +452,41 @@ public sealed class KitRouter(
             return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = false }, SetCookie = ClearCookie() };
         }
 
-        var wait = throttle?.RetryAfterMs() ?? 0;
-        if (wait > 0)
-        {
-            var seconds = (int)Math.Ceiling(wait / 1000.0);
-            return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
-        }
-
         // `typeof given === 'string' ? given : ''` — a missing, numeric or array password is ''.
         var given = body is { ValueKind: JsonValueKind.Object } b && b.TryGetProperty("password", out var p) && p.ValueKind == JsonValueKind.String
             ? p.GetString()!
             : string.Empty;
-        if (!SecretsMatch(given, password!))
-        {
-            throttle?.Fail();
 
-            // One message for missing and wrong: telling them apart helps a guesser.
-            return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
+        // Check, judge and count as ONE step. Separately, guesses sent at once were all checked
+        // before any was counted: 200 parallel guesses had 30 judged against 5 free attempts. ui.js
+        // never could, being one thread; the port made sign-in concurrent (SignInRaceTests).
+        lock (signInGate)
+        {
+            var wait = throttle?.RetryAfterMs() ?? 0;
+            if (wait > 0)
+            {
+                var seconds = (int)Math.Ceiling(wait / 1000.0);
+                return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
+            }
+
+            if (!SecretsMatch(given, password!))
+            {
+                throttle?.Fail();
+
+                // One message for missing and wrong: telling them apart helps a guesser.
+                return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
+            }
+
+            throttle?.Succeed();
         }
 
-        throttle?.Succeed();
         var token = sessions!.Create();
 
         // The token goes out ONLY as an HttpOnly cookie, never in the body.
         return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
     }
+
+    private readonly object signInGate = new();
 
     /// <summary>Fails closed: no store means nobody is signed in.</summary>
     private bool SignedIn(string? cookie) => sessions is not null && sessions.Valid(ParseCookies(cookie).GetValueOrDefault(Cookie));

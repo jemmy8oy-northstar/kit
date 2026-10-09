@@ -28,6 +28,13 @@ public static class ServiceRegistration
         services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
         services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch));
+
+        // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
+        // (token, repository, base) by the request GitHub would have received.
+        services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
+            new HttpClient(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) },
+            settings.Token(),
+            settings.GitRepository));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
             sp.GetRequiredService<IProjectViewer>(),
@@ -40,7 +47,10 @@ public static class ServiceRegistration
             settings.Secure,
             sp.GetRequiredService<ICorpusWriter>(),
             sp.GetRequiredService<IGitStore>(),
-            deployed: settings.PublicOrigin is not null));
+            deployed: settings.PublicOrigin is not null,
+            pulls: sp.GetRequiredService<IPullRequestOpener>(),
+            head: settings.GitBranch,
+            baseBranch: settings.GitBase));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

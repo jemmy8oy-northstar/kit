@@ -41,6 +41,10 @@ function parse(text, file = '<inline>') {
         // because the whole risk is an inference passing itself off as a
         // requirement. Silence means a human wrote it.
         source: { origin: 'defined', ref: null }, review: { state: 'approved', note: null },
+        // In the literal rather than assigned when the line is met, so the key
+        // sits in one place whatever line order the corpus uses — the goldens are
+        // compared byte-for-byte, key order included, against the C# port.
+        pending: false,
       };
       behaviours.push(cur);
       continue;
@@ -51,6 +55,25 @@ function parse(text, file = '<inline>') {
     const rest = line.slice(kw.length).trim();
 
     if (kw === 'actor') { cur.actor = rest; continue; }
+
+    // ── James, kit#155 (2026-10-08) ───────────────────────────────────────
+    // "clicking commit should add the spec changes as pending ... on the dev
+    // branch so that it is viewable. And then the feature branches can behave as
+    // normal feature branches do."
+    //
+    // So a spec can land on `dev` ahead of its code, and `pending` is what says
+    // so. It lives in the `.beh` file rather than in a label or a store because
+    // the CLI has to see it too (kit#148: Kit stays repo-only). The feature
+    // branch that builds the behaviour deletes the line in the same PR.
+    //
+    // Bare on purpose. A reason would be prose nothing reads, and an argument
+    // would invite a second state (`pending blocked`, `pending later`) that the
+    // gate in check.js would then have to have an opinion about.
+    if (kw === 'pending') {
+      if (rest) throw new Error(`${at}: pending takes nothing after it, got: ${rest}`);
+      cur.pending = true;
+      continue;
+    }
 
     // ── James's #68 decision, 2026-08-30 ──────────────────────────────────
     // "I like this default included but marked unreviewed."
@@ -433,6 +456,18 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
       return b && b.urlPattern ? [`await expect(page).toHaveURL(new RegExp(${JSON.stringify(b.urlPattern)}));`] : null;
     }
     case 'fills': {
+      // `fills field:X with "text"` / `with ?slot` — one field, one value. Six
+      // steps in three committed corpora were written this way before Kit could
+      // read it, and every one vanished: no line, no obligation, and field:X
+      // missing from the unbound list (kit#151). Bind FIRST, so an unbound field
+      // is named even when the value is what refuses.
+      const field = nouns.find((n) => n.kind === 'field');
+      if (field) {
+        const fb = bind(field);
+        const value = literal ? literal.name : providedValue(step);
+        if (!fb || !fb.label || value === null) return null;
+        return [`await page.getByLabel(${JSON.stringify(fb.label)}).fill(${JSON.stringify(value)});`];
+      }
       // The payoff of the whole unknowns mechanism: this step named no field,
       // and the field it generates against came from a DIFFERENT behaviour.
       const fields = step.resolved && step.resolved.fields;
@@ -470,6 +505,17 @@ function emit(step, bind, bindings = {}, symbols = new Map()) {
     default:
       return null;
   }
+}
+
+// The value a `?slot` on a single-field `fills` resolved to, or null. A hole is
+// test data — the English the learner types — so it generates only once some
+// behaviour `provides` it, which is exactly what `OPEN unknown(s)` already tells
+// the reader to do. Exactly ONE value: `provides` splits on commas, and joining
+// them back would be a guess at the spacing the author meant.
+function providedValue(step) {
+  const hole = step.holes[0];
+  const v = hole && step.resolved && step.resolved[hole.slot];
+  return v && v.length === 1 ? v[0] : null;
 }
 
 // ─────────────────────────── 4. coverage ───────────────────────────
@@ -845,15 +891,7 @@ function questions(behaviours, conflicts = []) {
   for (const b of behaviours) {
     for (const c of b.cites) if (!citedBy.has(c.id)) citedBy.set(c.id, b.id);
   }
-  const evidence = (b) => b.cites.map((c) => {
-    const t = byId.get(c.id);
-    return {
-      id: c.id,
-      title: t ? t.title : c.id,
-      ref: t ? t.source.ref : null,
-      contracts: t ? t.steps.filter((s) => s.kind === 'contract').map((s) => s.text) : [],
-    };
-  });
+  const evidence = (b) => evidenceOf(byId, b);
 
   // Conflicts first: they are the only question here where the corpus itself
   // says two authored statements cannot both hold.
@@ -909,6 +947,51 @@ function questions(behaviours, conflicts = []) {
   const rank = { decision: 0, review: 1 };
   out.sort((a, b) => rank[a.tier] - rank[b.tier]);
   return out;
+}
+
+function evidenceOf(byId, b) {
+  return b.cites.map((c) => {
+    const t = byId.get(c.id);
+    return {
+      id: c.id,
+      title: t ? t.title : c.id,
+      ref: t ? t.source.ref : null,
+      contracts: t ? t.steps.filter((s) => s.kind === 'contract').map((s) => s.text) : [],
+    };
+  });
+}
+
+// kit#73: the questions a human wrote on a DEFINED behaviour. questions() skips
+// those, rightly — a defined behaviour is not up for adjudication — but `asks`
+// is not adjudication. It is the author saying "I could not decide this", and it
+// is the one input that exists purely to reach the reader. A corpus written
+// before the code has nothing to infer from, so every behaviour in it is defined
+// and, without this, its sheet reports zero decisions while carrying several.
+//
+// Kept apart from questions() on purpose: Kit did not detect these and cannot
+// rank them, so they get their own section rather than borrowing the authority
+// of one. Sheet-only for now — the project view (and its C# port) still serve
+// questions() alone.
+function asked(behaviours, conflicts = []) {
+  const byId = new Map(behaviours.map((b) => [b.id, b]));
+  // A conflict's question is already on the sheet as that conflict's decision.
+  const owners = new Set();
+  for (const c of conflicts) {
+    const sides = [...c.holders, ...c.challengers.map((x) => x.from)];
+    const owner = sides.map((id) => byId.get(id)).find((b) => b && b.asks);
+    if (owner) owners.add(owner.id);
+  }
+  const cited = new Set(behaviours.flatMap((b) => b.cites.map((c) => c.id)));
+  return behaviours
+    .filter((b) => b.source.origin === 'defined' && b.asks && !owners.has(b.id) && !cited.has(b.id))
+    .map((b) => ({
+      kind: 'asked', tier: 'asked',
+      key: b.id, id: b.id, title: b.title,
+      source: b.source, serves: b.serves.map((s) => s.id),
+      contracts: b.steps.filter((s) => s.kind === 'contract').map((s) => s.text),
+      asks: b.asks, options: b.options, recommend: b.recommend, against: b.against,
+      cites: evidenceOf(byId, b),
+    }));
 }
 
 // The gate. A sheet that silently ships an incomplete decision is worse than no
@@ -973,11 +1056,13 @@ function renderSheet(app, qs, opts = {}) {
   const rev = opts.rev || '';
   const decisions = qs.filter((q) => q.tier === 'decision');
   const reviews = qs.filter((q) => q.tier === 'review');
+  const asked = opts.asked || [];
   const L = [];
 
   L.push(`# Behaviour question sheet — \`${app}\``);
   L.push('');
-  L.push(`**${decisions.length} decisions · ${reviews.length} reviews.** Generated by ` +
+  L.push(`**${decisions.length} decisions · ${reviews.length} reviews` +
+    `${asked.length ? ` · ${asked.length} asked by the author` : ''}.** Generated by ` +
     `\`node kit.js sheet ${app}${rev ? ` --rev ${rev}` : ''}\`` +
     `${rev ? `, over the app at \`${rev}\`` : ''}. Do not hand-edit — re-run it.`);
   L.push('');
@@ -1047,49 +1132,43 @@ function renderSheet(app, qs, opts = {}) {
       L.push(`**\`${q.id}\` — ${q.title}**`);
       L.push('');
       if (q.kind === 'unserved') {
+        // kit#93: this said "This surface exists in the code", which is false for a
+        // corpus written BEFORE the code — the mode he wants Kit driven in (kit#88).
+        // What was measured is only that nothing documented displays it.
         L.push('**Why this is a decision:** you said the API layer is inferred from what the UI needs to');
-        L.push('display. This surface exists in the code and **no documented screen displays it**, so either');
-        L.push('the design is missing a screen or the surface should go. Those are opposite edits.');
+        L.push('display. Kit inferred this surface and **no documented screen displays it**, so either the');
+        L.push('design is missing a screen or the surface should go. Those are opposite edits.');
       } else {
         L.push('**Why this is a decision:** it serves a documented screen, so Kit would have filed it as a');
         L.push('routine review — it is here because a human said it is not routine.');
       }
       L.push('');
-      L.push(`**Evidence** — read out of \`${q.source.ref}\`:`);
-      L.push('');
-      for (const c of q.contracts) L.push(`- ${c}`);
-      if (q.serves.length) L.push(`- serves: ${q.serves.map((s) => `\`${s}\``).join(', ')}`);
-      L.push('');
+      renderEvidence(L, q);
     }
-
-    // Rendered before the options: it is the half of the evidence that makes the
-    // question concrete, and it is here rather than in the review table because
-    // ticking it there would answer this question without saying so.
-    if ((q.cites || []).length) {
-      L.push('**Also on the table here** — these are part of this question, which is why they are not');
-      L.push('in the review list below:');
-      L.push('');
-      for (const c of q.cites) {
-        L.push(`- \`${c.id}\` ${c.title} — ${c.contracts.join('; ') || c.title} (\`${c.ref}\`)`);
-      }
-      L.push('');
-    }
-
-    L.push('**Options**');
-    L.push('');
-    for (const o of q.options) L.push(`- **${o.label}** — ${o.consequence}`);
-    L.push('');
-    if (q.recommend) {
-      L.push(`**I'd pick: ${q.recommend.label}.** ${q.recommend.why}`);
-      L.push('');
-      L.push(`**The strongest case against that:** ${q.against}`);
-      L.push('');
-    }
-    L.push('**Your answer** — becomes: ' + answerLine(q));
-    L.push('');
-    L.push('> ');
-    L.push('');
+    renderPack(L, q);
   });
+
+  // kit#73: after the decisions, because Kit proved nothing about these — and
+  // before the reviews, because a human's open question is not cheap either.
+  // Rendered only when there are some, so a corpus with none keeps its sheet.
+  if (asked.length) {
+    L.push('---');
+    L.push('');
+    L.push(`## Asked by the author — ${asked.length}`);
+    L.push('');
+    L.push('A human wrote each of these behaviours and left a question on it. Kit did not detect them');
+    L.push('and cannot rank them: they are here because the author asked, not because Kit proved that');
+    L.push('both answers change something.');
+    L.push('');
+    asked.forEach((q, i) => {
+      L.push(`### A${i + 1}. ${q.asks}`);
+      L.push('');
+      L.push(`**\`${q.id}\` — ${q.title}**`);
+      L.push('');
+      renderEvidence(L, q);
+      renderPack(L, q);
+    });
+  }
 
   L.push('---');
   L.push('');
@@ -1124,7 +1203,53 @@ function renderSheet(app, qs, opts = {}) {
   L.push('- **Anything read out of a document you wrote.** A defined behaviour is not up for adjudication');
   L.push('  here; you already ruled on it by writing it down. It only reappears if it collides with');
   L.push('  another defined behaviour — which is exactly what D1 is.');
+  if (asked.length) {
+    L.push('  The exception is a question its author wrote on it, which is the section above the reviews.');
+  }
   return L.join('\n') + '\n';
+}
+
+function renderEvidence(L, q) {
+  L.push(`**Evidence** — read out of \`${q.source.ref}\`:`);
+  L.push('');
+  for (const c of q.contracts) L.push(`- ${c}`);
+  if (q.serves.length) L.push(`- serves: ${q.serves.map((s) => `\`${s}\``).join(', ')}`);
+  // kit#93: an empty block under a heading reads as "nothing to see" rather
+  // than "nothing was captured" — say which.
+  if (!q.contracts.length && !q.serves.length) L.push('- _none recorded: the behaviour carries no contract lines and serves no screen_');
+  L.push('');
+}
+
+// The half every question shares, whoever raised it: what else it puts on the
+// table, the options, my pick and the case against it, and the line it becomes.
+function renderPack(L, q) {
+  // Rendered before the options: it is the half of the evidence that makes the
+  // question concrete, and it is here rather than in the review table because
+  // ticking it there would answer this question without saying so.
+  if ((q.cites || []).length) {
+    L.push('**Also on the table here** — these are part of this question, which is why they are not');
+    L.push('in the review list below:');
+    L.push('');
+    for (const c of q.cites) {
+      L.push(`- \`${c.id}\` ${c.title} — ${c.contracts.join('; ') || c.title} (\`${c.ref}\`)`);
+    }
+    L.push('');
+  }
+
+  L.push('**Options**');
+  L.push('');
+  for (const o of q.options) L.push(`- **${o.label}** — ${o.consequence}`);
+  L.push('');
+  if (q.recommend) {
+    L.push(`**I'd pick: ${q.recommend.label}.** ${q.recommend.why}`);
+    L.push('');
+    L.push(`**The strongest case against that:** ${q.against}`);
+    L.push('');
+  }
+  L.push('**Your answer** — becomes: ' + answerLine(q));
+  L.push('');
+  L.push('> ');
+  L.push('');
 }
 
 // The line an answer becomes. Kept next to the renderer rather than inlined so
@@ -1137,6 +1262,12 @@ function answerLine(q) {
     // that named a winner would have described an edit nobody was going to make.
     return `the two \`provides\` lines on ${q.sides.map((s) => `\`${s.id}\``).join(' and ')} reconciled — ` +
       'corrected, merged into one statement, or one of them removed, whichever your answer implies.';
+  }
+  // kit#93: when the author wrote the options, answering IS picking one of them —
+  // `serves`-or-delete is only the remedy when Kit detected the gap and nobody
+  // said what the choices are.
+  if (q.options.length) {
+    return `the option you pick, made true on \`${q.id}\` — the edit that option describes above.`;
   }
   if (q.kind === 'unserved') {
     return `\`serves BEH-…\` added to \`${q.id}\` (with the screen written into \`DESIGN.md\`), ` +
@@ -1313,7 +1444,7 @@ function parseCliArgs(argv) {
 
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
-  questions, questionErrors, renderSheet, nounsOf, boundNouns,
+  questions, asked, questionErrors, renderSheet, nounsOf, boundNouns,
   testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
   UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, CLI_VALUE_FLAGS, selectCorpora,
 };
@@ -1397,7 +1528,8 @@ if (require.main === module) {
       process.exit(1);
     }
     const qs = questions(behaviours, conflicts);
-    const qErrors = questionErrors(qs);
+    const authored = asked(behaviours, conflicts);
+    const qErrors = questionErrors([...qs, ...authored]);
     if (qErrors.length) {
       console.error('── incomplete questions (exit 1) ──');
       console.error('  A half-written decision is worse than a missing one: it looks worked through.');
@@ -1405,7 +1537,7 @@ if (require.main === module) {
       process.exit(1);
     }
     const app = (files.length === 1 ? files[0].replace(/\.beh$/, '') : only) || 'all';
-    process.stdout.write(renderSheet(app, qs, { rev }));
+    process.stdout.write(renderSheet(app, qs, { rev, asked: authored }));
     return;
   }
 
@@ -1421,11 +1553,19 @@ if (require.main === module) {
     if (!perApp.has(app)) perApp.set(app, []);
     perApp.get(app).push(b);
   }
+  // kit#76: the fraction is over BINDING TARGETS — the nouns a generatable step
+  // needs bound, which is requires.js's population and the one the unbound list
+  // below is drawn from. It used to be over every noun a step names, so it sat two
+  // lines above a list over a different population: `0/43` on kit.beh, where only
+  // 20 of the 43 are work a binding could ever do. The rest are named separately.
+  const { requirements } = require('./requires.js');
   let boundCount = 0;
-  const referenced = new Set();
+  const targets = new Set();
+  const notBindable = new Set();
   for (const [app, bs] of perApp) {
-    const r = boundNouns(bs, byApp[app] || {});
-    boundCount += r.bound;
+    const own = requirements(bs, byApp[app] || {}).nouns;
+    boundCount += own.filter((n) => n.bound).length;
+    const ownKeys = new Set(own.map((n) => n.noun));
     // `\0` as an ESCAPE, never a literal NUL byte in the source. The separator
     // itself is right — no app name or noun can contain a NUL, so the composite
     // key cannot collide — but typing the byte rather than the escape made this
@@ -1433,7 +1573,8 @@ if (require.main === module) {
     // it and prints NOTHING, so a search across the prototype directory silently
     // skipped kit.js, the largest source file here. An empty grep result meant
     // "suppressed", not "absent" ([[empty-means-two-things]]).
-    for (const n of r.referenced) referenced.add(`${app}\0${n}`);
+    for (const n of ownKeys) targets.add(`${app}\0${n}`);
+    for (const n of boundNouns(bs, {}).referenced) if (!ownKeys.has(n)) notBindable.add(n);
   }
   const totals = { generated: 0, contract: 0, ungenerated: 0 };
   const unbound = new Set();
@@ -1487,7 +1628,8 @@ if (require.main === module) {
   // run over one corpus says so, rather than leaving the reader to infer it.
   console.log(`  read from             ${dir}   (${files.length === 1 ? '1 corpus' : `${files.length} corpora`}: ${files.join(', ')})`);
   console.log(`  behaviours            ${behaviours.length}`);
-  console.log(`  nouns bound           ${boundCount}/${referenced.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
+  console.log(`  nouns bound           ${boundCount}/${targets.size}   in THIS corpus (Cucumber would need one step definition per step phrasing, i.e. ${steps})`);
+  console.log(`  not bindable          ${notBindable.size}   ${[...notBindable].join(', ') || '—'}${notBindable.size ? '   named by a step, but no step Kit generates binds them (a form binds its fields)' : ''}`);
   console.log(`  generated lines       ${totals.generated}`);
   console.log(`  wire contracts        ${totals.contract}   not expressible as a behaviour — something else must own these`);
   console.log(`  ungenerated           ${totals.ungenerated}   refused rather than guessed`);

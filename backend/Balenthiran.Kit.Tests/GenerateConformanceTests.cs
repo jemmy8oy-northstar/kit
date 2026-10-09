@@ -75,8 +75,9 @@ public class GenerateConformanceTests
     /// spell a lone surrogate (<c>"\ud800"</c>); <c>JSON.parse</c> keeps it and
     /// <c>JSON.stringify</c> writes it back escaped, but System.Text.Json cannot hold
     /// one in a string at all. The port must THROW there — could-not-read — never
-    /// write a different test. Nothing else can carry one in: corpus text arrives as
-    /// UTF-8, which cannot encode a lone surrogate, in Node or here.
+    /// write a different test. Corpus text arrives as UTF-8, which cannot encode a lone
+    /// surrogate — but a binding written through the API can, as a JSON escape; the viewer
+    /// reports that as one project's could-not-look (<see cref="RouteShapeTests"/>).
     /// </summary>
     [Fact]
     public void A_lone_surrogate_in_a_binding_is_refused_loudly_not_rewritten()

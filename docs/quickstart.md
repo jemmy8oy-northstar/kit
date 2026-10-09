@@ -73,10 +73,11 @@ found six weeks later by whoever built the screen.
 
 ## What it will not do
 
-- **It never commits.** Edits land in your working tree as an ordinary diff you
-  review. There is no hidden write.
-- **Writes are refused unless it is bound to loopback**, so the default really is
-  a local tool.
+- **By default, it never commits.** Edits land in your working tree as an ordinary
+  diff you review. There is no hidden write. (A deployed Kit with git write-back on
+  commits to `kit/hosted` and proposes the edits as a pull request instead.)
+- **With no password set, writes are refused unless it is bound to loopback**, so
+  the default really is a local tool.
 - **Contradiction detection is same-noun only.** Two behaviours that describe one
   control under different names do not collide and Kit reports nothing — see the
   limit stated in [`../README.md`](../README.md).
@@ -90,4 +91,4 @@ found six weeks later by whoever built the screen.
 |---|---|
 | [`analysis/strategic-position.md`](analysis/strategic-position.md) | Is this worth building, and is it still differentiated? |
 | [`design/process.md`](design/process.md) | The loop, with no UI and no product in it |
-| [`design/ui.md`](design/ui.md) | Why the UI never commits, and what a write is allowed to do |
+| [`design/ui.md`](design/ui.md) | Why the UI never commits by default, and what a write is allowed to do |

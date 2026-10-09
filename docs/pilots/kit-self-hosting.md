@@ -177,7 +177,9 @@ The UI shipped — kit#16 → #24 → #26 → #27 → #28 — so the prediction 
 | corpus | subject | derived steps | generated tests that PASS |
 |---|---|---|---|
 | `kit.beh` | Kit the CLI | **0** | — nothing to run |
-| `kit-ui.beh` | Kit the browser surface | **20** | **5 of 6** |
+| `kit-ui.beh` | Kit the browser surface | **21** | **6 of 6** |
+
+_Until kit#151 (2026-10-08) this row read **20** and **5 of 6**. The failure below is why it changed._
 
 **The prediction held.** Same author, same notation, same generator, same bindings file — and
 the moment the subject has a browser, the derived count goes from 0 to 20 and the emitted
@@ -210,6 +212,12 @@ await page.getByRole("button", { name: "Deny" }).click();
 **The test still runs on regardless.** Deny is disabled precisely because the fill never
 happened, so it fails on a click timeout — a failure that reads like an application bug and is
 nothing of the kind. The cause is the line above it.
+
+✅ **Resolved 2026-10-08 (kit#151):** `fills field:X with "text"` now generates
+`getByLabel(<label>).fill("text")`, so the correction is filled and the test passes — **6 of 6**,
+measured in a browser, with a control run of the old generator in the same environment still
+failing `BEH-ADJ-2` on the same 15 s click timeout. The same shape appears in two other corpora; the
+refusal story below is still true of every step Kit genuinely cannot write.
 
 Originally the refusal was *only* the comment, which no test runner will ever show you: honest
 at the point of generation and lost at the point of execution, so Kit knew the test was
@@ -279,6 +287,8 @@ output, kept as the fixture three tests drive from.
 therefore James's call ([claude-code-bot#83](https://github.com/jemmy8oy-northstar/claude-code-bot/issues/83)).
 So the binary is named on the command line, and its absence refuses rather than skipping. That
 also means **`--check` is a manual gate, not a CI one.** The half that does not need a browser —
-6 tests, 20 derived steps, 1 refusal, and the refused step sitting directly above the click that
-depends on it — is asserted in `kit.test.js`, which CI runs. Before this, the `kit-ui` table was
+6 tests, 21 derived steps, 0 refusals, and the correction filled directly above the Deny click that
+depends on it — is asserted in `kit.test.js`, which CI runs. (Until kit#151 that read *20 derived, 1
+refusal*, with the refused fill above the click; the adjacency tests now run on a copy with the field
+unbound, so they still have a refusal to stand on.) Before this, the `kit-ui` table was
 gated by nothing at all while the `kit.beh` table above it was gated by `self-host.js --check`.

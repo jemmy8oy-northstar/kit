@@ -86,6 +86,8 @@ public class ResolveEdgeTests
 
         public IReview Review => null!;
 
+        public bool Pending => false;
+
         public bool? ReviewExplicit => null;
 
         public IReadOnlyList<IFilled>? Filled => null;

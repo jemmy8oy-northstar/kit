@@ -1,3 +1,4 @@
+using Balenthiran.Kit.Database;
 using Balenthiran.Kit.Services;
 
 namespace Balenthiran.Kit.WebApi;
@@ -23,6 +24,29 @@ public sealed record KitSettings(
     string? GitRemote = null,
     string? GitBranch = null)
 {
+    /// <summary>
+    /// <c>KIT_GIT_TOKEN</c>, which Commit opens its pull request with (kit#155) — the credential the
+    /// entrypoint already pushes with. ⚠️ WRITE-ONLY on purpose, read through <see cref="Token"/>: a
+    /// record's <c>ToString</c> prints every property it can read, so a readable one would put the
+    /// token in any log line that ever formats the settings. An <c>internal get</c> is NOT enough —
+    /// the synthesised printer is in this assembly and printed it (CommitRouteTests caught it).
+    /// </summary>
+    public string? GitToken
+    {
+        init => gitToken = value;
+    }
+
+    private readonly string? gitToken;
+
+    /// <summary>The token, for the pull-request opener only.</summary>
+    internal string? Token() => gitToken;
+
+    /// <summary><c>owner/name</c> of the repository the edits branch lives in, from <c>KIT_GIT_CLONE</c>; null for anything not on github.com.</summary>
+    public string? GitRepository { get; init; }
+
+    /// <summary><c>KIT_GIT_BASE</c>: what Commit proposes the edits into — the branch the entrypoint starts the edits branch from.</summary>
+    public string GitBase { get; init; } = "dev";
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -46,7 +70,12 @@ public sealed record KitSettings(
             env("KIT_HOST") is { Length: > 0 } h ? h : "127.0.0.1",
             GitSwitch(env("KIT_GIT")),
             env("KIT_GIT_REMOTE") is { Length: > 0 } r ? r : null,
-            env("KIT_GIT_BRANCH") is { Length: > 0 } b ? b : null);
+            env("KIT_GIT_BRANCH") is { Length: > 0 } b ? b : null)
+        {
+            GitToken = env("KIT_GIT_TOKEN") is { Length: > 0 } t ? t : null,
+            GitRepository = GitHubPullRequestOpener.RepositoryFromRemote(env("KIT_GIT_CLONE")),
+            GitBase = env("KIT_GIT_BASE") is { Length: > 0 } g ? g : "dev",
+        };
     }
 
     /// <summary>

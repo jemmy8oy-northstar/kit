@@ -34,9 +34,11 @@ node start.js --help              # ports, hosts, corpus directories
 Without `--repos`, every project reports **not measured** — which is not the same as *nothing is
 tested*, and Kit will not pretend otherwise.
 
-⚠️ **Kit writes to your corpus and never commits.** Edits land in the working tree as an ordinary
-diff for you to review. Writes are refused unless it is bound to loopback, so the default is a local
-tool; see [`docs/design/ui.md`](docs/design/ui.md) decision 2.
+⚠️ **By default, Kit writes to your corpus and never commits.** Edits land in the working tree as an
+ordinary diff for you to review. With no password set, writes are refused unless it is bound to
+loopback, so the default is a local tool. **A deployed Kit with git write-back on commits each edit to
+`kit/hosted`**, and the Commit button proposes them to `dev` as one pull request — nothing reaches `dev`
+until that pull request is merged. See [`docs/design/ui.md`](docs/design/ui.md) decision 2.
 
 ## Where to start reading
 
@@ -86,9 +88,9 @@ node prototypes/behaviour-ast/ui.js         # the API alone, already built
 
 The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
 shows the test Kit generates from each behaviour, and **writes new steps and behaviours back into
-the `.beh` file**. It never commits: both decisions at the foot of
-[`docs/design/ui.md`](docs/design/ui.md) landed on their stated defaults, so it is a local tool
-whose edits you review as an ordinary working-tree diff.
+the `.beh` file**. By default it never commits, so you review its edits as an ordinary working-tree
+diff. Deployed, it commits to `kit/hosted` and proposes the edits as a pull request — both decisions
+in [`docs/design/ui.md`](docs/design/ui.md) were later overruled for the deployed case.
 
 Measured against snip-it's real `editor.spec.ts`: **8 behaviours → 28 generated lines, 22 byte-identical
 to lines a person actually wrote**, 3 more present but reflowed. 6 wire contracts are **refused and still

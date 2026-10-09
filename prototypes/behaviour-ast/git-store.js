@@ -30,6 +30,17 @@ const DEFAULT_NAME = 'kit';
 const DEFAULT_EMAIL = 'kit@users.noreply.github.com';
 
 /**
+ * The line of git's stderr that says WHY: the first marked `!` (a rejected ref),
+ * `fatal:` or `error:`, else the first line. A rejected push prints
+ * `To <remote>` first, so "the first line" told the user where the push went and
+ * never why it failed (kit#165). Same rule as the C# `GitStore.ReasonLine`.
+ */
+function reasonLine(stderr) {
+  const lines = String(stderr || '').trim().split('\n').map((l) => l.trim());
+  return lines.find((l) => l.startsWith('!') || l.startsWith('fatal:') || l.startsWith('error:')) ?? lines[0];
+}
+
+/**
  * Run one git command and say what happened to it.
  *
  * ⚠️ `failure` names the LAYER, and that is the whole point of this function.
@@ -53,7 +64,7 @@ function git(args, cwd) {
     return { ok: false, failure: `git was killed by ${r.signal}`, stdout: r.stdout || '', stderr: r.stderr || '' };
   }
   if (r.status !== 0) {
-    const first = String(r.stderr || '').trim().split('\n')[0] || `exit ${r.status}`;
+    const first = reasonLine(r.stderr) || `exit ${r.status}`;
     return { ok: false, failure: `git ${args[0]} exited ${r.status}: ${first}`, stdout: r.stdout || '', stderr: r.stderr || '' };
   }
   return { ok: true, failure: null, stdout: r.stdout || '', stderr: r.stderr || '' };
@@ -181,4 +192,4 @@ function writeBack(file, opts = {}) {
   return { committed: true, pushed: true, commit, branch, reason: null };
 }
 
-module.exports = { writeBack, workTreeFor, currentBranch, message, git };
+module.exports = { writeBack, workTreeFor, currentBranch, message, git, reasonLine };

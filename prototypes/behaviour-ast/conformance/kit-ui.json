@@ -71,7 +71,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-SHEET-1",
@@ -158,7 +159,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-PAIR-1",
@@ -258,7 +260,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ADJ-1",
@@ -358,7 +361,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-ADJ-2",
@@ -454,7 +458,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     },
     {
       "id": "BEH-STEP-1",
@@ -525,7 +530,8 @@
       "review": {
         "state": "approved",
         "note": null
-      }
+      },
+      "pending": false
     }
   ],
   "resolve": {
@@ -704,12 +710,12 @@
     },
     {
       "id": "BEH-ADJ-2",
-      "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:KitCorrection with \\\"the starter set is re-seeded whenever the list is empty\\\"\" });\n  // UNGENERATED: when fills field:KitCorrection with \"the starter set is re-seeded whenever the list is empty\"\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
+      "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  await page.getByLabel(\"Correction (required to deny)\").fill(\"the starter set is re-seeded whenever the list is empty\");\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
       "missing": [],
       "stats": {
-        "generated": 3,
+        "generated": 4,
         "contract": 2,
-        "ungenerated": 1
+        "ungenerated": 0
       }
     },
     {
@@ -824,6 +830,26 @@
               "verbs": [
                 "activates",
                 "sees"
+              ],
+              "met": true
+            }
+          ]
+        },
+        {
+          "noun": "field:KitCorrection",
+          "kind": "field",
+          "name": "KitCorrection",
+          "usedBy": [
+            "BEH-ADJ-2"
+          ],
+          "bound": true,
+          "satisfied": true,
+          "needs": [
+            {
+              "id": "label",
+              "surface": "a form field with an associated <label> — `fills` addresses fields by label only, so a role or a bare locator will not do here",
+              "verbs": [
+                "fills"
               ],
               "met": true
             }
@@ -1060,6 +1086,7 @@
         "button:KitAddStep",
         "button:KitApprove",
         "button:KitDeny",
+        "field:KitCorrection",
         "heading:KitAddAStep",
         "heading:KitAdjudication",
         "heading:KitBehaviourSteps",
