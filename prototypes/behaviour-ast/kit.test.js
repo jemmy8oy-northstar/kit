@@ -5604,7 +5604,7 @@ test('git-store: the commit message describes the edit and names the app', () =>
 // about the environment Kit actually receives, not about the script's text.
 const ENTRYPOINT = pathx.join(realMarker.ROOT, 'docker-entrypoint.sh');
 
-function startKit(env) {
+function startKit(env, { prependPath = '' } = {}) {
   const bin = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-bin-'));
   fsx.writeFileSync(pathx.join(bin, 'dotnet'), [
     '#!/bin/sh',
@@ -5617,11 +5617,35 @@ function startKit(env) {
   ].join('\n'), { mode: 0o755 });
   const r = spawnx('sh', [ENTRYPOINT, '--urls', 'x'], {
     encoding: 'utf8',
-    env: { PATH: `${bin}:${process.env.PATH}`, HOME: fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-home-')), KIT_GIT_BASE: 'main', ...env },
+    env: { PATH: `${prependPath}${bin}:${process.env.PATH}`, HOME: fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-home-')), KIT_GIT_BASE: 'main', ...env },
   });
   const out = Object.fromEntries(r.stdout.split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
   return { ...r, out };
 }
+
+test('entrypoint: a FAILED clone of an existing kit/hosted never forks a fresh one from the base (kit#165)', () => {
+  // The first clone used to fall through to the base on ANY failure, so a network
+  // blip at start-up began a new kit/hosted from dev beside the real one — and
+  // every edit after it was a rejected push, stranded until the next restart
+  // deleted it. A git that fails only that clone stands in for the blip.
+  const f = gitFixture();
+  f.sh(['-C', f.clone, 'push', '-q', 'origin', 'HEAD:kit/hosted']);
+  const realGit = spawnx('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
+  const flaky = fsx.mkdtempSync(pathx.join(os.tmpdir(), 'kit-flaky-'));
+  fsx.writeFileSync(pathx.join(flaky, 'git'), [
+    '#!/bin/sh',
+    'case "$*" in *clone*kit/hosted*) echo "fatal: unable to access: Could not resolve host" >&2; exit 128;; esac',
+    `exec ${realGit} "$@"`,
+  ].join('\n'), { mode: 0o755 });
+  const work = pathx.join(f.root, 'work');
+
+  const r = startKit({ KIT_GIT_CLONE: f.bare, KIT_GIT_TOKEN: 't', KIT_GIT_WORKTREE: work }, { prependPath: `${flaky}:` });
+
+  assert.strictEqual(r.status, 0, 'Kit must still start');
+  assert.strictEqual(r.out.KIT_GIT, '', 'write-back must be OFF rather than pushing to a forked branch');
+  assert.strictEqual(fsx.existsSync(work), false, 'no clone of the base may be left to serve');
+  assert.match(r.stderr, /kit\/hosted exists/);
+});
 
 test('entrypoint: with no token it clones nothing and Kit starts exactly as before', () => {
   const f = gitFixture();
