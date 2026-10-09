@@ -113,6 +113,31 @@ public class CommitRouteTests
     }
 
     /// <summary>
+    /// kit#160's blind review: Kestrel serves presses concurrently, so two at once both found no
+    /// open pull request and both created one. Against a GitHub that is slow to create, one
+    /// press opens it and the other must find it.
+    /// </summary>
+    [Fact]
+    public async Task Two_presses_at_once_open_ONE_pull_request()
+    {
+        var github = new SlowGitHub();
+        var raced = new KitRouter(
+            new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root),
+            new ProjectViewer(new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root), new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter()),
+            new UiBundle(Path.Combine(RepoLayout.Root, "no-bundle-here")),
+            null,
+            git: new GitStore(enabled: true),
+            pulls: github,
+            head: "kit/hosted");
+
+        var both = await Task.WhenAll(Task.Run(() => raced.Route("POST", "/api/commit")), Task.Run(() => raced.Route("POST", "/api/commit")));
+
+        Assert.All(both, r => Assert.Equal(200, r.Status));
+        Assert.Equal(1, github.Created);
+        Assert.Single(both, r => Body(r).GetProperty("alreadyOpen").GetBoolean());
+    }
+
+    /// <summary>
     /// The whole chain from the environment the chart sets to the request GitHub receives —
     /// the router tests above build their router by hand, so they cannot see the registration
     /// drop the token, the repository or the base.
@@ -179,6 +204,27 @@ public class CommitRouteTests
     }
 
     private static JsonElement Body(IKitResponse r) => JsonDocument.Parse(Serialiser.Serialise(r.Body!)).RootElement;
+
+    /// <summary>GitHub's find-then-create, with the create slow enough that two unserialised presses overlap.</summary>
+    private sealed class SlowGitHub : IPullRequestOpener
+    {
+        private int? open;
+
+        public int Created { get; private set; }
+
+        public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default)
+        {
+            if (open is { } n)
+            {
+                return new PullRequestResult { AlreadyOpen = true, Number = n };
+            }
+
+            await Task.Delay(200, cancellationToken);
+            Created++;
+            open = 13;
+            return new PullRequestResult { Opened = true, Number = 13 };
+        }
+    }
 
     /// <summary>Answers from a script and records what it was asked, so a test can assert GitHub was NOT asked.</summary>
     private sealed class ScriptedOpener(params IPullRequestResult[] answers) : IPullRequestOpener

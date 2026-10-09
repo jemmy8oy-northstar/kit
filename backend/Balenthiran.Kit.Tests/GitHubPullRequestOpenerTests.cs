@@ -115,6 +115,46 @@ public class GitHubPullRequestOpenerTests
         Assert.Equal("GitHub answered 200 with a body Kit could not read", r.Reason);
     }
 
+    /// <summary>
+    /// Found by a blind review of kit#160: a 2xx whose JSON is the wrong SHAPE reached
+    /// <c>TryGetProperty</c> on a non-object and threw, so Commit answered an unhandled 500
+    /// where every other outcome is a sentence.
+    /// </summary>
+    [Theory]
+    [InlineData("[]", "null")]
+    [InlineData("[]", "[1]")]
+    [InlineData("[]", """{"number":"13","html_url":7}""")]
+    [InlineData("[1]", null)]
+    [InlineData("""[{"number":12,"html_url":null}]""", null)]
+    public async Task A_success_of_the_wrong_shape_is_a_reason_not_a_throw(string list, string? created)
+    {
+        var gh = created is null
+            ? new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, list))
+            : new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, list), FakeGitHub.Json(HttpStatusCode.Created, created));
+
+        var r = await Opener(gh).OpenAsync("kit/hosted", "dev", "t", "b");
+
+        Assert.False(r.Opened);
+        Assert.False(r.AlreadyOpen);
+        Assert.StartsWith("GitHub answered 20", r.Reason);
+        Assert.EndsWith("that is not a pull request", r.Reason);
+    }
+
+    /// <summary>
+    /// Also from that review: a token pasted with its trailing newline (a secret created from a
+    /// file) must not turn into a throw outside the opener's catch.
+    /// </summary>
+    [Fact]
+    public async Task A_token_with_a_trailing_newline_is_sent_trimmed()
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """[{"number":12,"html_url":"https://github.com/o/k/pull/12"}]"""));
+
+        var r = await Opener(gh, token: Token + "\n").OpenAsync("kit/hosted", "dev", "t", "b");
+
+        Assert.True(r.AlreadyOpen);
+        Assert.Equal($"Bearer {Token}", Assert.Single(gh.Sent).Authorization);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

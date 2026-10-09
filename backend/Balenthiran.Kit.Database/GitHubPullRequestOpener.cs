@@ -64,10 +64,16 @@ public sealed partial class GitHubPullRequestOpener(
             return new PullRequestResult { Reason = found.Reason };
         }
 
-        if (found.Json is { ValueKind: JsonValueKind.Array } list && list.GetArrayLength() > 0)
+        if (found.Json is not { ValueKind: JsonValueKind.Array } list)
         {
-            var (number, url) = Identify(list[0]);
-            return new PullRequestResult { AlreadyOpen = true, Number = number, Url = url };
+            return new PullRequestResult { Reason = NotAPullRequest(found.Status) };
+        }
+
+        if (list.GetArrayLength() > 0)
+        {
+            return Identify(list[0]) is var (number, url)
+                ? new PullRequestResult { AlreadyOpen = true, Number = number, Url = url }
+                : new PullRequestResult { Reason = NotAPullRequest(found.Status) };
         }
 
         var payload = JsonSerializer.Serialize(new { title, head, @base = baseBranch, body });
@@ -77,20 +83,32 @@ public sealed partial class GitHubPullRequestOpener(
             return new PullRequestResult { Reason = created.Reason };
         }
 
-        var (n, u) = Identify(created.Json!.Value);
-        return new PullRequestResult { Opened = true, Number = n, Url = u };
+        return Identify(created.Json!.Value) is var (n, u)
+            ? new PullRequestResult { Opened = true, Number = n, Url = u }
+            : new PullRequestResult { Reason = NotAPullRequest(created.Status) };
     }
 
-    private static (int? Number, string? Url) Identify(JsonElement pr) => (
-        pr.TryGetProperty("number", out var n) && n.TryGetInt32(out var i) ? i : null,
-        pr.TryGetProperty("html_url", out var u) ? u.GetString() : null);
+    // A 2xx whose JSON is the wrong SHAPE is a sentence like every other outcome, never a throw:
+    // reading a property off a non-object threw, and Commit answered an unhandled 500 (kit#160's blind review).
+    private static string NotAPullRequest(int status) => $"GitHub answered {status} with JSON that is not a pull request";
+
+    /// <summary>The number and page of a pull request object, or null when it is not one.</summary>
+    private static (int Number, string Url)? Identify(JsonElement pr) =>
+        pr.ValueKind == JsonValueKind.Object
+        && pr.TryGetProperty("number", out var n) && n.ValueKind == JsonValueKind.Number && n.TryGetInt32(out var i)
+        && pr.TryGetProperty("html_url", out var u) && u.ValueKind == JsonValueKind.String
+            ? (i, u.GetString()!)
+            : null;
 
     // One request, and which LAYER failed if it did: unreachable, slow, refused, or unreadable
     // need different fixes, the same split GitStore.Git makes for git (kit#39).
-    private async Task<(JsonElement? Json, string? Reason)> SendAsync(HttpMethod method, Uri uri, string? payload, CancellationToken cancellationToken)
+    private async Task<(JsonElement? Json, string? Reason, int Status)> SendAsync(HttpMethod method, Uri uri, string? payload, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, uri);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Trimmed: a secret created from a file ends in a newline, and .NET throws a FormatException
+        // for one in a header value — outside every catch below (kit#160's blind review).
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Trim());
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
         request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
@@ -106,11 +124,11 @@ public sealed partial class GitHubPullRequestOpener(
         }
         catch (HttpRequestException e)
         {
-            return (null, $"GitHub could not be reached ({e.Message})");
+            return (null, $"GitHub could not be reached ({e.Message})", 0);
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return (null, "GitHub did not answer in time");
+            return (null, "GitHub did not answer in time", 0);
         }
 
         using (response)
@@ -129,12 +147,12 @@ public sealed partial class GitHubPullRequestOpener(
             var code = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)
             {
-                return (null, $"GitHub answered {code}: {Explain(response.StatusCode, json)}");
+                return (null, $"GitHub answered {code}: {Explain(response.StatusCode, json)}", code);
             }
 
             return json is null
-                ? (null, $"GitHub answered {code} with a body Kit could not read")
-                : (json, null);
+                ? (null, $"GitHub answered {code} with a body Kit could not read", code)
+                : (json, null, code);
         }
     }
 
