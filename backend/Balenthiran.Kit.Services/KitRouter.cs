@@ -203,8 +203,17 @@ public sealed class KitRouter(
         }
 
         var b = body.Value;
-        return bm.Success ? Bind(app, b) : Edit(app, m, b);
+
+        // ONE edit at a time: read the file, write it, commit, push. Kestrel serves requests in
+        // parallel, where ui.js never could (one thread, synchronous git), so two edits at once
+        // would race on the same corpus text and on git's index lock (kit#165).
+        lock (writeGate)
+        {
+            return bm.Success ? Bind(app, b) : Edit(app, m, b);
+        }
     }
+
+    private readonly object writeGate = new();
 
     /// <summary><c>write()</c> past its gates: create a behaviour, add a step, or adjudicate.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
