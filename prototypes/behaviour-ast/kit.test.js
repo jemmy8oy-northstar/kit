@@ -1067,8 +1067,10 @@ test('layer: only a ux behaviour is generated as a browser walk; the others are 
   assert.match(generate(ux, bindings).code, /^test\("\[BEH-U\] u", async \(\{ page \}\) => \{\n  await page\.goto/);
   const t = generate(tech, {});
   assert.strictEqual(t.code, 'test.skip("[BEH-T] t", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});');
-  // An unbound noun on a behaviour no browser walks is not a missing binding.
-  assert.deepStrictEqual(t.missing, []);
+  // Still reported: requires.js and boundNouns count every behaviour's nouns, and
+  // `missing` is held equal to them in every corpus.
+  assert.deepStrictEqual(t.missing, ['page:Home']);
+  assert.deepStrictEqual(t.stats, { generated: 0, contract: 0, ungenerated: 0 });
   assert.match(generate(ui, {}).code, /^test\.skip\("\[BEH-I\] i"[^]*NOT GENERATED: a ui behaviour needs a visual check/);
 });
 
