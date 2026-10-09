@@ -110,6 +110,7 @@
 # "The backend can pull the projects and serve the behaviours to the frontend."
 
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
+  pending
   source defined kit#88
   actor engineer
   given repo:Remote
@@ -120,6 +121,7 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
   contract pod whose clone is an implementation detail of its image
 
 behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
+  pending
   source defined kit#88
   actor engineer
   given project:Public
@@ -131,6 +133,7 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
   contract a public read that fails because a token could not be minted is a bug
 
 behaviour BEH-PULL-3 "A private project is served only against a live installation token"
+  pending
   source defined kit#88
   actor engineer
   given project:Private
