@@ -370,6 +370,10 @@ describe('removing a behaviour', () => {
 
     expect(await screen.findByRole('heading', { name: 'Removed BEH-HOME-1', level: 1 })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(/Not committed/)
+    // "Removed … from", never "Wrote … to": the result is shaped like any corpus
+    // write, and the first build said "Wrote BEH-1" after a removal.
+    expect(screen.getByRole('status')).toHaveTextContent('Removed BEH-HOME-1 from behaviours/snip-it.beh')
+    expect(screen.getByRole('status')).not.toHaveTextContent(/Wrote/)
     expect(screen.getByRole('link', { name: 'Back to snip-it' })).toHaveAttribute('href', '/projects/snip-it')
 
     // Exactly two calls: no re-read after a removal, because the corpus it

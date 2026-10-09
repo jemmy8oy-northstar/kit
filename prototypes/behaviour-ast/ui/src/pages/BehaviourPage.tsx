@@ -40,7 +40,7 @@ export default function BehaviourPage() {
       {removed ? (
         <Card elevation="flat">
           <h1>Removed {id}</h1>
-          <WriteResultNote result={removed} />
+          <WriteResultNote result={removed} removed />
           <p>
             <Link to={project}>Back to {app}</Link>
           </p>
