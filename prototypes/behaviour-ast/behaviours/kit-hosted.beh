@@ -117,6 +117,7 @@
 # "The backend can pull the projects and serve the behaviours to the frontend."
 
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
+  layer technical
   pending
   source defined kit#88
   actor engineer
@@ -128,6 +129,7 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
   contract pod whose clone is an implementation detail of its image
 
 behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
+  layer technical
   pending
   source defined kit#88
   actor engineer
@@ -140,6 +142,7 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
   contract a public read that fails because a token could not be minted is a bug
 
 behaviour BEH-PULL-3 "A private project is served only against a live installation token"
+  layer technical
   pending
   source defined kit#88
   actor engineer
@@ -153,6 +156,7 @@ behaviour BEH-PULL-3 "A private project is served only against a live installati
   contract is what he meant by "some similar refresh token mechanism to what you are using"
 
 behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend renders what it is handed"
+  layer technical
   source defined kit#88
   actor engineer
   given request:Project
@@ -216,6 +220,7 @@ behaviour BEH-ACT-4 "Edits are held until Commit, so a half-described change nev
 # raise a PR (and potentially merge it)."
 
 behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on dev"
+  layer technical
   source defined kit#88
   actor engineer
   given change:Pending
@@ -229,6 +234,7 @@ behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on d
   contract so today a pod would push a phone edit onto whatever branch its clone sits on
 
 behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who pressed Commit"
+  layer technical
   source defined docs/design/process.md#3
   actor engineer
   given change:Pending
@@ -254,6 +260,7 @@ behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is
   contract instrument that looks for work
 
 behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the work item"
+  layer technical
   source inferred kit#88
   actor engineer
   given branch:Pushed
@@ -274,6 +281,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
 # to set up kit as a proper full stack app."
 
 behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every configuration"
+  layer technical
   source defined docs/design/process.md
   actor engineer
   given request:Anonymous
@@ -285,6 +293,7 @@ behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every 
   contract phone — to protect data that is already public
 
 behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the operator"
+  layer technical
   source defined docs/design/process.md
   actor engineer
   given request:Unauthenticated
