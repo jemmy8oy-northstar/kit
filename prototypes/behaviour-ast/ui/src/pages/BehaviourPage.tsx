@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addBinding, addStep, fetchProject, setReview } from '../api/client'
+import { addBinding, addStep, fetchProject, removeBehaviour, setReview } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Generated, NounRequirement, ProjectDetail, Step } from '../api/types'
+import type {
+  Behaviour, Generated, NounRequirement, ProjectDetail, Step, WriteResult,
+} from '../api/types'
 import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
@@ -21,16 +23,33 @@ import { useWrite } from '../components/useWrite'
 export default function BehaviourPage() {
   const { app = '', id = '' } = useParams()
   const { resource, reload } = useReloadableResource(() => fetchProject(app), [app])
+  // Held HERE, above the resource, because a removal is the one write after
+  // which the page's own subject no longer exists. Kept inside the form, the
+  // note saying what git did would be thrown away with the form, and a re-read
+  // would answer "No such behaviour" — true, and indistinguishable from a
+  // mistyped URL, when what happened is that he removed it a second ago.
+  const [removed, setRemoved] = useState<WriteResult | null>(null)
+  const project = `/projects/${encodeURIComponent(app)}`
 
   return (
     <>
       <p className="crumbs">
-        <Link to="/">Projects</Link> / <Link to={`/projects/${encodeURIComponent(app)}`}>{app}</Link> / {id}
+        <Link to="/">Projects</Link> / <Link to={project}>{app}</Link> / {id}
       </p>
 
-      <ResourceView resource={resource}>
-        {(value) => <Detail project={value} id={id} onWrote={reload} />}
-      </ResourceView>
+      {removed ? (
+        <Card elevation="flat">
+          <h1>Removed {id}</h1>
+          <WriteResultNote result={removed} removed />
+          <p>
+            <Link to={project}>Back to {app}</Link>
+          </p>
+        </Card>
+      ) : (
+        <ResourceView resource={resource}>
+          {(value) => <Detail project={value} id={id} onWrote={reload} onRemoved={setRemoved} />}
+        </ResourceView>
+      )}
     </>
   )
 }
@@ -39,10 +58,12 @@ function Detail({
   project,
   id,
   onWrote,
+  onRemoved,
 }: {
   project: ProjectDetail
   id: string
   onWrote: () => void
+  onRemoved: (result: WriteResult) => void
 }) {
   const behaviour = project.behaviours.find((b) => b.id === id)
 
@@ -99,7 +120,72 @@ function Detail({
           />
         </section>
       </div>
+
+      <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
     </>
+  )
+}
+
+/**
+ * BEH-ACT-3: remove the behaviour on screen.
+ *
+ * Two clicks, because it is the only write here that cannot be undone from this
+ * page — a wrong step can be seen and a wrong review re-adjudicated, but a
+ * removed behaviour leaves nothing on screen to correct. The second button names
+ * the id, so the confirmation says what it will do rather than "Are you sure?".
+ *
+ * Whether it is SAFE to remove is not decided here. The server refuses while any
+ * other behaviour or question `serves` or `cites` this one, and that refusal —
+ * which names the referrer — is what appears below. A client-side guess at the
+ * references would be a second reading of the corpus, and could only drift.
+ *
+ * At the bottom, apart from the forms that add to the corpus, so it is not the
+ * button a thumb lands on while adjudicating.
+ */
+function RemoveForm({
+  app,
+  id,
+  onRemoved,
+}: {
+  app: string
+  id: string
+  onRemoved: (result: WriteResult) => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  // No re-read on success: the page above swaps itself for the removal note,
+  // and re-reading would only fetch a corpus that no longer has this id.
+  const { write, run } = useWrite(() => {})
+
+  async function remove() {
+    await run(async () => {
+      const result = await removeBehaviour(app, id)
+      onRemoved(result)
+      return result
+    })
+    setConfirming(false)
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <section className="write">
+      <h3>Remove</h3>
+      {confirming ? (
+        <div className="badges">
+          <Button type="button" variant="danger" onClick={remove} disabled={saving}>
+            {saving ? 'Removing…' : `Remove ${id} for good`}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={saving}>
+            Keep it
+          </Button>
+        </div>
+      ) : (
+        <Button type="button" variant="danger" onClick={() => setConfirming(true)}>
+          Remove
+        </Button>
+      )}
+      <WriteFeedback write={write} />
+    </section>
   )
 }
 

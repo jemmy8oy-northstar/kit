@@ -175,6 +175,22 @@ export function setReview(
 }
 
 /**
+ * Remove a behaviour (BEH-ACT-3). The id is in the path and the body is an empty
+ * object: the server refuses any field at all, so there is nothing here that
+ * could be mistaken for a way to say more than "remove this".
+ *
+ * The refusal that matters — another behaviour still `serves` or `cites` this
+ * one — is a 409 whose reason names the referrer, and it reaches the screen
+ * through `post` like every other refusal.
+ */
+export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/remove`,
+    {},
+  )
+}
+
+/**
  * Bind a noun — stage 4, and the write that touches this app's bindings rather
  * than its corpus.
  *
