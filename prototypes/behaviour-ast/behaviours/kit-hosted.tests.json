@@ -14,6 +14,12 @@
       "title": "Opens_one_pull_request_from_the_edits_branch_into_the_base"
     }
   ],
+  "BEH-COMMIT-4": [
+    {
+      "file": "prototypes/behaviour-ast/kit.test.js",
+      "title": "exit 1 when a behaviour has no test naming it — the gate can go RED"
+    }
+  ],
   "BEH-GATE-H1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
