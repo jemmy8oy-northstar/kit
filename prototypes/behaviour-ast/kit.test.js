@@ -4837,6 +4837,21 @@ test('nothing still advertises the UI as read-only, now that it writes', () => {
   }
 });
 
+test('the header does not say Kit never commits, while the server can commit', () => {
+  // The same shelf-life defect a third time. "writes the corpus file — never
+  // commits" was true until hosted write-back, after which a deployed Kit
+  // rendered "Committed as … and pushed to kit/hosted" under it. The header is
+  // the same in every Kit, so while any server Kit ships can run `git commit`,
+  // it may not deny committing. Conditional on the C# store rather than ui.js,
+  // because the C# server is the one that stays.
+  const store = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'backend', 'Balenthiran.Kit.Database', 'GitStore.cs'), 'utf8');
+  if (!store.includes('"commit", "-m"')) return; // the claim would be true; nothing to enforce
+  const header = fsx.readFileSync(pathx.join(__dirname, 'ui', 'src', 'App.tsx'), 'utf8')
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ');
+  assert.strictEqual(/never commits/i.test(header), false,
+    'ui/src/App.tsx says Kit never commits, but GitStore.cs commits every write when write-back is on');
+});
+
 test('nothing still says ui.js cannot serve the bundle, now that it does', () => {
   // The second instance of the same shelf-life defect, and it is here because
   // the first one cost a PR to notice. `ui/README.md` carried a whole paragraph

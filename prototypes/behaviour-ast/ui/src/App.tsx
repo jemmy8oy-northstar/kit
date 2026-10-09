@@ -37,8 +37,15 @@ export default function App() {
             replaces it states the boundary that is still true and still matters
             — Kit edits the file, Kit does not commit. `kit.test.js` now fails if
             any of the three places that made this claim makes it again.
+
+            Then it went stale the same way: "— never commits" was true until
+            hosted write-back (kit#43, kit#144) and Commit (kit#155), after which
+            a deployed Kit showed "Committed as … and pushed to kit/hosted" under
+            a header saying it never commits. The header cannot know which Kit it
+            is in, so it claims only what is true of both; each write's own note
+            says what git did with it.
             */}
-            <span className="muted">writes the corpus file — never commits</span>
+            <span className="muted">writes the corpus file</span>
           </header>
           <main>
             <Routes>
