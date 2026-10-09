@@ -452,31 +452,41 @@ public sealed class KitRouter(
             return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = false }, SetCookie = ClearCookie() };
         }
 
-        var wait = throttle?.RetryAfterMs() ?? 0;
-        if (wait > 0)
-        {
-            var seconds = (int)Math.Ceiling(wait / 1000.0);
-            return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
-        }
-
         // `typeof given === 'string' ? given : ''` — a missing, numeric or array password is ''.
         var given = body is { ValueKind: JsonValueKind.Object } b && b.TryGetProperty("password", out var p) && p.ValueKind == JsonValueKind.String
             ? p.GetString()!
             : string.Empty;
-        if (!SecretsMatch(given, password!))
-        {
-            throttle?.Fail();
 
-            // One message for missing and wrong: telling them apart helps a guesser.
-            return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
+        // Check, judge and count as ONE step. Separately, guesses sent at once were all checked
+        // before any was counted: 200 parallel guesses had 30 judged against 5 free attempts. ui.js
+        // never could, being one thread; the port made sign-in concurrent (SignInRaceTests).
+        lock (signInGate)
+        {
+            var wait = throttle?.RetryAfterMs() ?? 0;
+            if (wait > 0)
+            {
+                var seconds = (int)Math.Ceiling(wait / 1000.0);
+                return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
+            }
+
+            if (!SecretsMatch(given, password!))
+            {
+                throttle?.Fail();
+
+                // One message for missing and wrong: telling them apart helps a guesser.
+                return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
+            }
+
+            throttle?.Succeed();
         }
 
-        throttle?.Succeed();
         var token = sessions!.Create();
 
         // The token goes out ONLY as an HttpOnly cookie, never in the body.
         return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
     }
+
+    private readonly object signInGate = new();
 
     /// <summary>Fails closed: no store means nobody is signed in.</summary>
     private bool SignedIn(string? cookie) => sessions is not null && sessions.Valid(ParseCookies(cookie).GetValueOrDefault(Cookie));
