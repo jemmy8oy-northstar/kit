@@ -128,6 +128,40 @@ internal readonly record struct JsValue(bool Defined, JsonNode? Node)
     }
 
     /// <summary>
+    /// How deeply objects and arrays nest in <paramref name="e"/>: <c>1</c> for <c>{}</c> or
+    /// <c>[]</c>, <c>0</c> for a scalar. Counted with an explicit stack, never recursion, because
+    /// it exists to measure a value BEFORE <see cref="FromElement"/> recurses into it.
+    /// </summary>
+    public static int Depth(JsonElement e)
+    {
+        var max = 0;
+        var pending = new Stack<(JsonElement Element, int Depth)>();
+        pending.Push((e, 1));
+        while (pending.Count > 0)
+        {
+            var (el, d) = pending.Pop();
+            var children = el.ValueKind switch
+            {
+                JsonValueKind.Object => el.EnumerateObject().Select(p => p.Value),
+                JsonValueKind.Array => el.EnumerateArray(),
+                _ => null,
+            };
+            if (children is null)
+            {
+                continue;
+            }
+
+            max = Math.Max(max, d);
+            foreach (var c in children)
+            {
+                pending.Push((c, d + 1));
+            }
+        }
+
+        return max;
+    }
+
+    /// <summary>
     /// <c>JSON.parse</c>'s object model, built from a parsed element: a duplicate key
     /// keeps its FIRST position and its LAST value, as a JavaScript object does.
     /// </summary>

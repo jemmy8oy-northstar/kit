@@ -19,6 +19,9 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 {
     private const string Indent = "  ";
 
+    /// <summary>The deepest binding <see cref="AddBinding"/> writes: well under the ~60 at which reading the project back fails.</summary>
+    public const int MaxBindingDepth = 16;
+
     private static readonly string Ws = CorpusParser.Ws;
 
     // `/^behaviour\s+([A-Z][A-Z0-9-]*)\s+"/` — JavaScript's `\s`, which is not .NET's.
@@ -212,6 +215,14 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         if (!value.EnumerateObject().Any())
         {
             return WriteResult.Refuse("bad-binding", "an empty binding binds nothing — it would satisfy no verb and still count as bound");
+        }
+
+        // C# only: V8 takes any depth, but here a binding nested ~60 deep is written and then
+        // breaks every later read of the project, and ~17,000 deep overflows the stack inside
+        // FromElement and kills the server. A real binding nests 3 deep at most.
+        if (JsValue.Depth(value) > MaxBindingDepth)
+        {
+            return WriteResult.Refuse("bad-binding", $"a binding nests at most {MaxBindingDepth} levels deep — e.g. {{\"role\":\"button\",\"name\":\"Add habit\"}} is 1");
         }
 
         // writer.js's round-trip and collateral checks guard against values JSON cannot
