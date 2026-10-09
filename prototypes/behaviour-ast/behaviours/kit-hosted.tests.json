@@ -20,6 +20,16 @@
       "title": "exit 1 when a behaviour has no test naming it — the gate can go RED"
     }
   ],
+  "BEH-PULL-4": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/test/engineBoundary.test.ts",
+      "title": "no shipped UI file imports from outside ui/"
+    }
+  ],
   "BEH-GATE-H1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
