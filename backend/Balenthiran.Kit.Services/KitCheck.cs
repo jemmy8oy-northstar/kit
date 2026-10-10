@@ -57,12 +57,12 @@ public sealed class KitCheck(
     private static readonly Regex Marker = new(@"\[([A-Z][A-Z0-9-]*)\]", RegexOptions.CultureInvariant);
 
     /// <inheritdoc />
-    public ICheckRun Run(IReadOnlyList<string> args)
+    public ICommandRun Run(IReadOnlyList<string> args)
     {
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
         var code = Gate(args, stdout, stderr);
-        return new CheckRun { ExitCode = code, Stdout = stdout.ToString(), Stderr = stderr.ToString() };
+        return new CommandRun { ExitCode = code, Stdout = stdout.ToString(), Stderr = stderr.ToString() };
     }
 
     // `cli.js`'s one predicate for "a flag, not a value": a lone `-` is a value (stdin by convention).

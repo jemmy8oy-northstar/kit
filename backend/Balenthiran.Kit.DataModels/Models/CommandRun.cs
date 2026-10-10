@@ -2,8 +2,8 @@ using Balenthiran.Kit.Abstractions.DataModels;
 
 namespace Balenthiran.Kit.DataModels.Models;
 
-/// <summary>What one run of the Stage-0 gate printed, and how it exited.</summary>
-public sealed class CheckRun : ICheckRun
+/// <summary>What one run of a `kit` command printed, and how it exited.</summary>
+public sealed class CommandRun : ICommandRun
 {
     public required int ExitCode { get; init; }
 

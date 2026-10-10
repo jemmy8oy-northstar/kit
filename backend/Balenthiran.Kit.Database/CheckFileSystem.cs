@@ -3,7 +3,7 @@ using Balenthiran.Kit.Abstractions.Services;
 namespace Balenthiran.Kit.Database;
 
 /// <summary>
-/// The real disk, for <c>kit check</c>. A relative path resolves against <paramref name="baseDir"/>,
+/// The real disk, for the <c>kit</c> commands. A relative path resolves against <paramref name="baseDir"/>,
 /// or against the process's directory when there is none — the CLI's case. A test passes one, so it
 /// never has to move the whole process's working directory under its parallel neighbours.
 /// </summary>
@@ -15,6 +15,16 @@ public sealed class CheckFileSystem(string? baseDir = null) : ICheckFileSystem
 
     /// <inheritdoc />
     public bool Exists(string path) => File.Exists(Full(path)) || Directory.Exists(Full(path));
+
+    /// <inheritdoc />
+    public bool IsDirectory(string path) => Directory.Exists(Full(path));
+
+    /// <inheritdoc />
+    public string Resolve(string path)
+    {
+        var full = Path.GetFullPath(Full(path));
+        return full.Length > 1 ? full.TrimEnd('/') : full;
+    }
 
     /// <inheritdoc />
     public string ReadText(string path) => Utf8.GetString(File.ReadAllBytes(Full(path)));

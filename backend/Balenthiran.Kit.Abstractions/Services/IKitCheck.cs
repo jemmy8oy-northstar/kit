@@ -9,5 +9,5 @@ namespace Balenthiran.Kit.Abstractions.Services;
 public interface IKitCheck
 {
     /// <summary>Run the gate over the arguments after <c>check</c>. Relative paths resolve against the process's directory.</summary>
-    ICheckRun Run(IReadOnlyList<string> args);
+    ICommandRun Run(IReadOnlyList<string> args);
 }
