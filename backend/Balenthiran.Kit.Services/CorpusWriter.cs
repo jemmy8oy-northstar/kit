@@ -265,11 +265,11 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
         // Rule 3 exempts the target, so the target is policed here: `review approved` typed into a
         // step box parses, and without this would approve the behaviour it was meant to describe.
-        return Only(text, string.Join('\n', lines), id, after => after.Steps.Count != before.Steps.Count
-            ? ("not-a-step", "a step starts with given, when, then or contract")
-            : Shape(after, skipStep: index) != Shape(before, skipStep: index)
-                ? ("collateral-change", $"only step {index} of {id} was meant to change")
-                : null);
+        // The count is the whole check: one line replaced and still a step can change nothing else.
+        var r = Validate(text, string.Join('\n', lines), id);
+        return r.Ok && Target(r.Text!, id)!.Steps.Count != before.Steps.Count
+            ? WriteResult.Refuse("not-a-step", "a step starts with given, when, then or contract")
+            : r;
     }
 
     /// <inheritdoc />
@@ -291,22 +291,17 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
         }
 
-        if (Target(text, id) is not { } before)
-        {
-            return WriteResult.Refuse("corpus-already-invalid", "the file did not parse before this edit");
-        }
-
         // The parser reads `behaviour ID "(.*)"` — greedy, so the title runs to the LAST quote, and
         // a hand-written title may hold quotes of its own. Closing at the next quote instead would
-        // keep the tail of the old title, and Shape cannot see it because the title is exempt.
+        // keep the tail of the old title, and Validate cannot see it because the target is exempt.
+        // Nothing else can move: the new title holds no quote, so only the title is rewritten.
         var lines = text.Split('\n').ToList();
         var header = lines[b.Start];
         var open = header.IndexOf('"', StringComparison.Ordinal);
         var close = header.LastIndexOf('"');
         lines[b.Start] = header[..(open + 1)] + t + header[close..];
 
-        return Only(text, string.Join('\n', lines), id, after =>
-            Shape(after, skipTitle: true) != Shape(before, skipTitle: true) ? ("collateral-change", $"only the title of {id} was meant to change") : null);
+        return Validate(text, string.Join('\n', lines), id);
     }
 
     /// <summary>The target as parsed now, or null if the file does not parse.</summary>
@@ -320,18 +315,6 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         {
             return null;
         }
-    }
-
-    /// <summary><see cref="Validate"/>, then <paramref name="wrong"/> on the target itself.</summary>
-    private WriteResult Only(string before, string after, string id, Func<IBehaviour, (string Error, string Reason)?> wrong)
-    {
-        var r = Validate(before, after, id);
-        if (!r.Ok)
-        {
-            return r;
-        }
-
-        return wrong(Target(after, id)!) is { } w ? WriteResult.Refuse(w.Error, w.Reason) : r;
     }
 
     /// <inheritdoc />
@@ -531,12 +514,12 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     /// A comparable projection of one behaviour's MEANING, from the AST rather than the
     /// lines — a reformatted line that parses identically is not a change.
     /// </summary>
-    private static string Shape(IBehaviour b, int skipStep = -1, bool skipTitle = false) => JsonSerializer.Serialize(new
+    private static string Shape(IBehaviour b) => JsonSerializer.Serialize(new
     {
         id = b.Id,
-        title = skipTitle ? null : b.Title,
+        title = b.Title,
         actor = b.Actor,
-        steps = b.Steps.Select((s, i) => i == skipStep ? null : $"{s.Kind}|{s.Verb}||{s.Text}").ToList(),
+        steps = b.Steps.Select(s => $"{s.Kind}|{s.Verb}||{s.Text}").ToList(),
         provides = b.Provides.Select(p => $"{p.Kind}:{p.Name}.{p.Slot}={string.Join(',', p.Value)}").ToList(),
         serves = b.Serves.Select(s => s.Id).ToList(),
         source = new { origin = b.Source.Origin, @ref = b.Source.Ref },
