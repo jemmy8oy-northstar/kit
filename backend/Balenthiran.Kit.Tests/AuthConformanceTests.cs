@@ -85,7 +85,7 @@ public class AuthConformanceTests
             var clock = new Clock();
             var tokens = 0;
             var config = s!["config"]!;
-            var settings = new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, config["password"]?.GetValue<string>(), Path.Combine(RepoLayout.Root, "no-bundle-here"), string.Empty, config["publicOrigin"]?.GetValue<string>(), config["host"]!.GetValue<string>());
+            var settings = new KitSettings(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot, config["password"]?.GetValue<string>(), Path.Combine(RepoLayout.Root, "no-bundle-here"), string.Empty, config["publicOrigin"]?.GetValue<string>(), config["host"]!.GetValue<string>());
             await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings, services =>
             {
                 services.AddSingleton<ISessionStore>(new SessionStore(() => clock.T, () => $"tok-{++tokens}"));
@@ -154,7 +154,7 @@ public class AuthConformanceTests
     private static KitHost Host(JsonNode config, Clock clock)
     {
         var tokens = 0;
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
         var publicOrigin = config["publicOrigin"]?.GetValue<string>();
         var policy = new OriginPolicy(new UrlParser(), publicOrigin);

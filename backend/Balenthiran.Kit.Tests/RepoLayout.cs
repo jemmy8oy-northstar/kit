@@ -11,8 +11,22 @@ namespace Balenthiran.Kit.Tests;
 /// </summary>
 internal static class RepoLayout
 {
-    /// <summary>The corpora: <c>&lt;corpus&gt;.beh</c>.</summary>
+    /// <summary>
+    /// The LIVE corpora: <c>&lt;corpus&gt;.beh</c>, the ones he edits. Only a test about a committed
+    /// artefact that must track them (the sheets, the bindings files) reads these.
+    /// </summary>
     internal static string Behaviours => Path.Combine(Root, "prototypes", "behaviour-ast", "behaviours");
+
+    /// <summary>
+    /// A copy of the corpora the goldens were recorded from, laid out as a repository so a view's
+    /// <c>corpus</c> path (relative to the root) reads exactly as the goldens recorded it
+    /// (kit#182). Every golden is scored against THIS, so a spec edit — his first hosted one
+    /// included — can never turn the conformance suite red. Never edit it to match a corpus.
+    /// </summary>
+    internal static string FrozenRoot => Path.Combine(Fixtures, "FrozenRepo");
+
+    /// <summary>The frozen corpora, inside <see cref="FrozenRoot"/>.</summary>
+    internal static string FrozenBehaviours => Path.Combine(FrozenRoot, "prototypes", "behaviour-ast", "behaviours");
 
     /// <summary>The committed goldens: <c>&lt;corpus&gt;.json</c>.</summary>
     internal static string Conformance => Path.Combine(Root, "prototypes", "behaviour-ast", "conformance");

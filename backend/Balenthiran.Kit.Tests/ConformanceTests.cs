@@ -43,7 +43,7 @@ public class ConformanceTests
     public static TheoryData<string> Corpora()
     {
         var data = new TheoryData<string>();
-        foreach (var f in Directory.GetFiles(RepoLayout.Behaviours, "*.beh"))
+        foreach (var f in Directory.GetFiles(RepoLayout.FrozenBehaviours, "*.beh"))
         {
             data.Add(Path.GetFileNameWithoutExtension(f));
         }
@@ -88,7 +88,7 @@ public class ConformanceTests
     [MemberData(nameof(Corpora))]
     public void Parse_reproduces_the_golden_structure(string corpus)
     {
-        var behPath = Path.Combine(RepoLayout.Behaviours, $"{corpus}.beh");
+        var behPath = Path.Combine(RepoLayout.FrozenBehaviours, $"{corpus}.beh");
         var goldenPath = Path.Combine(RepoLayout.Conformance, $"{corpus}.json");
 
         Assert.True(File.Exists(goldenPath), $"no golden for corpus {corpus} at {goldenPath}");
@@ -116,10 +116,27 @@ public class ConformanceTests
     /// nothing — a moved directory, a changed extension — xunit reports zero
     /// failures, and zero failures is what green looks like.
     /// </summary>
+    /// <summary>
+    /// kit#182: a spec edit must never turn a golden red, so nothing scored against a golden may
+    /// read the live corpora. Only the committed-artefact checks may — a stale sheet SHOULD fail.
+    /// </summary>
+    [Fact]
+    public void Only_the_committed_artefact_checks_read_the_live_corpora()
+    {
+        var tests = Path.Combine(RepoLayout.Root, "backend", "Balenthiran.Kit.Tests");
+        var readers = Directory.GetFiles(tests, "*.cs")
+            .Where(f => File.ReadAllText(f).Contains(string.Join(".", "RepoLayout", "Behaviours"), StringComparison.Ordinal))
+            .Select(Path.GetFileName)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Equal(["CommittedArtefactTests.cs"], readers);
+    }
+
     [Fact]
     public void Every_corpus_has_a_golden_and_the_population_is_not_empty()
     {
-        var corpora = Directory.GetFiles(RepoLayout.Behaviours, "*.beh")
+        var corpora = Directory.GetFiles(RepoLayout.FrozenBehaviours, "*.beh")
             .Select(Path.GetFileNameWithoutExtension)
             .OrderBy(c => c, StringComparer.Ordinal)
             .ToList();

@@ -122,8 +122,8 @@ public class CommitRouteTests
     {
         var github = new SlowGitHub();
         var raced = new KitRouter(
-            new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root),
-            new ProjectViewer(new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root), new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter()),
+            new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot),
+            new ProjectViewer(new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot), new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter()),
             new UiBundle(Path.Combine(RepoLayout.Root, "no-bundle-here")),
             null,
             git: new GitStore(enabled: true),
@@ -188,7 +188,7 @@ public class CommitRouteTests
 
     private static KitRouter Router(ScriptedOpener pulls, bool git = true, string? head = "kit/hosted", string? password = null, string? publicOrigin = null)
     {
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
         return new KitRouter(
             corpora,

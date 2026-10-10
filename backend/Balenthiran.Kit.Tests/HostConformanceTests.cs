@@ -101,7 +101,7 @@ public class HostConformanceTests
         foreach (var config in new[] { "root", "deployed" })
         {
             var (basePath, publicOrigin) = Config(config);
-            await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist, basePath, publicOrigin));
+            await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot, null, FixtureDist, basePath, publicOrigin));
             await app.StartAsync();
             var port = new Uri(app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First()).Port;
 
@@ -168,7 +168,7 @@ public class HostConformanceTests
 
     private static KitHost Host(string basePath, string? publicOrigin)
     {
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
         var policy = new OriginPolicy(new UrlParser(), publicOrigin);
         return new KitHost(new KitRouter(corpora, viewer, new UiBundle(FixtureDist), null, policy), new UrlParser(), Serialiser, policy, basePath);

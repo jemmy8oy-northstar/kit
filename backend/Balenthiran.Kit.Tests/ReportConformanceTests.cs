@@ -19,7 +19,7 @@ public class ReportConformanceTests
     [Theory]
     [MemberData(nameof(Corpora))]
     public void Report_reproduces_the_golden_section(string corpus) =>
-        AssertSection(RepoLayout.Conformance, RepoLayout.Behaviours, corpus);
+        AssertSection(RepoLayout.Conformance, RepoLayout.FrozenBehaviours, corpus);
 
     [Fact]
     public void Report_reproduces_Node_on_the_branches_the_goldens_miss() =>

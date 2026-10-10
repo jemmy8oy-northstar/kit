@@ -19,7 +19,7 @@ public class GenerateConformanceTests
     [Theory]
     [MemberData(nameof(Corpora))]
     public void Generate_reproduces_the_golden_section(string corpus) =>
-        AssertSection(RepoLayout.Conformance, RepoLayout.Behaviours, corpus);
+        AssertSection(RepoLayout.Conformance, RepoLayout.FrozenBehaviours, corpus);
 
     [Theory]
     [MemberData(nameof(EdgeCorpora))]
