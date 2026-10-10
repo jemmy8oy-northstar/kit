@@ -67,7 +67,16 @@ public sealed class KitRouter(
     {
         if (method == "POST")
         {
-            return Write(pathname, cookie, origin, body);
+            try
+            {
+                return Write(pathname, cookie, origin, body);
+            }
+            catch (NotWritableException e)
+            {
+                // A project read from a repository this Kit has no clone of: nothing was written, and
+                // the sentence says why. Caught here rather than per route, so every write answers alike.
+                return Json(409, new ApiError { Error = e.ErrorCode, Reason = e.Message });
+            }
         }
 
         if (method != "GET")
