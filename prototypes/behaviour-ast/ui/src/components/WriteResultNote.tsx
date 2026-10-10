@@ -39,13 +39,26 @@ import ProposeEdits from './ProposeEdits'
  * would be a bigger change than the one he made — the information still helps
  * while you are naming things — so the wording moved and the mechanism did not.
  */
-export default function WriteResultNote({ result }: { result: AnyWriteResult }) {
+export default function WriteResultNote({
+  result,
+  removed = false,
+}: {
+  result: AnyWriteResult
+  /**
+   * The write took a behaviour OUT (BEH-ACT-3). The server's result has the same
+   * shape for every corpus write, so only the caller knows — and "Wrote BEH-1 to
+   * x.beh" after a removal reads as the opposite of what happened. Seen in a
+   * screenshot of the first build, not in a test.
+   */
+  removed?: boolean
+}) {
   const bind = 'noun' in result ? result : null
   return (
     <Card elevation="flat">
       <p role="status">
-        Wrote <strong>{bind ? bind.noun : (result as { behaviour: string }).behaviour}</strong> to{' '}
-        <code>{result.file}</code>.{' '}
+        {removed ? 'Removed' : 'Wrote'}{' '}
+        <strong>{bind ? bind.noun : (result as { behaviour: string }).behaviour}</strong>{' '}
+        {removed ? 'from' : 'to'} <code>{result.file}</code>.{' '}
         {result.committed
           ? result.pushed
             ? `Committed as ${result.commit} and pushed to ${result.branch}.`
