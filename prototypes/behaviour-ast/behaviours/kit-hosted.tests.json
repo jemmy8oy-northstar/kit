@@ -2,6 +2,26 @@
   "_": "behaviour -> the test(s) that name it. Same shape as kit.tests.json: the corpus carries the mapping, keyed on file + title (a C# test's title is its method name).",
   "_authored": "2026-10-09, from the kit spec audit (claude-code-bot#105). Only behaviours whose `then` line a test ASSERTS are mapped. Built-but-unasserted ones stay unmapped on purpose, so `check.js kit-hosted` keeps naming them.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. check.js proves the test exists, not what it asserts.",
+  "BEH-ACT-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/UpdateBehaviourTests.cs",
+      "title": "A_step_is_replaced_in_place_and_every_other_byte_survives"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx",
+      "title": "opens a step as the corpus spells it, and sends nothing until Save"
+    }
+  ],
+  "BEH-ACT-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/RemoveBehaviourTests.cs",
+      "title": "A_behaviour_another_one_serves_is_refused_naming_the_referrer_and_its_line"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx",
+      "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
+    }
+  ],
   "BEH-COMMIT-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",
