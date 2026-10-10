@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    `kit`, the command line — what replaces the Node engine's CLI (kit#119, cut 2).
+    No package references: everything it runs is in Services and Database.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="../Balenthiran.Kit.Services/Balenthiran.Kit.Services.csproj" />
+    <ProjectReference Include="../Balenthiran.Kit.Database/Balenthiran.Kit.Database.csproj" />
+    <ProjectReference Include="../Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>kit</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

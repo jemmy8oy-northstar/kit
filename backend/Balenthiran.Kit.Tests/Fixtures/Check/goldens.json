@@ -1,0 +1,906 @@
+{
+  "_generatedBy": "prototypes/behaviour-ast/check-goldens.js",
+  "titles": [
+    {
+      "file": "a.spec.ts",
+      "src": "test('alpha', () => {});\nit('beta', async () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "alpha",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "beta",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "test.only('alpha', () => {});\nit.skip('beta', () => {});\ntest.fixme(\"gamma\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "alpha",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "beta",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 3,
+          "raw": "gamma",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 3
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact]\n    public void Does_A_Thing()\n    {\n    }\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 2,
+          "raw": "Does_A_Thing",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact(DisplayName = \"a nicer name\")]\n    public void Does_A_Thing()\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 2,
+          "raw": "a nicer name",
+          "style": "DisplayName"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Theory]\n    // a comment\n    [InlineData(0)]\n    [InlineData(1)]\n    [InlineData(2)]\n    [InlineData(3)]\n    [InlineData(4)]\n    [InlineData(5)]\n    [InlineData(6)]\n    [InlineData(7)]\n\n    public void Theory_Method(int n)\n    {\n    }\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 12,
+          "raw": "Theory_Method",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact]\n    private readonly int _notATest = 1;\n\n    [Fact]\n    public void Real_Test()\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 5,
+          "raw": "Real_Test",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "T.cs",
+      "src": "[Fact]\n[Theory]\n[InlineData(1)]\n",
+      "titles": [],
+      "expectedCount": 2
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact]\n    public async Task Awaits_Something()\n    [Fact]\n    internal async ValueTask<int> Generic_Return()\n    [Fact]\n    public void Tuple_Param((int, string) x)\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 2,
+          "raw": "Awaits_Something",
+          "style": "method"
+        },
+        {
+          "file": "T.cs",
+          "line": 4,
+          "raw": "Generic_Return",
+          "style": "method"
+        },
+        {
+          "file": "T.cs",
+          "line": 6,
+          "raw": "Tuple_Param",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 3
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact(Skip = \"later\")]\n    /* block */\n    * continuation\n    public void After_Block_Comment()\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 4,
+          "raw": "After_Block_Comment",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact(DisplayName = \"escaped \\\" quote\")]\n    public void X()\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 2,
+          "raw": "escaped \\\" quote",
+          "style": "DisplayName"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "\r\n    [Fact]\r\n    public void Crlf_Method()\r\n    {\r\n    }\r\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 3,
+          "raw": "Crlf_Method",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [FactAttribute]\n    public void Long_Name()\n    [Facts]\n    public void Not_Fact()\n",
+      "titles": [
+        {
+          "file": "T.cs",
+          "line": 2,
+          "raw": "Long_Name",
+          "style": "method"
+        },
+        {
+          "file": "T.cs",
+          "line": 4,
+          "raw": "Not_Fact",
+          "style": "method"
+        }
+      ],
+      "expectedCount": 0
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact]\n    public void Ünïcode_Name()\n",
+      "titles": [],
+      "expectedCount": 1
+    },
+    {
+      "file": "T.cs",
+      "src": "    [Fact] public void Same_Line()\n    [Fact]\n",
+      "titles": [],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([[1, 'a'], [2, 'b']])('handles %s', (n, s) => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "handles %s",
+          "style": "each"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([['a)]', 1], ['b((', 2]])('closes over %s', (s, n) => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "closes over %s",
+          "style": "each"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([[Math.max(1, 2), 'a']])('computes %s', (n, s) => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "computes %s",
+          "style": "each"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each`\n  a | b\n  ${1} | ${2}\n`(\"$a plus $b\", () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "$a plus $b",
+          "style": "each"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([1, 2]);\ntest('after a table with no call', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "after a table with no call",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([1, /* ] */ 2, // )\n 3])('commented %s', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "commented %s",
+          "style": "each"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.each([1, 2",
+      "titles": [],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "const fixture = ['test(\"[BEH-1] a\", () => {})'];\ntest('the real one', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "the real one",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "// test('not this one', () => {})\ntest('the real one', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "the real one",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "/* test('nor this', () => {}) */\ntest('the real one', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "the real one",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "const ok = TEST_FILE_RE.test(name);\ntest(\"real\", () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "real",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "beforeEach(() => {}); test(\"shared line\", () => {});",
+      "titles": [],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "describe(\"g\", () => {\n  it(\"indented\", () => {});\n  await test(\"awaited\", () => {});\n  return it(\"returned\", () => {});\n});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "indented",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 3,
+          "raw": "awaited",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 4,
+          "raw": "returned",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 3
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "test(`template ${x} title`, () => {});\ntest(name, () => {});\ntest('esc \\' aped', () => {});",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "template ${x} title",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 3,
+          "raw": "esc \\' aped",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 3
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "\r\ntest(\"crlf one\", () => {});\r\n\ttest(\"tabbed\", () => {});\r\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "crlf one",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 3,
+          "raw": "tabbed",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "﻿test(\"after a bom\", () => {});\n",
+      "titles": [],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": " test(\"nbsp indent\", () => {});\n test(\"after a line separator\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "after a line separator",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "xtest(\"x\", () => {});\n$test(\"y\", () => {});\nmy.it(\"z\", () => {});\nitem(\"w\", () => {});\n",
+      "titles": [],
+      "expectedCount": 0
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "it.concurrent(\"conc\", () => {});\nit.each`a\n${1}`('tagged', () => {});\ntest\n(\"newline before paren\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "conc",
+          "style": "title"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "tagged",
+          "style": "each"
+        },
+        {
+          "file": "a.spec.ts",
+          "line": 4,
+          "raw": "newline before paren",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 3
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "const s = \"unterminated\ntest(\"after a broken string\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "after a broken string",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 1
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "const t = `${ \"}\" } still template`; test(\"x\", () => {});\ntest(\"y\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 2,
+          "raw": "y",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
+    },
+    {
+      "file": "a.test.js",
+      "src": "test('a', () => {});\ntest('a', () => {});\ntest('a', () => {});\n",
+      "titles": [
+        {
+          "file": "a.test.js",
+          "line": 1,
+          "raw": "a",
+          "style": "title"
+        },
+        {
+          "file": "a.test.js",
+          "line": 2,
+          "raw": "a",
+          "style": "title"
+        },
+        {
+          "file": "a.test.js",
+          "line": 3,
+          "raw": "a",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 3
+    }
+  ],
+  "checks": [
+    {
+      "name": "mapping-all-covered",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{\"_note\":\"metadata is skipped\",\"BEH-A1\":[{\"file\":\"tests/a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A2\":[{\"file\":\"tests/a.spec.ts\",\"title\":\"[BEH-A2] second\"}]}",
+        "repo/tests/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n",
+        "repo/node_modules/x.spec.ts": "test('ignored', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 0,
+      "stdout": "── kit check: app (via mapping) ──\n   2 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n\n   ✅ every behaviour is named by a test.\n   ⚠️  this proves someone LINKED each behaviour to a test, not that the test\n      asserts it. See docs/design/tagging.md before quoting this as coverage.\n",
+      "stderr": ""
+    },
+    {
+      "name": "mapping-uncovered-and-broken-entries",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\nbehaviour BEH-A3 \"a third\"\n  when opens page:Home\n",
+        "behaviours/app.tests.json": "{\"7\":[{\"file\":\"tests/a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A1\":[{\"file\":\"tests/a.spec.ts\",\"title\":\"[BEH-A1] renamed\"}],\"BEH-A2\":[{\"file\":\"tests/missing.spec.ts\",\"title\":\"x\"},{\"file\":\"tests/b.spec.ts\",\"title\":\"dup\"}],\"BEH-ZZ\":[{\"file\":\"tests/a.spec.ts\",\"title\":\"[BEH-A1] saves\"}]}",
+        "repo/tests/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n",
+        "repo/tests/b.spec.ts": "test('dup', () => {});\ntest('dup', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   3 behaviour(s) read from behaviours/app.beh\n   2 test file(s), 4 test(s) read from repo\n   0/3 behaviour(s) have a test naming them\n\n   ✗ 7: mapped to a test, but no such behaviour in the corpus\n   ✗ BEH-A1: tests/a.spec.ts has no test titled \"[BEH-A1] renamed\" — renamed or deleted?\n   ✗ BEH-A2: names tests/missing.spec.ts, which is not a test file in this app\n   ✗ BEH-A2: \"dup\" appears 2× in tests/b.spec.ts — file+title cannot address it uniquely\n   ✗ BEH-ZZ: mapped to a test, but no such behaviour in the corpus\n   ✗ BEH-A1: no test names this behaviour — \"a signed-in user saves\"\n   ✗ BEH-A2: no test names this behaviour — \"a second behaviour\"\n   ✗ BEH-A3: no test names this behaviour — \"a third\"\n\n   8 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "markers-orphan",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/a/Thing.test.js": "test('[BEH-A1] saves', () => {});\ntest('[BEH-GONE] stale', () => {});\n",
+        "repo/b/WidgetTests.cs": "    [Fact]\n    public void Covers_A2() { /* [BEH-A2] */ }\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--via",
+        "markers",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via markers) ──\n   2 behaviour(s) read from behaviours/app.beh\n   2 test file(s), 3 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n\n   ✗ [BEH-GONE] is named by a test but is not a behaviour in this corpus\n\n   1 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "markers-all-covered",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "--via",
+        "markers",
+        "app",
+        "--dir",
+        "behaviours",
+        "--repo",
+        "repo"
+      ],
+      "exitCode": 0,
+      "stdout": "── kit check: app (via markers) ──\n   2 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n\n   ✅ every behaviour is named by a test.\n   ⚠️  this proves someone LINKED each behaviour to a test, not that the test\n      asserts it. See docs/design/tagging.md before quoting this as coverage.\n",
+      "stderr": ""
+    },
+    {
+      "name": "pending",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\nbehaviour BEH-P1 \"not built yet\"\n  pending\n  when opens page:Home\n\nbehaviour BEH-P2 \"built but still pending\"\n  pending\n  when opens page:Home\n",
+        "behaviours/app.tests.json": "{\"BEH-A1\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A2\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A2] second\"}],\"BEH-P2\":[{\"file\":\"a.spec.ts\",\"title\":\"p2\"}]}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\ntest('p2', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   4 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 3 test(s) read from repo\n   3/3 behaviour(s) have a test naming them\n   1 pending behaviour(s): spec'd, not built — not counted above\n\n   ✗ BEH-P2: a test names this behaviour, but it is still marked pending — delete the `pending` line\n   ◌ BEH-P1: pending — spec'd, not built — \"not built yet\"\n\n   1 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "pending-only-uncovered-passes",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\nbehaviour BEH-P1 \"not built yet\"\n  pending\n  when opens page:Home\n",
+        "behaviours/app.tests.json": "{\"BEH-A1\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A2\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A2] second\"}]}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 0,
+      "stdout": "── kit check: app (via mapping) ──\n   3 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n   1 pending behaviour(s): spec'd, not built — not counted above\n\n   ◌ BEH-P1: pending — spec'd, not built — \"not built yet\"\n   ✅ every built behaviour is named by a test.\n   ⚠️  this proves someone LINKED each behaviour to a test, not that the test\n      asserts it. See docs/design/tagging.md before quoting this as coverage.\n",
+      "stderr": ""
+    },
+    {
+      "name": "layers",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\nbehaviour BEH-U1 \"a ui behaviour\"\n  layer ui\n  when opens page:Home\n\nbehaviour BEH-U2 \"a pending ui behaviour\"\n  layer ui\n  pending\n  when opens page:Home\n\nbehaviour BEH-T1 \"technical, e2e only\"\n  layer technical\n  when opens page:Home\n\nbehaviour BEH-T2 \"technical, unit tested\"\n  layer technical\n  when opens page:Home\n\nbehaviour BEH-T3 \"technical, untested\"\n  layer technical\n  when opens page:Home\n",
+        "behaviours/app.tests.json": "{\"BEH-A1\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A2\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A2] second\"}],\"BEH-U1\":[{\"file\":\"a.spec.ts\",\"title\":\"u1\"}],\"BEH-T1\":[{\"file\":\"a.spec.ts\",\"title\":\"t1\"}],\"BEH-T2\":[{\"file\":\"a.spec.ts\",\"title\":\"t1\"},{\"file\":\"unit/LogicTests.cs\",\"title\":\"T2_Works\"}]}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\ntest('u1', () => {});\ntest('t1', () => {});\n",
+        "repo/unit/LogicTests.cs": "    [Fact]\n    public void T2_Works()\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   7 behaviour(s) read from behaviours/app.beh\n   2 test file(s), 5 test(s) read from repo\n   5/6 behaviour(s) have a test naming them\n   1 pending behaviour(s): spec'd, not built — not counted above\n   layers: ux 2, technical 3, ui 2\n\n   ✗ BEH-U1: a ui behaviour cannot be satisfied yet — visual checks are not designed (kit#89). Mark it pending, or give it another layer\n   ✗ BEH-T1: a technical behaviour needs a unit test, but only e2e specs name it (a.spec.ts)\n   ✗ BEH-T3: no test names this behaviour — \"technical, untested\"\n   ◌ BEH-U2: pending — spec'd, not built — \"a pending ui behaviour\"\n\n   3 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "layers-markers",
+      "files": {
+        "behaviours/app.beh": "# kit:layer technical\n\nbehaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/e2e/flow.spec.ts": "test('[BEH-A1] saves', () => {});\n",
+        "repo/unit/thing.test.ts": "test('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--via",
+        "markers",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via markers) ──\n   2 behaviour(s) read from behaviours/app.beh\n   2 test file(s), 2 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n   layers: technical 2\n\n   ✗ BEH-A1: a technical behaviour needs a unit test, but only e2e specs name it (e2e/flow.spec.ts)\n\n   1 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "count-disagreement",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n",
+        "repo/b.spec.ts": "beforeEach(() => {}); test(\"shared line\", () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: b.spec.ts: read 0 test(s) but 1 test declaration(s) survive stripping strings and comments — the two counts disagree, so the reader is losing or inventing tests\n"
+    },
+    {
+      "name": "count-disagreement-cs",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{}",
+        "repo/ATests.cs": "    [Fact]\n    private void Not_Public()\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: ATests.cs: read 0 test(s) but 1 [Fact]/[Theory] attribute(s) exist — the two counts disagree, so the reader is losing or inventing tests\n"
+    },
+    {
+      "name": "zero-test-files",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{}",
+        "repo/readme.md": "nothing"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: 0 test files under repo\n"
+    },
+    {
+      "name": "no-corpus",
+      "files": {
+        "behaviours/other.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: no corpus behaviours/app.beh\n"
+    },
+    {
+      "name": "empty-corpus",
+      "files": {
+        "behaviours/app.beh": "# nothing here\n",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: app.beh resolved to 0 behaviours\n"
+    },
+    {
+      "name": "no-mapping",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: no mapping behaviours/app.tests.json (--via mapping)\n"
+    },
+    {
+      "name": "no-repo",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "missing",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: no such repo missing\n"
+    },
+    {
+      "name": "dir-normalised",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "./repo/",
+        "--dir",
+        "./x/../behaviours/"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   2 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from ./repo/\n   0/2 behaviour(s) have a test naming them\n\n   ✗ BEH-A1: no test names this behaviour — \"a signed-in user saves\"\n   ✗ BEH-A2: no test names this behaviour — \"a second behaviour\"\n\n   2 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "usage-no-args",
+      "files": {},
+      "args": [],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "usage-no-repo",
+      "files": {},
+      "args": [
+        "app"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "bad-via",
+      "files": {},
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--via",
+        "tags"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "--via must be \"mapping\" (option C, default) or \"markers\" (option A), got \"tags\"\n"
+    },
+    {
+      "name": "unknown-flag",
+      "files": {},
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--verbose"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: unknown option --verbose\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "help-flag",
+      "files": {},
+      "args": [
+        "-h"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: unknown option -h\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "flag-missing-value",
+      "files": {},
+      "args": [
+        "app",
+        "--repo",
+        "--dir",
+        "x"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: --repo needs a value\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "flag-at-end",
+      "files": {},
+      "args": [
+        "app",
+        "--dir"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: --dir needs a value\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "two-apps",
+      "files": {},
+      "args": [
+        "app",
+        "other",
+        "--repo",
+        "repo"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: two app names given, \"app\" and \"other\" — this gate checks one corpus\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+    },
+    {
+      "name": "dash-value",
+      "files": {},
+      "args": [
+        "-",
+        "--repo",
+        "repo"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: no such repo repo\n"
+    }
+  ]
+}
