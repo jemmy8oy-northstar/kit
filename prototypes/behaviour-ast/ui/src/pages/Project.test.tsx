@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
+import { noNotes } from '../test/noNotes'
 import snipIt from '../test/fixtures/project-snip-it.json'
 import habits from '../test/fixtures/project-james-habits-app.json'
 
 function renderApp(body: unknown, app: string) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
+    vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
   )
 
   return render(

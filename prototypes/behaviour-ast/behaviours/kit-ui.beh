@@ -116,10 +116,9 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 # into the spec and code" — and, 2026-10-10: "I want to be using kit but it just
 # isn't quite natural yet". A note is NOT a behaviour: nothing parses it, and
 # nothing generates from it. It is an inbox the engineer empties into the spec.
-# `pending` until built; the shape is his to change (kit#118, default 10-11).
+# Built in the same stack as this spec; the shape is his to change (kit#118, default 10-11).
 
 behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -131,7 +130,6 @@ behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviou
   contract Leave note is disabled while the box is empty
 
 behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitBehaviour
@@ -141,7 +139,6 @@ behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
   contract the note survives the behaviour being renamed or removed — it is text, not a link
 
 behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spec"
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
