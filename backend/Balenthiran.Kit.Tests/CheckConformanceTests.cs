@@ -47,8 +47,8 @@ public class CheckConformanceTests
     [Fact]
     public void The_golden_still_holds_its_cases()
     {
-        Assert.True(Golden["checks"]!.AsArray().Count >= 25);
-        Assert.True(Golden["titles"]!.AsArray().Count >= 36);
+        Assert.True(Golden["checks"]!.AsArray().Count >= 29);
+        Assert.True(Golden["titles"]!.AsArray().Count >= 37);
         var codes = Golden["checks"]!.AsArray().Select(c => c!["exitCode"]!.GetValue<int>()).ToHashSet();
         Assert.Equal([0, 1, 2], codes.Order());
     }

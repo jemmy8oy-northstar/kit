@@ -70,6 +70,8 @@ const TITLE_SOURCES = [
   ['a.spec.ts', 'const s = "unterminated\ntest("after a broken string", () => {});\n'],
   ['a.spec.ts', 'const t = `${ "}" } still template`; test("x", () => {});\ntest("y", () => {});\n'],
   ['a.test.js', "test('a', () => {});\n".repeat(3)],
+  // JavaScript's \s has U+FEFF and not U+0085; .NET's is the other way round.
+  ['a.spec.ts', 'test(\ufeff"bom before the title", () => {});\nit(\u0085"nel before the title", () => {});\n'],
 ];
 
 // ── the gate ─────────────────────────────────────────────────────────────────
@@ -234,6 +236,45 @@ const CASES = [
     name: 'dir-normalised',
     files: { 'behaviours/app.beh': CORPUS, 'behaviours/app.tests.json': '{}', 'repo/a.spec.ts': SPEC },
     args: ['app', '--repo', './repo/', '--dir', './x/../behaviours/'],
+  },
+  {
+    // Written as TEXT: `JSON.stringify` of a JS object would already have put "12" first,
+    // and the order JSON.parse leaves the keys in is the thing under test.
+    name: 'mapping-key-order',
+    files: {
+      'behaviours/app.beh': CORPUS,
+      'behaviours/app.tests.json': '{"BEH-A1": [{"file": "a.spec.ts", "title": "nope"}], "12": [], "BEH-QQ": [], "3": []}',
+      'repo/a.spec.ts': SPEC,
+    },
+    args: ['app', '--repo', 'repo', '--dir', 'behaviours'],
+  },
+  {
+    // Node's 'utf8' keeps a BOM, so a first-line test is not at a statement start — the two
+    // counts disagree. A reader that strips it would read the test and pass.
+    name: 'bom-test-file',
+    files: { 'behaviours/app.beh': CORPUS, 'behaviours/app.tests.json': '{}', 'repo/a.spec.ts': '\ufefftest("[BEH-A1] saves", () => {});\n' },
+    args: ['app', '--repo', 'repo', '--dir', 'behaviours'],
+  },
+  {
+    // Walk order is printed: in the evidence list, and in which file a refusal names.
+    name: 'walk-order',
+    files: {
+      'behaviours/app.beh': '# kit:layer technical\n\n' + CORPUS,
+      'repo/b/z.spec.ts': "test('[BEH-A1] z', () => {});\n",
+      'repo/B.spec.ts': "test('[BEH-A1] upper', () => {});\n",
+      'repo/a.spec.ts': "test('[BEH-A1] lower', () => {});\n",
+      'repo/a/Unit.test.ts': "test('[BEH-A2] unit', () => {});\n",
+    },
+    args: ['app', '--repo', 'repo', '--via', 'markers', '--dir', 'behaviours'],
+  },
+  {
+    name: 'ui-uncovered',
+    files: {
+      'behaviours/app.beh': corpusWith('behaviour BEH-U3 "a ui behaviour nobody tests"\n  layer ui\n  when opens page:Home\n'),
+      'behaviours/app.tests.json': JSON.stringify({ 'BEH-A1': [{ file: 'a.spec.ts', title: '[BEH-A1] saves' }], 'BEH-A2': [{ file: 'a.spec.ts', title: '[BEH-A2] second' }] }),
+      'repo/a.spec.ts': SPEC,
+    },
+    args: ['app', '--repo', 'repo', '--dir', 'behaviours'],
   },
   { name: 'usage-no-args', files: {}, args: [] },
   { name: 'usage-no-repo', files: {}, args: ['app'] },

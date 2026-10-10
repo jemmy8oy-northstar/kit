@@ -503,6 +503,19 @@
         }
       ],
       "expectedCount": 3
+    },
+    {
+      "file": "a.spec.ts",
+      "src": "test(﻿\"bom before the title\", () => {});\nit(\"nel before the title\", () => {});\n",
+      "titles": [
+        {
+          "file": "a.spec.ts",
+          "line": 1,
+          "raw": "bom before the title",
+          "style": "title"
+        }
+      ],
+      "expectedCount": 2
     }
   ],
   "checks": [
@@ -796,6 +809,82 @@
       ],
       "exitCode": 1,
       "stdout": "── kit check: app (via mapping) ──\n   2 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from ./repo/\n   0/2 behaviour(s) have a test naming them\n\n   ✗ BEH-A1: no test names this behaviour — \"a signed-in user saves\"\n   ✗ BEH-A2: no test names this behaviour — \"a second behaviour\"\n\n   2 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "mapping-key-order",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{\"BEH-A1\": [{\"file\": \"a.spec.ts\", \"title\": \"nope\"}], \"12\": [], \"BEH-QQ\": [], \"3\": []}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   2 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from repo\n   0/2 behaviour(s) have a test naming them\n\n   ✗ 3: mapped to a test, but no such behaviour in the corpus\n   ✗ 12: mapped to a test, but no such behaviour in the corpus\n   ✗ BEH-A1: a.spec.ts has no test titled \"nope\" — renamed or deleted?\n   ✗ BEH-QQ: mapped to a test, but no such behaviour in the corpus\n   ✗ BEH-A1: no test names this behaviour — \"a signed-in user saves\"\n   ✗ BEH-A2: no test names this behaviour — \"a second behaviour\"\n\n   6 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "bom-test-file",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "behaviours/app.tests.json": "{}",
+        "repo/a.spec.ts": "﻿test(\"[BEH-A1] saves\", () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "cannot look: a.spec.ts: read 0 test(s) but 1 test declaration(s) survive stripping strings and comments — the two counts disagree, so the reader is losing or inventing tests\n"
+    },
+    {
+      "name": "walk-order",
+      "files": {
+        "behaviours/app.beh": "# kit:layer technical\n\nbehaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\n",
+        "repo/b/z.spec.ts": "test('[BEH-A1] z', () => {});\n",
+        "repo/B.spec.ts": "test('[BEH-A1] upper', () => {});\n",
+        "repo/a.spec.ts": "test('[BEH-A1] lower', () => {});\n",
+        "repo/a/Unit.test.ts": "test('[BEH-A2] unit', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--via",
+        "markers",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via markers) ──\n   2 behaviour(s) read from behaviours/app.beh\n   4 test file(s), 4 test(s) read from repo\n   2/2 behaviour(s) have a test naming them\n   layers: technical 2\n\n   ✗ BEH-A1: a technical behaviour needs a unit test, but only e2e specs name it (B.spec.ts, a.spec.ts, b/z.spec.ts)\n\n   1 problem(s). This is what \"fails the build\" means.\n",
+      "stderr": ""
+    },
+    {
+      "name": "ui-uncovered",
+      "files": {
+        "behaviours/app.beh": "behaviour BEH-A1 \"a signed-in user saves\"\n  when opens page:Home\n  then sees button:Save\n\nbehaviour BEH-A2 \"a second behaviour\"\n  when opens page:Settings\n  then sees field:Name\nbehaviour BEH-U3 \"a ui behaviour nobody tests\"\n  layer ui\n  when opens page:Home\n",
+        "behaviours/app.tests.json": "{\"BEH-A1\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A1] saves\"}],\"BEH-A2\":[{\"file\":\"a.spec.ts\",\"title\":\"[BEH-A2] second\"}]}",
+        "repo/a.spec.ts": "test('[BEH-A1] saves', () => {});\ntest('[BEH-A2] second', () => {});\n"
+      },
+      "args": [
+        "app",
+        "--repo",
+        "repo",
+        "--dir",
+        "behaviours"
+      ],
+      "exitCode": 1,
+      "stdout": "── kit check: app (via mapping) ──\n   3 behaviour(s) read from behaviours/app.beh\n   1 test file(s), 2 test(s) read from repo\n   2/3 behaviour(s) have a test naming them\n   layers: ux 2, ui 1\n\n   ✗ BEH-U3: a ui behaviour cannot be satisfied yet — visual checks are not designed (kit#89). Mark it pending, or give it another layer\n\n   1 problem(s). This is what \"fails the build\" means.\n",
       "stderr": ""
     },
     {
