@@ -109,3 +109,43 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
   then sees heading:KitAddAStep
   then sees button:KitAddStep
   contract the page re-reads after the write, so the REGENERATED test is what is on screen
+
+# ═══ Free-text notes (kit#118) ═══════════════════════════════════════════════
+# "a less structured input in the ui where you can just comment on something
+# rather than defining a behaviour and this follows the workflow to get folded
+# into the spec and code" — and, 2026-10-10: "I want to be using kit but it just
+# isn't quite natural yet". A note is NOT a behaviour: nothing parses it, and
+# nothing generates from it. It is an inbox the engineer empties into the spec.
+# `pending` until built; the shape is his to change (kit#118, default 10-11).
+
+behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when fills field:KitNote with "the habit list should remember the order I dragged it into"
+  when activates button:KitLeaveNote
+  then sees region:KitOpenNotes
+  contract the note is appended to <app>.notes.md beside the corpus, never into the .beh
+  contract it is committed and pushed like any other edit, and the write result says so
+  contract Leave note is disabled while the box is empty
+
+behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitBehaviour
+  when fills field:KitNote with "this should also cover the empty list"
+  when activates button:KitLeaveNote
+  contract the note carries the behaviour's id, so it is listed under the project too
+  contract the note survives the behaviour being renamed or removed — it is text, not a link
+
+behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spec"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract <app>.notes.md holds only notes nobody has folded yet; a folded note is deleted,
+  contract not ticked, in the same pull request that adds the behaviour or code it became
+  contract with no open notes the region says so, rather than vanishing
