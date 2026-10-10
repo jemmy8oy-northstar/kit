@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />
   <Project Path="Balenthiran.Kit.DataModels/Balenthiran.Kit.DataModels.csproj" />
+  <Project Path="Balenthiran.Kit.Cli/Balenthiran.Kit.Cli.csproj" />
   <Project Path="Balenthiran.Kit.Database/Balenthiran.Kit.Database.csproj" />
   <Project Path="Balenthiran.Kit.DomainModels/Balenthiran.Kit.DomainModels.csproj" />
   <Project Path="Balenthiran.Kit.EntityModels/Balenthiran.Kit.EntityModels.csproj" />
