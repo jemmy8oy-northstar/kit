@@ -97,7 +97,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     public IReadOnlyList<string> Corpora() => served is { } s ? s.Apps.Keys.ToList() : clone.Corpora();
 
     /// <inheritdoc />
-    public string Read(string app) => ReadText(app).TrimStart('﻿');
+    public string Read(string app) => ReadText(app).TrimStart('\ufeff');
 
     /// <inheritdoc />
     public JsonObject Bindings(string app)
@@ -106,7 +106,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 
         // A file that exists and will not parse still throws: that is could-not-look.
         return text is null ? []
-            : JsonNode.Parse(text.TrimStart('﻿')) as JsonObject
+            : JsonNode.Parse(text.TrimStart('\ufeff')) as JsonObject
                 ?? throw new InvalidOperationException("bindings.json is not a JSON object");
     }
 

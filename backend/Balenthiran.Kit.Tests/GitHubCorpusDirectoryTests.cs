@@ -15,7 +15,7 @@ namespace Balenthiran.Kit.Tests;
 /// </summary>
 public sealed class GitHubCorpusDirectoryTests : IDisposable
 {
-    private static readonly ProjectSource Kit = ProjectSource.Parse("o/kit@kit/hosted:behaviours")!;
+    private static readonly ProjectSource Kit = ProjectSource.Parse("o/kit@kit/hosted:prototypes/corpora")!;
     private static readonly ProjectSource Other = ProjectSource.Parse("o/snip-it@dev:behaviours")!;
 
     private readonly string root = Directory.CreateTempSubdirectory("kit-pull-").FullName;
@@ -43,20 +43,20 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
     [Fact]
     public async Task After_a_refresh_every_read_is_GitHubs_and_the_list_is_GitHubs_alone()
     {
-        var d = new GitHubCorpusDirectory(clone, [Kit], new Scripted(Snap(Kit, ("alpha.beh", "a2", "behaviour BEH-A \"on GitHub\"\n"), ("beta.beh", "b1", "﻿behaviour BEH-B \"b\"\n"), ("beta.bindings.json", "j1", "{\"page:Home\": {\"route\": \"./\"}}"))));
+        var d = new GitHubCorpusDirectory(clone, [Kit], new Scripted(Snap(Kit, ("alpha.beh", "a2", "behaviour BEH-A \"on GitHub\"\n"), ("beta.beh", "b1", "\ufeffbehaviour BEH-B \"b\"\n"), ("beta.bindings.json", "j1", "{\"page:Home\": {\"route\": \"./\"}}"))));
 
         await d.RefreshAsync();
 
         Assert.True(d.FromGitHub);
         Assert.Equal(["alpha", "beta"], d.Corpora());
         Assert.Equal("behaviour BEH-A \"on GitHub\"\n", d.Read("alpha"));
-        Assert.Equal("﻿behaviour BEH-B \"b\"\n", d.ReadText("beta")); // a splice sees the BOM
+        Assert.Equal("\ufeffbehaviour BEH-B \"b\"\n", d.ReadText("beta")); // a splice sees the BOM
         Assert.Equal("behaviour BEH-B \"b\"\n", d.Read("beta"));         // a parse does not
         Assert.Equal("./", d.Bindings("beta")["page:Home"]!["route"]!.GetValue<string>());
         Assert.Empty(d.Bindings("alpha"));
         Assert.Null(d.ReadBindingsText("alpha"));
-        Assert.Equal("behaviours/beta.beh", d.RelativePath("beta"));
-        Assert.Equal("behaviours/beta.bindings.json", d.RelativeBindingsPath("beta"));
+        Assert.Equal("prototypes/corpora/beta.beh", d.RelativePath("beta"));
+        Assert.Equal("prototypes/corpora/beta.bindings.json", d.RelativeBindingsPath("beta"));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
 
         var e = await Assert.ThrowsAsync<GitHubReadException>(() => d.RefreshAsync());
 
-        Assert.Equal("alpha.beh is in both o/kit@kit/hosted:behaviours and o/snip-it@dev:behaviours; Kit will not choose one", e.Message);
+        Assert.Equal("alpha.beh is in both o/kit@kit/hosted:prototypes/corpora and o/snip-it@dev:behaviours; Kit will not choose one", e.Message);
         Assert.Equal("kept", d.Read("alpha"));
     }
 
