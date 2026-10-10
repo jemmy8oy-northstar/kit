@@ -9,7 +9,7 @@ namespace Balenthiran.Kit.Tests;
 /// <c>kit check</c> scored against NODE. <c>Fixtures/Check/goldens.json</c> is what
 /// <c>check.js</c> printed and how it exited, as a real process, for every case — and what
 /// <c>testTitles</c>/<c>expectedTestCount</c> returned for every source. The expected side never
-/// passes through C#. Regenerate with <c>node prototypes/behaviour-ast/check-goldens.js</c>.
+/// passes through C#. FROZEN: the recorder went with the Node engine (kit#119), so a change here is a hand edit, in a PR that says why.
 /// </summary>
 /// <remarks>
 /// The cases' files live inside the golden as strings and are written to a temp directory per

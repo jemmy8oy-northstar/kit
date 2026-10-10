@@ -20,7 +20,7 @@
   "handWritten": [
     {
       "file": "write-contract.json",
-      "why": "not a recording of anything — it is one half of a contract pinned from both sides, by ui/src/api/client.test.ts and by prototypes/behaviour-ast/kit.test.js. Regenerating it would delete the pin."
+      "why": "not a recording of anything — it is one half of a contract pinned from both sides, by ui/src/api/client.test.ts and by ui/src/test/contract.test.ts. Regenerating it would delete the pin."
     }
   ]
 }

@@ -7,7 +7,7 @@ namespace Balenthiran.Kit.Tests;
 /// <summary>
 /// <c>kit report</c> and <c>kit sheet</c> scored against NODE: <c>Fixtures/Check/report-goldens.json</c>
 /// is what <c>kit.js</c> printed and how it exited, as a real process, over a frozen copy of every
-/// committed corpus and the refusals. Regenerate with <c>node prototypes/behaviour-ast/report-goldens.js</c>.
+/// committed corpus and the refusals. FROZEN: the recorder went with the Node engine (kit#119), so a change here is a hand edit, in a PR that says why.
 /// </summary>
 /// <remarks>
 /// Three substitutions, all on the Node side and all naming the command rather than changing what

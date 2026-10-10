@@ -1,6 +1,6 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C (docs/design/tagging.md): the corpus carries the mapping, so no test file is edited. Keyed on file + title, the same as snip-it.tests.json.",
-  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml. Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
+  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml (since kit#119 the C# `kit check kit --repo .`, and the tests named below are C#). Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. Nothing here checks the test body. That limit is C's and it is not fixable by parsing; it is stated in docs/design/tagging.md and repeated in check.js's output, because a gate quoted second-hand loses its caveats first.",
   "BEH-GATE-1": [
     {

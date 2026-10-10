@@ -56,7 +56,7 @@ describe('the write contract, from the client side', () => {
   // same literals down a real socket into the Node server and assert the file on
   // disk; that server is deleted (kit#153) and the C# server's answers are held by
   // the writes golden, not by these literals. This half asserts the client is what
-  // produces them, and kit.test.js still pins the paths to what the client builds.
+  // produces them, and src/test/contract.test.ts pins the paths to what the client builds.
   for (const req of contract.requests) {
     it(`sends ${req.method} ${req.path} — ${req.what}`, async () => {
       const calls = recorder(
@@ -94,8 +94,8 @@ describe('the read contract, from the client side', () => {
   // safe — the fixture drives `two words` through `addStep` on both sides — and
   // the single GET the client builds was pinned by nobody.
   //
-  // Deliberately driven from the same `contract.reads` kit.test.js drives into a
-  // real socket. Asserting the URL against a literal typed HERE would be the
+  // Deliberately driven from the same `contract.reads` that src/test/contract.test.ts
+  // checks (and the deleted kit.test.js once drove into a real socket). Asserting the URL against a literal typed HERE would be the
   // mock proving itself, which is the failure the fixture's own header warns of.
   for (const read of contract.reads) {
     it(`sends ${read.method} ${read.path} — ${read.what}`, async () => {

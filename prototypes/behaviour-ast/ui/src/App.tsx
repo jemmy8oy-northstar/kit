@@ -35,7 +35,7 @@ export default function App() {
             a capability is a claim with a shelf life: it went stale the moment
             the write routes shipped, and it took a screenshot to notice. What
             replaces it states the boundary that is still true and still matters
-            — Kit edits the file, Kit does not commit. `kit.test.js` now fails if
+            — Kit edits the file, Kit does not commit. `src/test/contract.test.ts` now fails if
             any of the three places that made this claim makes it again.
 
             Then it went stale the same way: "— never commits" was true until
