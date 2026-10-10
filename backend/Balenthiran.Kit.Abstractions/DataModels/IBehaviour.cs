@@ -36,6 +36,9 @@ public interface IBehaviour
     /// <summary>Spec'd on <c>dev</c> ahead of its code (kit#155); a <c>pending</c> line.</summary>
     bool Pending { get; }
 
+    /// <summary>The layer whose tests prove it (kit#89): <c>ux</c>, <c>technical</c> or <c>ui</c>.</summary>
+    string Layer { get; }
+
     bool? ReviewExplicit { get; }
 
     /// <summary>Holes another behaviour filled. Null until <c>resolve</c> has run.</summary>

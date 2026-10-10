@@ -14,7 +14,7 @@ public class GenerateConformanceTests
 
     public static TheoryData<string> Corpora() => ConformanceTests.Corpora();
 
-    public static TheoryData<string> EdgeCorpora() => new() { "generate-edges", "generate-nofixture" };
+    public static TheoryData<string> EdgeCorpora() => new() { "generate-edges", "generate-nofixture", "layer-edges" };
 
     [Theory]
     [MemberData(nameof(Corpora))]

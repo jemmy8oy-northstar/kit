@@ -1,10 +1,10 @@
 {
   "format": 2,
-  "corpus": "pending-edges",
+  "corpus": "layer-edges",
   "parse": [
     {
-      "id": "BEH-P1",
-      "title": "pending straight after the header",
+      "id": "BEH-L1",
+      "title": "before the directive, still inherits it",
       "actor": null,
       "steps": [
         {
@@ -18,7 +18,7 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:18"
+          "at": "layer-edges.beh:17"
         },
         {
           "kind": "then",
@@ -31,13 +31,13 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:19"
+          "at": "layer-edges.beh:18"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "pending-edges.beh:16",
+      "at": "layer-edges.beh:16",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -51,12 +51,12 @@
         "state": "approved",
         "note": null
       },
-      "pending": true,
-      "layer": "ux"
+      "pending": false,
+      "layer": "technical"
     },
     {
-      "id": "BEH-B1",
-      "title": "a built behaviour between two pending ones",
+      "id": "BEH-L2",
+      "title": "overridden back to ux",
       "actor": null,
       "steps": [
         {
@@ -70,7 +70,7 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:22"
+          "at": "layer-edges.beh:24"
         },
         {
           "kind": "then",
@@ -83,13 +83,13 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:23"
+          "at": "layer-edges.beh:25"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "pending-edges.beh:21",
+      "at": "layer-edges.beh:22",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -107,8 +107,8 @@
       "layer": "ux"
     },
     {
-      "id": "BEH-P2",
-      "title": "pending after its steps",
+      "id": "BEH-L3",
+      "title": "ui, after its steps",
       "actor": null,
       "steps": [
         {
@@ -122,7 +122,7 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:26"
+          "at": "layer-edges.beh:28"
         },
         {
           "kind": "then",
@@ -135,13 +135,13 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:27"
+          "at": "layer-edges.beh:29"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "pending-edges.beh:25",
+      "at": "layer-edges.beh:27",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -155,12 +155,12 @@
         "state": "approved",
         "note": null
       },
-      "pending": true,
-      "layer": "ux"
+      "pending": false,
+      "layer": "ui"
     },
     {
-      "id": "BEH-P3",
-      "title": "pending with a trailing tab",
+      "id": "BEH-L4",
+      "title": "technical with a trailing tab",
       "actor": null,
       "steps": [
         {
@@ -174,13 +174,13 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:32"
+          "at": "layer-edges.beh:34"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "pending-edges.beh:30",
+      "at": "layer-edges.beh:32",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -194,12 +194,12 @@
         "state": "approved",
         "note": null
       },
-      "pending": true,
-      "layer": "ux"
+      "pending": false,
+      "layer": "technical"
     },
     {
-      "id": "BEH-P4",
-      "title": "pending written twice",
+      "id": "BEH-L5",
+      "title": "written twice, the last wins",
       "actor": null,
       "steps": [
         {
@@ -213,13 +213,13 @@
             }
           ],
           "holes": [],
-          "at": "pending-edges.beh:37"
+          "at": "layer-edges.beh:39"
         }
       ],
       "unknowns": [],
       "provides": [],
       "serves": [],
-      "at": "pending-edges.beh:34",
+      "at": "layer-edges.beh:36",
       "asks": null,
       "options": [],
       "recommend": null,
@@ -233,7 +233,7 @@
         "state": "approved",
         "note": null
       },
-      "pending": true,
+      "pending": false,
       "layer": "ux"
     }
   ],
@@ -242,7 +242,7 @@
     "conflicts": [],
     "changed": [
       {
-        "id": "BEH-P1",
+        "id": "BEH-L1",
         "changes": [
           {
             "path": "filled",
@@ -257,7 +257,7 @@
         ]
       },
       {
-        "id": "BEH-B1",
+        "id": "BEH-L2",
         "changes": [
           {
             "path": "filled",
@@ -272,7 +272,7 @@
         ]
       },
       {
-        "id": "BEH-P2",
+        "id": "BEH-L3",
         "changes": [
           {
             "path": "filled",
@@ -287,7 +287,7 @@
         ]
       },
       {
-        "id": "BEH-P3",
+        "id": "BEH-L4",
         "changes": [
           {
             "path": "filled",
@@ -302,7 +302,7 @@
         ]
       },
       {
-        "id": "BEH-P4",
+        "id": "BEH-L5",
         "changes": [
           {
             "path": "filled",
@@ -320,8 +320,8 @@
   },
   "generate": [
     {
-      "id": "BEH-P1",
-      "code": "test(\"[BEH-P1] pending straight after the header\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Main\" });\n  // UNGENERATED: then sees region:Main\n});",
+      "id": "BEH-L1",
+      "code": "test.skip(\"[BEH-L1] before the directive, still inherits it\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
       "missing": [
         "page:Home",
         "region:Main"
@@ -329,12 +329,12 @@
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 2
+        "ungenerated": 0
       }
     },
     {
-      "id": "BEH-B1",
-      "code": "test(\"[BEH-B1] a built behaviour between two pending ones\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
+      "id": "BEH-L2",
+      "code": "test(\"[BEH-L2] overridden back to ux\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
       "missing": [
         "page:Home",
         "button:Save"
@@ -346,8 +346,8 @@
       }
     },
     {
-      "id": "BEH-P2",
-      "code": "test(\"[BEH-P2] pending after its steps\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Name\" });\n  // UNGENERATED: then sees field:Name\n});",
+      "id": "BEH-L3",
+      "code": "test.skip(\"[BEH-L3] ui, after its steps\", async () => {\n  // NOT GENERATED: a ui behaviour needs a visual check, and none is designed yet (kit#89)\n});",
       "missing": [
         "page:Home",
         "field:Name"
@@ -355,24 +355,24 @@
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 2
+        "ungenerated": 0
       }
     },
     {
-      "id": "BEH-P3",
-      "code": "test(\"[BEH-P3] pending with a trailing tab\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "id": "BEH-L4",
+      "code": "test.skip(\"[BEH-L4] technical with a trailing tab\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
       "missing": [
         "page:Home"
       ],
       "stats": {
         "generated": 0,
         "contract": 0,
-        "ungenerated": 1
+        "ungenerated": 0
       }
     },
     {
-      "id": "BEH-P4",
-      "code": "test(\"[BEH-P4] pending written twice\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "id": "BEH-L5",
+      "code": "test(\"[BEH-L5] written twice, the last wins\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
       "missing": [
         "page:Home"
       ],
@@ -391,11 +391,11 @@
       "approved": [],
       "denied": [],
       "untraceable": [
-        "BEH-P1",
-        "BEH-B1",
-        "BEH-P2",
-        "BEH-P3",
-        "BEH-P4"
+        "BEH-L1",
+        "BEH-L2",
+        "BEH-L3",
+        "BEH-L4",
+        "BEH-L5"
       ]
     },
     "surface": {
@@ -411,7 +411,7 @@
           "kind": "button",
           "name": "Save",
           "usedBy": [
-            "BEH-B1"
+            "BEH-L2"
           ],
           "bound": false,
           "satisfied": false,
@@ -431,7 +431,7 @@
           "kind": "field",
           "name": "Name",
           "usedBy": [
-            "BEH-P2"
+            "BEH-L3"
           ],
           "bound": false,
           "satisfied": false,
@@ -451,11 +451,11 @@
           "kind": "page",
           "name": "Home",
           "usedBy": [
-            "BEH-B1",
-            "BEH-P1",
-            "BEH-P2",
-            "BEH-P3",
-            "BEH-P4"
+            "BEH-L1",
+            "BEH-L2",
+            "BEH-L3",
+            "BEH-L4",
+            "BEH-L5"
           ],
           "bound": false,
           "satisfied": false,
@@ -475,7 +475,7 @@
           "kind": "region",
           "name": "Main",
           "usedBy": [
-            "BEH-P1"
+            "BEH-L1"
           ],
           "bound": false,
           "satisfied": false,
@@ -497,7 +497,7 @@
           "kind": "button",
           "name": "Save",
           "usedBy": [
-            "BEH-B1"
+            "BEH-L2"
           ],
           "bound": false,
           "satisfied": false,
@@ -517,7 +517,7 @@
           "kind": "field",
           "name": "Name",
           "usedBy": [
-            "BEH-P2"
+            "BEH-L3"
           ],
           "bound": false,
           "satisfied": false,
@@ -537,11 +537,11 @@
           "kind": "page",
           "name": "Home",
           "usedBy": [
-            "BEH-B1",
-            "BEH-P1",
-            "BEH-P2",
-            "BEH-P3",
-            "BEH-P4"
+            "BEH-L1",
+            "BEH-L2",
+            "BEH-L3",
+            "BEH-L4",
+            "BEH-L5"
           ],
           "bound": false,
           "satisfied": false,
@@ -561,7 +561,7 @@
           "kind": "region",
           "name": "Main",
           "usedBy": [
-            "BEH-P1"
+            "BEH-L1"
           ],
           "bound": false,
           "satisfied": false,

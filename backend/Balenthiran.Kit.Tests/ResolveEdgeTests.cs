@@ -88,6 +88,8 @@ public class ResolveEdgeTests
 
         public bool Pending => false;
 
+        public string Layer => "ux";
+
         public bool? ReviewExplicit => null;
 
         public IReadOnlyList<IFilled>? Filled => null;

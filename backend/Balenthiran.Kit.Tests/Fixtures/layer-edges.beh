@@ -1,0 +1,39 @@
+# kit:not-a-real-app
+#
+# Layers other than `ux` (kit#89), which NO committed golden contains — every
+# corpus is `ux` by default — so without this file the two parsers would only
+# ever be compared on the default. It covers the file directive set AFTER the
+# first behaviour (it still applies to it), a behaviour inheriting it, a `layer`
+# line overriding it to each value, one with a trailing tab, and one written
+# twice (the last line wins, as `actor` does).
+# layer-edges.json is Node's output for this file, written by conformance.js's own
+# `pipeline` — regenerate it with:
+#
+#   node -e "const c=require('./prototypes/behaviour-ast/conformance.js');
+#     process.stdout.write(c.serialise(c.pipeline('backend/Balenthiran.Kit.Tests/Fixtures','layer-edges')))"
+#     > backend/Balenthiran.Kit.Tests/Fixtures/layer-edges.json
+
+behaviour BEH-L1 "before the directive, still inherits it"
+  when opens page:Home
+  then sees region:Main
+
+# kit:layer technical
+
+behaviour BEH-L2 "overridden back to ux"
+  layer ux
+  when opens page:Home
+  then sees button:Save
+
+behaviour BEH-L3 "ui, after its steps"
+  when opens page:Home
+  then sees field:Name
+  layer ui
+
+behaviour BEH-L4 "technical with a trailing tab"
+  layer technical	
+  when opens page:Home
+
+behaviour BEH-L5 "written twice, the last wins"
+  layer ui
+  layer ux
+  when opens page:Home

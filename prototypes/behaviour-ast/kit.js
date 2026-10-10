@@ -21,10 +21,42 @@ const STEP_KEYS = new Set(['given', 'when', 'then', 'contract']);
 // Line-based on purpose: James's requirement is that a human can write the tree
 // by hand, and YAML and JSON both fail that on punctuation alone.
 
+// ── James, kit#89 (2026-09-27; "This sounds good" 2026-10-08) ──────────────
+// "UI (visuals), UX (workflows) and technical. Technical being implementation
+// details." `ux` is a workflow a user walks and an e2e test proves —
+// everything Kit did before layers existed, so it is the
+// default and no existing corpus changes meaning. `technical` is proven by a
+// backend unit test. `ui` is accepted here so a corpus can say it, and refused
+// by the gate until visual checks are designed.
+const LAYERS = ['ux', 'technical', 'ui'];
+
+// `# kit:layer technical` sets the default for every behaviour in the file; a
+// `layer` line on one behaviour overrides it. Read in a pass of its own so the
+// directive applies wherever it sits. Tokenised the same way as a behaviour
+// line rather than by a regex, so the C# port can reuse the helpers its
+// whitespace test already holds to JavaScript's.
+function fileLayer(lines, file) {
+  let layer = 'ux', setAt = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line.startsWith('#')) continue;
+    const c = line.slice(1).trim();
+    const kw = c.split(/\s+/)[0];
+    if (kw !== 'kit:layer') continue;
+    const at = `${file}:${i + 1}`;
+    if (setAt) throw new Error(`${at}: kit:layer is already set at ${setAt}`);
+    const v = c.slice(kw.length).trim();
+    if (!LAYERS.includes(v)) throw new Error(`${at}: kit:layer wants "ux"|"technical"|"ui", got: ${v}`);
+    layer = v; setAt = at;
+  }
+  return layer;
+}
+
 function parse(text, file = '<inline>') {
   const behaviours = [];
   let cur = null;
   const lines = text.split('\n');
+  const defaultLayer = fileLayer(lines, file);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -44,7 +76,7 @@ function parse(text, file = '<inline>') {
         // In the literal rather than assigned when the line is met, so the key
         // sits in one place whatever line order the corpus uses — the goldens are
         // compared byte-for-byte, key order included, against the C# port.
-        pending: false,
+        pending: false, layer: defaultLayer,
       };
       behaviours.push(cur);
       continue;
@@ -72,6 +104,12 @@ function parse(text, file = '<inline>') {
     if (kw === 'pending') {
       if (rest) throw new Error(`${at}: pending takes nothing after it, got: ${rest}`);
       cur.pending = true;
+      continue;
+    }
+
+    if (kw === 'layer') {
+      if (!LAYERS.includes(rest)) throw new Error(`${at}: layer wants "ux"|"technical"|"ui", got: ${rest}`);
+      cur.layer = rest;
       continue;
     }
 
@@ -337,6 +375,18 @@ function sameValue(a, b) {
 // both sides agreeing with each other.
 const UNGENERATED_ANNOTATION = 'kit-ungenerated';
 
+// kit#89: only a `ux` behaviour is a browser walk. The others still get a test
+// — skipped, under their id, saying which suite owes the evidence — so the
+// generated spec lists every behaviour and none of them is silently missing.
+// No step is emitted, but the nouns the walk WOULD need are still reported
+// missing: `boundNouns`, `requires.js` and the saturation write-up count every
+// behaviour's nouns, and `generate`'s `missing` is held equal to them. Taking
+// technical nouns out of binding is a change to all of those at once.
+const NOT_A_BROWSER_WALK = {
+  technical: 'a technical behaviour is proven by a unit test, not by a browser',
+  ui: 'a ui behaviour needs a visual check, and none is designed yet',
+};
+
 function generate(behaviour, bindings, symbols = new Map()) {
   const body = [];
   const missing = new Set();
@@ -378,6 +428,16 @@ function generate(behaviour, bindings, symbols = new Map()) {
       body.push(`// UNGENERATED: ${step.kind} ${step.text}`);
       stats.ungenerated++;
     }
+  }
+
+  const why = NOT_A_BROWSER_WALK[behaviour.layer];
+  if (why) {
+    const skipped = [
+      `test.skip(${JSON.stringify(`[${behaviour.id}] ${behaviour.title}`)}, async () => {`,
+      `  // NOT GENERATED: ${why} (kit#89)`,
+      '});',
+    ].join('\n');
+    return { code: skipped, missing: [...missing], stats: { generated: 0, contract: 0, ungenerated: 0 } };
   }
 
   const code = [
@@ -1445,7 +1505,7 @@ function parseCliArgs(argv) {
 module.exports = {
   parse, parseStep, resolve, generate, coverage, adjudication, surface,
   questions, asked, questionErrors, renderSheet, nounsOf, boundNouns,
-  testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE,
+  testTitles, expectedTestCount, jsDeclarationCount, mapping, TEST_FILE_RE, LAYERS,
   UNGENERATED_ANNOTATION, parseCliArgs, CLI_USAGE, CLI_VALUE_FLAGS, selectCorpora,
 };
 

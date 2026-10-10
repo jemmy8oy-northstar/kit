@@ -23,6 +23,11 @@ public sealed class CorpusParser : ICorpusParser
 {
     private static readonly HashSet<string> StepKeys = ["given", "when", "then", "contract"];
 
+    // kit#89: `ux` (an e2e test proves it — the default, and everything Kit did
+    // before layers), `technical` (a backend unit test), `ui` (accepted, refused
+    // by the gate until visual checks are designed).
+    private static readonly HashSet<string> Layers = ["ux", "technical", "ui"];
+
     // ── Whitespace, which is NOT `\s` ───────────────────────────────────────
     //
     // ⚠️ .NET's `\s` and JavaScript's `\s` are different sets, and the goldens
@@ -82,6 +87,7 @@ public sealed class CorpusParser : ICorpusParser
         // line-break-aware one. A lone `\r` is left on the end of the line and
         // removed by the trim below, which is why a CRLF corpus works.
         var lines = text.Split('\n');
+        var defaultLayer = FileLayer(lines, file);
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -92,7 +98,7 @@ public sealed class CorpusParser : ICorpusParser
             var m = BehaviourLine.Match(line);
             if (m.Success)
             {
-                cur = new Behaviour { Id = m.Groups[1].Value, Title = m.Groups[2].Value, At = at };
+                cur = new Behaviour { Id = m.Groups[1].Value, Title = m.Groups[2].Value, At = at, Layer = defaultLayer };
                 behaviours.Add(cur);
                 continue;
             }
@@ -113,6 +119,13 @@ public sealed class CorpusParser : ICorpusParser
             {
                 if (rest.Length > 0) throw new CorpusParseException($"{at}: pending takes nothing after it, got: {rest}");
                 cur.Pending = true;
+                continue;
+            }
+
+            if (kw == "layer")
+            {
+                if (!Layers.Contains(rest)) throw new CorpusParseException($@"{at}: layer wants ""ux""|""technical""|""ui"", got: {rest}");
+                cur.Layer = rest;
                 continue;
             }
 
@@ -304,6 +317,34 @@ public sealed class CorpusParser : ICorpusParser
     /// <c>Ws</c> comment for the two codepoints they disagree about.
     /// </summary>
     private static string Trim(string s) => s.Trim(WsChars);
+
+    /// <summary>
+    /// <c>fileLayer</c> in <c>kit.js</c>: a <c># kit:layer &lt;x&gt;</c> line sets
+    /// the default for every behaviour in the file, wherever it sits. Tokenised
+    /// with <see cref="Trim"/> and <see cref="FirstToken"/> rather than a regex,
+    /// so JavaScript and .NET cannot disagree about <c>\b</c> or <c>.</c>.
+    /// </summary>
+    private static string FileLayer(string[] lines, string file)
+    {
+        var layer = "ux";
+        string? setAt = null;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = Trim(lines[i]);
+            if (!line.StartsWith('#')) continue;
+            var c = Trim(line[1..]);
+            var kw = FirstToken(c);
+            if (kw != "kit:layer") continue;
+            var at = $"{file}:{i + 1}";
+            if (setAt is not null) throw new CorpusParseException($"{at}: kit:layer is already set at {setAt}");
+            var v = Trim(c[kw.Length..]);
+            if (!Layers.Contains(v)) throw new CorpusParseException($@"{at}: kit:layer wants ""ux""|""technical""|""ui"", got: {v}");
+            layer = v;
+            setAt = at;
+        }
+
+        return layer;
+    }
 
     /// <summary>
     /// <c>s.split(/\s+/)[0]</c> on an already-trimmed string: the leading run of
