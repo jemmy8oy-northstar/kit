@@ -345,7 +345,31 @@ export interface BindResult extends GitOutcome {
  * a bind without its shared-name note and still typecheck. Narrow on `'noun'
  * in result` where the difference matters.
  */
-export type AnyWriteResult = WriteResult | BindResult
+export type AnyWriteResult = WriteResult | BindResult | NoteResult
+
+/** One open note (kit#118): free text, not a behaviour, waiting to be folded into the spec. */
+export interface Note {
+  /** UTC, to the minute: `2026-10-10 20:41Z`. */
+  at: string
+  /** The behaviour it was left on; null for one left on the project. */
+  behaviour: string | null
+  text: string
+}
+
+/** `GET /api/projects/<app>/notes`: every note still open, oldest first. */
+export interface NoteList {
+  app: string
+  /** Where the notes live, whether or not the file exists yet. */
+  file: string
+  notes: Note[]
+}
+
+/** What `POST /api/projects/<app>/notes` returns: a corpus write's shape, with the behaviour optional. */
+export interface NoteResult extends GitOutcome {
+  app: string
+  behaviour: string | null
+  file: string
+}
 
 /**
  * Whether this Kit has a password, and whether this browser is past it (kit#46).

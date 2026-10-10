@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import BehaviourPage from './BehaviourPage'
+import { noNotes } from '../test/noNotes'
 import habits from '../test/fixtures/project-james-habits-app.json'
 import snipIt from '../test/fixtures/project-snip-it.json'
 
 function renderAt(body: unknown, app: string, id: string) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
+    vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
   )
 
   return render(
@@ -219,6 +220,8 @@ function scripted(responses: { ok: boolean; status: number; body: unknown }[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
+      const notes = noNotes(url, init)
+      if (notes) return notes
       calls.push({ url, init })
       const next = responses.shift()
       if (!next) throw new Error(`unscripted fetch: ${url}`)
@@ -637,7 +640,9 @@ describe('adjudicating an inference', () => {
     ]
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => {
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const notes = noNotes(url, init)
+        if (notes) return notes
         await new Promise((r) => setTimeout(r, 0)) // a real tick, so `loading` commits
         const next = responses.shift()
         if (!next) throw new Error('unscripted fetch')
