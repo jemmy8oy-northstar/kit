@@ -5,7 +5,7 @@
 #
 # ✅ UPDATE 2026-10-09 (claude-code-bot#105): most of this now EXISTS — it is the
 # deployed C# server. `kit-hosted.tests.json` maps the behaviours a test asserts,
-# BEH-PULL-1..3 are `pending`, and `check.js kit-hosted` lists the rest by id.
+# BEH-PULL-1..3 are built and mapped (kit#88, 2026-10-10), and `kit check kit-hosted` lists the rest by id.
 # The paragraphs below are the 2026-09-30 reasoning, kept as written.
 #
 # James, kit#88 (2026-09-27), after the paragraphs describing the workflow:
@@ -118,7 +118,6 @@
 
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
   layer technical
-  pending
   source defined kit#88
   actor engineer
   given repo:Remote
@@ -130,7 +129,6 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
 
 behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
   layer technical
-  pending
   source defined kit#88
   actor engineer
   given project:Public
@@ -143,7 +141,6 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
 
 behaviour BEH-PULL-3 "A private project is served only against a live installation token"
   layer technical
-  pending
   source defined kit#88
   actor engineer
   given project:Private
