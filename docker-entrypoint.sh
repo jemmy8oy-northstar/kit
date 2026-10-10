@@ -29,6 +29,18 @@
 # environment, configured through GIT_CONFIG_* so nothing is written to disk.
 set -u
 
+# The GitHub App credential (kit#88: the App does writes too) is a key, not a token, and a shell
+# cannot sign its JWT — so the server mints one to clone with. That token expires within the hour;
+# every push after it asks the server's token source for a fresh one (GitStore), not this variable.
+# A static KIT_GIT_TOKEN, if both are set, is what the clone uses, as before.
+if [ -n "${KIT_GIT_CLONE:-}" ] && [ -z "${KIT_GIT_TOKEN:-}" ] && [ -n "${KIT_GITHUB_APP_ID:-}" ]; then
+  if minted=$(dotnet Balenthiran.Kit.WebApi.dll github-token) && [ -n "$minted" ]; then
+    export KIT_GIT_TOKEN="$minted"
+  else
+    echo "kit-start: could not mint a GitHub App token to clone with; serving the image's own corpus with write-back OFF" >&2
+  fi
+fi
+
 if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
   work="${KIT_GIT_WORKTREE:-${HOME:-/tmp}/kit}"
   branch="${KIT_GIT_BRANCH:-kit/hosted}"
