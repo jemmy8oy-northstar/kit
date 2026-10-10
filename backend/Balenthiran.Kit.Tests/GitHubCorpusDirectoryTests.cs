@@ -150,9 +150,27 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         var d = new GitHubCorpusDirectory(clone, [Kit, Other], new Scripted(Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", "y"))));
         await d.RefreshAsync();
 
-        var e = Assert.Throws<InvalidOperationException>(() => d.WriteText("beta", "z"));
+        var e = Assert.Throws<NotWritableException>(() => d.WriteText("beta", "z"));
 
         Assert.Equal("beta is read from o/snip-it@dev:behaviours, which this Kit has no clone of, so it cannot be edited here", e.Message);
+        Assert.False(File.Exists(Path.Combine(root, "behaviours", "beta.beh")));
+    }
+
+    /// <summary>The same refusal through the router: a 409 naming the layer, never the 500 it used to be.</summary>
+    [Fact]
+    public async Task A_write_to_an_app_with_no_clone_is_a_409_not_a_500()
+    {
+        var d = new GitHubCorpusDirectory(clone, [Kit, Other], new Scripted(Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", "behaviour BEH-B \"b\"\n  when opens page:Home\n"))));
+        await d.RefreshAsync();
+        var viewer = new Services.ProjectViewer(d, new Services.CorpusParser(), new Services.BehaviourResolver(), new Services.TestGenerator(), new Services.ProjectReporter());
+        var router = new Services.KitRouter(d, viewer, new Services.UiBundle(Path.Combine(root, "no-bundle")), null);
+
+        var r = router.Route("POST", "/api/projects/beta/behaviours", body: System.Text.Json.JsonDocument.Parse("""{"id":"BEH-N","title":"new"}""").RootElement);
+
+        Assert.Equal(409, r.Status);
+        var body = System.Text.Json.JsonSerializer.SerializeToElement(r.Body, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        Assert.Equal("not-writable", body.GetProperty("error").GetString());
+        Assert.StartsWith("beta is read from o/snip-it@dev:behaviours", body.GetProperty("reason").GetString());
         Assert.False(File.Exists(Path.Combine(root, "behaviours", "beta.beh")));
     }
 

@@ -180,7 +180,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         if (!clone.Corpora().Contains(app, StringComparer.Ordinal))
         {
             var from = served?.Apps.TryGetValue(app, out var e) == true ? Key(e.Source) : "GitHub";
-            throw new InvalidOperationException($"{app} is read from {from}, which this Kit has no clone of, so it cannot be edited here");
+            throw new NotWritableException($"{app} is read from {from}, which this Kit has no clone of, so it cannot be edited here");
         }
     }
 
