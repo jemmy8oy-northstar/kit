@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addBinding, addStep, fetchProject, removeBehaviour, setReview } from '../api/client'
+import {
+  addBinding, addStep, fetchProject, removeBehaviour, retitle, setReview, updateStep,
+} from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type {
   Behaviour, Generated, NounRequirement, ProjectDetail, Step, WriteResult,
@@ -84,7 +86,7 @@ function Detail({
 
   return (
     <>
-      <h1>{behaviour.title}</h1>
+      <TitleEditor app={project.app} behaviour={behaviour} onWrote={onWrote} />
       <div className="badges">
         <Badge tone="primary">{behaviour.id}</Badge>
         <Badge tone="neutral">{behaviour.actor}</Badge>
@@ -100,13 +102,7 @@ function Detail({
       <div className="split">
         <section>
           <h2>Behaviour</h2>
-          <ol className="steps">
-            {behaviour.steps.map((s, i) => (
-              <li key={`${s.kind}-${i}`}>
-                <StepLine step={s} />
-              </li>
-            ))}
-          </ol>
+          <StepsEditor app={project.app} behaviour={behaviour} onWrote={onWrote} />
           <AddStepForm app={project.app} id={behaviour.id} onWrote={onWrote} />
         </section>
 
@@ -122,6 +118,173 @@ function Detail({
       </div>
 
       <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
+    </>
+  )
+}
+
+/**
+ * BEH-ACT-2: correct a step that is already there, beside the test it produced.
+ *
+ * The input holds the line as the corpus spells it (`then sees region:Main`), for
+ * the one-grammar reason AddStepForm gives. Save sends the step's INDEX rather
+ * than its old text: two identical lines are two steps, and the text could not
+ * say which one he meant. One step is open at a time. A refusal leaves it open
+ * with what he typed; a write closes it and re-reads, so the test beside it is
+ * the one his edit produced.
+ */
+function StepsEditor({
+  app,
+  behaviour,
+  onWrote,
+}: {
+  app: string
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const [editing, setEditing] = useState<number | null>(null)
+  const [line, setLine] = useState('')
+  const { write, run, reset } = useWrite(onWrote)
+
+  function open(index: number) {
+    const s = behaviour.steps[index]
+    setLine(`${s.kind} ${s.text}`)
+    setEditing(index)
+    reset()
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (editing === null) return
+    const index = editing
+    await run(async () => {
+      const result = await updateStep(app, behaviour.id, index, line)
+      setEditing(null)
+      return result
+    })
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <>
+      <ol className="steps">
+        {behaviour.steps.map((s, i) => (
+          <li key={`${s.kind}-${i}`}>
+            {editing === i ? (
+              <form onSubmit={save} className="write">
+                <label htmlFor="edit-step">Step {i + 1}</label>
+                <Input
+                  id="edit-step"
+                  value={line}
+                  onChange={(e) => setLine(e.target.value)}
+                  invalid={write.state === 'refused'}
+                />
+                <div className="badges">
+                  <Button type="submit" disabled={saving || line.trim() === ''}>
+                    {saving ? 'Writing…' : 'Save'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(null)
+                      reset()
+                    }}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <StepLine step={s} />{' '}
+                <Button type="button" variant="secondary" onClick={() => open(i)} aria-label={`Edit step ${i + 1}`}>
+                  Edit
+                </Button>
+              </>
+            )}
+          </li>
+        ))}
+      </ol>
+      <WriteFeedback write={write} />
+    </>
+  )
+}
+
+/**
+ * BEH-ACT-2's other half: the title, which is the sentence the whole behaviour
+ * is read by. The heading stays on screen while it is edited, so he is changing
+ * something he can still see. The server refuses a quote, because a quote would
+ * end the title early in the corpus.
+ */
+function TitleEditor({
+  app,
+  behaviour,
+  onWrote,
+}: {
+  app: string
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const { write, run, reset } = useWrite(onWrote)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (draft === null) return
+    const title = draft
+    await run(async () => {
+      const result = await retitle(app, behaviour.id, title)
+      setDraft(null)
+      return result
+    })
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <>
+      <h1>{behaviour.title}</h1>
+      {draft === null ? (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setDraft(behaviour.title)
+            reset()
+          }}
+        >
+          Edit title
+        </Button>
+      ) : (
+        <form onSubmit={save} className="write">
+          <label htmlFor="edit-title">Title</label>
+          <Input
+            id="edit-title"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            invalid={write.state === 'refused'}
+          />
+          <div className="badges">
+            <Button type="submit" disabled={saving || draft.trim() === ''}>
+              {saving ? 'Writing…' : 'Save title'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setDraft(null)
+                reset()
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+      <WriteFeedback write={write} />
     </>
   )
 }

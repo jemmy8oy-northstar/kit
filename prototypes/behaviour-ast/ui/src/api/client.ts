@@ -148,6 +148,26 @@ export function addStep(app: string, id: string, step: string): Promise<WriteRes
   )
 }
 
+/**
+ * Replace step `index` of a behaviour (BEH-ACT-2), counted from 0 in the order
+ * the read API lists them. The server splices that one line, so every comment
+ * around it survives, and refuses a line that is not a step.
+ */
+export function updateStep(app: string, id: string, index: number, step: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps/${index}`,
+    { step },
+  )
+}
+
+/** Replace a behaviour's title (BEH-ACT-2), and nothing else on its header line. */
+export function retitle(app: string, id: string, title: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/title`,
+    { title },
+  )
+}
+
 export function addBehaviour(app: string, behaviour: NewBehaviour): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(app)}/behaviours`, behaviour)
 }
