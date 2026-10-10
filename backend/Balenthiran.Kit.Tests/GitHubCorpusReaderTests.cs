@@ -49,6 +49,18 @@ public class GitHubCorpusReaderTests
         Assert.All(gh.Sent, s => Assert.Equal("Bearer tok", s.Authorization));
     }
 
+    /// <summary>kit#118: a project's open notes travel with it, or a note left in Kit would vanish from Kit once GitHub answers.</summary>
+    [Fact]
+    public async Task A_notes_file_is_read_with_its_corpus()
+    {
+        var gh = new FakeGitHub(Listed("""[{"type": "file", "name": "alpha.beh", "sha": "a1"}, {"type": "file", "name": "alpha.notes.md", "sha": "n1"}]"""), Raw("behaviour BEH-A \"a\"\n"), Raw("# Notes on alpha\n"));
+
+        var snap = await Reader(gh, "tok").ReadAsync(Kit);
+
+        Assert.Equal(["alpha.beh", "alpha.notes.md"], snap.Files.Keys);
+        Assert.Equal("# Notes on alpha\n", snap.Files["alpha.notes.md"].Text);
+    }
+
     [Fact]
     public async Task A_BOM_survives_so_a_splice_written_back_changes_only_its_line()
     {

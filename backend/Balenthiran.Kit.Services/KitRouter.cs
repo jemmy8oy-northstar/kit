@@ -44,7 +44,8 @@ public sealed class KitRouter(
     bool deployed = false,
     IPullRequestOpener? pulls = null,
     string? head = null,
-    string baseBranch = "dev") : IKitRouter
+    string baseBranch = "dev",
+    TimeProvider? clock = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -60,6 +61,7 @@ public sealed class KitRouter(
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
+    private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -128,6 +130,21 @@ public sealed class KitRouter(
             }
         }
 
+        // kit#118: the open notes, apart from the project view so its shape (and its goldens) stay put.
+        var notes = NotesRoute.Match(pathname);
+        if (notes.Success)
+        {
+            if (DecodeUriComponent(notes.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, new NoteList { App = app, File = corpora.RelativeNotesPath(app), Notes = Notes.Parse(corpora.ReadNotesText(app)) })
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
     }
 
@@ -178,7 +195,8 @@ public sealed class KitRouter(
         }
 
         var bm = Bindings.Match(pathname);
-        var m = bm.Success ? bm : Behaviours.Match(pathname);
+        var nm = NotesRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -209,7 +227,7 @@ public sealed class KitRouter(
         // would race on the same corpus text and on git's index lock (kit#165).
         lock (writeGate)
         {
-            return bm.Success ? Bind(app, b) : Edit(app, m, b);
+            return bm.Success ? Bind(app, b) : nm.Success ? LeaveNote(app, b) : Edit(app, m, b);
         }
     }
 
@@ -372,6 +390,45 @@ public sealed class KitRouter(
     }
 
     /// <summary>
+    /// kit#118: append one free-text note to <c>&lt;app&gt;.notes.md</c>, then commit and push it like
+    /// any edit. A note on a behaviour names it, but the id is not looked up: a note may be about a
+    /// behaviour that is being renamed, removed, or does not exist yet.
+    /// </summary>
+    private KitResponse LeaveNote(string app, JsonElement body)
+    {
+        if (TypeError(body, NoteFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var text = Str(body, "text")!;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "a note needs some text" });
+        }
+
+        if (text.Length > Notes.MaxLength)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}" });
+        }
+
+        var behaviour = Str(body, "behaviour");
+        if (behaviour is not null && !Notes.IsBehaviourId(behaviour))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+        }
+
+        corpora.WriteNotesText(app, Notes.Append(corpora.ReadNotesText(app), app, text, behaviour, (clock ?? TimeProvider.System).GetUtcNow()));
+        return Json(200, GitOutcome(corpora.FullNotesPath(app), behaviour is null ? "leave a note" : $"leave a note on {behaviour}", app, new WriteOutcome
+        {
+            App = app,
+            Behaviour = behaviour,
+            File = corpora.RelativeNotesPath(app),
+            Note = NotCommitted,
+        }));
+    }
+
+    /// <summary>
     /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
     /// helper for both write paths, so they cannot describe the same outcome two ways. Off,
     /// the answer is <paramref name="plain"/> unchanged (decision 2) — except deployed, where
@@ -431,6 +488,7 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
     private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
+    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?")];
 
     private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
     {
