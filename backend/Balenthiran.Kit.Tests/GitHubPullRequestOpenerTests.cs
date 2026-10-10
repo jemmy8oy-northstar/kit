@@ -15,7 +15,7 @@ public class GitHubPullRequestOpenerTests
     private const string Repo = "jemmy8oy-northstar/kit";
 
     private static GitHubPullRequestOpener Opener(FakeGitHub gh, string? token = Token, string? repo = Repo) =>
-        new(new HttpClient(gh), token, repo);
+        new(new HttpClient(gh), new StaticGitHubTokenSource(token), repo);
 
     [Fact]
     public async Task One_already_open_is_returned_and_no_second_one_is_created()

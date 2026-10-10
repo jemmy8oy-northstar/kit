@@ -5,8 +5,8 @@
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    // `node` is here for one file: src/test/fixtures.test.ts requires ui.js
-    // through node:module to check the fixtures against the real server. No
+    // `node` is here for src/test/fixtures.test.ts, which reads the conformance golden
+    // off disk to check the fixtures against the real server. No
     // application code may use a node API — there is no node at runtime.
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom", "node"],
     "skipLibCheck": true,

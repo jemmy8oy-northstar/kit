@@ -20,19 +20,22 @@ no test naming it **fails the build**.
 ## Run it
 
 ```
-node start.js
+npm --prefix prototypes/behaviour-ast/ui ci
+npm --prefix prototypes/behaviour-ast/ui run build
+dotnet run --project backend/Balenthiran.Kit.WebApi --urls http://127.0.0.1:4321
 ```
 
-Then open **http://127.0.0.1:4321**. That is the whole thing: it installs and builds the UI the
-first time (about a minute), rebuilds when the bundle is older than the source, and serves.
+Then open **http://127.0.0.1:4321**. The server is C# (kit#119); it serves the corpora under
+`prototypes/behaviour-ast/behaviours` (or `KIT_DIR`) and the UI bundle built above. Settings are
+environment variables — `backend/Balenthiran.Kit.WebApi/KitSettings.cs` lists them.
+
+The engine is also a command line:
 
 ```
-node start.js --repos ~/code      # so Kit can find your tests and measure coverage
-node start.js --help              # ports, hosts, corpus directories
+dotnet run --project backend/Balenthiran.Kit.Cli -- check kit --repo . --dir prototypes/behaviour-ast/behaviours
+dotnet run --project backend/Balenthiran.Kit.Cli -- report snip-it --dir prototypes/behaviour-ast/behaviours
+dotnet run --project backend/Balenthiran.Kit.Cli -- sheet james-habits-app --dir prototypes/behaviour-ast/behaviours
 ```
-
-Without `--repos`, every project reports **not measured** — which is not the same as *nothing is
-tested*, and Kit will not pretend otherwise.
 
 ⚠️ **By default, Kit writes to your corpus and never commits.** Edits land in the working tree as an
 ordinary diff for you to review. With no password set, writes are refused unless it is bound to
@@ -67,7 +70,7 @@ two independent readings of the same brief agreed on **3 nouns out of 32**, and 
 control three different ways.
 
 **Kit does not fix this, by decision** — there is no canonical vocabulary and no reconciliation step,
-and none is planned. The forward path does not need one: `requires.js` emits a required-surface
+and none is planned. The forward path does not need one: the requires panel emits a required-surface
 contract that *dictates* the noun names to whoever implements it, so the builder never guesses. The
 gap is real only when two corpora are written independently and then merged, which is not the
 workflow Kit is for. Semantic conflict — two behaviours that contradict in meaning without colliding
@@ -80,11 +83,13 @@ on a slot — is a separate, later, model-shaped problem; see
 falsifiable question: *can a behaviour tree generate a runnable test with no hand-written glue?*
 
 ```
-node start.js                               # the UI — install, build, serve
-node prototypes/behaviour-ast/kit.js        # generated tests + measurements
-node prototypes/behaviour-ast/kit.test.js   # the suite
-node prototypes/behaviour-ast/ui.js         # the API alone, already built
+dotnet test ./backend                                   # the engine and server suite
+npm --prefix prototypes/behaviour-ast/ui test           # the UI suite
 ```
+
+The engine was first written in plain Node and ported to C# byte for byte (kit#119). The Node code
+is deleted; what it produced is frozen in `prototypes/behaviour-ast/conformance/`, which the C#
+tests are still scored against.
 
 The UI over it: [`prototypes/behaviour-ast/ui/`](prototypes/behaviour-ast/ui/) — it reads a corpus,
 shows the test Kit generates from each behaviour, and **writes new steps and behaviours back into

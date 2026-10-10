@@ -1,0 +1,81 @@
+# snip-it's SIX REAL e2e tests, re-expressed as behaviour trees.
+#
+# Not invented. Every step below corresponds to a line that exists today in
+# snip-it frontend/e2e/editor.spec.ts on origin/dev. The point of encoding the
+# real suite rather than a toy is that the generated output can be compared
+# against hand-written code that a person actually wrote and CI actually runs.
+#
+# `contract` steps are the honest part: they are assertions the tree CANNOT
+# express, kept in so the coverage number is not flattered by omitting them.
+
+behaviour BEH-HOME-1 "The landing page renders"
+  actor visitor
+  when opens page:Home
+  then sees region:Main
+
+behaviour BEH-EDIT-1 "The editor loads a transcript and offers its toolbar"
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  then sees button:SelectAll
+  then sees button:RemoveFillerWords
+  then sees button:SendForExport
+  then shows region:WordTrack "transcribe"
+
+behaviour BEH-EDIT-2 "The editor can be switched to dark mode"
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  then sees button:SelectAll
+  when activates button:ToggleTheme
+
+behaviour BEH-CUT-1 "Sending for export submits a cut and surfaces the finished job"
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  when activates button:RemoveFillerWords
+  when activates button:SendForExport
+  then shows region:CutStatus "is complete"
+  then sees link:Download
+  contract POST /api/cuts is sent exactly once
+  contract the body carries transcriptionJobId
+  contract the body carries every word
+  contract at least one word is marked not kept
+
+behaviour BEH-UP-1 "Uploading a file transcribes it and opens the editor"
+  actor visitor
+  when opens page:Upload
+  then sees heading:TranscribeAVideo
+  when fills form:Upload with ?fields
+  when activates button:Transcribe
+  then sees button:SelectAll
+  then lands on page:TranscriptEditor
+  contract the upload is multipart/form-data
+  contract the request path is /snipit/api/transcriptions
+
+behaviour BEH-FILL-1 "Removing filler words leaves the editor interactive"
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  when activates button:RemoveFillerWords
+  then sees button:SendForExport
+
+# ── the unknowns mechanism, on real material ──
+# BEH-UP-1 above says "fills the upload form" and glosses over WHICH fields —
+# exactly James's "user fills out x form. This is ok but this creates unknowns."
+# It is answered not by asking the author, but by a DIFFERENT behaviour that
+# happens to name the field. That is the whole cross-resolution idea, and the
+# field name below is the real one from editor.spec.ts (`getByLabel(...)`).
+
+behaviour BEH-UP-2 "The upload form takes a single video or audio file"
+  actor visitor
+  when opens page:Upload
+  when attaches file:talk_mp4 to field:VideoOrAudioFile
+  provides form:Upload.fields = VideoOrAudioFile
+
+# The editor's route carries an id. That is a hole too, and the generator refuses
+# to emit `./editor/` rather than quietly produce a test that navigates nowhere.
+# Supplying it is the same mechanism as any other unknown — one symbol table.
+behaviour BEH-EDIT-0 "The editor addresses one transcription by id"
+  actor visitor
+  provides page:TranscriptEditor.transcriptionId = 11111111-1111-1111-1111-111111111111

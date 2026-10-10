@@ -1,141 +1,141 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C (docs/design/tagging.md): the corpus carries the mapping, so no test file is edited. Keyed on file + title, the same as snip-it.tests.json.",
-  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml. Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
+  "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml (since kit#119 the C# `kit check kit --repo .`, and the tests named below are C#). Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. Nothing here checks the test body. That limit is C's and it is not fixable by parsing; it is stated in docs/design/tagging.md and repeated in check.js's output, because a gate quoted second-hand loses its caveats first.",
   "BEH-GATE-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "exit 1 when a behaviour has no test naming it — the gate can go RED"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it"
     }
   ],
   "BEH-GATE-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "exit 2 when the repo has no test files at all"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_exits_2_never_0_when_the_repo_has_no_test_files"
     }
   ],
   "BEH-GATE-3": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "REFUSES a mapping naming a title that file does not have — the renamed-test case"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_refuses_a_mapping_naming_a_test_that_no_longer_exists"
     }
   ],
   "BEH-READ-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "exit 2 when the JS reader and the JS count disagree — the half that had no guard"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_refuses_when_the_readers_two_counts_disagree"
     }
   ],
   "BEH-GEN-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "an unbound noun is REFUSED, and the missing noun is named"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "An_unbound_noun_is_refused_and_the_missing_noun_is_named"
     }
   ],
   "BEH-GEN-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "an unsupplied ROUTE PARAM is refused — the real bug this caught"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "An_unsupplied_route_param_is_refused_rather_than_truncated"
     }
   ],
   "BEH-PARSE-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "an unrecognised keyword is an error, not silently dropped"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped"
     }
   ],
   "BEH-RESOLVE-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a hole is filled by a DIFFERENT behaviour"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "A_hole_is_filled_by_a_different_behaviour"
     }
   ],
   "BEH-RESOLVE-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "two behaviours disagreeing IS a conflict, with both sides named"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "Two_behaviours_disagreeing_is_a_conflict_with_both_sides_named"
     }
   ],
   "BEH-ADJ-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "an inference defaults to unreviewed WITHOUT anyone writing review"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "An_inference_defaults_to_unreviewed_without_anyone_writing_review"
     }
   ],
   "BEH-UI-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "POST and GET are the whole surface — every other verb reaches no handler"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
     }
   ],
   "BEH-UI-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "the server binds the loopback interface and not every interface"
+      "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
+      "title": "The_default_host_is_loopback_not_every_interface"
     }
   ],
   "BEH-UI-3": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a traversal in the app name is a 404, not a read outside the corpus dir"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
     }
   ],
   "BEH-UI-4": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "unavailable coverage is null in the list, never zero"
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "Unavailable_coverage_is_null_in_the_list_never_zero"
     }
   ],
   "BEH-WRITE-1": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "writer: every comment in the corpus survives an edit, byte for byte"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_writer_keeps_every_comment_byte_for_byte"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "writer: a step lands at the end of its own block, not after the blank line"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_writer_lands_a_step_at_the_end_of_its_own_block"
     }
   ],
   "BEH-WRITE-2": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "writer: an edit that would not parse is refused, and the text is unchanged"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_writer_refuses_an_edit_that_would_not_parse_and_hands_back_no_text"
     }
   ],
   "BEH-WRITE-3": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "writer: an edit that changes a NEIGHBOURING behaviour is refused"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_writer_refuses_an_edit_that_would_change_a_neighbouring_behaviour"
     }
   ],
   "BEH-WRITE-4": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "writer: it contains no path to git at all — decision 2, checked not promised"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_writer_has_no_path_to_git_or_a_process"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a POST appends a step to the real file on disk, and says it did not commit"
+      "file": "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs",
+      "title": "Every_route_answers_and_writes_as_ui_js_does"
     }
   ],
   "BEH-WRITE-5": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "the write path is refused when the server is not bound to loopback"
+      "file": "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs",
+      "title": "Every_step_answers_as_ui_js_does"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "isLoopback accepts the loopback range and nothing that merely looks like it"
+      "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
+      "title": "IsLoopback_accepts_the_loopback_range_and_nothing_that_merely_looks_like_it"
     }
   ],
   "BEH-WRITE-6": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "a cross-origin POST from a hostile page gets no CORS header from the socket"
+      "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
+      "title": "The_host_answers_as_ui_js_does"
     },
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "CORS: a loopback origin is reflected, and any other origin gets no header"
+      "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
+      "title": "Kestrel_delivers_every_answer_over_a_real_socket"
     }
   ]
 }

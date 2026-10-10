@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.Database;
@@ -14,15 +15,16 @@ namespace Balenthiran.Kit.Database;
 /// so pressing Commit twice proposes the work once.
 /// </summary>
 /// <param name="http">Sent every request; tests hand it a fake handler.</param>
-/// <param name="token">
-/// <c>KIT_GIT_TOKEN</c> — the same credential the image pushes with (kit#144). Sent as a
-/// header and never written into a reason, because a reason is shown in the UI.
+/// <param name="tokens">
+/// <c>KIT_GIT_TOKEN</c>, or the GitHub App installation (kit#88). Asked per request, so a minted
+/// token that has expired is replaced rather than sent. Sent as a header and never written into
+/// a reason, because a reason is shown in the UI.
 /// </param>
 /// <param name="repository"><c>owner/name</c>, usually <see cref="RepositoryFromRemote"/> of the clone's <c>origin</c>.</param>
 /// <param name="api">Default <c>https://api.github.com/</c>.</param>
 public sealed partial class GitHubPullRequestOpener(
     HttpClient http,
-    string? token,
+    IGitHubTokenSource tokens,
     string? repository,
     Uri? api = null) : IPullRequestOpener
 {
@@ -43,14 +45,26 @@ public sealed partial class GitHubPullRequestOpener(
     /// <inheritdoc />
     public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return new PullRequestResult { Reason = "no GitHub token is set (KIT_GIT_TOKEN), so Kit cannot open a pull request" };
-        }
-
+        // The repository first: minting an App token is itself a request to GitHub, and wasted on a
+        // pod that could not use it.
         if (string.IsNullOrEmpty(repository) || repository.Split('/') is not [{ Length: > 0 } owner, { Length: > 0 }])
         {
             return new PullRequestResult { Reason = "Kit does not know which GitHub repository its clone came from, so it cannot open a pull request" };
+        }
+
+        string? token;
+        try
+        {
+            token = await tokens.TokenAsync(cancellationToken);
+        }
+        catch (GitHubTokenException e)
+        {
+            return new PullRequestResult { Reason = e.Message };
+        }
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return new PullRequestResult { Reason = "no GitHub token is set (KIT_GIT_TOKEN), so Kit cannot open a pull request" };
         }
 
         var root = new Uri(api ?? DefaultApi, $"repos/{repository}/pulls");
@@ -58,7 +72,7 @@ public sealed partial class GitHubPullRequestOpener(
         // GitHub matches `head` only in the owner:branch form; a bare branch name finds nothing and
         // would open a duplicate on every press.
         var query = $"?state=open&head={Uri.EscapeDataString($"{owner}:{head}")}&base={Uri.EscapeDataString(baseBranch)}";
-        var found = await SendAsync(HttpMethod.Get, new Uri(root + query), null, cancellationToken);
+        var found = await SendAsync(HttpMethod.Get, new Uri(root + query), token, null, cancellationToken);
         if (found.Reason is not null)
         {
             return new PullRequestResult { Reason = found.Reason };
@@ -77,7 +91,7 @@ public sealed partial class GitHubPullRequestOpener(
         }
 
         var payload = JsonSerializer.Serialize(new { title, head, @base = baseBranch, body });
-        var created = await SendAsync(HttpMethod.Post, root, payload, cancellationToken);
+        var created = await SendAsync(HttpMethod.Post, root, token, payload, cancellationToken);
         if (created.Reason is not null)
         {
             return new PullRequestResult { Reason = created.Reason };
@@ -102,13 +116,13 @@ public sealed partial class GitHubPullRequestOpener(
 
     // One request, and which LAYER failed if it did: unreachable, slow, refused, or unreadable
     // need different fixes, the same split GitStore.Git makes for git (kit#39).
-    private async Task<(JsonElement? Json, string? Reason, int Status)> SendAsync(HttpMethod method, Uri uri, string? payload, CancellationToken cancellationToken)
+    private async Task<(JsonElement? Json, string? Reason, int Status)> SendAsync(HttpMethod method, Uri uri, string token, string? payload, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(method, uri);
 
         // Trimmed: a secret created from a file ends in a newline, and .NET throws a FormatException
         // for one in a header value — outside every catch below (kit#160's blind review).
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Trim());
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
         request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");

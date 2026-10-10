@@ -48,7 +48,7 @@ async function get<T>(requested: string): Promise<T> {
     // the most likely failure by far when the UI is a local tool, so it gets
     // the sentence that tells you what to do about it.
     throw new ApiError(
-      `Could not reach the Kit read API at ${path}. Start it with \`node ui.js\`.`,
+      `Could not reach the Kit read API at ${path}. Start it with \`dotnet run --project backend/Balenthiran.Kit.WebApi\` from the repo root.`,
       null,
     )
   }
@@ -88,7 +88,7 @@ async function post<T>(requested: string, body: unknown): Promise<T> {
     })
   } catch {
     throw new ApiError(
-      `Could not reach the Kit write API at ${path}. Start it with \`node ui.js\`.`,
+      `Could not reach the Kit write API at ${path}. Start it with \`dotnet run --project backend/Balenthiran.Kit.WebApi\` from the repo root.`,
       null,
     )
   }
@@ -148,6 +148,26 @@ export function addStep(app: string, id: string, step: string): Promise<WriteRes
   )
 }
 
+/**
+ * Replace step `index` of a behaviour (BEH-ACT-2), counted from 0 in the order
+ * the read API lists them. The server splices that one line, so every comment
+ * around it survives, and refuses a line that is not a step.
+ */
+export function updateStep(app: string, id: string, index: number, step: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/steps/${index}`,
+    { step },
+  )
+}
+
+/** Replace a behaviour's title (BEH-ACT-2), and nothing else on its header line. */
+export function retitle(app: string, id: string, title: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/title`,
+    { title },
+  )
+}
+
 export function addBehaviour(app: string, behaviour: NewBehaviour): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(app)}/behaviours`, behaviour)
 }
@@ -171,6 +191,22 @@ export function setReview(
   return post<WriteResult>(
     `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/review`,
     { state, note },
+  )
+}
+
+/**
+ * Remove a behaviour (BEH-ACT-3). The id is in the path and the body is an empty
+ * object: the server refuses any field at all, so there is nothing here that
+ * could be mistaken for a way to say more than "remove this".
+ *
+ * The refusal that matters — another behaviour still `serves` or `cites` this
+ * one — is a 409 whose reason names the referrer, and it reaches the screen
+ * through `post` like every other refusal.
+ */
+export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/remove`,
+    {},
   )
 }
 

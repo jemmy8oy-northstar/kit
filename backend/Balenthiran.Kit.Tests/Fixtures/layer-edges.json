@@ -1,0 +1,584 @@
+{
+  "format": 2,
+  "corpus": "layer-edges",
+  "parse": [
+    {
+      "id": "BEH-L1",
+      "title": "before the directive, still inherits it",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:17"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees region:Main",
+          "refs": [
+            {
+              "kind": "region",
+              "name": "Main"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:18"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "layer-edges.beh:16",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false,
+      "layer": "technical"
+    },
+    {
+      "id": "BEH-L2",
+      "title": "overridden back to ux",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:24"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees button:Save",
+          "refs": [
+            {
+              "kind": "button",
+              "name": "Save"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:25"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "layer-edges.beh:22",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false,
+      "layer": "ux"
+    },
+    {
+      "id": "BEH-L3",
+      "title": "ui, after its steps",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:28"
+        },
+        {
+          "kind": "then",
+          "verb": "sees",
+          "text": "sees field:Name",
+          "refs": [
+            {
+              "kind": "field",
+              "name": "Name"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:29"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "layer-edges.beh:27",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false,
+      "layer": "ui"
+    },
+    {
+      "id": "BEH-L4",
+      "title": "technical with a trailing tab",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:34"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "layer-edges.beh:32",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false,
+      "layer": "technical"
+    },
+    {
+      "id": "BEH-L5",
+      "title": "written twice, the last wins",
+      "actor": null,
+      "steps": [
+        {
+          "kind": "when",
+          "verb": "opens",
+          "text": "opens page:Home",
+          "refs": [
+            {
+              "kind": "page",
+              "name": "Home"
+            }
+          ],
+          "holes": [],
+          "at": "layer-edges.beh:39"
+        }
+      ],
+      "unknowns": [],
+      "provides": [],
+      "serves": [],
+      "at": "layer-edges.beh:36",
+      "asks": null,
+      "options": [],
+      "recommend": null,
+      "against": null,
+      "cites": [],
+      "source": {
+        "origin": "defined",
+        "ref": null
+      },
+      "review": {
+        "state": "approved",
+        "note": null
+      },
+      "pending": false,
+      "layer": "ux"
+    }
+  ],
+  "resolve": {
+    "symbols": [],
+    "conflicts": [],
+    "changed": [
+      {
+        "id": "BEH-L1",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-L2",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-L3",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-L4",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      },
+      {
+        "id": "BEH-L5",
+        "changes": [
+          {
+            "path": "filled",
+            "from": null,
+            "to": []
+          },
+          {
+            "path": "open",
+            "from": null,
+            "to": []
+          }
+        ]
+      }
+    ]
+  },
+  "generate": [
+    {
+      "id": "BEH-L1",
+      "code": "test.skip(\"[BEH-L1] before the directive, still inherits it\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
+      "missing": [
+        "page:Home",
+        "region:Main"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-L2",
+      "code": "test(\"[BEH-L2] overridden back to ux\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
+      "missing": [
+        "page:Home",
+        "button:Save"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 2
+      }
+    },
+    {
+      "id": "BEH-L3",
+      "code": "test.skip(\"[BEH-L3] ui, after its steps\", async () => {\n  // NOT GENERATED: a ui behaviour needs a visual check, and none is designed yet (kit#89)\n});",
+      "missing": [
+        "page:Home",
+        "field:Name"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-L4",
+      "code": "test.skip(\"[BEH-L4] technical with a trailing tab\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
+      "missing": [
+        "page:Home"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 0
+      }
+    },
+    {
+      "id": "BEH-L5",
+      "code": "test(\"[BEH-L5] written twice, the last wins\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "missing": [
+        "page:Home"
+      ],
+      "stats": {
+        "generated": 0,
+        "contract": 0,
+        "ungenerated": 1
+      }
+    }
+  ],
+  "report": {
+    "adjudication": {
+      "defined": 5,
+      "inferred": 0,
+      "unreviewed": [],
+      "approved": [],
+      "denied": [],
+      "untraceable": [
+        "BEH-L1",
+        "BEH-L2",
+        "BEH-L3",
+        "BEH-L4",
+        "BEH-L5"
+      ]
+    },
+    "surface": {
+      "errors": [],
+      "served": [],
+      "unserved": []
+    },
+    "questions": [],
+    "requires": {
+      "nouns": [
+        {
+          "noun": "button:Save",
+          "kind": "button",
+          "name": "Save",
+          "usedBy": [
+            "BEH-L2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-L3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Home",
+          "kind": "page",
+          "name": "Home",
+          "usedBy": [
+            "BEH-L1",
+            "BEH-L2",
+            "BEH-L3",
+            "BEH-L4",
+            "BEH-L5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Main",
+          "kind": "region",
+          "name": "Main",
+          "usedBy": [
+            "BEH-L1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "missing": [
+        {
+          "noun": "button:Save",
+          "kind": "button",
+          "name": "Save",
+          "usedBy": [
+            "BEH-L2"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "field:Name",
+          "kind": "field",
+          "name": "Name",
+          "usedBy": [
+            "BEH-L3"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "page:Home",
+          "kind": "page",
+          "name": "Home",
+          "usedBy": [
+            "BEH-L1",
+            "BEH-L2",
+            "BEH-L3",
+            "BEH-L4",
+            "BEH-L5"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "route",
+              "surface": "a route that serves this page",
+              "verbs": [
+                "opens"
+              ],
+              "met": false
+            }
+          ]
+        },
+        {
+          "noun": "region:Main",
+          "kind": "region",
+          "name": "Main",
+          "usedBy": [
+            "BEH-L1"
+          ],
+          "bound": false,
+          "satisfied": false,
+          "needs": [
+            {
+              "id": "addressable",
+              "surface": "addressable from a test: a role plus an accessible name (preferred), an associated <label>, or a stable locator",
+              "verbs": [
+                "sees"
+              ],
+              "met": false
+            }
+          ]
+        }
+      ],
+      "insufficient": [],
+      "satisfied": []
+    }
+  }
+}

@@ -93,7 +93,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-NAV-1",
@@ -170,7 +171,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-PICK-0",
@@ -225,7 +227,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-PICK-1",
@@ -306,7 +309,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-PICK-2",
@@ -421,7 +425,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-SWAP-1",
@@ -498,7 +503,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-METRICS-1",
@@ -543,7 +549,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-ERR-1",
@@ -632,7 +639,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-IND-ERR-1",
@@ -700,7 +708,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MM-ISOLATION-1",
@@ -793,7 +802,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "resolve": {

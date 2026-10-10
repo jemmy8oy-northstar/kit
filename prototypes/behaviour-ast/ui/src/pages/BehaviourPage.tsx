@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addBinding, addStep, fetchProject, setReview } from '../api/client'
+import {
+  addBinding, addStep, fetchProject, removeBehaviour, retitle, setReview, updateStep,
+} from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Generated, NounRequirement, ProjectDetail, Step } from '../api/types'
+import type {
+  Behaviour, Generated, NounRequirement, ProjectDetail, Step, WriteResult,
+} from '../api/types'
 import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
@@ -21,16 +25,33 @@ import { useWrite } from '../components/useWrite'
 export default function BehaviourPage() {
   const { app = '', id = '' } = useParams()
   const { resource, reload } = useReloadableResource(() => fetchProject(app), [app])
+  // Held HERE, above the resource, because a removal is the one write after
+  // which the page's own subject no longer exists. Kept inside the form, the
+  // note saying what git did would be thrown away with the form, and a re-read
+  // would answer "No such behaviour" — true, and indistinguishable from a
+  // mistyped URL, when what happened is that he removed it a second ago.
+  const [removed, setRemoved] = useState<WriteResult | null>(null)
+  const project = `/projects/${encodeURIComponent(app)}`
 
   return (
     <>
       <p className="crumbs">
-        <Link to="/">Projects</Link> / <Link to={`/projects/${encodeURIComponent(app)}`}>{app}</Link> / {id}
+        <Link to="/">Projects</Link> / <Link to={project}>{app}</Link> / {id}
       </p>
 
-      <ResourceView resource={resource}>
-        {(value) => <Detail project={value} id={id} onWrote={reload} />}
-      </ResourceView>
+      {removed ? (
+        <Card elevation="flat">
+          <h1>Removed {id}</h1>
+          <WriteResultNote result={removed} removed />
+          <p>
+            <Link to={project}>Back to {app}</Link>
+          </p>
+        </Card>
+      ) : (
+        <ResourceView resource={resource}>
+          {(value) => <Detail project={value} id={id} onWrote={reload} onRemoved={setRemoved} />}
+        </ResourceView>
+      )}
     </>
   )
 }
@@ -39,10 +60,12 @@ function Detail({
   project,
   id,
   onWrote,
+  onRemoved,
 }: {
   project: ProjectDetail
   id: string
   onWrote: () => void
+  onRemoved: (result: WriteResult) => void
 }) {
   const behaviour = project.behaviours.find((b) => b.id === id)
 
@@ -63,7 +86,7 @@ function Detail({
 
   return (
     <>
-      <h1>{behaviour.title}</h1>
+      <TitleEditor app={project.app} behaviour={behaviour} onWrote={onWrote} />
       <div className="badges">
         <Badge tone="primary">{behaviour.id}</Badge>
         <Badge tone="neutral">{behaviour.actor}</Badge>
@@ -79,13 +102,7 @@ function Detail({
       <div className="split">
         <section>
           <h2>Behaviour</h2>
-          <ol className="steps">
-            {behaviour.steps.map((s, i) => (
-              <li key={`${s.kind}-${i}`}>
-                <StepLine step={s} />
-              </li>
-            ))}
-          </ol>
+          <StepsEditor app={project.app} behaviour={behaviour} onWrote={onWrote} />
           <AddStepForm app={project.app} id={behaviour.id} onWrote={onWrote} />
         </section>
 
@@ -99,7 +116,239 @@ function Detail({
           />
         </section>
       </div>
+
+      <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
     </>
+  )
+}
+
+/**
+ * BEH-ACT-2: correct a step that is already there, beside the test it produced.
+ *
+ * The input holds the line as the corpus spells it (`then sees region:Main`), for
+ * the one-grammar reason AddStepForm gives. Save sends the step's INDEX rather
+ * than its old text: two identical lines are two steps, and the text could not
+ * say which one he meant. One step is open at a time. A refusal leaves it open
+ * with what he typed; a write closes it and re-reads, so the test beside it is
+ * the one his edit produced.
+ */
+function StepsEditor({
+  app,
+  behaviour,
+  onWrote,
+}: {
+  app: string
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const [editing, setEditing] = useState<number | null>(null)
+  const [line, setLine] = useState('')
+  const { write, run, reset } = useWrite(onWrote)
+
+  function open(index: number) {
+    const s = behaviour.steps[index]
+    setLine(`${s.kind} ${s.text}`)
+    setEditing(index)
+    reset()
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (editing === null) return
+    const index = editing
+    await run(async () => {
+      const result = await updateStep(app, behaviour.id, index, line)
+      setEditing(null)
+      return result
+    })
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <>
+      <ol className="steps">
+        {behaviour.steps.map((s, i) => (
+          <li key={`${s.kind}-${i}`}>
+            {editing === i ? (
+              <form onSubmit={save} className="write">
+                <label htmlFor="edit-step">Step {i + 1}</label>
+                <Input
+                  id="edit-step"
+                  value={line}
+                  onChange={(e) => setLine(e.target.value)}
+                  invalid={write.state === 'refused'}
+                />
+                <div className="badges">
+                  <Button type="submit" disabled={saving || line.trim() === ''}>
+                    {saving ? 'Writing…' : 'Save'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(null)
+                      reset()
+                    }}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <StepLine step={s} />{' '}
+                <Button type="button" variant="secondary" onClick={() => open(i)} aria-label={`Edit step ${i + 1}`}>
+                  Edit
+                </Button>
+              </>
+            )}
+          </li>
+        ))}
+      </ol>
+      <WriteFeedback write={write} />
+    </>
+  )
+}
+
+/**
+ * BEH-ACT-2's other half: the title, which is the sentence the whole behaviour
+ * is read by. The heading stays on screen while it is edited, so he is changing
+ * something he can still see. The server refuses a quote, because a quote would
+ * end the title early in the corpus.
+ */
+function TitleEditor({
+  app,
+  behaviour,
+  onWrote,
+}: {
+  app: string
+  behaviour: Behaviour
+  onWrote: () => void
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const { write, run, reset } = useWrite(onWrote)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (draft === null) return
+    const title = draft
+    await run(async () => {
+      const result = await retitle(app, behaviour.id, title)
+      setDraft(null)
+      return result
+    })
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <>
+      <h1>{behaviour.title}</h1>
+      {draft === null ? (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setDraft(behaviour.title)
+            reset()
+          }}
+        >
+          Edit title
+        </Button>
+      ) : (
+        <form onSubmit={save} className="write">
+          <label htmlFor="edit-title">Title</label>
+          <Input
+            id="edit-title"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            invalid={write.state === 'refused'}
+          />
+          <div className="badges">
+            <Button type="submit" disabled={saving || draft.trim() === ''}>
+              {saving ? 'Writing…' : 'Save title'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setDraft(null)
+                reset()
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+      <WriteFeedback write={write} />
+    </>
+  )
+}
+
+/**
+ * BEH-ACT-3: remove the behaviour on screen.
+ *
+ * Two clicks, because it is the only write here that cannot be undone from this
+ * page — a wrong step can be seen and a wrong review re-adjudicated, but a
+ * removed behaviour leaves nothing on screen to correct. The second button names
+ * the id, so the confirmation says what it will do rather than "Are you sure?".
+ *
+ * Whether it is SAFE to remove is not decided here. The server refuses while any
+ * other behaviour or question `serves` or `cites` this one, and that refusal —
+ * which names the referrer — is what appears below. A client-side guess at the
+ * references would be a second reading of the corpus, and could only drift.
+ *
+ * At the bottom, apart from the forms that add to the corpus, so it is not the
+ * button a thumb lands on while adjudicating.
+ */
+function RemoveForm({
+  app,
+  id,
+  onRemoved,
+}: {
+  app: string
+  id: string
+  onRemoved: (result: WriteResult) => void
+}) {
+  const [confirming, setConfirming] = useState(false)
+  // No re-read on success: the page above swaps itself for the removal note,
+  // and re-reading would only fetch a corpus that no longer has this id.
+  const { write, run } = useWrite(() => {})
+
+  async function remove() {
+    await run(async () => {
+      const result = await removeBehaviour(app, id)
+      onRemoved(result)
+      return result
+    })
+    setConfirming(false)
+  }
+
+  const saving = write.state === 'saving'
+
+  return (
+    <section className="write">
+      <h3>Remove</h3>
+      {confirming ? (
+        <div className="badges">
+          <Button type="button" variant="danger" onClick={remove} disabled={saving}>
+            {saving ? 'Removing…' : `Remove ${id} for good`}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={saving}>
+            Keep it
+          </Button>
+        </div>
+      ) : (
+        <Button type="button" variant="danger" onClick={() => setConfirming(true)}>
+          Remove
+        </Button>
+      )}
+      <WriteFeedback write={write} />
+    </section>
   )
 }
 

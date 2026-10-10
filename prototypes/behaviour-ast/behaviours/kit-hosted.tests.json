@@ -1,0 +1,65 @@
+{
+  "_": "behaviour -> the test(s) that name it. Same shape as kit.tests.json: the corpus carries the mapping, keyed on file + title (a C# test's title is its method name).",
+  "_authored": "2026-10-09, from the kit spec audit (claude-code-bot#105). Only behaviours whose `then` line a test ASSERTS are mapped. Built-but-unasserted ones stay unmapped on purpose, so `check.js kit-hosted` keeps naming them.",
+  "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. check.js proves the test exists, not what it asserts.",
+  "BEH-ACT-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/UpdateBehaviourTests.cs",
+      "title": "A_step_is_replaced_in_place_and_every_other_byte_survives"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx",
+      "title": "opens a step as the corpus spells it, and sends nothing until Save"
+    }
+  ],
+  "BEH-ACT-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/RemoveBehaviourTests.cs",
+      "title": "A_behaviour_another_one_serves_is_refused_naming_the_referrer_and_its_line"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx",
+      "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
+    }
+  ],
+  "BEH-COMMIT-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",
+      "title": "An_edit_is_never_committed_onto_the_branch_Commit_proposes_into"
+    }
+  ],
+  "BEH-COMMIT-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",
+      "title": "The_commit_is_attributed_to_Kit_even_when_the_clone_is_configured_as_someone_else"
+    }
+  ],
+  "BEH-COMMIT-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/CommitRouteTests.cs",
+      "title": "Opens_one_pull_request_from_the_edits_branch_into_the_base"
+    }
+  ],
+  "BEH-COMMIT-4": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it"
+    }
+  ],
+  "BEH-PULL-4": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
+      "title": "The_router_answers_as_ui_js_does"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/test/engineBoundary.test.ts",
+      "title": "no shipped UI file imports from outside ui/"
+    }
+  ],
+  "BEH-GATE-H1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
+      "title": "Locked_a_write_needs_a_session_and_a_read_still_does_not"
+    }
+  ]
+}

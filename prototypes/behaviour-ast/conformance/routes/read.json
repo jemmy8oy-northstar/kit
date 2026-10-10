@@ -5150,7 +5150,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:112"
+              "at": "kit-hosted.beh:119"
             },
             {
               "id": "BEH-PULL-2",
@@ -5233,7 +5233,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:122"
+              "at": "kit-hosted.beh:131"
             },
             {
               "id": "BEH-PULL-3",
@@ -5323,7 +5323,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:133"
+              "at": "kit-hosted.beh:144"
             },
             {
               "id": "BEH-PULL-4",
@@ -5413,7 +5413,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:145"
+              "at": "kit-hosted.beh:158"
             },
             {
               "id": "BEH-ACT-1",
@@ -5477,7 +5477,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:162"
+              "at": "kit-hosted.beh:176"
             },
             {
               "id": "BEH-ACT-2",
@@ -5541,7 +5541,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:171"
+              "at": "kit-hosted.beh:185"
             },
             {
               "id": "BEH-ACT-3",
@@ -5612,7 +5612,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:180"
+              "at": "kit-hosted.beh:194"
             },
             {
               "id": "BEH-ACT-4",
@@ -5655,7 +5655,7 @@
                 "note": null
               },
               "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
-              "at": "kit-hosted.beh:190"
+              "at": "kit-hosted.beh:204"
             },
             {
               "id": "BEH-COMMIT-1",
@@ -5752,7 +5752,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:208"
+              "at": "kit-hosted.beh:222"
             },
             {
               "id": "BEH-COMMIT-2",
@@ -5849,7 +5849,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:221"
+              "at": "kit-hosted.beh:236"
             },
             {
               "id": "BEH-COMMIT-3",
@@ -5939,7 +5939,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:234"
+              "at": "kit-hosted.beh:250"
             },
             {
               "id": "BEH-COMMIT-4",
@@ -6036,7 +6036,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:246"
+              "at": "kit-hosted.beh:262"
             },
             {
               "id": "BEH-GATE-H1",
@@ -6119,7 +6119,7 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:266"
+              "at": "kit-hosted.beh:283"
             },
             {
               "id": "BEH-GATE-H2",
@@ -6216,57 +6216,57 @@
                 "note": null
               },
               "asks": null,
-              "at": "kit-hosted.beh:277"
+              "at": "kit-hosted.beh:295"
             }
           ],
           "conflicts": [],
           "generated": [
             {
               "id": "BEH-PULL-1",
-              "code": "test(\"[BEH-PULL-1] The project list comes from GitHub, not from the pod's working tree\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:Remote\" });\n  // UNGENERATED: given repo:Remote\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports origin:GitHub\" });\n  // UNGENERATED: then reports origin:GitHub\n  // CONTRACT (not derivable from a behaviour): today the list is readdirSync(behaviours/*.beh) against the checkout\n  // CONTRACT (not derivable from a behaviour): the process happens to sit in — correct for a laptop, meaningless for a\n  // CONTRACT (not derivable from a behaviour): pod whose clone is an implementation detail of its image\n});",
+              "code": "test.skip(\"[BEH-PULL-1] The project list comes from GitHub, not from the pod's working tree\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "repo:Remote"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 3,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-PULL-2",
-              "code": "test(\"[BEH-PULL-2] A public project's behaviours are served without a token, on a request of their own\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given project:Public\" });\n  // UNGENERATED: given project:Public\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports auth:NotRequired\" });\n  // UNGENERATED: then reports auth:NotRequired\n  // CONTRACT (not derivable from a behaviour): his instinct, quoted: \"obviously beh from public repos dont need to be\n  // CONTRACT (not derivable from a behaviour): authenticated so maybe can be returned faster\" — so the split is not a\n  // CONTRACT (not derivable from a behaviour): performance tweak layered on later, it is which credential the request needs\n  // CONTRACT (not derivable from a behaviour): a public read that fails because a token could not be minted is a bug\n});",
+              "code": "test.skip(\"[BEH-PULL-2] A public project's behaviours are served without a token, on a request of their own\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "project:Public"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 4,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-PULL-3",
-              "code": "test(\"[BEH-PULL-3] A private project is served only against a live installation token\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given project:Private\" });\n  // UNGENERATED: given project:Private\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports auth:InstallationToken\" });\n  // UNGENERATED: then reports auth:InstallationToken\n  // CONTRACT (not derivable from a behaviour): the kit-github secret he created on 2026-09-27 holds an app id, an\n  // CONTRACT (not derivable from a behaviour): installation id and a private key — a credential that is EXCHANGED for a\n  // CONTRACT (not derivable from a behaviour): short-lived token, never sent as one\n  // CONTRACT (not derivable from a behaviour): an expired token is re-minted rather than returned as a failed read, which\n  // CONTRACT (not derivable from a behaviour): is what he meant by \"some similar refresh token mechanism to what you are using\"\n});",
+              "code": "test.skip(\"[BEH-PULL-3] A private project is served only against a live installation token\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "project:Private"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 5,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-PULL-4",
-              "code": "test(\"[BEH-PULL-4] The backend parses, resolves and generates; the frontend renders what it is handed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Project\" });\n  // UNGENERATED: given request:Project\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports work:ServerSide\" });\n  // UNGENERATED: then reports work:ServerSide\n  // CONTRACT (not derivable from a behaviour): \"I am envisioning, the frontend has the UI, keep it light let the backend\n  // CONTRACT (not derivable from a behaviour): do the heavy lifting\" — so the generated test a screen shows is computed\n  // CONTRACT (not derivable from a behaviour): server-side and arrives as data; the browser never carries the engine\n  // CONTRACT (not derivable from a behaviour): this is also what makes the engine's language a private decision rather\n  // CONTRACT (not derivable from a behaviour): than a public one\n});",
+              "code": "test.skip(\"[BEH-PULL-4] The backend parses, resolves and generates; the frontend renders what it is handed\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "request:Project"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 5,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
@@ -6323,26 +6323,26 @@
             },
             {
               "id": "BEH-COMMIT-1",
-              "code": "test(\"[BEH-COMMIT-1] Commit creates a branch off dev, and never a commit on dev\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given change:Pending\" });\n  // UNGENERATED: given change:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports branch:Created\" });\n  // UNGENERATED: then reports branch:Created\n  // CONTRACT (not derivable from a behaviour): answering the question mark in his own sentence: it has to be a branch\n  // CONTRACT (not derivable from a behaviour): a spec written before its code exists makes check.js exit 1 BY DESIGN\n  // CONTRACT (not derivable from a behaviour): (kit.beh BEH-GATE-1), so committing to dev would push a known-red tree\n  // CONTRACT (not derivable from a behaviour): onto the branch every other PR is measured against\n  // CONTRACT (not derivable from a behaviour): ⚠️ UNBUILT: git-store.js defaults to `opts.branch || currentBranch(cwd)`,\n  // CONTRACT (not derivable from a behaviour): so today a pod would push a phone edit onto whatever branch its clone sits on\n});",
+              "code": "test.skip(\"[BEH-COMMIT-1] Commit creates a branch off dev, and never a commit on dev\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "change:Pending"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 6,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-COMMIT-2",
-              "code": "test(\"[BEH-COMMIT-2] The commit is attributed to Kit, not to the person who pressed Commit\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given change:Pending\" });\n  // UNGENERATED: given change:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports author:Kit\" });\n  // UNGENERATED: then reports author:Kit\n  // CONTRACT (not derivable from a behaviour): his override on kit#88, 2026-09-30: \"Let's let the commit belong to kit\n  // CONTRACT (not derivable from a behaviour): for now… using the gh app speeds up timelines\"\n  // CONTRACT (not derivable from a behaviour): ⚠️ THIS IS A TRADE HE MADE KNOWINGLY, NOT A LIMITATION — commit\n  // CONTRACT (not derivable from a behaviour): attribution was the argument that carried the earlier web-flow decision,\n  // CONTRACT (not derivable from a behaviour): and he judged shipping sooner worth more while Kit has one user\n  // CONTRACT (not derivable from a behaviour): the condition for revisiting it is a SECOND USER, not a date\n});",
+              "code": "test.skip(\"[BEH-COMMIT-2] The commit is attributed to Kit, not to the person who pressed Commit\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "change:Pending"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 6,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
@@ -6359,38 +6359,38 @@
             },
             {
               "id": "BEH-COMMIT-4",
-              "code": "test(\"[BEH-COMMIT-4] The branch a Commit produces is red, and the red is the work item\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given branch:Pushed\" });\n  // UNGENERATED: given branch:Pushed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): MEASURED on 2026-09-30, on a throwaway copy of this corpus directory:\n  // CONTRACT (not derivable from a behaviour): adding one unimplemented behaviour took `20/20 behaviour(s) have a test\n  // CONTRACT (not derivable from a behaviour): naming them` to `20/21` and exit 0 to exit 1\n  // CONTRACT (not derivable from a behaviour): so \"the tests are failing\" is the normal state of a fresh Kit branch, and\n  // CONTRACT (not derivable from a behaviour): anything that treats a red branch as a fault will fight the workflow he\n  // CONTRACT (not derivable from a behaviour): described rather than serve it\n});",
+              "code": "test.skip(\"[BEH-COMMIT-4] The branch a Commit produces is red, and the red is the work item\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "branch:Pushed"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 6,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-GATE-H1",
-              "code": "test(\"[BEH-GATE-H1] A read is served to anyone, and that stays true in every configuration\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Anonymous\" });\n  // UNGENERATED: given request:Anonymous\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitServe\" });\n  // UNGENERATED: when runs command:KitServe\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Ok\" });\n  // UNGENERATED: then reports status:Ok\n  // CONTRACT (not derivable from a behaviour): kit is a public repo, so a corpus served to an unauthenticated caller\n  // CONTRACT (not derivable from a behaviour): discloses nothing that `git clone` does not\n  // CONTRACT (not derivable from a behaviour): gating reads would cost the thing he wants — glancing at a spec from a\n  // CONTRACT (not derivable from a behaviour): phone — to protect data that is already public\n});",
+              "code": "test.skip(\"[BEH-GATE-H1] A read is served to anyone, and that stays true in every configuration\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "request:Anonymous"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 4,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             },
             {
               "id": "BEH-GATE-H2",
-              "code": "test(\"[BEH-GATE-H2] A write is refused unless the caller proved they are the operator\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Unauthenticated\" });\n  // UNGENERATED: given request:Unauthenticated\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Forbidden\" });\n  // UNGENERATED: then reports status:Forbidden\n  // CONTRACT (not derivable from a behaviour): this is the half BEH-WRITE-5 used to hold by binding loopback, which a\n  // CONTRACT (not derivable from a behaviour): hosted service cannot do — so the gate moves from the interface to a\n  // CONTRACT (not derivable from a behaviour): credential, and kit#47's KIT_PASSWORD is the first one\n  // CONTRACT (not derivable from a behaviour): ⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the\n  // CONTRACT (not derivable from a behaviour): App installation token is how KIT talks to GITHUB; the password is how a\n  // CONTRACT (not derivable from a behaviour): PERSON is let into Kit. Neither substitutes for the other\n});",
+              "code": "test.skip(\"[BEH-GATE-H2] A write is refused unless the caller proved they are the operator\", async () => {\n  // NOT GENERATED: a technical behaviour is proven by a unit test, not by a browser (kit#89)\n});",
               "missing": [
                 "request:Unauthenticated"
               ],
               "stats": {
                 "generated": 0,
-                "contract": 6,
-                "ungenerated": 3
+                "contract": 0,
+                "ungenerated": 0
               }
             }
           ],
@@ -6436,18 +6436,18 @@
                 {
                   "label": "Accumulate until Commit",
                   "consequence": "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing",
-                  "at": "kit-hosted.beh:196"
+                  "at": "kit-hosted.beh:210"
                 },
                 {
                   "label": "Write each edit straight through",
                   "consequence": "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches",
-                  "at": "kit-hosted.beh:197"
+                  "at": "kit-hosted.beh:211"
                 }
               ],
               "recommend": {
                 "label": "Accumulate until Commit",
                 "why": "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice.",
-                "at": "kit-hosted.beh:198"
+                "at": "kit-hosted.beh:212"
               },
               "against": "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous.",
               "cites": []

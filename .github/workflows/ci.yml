@@ -1,10 +1,12 @@
 name: CI
 
-# `kit` is documentation, a plain-Node prototype, a Vite/React UI under
-# prototypes/behaviour-ast/ui (#19) and — since #120 — a C# engine port under
-# ./backend. It has no ./frontend, so the repo-template scaffold this replaces
-# asserted the build of directories that did not exist and failed on every pull
-# request — a red tick that meant nothing about the change under review.
+# `kit` is documentation, a Vite/React UI under prototypes/behaviour-ast/ui
+# (#19) and a C# engine, server and CLI under ./backend. The plain-Node
+# prototype the engine was ported from is deleted (kit#119), and so is the
+# `prototype` job that ran its suite. It has no ./frontend, so the
+# repo-template scaffold this replaces asserted the build of directories that did
+# not exist and failed on every pull request — a red tick that meant nothing
+# about the change under review.
 #
 # What runs here is the thing that exists. The `backend` job below is
 # repo-template's, taken back out of the scaffold VERBATIM as this header said to
@@ -14,33 +16,18 @@ name: CI
 #
 # Job ids are the check context GitHub reports, and a branch ruleset requires
 # them by exact string. `kit` has no rulesets today; if one is added, require
-# `prototype` and rename it in both places or the check hangs forever.
+# `backend` and `ui` and rename them in both places or the check hangs forever.
 #
-# ✅ STAGE 0 *IS* GATED HERE — see the `Stage-0 gate` step below, which runs
-# `node prototypes/behaviour-ast/check.js kit --repo .` on every pull request.
+# ✅ STAGE 0 *IS* GATED HERE — see the `Stage-0 gate` step in the `backend` job,
+# which runs the C# `kit check kit --repo .` on every pull request (it was
+# `node prototypes/behaviour-ast/check.js` until kit#119's cut 2).
 # Kit checks ITSELF, against `behaviours/kit.beh` and the `kit.tests.json`
 # mapping, so nothing here is pinned to another repository's HEAD.
-#
-# ⚠️ This paragraph said the exact opposite until 2026-09-16, and ended
-# *"do not describe stage 0 as enforced anywhere"* — forty lines above the step
-# that enforces it. All three of its supporting facts were re-measured and all
-# three are false:
-#
-#   * *"`TEST_FILE_RE` does not match `kit.test.js`"* — it does. The regex is
-#     `/\.(spec|test)\.(ts|tsx|js|jsx)$|Tests?\.cs$/`; `kit.test.js` ends in
-#     `.test.js`. It has matched since the regex landed on 2026-09-03.
-#   * *"titles are declared with a local `t(...)` helper that `JS_TITLE` does not
-#     read"* — the suite declares them with `test(...)`, and `testTitles()` reads
-#     **291** of them out of `kit.test.js`.
-#   * *"`node check.js snip-it --repo <kit>` exits 2, 0 test files"* — it now
-#     reads 9 test files and 365 tests and exits 1, for an unrelated reason (the
-#     snip-it corpus names snip-it's own spec paths). That measurement was true
-#     when taken and silently stopped being true.
 #
 # 🔑 The CI step arrived in `e5b1a15`, **three minutes after** the write-up that
 # called it "a separate, smaller piece of work" — so this header was stale within
 # the hour and stayed stale for eleven days. What is still NOT gated here is a
-# check over any OTHER app's corpus: `check.js <app> --repo <path>` needs that
+# check over any OTHER app's corpus: `kit check <app> --repo <path>` needs that
 # app's repository, and wiring one in would pin kit's CI to its HEAD.
 
 on:
@@ -54,50 +41,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prototype:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      # No package.json and no dependencies on purpose — the prototype is
-      # plain Node so that reading it needs nothing installed.
-      - name: Behaviour-AST suite
-        run: node prototypes/behaviour-ast/kit.test.js
-
-      # A green suite says the tests pass; it does not say the tests would
-      # NOTICE. `mutate.js` breaks kit.js/check.js/prose-audit.js/saturation.js
-      # one rule at a time and requires the suite to go red for each. It has
-      # been run by hand at every step and by nothing on merge, which means the
-      # one property the suite is quoted for has never been enforced by the
-      # thing that gates the branch ([[passing-is-not-gating]]).
-      #
-      # It runs the suite once per mutant, in-process, with no network and no
-      # install — ~59 mutants in a few seconds today. If that stops being true,
-      # move it to a scheduled job rather than dropping it.
-      - name: Mutation gate — the suite must notice each broken rule
-        run: node prototypes/behaviour-ast/mutate.js
-
-      # Stage 0's deliverable, applied to kit itself: a documented behaviour
-      # with no test naming it fails the build. Kit is the first repo in the
-      # estate where that sentence is true of the repo you are reading.
-      #
-      # It gates on behaviour ids and the mapping in behaviours/kit.tests.json,
-      # NOT on generated code — `docs/pilots/kit-self-hosting.md` measures why
-      # Kit can derive nothing for itself (its verbs are `runs`/`exits`, the
-      # generator's are all browser verbs). Those are different questions and
-      # this step only answers the first.
-      #
-      # ⚠️ What a pass means: someone LINKED each behaviour to a test. It does
-      # not prove the test asserts the behaviour. That limit is option C's and
-      # is not fixable by parsing — `docs/design/tagging.md`.
-      - name: Stage-0 gate — every kit behaviour is named by a test
-        run: node prototypes/behaviour-ast/check.js kit --repo .
-
   # The C# engine port (#119). The goldens it is scored against live under
   # prototypes/, so the tests find them by walking up from the test binary —
   # which is why this needs the whole checkout and not just ./backend.
@@ -127,19 +70,38 @@ jobs:
           --configuration Release
           --verbosity normal
 
+      # Stage 0's deliverable, applied to kit itself: a documented behaviour
+      # with no test naming it fails the build. Kit is the first repo in the
+      # estate where that sentence is true of the repo you are reading.
+      #
+      # The C# `kit check` (kit#119), replacing `node check.js kit --repo .`,
+      # which it matches byte for byte. `--dir` is explicit because a CLI has no
+      # script directory to default to.
+      #
+      # It gates on behaviour ids and the mapping in behaviours/kit.tests.json,
+      # NOT on generated code — `docs/pilots/kit-self-hosting.md` measures why
+      # Kit can derive nothing for itself (its verbs are `runs`/`exits`, the
+      # generator's are all browser verbs). Those are different questions and
+      # this step only answers the first.
+      #
+      # ⚠️ What a pass means: someone LINKED each behaviour to a test. It does
+      # not prove the test asserts the behaviour. That limit is option C's and
+      # is not fixable by parsing — `docs/design/tagging.md`.
+      - name: Stage-0 gate — every kit behaviour is named by a test
+        run: >
+          dotnet run --project backend/Balenthiran.Kit.Cli
+          --no-build
+          --configuration Release
+          -- check kit --repo . --dir prototypes/behaviour-ast/behaviours
+
   # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
   # suite quoted in a PR body but executed by no gating job is a claim, not a
   # check — I have made that mistake before ([[passing-is-not-gating]]), so the
   # job exists specifically to stop "20 tests" from being something only I ever
   # observed on my own machine.
   #
-  # Deliberately a SECOND job, not steps on `prototype`. The prototype is plain
-  # Node with no install; this needs `npm ci` and ~25s of it. Merging them would
-  # put a dependency install in front of a suite that needs none, and turn every
-  # npm-registry hiccup into a red tick on a change that never touched the UI.
-  #
   # Job id `ui` is the check context GitHub reports. kit still has no rulesets;
-  # if one is ever added, require BOTH `prototype` and `ui` by exact string.
+  # if one is ever added, require BOTH `backend` and `ui` by exact string.
   ui:
     runs-on: ubuntu-latest
     defaults:
@@ -175,8 +137,7 @@ jobs:
         run: npm run build
 
       # Runs from the repo root's checkout on purpose: `src/test/fixtures.test.ts`
-      # requires `../../../ui.js` so the fixtures are checked against real server
-      # output rather than against themselves. A job that copied only `ui/` would
-      # fail to load that suite — measured, not assumed.
+      # reads `conformance/routes/read.json` and `src/test/contract.test.ts` reads
+      # `backend/`, outside `ui/`. A job that copied only `ui/` would fail them.
       - name: Unit tests
         run: npm test

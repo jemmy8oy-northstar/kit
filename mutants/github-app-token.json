@@ -1,0 +1,75 @@
+{
+  "command": "dotnet test backend/Balenthiran.Kit.slnx --filter FullyQualifiedName~GitHubAppTokenSourceTests",
+  "mutants": [
+    {
+      "id": "never-reuses",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "cached is { } c && clock.GetUtcNow()",
+      "to": "false && cached is { } c && clock.GetUtcNow()",
+      "kills": "A_live_token_is_reused_without_asking_GitHub_again: every Commit mints, and the App's rate limit is spent on tokens"
+    },
+    {
+      "id": "no-recheck-under-lock",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "return Fresh() ?? await MintAsync(cancellationToken);",
+      "to": "return await MintAsync(cancellationToken);",
+      "kills": "Two_callers_on_a_cold_cache_mint_ONE_token: the waiter mints again after the holder already did"
+    },
+    {
+      "id": "refresh-at-expiry",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "RefreshBefore = TimeSpan.FromMinutes(5);",
+      "to": "RefreshBefore = TimeSpan.FromMinutes(0);",
+      "kills": "Five_minutes_before_it_expires_a_new_token_is_minted: a token handed out seconds before expiry fails mid-request"
+    },
+    {
+      "id": "iat-not-backdated",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "iat = (now - Backdate).ToUnixTimeSeconds(),",
+      "to": "iat = now.ToUnixTimeSeconds(),",
+      "kills": "The_key_signs_a_JWT...: a pod clock a second ahead of GitHub's gets 'iat in the future' refusals"
+    },
+    {
+      "id": "wrong-hash",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "Encoding.ASCII.GetBytes(signed), HashAlgorithmName.SHA256",
+      "to": "Encoding.ASCII.GetBytes(signed), HashAlgorithmName.SHA384",
+      "kills": "The_key_signs_a_JWT...: the header says RS256 and the signature is not, so GitHub refuses every exchange"
+    },
+    {
+      "id": "jwt-in-reason",
+      "file": "backend/Balenthiran.Kit.Database/GitHubAppTokenSource.cs",
+      "from": "$\"GitHub answered {code} when minting",
+      "to": "$\"GitHub answered {code} {request.Headers.Authorization} when minting",
+      "kills": "A_failed_exchange_names_the_status_and_never_the_JWT_or_key: the reason is shown in the UI"
+    },
+    {
+      "id": "half-set-falls-back",
+      "file": "backend/Balenthiran.Kit.WebApi/KitSettings.cs",
+      "from": "missing.Count is > 0 and < 3",
+      "to": "missing.Count is > 5",
+      "kills": "A_half_set_App_credential_refuses_to_start_rather_than_fall_back"
+    },
+    {
+      "id": "app-never-registered",
+      "file": "backend/Balenthiran.Kit.WebApi/ServiceRegistration.cs",
+      "from": "sp => settings.GitHubApp",
+      "to": "sp => false",
+      "kills": "The_registered_server_mints_with_the_App_when_all_three_are_set"
+    },
+    {
+      "id": "failed-mint-throws-out-of-opener",
+      "file": "backend/Balenthiran.Kit.Database/GitHubPullRequestOpener.cs",
+      "from": "return new PullRequestResult { Reason = e.Message };",
+      "to": "throw;",
+      "kills": "The_opener_sends_the_minted_token_and_turns_a_failed_mint_into_a_reason: Commit answers an unhandled 500"
+    },
+    {
+      "id": "key-readable",
+      "file": "backend/Balenthiran.Kit.WebApi/KitSettings.cs",
+      "from": "    public string? GitHubPrivateKey\n    {\n        init",
+      "to": "    public string? GitHubPrivateKey\n    {\n        get => gitHubPrivateKey;\n        init",
+      "kills": "The_registered_server_mints_with_the_App...: the record printer writes the key into any log line that formats the settings"
+    }
+  ]
+}

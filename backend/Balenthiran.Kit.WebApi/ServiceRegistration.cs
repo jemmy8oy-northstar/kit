@@ -14,7 +14,22 @@ public static class ServiceRegistration
     public static IServiceCollection AddKitServices(this IServiceCollection services, KitSettings settings)
     {
         services.AddSingleton(settings);
-        services.AddSingleton<ICorpusDirectory>(new CorpusDirectory(settings.Dir, settings.RepoRoot));
+        var disk = new CorpusDirectory(settings.Dir, settings.RepoRoot);
+        if (settings.Projects.Count == 0)
+        {
+            services.AddSingleton<ICorpusDirectory>(disk);
+        }
+        else
+        {
+            // BEH-PULL-1 (kit#88): reads from GitHub, writes to the clone on disk.
+            services.AddSingleton(sp => new GitHubCorpusDirectory(
+                disk,
+                settings.Projects,
+                new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>())));
+            services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
+            services.AddHostedService<ProjectPoller>();
+        }
+
         services.AddSingleton<ICorpusParser, CorpusParser>();
         services.AddSingleton<IBehaviourResolver, BehaviourResolver>();
         services.AddSingleton<ITestGenerator, TestGenerator>();
@@ -27,13 +42,17 @@ public static class ServiceRegistration
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
         services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
-        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch));
+        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
         // (token, repository, base) by the request GitHub would have received.
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IGitHubTokenSource>(sp => settings.GitHubApp
+            ? new GitHubAppTokenSource(GitHubClient(sp), settings.GitHubAppId!, settings.GitHubInstallationId!, settings.PrivateKey()!, sp.GetRequiredService<TimeProvider>())
+            : new StaticGitHubTokenSource(settings.Token()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
-            new HttpClient(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) },
-            settings.Token(),
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
@@ -59,4 +78,7 @@ public static class ServiceRegistration
             settings.BasePath));
         return services;
     }
+
+    private static HttpClient GitHubClient(IServiceProvider sp) =>
+        new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };
 }

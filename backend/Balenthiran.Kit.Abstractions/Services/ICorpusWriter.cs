@@ -21,6 +21,22 @@ public interface ICorpusWriter
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
     /// <summary>
+    /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
+    /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
+    /// </summary>
+    IWriteResult RemoveBehaviour(string text, string id);
+
+    /// <summary>
+    /// Replace one behaviour's step, counted from 0 in file order (BEH-ACT-2). The line keeps
+    /// its indentation; refused unless the result is still a step and nothing else in the
+    /// behaviour changed.
+    /// </summary>
+    IWriteResult UpdateStep(string text, string id, int index, string line);
+
+    /// <summary>Replace one behaviour's title in its header line, and nothing else (BEH-ACT-2).</summary>
+    IWriteResult Retitle(string text, string id, string title);
+
+    /// <summary>
     /// Add one binding to a bindings file's text. Refuses to overwrite one, or to change any
     /// other. <paramref name="corpora"/> is every corpus's noun names, for <c>sharedWith</c>.
     /// </summary>

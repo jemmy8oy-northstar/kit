@@ -78,6 +78,13 @@ apps:
             name: kit-git
             key: token
             optional: true
+      # BEH-PULL-1 (kit#88): the project list and every read come from GitHub,
+      # re-read every KIT_PROJECTS_POLL seconds (default 120), not from the pod's
+      # clone. Writes still go to the clone above and are pushed to kit/hosted, so
+      # this names the SAME branch — another branch here would serve a corpus the
+      # edits never reach. Remove the entry to read the clone, as before.
+      - name: KIT_PROJECTS
+        value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours"
     resources: {}
     nodeSelector: {}
     tolerations: []

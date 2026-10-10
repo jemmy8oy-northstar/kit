@@ -64,7 +64,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-SHELF-2",
@@ -128,7 +129,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-SHELF-3",
@@ -192,7 +194,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-LEND-1",
@@ -282,7 +285,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-LEND-2",
@@ -381,7 +385,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-LEND-3",
@@ -432,7 +437,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-RETURN-1",
@@ -509,7 +515,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-RETURN-2",
@@ -573,7 +580,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "resolve": {

@@ -5,8 +5,10 @@ Answers one falsifiable question from [claude-code-bot#68](https://github.com/je
 > **Can a behaviour tree generate a runnable test with no hand-written glue?**
 
 Not a product, not a PR, not queued for build. It exists so the design argument
-on #68 rests on something that ran. `node kit.js` prints the generated tests and
-the measurements quoted on the thread.
+on #68 rests on something that ran. It was written in plain Node and is now C#
+(`backend/`, kit#119): `kit report <corpus>` prints the generated tests and the
+measurements. What the Node engine produced is frozen in `conformance/`, and the
+C# tests are scored against it.
 
 ## Why this question and not "is the format nice"
 
@@ -71,9 +73,8 @@ on an inference means unreviewed; no `serves` on an inference is the finding, an
 no `serves` on a defined behaviour is normal — a documented behaviour is served,
 it does not serve.
 
-`node mutate.js` breaks each rule above in turn and checks the suite goes red for
-it. 11/11 killed today; a SURVIVED line means a rule the tests only appear to
-enforce.
+`mutants/*.json` breaks rules in the C# engine one at a time, and the suite must go
+red for each; a survivor is a rule the tests only appear to enforce.
 
 ## The two design consequences that fell out of building it
 

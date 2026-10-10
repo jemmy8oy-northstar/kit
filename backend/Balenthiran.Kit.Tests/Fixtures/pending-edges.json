@@ -51,7 +51,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-B1",
@@ -102,7 +103,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-P2",
@@ -153,7 +155,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-P3",
@@ -191,7 +194,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     },
     {
       "id": "BEH-P4",
@@ -229,7 +233,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": true
+      "pending": true,
+      "layer": "ux"
     }
   ],
   "resolve": {

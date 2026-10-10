@@ -81,7 +81,7 @@ public class RoutesConformanceTests
     [Fact]
     public async Task The_host_delivers_the_bundle_as_bytes_with_its_cache_header()
     {
-        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist));
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot, null, FixtureDist));
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         using var http = new HttpClient();
@@ -107,12 +107,33 @@ public class RoutesConformanceTests
         Assert.Equal(200, Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/api/health").Status);
     }
 
+    /// <summary>
+    /// BEH-UI-4: coverage the list could not read is <c>null</c>, never zero. With no repos given the
+    /// list cannot measure anything, so every row must say so rather than report an empty list — a UI
+    /// that cannot tell "no mapping exists" from "nothing is covered" renders the second.
+    /// </summary>
+    [Fact]
+    public void Unavailable_coverage_is_null_in_the_list_never_zero()
+    {
+        var list = JsonNode.Parse(Serialiser.Serialise(Router(Path.Combine(RepoLayout.Root, "no-bundle-here")).Route("GET", "/api/projects")))!;
+        var projects = list["body"]!["projects"]!.AsArray();
+        Assert.NotEmpty(projects);
+        foreach (var p in projects)
+        {
+            var coverage = p!["coverage"]!;
+            Assert.False(coverage["available"]!.GetValue<bool>(), $"{p["app"]}: coverage claims to be available with no repos");
+            Assert.Null(coverage["covered"]);
+            Assert.Null(coverage["uncovered"]);
+            Assert.False(string.IsNullOrEmpty(coverage["reason"]?.GetValue<string>()), $"{p["app"]}: unavailable coverage must say why");
+        }
+    }
+
     /// <summary>The golden is only a score if it holds what it claims: every corpus, and every refusal.</summary>
     [Fact]
     public void The_golden_covers_every_corpus_and_every_refusal()
     {
         var paths = Golden()["requests"]!.AsArray().Select(r => r!["path"]!.GetValue<string>()).ToHashSet();
-        var corpora = Directory.GetFiles(RepoLayout.Behaviours, "*.beh").Select(Path.GetFileNameWithoutExtension).ToList();
+        var corpora = Directory.GetFiles(RepoLayout.FrozenBehaviours, "*.beh").Select(Path.GetFileNameWithoutExtension).ToList();
         Assert.True(corpora.Count >= 10, $"only {corpora.Count} corpora found — the scan has stopped matching");
         foreach (var corpus in corpora)
         {
@@ -132,7 +153,7 @@ public class RoutesConformanceTests
     public async Task The_host_delivers_what_the_router_answers(string path)
     {
         var expected = Expected("GET", path);
-        var settings = new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist);
+        var settings = new KitSettings(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot, null, FixtureDist);
         await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings);
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
@@ -155,7 +176,7 @@ public class RoutesConformanceTests
     [Fact]
     public async Task The_host_decodes_the_path_exactly_once()
     {
-        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.Behaviours, RepoLayout.Root, null, FixtureDist));
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot, null, FixtureDist));
         await app.StartAsync();
         var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
 
@@ -189,7 +210,7 @@ public class RoutesConformanceTests
     [Fact]
     public void A_password_of_only_JavaScript_whitespace_is_no_lock()
     {
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         string Session(string? password) => JsonSerializer.Serialize(
             new KitRouter(corpora, Viewer(corpora), new UiBundle(FixtureDist), password).Route("GET", "/api/session").Body, Serialiser.Options);
 
@@ -209,7 +230,7 @@ public class RoutesConformanceTests
 
     private static KitRouter Router(string dist)
     {
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         return new KitRouter(corpora, Viewer(corpora), new UiBundle(dist), null);
     }
 

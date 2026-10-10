@@ -64,7 +64,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-2",
@@ -141,7 +142,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-3",
@@ -227,7 +229,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-4",
@@ -291,7 +294,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MANAGE-1",
@@ -355,7 +359,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-HISTORY-1",
@@ -432,7 +437,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-LOOP-1",
@@ -465,7 +471,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-DATE-1",
@@ -498,7 +505,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-SEED-1",
@@ -563,6 +571,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -602,6 +611,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -657,6 +667,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -706,6 +717,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -788,6 +800,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -827,6 +840,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -866,6 +880,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -909,6 +924,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -942,7 +958,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-HISTORY-3",
@@ -981,6 +998,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -1020,6 +1038,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -1085,6 +1104,7 @@
         "note": null
       },
       "pending": false,
+      "layer": "ux",
       "reviewExplicit": true
     },
     {
@@ -1145,7 +1165,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-WINDOW-MVP",
@@ -1180,7 +1201,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-WINDOW-API",
@@ -1235,7 +1257,8 @@
         "state": "approved",
         "note": null
       },
-      "pending": false
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "resolve": {

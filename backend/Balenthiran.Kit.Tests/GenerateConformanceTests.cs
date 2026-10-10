@@ -14,12 +14,12 @@ public class GenerateConformanceTests
 
     public static TheoryData<string> Corpora() => ConformanceTests.Corpora();
 
-    public static TheoryData<string> EdgeCorpora() => new() { "generate-edges", "generate-nofixture" };
+    public static TheoryData<string> EdgeCorpora() => new() { "generate-edges", "generate-nofixture", "layer-edges" };
 
     [Theory]
     [MemberData(nameof(Corpora))]
     public void Generate_reproduces_the_golden_section(string corpus) =>
-        AssertSection(RepoLayout.Conformance, RepoLayout.Behaviours, corpus);
+        AssertSection(RepoLayout.Conformance, RepoLayout.FrozenBehaviours, corpus);
 
     [Theory]
     [MemberData(nameof(EdgeCorpora))]
