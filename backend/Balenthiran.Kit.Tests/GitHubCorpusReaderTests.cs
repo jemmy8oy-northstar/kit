@@ -175,15 +175,35 @@ public class GitHubCorpusReaderTests
     }
 
     [Fact]
-    public async Task An_unreachable_GitHub_and_a_failed_mint_name_their_layer_and_never_the_token()
+    public async Task An_unreachable_GitHub_names_its_layer_and_never_the_token()
     {
         var down = new FakeGitHub(_ => throw new HttpRequestException("Name or service not known"));
         var e1 = await Assert.ThrowsAsync<GitHubReadException>(() => Reader(down, "tok-secret").ReadAsync(Kit));
         Assert.EndsWith("GitHub could not be reached (Name or service not known)", e1.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("tok-secret", e1.Message, StringComparison.Ordinal);
+    }
 
-        var e2 = await Assert.ThrowsAsync<GitHubReadException>(() => new GitHubCorpusReader(new HttpClient(new FakeGitHub()), new FailingTokens()).ReadAsync(Kit));
-        Assert.EndsWith(": the App would not mint", e2.Message, StringComparison.Ordinal);
+    /// <summary>BEH-PULL-2: "a public read that fails because a token could not be minted is a bug".</summary>
+    [Fact]
+    public async Task A_failed_mint_still_reads_a_public_project_without_a_token()
+    {
+        var gh = new FakeGitHub(Listed("""[{"type": "file", "name": "a.beh", "sha": "a1"}]"""), Raw("behaviour BEH-A \"a\"\n"));
+
+        var snap = await new GitHubCorpusReader(new HttpClient(gh), new FailingTokens()).ReadAsync(Kit);
+
+        Assert.Equal(["a.beh"], snap.Files.Keys);
+        Assert.All(gh.Sent, s => Assert.Null(s.Authorization));
+    }
+
+    /// <summary>...and when the tokenless read is a 404, the mint's reason is the half of the answer that explains it.</summary>
+    [Fact]
+    public async Task A_failed_mint_then_a_404_says_the_project_may_be_private_and_why_there_was_no_token()
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.NotFound, """{"message": "Not Found"}"""));
+
+        var e = await Assert.ThrowsAsync<GitHubReadException>(() => new GitHubCorpusReader(new HttpClient(gh), new FailingTokens()).ReadAsync(Kit));
+
+        Assert.EndsWith("GitHub answered 404: Not Found — the repository, branch or path does not exist, or it is private and the App token could not be minted: the App would not mint", e.Message, StringComparison.Ordinal);
     }
 
     [Theory]
