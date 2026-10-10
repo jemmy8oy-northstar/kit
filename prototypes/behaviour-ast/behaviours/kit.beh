@@ -8,11 +8,17 @@
 #   answer to give. The directive lives here rather than in a filename list
 #   inside saturation.js so that it travels with the file that needs it.
 #
+# kit:layer technical
+#   Every behaviour below describes the command line, never a screen, so the
+#   whole file is the technical layer (kit#89, kit#193). That is the reason for
+#   the 0% below, stated in the notation rather than only in this prose.
+#
 # James asked (claude-code-bot#89): "think about how kit looks as a kit managed
 # project". This corpus is the attempt, and the attempt is the measurement.
 #
-# ⚠️ READ THE NUMBER THIS PRODUCES CAREFULLY. `kit.js kit` will report ~0%
-# generated, and that is NOT the same finding as james-habits-app's 0%. There,
+# ⚠️ READ THE NUMBER THIS PRODUCES CAREFULLY. `kit report kit` generates nothing
+# — with the layer above it says 0/0, "every behaviour is technical"; before the
+# tag it said 0% — and that is NOT the same finding as james-habits-app's 0%. There,
 # the app was missing nouns and Kit was working as designed. Here, every noun
 # could be bound tomorrow and the number would not move, because the generator
 # emits Playwright and Kit has no browser to point it at. The eight verbs it
@@ -37,8 +43,10 @@
 # contrast measurable, and kit-ui.beh exists so that nobody has to.
 # Full account: docs/pilots/kit-self-hosting.md.
 #
-# Every behaviour below is real, and every one is already tested in
-# `kit.test.js` — the mapping in `kit.tests.json` names which test.
+# Every behaviour below is real, and every one is tested: `kit.tests.json` maps
+# each to the C# test that asserts it (backend/Balenthiran.Kit.Tests), and CI's
+# `kit check kit` fails the build if one loses its test. (`kit.test.js`, which
+# this line used to name, went with the Node engine in kit#202.)
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   actor engineer
