@@ -316,6 +316,9 @@ function record() {
 }
 
 if (require.main === module) {
+  const { unknownFlag, refuse } = require('./cli.js');
+  const unknown = unknownFlag(process.argv.slice(2), ['--check']);
+  if (unknown) process.exit(refuse(unknown, 'usage: node check-goldens.js [--check]'));
   const next = record();
   if (process.argv.includes('--check')) {
     const now = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
