@@ -22,8 +22,8 @@
   ],
   "BEH-COMMIT-4": [
     {
-      "file": "prototypes/behaviour-ast/kit.test.js",
-      "title": "exit 1 when a behaviour has no test naming it — the gate can go RED"
+      "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
+      "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it"
     }
   ],
   "BEH-PULL-4": [
