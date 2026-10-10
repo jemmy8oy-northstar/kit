@@ -178,5 +178,13 @@ public class RouteShapeTests
         public void WriteText(string app, string text) => inner.WriteText(app, text);
 
         public void WriteBindingsText(string app, string text) => inner.WriteBindingsText(app, text);
+
+        public string? ReadNotesText(string app) => inner.ReadNotesText(app);
+
+        public void WriteNotesText(string app, string text) => inner.WriteNotesText(app, text);
+
+        public string RelativeNotesPath(string app) => inner.RelativeNotesPath(app);
+
+        public string FullNotesPath(string app) => inner.FullNotesPath(app);
     }
 }

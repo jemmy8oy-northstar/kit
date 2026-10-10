@@ -144,6 +144,28 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal("{\"page:X\": {}}", d.ReadBindingsText("alpha"));
     }
 
+    /// <summary>kit#118: notes are read from GitHub like the corpus, and a note just left is read back until GitHub has it.</summary>
+    [Fact]
+    public async Task Notes_come_from_GitHub_and_a_new_note_is_read_back_until_GitHub_has_it()
+    {
+        var reader = new Scripted(
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.notes.md", "n1", "on GitHub")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.notes.md", "n1", "on GitHub")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.notes.md", "n2", "pushed")));
+        var d = new GitHubCorpusDirectory(clone, [Kit], reader);
+        await d.RefreshAsync();
+        Assert.Equal("on GitHub", d.ReadNotesText("alpha"));
+        Assert.Equal("prototypes/corpora/alpha.notes.md", d.RelativeNotesPath("alpha"));
+
+        d.WriteNotesText("alpha", "left in Kit");
+        Assert.Equal("left in Kit", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.notes.md")));
+        await d.RefreshAsync();
+        Assert.Equal("left in Kit", d.ReadNotesText("alpha"));
+
+        await d.RefreshAsync();
+        Assert.Equal("pushed", d.ReadNotesText("alpha"));
+    }
+
     [Fact]
     public async Task An_app_from_a_repository_with_no_clone_cannot_be_edited_here()
     {

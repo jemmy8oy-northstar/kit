@@ -75,7 +75,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         return new CorpusSnapshot { Source = source, ETag = answer.Headers.ETag?.ToString(), Files = files };
     }
 
-    /// <summary>The corpus files of a contents listing: <c>.beh</c> and <c>.bindings.json</c> files directly in it, nothing nested.</summary>
+    /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c> and <c>.notes.md</c> files directly in it, nothing nested.</summary>
     private static List<(string Name, string Sha)> Entries(JsonElement json, IProjectSource source)
     {
         // A FILE at the path answers an object, not an array: the source names something that is
@@ -91,7 +91,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             if (e.ValueKind != JsonValueKind.Object
                 || !e.TryGetProperty("type", out var type) || type.GetString() != "file"
                 || !e.TryGetProperty("name", out var n) || n.GetString() is not { } name
-                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal)))
+                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal)))
             {
                 continue;
             }

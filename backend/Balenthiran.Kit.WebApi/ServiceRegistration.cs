@@ -69,7 +69,8 @@ public static class ServiceRegistration
             deployed: settings.PublicOrigin is not null,
             pulls: sp.GetRequiredService<IPullRequestOpener>(),
             head: settings.GitBranch,
-            baseBranch: settings.GitBase));
+            baseBranch: settings.GitBase,
+            clock: sp.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
