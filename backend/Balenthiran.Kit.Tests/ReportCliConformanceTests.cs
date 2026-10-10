@@ -37,8 +37,8 @@ public class ReportCliConformanceTests
     public void The_golden_still_holds_its_cases()
     {
         var checks = Golden["checks"]!.AsArray();
-        Assert.True(checks.Count >= 43);
-        Assert.True(checks.Count(c => c!["name"]!.GetValue<string>().StartsWith("sheet-", StringComparison.Ordinal)) >= 14);
+        Assert.True(checks.Count >= 47);
+        Assert.True(checks.Count(c => c!["name"]!.GetValue<string>().StartsWith("sheet-", StringComparison.Ordinal)) >= 18);
         Assert.True(Golden["sets"]!["real"]!.AsObject().Count >= 14);
         Assert.Equal([0, 1, 2], checks.Select(c => c!["exitCode"]!.GetValue<int>()).ToHashSet().Order());
     }

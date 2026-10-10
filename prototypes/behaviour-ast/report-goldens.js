@@ -46,6 +46,23 @@ const EDGE = {
   'edge/blank.beh': '# only a header so far\n',
   'edge/twin-a.beh': 'behaviour BEH-1 "a"\n  when opens page:Home\n',
   'edge/twin-b.beh': 'behaviour BEH-1 "b"\n  when opens page:Home\n',
+  // A conflict whose sides hold more than one value: `provides` splits on commas, and a
+  // template literal joins an array with a bare comma.
+  'conflict/conflict.beh': [
+    'behaviour BEH-A "the design says one window"',
+    '  source defined docs/DESIGN.md#a',
+    '  provides region:Grid.days = 7, 30',
+    '',
+    'behaviour BEH-B "the route says another"',
+    '  source defined docs/DESIGN.md#b',
+    '  provides region:Grid.days = 14',
+    '  asks "Which window is the contract?"',
+    '  option "Seven or thirty" "the design wins"',
+    '  option "Fourteen" "the route wins"',
+    '  recommend "Fourteen" "it is what ships"',
+    '  against "the design was written first"',
+    '',
+  ].join('\n'),
 };
 
 const CASES = [];
@@ -68,6 +85,11 @@ CASES.push(
   { name: 'sheet-broken-link', files: EDGE, args: ['sheet', 'broken', '--dir', 'edge'] },
   { name: 'sheet-incomplete-question', files: EDGE, args: ['sheet', 'half', '--dir', 'edge'] },
   { name: 'report-twins', files: EDGE, args: ['twin', '--dir', 'edge'] },
+  { name: 'sheet-conflict', files: EDGE, args: ['sheet', 'conflict', '--dir', 'conflict'] },
+  { name: 'report-conflict', files: EDGE, args: ['conflict', '--dir', 'conflict'] },
+  // The sheet names the corpus it RESOLVED, not the substring typed — and `all` for no name.
+  { name: 'sheet-substring', files: REAL, args: ['sheet', 'james-habits', '--dir', 'behaviours'] },
+  { name: 'sheet-all', files: REAL, args: ['sheet', '--dir', 'behaviours'] },
   { name: 'help', files: {}, args: ['--help'] },
   { name: 'help-short-after-sheet', files: {}, args: ['sheet', '-h'] },
   { name: 'unknown-flag', files: {}, args: ['kit', '--json'] },
