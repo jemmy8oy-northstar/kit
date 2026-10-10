@@ -60,7 +60,7 @@ public sealed class KitRouter(
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
-    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove))?\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
@@ -215,12 +215,28 @@ public sealed class KitRouter(
 
     private readonly object writeGate = new();
 
-    /// <summary><c>write()</c> past its gates: create a behaviour, add a step, or adjudicate.</summary>
+    /// <summary><c>write()</c> past its gates: create, add or replace a step, retitle, adjudicate, or remove.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
     {
-        var review = m.Groups[3].Value == "review";
-        var remove = m.Groups[3].Value == "remove";
-        var step = m.Groups[2].Success && !review && !remove;
+        var kind = m.Groups[3].Value;
+        var review = kind == "review";
+        var remove = kind == "remove";
+        var title = kind == "title";
+
+        // `steps/{n}` replaces step n (BEH-ACT-2); bare `steps` appends one. Nothing else takes an index.
+        var update = m.Groups[4].Success;
+        if (update && kind != "steps")
+        {
+            return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {m.Value}" });
+        }
+
+        var index = -1;
+        if (update && !int.TryParse(m.Groups[4].Value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out index))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "a step index is a whole number, counted from 0" });
+        }
+
+        var step = kind == "steps" && !update;
 
         // Decoded with a refusal, never a throw — in ui.js this once crashed the process.
         string? id;
@@ -245,7 +261,7 @@ public sealed class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = "removing a behaviour takes an empty body: the id is in the path" });
         }
 
-        if (!remove && TypeError(body, review ? ReviewFields : step ? StepFields : CreateFields) is { } wrongType)
+        if (!remove && TypeError(body, review ? ReviewFields : title ? TitleFields : step || update ? StepFields : CreateFields) is { } wrongType)
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
         }
@@ -253,6 +269,10 @@ public sealed class KitRouter(
         var text = corpora.ReadText(app);
         var result = remove
             ? writer.RemoveBehaviour(text, id!)
+            : update
+            ? writer.UpdateStep(text, id!, index, Str(body, "step")!)
+            : title
+            ? writer.Retitle(text, id!, Str(body, "title")!)
             : review
             ? writer.SetReview(text, id!, Str(body, "state")!, Str(body, "note"))
             : step
@@ -266,7 +286,7 @@ public sealed class KitRouter(
         }
 
         corpora.WriteText(app, result.Text!);
-        var what = remove ? $"remove {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        var what = remove ? $"remove {id}" : update ? $"update step {index} of {id}" : title ? $"retitle {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
         return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
@@ -409,6 +429,7 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] CreateFields = [("id", "string"), ("title", "string"), ("actor", "string?"), ("steps", "strings?"), ("source", "string?"), ("ref", "string?")];
     private static readonly (string Field, string Type)[] StepFields = [("step", "string")];
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
+    private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
 
     private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)

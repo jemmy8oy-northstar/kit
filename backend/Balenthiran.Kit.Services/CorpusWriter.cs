@@ -228,6 +228,113 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <inheritdoc />
+    public IWriteResult UpdateStep(string text, string id, int index, string line)
+    {
+        var step = Trim(line);
+        if (step.Length == 0)
+        {
+            return WriteResult.Refuse("empty-step", "a step line cannot be blank");
+        }
+
+        if (line.Contains('\n', StringComparison.Ordinal))
+        {
+            return WriteResult.Refuse("multiline-step", "a step is one line; add them one at a time");
+        }
+
+        if (Block(text, id) is null)
+        {
+            return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
+        }
+
+        if (Target(text, id) is not { } before)
+        {
+            return WriteResult.Refuse("corpus-already-invalid", "the file did not parse before this edit");
+        }
+
+        if (index < 0 || index >= before.Steps.Count)
+        {
+            return WriteResult.Refuse("no-such-step", $"{id} has {before.Steps.Count} step(s), so there is no step {index}");
+        }
+
+        var lines = text.Split('\n').ToList();
+        var at = before.Steps[index].At;
+        var n = int.Parse(at[(at.LastIndexOf(':') + 1)..], System.Globalization.CultureInfo.InvariantCulture) - 1;
+        var indent = lines[n][..(lines[n].Length - lines[n].TrimStart(CorpusParser.WsChars).Length)];
+        // A CRLF corpus keeps its `\r`, or the one edited line would be the only LF line in it.
+        lines[n] = indent + step + (lines[n].EndsWith('\r') ? "\r" : string.Empty);
+
+        // Rule 3 exempts the target, so the target is policed here: `review approved` typed into a
+        // step box parses, and without this would approve the behaviour it was meant to describe.
+        return Only(text, string.Join('\n', lines), id, after => after.Steps.Count != before.Steps.Count
+            ? ("not-a-step", "a step starts with given, when, then or contract")
+            : Shape(after, skipStep: index) != Shape(before, skipStep: index)
+                ? ("collateral-change", $"only step {index} of {id} was meant to change")
+                : null);
+    }
+
+    /// <inheritdoc />
+    public IWriteResult Retitle(string text, string id, string title)
+    {
+        var t = Trim(title);
+        if (t.Length == 0)
+        {
+            return WriteResult.Refuse("bad-title", "a title cannot be blank");
+        }
+
+        if (title.Contains('"', StringComparison.Ordinal) || title.Contains('\n', StringComparison.Ordinal))
+        {
+            return WriteResult.Refuse("bad-title", "a title cannot contain a double quote or a newline");
+        }
+
+        if (Block(text, id) is not { } b)
+        {
+            return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
+        }
+
+        if (Target(text, id) is not { } before)
+        {
+            return WriteResult.Refuse("corpus-already-invalid", "the file did not parse before this edit");
+        }
+
+        // The parser reads `behaviour ID "(.*)"` — greedy, so the title runs to the LAST quote, and
+        // a hand-written title may hold quotes of its own. Closing at the next quote instead would
+        // keep the tail of the old title, and Shape cannot see it because the title is exempt.
+        var lines = text.Split('\n').ToList();
+        var header = lines[b.Start];
+        var open = header.IndexOf('"', StringComparison.Ordinal);
+        var close = header.LastIndexOf('"');
+        lines[b.Start] = header[..(open + 1)] + t + header[close..];
+
+        return Only(text, string.Join('\n', lines), id, after =>
+            Shape(after, skipTitle: true) != Shape(before, skipTitle: true) ? ("collateral-change", $"only the title of {id} was meant to change") : null);
+    }
+
+    /// <summary>The target as parsed now, or null if the file does not parse.</summary>
+    private IBehaviour? Target(string text, string id)
+    {
+        try
+        {
+            return parser.Parse(text, "before").FirstOrDefault(x => x.Id == id);
+        }
+        catch (CorpusParseException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary><see cref="Validate"/>, then <paramref name="wrong"/> on the target itself.</summary>
+    private WriteResult Only(string before, string after, string id, Func<IBehaviour, (string Error, string Reason)?> wrong)
+    {
+        var r = Validate(before, after, id);
+        if (!r.Ok)
+        {
+            return r;
+        }
+
+        return wrong(Target(after, id)!) is { } w ? WriteResult.Refuse(w.Error, w.Reason) : r;
+    }
+
+    /// <inheritdoc />
     public IWriteResult AddBinding(string text, string noun, JsonElement value, IReadOnlyDictionary<string, IReadOnlyList<string>> corpora, string app)
     {
         JsonNode? parsed;
@@ -424,12 +531,12 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     /// A comparable projection of one behaviour's MEANING, from the AST rather than the
     /// lines — a reformatted line that parses identically is not a change.
     /// </summary>
-    private static string Shape(IBehaviour b) => JsonSerializer.Serialize(new
+    private static string Shape(IBehaviour b, int skipStep = -1, bool skipTitle = false) => JsonSerializer.Serialize(new
     {
         id = b.Id,
-        title = b.Title,
+        title = skipTitle ? null : b.Title,
         actor = b.Actor,
-        steps = b.Steps.Select(s => $"{s.Kind}|{s.Verb}||{s.Text}").ToList(),
+        steps = b.Steps.Select((s, i) => i == skipStep ? null : $"{s.Kind}|{s.Verb}||{s.Text}").ToList(),
         provides = b.Provides.Select(p => $"{p.Kind}:{p.Name}.{p.Slot}={string.Join(',', p.Value)}").ToList(),
         serves = b.Serves.Select(s => s.Id).ToList(),
         source = new { origin = b.Source.Origin, @ref = b.Source.Ref },
