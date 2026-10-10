@@ -16,8 +16,9 @@ name: CI
 # them by exact string. `kit` has no rulesets today; if one is added, require
 # `prototype` and rename it in both places or the check hangs forever.
 #
-# ✅ STAGE 0 *IS* GATED HERE — see the `Stage-0 gate` step below, which runs
-# `node prototypes/behaviour-ast/check.js kit --repo .` on every pull request.
+# ✅ STAGE 0 *IS* GATED HERE — see the `Stage-0 gate` step in the `backend` job,
+# which runs the C# `kit check kit --repo .` on every pull request (it was
+# `node prototypes/behaviour-ast/check.js` until kit#119's cut 2).
 # Kit checks ITSELF, against `behaviours/kit.beh` and the `kit.tests.json`
 # mapping, so nothing here is pinned to another repository's HEAD.
 #
@@ -82,21 +83,8 @@ jobs:
       - name: Mutation gate — the suite must notice each broken rule
         run: node prototypes/behaviour-ast/mutate.js
 
-      # Stage 0's deliverable, applied to kit itself: a documented behaviour
-      # with no test naming it fails the build. Kit is the first repo in the
-      # estate where that sentence is true of the repo you are reading.
-      #
-      # It gates on behaviour ids and the mapping in behaviours/kit.tests.json,
-      # NOT on generated code — `docs/pilots/kit-self-hosting.md` measures why
-      # Kit can derive nothing for itself (its verbs are `runs`/`exits`, the
-      # generator's are all browser verbs). Those are different questions and
-      # this step only answers the first.
-      #
-      # ⚠️ What a pass means: someone LINKED each behaviour to a test. It does
-      # not prove the test asserts the behaviour. That limit is option C's and
-      # is not fixable by parsing — `docs/design/tagging.md`.
-      - name: Stage-0 gate — every kit behaviour is named by a test
-        run: node prototypes/behaviour-ast/check.js kit --repo .
+      # The Stage-0 gate moved to the `backend` job (kit#119, cut 2): it is the
+      # C# `kit check` now, which answers byte for byte as `check.js` did.
 
   # The C# engine port (#119). The goldens it is scored against live under
   # prototypes/, so the tests find them by walking up from the test binary —
@@ -126,6 +114,30 @@ jobs:
           --no-build
           --configuration Release
           --verbosity normal
+
+      # Stage 0's deliverable, applied to kit itself: a documented behaviour
+      # with no test naming it fails the build. Kit is the first repo in the
+      # estate where that sentence is true of the repo you are reading.
+      #
+      # The C# `kit check` (kit#119), replacing `node check.js kit --repo .`,
+      # which it matches byte for byte. `--dir` is explicit because a CLI has no
+      # script directory to default to.
+      #
+      # It gates on behaviour ids and the mapping in behaviours/kit.tests.json,
+      # NOT on generated code — `docs/pilots/kit-self-hosting.md` measures why
+      # Kit can derive nothing for itself (its verbs are `runs`/`exits`, the
+      # generator's are all browser verbs). Those are different questions and
+      # this step only answers the first.
+      #
+      # ⚠️ What a pass means: someone LINKED each behaviour to a test. It does
+      # not prove the test asserts the behaviour. That limit is option C's and
+      # is not fixable by parsing — `docs/design/tagging.md`.
+      - name: Stage-0 gate — every kit behaviour is named by a test
+        run: >
+          dotnet run --project backend/Balenthiran.Kit.Cli
+          --no-build
+          --configuration Release
+          -- check kit --repo . --dir prototypes/behaviour-ast/behaviours
 
   # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
   # suite quoted in a PR body but executed by no gating job is a claim, not a
