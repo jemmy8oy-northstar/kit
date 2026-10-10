@@ -72,6 +72,20 @@ public sealed record KitSettings(
     /// <summary><c>KIT_GIT_BASE</c>: what Commit proposes the edits into — the branch the entrypoint starts the edits branch from.</summary>
     public string GitBase { get; init; } = "dev";
 
+    /// <summary>
+    /// <c>KIT_PROJECTS</c> (kit#88, BEH-PULL-1): where the corpora are READ from on GitHub, as
+    /// <c>owner/repo@branch:path</c> separated by commas or whitespace. Empty means read the
+    /// directory on disk, as before — a laptop, a test, or a pod that has not opted in.
+    /// </summary>
+    public IReadOnlyList<ProjectSource> Projects { get; init; } = [];
+
+    /// <summary>
+    /// <c>KIT_PROJECTS_POLL</c>, seconds between re-reads of <see cref="Projects"/>; default 120.
+    /// A re-read of an unchanged directory is one conditional request, but WITHOUT a token even a
+    /// 304 spends one of GitHub's 60 an hour, so the default stays well under that per source.
+    /// </summary>
+    public TimeSpan ProjectsPoll { get; init; } = TimeSpan.FromSeconds(120);
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -111,8 +125,30 @@ public sealed record KitSettings(
             GitHubAppId = app["KIT_GITHUB_APP_ID"],
             GitHubInstallationId = app["KIT_GITHUB_INSTALLATION_ID"],
             GitHubPrivateKey = app["KIT_GITHUB_PRIVATE_KEY"],
+            Projects = ParseProjects(env("KIT_PROJECTS")),
+            ProjectsPoll = ParsePoll(env("KIT_PROJECTS_POLL")),
         };
     }
+
+    /// <summary>
+    /// <c>KIT_PROJECTS</c>, every entry a <see cref="ProjectSource"/>. One that does not parse
+    /// THROWS rather than being skipped: a dropped source is a project that silently vanished.
+    /// </summary>
+    public static IReadOnlyList<ProjectSource> ParseProjects(string? value)
+    {
+        var entries = (value ?? string.Empty).Split([',', ' ', '\n', '\r', '\t'], StringSplitOptions.RemoveEmptyEntries);
+        var sources = entries
+            .Select(e => ProjectSource.Parse(e) ?? throw new InvalidOperationException($"KIT_PROJECTS entry \"{e}\" is not owner/repo@branch:path"))
+            .ToList();
+        var twice = sources.GroupBy(s => s.ToString()).FirstOrDefault(g => g.Count() > 1);
+        return twice is null ? sources : throw new InvalidOperationException($"KIT_PROJECTS names {twice.Key} twice");
+    }
+
+    /// <summary><c>KIT_PROJECTS_POLL</c>: whole seconds, at least 10; unset is 120. Anything else THROWS.</summary>
+    public static TimeSpan ParsePoll(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? TimeSpan.FromSeconds(120)
+        : int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var s) && s >= 10 ? TimeSpan.FromSeconds(s)
+        : throw new InvalidOperationException($"KIT_PROJECTS_POLL is \"{value}\": set it to a whole number of seconds, 10 or more");
 
     /// <summary>
     /// <c>KIT_GIT</c>: <c>ui.js</c>'s <c>--git</c>. <c>1</c>/<c>true</c> is on; unset, empty,

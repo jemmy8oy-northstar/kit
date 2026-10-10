@@ -14,7 +14,22 @@ public static class ServiceRegistration
     public static IServiceCollection AddKitServices(this IServiceCollection services, KitSettings settings)
     {
         services.AddSingleton(settings);
-        services.AddSingleton<ICorpusDirectory>(new CorpusDirectory(settings.Dir, settings.RepoRoot));
+        var disk = new CorpusDirectory(settings.Dir, settings.RepoRoot);
+        if (settings.Projects.Count == 0)
+        {
+            services.AddSingleton<ICorpusDirectory>(disk);
+        }
+        else
+        {
+            // BEH-PULL-1 (kit#88): reads from GitHub, writes to the clone on disk.
+            services.AddSingleton(sp => new GitHubCorpusDirectory(
+                disk,
+                settings.Projects,
+                new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>())));
+            services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
+            services.AddHostedService<ProjectPoller>();
+        }
+
         services.AddSingleton<ICorpusParser, CorpusParser>();
         services.AddSingleton<IBehaviourResolver, BehaviourResolver>();
         services.AddSingleton<ITestGenerator, TestGenerator>();
