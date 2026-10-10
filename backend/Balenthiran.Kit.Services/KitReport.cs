@@ -96,12 +96,9 @@ public sealed class KitReport(
     private static List<string> NounsOf(Behaviour b) =>
         b.Steps.SelectMany(s => s.Refs).Where(r => r.Kind != "literal").Select(r => $"{r.Kind}:{r.Name}").ToList();
 
-    // `Math.round`: halves go UP, where .NET's default goes to even.
-    private static string Percent(int part, int whole)
-    {
-        var ratio = part / (double)whole * 100;
-        return double.IsNaN(ratio) ? "NaN" : Math.Floor(ratio + 0.5).ToString(CultureInfo.InvariantCulture);
-    }
+    // `Math.round`: halves go UP, where .NET's default goes to even. Only ever called with whole > 0.
+    private static string Percent(int part, int whole) =>
+        Math.Floor(part / (double)whole * 100 + 0.5).ToString(CultureInfo.InvariantCulture);
 
     private int Main(IReadOnlyList<string> argv, bool sheetMode, StringBuilder stdout, StringBuilder stderr)
     {
@@ -388,7 +385,11 @@ public sealed class KitReport(
         Out($"  wire contracts        {contract}   not expressible as a behaviour — something else must own these");
         Out($"  ungenerated           {ungenerated}   refused rather than guessed");
         Out($"  unbound nouns         {unbound.Count}   {string.Join(", ", unbound)}");
-        Out($"  generated / total     {generated}/{steps} = {Percent(generated, steps)}%");
+        // 0/0 is not a rate. kit.js printed "NaN%" for it, and so did this port, until a corpus tagged
+        // technical throughout (kit#193) made it the headline number of Kit's own spec.
+        Out(steps == 0
+            ? $"  generated / total     0/0   no step to generate from: none is written, or every behaviour is technical"
+            : $"  generated / total     {generated}/{steps} = {Percent(generated, steps)}%");
 
         // The one thing here that GATES: a broken `serves` link is a corpus that lies about itself.
         if (surf.Errors.Count > 0)
