@@ -52,7 +52,7 @@ public class GitHubCorpusReaderTests
     [Fact]
     public async Task A_BOM_survives_so_a_splice_written_back_changes_only_its_line()
     {
-        var bom = "﻿behaviour BEH-S \"s\"\n";
+        var bom = "\ufeffbehaviour BEH-S \"s\"\n";
         var gh = new FakeGitHub(Listed("""[{"type": "file", "name": "s.beh", "sha": "s1"}]"""), Raw(bom));
 
         var snap = await Reader(gh, "tok").ReadAsync(Kit);
