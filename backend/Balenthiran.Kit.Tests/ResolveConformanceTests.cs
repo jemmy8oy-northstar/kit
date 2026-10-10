@@ -25,7 +25,7 @@ public class ResolveConformanceTests
         // means a resolver that returned nothing would compare equal.
         Assert.True(expected["changed"]!.AsArray().Count > 0, $"golden for {corpus} has an EMPTY resolve.changed");
 
-        var actual = _scorer.Section(File.ReadAllText(Path.Combine(RepoLayout.Behaviours, $"{corpus}.beh")), $"{corpus}.beh");
+        var actual = _scorer.Section(File.ReadAllText(Path.Combine(RepoLayout.FrozenBehaviours, $"{corpus}.beh")), $"{corpus}.beh");
 
         // Section by section first, so a failure names the half that is wrong
         // rather than dumping two whole documents.

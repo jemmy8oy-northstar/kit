@@ -1,0 +1,125 @@
+# kit:not-a-real-app
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# TRIAL CORPUS — "Longlist"  (an app that DOES NOT EXIST)
+#
+# James, claude-code-bot#99 (2026-09-23): "Whilst I do not have access you can
+# use kit! ... you can come up with your own projects. If you have any good ones
+# I can create repos for you."
+#
+# So this is mine, not a reverse-engineering of something shipped. The brief is
+# docs/trials/longlist-brief.md and the account of starting it — which is the
+# actual finding — is docs/trials/starting-a-project-in-kit.md.
+#
+# The directive above keeps it out of any study whose population is real apps,
+# binding saturation above all. Same axis as trial-lend.beh: existence.
+#
+# ⚠️ THIS FILE IS IN THE WRONG PLACE, AND THAT IS THE POINT. His kit#52 decision
+# is that a spec lives with its project. Longlist has no repo, and `kit.js` and
+# `check.js` take no `--dir` (only `ui.js` does), so a corpus anywhere else
+# cannot be gated by `kit check` — stage 7, the only part of Kit that goes red.
+# Putting it here is the only placement under which Kit can actually check it.
+#
+# Every behaviour is `source defined` and traces to a line of the brief. Nothing
+# is `inferred`: there is no model step in the build, so an `inferred` line here
+# would be me hand-writing something and crediting a machine for it.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══ Capture — "the whole point is that writing it down is cheaper than building it" ═══
+
+behaviour BEH-CAPTURE-1 "An idea is captured from anywhere in one field"
+  source defined docs/trials/longlist-brief.md#capture
+  actor owner
+  when opens page:Longlist
+  then sees field:NewIdea
+  then sees button:Capture
+
+behaviour BEH-CAPTURE-2 "A captured idea joins the list without leaving the page"
+  source defined docs/trials/longlist-brief.md#capture
+  actor owner
+  when opens page:Longlist
+  when fills form:NewIdea with ?fields
+  when activates button:Capture
+  then sees region:IdeaList
+
+behaviour BEH-CAPTURE-3 "Capture asks for the idea and why it came up, and nothing else"
+  source defined docs/trials/longlist-brief.md#capture
+  actor owner
+  when opens page:Longlist
+  provides form:NewIdea.fields = Idea, WhyNow
+
+behaviour BEH-CAPTURE-4 "An empty longlist says so rather than showing a blank page"
+  source defined docs/trials/longlist-brief.md#capture
+  actor owner
+  given longlist:Empty
+  when opens page:Longlist
+  then sees region:EmptyState
+
+
+# ═══ Deciding — "an idea leaves the list by being decided, never by rotting" ═══
+
+behaviour BEH-DECIDE-1 "An idea can be opened to decide on it"
+  source defined docs/trials/longlist-brief.md#decide
+  actor owner
+  given idea:Captured
+  when opens page:Longlist
+  when activates link:IdeaTitle
+  then lands on page:Idea
+  then sees region:WhyNow
+
+behaviour BEH-DECIDE-2 "Deciding to build an idea records the decision against it"
+  source defined docs/trials/longlist-brief.md#decide
+  actor owner
+  given idea:Captured
+  when opens page:Idea
+  when activates button:Build
+  then sees badge:Decision
+
+behaviour BEH-DECIDE-3 "Declining an idea requires a reason, so the longlist teaches"
+  source defined docs/trials/longlist-brief.md#decide
+  actor owner
+  given idea:Captured
+  when opens page:Idea
+  when activates button:Decline
+  then sees field:DeclineReason
+  then sees badge:Decision
+
+
+# ═══ Not letting it rot — "a longlist nobody revisits is a graveyard" ═══
+
+behaviour BEH-AGE-1 "An idea nobody has decided on for a long time is visibly stale"
+  source defined docs/trials/longlist-brief.md#rot
+  actor owner
+  given idea:Stale
+  when opens page:Longlist
+  then sees badge:Stale
+
+
+# ═══ The shapes the notation cannot state — recorded, not smuggled in ═══
+#
+# Written down rather than worked around, the way trial-lend.beh did. Two of
+# these repeat that trial's findings on a corpus written four weeks later and by
+# a different route, which makes them population evidence rather than anecdote:
+#
+#   TIMING       BEH-AGE-1's "for a long time" is the rule, and `given
+#                idea:Stale` names a fixture STATE instead. The threshold lands
+#                in bindings.json, where no reviewer reads it as a rule. Exactly
+#                trial-lend's overdue-loan finding, unchanged.
+#
+#   ORDERING     the brief asks for the oldest undecided idea first, so the
+#                list argues for attention. There is no `then ... in order of`.
+#                A generated test can see the list and never that it is sorted.
+#                Also unchanged from trial-lend.
+#
+#   NEGATION     a decided idea leaves the longlist. There is no `then does not
+#                see`, so it is not written above at all — trial-lend could at
+#                least assert a weaker fact (an empty state); here the list is
+#                not empty afterwards, so even that escape does not exist.
+#                🔑 NEW: the workaround trial-lend found does not generalise.
+#
+#   REQUIREDNESS BEH-DECIDE-3 says declining requires a reason. The corpus can
+#                say the field is SEEN, not that the button is refused without
+#                it. `contract` lines are where this would go, which means the
+#                one rule that gives the feature its purpose is not a behaviour.
+#                🔑 NEW: not on trial-lend's list.

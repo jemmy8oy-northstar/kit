@@ -1,0 +1,87 @@
+{
+  "_comment": [
+    "Bindings for Kit's OWN UI corpus (kit-ui.beh, beside this file). Every",
+    "accessible name below was read off the running app with a Playwright role",
+    "sweep — the same \"nothing is invented\" rule as every other corpus, and the",
+    "reason the corpus can be checked rather than believed.",
+    "",
+    "Kit is TWO apps in its own registry: kit.beh (the CLI, \"# kit:no-ui\", derives",
+    "nothing and that is the finding) and kit-ui.beh (the browser surface, which is",
+    "what kit.beh's header predicted would change the number).",
+    "",
+    "⚠️ EVERY NOUN IS PREFIXED Kit* AND NO LONGER NEEDS TO BE. The prefix dodged a",
+    "global namespace — an unprefixed page:Home here would have inherited snip-it's",
+    "\"./\" and emitted a test that runs against the wrong app with no unbound-noun",
+    "warning. A corpus now binds its own nouns, so that cannot happen. Renaming is",
+    "a corpus change and therefore James's (claude-code-bot#58).",
+    "",
+    "DELIBERATELY ABSENT, honest refusals rather than gaps:",
+    "  status:WriteNote — the \"written, not committed\" note has role=status but NO",
+    "    accessible name, so it cannot be addressed by role+name. Its content is",
+    "    the assertion worth making, and the notation has no way to ask for it.",
+    "  the disabled-ness of button:KitDeny — `sees` proves a control EXISTS, not",
+    "    that it is disabled. Boolean control state is unassertable in this grammar,",
+    "    so it stays a `contract` line and is counted as one."
+  ],
+  "page:KitProjects": {
+    "route": "/"
+  },
+  "page:KitProject": {
+    "route": "/projects/:app"
+  },
+  "page:KitBehaviour": {
+    "route": "/projects/:app/behaviours/:id"
+  },
+  "region:KitMain": {
+    "locator": "locator('main')"
+  },
+  "heading:KitProjectsTitle": {
+    "role": "heading",
+    "name": "Projects",
+    "exact": true
+  },
+  "heading:KitQuestionSheet": {
+    "role": "heading",
+    "name": "Question sheet"
+  },
+  "heading:KitNeverAdjudicated": {
+    "role": "heading",
+    "name": "Never adjudicated"
+  },
+  "heading:KitAdjudication": {
+    "role": "heading",
+    "name": "Adjudication"
+  },
+  "heading:KitBehaviourSteps": {
+    "role": "heading",
+    "name": "Behaviour",
+    "exact": true
+  },
+  "heading:KitGeneratedTest": {
+    "role": "heading",
+    "name": "Generated test"
+  },
+  "heading:KitAddAStep": {
+    "role": "heading",
+    "name": "Add a step"
+  },
+  "button:KitApprove": {
+    "role": "button",
+    "name": "Approve"
+  },
+  "button:KitDeny": {
+    "role": "button",
+    "name": "Deny"
+  },
+  "button:KitAddStep": {
+    "role": "button",
+    "name": "Add step"
+  },
+  "button:KitAddBehaviour": {
+    "role": "button",
+    "name": "Add behaviour"
+  },
+  "field:KitCorrection": {
+    "label": "Correction (required to deny)"
+  }
+}

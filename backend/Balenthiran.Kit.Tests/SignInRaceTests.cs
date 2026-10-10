@@ -15,7 +15,7 @@ public class SignInRaceTests
     [Fact]
     public async Task Guesses_sent_at_once_are_throttled_exactly_as_guesses_sent_in_turn()
     {
-        var corpora = new CorpusDirectory(RepoLayout.Behaviours, RepoLayout.Root);
+        var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
         var router = new KitRouter(
             corpora,

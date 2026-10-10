@@ -6,8 +6,8 @@
     "client believes: it could build /api/projects/x/behaviour/ID/steps (singular) and stay",
     "green over its own stub. A green suite over a mock proves the mock.",
     "",
-    "client.test.ts asserts the client emits exactly these; kit.test.js asserts the paths are",
-    "what the client builds. HISTORY: kit.test.js also fed exactly these to a running Node",
+    "client.test.ts asserts the client emits exactly these; contract.test.ts asserts the paths are",
+    "what the client builds. HISTORY: the deleted kit.test.js also fed exactly these to a running Node",
     "server (ui.js) and asserted the file on disk changed. That server is deleted (kit#153) and",
     "these requests are NOT replayed against the C# server today - its answers are held by the",
     "writes golden (conformance/routes/writes.json) instead."

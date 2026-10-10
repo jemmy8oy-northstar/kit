@@ -1,0 +1,130 @@
+# macro-metrics' FRONTEND USER STORIES, encoded from prose.
+#
+# Source: jemmy8oy-northstar/macro-metrics docs/user-stories-frontend.md
+#         at 89053e63532166adbf2ce1894226589a498ba4db (origin/main, read 2026-09-03)
+#         7 stories, 46 acceptance-criteria lines.
+#
+# This is the FIRST corpus in this repo not reverse-engineered from working code.
+# snip-it's was read off editor.spec.ts; habits' and vocab's off DESIGN.md plus the
+# routes. All three are the friendliest possible input, because a behaviour that was
+# read out of a passing test is guaranteed expressible. Prose written for humans,
+# before any test existed, is the honest case — and it is the case Kit will actually
+# meet, since James's design starts at natural language.
+#
+# ⚠️ WHAT THIS FILE IS NOT: it is not "the macro-metrics corpus". It is the subset of
+# 46 acceptance criteria the notation can carry. The other 30 are not omitted — every
+# one is accounted for in docs/pilots/macro-metrics-prose.ledger.json, with the reason,
+# and `node prose-audit.js` refuses if a single AC has no disposition. Dropping the
+# hard ones and reporting a coverage percentage over what was left is exactly the
+# flattering measurement this corpus exists to avoid.
+#
+# ── Deliberate refusals below, each a finding, none an oversight ──
+# * `link:Presets/Compare/Indicators` are UNBOUND on purpose. The AC says the mini-nav
+#   "contains three anchor links"; StickyNav.tsx renders three `<button onClick=…>`
+#   that call scrollIntoView. A link and a button differ for keyboard, middle-click and
+#   sharing, so this is a real (small) divergence, and the generator naming an unbound
+#   noun is the spec constraining the app — the property Gherkin's glue removes.
+# * `ratio:Errored` is UNBOUND: macro-metrics has ZERO .spec.ts files, so there is no
+#   route-mock helper to bind a `given` to. Kit refuses rather than invent one.
+# * The six date-range buttons are UNBOUND, and NOT because they lack names: they have
+#   perfect ones ("1y" … "Max"). Nine PresetCards each render all six, so `button:Max`
+#   names 9 elements and any generated locator would be ambiguous. That is finding (1)
+#   in the write-up — the notation has no cardinality — arriving as a refusal.
+
+# ── Story 1 — page loads ───────────────────────────────────────────────────────
+
+behaviour BEH-MM-LOAD-1 "The homepage renders its three sections"
+  source defined docs/user-stories-frontend.md#story-1
+  actor visitor
+  when opens page:MacroHome
+  then sees heading:PresetRatios
+  then sees heading:CustomComparison
+  then sees heading:MacroIndicators
+  contract all 9 preset ratio fetches fire in parallel
+  contract all 3 indicator fetches fire in parallel
+
+# The AC wants "three anchor links". The app has three buttons. Kept as the AC wrote
+# it, so the refusal reports the divergence instead of the corpus absorbing it.
+behaviour BEH-MM-NAV-1 "The sticky mini-nav offers the three section anchors"
+  source defined docs/user-stories-frontend.md#story-1
+  actor visitor
+  when opens page:MacroHome
+  then sees link:Presets
+  then sees link:Compare
+  then sees link:Indicators
+
+# ── Story 4 — the metric picker ────────────────────────────────────────────────
+
+behaviour BEH-MM-PICK-0 "With nothing chosen, the compare section says what to do"
+  source defined docs/user-stories-frontend.md#story-4
+  actor visitor
+  when opens page:MacroHome
+  then shows region:Compare "Select two metrics above to see a custom comparison"
+
+behaviour BEH-MM-PICK-1 "Choosing only a numerator asks for the denominator"
+  source defined docs/user-stories-frontend.md#story-4
+  actor visitor
+  when opens page:MacroHome
+  when activates combobox:Numerator
+  when activates option:Gold
+  then shows region:Compare "Now select a denominator"
+
+behaviour BEH-MM-PICK-2 "Choosing both metrics renders the comparison chart"
+  source defined docs/user-stories-frontend.md#story-4
+  actor visitor
+  when opens page:MacroHome
+  when activates combobox:Numerator
+  when activates option:Gold
+  when activates combobox:Denominator
+  when activates option:UsCpi
+  then shows region:Compare "Gold / US CPI"
+  contract GET /api/metrics/ratio is fired with both metric ids
+
+behaviour BEH-MM-SWAP-1 "The swap control is offered next to the two pickers"
+  source defined docs/user-stories-frontend.md#story-4
+  actor visitor
+  when opens page:MacroHome
+  then sees combobox:Numerator
+  then sees combobox:Denominator
+  then sees button:Swap
+
+# The picker's option list is the one collection in the whole document the notation
+# CAN carry — but only as a symbol, never as an assertion. `provides` records the 11
+# metrics; nothing generates a test that the dropdown offers them. Recording is not
+# checking, and the gap is the finding, so it is written rather than left implicit.
+behaviour BEH-MM-METRICS-1 "Eleven metrics are comparable"
+  source defined docs/user-stories-frontend.md#story-4
+  actor visitor
+  provides combobox:Numerator.options = UK House Prices, US House Prices, UK Wages, US Wages, UK CPI, US CPI, Gold, Oil, FTSE 100, S&P 500, Bitcoin
+
+# ── Story 5 — the comparison chart's failure path ──────────────────────────────
+
+behaviour BEH-MM-ERR-1 "A failed comparison fetch says so and offers a retry"
+  source defined docs/user-stories-frontend.md#story-5
+  actor visitor
+  given ratio:Errored
+  when opens page:MacroHome
+  then shows region:Compare "Could not load data."
+  then sees button:TryAgain
+  contract the Try again button re-fires only that card's fetch
+
+# ── Story 6 / 7 — per-card failure ─────────────────────────────────────────────
+
+behaviour BEH-MM-IND-ERR-1 "A failed indicator card says it is unavailable"
+  source defined docs/user-stories-frontend.md#story-6
+  actor visitor
+  given ratio:Errored
+  when opens page:MacroHome
+  then shows region:Indicators "Unavailable"
+
+# Story 7's universal ("an error on one card does not affect others") has no shape in
+# the notation. Its testable INSTANCE does: name one failing card and one working one.
+# The instance is written; the universal is recorded in the ledger as inexpressible.
+behaviour BEH-MM-ISOLATION-1 "One card's error leaves the others readable"
+  source defined docs/user-stories-frontend.md#story-7
+  actor visitor
+  given ratio:OneErrored
+  when opens page:MacroHome
+  then shows region:Presets "Could not load data."
+  then shows region:Indicators "Unavailable"
+  contract every other card still renders its value
