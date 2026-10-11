@@ -94,5 +94,33 @@
   "region:KitOpenNotes": {
     "role": "region",
     "name": "Notes"
+  },
+  "region:KitNav": {
+    "role": "navigation",
+    "name": "Main"
+  },
+  "link:KitNavBoard": {
+    "role": "link",
+    "name": "Board",
+    "exact": true
+  },
+  "page:KitBoard": {
+    "route": "/board"
+  },
+  "region:KitBoardProposed": {
+    "role": "region",
+    "name": "Proposed"
+  },
+  "region:KitBoardBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "region:KitBoardDone": {
+    "role": "region",
+    "name": "Done"
+  },
+  "button:KitBoardFilterProject": {
+    "role": "button",
+    "name": "Filter to"
   }
 }

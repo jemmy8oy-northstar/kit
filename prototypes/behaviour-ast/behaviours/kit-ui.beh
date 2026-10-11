@@ -196,7 +196,6 @@ behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spe
 # their own behaviours and stay `pending` until that data does.
 
 behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects"
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitProjects
@@ -206,7 +205,6 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   contract the navbar marks the view you are on; the projects link is the existing project list
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard
@@ -219,7 +217,6 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
   contract a corpus that will not parse is named on the board as an error, never silently left out
 
 behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filtered to projects"
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard

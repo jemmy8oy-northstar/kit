@@ -234,3 +234,70 @@ pre {
   overflow-wrap: anywhere;
   margin: var(--space-2) 0 0;
 }
+
+/* The navbar (kit#237). NavLink sets aria-current="page" on the active link. */
+.nav {
+  display: flex;
+  gap: var(--space-4);
+  margin-left: auto;
+}
+
+.nav a[aria-current='page'] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/*
+ * The board (kit#237). A project's colour is one of these twelve, picked by a
+ * hash of its name (board.ts), so it is the same on every visit. Spaced round
+ * the hue wheel rather than borrowed from the status tokens, so no project reads
+ * as "danger". `--project` is what the card border and the legend dot read.
+ */
+.hue-0 { --project: hsl(0 60% 45%); }
+.hue-1 { --project: hsl(30 60% 45%); }
+.hue-2 { --project: hsl(60 60% 45%); }
+.hue-3 { --project: hsl(90 60% 45%); }
+.hue-4 { --project: hsl(120 60% 45%); }
+.hue-5 { --project: hsl(150 60% 45%); }
+.hue-6 { --project: hsl(180 60% 45%); }
+.hue-7 { --project: hsl(210 60% 45%); }
+.hue-8 { --project: hsl(240 60% 45%); }
+.hue-9 { --project: hsl(270 60% 45%); }
+.hue-10 { --project: hsl(300 60% 45%); }
+.hue-11 { --project: hsl(330 60% 45%); }
+
+.board {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 60rem) {
+  .board {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.board > section {
+  min-width: 0;
+}
+
+.board-card {
+  border-left: 0.35rem solid var(--project);
+}
+
+.board-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: var(--project);
+  margin-right: var(--space-2);
+}
