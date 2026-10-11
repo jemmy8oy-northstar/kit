@@ -26,4 +26,7 @@ public interface IProjectView
     IReadOnlyList<IQuestion> Questions { get; }
 
     IRequiresView Requires { get; }
+
+    /// <summary>The corpus's features (kit#237); empty for a corpus that declares none.</summary>
+    IReadOnlyList<IFeatureView> Features { get; }
 }

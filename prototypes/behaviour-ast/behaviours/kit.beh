@@ -101,7 +101,6 @@ behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped
   contract spec becomes descriptive
 
 behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error naming its line"
-  pending
   source defined kit#237
   actor engineer
   given corpus:BadFeatureTags

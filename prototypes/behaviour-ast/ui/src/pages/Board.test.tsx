@@ -22,6 +22,7 @@ function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
     pending: false,
     layer: 'ui',
     at: 'x.beh:1',
+    in: [],
     ...over,
   }
 }

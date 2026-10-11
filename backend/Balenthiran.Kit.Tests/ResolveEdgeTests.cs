@@ -90,6 +90,8 @@ public class ResolveEdgeTests
 
         public string Layer => "ux";
 
+        public IReadOnlyList<IIdRef> In => [];
+
         public bool? ReviewExplicit => null;
 
         public IReadOnlyList<IFilled>? Filled => null;

@@ -13,4 +13,11 @@ public interface ICorpusParser
     /// </summary>
     /// <exception cref="CorpusParseException">The corpus is not a corpus.</exception>
     IReadOnlyList<IBehaviour> Parse(string text, string file = "<inline>");
+
+    /// <summary>
+    /// <see cref="Parse"/>, plus the corpus's <c>feature</c> blocks (kit#237). Both run the
+    /// same checks, so a corpus whose tags point nowhere or loop is refused by either.
+    /// </summary>
+    /// <exception cref="CorpusParseException">The corpus is not a corpus.</exception>
+    IParsedCorpus ParseCorpus(string text, string file = "<inline>");
 }
