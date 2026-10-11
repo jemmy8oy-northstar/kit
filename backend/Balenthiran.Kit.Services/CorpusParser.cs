@@ -62,6 +62,9 @@ public sealed class CorpusParser : ICorpusParser
     // JavaScript's `$` rejects. Lines are trimmed before matching, which hides
     // the difference here today — `\z` means it cannot come back.
     private static readonly Regex BehaviourLine = new($@"^behaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
+    private static readonly Regex FeatureLine = new($@"^feature[{Ws}]+(FEAT-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
+    private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
+    private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex SourceRest = new($@"^(defined|inferred)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ReviewRest = new($@"^(unreviewed|approved|denied)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ServesRest = new(@"^([A-Z][A-Z0-9-]*)\z", RegexOptions.Compiled);
@@ -78,10 +81,17 @@ public sealed class CorpusParser : ICorpusParser
     /// type carries the concrete shape and key order the goldens are scored on —
     /// see <see cref="EngineJsonSerialiser.Serialise"/>.
     /// </remarks>
-    public IReadOnlyList<IBehaviour> Parse(string text, string file = "<inline>")
+    public IReadOnlyList<IBehaviour> Parse(string text, string file = "<inline>") => Read(text, file).Behaviours;
+
+    /// <inheritdoc />
+    public IParsedCorpus ParseCorpus(string text, string file = "<inline>") => Read(text, file);
+
+    private static ParsedCorpus Read(string text, string file)
     {
         var behaviours = new List<Behaviour>();
+        var features = new List<Feature>();
         Behaviour? cur = null;
+        Feature? feat = null;
 
         // `String.prototype.split('\n')` — a single-character split, not a
         // line-break-aware one. A lone `\r` is left on the end of the line and
@@ -100,13 +110,50 @@ public sealed class CorpusParser : ICorpusParser
             {
                 cur = new Behaviour { Id = m.Groups[1].Value, Title = m.Groups[2].Value, At = at, Layer = defaultLayer };
                 behaviours.Add(cur);
+                feat = null;
                 continue;
             }
 
-            if (cur is null) throw new CorpusParseException($"{at}: line outside a behaviour: {line}");
-
             var kw = FirstToken(line);
             var rest = Trim(line[kw.Length..]);
+
+            // ── James, kit#237 (2026-10-11) ─────────────────────────────────
+            // "Consider views/pages as features … consider the parent
+            // relationships as tags." A feature holds nothing but its parents:
+            // what it means is the behaviours tagged into it.
+            if (kw == "feature")
+            {
+                var f = FeatureLine.Match(line);
+                if (!f.Success) throw new CorpusParseException($@"{at}: feature wants FEAT-<ID> ""<title>"", got: {line}");
+                if (features.Find(x => x.Id == f.Groups[1].Value) is { } dup)
+                {
+                    throw new CorpusParseException($"{at}: feature {dup.Id} is already declared at {dup.At}");
+                }
+
+                feat = new Feature { Id = f.Groups[1].Value, Title = f.Groups[2].Value, At = at };
+                features.Add(feat);
+                cur = null;
+                continue;
+            }
+
+            // A tag, not a dependency: `in` names only FEAT- ids, and `serves` only
+            // behaviours, so arranging the pages can never change what Kit refuses
+            // to delete.
+            if (kw == "in" && (feat is not null || cur is not null))
+            {
+                if (!InRest.IsMatch(rest)) throw new CorpusParseException($"{at}: in wants a feature id (FEAT-…), got: {rest}");
+                var tags = feat?.In ?? (cur!.In ??= []);
+                if (tags.Find(t => t.Id == rest) is { } again)
+                {
+                    throw new CorpusParseException($"{at}: already in {rest} at {again.At}");
+                }
+
+                tags.Add(new IdRef { Id = rest, At = at });
+                continue;
+            }
+
+            if (feat is not null) throw new CorpusParseException($@"{at}: a feature takes only ""in"" lines, got: {line}");
+            if (cur is null) throw new CorpusParseException($"{at}: line outside a behaviour: {line}");
 
             if (kw == "actor") { cur.Actor = rest; continue; }
 
@@ -281,7 +328,74 @@ public sealed class CorpusParser : ICorpusParser
             throw new CorpusParseException($@"{at}: unrecognised keyword ""{kw}""");
         }
 
-        return behaviours;
+        CheckTags(behaviours, features);
+        return new ParsedCorpus { Behaviours = behaviours, Features = features, Project = FileProject(lines, file) };
+    }
+
+    /// <summary>
+    /// kit#237: a <c># kit:project &lt;name&gt;</c> line puts this file in a project with every
+    /// other file naming it, wherever the line sits — read as <see cref="FileLayer"/> reads its
+    /// directive, and refused on the same terms. The name has an app's shape, because a file
+    /// with no directive is a project named by its file.
+    /// </summary>
+    private static string? FileProject(string[] lines, string file)
+    {
+        string? project = null;
+        string? setAt = null;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = Trim(lines[i]);
+            if (!line.StartsWith('#')) continue;
+            var c = Trim(line[1..]);
+            var kw = FirstToken(c);
+            if (kw != "kit:project") continue;
+            var at = $"{file}:{i + 1}";
+            if (setAt is not null) throw new CorpusParseException($"{at}: kit:project is already set at {setAt}");
+            var v = Trim(c[kw.Length..]);
+            if (!ProjectName.IsMatch(v)) throw new CorpusParseException($"{at}: kit:project wants a name of lowercase letters, digits and hyphens, got: {v}");
+            project = v;
+            setAt = at;
+        }
+
+        return project;
+    }
+
+    /// <summary>
+    /// The two ways a tag graph goes wrong once every line has parsed (the third, a
+    /// duplicate feature id, is caught as it is read). Each leaves something drawn
+    /// nowhere, so each is refused with the line that caused it.
+    /// </summary>
+    private static void CheckTags(List<Behaviour> behaviours, List<Feature> features)
+    {
+        var byId = features.ToDictionary(f => f.Id, StringComparer.Ordinal);
+        // In file order, so the first dangling line in the file is the one named, whichever
+        // kind of block it sits in. `At` is `<file>:<line>` and every tag is in one file.
+        var dangling = features.SelectMany(f => f.In).Concat(behaviours.SelectMany(b => b.In ?? []))
+            .Where(t => !byId.ContainsKey(t.Id))
+            .MinBy(t => int.Parse(t.At[(t.At.LastIndexOf(':') + 1)..], System.Globalization.CultureInfo.InvariantCulture));
+        if (dangling is not null) throw new CorpusParseException($"{dangling.At}: in names {dangling.Id}, which is not a feature in this file");
+
+        // Depth-first, three colours: a feature reached again while still on the path is
+        // its own ancestor. Named at the `in` line that closes the loop — the line to delete.
+        var done = new HashSet<string>(StringComparer.Ordinal);
+        var path = new List<string>();
+        void Visit(Feature f, IdRef? via)
+        {
+            if (done.Contains(f.Id)) return;
+            var i = path.IndexOf(f.Id);
+            if (i >= 0)
+            {
+                var loop = string.Join(" → ", path.Skip(i).Append(f.Id));
+                throw new CorpusParseException($"{via!.At}: {f.Id} is its own ancestor: {loop}");
+            }
+
+            path.Add(f.Id);
+            foreach (var parent in f.In) Visit(byId[parent.Id], parent);
+            path.RemoveAt(path.Count - 1);
+            done.Add(f.Id);
+        }
+
+        foreach (var f in features) Visit(f, null);
     }
 
     /// <summary>

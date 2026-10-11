@@ -45,7 +45,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 11
+              "unreviewed": 11,
+              "project": "james-habits-app"
             },
             {
               "app": "kit",
@@ -60,7 +61,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "kit"
             },
             {
               "app": "kit-hosted",
@@ -75,7 +77,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 2
+              "unreviewed": 2,
+              "project": "kit-hosted"
             },
             {
               "app": "kit-ui",
@@ -90,7 +93,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "kit-ui"
             },
             {
               "app": "language-vocab",
@@ -105,7 +109,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 15
+              "unreviewed": 15,
+              "project": "language-vocab"
             },
             {
               "app": "longlist",
@@ -120,7 +125,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "longlist"
             },
             {
               "app": "macro-metrics",
@@ -135,7 +141,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "macro-metrics"
             },
             {
               "app": "snip-it",
@@ -150,7 +157,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "snip-it"
             },
             {
               "app": "trial-habits-a",
@@ -165,7 +173,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "trial-habits-a"
             },
             {
               "app": "trial-habits-b",
@@ -180,7 +189,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "trial-habits-b"
             },
             {
               "app": "trial-lend",
@@ -195,7 +205,8 @@
                 "uncovered": null,
                 "reason": "no --repo given, so no test files were read"
               },
-              "unreviewed": 0
+              "unreviewed": 0,
+              "project": "trial-lend"
             }
           ]
         }
@@ -268,7 +279,8 @@
               "asks": null,
               "at": "james-habits-app.beh:27",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-2",
@@ -337,7 +349,8 @@
               "asks": null,
               "at": "james-habits-app.beh:34",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-3",
@@ -417,7 +430,8 @@
               "asks": null,
               "at": "james-habits-app.beh:42",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-4",
@@ -474,7 +488,8 @@
               "asks": null,
               "at": "james-habits-app.beh:50",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MANAGE-1",
@@ -531,7 +546,8 @@
               "asks": null,
               "at": "james-habits-app.beh:57",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-HISTORY-1",
@@ -600,7 +616,8 @@
               "asks": null,
               "at": "james-habits-app.beh:64",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-LOOP-1",
@@ -628,7 +645,8 @@
               "asks": null,
               "at": "james-habits-app.beh:76",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DATE-1",
@@ -656,7 +674,8 @@
               "asks": null,
               "at": "james-habits-app.beh:83",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SEED-1",
@@ -708,7 +727,8 @@
               "asks": null,
               "at": "james-habits-app.beh:96",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ORDER-1",
@@ -736,7 +756,8 @@
               "asks": null,
               "at": "james-habits-app.beh:105",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ARCHIVE-1",
@@ -778,7 +799,8 @@
               "asks": null,
               "at": "james-habits-app.beh:112",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ARCHIVE-2",
@@ -806,7 +828,8 @@
               "asks": "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?",
               "at": "james-habits-app.beh:126",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STREAK-1",
@@ -870,7 +893,8 @@
               "asks": null,
               "at": "james-habits-app.beh:137",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STREAK-2",
@@ -898,7 +922,8 @@
               "asks": null,
               "at": "james-habits-app.beh:148",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STREAK-3",
@@ -926,7 +951,8 @@
               "asks": null,
               "at": "james-habits-app.beh:155",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ENTRY-1",
@@ -954,7 +980,8 @@
               "asks": null,
               "at": "james-habits-app.beh:162",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-HISTORY-2",
@@ -982,7 +1009,8 @@
               "asks": null,
               "at": "james-habits-app.beh:177",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-HISTORY-3",
@@ -1010,7 +1038,8 @@
               "asks": null,
               "at": "james-habits-app.beh:182",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-REORDER-1",
@@ -1038,7 +1067,8 @@
               "asks": null,
               "at": "james-habits-app.beh:189",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ERROR-1",
@@ -1080,7 +1110,8 @@
               "asks": "Nothing documented displays an error. Should DESIGN.md gain an error state the frontend renders these into, or should the machine-readable code go and a status code be the whole contract?",
               "at": "james-habits-app.beh:203",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-COMPLETE-1",
@@ -1122,7 +1153,8 @@
               "asks": null,
               "at": "james-habits-app.beh:224",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WINDOW-MVP",
@@ -1142,7 +1174,8 @@
               "asks": null,
               "at": "james-habits-app.beh:252",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WINDOW-API",
@@ -1162,7 +1195,8 @@
               "asks": "The two sides only contradict each other on paper — the route is caller-supplied DEFAULTING to 30, which satisfies both. The real collision underneath is the NAME: DESIGN.md documents ?days=30, the route binds ?historyDays. Which one is the contract the frontend gets built against?",
               "at": "james-habits-app.beh:257",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [
@@ -2568,7 +2602,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "james-habits-app"
         }
       }
     },
@@ -2646,7 +2682,8 @@
               "asks": null,
               "at": "kit.beh:43",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GATE-2",
@@ -2717,7 +2754,8 @@
               "asks": null,
               "at": "kit.beh:50",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GATE-3",
@@ -2781,7 +2819,8 @@
               "asks": null,
               "at": "kit.beh:58",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-READ-1",
@@ -2852,7 +2891,8 @@
               "asks": null,
               "at": "kit.beh:65",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GEN-1",
@@ -2916,7 +2956,8 @@
               "asks": null,
               "at": "kit.beh:73",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GEN-2",
@@ -2980,7 +3021,8 @@
               "asks": null,
               "at": "kit.beh:80",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-PARSE-1",
@@ -3051,7 +3093,8 @@
               "asks": null,
               "at": "kit.beh:87",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-RESOLVE-1",
@@ -3115,7 +3158,8 @@
               "asks": null,
               "at": "kit.beh:95",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-RESOLVE-2",
@@ -3172,7 +3216,8 @@
               "asks": null,
               "at": "kit.beh:102",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ADJ-1",
@@ -3236,7 +3281,8 @@
               "asks": null,
               "at": "kit.beh:108",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UI-1",
@@ -3321,7 +3367,8 @@
               "asks": null,
               "at": "kit.beh:121",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UI-2",
@@ -3392,7 +3439,8 @@
               "asks": null,
               "at": "kit.beh:131",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UI-3",
@@ -3463,7 +3511,8 @@
               "asks": null,
               "at": "kit.beh:139",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UI-4",
@@ -3534,7 +3583,8 @@
               "asks": null,
               "at": "kit.beh:147",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-1",
@@ -3605,7 +3655,8 @@
               "asks": null,
               "at": "kit.beh:161",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-2",
@@ -3676,7 +3727,8 @@
               "asks": null,
               "at": "kit.beh:170",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-3",
@@ -3747,7 +3799,8 @@
               "asks": null,
               "at": "kit.beh:179",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-4",
@@ -3818,7 +3871,8 @@
               "asks": null,
               "at": "kit.beh:188",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-5",
@@ -3896,7 +3950,8 @@
               "asks": null,
               "at": "kit.beh:197",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WRITE-6",
@@ -3974,7 +4029,8 @@
               "asks": null,
               "at": "kit.beh:207",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -5146,7 +5202,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "kit"
         }
       }
     },
@@ -5238,7 +5296,8 @@
               "asks": null,
               "at": "kit-hosted.beh:119",
               "pending": true,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-PULL-2",
@@ -5323,7 +5382,8 @@
               "asks": null,
               "at": "kit-hosted.beh:131",
               "pending": true,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-PULL-3",
@@ -5415,7 +5475,8 @@
               "asks": null,
               "at": "kit-hosted.beh:144",
               "pending": true,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-PULL-4",
@@ -5507,7 +5568,8 @@
               "asks": null,
               "at": "kit-hosted.beh:158",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-ACT-1",
@@ -5573,7 +5635,8 @@
               "asks": null,
               "at": "kit-hosted.beh:176",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ACT-2",
@@ -5639,7 +5702,8 @@
               "asks": null,
               "at": "kit-hosted.beh:185",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ACT-3",
@@ -5712,7 +5776,8 @@
               "asks": null,
               "at": "kit-hosted.beh:194",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ACT-4",
@@ -5757,7 +5822,8 @@
               "asks": "Does a hosted edit write to GitHub immediately, or accumulate until Commit?",
               "at": "kit-hosted.beh:204",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-COMMIT-1",
@@ -5856,7 +5922,8 @@
               "asks": null,
               "at": "kit-hosted.beh:222",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-COMMIT-2",
@@ -5955,7 +6022,8 @@
               "asks": null,
               "at": "kit-hosted.beh:236",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-COMMIT-3",
@@ -6047,7 +6115,8 @@
               "asks": null,
               "at": "kit-hosted.beh:250",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-COMMIT-4",
@@ -6146,7 +6215,8 @@
               "asks": null,
               "at": "kit-hosted.beh:262",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-GATE-H1",
@@ -6231,7 +6301,8 @@
               "asks": null,
               "at": "kit-hosted.beh:283",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             },
             {
               "id": "BEH-GATE-H2",
@@ -6330,7 +6401,8 @@
               "asks": null,
               "at": "kit-hosted.beh:295",
               "pending": false,
-              "layer": "technical"
+              "layer": "technical",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -7225,7 +7297,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "kit-hosted"
         }
       }
     },
@@ -7303,7 +7377,8 @@
               "asks": null,
               "at": "kit-ui.beh:62",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SHEET-1",
@@ -7372,7 +7447,8 @@
               "asks": null,
               "at": "kit-ui.beh:69",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-PAIR-1",
@@ -7443,7 +7519,8 @@
               "asks": null,
               "at": "kit-ui.beh:77",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ADJ-1",
@@ -7533,7 +7610,8 @@
               "asks": null,
               "at": "kit-ui.beh:87",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ADJ-2",
@@ -7620,7 +7698,8 @@
               "asks": null,
               "at": "kit-ui.beh:97",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STEP-1",
@@ -7684,7 +7763,8 @@
               "asks": null,
               "at": "kit-ui.beh:106",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -8200,7 +8280,9 @@
               "page:KitProjects",
               "region:KitMain"
             ]
-          }
+          },
+          "features": [],
+          "project": "kit-ui"
         }
       }
     },
@@ -8301,7 +8383,8 @@
               "asks": null,
               "at": "language-vocab.beh:29",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DRILL-ENZH",
@@ -8376,7 +8459,8 @@
               "asks": null,
               "at": "language-vocab.beh:38",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CHAR-1",
@@ -8428,7 +8512,8 @@
               "asks": null,
               "at": "language-vocab.beh:49",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TONE-1",
@@ -8487,7 +8572,8 @@
               "asks": null,
               "at": "language-vocab.beh:56",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TONE-2",
@@ -8557,7 +8643,8 @@
               "asks": null,
               "at": "language-vocab.beh:64",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-NORMALISE-1",
@@ -8599,7 +8686,8 @@
               "asks": null,
               "at": "language-vocab.beh:73",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-AUDIO-1",
@@ -8651,7 +8739,8 @@
               "asks": null,
               "at": "language-vocab.beh:80",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-POOL-MVP",
@@ -8679,7 +8768,8 @@
               "asks": null,
               "at": "language-vocab.beh:87",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STRENGTH-MVP",
@@ -8707,7 +8797,8 @@
               "asks": null,
               "at": "language-vocab.beh:95",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STATS-1",
@@ -8776,7 +8867,8 @@
               "asks": null,
               "at": "language-vocab.beh:101",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CARD-1",
@@ -8853,7 +8945,8 @@
               "asks": null,
               "at": "language-vocab.beh:109",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SEEDDATA-1",
@@ -8888,7 +8981,8 @@
               "asks": null,
               "at": "language-vocab.beh:118",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GRADE-1",
@@ -8916,7 +9010,8 @@
               "asks": null,
               "at": "language-vocab.beh:132",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GRADE-2",
@@ -8944,7 +9039,8 @@
               "asks": null,
               "at": "language-vocab.beh:138",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GRADE-3",
@@ -8964,7 +9060,8 @@
               "asks": null,
               "at": "language-vocab.beh:144",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-GRADE-4",
@@ -8992,7 +9089,8 @@
               "asks": null,
               "at": "language-vocab.beh:149",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-STRENGTH-1",
@@ -9012,7 +9110,8 @@
               "asks": null,
               "at": "language-vocab.beh:155",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-WEIGHT-1",
@@ -9040,7 +9139,8 @@
               "asks": null,
               "at": "language-vocab.beh:160",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UNLOCK-1",
@@ -9068,7 +9168,8 @@
               "asks": null,
               "at": "language-vocab.beh:166",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-BOOTSTRAP-1",
@@ -9103,7 +9204,8 @@
               "asks": null,
               "at": "language-vocab.beh:172",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UNLOCK-2",
@@ -9123,7 +9225,8 @@
               "asks": null,
               "at": "language-vocab.beh:179",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SEED-1",
@@ -9151,7 +9254,8 @@
               "asks": null,
               "at": "language-vocab.beh:184",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SEED-2",
@@ -9171,7 +9275,8 @@
               "asks": null,
               "at": "language-vocab.beh:190",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SEED-3",
@@ -9199,7 +9304,8 @@
               "asks": null,
               "at": "language-vocab.beh:195",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-LANG-1",
@@ -9234,7 +9340,8 @@
               "asks": "DESIGN.md defers other languages but promises the data model is language-tagged from day one. It got more than a column: `language` is a required parameter on all three IPoolService methods, so every drill route in PR 4 has to carry it too. Is language a PARAMETER, or a setting the app is configured with?",
               "at": "language-vocab.beh:214",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-ITEMTYPE-1",
@@ -9262,7 +9369,8 @@
               "asks": "The string `Sentence` occurs exactly twice in this repo: the enum member, and the DESIGN.md line reserving it. No seed entry sets a type, no route exposes one, the frontend has no such field. Does the reservation stay, or does the type arrive with sentence mode?",
               "at": "language-vocab.beh:225",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DETERMINISM-1",
@@ -9290,7 +9398,8 @@
               "asks": "SelectNextAsync takes a required `int seed` and NOTHING calls it outside the tests — the drill API is PR 4 and does not exist. So where the seed comes from in production has never been decided, and it is a user-visible choice, not an implementation detail. Which is it: the client sends a seed, or the server makes one?",
               "at": "language-vocab.beh:235",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -10533,7 +10642,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "language-vocab"
         }
       }
     },
@@ -10604,7 +10715,8 @@
               "asks": null,
               "at": "longlist.beh:31",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CAPTURE-2",
@@ -10685,7 +10797,8 @@
               "asks": null,
               "at": "longlist.beh:38",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CAPTURE-3",
@@ -10718,7 +10831,8 @@
               "asks": null,
               "at": "longlist.beh:46",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CAPTURE-4",
@@ -10775,7 +10889,8 @@
               "asks": null,
               "at": "longlist.beh:52",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DECIDE-1",
@@ -10856,7 +10971,8 @@
               "asks": null,
               "at": "longlist.beh:62",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DECIDE-2",
@@ -10925,7 +11041,8 @@
               "asks": null,
               "at": "longlist.beh:71",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DECIDE-3",
@@ -11006,7 +11123,8 @@
               "asks": null,
               "at": "longlist.beh:79",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-AGE-1",
@@ -11063,7 +11181,8 @@
               "asks": null,
               "at": "longlist.beh:91",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -12049,7 +12168,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "longlist"
         }
       }
     },
@@ -12146,7 +12267,8 @@
               "asks": null,
               "at": "macro-metrics.beh:36",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-NAV-1",
@@ -12215,7 +12337,8 @@
               "asks": null,
               "at": "macro-metrics.beh:48",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-PICK-0",
@@ -12264,7 +12387,8 @@
               "asks": null,
               "at": "macro-metrics.beh:58",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-PICK-1",
@@ -12337,7 +12461,8 @@
               "asks": null,
               "at": "macro-metrics.beh:64",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-PICK-2",
@@ -12441,7 +12566,8 @@
               "asks": null,
               "at": "macro-metrics.beh:72",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-SWAP-1",
@@ -12510,7 +12636,8 @@
               "asks": null,
               "at": "macro-metrics.beh:83",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-METRICS-1",
@@ -12530,7 +12657,8 @@
               "asks": null,
               "at": "macro-metrics.beh:95",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-ERR-1",
@@ -12610,7 +12738,8 @@
               "asks": null,
               "at": "macro-metrics.beh:102",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-IND-ERR-1",
@@ -12671,7 +12800,8 @@
               "asks": null,
               "at": "macro-metrics.beh:113",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MM-ISOLATION-1",
@@ -12755,7 +12885,8 @@
               "asks": null,
               "at": "macro-metrics.beh:123",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -13472,7 +13603,9 @@
               "region:Indicators",
               "region:Presets"
             ]
-          }
+          },
+          "features": [],
+          "project": "macro-metrics"
         }
       }
     },
@@ -13531,7 +13664,8 @@
               "asks": null,
               "at": "snip-it.beh:11",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-EDIT-1",
@@ -13628,7 +13762,8 @@
               "asks": null,
               "at": "snip-it.beh:16",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-EDIT-2",
@@ -13697,7 +13832,8 @@
               "asks": null,
               "at": "snip-it.beh:25",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-CUT-1",
@@ -13822,7 +13958,8 @@
               "asks": null,
               "at": "snip-it.beh:32",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UP-1",
@@ -13940,7 +14077,8 @@
               "asks": null,
               "at": "snip-it.beh:45",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-FILL-1",
@@ -14009,7 +14147,8 @@
               "asks": null,
               "at": "snip-it.beh:56",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-UP-2",
@@ -14058,7 +14197,8 @@
               "asks": null,
               "at": "snip-it.beh:70",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-EDIT-0",
@@ -14078,7 +14218,8 @@
               "asks": null,
               "at": "snip-it.beh:79",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -14686,7 +14827,9 @@
               "region:Main",
               "transcription:Completed"
             ]
-          }
+          },
+          "features": [],
+          "project": "snip-it"
         }
       }
     },
@@ -14769,7 +14912,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:49",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SETUP-2",
@@ -14861,7 +15005,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:57",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SETUP-3",
@@ -14894,7 +15039,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:66",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-1",
@@ -14939,7 +15085,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:75",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-2",
@@ -14996,7 +15143,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:81",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-3",
@@ -15072,7 +15220,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:88",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-4",
@@ -15129,7 +15278,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:97",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-5",
@@ -15204,7 +15354,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:104",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-6",
@@ -15249,7 +15400,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:112",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DERIVE-1",
@@ -15310,7 +15462,8 @@
               "asks": null,
               "at": "trial-habits-a.beh:121",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -16290,7 +16443,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "trial-habits-a"
         }
       }
     },
@@ -16349,7 +16504,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:50",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-2",
@@ -16394,7 +16550,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:56",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-TODAY-3",
@@ -16463,7 +16620,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:62",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-MEALS-1",
@@ -16520,7 +16678,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:84",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-BREAKFAST-1",
@@ -16565,7 +16724,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:91",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-RUN-1",
@@ -16641,7 +16801,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:97",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SLEEP-1",
@@ -16693,7 +16854,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:109",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SLEEP-2",
@@ -16761,7 +16923,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:116",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SLEEP-3",
@@ -16794,7 +16957,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:123",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DRINKS-1",
@@ -16862,7 +17026,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:129",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-DRINKS-2",
@@ -16895,7 +17060,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:136",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-HISTORY-1",
@@ -16964,7 +17130,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:153",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-HISTORY-2",
@@ -17021,7 +17188,8 @@
               "asks": null,
               "at": "trial-habits-b.beh:161",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -18020,7 +18188,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "trial-habits-b"
         }
       }
     },
@@ -18091,7 +18261,8 @@
               "asks": null,
               "at": "trial-lend.beh:33",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SHELF-2",
@@ -18148,7 +18319,8 @@
               "asks": null,
               "at": "trial-lend.beh:40",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-SHELF-3",
@@ -18205,7 +18377,8 @@
               "asks": null,
               "at": "trial-lend.beh:47",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-LEND-1",
@@ -18286,7 +18459,8 @@
               "asks": null,
               "at": "trial-lend.beh:57",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-LEND-2",
@@ -18380,7 +18554,8 @@
               "asks": null,
               "at": "trial-lend.beh:66",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-LEND-3",
@@ -18413,7 +18588,8 @@
               "asks": null,
               "at": "trial-lend.beh:75",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-RETURN-1",
@@ -18482,7 +18658,8 @@
               "asks": null,
               "at": "trial-lend.beh:84",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             },
             {
               "id": "BEH-RETURN-2",
@@ -18539,7 +18716,8 @@
               "asks": null,
               "at": "trial-lend.beh:96",
               "pending": false,
-              "layer": "ux"
+              "layer": "ux",
+              "in": []
             }
           ],
           "conflicts": [],
@@ -19487,7 +19665,9 @@
             ],
             "insufficient": [],
             "satisfied": []
-          }
+          },
+          "features": [],
+          "project": "trial-lend"
         }
       }
     },

@@ -22,6 +22,7 @@ function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
     pending: false,
     layer: 'ui',
     at: 'x.beh:1',
+    in: [],
     ...over,
   }
 }
@@ -112,6 +113,28 @@ describe('Board', () => {
     expect(link).toHaveAttribute('href', '/projects/alpha/behaviours/A-BACKLOG')
     expect(column('Backlog').getByText('title of A-BACKLOG')).toBeInTheDocument()
     expect(column('Backlog').getByText('alpha')).toBeInTheDocument()
+  })
+
+  it('colours and filters by project, so files naming one # kit:project share a button and a colour', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) => {
+        const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
+        const body = app
+          ? { app, behaviours: details[app] }
+          : { projects: [{ app: 'alpha', project: 'one' }, { app: 'beta', project: 'one' }] }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => body }
+      }),
+    )
+    renderBoard()
+    await loaded()
+
+    expect(await screen.findByRole('button', { name: 'Filter to one' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Filter to alpha' })).not.toBeInTheDocument()
+    const a = column('Done').getByText('one · alpha').closest('.board-card')!
+    const b = column('Done').getByText('one · beta').closest('.board-card')!
+    expect(a.className).toContain(`hue-${hueOf('one')}`)
+    expect(b.className).toContain(`hue-${hueOf('one')}`)
   })
 
   it('names a corpus that will not parse, not drops it', async () => {

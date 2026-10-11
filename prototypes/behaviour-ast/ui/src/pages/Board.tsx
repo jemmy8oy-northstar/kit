@@ -4,7 +4,7 @@ import { ApiError, fetchProject, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
-import { columnOf, hueOf, isTrial, type Column } from '../board'
+import { columnOf, hueOf, isTrial, projectOf, type Column } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -75,28 +75,28 @@ export default function Board() {
           const shown = all.filter(
             (e) =>
               (showTrials || !isTrial(e.summary)) &&
-              (selected.length === 0 || selected.includes(e.summary.app)),
+              (selected.length === 0 || selected.includes(projectOf(e.summary))),
           )
+          // One button per project, not per file: files naming one `# kit:project` share it (kit#237).
+          const projects = [...new Set(all.filter((e) => showTrials || !isTrial(e.summary)).map((e) => projectOf(e.summary)))]
           const failed = shown.filter((e) => e.error)
           return (
             <>
               <div className="board-controls">
-                {all
-                  .filter((e) => showTrials || !isTrial(e.summary))
-                  .map((e) => (
-                    <Button
-                      key={e.summary.app}
-                      type="button"
-                      size="sm"
-                      variant={selected.includes(e.summary.app) ? 'secondary' : 'ghost'}
-                      aria-pressed={selected.includes(e.summary.app)}
-                      aria-label={`Filter to ${e.summary.app}`}
-                      onClick={() => toggle(e.summary.app)}
-                    >
-                      <span className={`dot hue-${hueOf(e.summary.app)}`} aria-hidden="true" />
-                      {e.summary.app}
-                    </Button>
-                  ))}
+                {projects.map((p) => (
+                  <Button
+                    key={p}
+                    type="button"
+                    size="sm"
+                    variant={selected.includes(p) ? 'secondary' : 'ghost'}
+                    aria-pressed={selected.includes(p)}
+                    aria-label={`Filter to ${p}`}
+                    onClick={() => toggle(p)}
+                  >
+                    <span className={`dot hue-${hueOf(p)}`} aria-hidden="true" />
+                    {p}
+                  </Button>
+                ))}
                 <Button
                   type="button"
                   size="sm"
@@ -121,7 +121,7 @@ export default function Board() {
                   const cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b) === col.id)
-                      .map((b) => ({ app: e.summary.app, b })),
+                      .map((b) => ({ app: e.summary.app, project: projectOf(e.summary), b })),
                   )
                   return (
                     <section key={col.id} aria-labelledby={`board-${col.id}`}>
@@ -129,9 +129,9 @@ export default function Board() {
                         <span id={`board-${col.id}`}>{col.title}</span> <span className="board-count">{cards.length}</span>
                       </h2>
                       <ul className="cards">
-                        {cards.map(({ app, b }) => (
+                        {cards.map(({ app, project, b }) => (
                           <li key={`${app}/${b.id}`}>
-                            <Card className={`board-card hue-${hueOf(app)}`}>
+                            <Card className={`board-card hue-${hueOf(project)}`}>
                               <h3>
                                 <Link
                                   to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}
@@ -140,7 +140,7 @@ export default function Board() {
                                 </Link>
                               </h3>
                               <p>{b.title}</p>
-                              <p className="muted">{app}</p>
+                              <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                             </Card>
                           </li>
                         ))}

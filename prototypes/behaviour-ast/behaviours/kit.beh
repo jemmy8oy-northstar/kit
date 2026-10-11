@@ -1,5 +1,10 @@
 # Kit, described in Kit's own notation.
 #
+# kit:project kit
+#   kit#237: Kit is one project. This file is its command line; Kit shows the three files
+#   as one project, each file one of its top-level features, while check and report
+#   still read each file on its own.
+#
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. That study asks whether the glue binding a spec to a UI saturates as
@@ -99,6 +104,17 @@ behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped
   then raises error:UnrecognisedKeyword
   contract a spec language that ignores what it does not understand is how a
   contract spec becomes descriptive
+
+behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error naming its line"
+  source defined kit#237
+  actor engineer
+  given corpus:BadFeatureTags
+  when runs command:KitParse
+  then raises error:BadFeatureTag
+  contract three refusals: an `in` naming no feature in the project, a feature that is its own ancestor,
+  contract and a feature id declared twice; silence on any of them leaves a behaviour drawn nowhere
+  contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
+  contract card on a page can never change what Kit refuses to delete
 
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
   actor engineer

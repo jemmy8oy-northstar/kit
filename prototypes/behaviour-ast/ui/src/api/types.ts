@@ -73,6 +73,11 @@ export interface ProjectSummary {
   conflicts?: number
   coverage?: SummaryCoverage
   unreviewed?: number
+  /**
+   * The project this corpus is shown under (kit#237): its `# kit:project` directive, or its
+   * own name. Files sharing one are one project. Absent on an error row.
+   */
+  project?: string
 }
 
 export interface StepRef {
@@ -103,6 +108,16 @@ export interface Behaviour {
   /** The layer the behaviour belongs to, as the server derives it. */
   layer: string
   /** `<corpus>.beh:<line>` — where a human goes to edit it. */
+  at: string
+  /** The features it is tagged into, one per `in` line (kit#237); empty when untagged. */
+  in: string[]
+}
+
+/** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */
+export interface Feature {
+  id: string
+  title: string
+  in: string[]
   at: string
 }
 
@@ -193,6 +208,10 @@ export interface ProjectDetail {
   surface: { errors: string[]; served: string[]; unserved: string[] }
   questions: Question[]
   requires: Requires
+  /** Empty for a corpus that declares no features — it is then shown as a flat list, as before. */
+  features: Feature[]
+  /** See `ProjectSummary.project`. */
+  project: string
 }
 
 /**

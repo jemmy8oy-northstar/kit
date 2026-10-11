@@ -43,6 +43,13 @@ public sealed class ProjectView : IProjectView
     [JsonPropertyOrder(12)]
     public required RequiresView Requires { get; init; }
 
+    // kit#237. Last, so every key already served keeps its place; empty when none are declared.
+    [JsonPropertyOrder(13)]
+    public required List<FeatureView> Features { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required string Project { get; init; }
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;
@@ -58,4 +65,6 @@ public sealed class ProjectView : IProjectView
     IReadOnlyList<IQuestion> IProjectView.Questions => Questions.Cast<IQuestion>().ToList();
 
     IRequiresView IProjectView.Requires => Requires;
+
+    IReadOnlyList<IFeatureView> IProjectView.Features => Features;
 }

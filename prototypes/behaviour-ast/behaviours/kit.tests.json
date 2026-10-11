@@ -44,6 +44,16 @@
       "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped"
     }
   ],
+  "BEH-PARSE-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
+      "title": "A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
+      "title": "A_malformed_feature_or_tag_line_is_refused"
+    }
+  ],
   "BEH-RESOLVE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",

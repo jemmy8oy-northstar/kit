@@ -26,4 +26,7 @@ public interface IBehaviourView
     bool Pending { get; }
 
     string Layer { get; }
+
+    /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>
+    IReadOnlyList<string> In { get; }
 }

@@ -128,5 +128,28 @@
   },
   "page:KitBoard": {
     "route": "/board"
+  },
+  "page:KitFeature": {
+    "route": "/projects/:app/features/:id"
+  },
+  "region:KitProjectFeatures": {
+    "role": "region",
+    "name": "Features"
+  },
+  "region:KitFeatureChildren": {
+    "role": "region",
+    "name": "Contents"
+  },
+  "region:KitFeatureParents": {
+    "role": "region",
+    "name": "In"
+  },
+  "region:KitBreadcrumb": {
+    "role": "navigation",
+    "name": "Breadcrumb"
+  },
+  "region:KitProjectList": {
+    "role": "list",
+    "name": "Project list"
   }
 }
