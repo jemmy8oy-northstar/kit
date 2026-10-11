@@ -6,6 +6,7 @@ import type { ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
+import { byProject } from '../features'
 
 /** Step 1 of his loop: see the projects Kit knows about. */
 export default function Projects() {
@@ -22,12 +23,19 @@ export default function Projects() {
 
       <ResourceView resource={projects}>
         {({ projects: rows }) => (
-          <ul className="cards">
-            {rows.map((p) => (
-              <li key={p.app}>
-                <ProjectRow project={p} />
-              </li>
-            ))}
+          <ul className="cards" aria-label="Project list">
+            {byProject(rows).map((g) =>
+              // BEH-FEAT-4: one file that is its own project reads as it always did.
+              g.files.length === 1 && g.files[0].app === g.project ? (
+                <li key={g.project}>
+                  <ProjectRow project={g.files[0]} />
+                </li>
+              ) : (
+                <li key={g.project}>
+                  <ProjectGroup project={g.project} files={g.files} />
+                </li>
+              ),
+            )}
           </ul>
         )}
       </ResourceView>
@@ -35,14 +43,40 @@ export default function Projects() {
   )
 }
 
-function ProjectRow({ project }: { project: ProjectSummary }) {
+/**
+ * Files that name one project with `# kit:project` (kit#237): one card, and each file is one of
+ * its top-level features. The files stay separate underneath, so each keeps its own counts.
+ */
+function ProjectGroup({ project, files }: { project: string; files: ProjectSummary[] }) {
+  const total = files.reduce((n, f) => n + (f.behaviours ?? 0), 0)
+  return (
+    <Card elevation="flat">
+      <h2>{project}</h2>
+      <div className="badges">
+        <Count n={total} one="behaviour" tone="primary" />
+        <Count n={files.length} one="file" />
+      </div>
+      <ul className="cards">
+        {files.map((p) => (
+          <li key={p.app}>
+            <ProjectRow project={p} nested />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+function ProjectRow({ project, nested = false }: { project: ProjectSummary; nested?: boolean }) {
+  // Inside a project group the group has the h2, so each file is a level below it.
+  const H = nested ? 'h3' : 'h2'
   // A corpus that will not parse is a state of the world, not a project with
   // nothing in it. ui.js reports it as an error and the row says so, rather
   // than showing a plausible-looking "0 behaviours".
   if (project.error) {
     return (
       <Card elevation="flat">
-        <h2>{project.app}</h2>
+        <H>{project.app}</H>
         <Badge tone="danger">corpus will not parse</Badge>
         <p role="alert">{project.error}</p>
       </Card>
@@ -51,9 +85,9 @@ function ProjectRow({ project }: { project: ProjectSummary }) {
 
   return (
     <Card interactive>
-      <h2>
+      <H>
         <Link to={`/projects/${encodeURIComponent(project.app)}`}>{project.app}</Link>
-      </h2>
+      </H>
       <p className="muted">{project.corpus}</p>
       <div className="badges">
         {/* A trial corpus describes an app that does not exist. It belongs in

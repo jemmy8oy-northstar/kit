@@ -39,6 +39,9 @@ public interface IBehaviour
     /// <summary>The layer whose tests prove it (kit#89): <c>ux</c>, <c>technical</c> or <c>ui</c>.</summary>
     string Layer { get; }
 
+    /// <summary>The features it is tagged into, one per <c>in</c> line (kit#237); empty when untagged.</summary>
+    IReadOnlyList<IIdRef> In { get; }
+
     bool? ReviewExplicit { get; }
 
     /// <summary>Holes another behaviour filled. Null until <c>resolve</c> has run.</summary>

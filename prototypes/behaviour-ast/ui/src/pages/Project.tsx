@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import { addBehaviour, fetchProject } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Conflict, ProjectDetail, Question } from '../api/types'
+import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
+import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
@@ -31,6 +32,7 @@ export default function Project() {
 
 function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => void }) {
   const unreviewed = new Set(project.adjudication.unreviewed)
+  const top = topLevel(project)
 
   return (
     <>
@@ -63,10 +65,21 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
 
       <QuestionSheet app={project.app} questions={project.questions} />
 
+      {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
+          features has no section here and lists every behaviour, as it always did. */}
+      {top.features.length > 0 && (
+        <section aria-label="Features">
+          <FeatureCards app={project.app} project={project} features={top.features} path={[]} />
+        </section>
+      )}
+
       <section>
-        <h2>Behaviours</h2>
+        {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
+        {(top.features.length === 0 || top.behaviours.length > 0) && (
+          <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+        )}
         <ul className="cards">
-          {project.behaviours.map((b) => (
+          {top.behaviours.map((b) => (
             <li key={b.id}>
               <BehaviourRow app={project.app} behaviour={b} unreviewed={unreviewed.has(b.id)} />
             </li>
@@ -288,7 +301,45 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
   )
 }
 
-function BehaviourRow({
+/**
+ * Feature cards (BEH-FEAT-1/2): a title, and how many behaviours sit anywhere beneath it, each
+ * counted once. `path` is how the reader got here, carried into the link for the crumbs.
+ */
+export function FeatureCards({
+  app,
+  project,
+  features,
+  path,
+}: {
+  app: string
+  project: Tagged
+  features: Feature[]
+  path: string[]
+}) {
+  if (!features.length) return null
+  return (
+    <>
+      <h2>Features</h2>
+      <ul className="cards">
+        {features.map((f) => (
+          <li key={f.id}>
+            <Card interactive>
+              <h3>
+                <Link to={featureHref(app, f.id, path)}>{f.title}</Link>
+              </h3>
+              <div className="badges">
+                <Count n={behavioursUnder(project, f.id).size} one="behaviour" tone="primary" />
+                <Badge tone="neutral">{f.id}</Badge>
+              </div>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+export function BehaviourRow({
   app,
   behaviour,
   unreviewed,

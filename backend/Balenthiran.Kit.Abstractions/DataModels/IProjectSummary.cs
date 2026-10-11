@@ -18,4 +18,10 @@ public interface IProjectSummary
     ICoverageSummary Coverage { get; }
 
     int Unreviewed { get; }
+
+    /// <summary>
+    /// The project this corpus is shown under (kit#237): its <c># kit:project</c> directive, or
+    /// its own name when it has none. Files sharing one are one project.
+    /// </summary>
+    string Project { get; }
 }

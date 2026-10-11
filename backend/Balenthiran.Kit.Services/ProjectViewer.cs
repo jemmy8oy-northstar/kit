@@ -63,8 +63,8 @@ public sealed class ProjectViewer(
     private ProjectView Project(string app)
     {
         var src = corpora.Read(app);
-        var parsed = parser.Parse(src, $"{app}.beh");
-        var resolution = resolver.Resolve(parsed);
+        var corpus = parser.ParseCorpus(src, $"{app}.beh");
+        var resolution = resolver.Resolve(corpus.Behaviours);
         var behaviours = resolution.Behaviours.Cast<Behaviour>().ToList();
         if (behaviours.Count == 0)
         {
@@ -112,6 +112,9 @@ public sealed class ProjectViewer(
                 Review = b.Review,
                 Asks = b.Asks,
                 At = b.At,
+                Pending = b.Pending,
+                Layer = b.Layer,
+                In = (b.In ?? []).Select(t => t.Id).ToList(),
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,
@@ -126,6 +129,9 @@ public sealed class ProjectViewer(
                 Insufficient = report.Requires.Insufficient.Select(Decorate).ToList(),
                 Satisfied = report.Requires.Satisfied,
             },
+            Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At }).ToList(),
+            // kit#237: files naming the same project are shown as one; no directive, its own.
+            Project = corpus.Project ?? app,
         };
     }
 
@@ -152,6 +158,7 @@ public sealed class ProjectViewer(
             Conflicts = p.Conflicts.Count,
             Coverage = new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = p.Coverage.Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
+            Project = p.Project,
         };
     }
 
