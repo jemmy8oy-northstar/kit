@@ -201,16 +201,20 @@ behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anyth
   contract a behaviour can be the target of `serves` or `cites` from another one, so
   contract deleting it silently is how a corpus acquires a dangling reference
 
-behaviour BEH-ACT-4 "Edits are held until Commit, so a half-described change never reaches a branch"
+# Reworded 2026-10-10 to the flow that shipped (claude-code-bot#105 spec audit). It
+# first said edits were HELD until Commit; what was built pushes each edit to the
+# edits branch as it is made — the "write each edit straight through" option this
+# block used to weigh, which is the only one a pod with no volume can keep. The
+# property his sentence wanted survives: nothing reaches dev until Commit's pull
+# request is merged.
+behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and reaches dev only through Commit"
   source inferred kit#88
   actor engineer
   when opens page:KitHostedProject
   then sees button:KitHostedCommit
-  asks "Does a hosted edit write to GitHub immediately, or accumulate until Commit?"
-  option "Accumulate until Commit" "the Commit button is the only thing that talks to GitHub; a change spanning three behaviours lands as one commit, and abandoning it costs nothing"
-  option "Write each edit straight through" "no server-side state at all, and the pod can die mid-change without losing anything; but every keystroke-level save is a commit, and a spec described over five edits arrives as five red branches"
-  recommend "Accumulate until Commit" "your own sentence puts Commit at the end of a list of edits — 'add new behaviours, update behaviours, remove behaviours etc and then can Commit' — which reads as a staging step. And a change is usually more than one behaviour: BEH-PULL-2 and BEH-PULL-3 above are one decision of yours described twice."
-  against "Accumulating means the pod holds unsaved work, and you said there is no volume for it — a restart between your last edit and Commit loses the lot. Writing straight through cannot lose anything, and five small PRs are annoying rather than dangerous."
+  contract every write is committed and pushed to kit/hosted at once, so a pod restart between edits loses nothing
+  contract no edit is ever committed onto dev; Commit proposes kit/hosted to dev as ONE pull request
+  contract a change described over several edits arrives as several commits in that one pull request, not as several branches
 
 
 # ═══ Commit ═══════════════════════════════════════════════════════════════════
