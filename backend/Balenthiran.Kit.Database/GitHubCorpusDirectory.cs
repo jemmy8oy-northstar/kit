@@ -28,6 +28,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 {
     private const string Suffix = ".beh";
     private const string BindingsSuffix = ".bindings.json";
+    private const string NotesSuffix = ".notes.md";
 
     private readonly ICorpusSnapshot?[] last = new ICorpusSnapshot?[sources.Count];
     private readonly ConcurrentDictionary<string, Override> overrides = new(StringComparer.Ordinal);
@@ -70,7 +71,8 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
                     }
 
                     snap.Files.TryGetValue(app + BindingsSuffix, out var bindings);
-                    apps[app] = new Entry(snap.Source, file, bindings);
+                    snap.Files.TryGetValue(app + NotesSuffix, out var notes);
+                    apps[app] = new Entry(snap.Source, file, bindings, notes);
                 }
             }
 
@@ -173,6 +175,35 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         overrides[app + BindingsSuffix] = new Override(text, Sha(app + BindingsSuffix));
     }
 
+    /// <inheritdoc />
+    public string? ReadNotesText(string app)
+    {
+        if (overrides.TryGetValue(app + NotesSuffix, out var o))
+        {
+            return o.Text;
+        }
+
+        return served is { } s
+            ? s.Apps.TryGetValue(app, out var e) ? e.Notes?.Text : null
+            : clone.ReadNotesText(app);
+    }
+
+    /// <inheritdoc />
+    public void WriteNotesText(string app, string text)
+    {
+        Writable(app);
+        clone.WriteNotesText(app, text);
+        overrides[app + NotesSuffix] = new Override(text, Sha(app + NotesSuffix));
+    }
+
+    /// <inheritdoc />
+    public string RelativeNotesPath(string app) => served?.Apps.TryGetValue(app, out var e) == true
+        ? $"{e.Source.Path}/{app}{NotesSuffix}"
+        : clone.RelativeNotesPath(app);
+
+    /// <inheritdoc />
+    public string FullNotesPath(string app) => clone.FullNotesPath(app);
+
     // An app read from a repository this pod has no clone of has nowhere to be written; writing
     // into the clone would create a corpus in the WRONG repository and push it there.
     private void Writable(string app)
@@ -192,18 +223,23 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             return null;
         }
 
-        var app = fileName.EndsWith(BindingsSuffix, StringComparison.Ordinal) ? fileName[..^BindingsSuffix.Length] : fileName[..^Suffix.Length];
-        if (!s.Apps.TryGetValue(app, out var e))
+        var suffix = new[] { BindingsSuffix, NotesSuffix, Suffix }.First(x => fileName.EndsWith(x, StringComparison.Ordinal));
+        if (!s.Apps.TryGetValue(fileName[..^suffix.Length], out var e))
         {
             return null;
         }
 
-        return fileName.EndsWith(BindingsSuffix, StringComparison.Ordinal) ? e.Bindings?.Sha : e.Corpus.Sha;
+        return suffix switch
+        {
+            BindingsSuffix => e.Bindings?.Sha,
+            NotesSuffix => e.Notes?.Sha,
+            _ => e.Corpus.Sha,
+        };
     }
 
     private static string Key(IProjectSource s) => $"{s.Owner}/{s.Repository}@{s.Branch}:{s.Path}";
 
-    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings);
+    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes);
 
     private sealed record Served(SortedDictionary<string, Entry> Apps);
 

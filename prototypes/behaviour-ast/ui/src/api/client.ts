@@ -1,6 +1,6 @@
 import type {
-  Binding, BindResult, NewBehaviour, ProjectDetail, ProjectSummary, ProposeResult, ReviewState,
-  SessionState, WriteResult,
+  Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
+  ProposeResult, ReviewState, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -208,6 +208,24 @@ export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
     `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/remove`,
     {},
   )
+}
+
+/** The project's open notes (kit#118), oldest first. */
+export function fetchNotes(app: string): Promise<NoteList> {
+  return get<NoteList>(`/api/projects/${encodeURIComponent(app)}/notes`)
+}
+
+/**
+ * Leave free text on a project, or on one behaviour of it (kit#118). It goes to
+ * `<app>.notes.md` beside the corpus, never into the `.beh`: a note is not a
+ * behaviour, and nothing generates from it. `behaviour` is omitted, not sent
+ * null, when the note is about the project.
+ */
+export function leaveNote(app: string, text: string, behaviour?: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, {
+    text,
+    ...(behaviour ? { behaviour } : {}),
+  })
 }
 
 /**

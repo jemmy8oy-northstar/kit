@@ -42,6 +42,7 @@ import ProposeEdits from './ProposeEdits'
 export default function WriteResultNote({
   result,
   removed = false,
+  subject,
 }: {
   result: AnyWriteResult
   /**
@@ -51,13 +52,15 @@ export default function WriteResultNote({
    * screenshot of the first build, not in a test.
    */
   removed?: boolean
+  /** What was written, when it is not a behaviour or a noun — "a note" (kit#118), whose behaviour may be null. */
+  subject?: string
 }) {
   const bind = 'noun' in result ? result : null
   return (
     <Card elevation="flat">
       <p role="status">
         {removed ? 'Removed' : 'Wrote'}{' '}
-        <strong>{bind ? bind.noun : (result as { behaviour: string }).behaviour}</strong>{' '}
+        <strong>{subject ?? (bind ? bind.noun : (result as { behaviour: string }).behaviour)}</strong>{' '}
         {removed ? 'from' : 'to'} <code>{result.file}</code>.{' '}
         {result.committed
           ? result.pushed

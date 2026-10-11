@@ -12,6 +12,7 @@ import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
 import { useWrite } from '../components/useWrite'
+import NotesPanel from '../components/NotesPanel'
 
 /**
  * Steps 2 and 3 of his loop, on one page, which is the point: "iterating on the
@@ -116,6 +117,8 @@ function Detail({
           />
         </section>
       </div>
+
+      <NotesPanel app={project.app} behaviour={behaviour.id} />
 
       <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
     </>

@@ -83,5 +83,16 @@
   },
   "field:KitCorrection": {
     "label": "Correction (required to deny)"
+  },
+  "field:KitNote": {
+    "label": "Leave a note"
+  },
+  "button:KitLeaveNote": {
+    "role": "button",
+    "name": "Leave note"
+  },
+  "region:KitOpenNotes": {
+    "role": "region",
+    "name": "Notes"
   }
 }
