@@ -266,24 +266,55 @@ pre {
 .hue-10 { --project: hsl(300 60% 45%); }
 .hue-11 { --project: hsl(330 60% 45%); }
 
+/*
+ * On a phone the columns sit side by side and swipe, as a kanban does, rather
+ * than stacking: stacked, the whole Proposed column stood between you and the
+ * backlog. Each column scrolls on its own on a wide screen for the same reason.
+ */
 .board {
   display: grid;
-  gap: var(--space-6);
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 60rem) {
-  .board {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  gap: var(--space-4);
+  grid-auto-flow: column;
+  grid-auto-columns: 85%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
 }
 
 .board > section {
   min-width: 0;
+  scroll-snap-align: start;
 }
 
+@media (min-width: 60rem) {
+  .board {
+    grid-auto-columns: 1fr;
+  }
+
+  .board > section > .cards {
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+}
+
+.board-count {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* Compact: id and title only, so a column shows a dozen cards, not three. */
 .board-card {
   border-left: 0.35rem solid var(--project);
+  padding: var(--space-2) var(--space-3);
+}
+
+.board-card h3,
+.board-card p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.board-card .muted {
+  font-size: var(--text-xs, var(--text-sm));
 }
 
 .board-controls {

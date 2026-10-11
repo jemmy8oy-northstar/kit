@@ -57,7 +57,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:27"
+      "at": "james-habits-app.beh:27",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-2",
@@ -124,7 +126,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:34"
+      "at": "james-habits-app.beh:34",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-3",
@@ -202,7 +206,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:42"
+      "at": "james-habits-app.beh:42",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-TODAY-4",
@@ -257,7 +263,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:50"
+      "at": "james-habits-app.beh:50",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-MANAGE-1",
@@ -312,7 +320,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:57"
+      "at": "james-habits-app.beh:57",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-HISTORY-1",
@@ -379,7 +389,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:64"
+      "at": "james-habits-app.beh:64",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-LOOP-1",
@@ -405,7 +417,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:76"
+      "at": "james-habits-app.beh:76",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-DATE-1",
@@ -431,7 +445,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:83"
+      "at": "james-habits-app.beh:83",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-SEED-1",
@@ -481,7 +497,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:96"
+      "at": "james-habits-app.beh:96",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ORDER-1",
@@ -507,7 +525,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:105"
+      "at": "james-habits-app.beh:105",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ARCHIVE-1",
@@ -547,7 +567,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:112"
+      "at": "james-habits-app.beh:112",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ARCHIVE-2",
@@ -573,7 +595,9 @@
         "note": null
       },
       "asks": "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?",
-      "at": "james-habits-app.beh:126"
+      "at": "james-habits-app.beh:126",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-STREAK-1",
@@ -635,7 +659,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:137"
+      "at": "james-habits-app.beh:137",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-STREAK-2",
@@ -661,7 +687,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:148"
+      "at": "james-habits-app.beh:148",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-STREAK-3",
@@ -687,7 +715,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:155"
+      "at": "james-habits-app.beh:155",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ENTRY-1",
@@ -713,7 +743,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:162"
+      "at": "james-habits-app.beh:162",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-HISTORY-2",
@@ -739,7 +771,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:177"
+      "at": "james-habits-app.beh:177",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-HISTORY-3",
@@ -765,7 +799,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:182"
+      "at": "james-habits-app.beh:182",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-REORDER-1",
@@ -791,7 +827,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:189"
+      "at": "james-habits-app.beh:189",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-ERROR-1",
@@ -831,7 +869,9 @@
         "note": null
       },
       "asks": "Nothing documented displays an error. Should DESIGN.md gain an error state the frontend renders these into, or should the machine-readable code go and a status code be the whole contract?",
-      "at": "james-habits-app.beh:203"
+      "at": "james-habits-app.beh:203",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-COMPLETE-1",
@@ -871,7 +911,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:224"
+      "at": "james-habits-app.beh:224",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-WINDOW-MVP",
@@ -889,7 +931,9 @@
         "note": null
       },
       "asks": null,
-      "at": "james-habits-app.beh:252"
+      "at": "james-habits-app.beh:252",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-WINDOW-API",
@@ -907,7 +951,9 @@
         "note": null
       },
       "asks": "The two sides only contradict each other on paper — the route is caller-supplied DEFAULTING to 30, which satisfies both. The real collision underneath is the NAME: DESIGN.md documents ?days=30, the route binds ?historyDays. Which one is the contract the frontend gets built against?",
-      "at": "james-habits-app.beh:257"
+      "at": "james-habits-app.beh:257",
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "conflicts": [

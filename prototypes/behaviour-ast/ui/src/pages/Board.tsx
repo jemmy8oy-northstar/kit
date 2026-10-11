@@ -87,7 +87,8 @@ export default function Board() {
                     <Button
                       key={e.summary.app}
                       type="button"
-                      variant="secondary"
+                      size="sm"
+                      variant={selected.includes(e.summary.app) ? 'secondary' : 'ghost'}
                       aria-pressed={selected.includes(e.summary.app)}
                       aria-label={`Filter to ${e.summary.app}`}
                       onClick={() => toggle(e.summary.app)}
@@ -98,7 +99,8 @@ export default function Board() {
                   ))}
                 <Button
                   type="button"
-                  variant="secondary"
+                  size="sm"
+                  variant={showTrials ? 'secondary' : 'ghost'}
                   aria-pressed={showTrials}
                   onClick={() => update({ trials: !showTrials })}
                 >
@@ -123,7 +125,9 @@ export default function Board() {
                   )
                   return (
                     <section key={col.id} aria-labelledby={`board-${col.id}`}>
-                      <h2 id={`board-${col.id}`}>{col.title}</h2>
+                      <h2>
+                        <span id={`board-${col.id}`}>{col.title}</span> <span className="board-count">{cards.length}</span>
+                      </h2>
                       <ul className="cards">
                         {cards.map(({ app, b }) => (
                           <li key={`${app}/${b.id}`}>

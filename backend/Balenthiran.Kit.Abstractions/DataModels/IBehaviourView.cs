@@ -22,4 +22,8 @@ public interface IBehaviourView
     string? Asks { get; }
 
     string At { get; }
+
+    bool Pending { get; }
+
+    string Layer { get; }
 }

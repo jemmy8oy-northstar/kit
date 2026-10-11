@@ -104,9 +104,6 @@
     "name": "Board",
     "exact": true
   },
-  "page:KitBoard": {
-    "route": "/board"
-  },
   "region:KitBoardProposed": {
     "role": "region",
     "name": "Proposed"
@@ -119,8 +116,17 @@
     "role": "region",
     "name": "Done"
   },
-  "button:KitBoardFilterProject": {
+  "heading:KitBoardTitle": {
+    "role": "heading",
+    "name": "Board",
+    "exact": true
+  },
+  "button:KitBoardShowTrials": {
     "role": "button",
-    "name": "Filter to"
+    "name": "Show trials",
+    "exact": true
+  },
+  "page:KitBoard": {
+    "route": "/board"
   }
 }
