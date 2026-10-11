@@ -112,6 +112,8 @@ public sealed class ProjectViewer(
                 Review = b.Review,
                 Asks = b.Asks,
                 At = b.At,
+                Pending = b.Pending,
+                Layer = b.Layer,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,

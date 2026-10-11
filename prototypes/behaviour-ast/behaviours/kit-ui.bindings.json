@@ -94,5 +94,39 @@
   "region:KitOpenNotes": {
     "role": "region",
     "name": "Notes"
+  },
+  "region:KitNav": {
+    "role": "navigation",
+    "name": "Main"
+  },
+  "link:KitNavBoard": {
+    "role": "link",
+    "name": "Board",
+    "exact": true
+  },
+  "region:KitBoardProposed": {
+    "role": "region",
+    "name": "Proposed"
+  },
+  "region:KitBoardBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "region:KitBoardDone": {
+    "role": "region",
+    "name": "Done"
+  },
+  "heading:KitBoardTitle": {
+    "role": "heading",
+    "name": "Board",
+    "exact": true
+  },
+  "button:KitBoardShowTrials": {
+    "role": "button",
+    "name": "Show trials",
+    "exact": true
+  },
+  "page:KitBoard": {
+    "route": "/board"
   }
 }

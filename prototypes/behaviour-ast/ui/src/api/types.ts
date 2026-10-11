@@ -98,6 +98,10 @@ export interface Behaviour {
   source: { origin: string; ref: string | null }
   review: { state: string; note: string | null }
   asks: unknown
+  /** Marked `pending` in the corpus: specified, not built. */
+  pending: boolean
+  /** The layer the behaviour belongs to, as the server derives it. */
+  layer: string
   /** `<corpus>.beh:<line>` — where a human goes to edit it. */
   at: string
 }

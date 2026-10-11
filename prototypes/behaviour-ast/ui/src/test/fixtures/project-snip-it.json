@@ -45,7 +45,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:11"
+      "at": "snip-it.beh:11",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-EDIT-1",
@@ -140,7 +142,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:16"
+      "at": "snip-it.beh:16",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-EDIT-2",
@@ -207,7 +211,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:25"
+      "at": "snip-it.beh:25",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-CUT-1",
@@ -330,7 +336,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:32"
+      "at": "snip-it.beh:32",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-UP-1",
@@ -446,7 +454,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:45"
+      "at": "snip-it.beh:45",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-FILL-1",
@@ -513,7 +523,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:56"
+      "at": "snip-it.beh:56",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-UP-2",
@@ -560,7 +572,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:70"
+      "at": "snip-it.beh:70",
+      "pending": false,
+      "layer": "ux"
     },
     {
       "id": "BEH-EDIT-0",
@@ -578,7 +592,9 @@
         "note": null
       },
       "asks": null,
-      "at": "snip-it.beh:79"
+      "at": "snip-it.beh:79",
+      "pending": false,
+      "layer": "ux"
     }
   ],
   "conflicts": [],
