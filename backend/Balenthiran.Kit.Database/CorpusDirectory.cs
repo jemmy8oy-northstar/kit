@@ -60,6 +60,18 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     /// <inheritdoc />
     public void WriteBindingsText(string app, string text) => Replace(BindingsFile(app), text);
 
+    /// <inheritdoc />
+    public string? ReadNotesText(string app) => File.Exists(NotesFile(app)) ? Utf8.GetString(File.ReadAllBytes(NotesFile(app))) : null;
+
+    /// <inheritdoc />
+    public void WriteNotesText(string app, string text) => Replace(NotesFile(app), text);
+
+    /// <inheritdoc />
+    public string RelativeNotesPath(string app) => Relative(NotesFile(app));
+
+    /// <inheritdoc />
+    public string FullNotesPath(string app) => Path.GetFullPath(NotesFile(app));
+
     // Write beside the file, then rename over it. File.WriteAllBytes truncates first, and
     // Kestrel serves reads while a write is in flight (no GET takes the edit lock), so a page
     // could read an empty or half-written corpus — or throw, when the file shrank mid-read.
@@ -84,6 +96,8 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     private static readonly System.Text.UTF8Encoding Utf8 = new(false);
 
     private string BindingsFile(string app) => Path.Combine(dir, app + ".bindings.json");
+
+    private string NotesFile(string app) => Path.Combine(dir, app + ".notes.md");
 
     private string Relative(string file) => Path.GetRelativePath(repoRoot, file).Replace('\\', '/');
 }

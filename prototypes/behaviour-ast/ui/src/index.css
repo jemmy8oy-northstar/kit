@@ -208,3 +208,29 @@ pre {
 .error {
   color: var(--color-danger);
 }
+
+/*
+ * A note (kit#118). The design system has no multi-line field, so this is a
+ * native <textarea> wearing the sign-in input's tokens. 16px text on purpose:
+ * anything smaller and iOS zooms the page when the box takes focus.
+ */
+.note-text {
+  width: 100%;
+  min-height: 6rem;
+  box-sizing: border-box;
+  padding: var(--space-3);
+  font-size: var(--text-base);
+  font-family: var(--font-text);
+  line-height: var(--leading-normal);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.note-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: var(--space-2) 0 0;
+}

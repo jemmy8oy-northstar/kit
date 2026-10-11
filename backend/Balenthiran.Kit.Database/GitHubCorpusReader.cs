@@ -38,19 +38,24 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             previous = null;
         }
 
+        // BEH-PULL-2: "a public read that fails because a token could not be minted is a bug". So a
+        // failed mint reads WITHOUT a token, as a public repository allows, and the mint's reason is
+        // kept for the one answer it explains — a 404, which is also how GitHub hides a private repo.
         string? token;
+        string? mintFailed = null;
         try
         {
             token = await tokens.TokenAsync(cancellationToken);
         }
         catch (GitHubTokenException e)
         {
-            throw new GitHubReadException($"{Key(source)}: {e.Message}", e);
+            token = null;
+            mintFailed = e.Message;
         }
 
         var root = api ?? DefaultApi;
         var listing = new Uri(root, $"repos/{source.Owner}/{source.Repository}/contents/{Escape(source.Path)}?ref={Uri.EscapeDataString(source.Branch)}");
-        using var answer = await SendAsync(listing, token, previous?.ETag, "application/vnd.github+json", source, cancellationToken);
+        using var answer = await SendAsync(listing, token, previous?.ETag, "application/vnd.github+json", source, mintFailed, cancellationToken);
         if (answer.StatusCode == HttpStatusCode.NotModified && previous is not null)
         {
             return previous;
@@ -67,7 +72,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             }
 
             var blob = new Uri(root, $"repos/{source.Owner}/{source.Repository}/git/blobs/{sha}");
-            using var raw = await SendAsync(blob, token, null, "application/vnd.github.raw+json", source, cancellationToken);
+            using var raw = await SendAsync(blob, token, null, "application/vnd.github.raw+json", source, mintFailed, cancellationToken);
             var bytes = await raw.Content.ReadAsByteArrayAsync(cancellationToken);
             files[name] = new SnapshotFile { Sha = sha, Text = Utf8.GetString(bytes) };
         }
@@ -75,7 +80,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         return new CorpusSnapshot { Source = source, ETag = answer.Headers.ETag?.ToString(), Files = files };
     }
 
-    /// <summary>The corpus files of a contents listing: <c>.beh</c> and <c>.bindings.json</c> files directly in it, nothing nested.</summary>
+    /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c> and <c>.notes.md</c> files directly in it, nothing nested.</summary>
     private static List<(string Name, string Sha)> Entries(JsonElement json, IProjectSource source)
     {
         // A FILE at the path answers an object, not an array: the source names something that is
@@ -91,7 +96,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             if (e.ValueKind != JsonValueKind.Object
                 || !e.TryGetProperty("type", out var type) || type.GetString() != "file"
                 || !e.TryGetProperty("name", out var n) || n.GetString() is not { } name
-                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal)))
+                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal)))
             {
                 continue;
             }
@@ -110,7 +115,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
     }
 
     // One request, and which LAYER failed if it did, as GitHubPullRequestOpener names it.
-    private async Task<HttpResponseMessage> SendAsync(Uri uri, string? token, string? etag, string accept, IProjectSource source, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendAsync(Uri uri, string? token, string? etag, string accept, IProjectSource source, string? mintFailed, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         if (!string.IsNullOrWhiteSpace(token))
@@ -153,9 +158,9 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
 
             // 404 is also what GitHub answers a PRIVATE repository read without a token (BEH-PULL-3),
             // so the sentence says both rather than guess which.
-            var hint = response.StatusCode == HttpStatusCode.NotFound && string.IsNullOrWhiteSpace(token)
-                ? " — the repository, branch or path does not exist, or it is private and no GitHub token is set"
-                : string.Empty;
+            var hint = response.StatusCode != HttpStatusCode.NotFound || !string.IsNullOrWhiteSpace(token) ? string.Empty
+                : mintFailed is not null ? $" — the repository, branch or path does not exist, or it is private and the App token could not be minted: {mintFailed}"
+                : " — the repository, branch or path does not exist, or it is private and no GitHub token is set";
             throw new GitHubReadException($"{Key(source)}: GitHub answered {code}: {message}{hint}");
         }
     }

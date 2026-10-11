@@ -6,6 +6,7 @@ import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, ProjectDetail, Question } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
+import NotesPanel from '../components/NotesPanel'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
@@ -43,6 +44,9 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
           <Badge tone="warning">{project.adjudication.inferred} inferred</Badge>
         ) : null}
       </div>
+
+      {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
+      <NotesPanel app={project.app} />
 
       {project.conflicts.length > 0 && (
         <section>

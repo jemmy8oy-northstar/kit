@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.Database;
@@ -21,6 +22,12 @@ namespace Balenthiran.Kit.Database;
 /// dev". Until this the only guard was the entrypoint checking out <c>kit/hosted</c>; a clone left on
 /// <c>dev</c> with write-back on pushed every phone edit straight onto it. Null: no branch is refused.
 /// </param>
+/// <param name="tokens">
+/// Where each PUSH gets its credential (kit#88: the App does writes too). The token is handed to
+/// git as <c>KIT_GIT_TOKEN</c> in the push's own environment, which the entrypoint's credential
+/// helper reads — so an App token minted for this push replaces the one the clone was made with,
+/// which is an hour old at most and expired after that. Null: the process environment, as before.
+/// </param>
 public sealed class GitStore(
     bool enabled,
     string? remote = null,
@@ -28,7 +35,8 @@ public sealed class GitStore(
     bool push = true,
     string? name = null,
     string? email = null,
-    string? baseBranch = null) : IGitStore
+    string? baseBranch = null,
+    IGitHubTokenSource? tokens = null) : IGitStore
 {
     /// <summary>Identity used when the pod has no git config of its own.</summary>
     public const string DefaultName = "kit";
@@ -55,7 +63,7 @@ public sealed class GitStore(
     /// (kit#39). ⚠️ <c>git.js</c> has a third, "killed by SIGx"; .NET reports a signalled child
     /// as exit 128+n, indistinguishable from git's own exit 129, so here it reads as an exit.
     /// </summary>
-    public static Call Git(IReadOnlyList<string> args, string cwd)
+    public static Call Git(IReadOnlyList<string> args, string cwd, IReadOnlyDictionary<string, string>? env = null)
     {
         var start = new ProcessStartInfo("git")
         {
@@ -67,6 +75,11 @@ public sealed class GitStore(
         foreach (var a in args)
         {
             start.ArgumentList.Add(a);
+        }
+
+        foreach (var (key, value) in env ?? new Dictionary<string, string>())
+        {
+            start.Environment[key] = value;
         }
 
         Process process;
@@ -188,7 +201,19 @@ public sealed class GitStore(
 
         // 🔴 Committed and NOT pushed — usually the branch moved on. Not retried, not rebased:
         // a tool rewriting his history unattended to turn its own status line green.
-        var pushed = Git(["push", Remote, $"HEAD:{target}"], cwd);
+        Dictionary<string, string>? credential = null;
+        try
+        {
+            var token = tokens?.TokenAsync().GetAwaiter().GetResult();
+            credential = token is null ? null : new() { ["KIT_GIT_TOKEN"] = token };
+        }
+        catch (GitHubTokenException e)
+        {
+            // Committed and not pushed, for the same reason as a rejected push: say so, keep the commit.
+            return new GitWriteBack { Committed = true, Commit = commit, Branch = target, Reason = e.Message };
+        }
+
+        var pushed = Git(["push", Remote, $"HEAD:{target}"], cwd, credential);
         if (!pushed.Ok)
         {
             return new GitWriteBack { Committed = true, Commit = commit, Branch = target, Reason = pushed.Failure };

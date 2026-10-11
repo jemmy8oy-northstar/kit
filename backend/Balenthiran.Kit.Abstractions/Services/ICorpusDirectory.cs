@@ -41,4 +41,16 @@ public interface ICorpusDirectory
 
     /// <summary>Replace (or create) an app's bindings file. Only ever called with a writer's validated result.</summary>
     void WriteBindingsText(string app, string text);
+
+    /// <summary>The app's open notes, <c>&lt;app&gt;.notes.md</c> (kit#118), or null when none was ever left.</summary>
+    string? ReadNotesText(string app);
+
+    /// <summary>Replace (or create) the notes file. Only ever called with <c>Notes.Append</c>'s result.</summary>
+    void WriteNotesText(string app, string text);
+
+    /// <summary>The notes file's path, as <see cref="RelativePath"/> gives the corpus's.</summary>
+    string RelativeNotesPath(string app);
+
+    /// <summary>The notes file, absolute — what a git write-back commits.</summary>
+    string FullNotesPath(string app);
 }
