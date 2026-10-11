@@ -58,7 +58,7 @@ fi
 if [ -z "${KIT_GIT_CLONE:-}" ]; then
   off "KIT_GIT_CLONE is not set, so there is no repository to clone"
 elif [ -z "${KIT_GIT_TOKEN:-}" ] && [ -z "${KIT_GITHUB_APP_ID:-}" ]; then
-  off "no credential reached the pod: KIT_GIT_TOKEN and KIT_GITHUB_APP_ID are both empty (check the kit-github secret's key names: appid, installationid, privatekey)"
+  off "no credential reached the pod: KIT_GIT_TOKEN and KIT_GITHUB_APP_ID are both empty (check the kit-github secret has GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID and private-key.pem)"
 fi
 
 if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
