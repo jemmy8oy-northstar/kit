@@ -66,6 +66,45 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
   then sees region:KitMain
   contract a corpus that will not parse is listed AS an error, not as zero behaviours
 
+# ═══ Scheduled vs backlog (kit#118) ══════════════════════════════════════════
+# "maybe there is a point where things are scheduled vs backlogged and the
+# schedule is ordered … and the backlog is just an idea to happen at some point
+# but not a candidate for execution for now." A `pending` behaviour is already
+# an unbuilt one; this splits the pending set in two. Backlog is the default, so
+# no existing corpus changes meaning. Estimated delivery is his "later" — not here.
+# `pending` until built; the shape is his to change (kit#118).
+
+behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart from its backlog"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitSchedule
+  then sees region:KitBacklog
+  contract the schedule is an ordered list of pending behaviour ids in <app>.schedule beside the corpus
+  contract a pending behaviour not on the schedule is backlog; nothing in the .beh says which
+  contract a built behaviour is never listed in either, and an id on the schedule that is no longer pending is shown as done, not dropped silently
+
+behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule reordered"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when activates button:KitScheduleBehaviour
+  then sees region:KitSchedule
+  contract scheduling appends to the end of the schedule; moving up or down swaps neighbours
+  contract unscheduling returns it to the backlog; no behaviour is deleted by either
+  contract each change is committed and pushed like any other edit, and the write result says so
+
+behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitSchedule
+  contract the first still-pending id on the schedule is marked next — the one an agent picks up
+  contract with nothing scheduled the region says so, and does not fall back to the backlog
+
 behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   actor engineer
   provides page:KitProject.app = james-habits-app
