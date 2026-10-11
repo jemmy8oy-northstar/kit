@@ -83,25 +83,27 @@ apps:
       # entrypoint clones with a token the server mints, and every push mints its
       # own, so the `kit-git` token above is no longer needed. All three or none:
       # Kit refuses to start on a half-set credential rather than run without it.
-      # ⚠️ The key names are what that secret was created with — check them with
-      #   kubectl get secret kit-github -n balenthiran -o jsonpath='{.data}'
+      # The key names are the claude-code-bot secret's, which kit-github copies (kit#233: the
+      # first guess, appid/installationid/privatekey, matched none, so all three were silently
+      # absent and write-back stayed off). Check them with
+      #   kubectl get secret kit-github -n balenthiran -o json | jq '.data | keys'
       - name: KIT_GITHUB_APP_ID
         valueFrom:
           secretKeyRef:
             name: kit-github
-            key: appid
+            key: GITHUB_APP_ID
             optional: true
       - name: KIT_GITHUB_INSTALLATION_ID
         valueFrom:
           secretKeyRef:
             name: kit-github
-            key: installationid
+            key: GITHUB_APP_INSTALLATION_ID
             optional: true
       - name: KIT_GITHUB_PRIVATE_KEY
         valueFrom:
           secretKeyRef:
             name: kit-github
-            key: privatekey
+            key: private-key.pem
             optional: true
       # BEH-PULL-1 (kit#88): the project list and every read come from GitHub,
       # re-read every KIT_PROJECTS_POLL seconds (default 120), not from the pod's
