@@ -243,3 +243,50 @@ behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
   then sees region:KitBoardDone
   contract completed is when the behaviour last stopped being pending, read from git history, not stored in the .beh
   contract a behaviour with no history (never pending) is completed when it was added
+
+# ═══ The projects view: features, and parents as tags (kit#237) ═══════════════
+# "Features can parent other features, they can also parent spec … consider the
+# parent relationships as tags … a feature can be a sub feature of multiple
+# features." Decided on kit#237 (2026-10-11); the language is in
+# docs/design/features.md. `feature FEAT-X "title"` declares a feature, and an
+# `in FEAT-X` line on a feature or a behaviour tags it under a parent — repeat
+# the line for several parents. Nothing has to be tagged: a corpus with no
+# features is shown exactly as it was, as a flat list.
+
+behaviour BEH-FEAT-1 "A project shows its top-level features, then its untagged behaviours"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract top level is every feature and every behaviour with no `in` line
+  contract a feature card names its title and how many behaviours sit anywhere beneath it, each counted once
+  contract a project with no features shows its behaviours as it always has
+
+behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and every parent as a tag"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitFeature
+  then sees region:KitFeatureChildren
+  then sees region:KitFeatureParents
+  contract a child is anything with an `in` line naming this feature; one thing tagged into two features is listed under both
+  contract each parent links to its own feature page; none of them is the owner
+
+behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitFeature
+  then sees region:KitBreadcrumb
+  contract with several parents there is no single path, so the path is carried in the url and a shared link shows the same crumbs
+  contract with no path in the url the crumbs are the project and the feature, never a parent picked for you
+
+behaviour BEH-FEAT-4 "Files naming the same project are one project, each file a top-level feature"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitProjectList
+  contract `# kit:project <name>` groups files on the project list and the board; each file is a feature titled by its file name
+  contract a file without the directive is its own project, as today; check and report still read one file at a time
