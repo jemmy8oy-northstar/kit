@@ -74,7 +74,10 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
       )}
 
       <section>
-        <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+        {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
+        {(top.features.length === 0 || top.behaviours.length > 0) && (
+          <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+        )}
         <ul className="cards">
           {top.behaviours.map((b) => (
             <li key={b.id}>
