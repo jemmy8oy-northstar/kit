@@ -77,8 +77,9 @@ public class FeatureTests
     [Theory]
     [InlineData("behaviour BEH-A \"a\"\n  in FEAT-NOPE\n", "t.beh:2: in names FEAT-NOPE, which is not a feature in this file")]
     [InlineData("feature FEAT-A \"a\"\n  in FEAT-NOPE\n", "t.beh:2: in names FEAT-NOPE, which is not a feature in this file")]
-    [InlineData("feature FEAT-A \"a\"\n  in FEAT-A\n", "t.beh:1: FEAT-A is its own ancestor: FEAT-A → FEAT-A")]
-    [InlineData("feature FEAT-A \"a\"\n  in FEAT-B\nfeature FEAT-B \"b\"\n  in FEAT-C\nfeature FEAT-C \"c\"\n  in FEAT-A\n", "t.beh:1: FEAT-A is its own ancestor: FEAT-A → FEAT-B → FEAT-C → FEAT-A")]
+    [InlineData("behaviour BEH-A \"a\"\n  in FEAT-NOPE\nfeature FEAT-A \"a\"\n  in FEAT-GONE\n", "t.beh:2: in names FEAT-NOPE, which is not a feature in this file")]
+    [InlineData("feature FEAT-A \"a\"\n  in FEAT-A\n", "t.beh:2: FEAT-A is its own ancestor: FEAT-A → FEAT-A")]
+    [InlineData("feature FEAT-A \"a\"\n  in FEAT-B\nfeature FEAT-B \"b\"\n  in FEAT-C\nfeature FEAT-C \"c\"\n  in FEAT-A\n", "t.beh:6: FEAT-A is its own ancestor: FEAT-A → FEAT-B → FEAT-C → FEAT-A")]
     [InlineData("feature FEAT-A \"a\"\n\nfeature FEAT-A \"again\"\n", "t.beh:3: feature FEAT-A is already declared at t.beh:1")]
     public void A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line(string corpus, string message)
     {
@@ -96,6 +97,16 @@ public class FeatureTests
     {
         var e = Assert.Throws<CorpusParseException>(() => _parser.Parse(corpus, "t.beh"));
         Assert.Equal(message, e.Message);
+    }
+
+    [Fact]
+    public void Two_parents_sharing_an_ancestor_is_a_diamond_not_a_loop()
+    {
+        var c = _parser.ParseCorpus(
+            "feature FEAT-TOP \"top\"\nfeature FEAT-L \"l\"\n  in FEAT-TOP\nfeature FEAT-R \"r\"\n  in FEAT-TOP\n" +
+            "feature FEAT-CARD \"card\"\n  in FEAT-L\n  in FEAT-R\nbehaviour BEH-A \"a\"\n  in FEAT-CARD\n", "t.beh");
+
+        Assert.Equal(4, c.Features.Count);
     }
 
     [Fact]

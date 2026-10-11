@@ -339,32 +339,34 @@ public sealed class CorpusParser : ICorpusParser
     private static void CheckTags(List<Behaviour> behaviours, List<Feature> features)
     {
         var byId = features.ToDictionary(f => f.Id, StringComparer.Ordinal);
-        foreach (var tag in features.SelectMany(f => f.In).Concat(behaviours.SelectMany(b => b.In ?? [])))
-        {
-            if (!byId.ContainsKey(tag.Id)) throw new CorpusParseException($"{tag.At}: in names {tag.Id}, which is not a feature in this file");
-        }
+        // In file order, so the first dangling line in the file is the one named, whichever
+        // kind of block it sits in. `At` is `<file>:<line>` and every tag is in one file.
+        var dangling = features.SelectMany(f => f.In).Concat(behaviours.SelectMany(b => b.In ?? []))
+            .Where(t => !byId.ContainsKey(t.Id))
+            .MinBy(t => int.Parse(t.At[(t.At.LastIndexOf(':') + 1)..], System.Globalization.CultureInfo.InvariantCulture));
+        if (dangling is not null) throw new CorpusParseException($"{dangling.At}: in names {dangling.Id}, which is not a feature in this file");
 
         // Depth-first, three colours: a feature reached again while still on the path is
-        // its own ancestor. Reported once, at the first feature found on the loop.
+        // its own ancestor. Named at the `in` line that closes the loop — the line to delete.
         var done = new HashSet<string>(StringComparer.Ordinal);
         var path = new List<string>();
-        void Visit(Feature f)
+        void Visit(Feature f, IdRef? via)
         {
             if (done.Contains(f.Id)) return;
             var i = path.IndexOf(f.Id);
             if (i >= 0)
             {
                 var loop = string.Join(" → ", path.Skip(i).Append(f.Id));
-                throw new CorpusParseException($"{byId[path[i]].At}: {path[i]} is its own ancestor: {loop}");
+                throw new CorpusParseException($"{via!.At}: {f.Id} is its own ancestor: {loop}");
             }
 
             path.Add(f.Id);
-            foreach (var parent in f.In) Visit(byId[parent.Id]);
+            foreach (var parent in f.In) Visit(byId[parent.Id], parent);
             path.RemoveAt(path.Count - 1);
             done.Add(f.Id);
         }
 
-        foreach (var f in features) Visit(f);
+        foreach (var f in features) Visit(f, null);
     }
 
     /// <summary>
