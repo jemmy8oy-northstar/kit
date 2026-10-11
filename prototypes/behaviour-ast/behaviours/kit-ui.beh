@@ -185,3 +185,64 @@ behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spe
   contract <app>.notes.md holds only notes nobody has folded yet; a folded note is deleted,
   contract not ticked, in the same pull request that adds the behaviour or code it became
   contract with no open notes the region says so, rather than vanishing
+
+# ═══ Navigation and the board (kit#237) ═══════════════════════════════════════
+# "What I am seeing is more like an agile tool … a navbar with two views for now:
+# board view and project view." The project view is the existing pages until the
+# feature model is decided (kit#237). The board's columns map onto what the corpus
+# already says: proposed = an inference nobody has adjudicated, backlog = pending,
+# done = built. Scheduled and in-progress need data that does not exist yet — the
+# schedule is BEH-SCHED, and a completion time is not in the .beh — so they are
+# their own behaviours and stay `pending` until that data does.
+
+behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  when activates link:KitNavBoard
+  then sees page:KitBoard
+  contract the navbar marks the view you are on; the projects link is the existing project list
+
+behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  then sees region:KitBoardBacklog
+  then sees region:KitBoardDone
+  contract proposed is source inferred and review unreviewed; backlog is pending; done is everything else
+  contract a denied inference is on no column — it is not work, it is a correction waiting to be written
+  contract each card is the behaviour's id and title, links to its behaviour page, and names its project
+  contract a corpus that will not parse is named on the board as an error, never silently left out
+
+behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filtered to projects"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  when activates button:KitBoardFilterProject
+  then sees region:KitBoardBacklog
+  contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
+  contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
+
+behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardScheduled
+  then sees region:KitBoardInProgress
+  contract scheduled is the project's schedule in order (BEH-SCHED-1); in progress is its top, the one marked next (BEH-SCHED-3)
+  contract both wait on BEH-SCHED; until it is built they are not drawn, rather than drawn empty
+
+behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardDone
+  contract completed is when the behaviour last stopped being pending, read from git history, not stored in the .beh
+  contract a behaviour with no history (never pending) is completed when it was added
