@@ -73,6 +73,11 @@ export interface ProjectSummary {
   conflicts?: number
   coverage?: SummaryCoverage
   unreviewed?: number
+  /**
+   * The project this corpus is shown under (kit#237): its `# kit:project` directive, or its
+   * own name. Files sharing one are one project. Absent on an error row.
+   */
+  project?: string
 }
 
 export interface StepRef {
@@ -205,6 +210,8 @@ export interface ProjectDetail {
   requires: Requires
   /** Empty for a corpus that declares no features — it is then shown as a flat list, as before. */
   features: Feature[]
+  /** See `ProjectSummary.project`. */
+  project: string
 }
 
 /**

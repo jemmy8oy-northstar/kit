@@ -29,4 +29,7 @@ public interface IProjectView
 
     /// <summary>The corpus's features (kit#237); empty for a corpus that declares none.</summary>
     IReadOnlyList<IFeatureView> Features { get; }
+
+    /// <summary>See <see cref="IProjectSummary.Project"/>.</summary>
+    string Project { get; }
 }

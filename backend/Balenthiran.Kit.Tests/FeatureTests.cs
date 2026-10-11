@@ -144,6 +144,55 @@ public class FeatureTests
         Assert.Equal(["FEAT-BOARD", "FEAT-UI"], new CorpusParser().Parse(r.Text!, "t.beh")[0].In.Select(t => t.Id));
     }
 
+    // ── `# kit:project` ────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("# kit:project kit\nbehaviour BEH-A \"a\"\n", "kit")]
+    [InlineData("behaviour BEH-A \"a\"\n  # kit:project kit-2\n", "kit-2")]
+    [InlineData("# kit:projects kit\nbehaviour BEH-A \"a\"\n", null)]
+    [InlineData("behaviour BEH-A \"a\"\n", null)]
+    public void A_kit_project_line_names_the_files_project_wherever_it_sits(string corpus, string? project)
+    {
+        Assert.Equal(project, _parser.ParseCorpus(corpus, "t.beh").Project);
+    }
+
+    [Theory]
+    [InlineData("# kit:project kit\n# kit:project kit\n", "t.beh:2: kit:project is already set at t.beh:1")]
+    [InlineData("# kit:project Kit\n", "t.beh:1: kit:project wants a name of lowercase letters, digits and hyphens, got: Kit")]
+    [InlineData("# kit:project\n", "t.beh:1: kit:project wants a name of lowercase letters, digits and hyphens, got: ")]
+    [InlineData("# kit:project kit ui\n", "t.beh:1: kit:project wants a name of lowercase letters, digits and hyphens, got: kit ui")]
+    public void A_second_or_malformed_kit_project_line_is_refused(string corpus, string message)
+    {
+        var e = Assert.Throws<CorpusParseException>(() => _parser.Parse(corpus + "behaviour BEH-A \"a\"\n", "t.beh"));
+        Assert.Equal(message, e.Message);
+    }
+
+    [Fact]
+    public void Files_naming_one_project_report_it_and_a_file_without_one_is_its_own()
+    {
+        var dir = Directory.CreateTempSubdirectory("kit-project-");
+        try
+        {
+            File.WriteAllText(Path.Combine(dir.FullName, "kit-ui.beh"), "# kit:project kit\nbehaviour BEH-A \"a\"\n  when opens page:Home\n");
+            File.WriteAllText(Path.Combine(dir.FullName, "kit-cli.beh"), "# kit:project kit\nbehaviour BEH-B \"b\"\n  when opens page:Home\n");
+            File.WriteAllText(Path.Combine(dir.FullName, "other.beh"), "behaviour BEH-C \"c\"\n  when opens page:Home\n");
+            var corpora = new CorpusDirectory(dir.FullName, dir.FullName);
+            var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
+
+            Assert.Equal(
+                ["kit-cli:kit", "kit-ui:kit", "other:other"],
+                corpora.Corpora().Select(a => (ProjectSummary)viewer.Summary(a)).Select(s => $"{s.App}:{s.Project}"));
+            Assert.Equal("kit", ((ProjectView)viewer.View("kit-ui")).Project);
+
+            var json = JsonNode.Parse(new EngineJsonSerialiser().Serialise(viewer.Summary("other")))!;
+            Assert.Equal("project", json.AsObject().Last().Key);
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
+    }
+
     // ── The wire ───────────────────────────────────────────────────────────
 
     [Fact]
@@ -164,7 +213,7 @@ public class FeatureTests
             Assert.Empty(view.Behaviours[1].In);
 
             var json = JsonNode.Parse(new EngineJsonSerialiser().Serialise(view))!;
-            Assert.Equal("features", json.AsObject().Last().Key);
+            Assert.Equal(["features", "project"], json.AsObject().Select(kv => kv.Key).TakeLast(2));
             Assert.Equal("in", json["behaviours"]![1]!.AsObject().Last().Key);
         }
         finally

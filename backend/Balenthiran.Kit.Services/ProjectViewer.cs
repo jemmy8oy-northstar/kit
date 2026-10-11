@@ -130,6 +130,8 @@ public sealed class ProjectViewer(
                 Satisfied = report.Requires.Satisfied,
             },
             Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At }).ToList(),
+            // kit#237: files naming the same project are shown as one; no directive, its own.
+            Project = corpus.Project ?? app,
         };
     }
 
@@ -156,6 +158,7 @@ public sealed class ProjectViewer(
             Conflicts = p.Conflicts.Count,
             Coverage = new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = p.Coverage.Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
+            Project = p.Project,
         };
     }
 

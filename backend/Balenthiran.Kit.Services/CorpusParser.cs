@@ -63,7 +63,8 @@ public sealed class CorpusParser : ICorpusParser
     // the difference here today — `\z` means it cannot come back.
     private static readonly Regex BehaviourLine = new($@"^behaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex FeatureLine = new($@"^feature[{Ws}]+(FEAT-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
-    private static readonly Regex InRest = new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
+    private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
+    private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex SourceRest = new($@"^(defined|inferred)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ReviewRest = new($@"^(unreviewed|approved|denied)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ServesRest = new(@"^([A-Z][A-Z0-9-]*)\z", RegexOptions.Compiled);
@@ -328,7 +329,35 @@ public sealed class CorpusParser : ICorpusParser
         }
 
         CheckTags(behaviours, features);
-        return new ParsedCorpus { Behaviours = behaviours, Features = features };
+        return new ParsedCorpus { Behaviours = behaviours, Features = features, Project = FileProject(lines, file) };
+    }
+
+    /// <summary>
+    /// kit#237: a <c># kit:project &lt;name&gt;</c> line puts this file in a project with every
+    /// other file naming it, wherever the line sits — read as <see cref="FileLayer"/> reads its
+    /// directive, and refused on the same terms. The name has an app's shape, because a file
+    /// with no directive is a project named by its file.
+    /// </summary>
+    private static string? FileProject(string[] lines, string file)
+    {
+        string? project = null;
+        string? setAt = null;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = Trim(lines[i]);
+            if (!line.StartsWith('#')) continue;
+            var c = Trim(line[1..]);
+            var kw = FirstToken(c);
+            if (kw != "kit:project") continue;
+            var at = $"{file}:{i + 1}";
+            if (setAt is not null) throw new CorpusParseException($"{at}: kit:project is already set at {setAt}");
+            var v = Trim(c[kw.Length..]);
+            if (!ProjectName.IsMatch(v)) throw new CorpusParseException($"{at}: kit:project wants a name of lowercase letters, digits and hyphens, got: {v}");
+            project = v;
+            setAt = at;
+        }
+
+        return project;
     }
 
     /// <summary>
