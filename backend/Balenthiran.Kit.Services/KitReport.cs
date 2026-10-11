@@ -358,9 +358,12 @@ public sealed class KitReport(
             Out($"  denied w/ correction  {adj.Denied.Count}");
         }
 
+        // kit#86: a plain count, not a warning. README: "No `source` means a human wrote it", so a
+        // ⚠️ that fired on 100% of kit, kit-ui and snip-it carried no information and contradicted
+        // the notation's own rule. The ids are in the project view's `untraceable` for anyone who needs them.
         if (adj.Untraceable.Count > 0)
         {
-            Out($"  ⚠️  UNTRACEABLE        {adj.Untraceable.Count}   no source ref: {string.Join(", ", adj.Untraceable)}");
+            Out($"  no source (by hand)   {adj.Untraceable.Count}");
         }
 
         Out(string.Empty);
