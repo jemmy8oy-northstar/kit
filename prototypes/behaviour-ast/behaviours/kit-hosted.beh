@@ -1,5 +1,10 @@
 # kit:not-a-real-app
 #
+# kit:project kit
+#   kit#237: Kit is one project. This file is its hosted service; Kit shows the three files
+#   as one project, each file one of its top-level features, while check and report
+#   still read each file on its own.
+#
 # ─────────────────────────────────────────────────────────────────────────────
 # HOSTED KIT — the app James described on kit#88
 #

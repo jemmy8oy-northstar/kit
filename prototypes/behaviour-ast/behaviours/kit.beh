@@ -1,5 +1,10 @@
 # Kit, described in Kit's own notation.
 #
+# kit:project kit
+#   kit#237: Kit is one project. This file is its command line; Kit shows the three files
+#   as one project, each file one of its top-level features, while check and report
+#   still read each file on its own.
+#
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. That study asks whether the glue binding a spec to a UI saturates as
