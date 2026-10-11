@@ -202,7 +202,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   when opens page:KitProjects
   then sees region:KitNav
   when activates link:KitNavBoard
-  then sees page:KitBoard
+  then sees heading:KitBoardTitle
   contract the navbar marks the view you are on; the projects link is the existing project list
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
@@ -223,7 +223,7 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
   source defined kit#237
   actor engineer
   when opens page:KitBoard
-  when activates button:KitBoardFilterProject
+  when activates button:KitBoardShowTrials
   then sees region:KitBoardBacklog
   contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
   contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
