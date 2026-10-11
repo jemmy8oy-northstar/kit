@@ -61,5 +61,27 @@
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
       "title": "Locked_a_write_needs_a_session_and_a_read_still_does_not"
     }
+  ],
+  "BEH-PULL-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusDirectoryTests.cs",
+      "title": "After_a_refresh_every_read_is_GitHubs_and_the_list_is_GitHubs_alone"
+    }
+  ],
+  "BEH-PULL-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusReaderTests.cs",
+      "title": "With_no_token_it_reads_without_one_as_a_public_repository_allows"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusReaderTests.cs",
+      "title": "A_failed_mint_still_reads_a_public_project_without_a_token"
+    }
+  ],
+  "BEH-PULL-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PullAuthTests.cs",
+      "title": "A_private_project_is_read_with_the_installation_token_and_an_expired_one_is_re_minted"
+    }
   ]
 }
