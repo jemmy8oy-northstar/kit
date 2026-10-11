@@ -3,6 +3,7 @@ import Board from './pages/Board'
 import Projects from './pages/Projects'
 import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
+import FeaturePage from './pages/FeaturePage'
 import SignIn from './components/SignIn'
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/board" element={<Board />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
+              <Route path="/projects/:app/features/:id" element={<FeaturePage />} />
             </Routes>
           </main>
         </div>

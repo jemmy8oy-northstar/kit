@@ -26,6 +26,11 @@ export function hueOf(app: string): number {
   return h % HUES
 }
 
+/** The project a row is shown under (kit#237): its `# kit:project`, or its own name. */
+export function projectOf(p: ProjectSummary): string {
+  return p.project ?? p.app
+}
+
 /** Trial corpora: an app that does not exist, or a second spec of one that does. */
 export function isTrial(p: ProjectSummary): boolean {
   return Boolean(p.notReal || p.duplicateOf)
