@@ -69,6 +69,9 @@ public sealed record KitSettings(
     /// <summary><c>owner/name</c> of the repository the edits branch lives in, from <c>KIT_GIT_CLONE</c>; null for anything not on github.com.</summary>
     public string? GitRepository { get; init; }
 
+    /// <summary><c>KIT_GIT_OFF_REASON</c> (kit#233): why the entrypoint left write-back off, repeated in the deployed warning.</summary>
+    public string? GitOffReason { get; init; }
+
     /// <summary><c>KIT_GIT_BASE</c>: what Commit proposes the edits into — the branch the entrypoint starts the edits branch from.</summary>
     public string GitBase { get; init; } = "dev";
 
@@ -121,6 +124,7 @@ public sealed record KitSettings(
         {
             GitToken = env("KIT_GIT_TOKEN") is { Length: > 0 } t ? t : null,
             GitRepository = GitHubPullRequestOpener.RepositoryFromRemote(env("KIT_GIT_CLONE")),
+            GitOffReason = env("KIT_GIT_OFF_REASON") is { Length: > 0 } why ? why : null,
             GitBase = env("KIT_GIT_BASE") is { Length: > 0 } g ? g : "dev",
             GitHubAppId = app["KIT_GITHUB_APP_ID"],
             GitHubInstallationId = app["KIT_GITHUB_INSTALLATION_ID"],
