@@ -80,6 +80,31 @@ apps:
             name: kit-git
             key: token
             optional: true
+      # The GitHub App (kit#88: "the backend can use [it] to read and write to gh"),
+      # from the `kit-github` secret James created on 2026-09-27. With these set the
+      # entrypoint clones with a token the server mints, and every push mints its
+      # own, so the `kit-git` token above is no longer needed. All three or none:
+      # Kit refuses to start on a half-set credential rather than run without it.
+      # ⚠️ The key names are what that secret was created with — check them with
+      #   kubectl get secret kit-github -n balenthiran -o jsonpath='{.data}'
+      - name: KIT_GITHUB_APP_ID
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: appid
+            optional: true
+      - name: KIT_GITHUB_INSTALLATION_ID
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: installationid
+            optional: true
+      - name: KIT_GITHUB_PRIVATE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: privatekey
+            optional: true
       # BEH-PULL-1 (kit#88): the project list and every read come from GitHub,
       # re-read every KIT_PROJECTS_POLL seconds (default 120), not from the pod's
       # clone. Writes still go to the clone above and are pushed to kit/hosted, so
@@ -91,7 +116,7 @@ apps:
     nodeSelector: {}
     tolerations: []
     affinity: {}
-# Write-back switches itself on only when the `kit-git` secret holds a token (see
-# KIT_GIT_TOKEN above). Without one, every edit is answered "on this server's disk
+# Write-back switches itself on only when there is a push credential: the `kit-git`
+# token or the `kit-github` App (see above). Without either, every edit is answered "on this server's disk
 # only" (kit#142), which is true. Write-back with no credential would mean commits
 # nobody can push, in a container that is wiped on restart.

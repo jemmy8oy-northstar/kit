@@ -42,14 +42,12 @@ public static class ServiceRegistration
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
         services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
-        services.AddSingleton<IGitStore>(new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase));
+        services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
         // (token, repository, base) by the request GitHub would have received.
         services.TryAddSingleton(TimeProvider.System);
-        services.TryAddSingleton<IGitHubTokenSource>(sp => settings.GitHubApp
-            ? new GitHubAppTokenSource(GitHubClient(sp), settings.GitHubAppId!, settings.GitHubInstallationId!, settings.PrivateKey()!, sp.GetRequiredService<TimeProvider>())
-            : new StaticGitHubTokenSource(settings.Token()));
+        services.TryAddSingleton(sp => TokenSource(settings, GitHubClient(sp), sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
@@ -78,6 +76,11 @@ public static class ServiceRegistration
             settings.BasePath));
         return services;
     }
+
+    /// <summary>The App installation when all three are set, else <c>KIT_GIT_TOKEN</c> — shared by the server and <c>github-token</c>.</summary>
+    public static IGitHubTokenSource TokenSource(KitSettings settings, HttpClient http, TimeProvider clock) => settings.GitHubApp
+        ? new GitHubAppTokenSource(http, settings.GitHubAppId!, settings.GitHubInstallationId!, settings.PrivateKey()!, clock)
+        : new StaticGitHubTokenSource(settings.Token());
 
     private static HttpClient GitHubClient(IServiceProvider sp) =>
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };

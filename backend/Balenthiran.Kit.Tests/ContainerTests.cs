@@ -185,6 +185,45 @@ public class ContainerTests
         Assert.Contains("write-back OFF", r.Stderr);
     }
 
+    /// <summary>kit#88: the App credential alone is enough — the server mints the token the clone uses.</summary>
+    [Fact]
+    public void With_only_the_App_credential_it_clones_with_a_token_the_server_mints()
+    {
+        using var f = new Remote();
+        var work = Path.Combine(f.Root, "work");
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GITHUB_APP_ID"] = "123", ["FAKE_MINT"] = "ghs_minted", ["KIT_GIT_WORKTREE"] = work });
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal("1", r.Out["KIT_GIT"]);
+        Assert.Equal("ghs_minted", r.Out["password"]);
+        Assert.Equal("Balenthiran.Kit.WebApi.dll --urls x", r.Out["ARGS"]);
+        Assert.True(Directory.Exists(Path.Combine(work, ".git")));
+    }
+
+    [Fact]
+    public void An_App_token_that_cannot_be_minted_starts_Kit_with_write_back_off()
+    {
+        using var f = new Remote();
+        var work = Path.Combine(f.Root, "work");
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GITHUB_APP_ID"] = "123", ["KIT_GIT_WORKTREE"] = work });
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal("", r.Out["KIT_GIT"]);
+        Assert.Equal("", r.Out["KIT_DIR"]);
+        Assert.False(Directory.Exists(work));
+        Assert.Contains("kit github-token: refused", r.Stderr);
+        Assert.Contains("could not mint a GitHub App token", r.Stderr);
+    }
+
+    [Fact]
+    public void A_static_token_is_used_as_before_and_nothing_is_minted()
+    {
+        using var f = new Remote();
+        var work = Path.Combine(f.Root, "work");
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GIT_TOKEN"] = "static", ["KIT_GITHUB_APP_ID"] = "123", ["FAKE_MINT"] = "ghs_minted", ["KIT_GIT_WORKTREE"] = work });
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal("static", r.Out["password"]);
+        Assert.DoesNotContain("MINTED", r.Stdout + r.Stderr);
+    }
+
     private sealed record Ran(int Status, string Stdout, string Stderr, Dictionary<string, string> Out);
 
     private static Ran StartKit(Dictionary<string, string> env, string prependPath = "")
@@ -192,6 +231,8 @@ public class ContainerTests
         var bin = Directory.CreateTempSubdirectory("kit-bin-").FullName;
         Executable(Path.Combine(bin, "dotnet"),
             "#!/bin/sh",
+            // `github-token`: print FAKE_MINT, or refuse as the real command does — exit 1, reason on stderr.
+            "if [ \"$*\" = \"Balenthiran.Kit.WebApi.dll github-token\" ]; then echo MINTED >&2; [ -n \"${FAKE_MINT-}\" ] && { printf %s \"$FAKE_MINT\"; exit 0; }; echo \"kit github-token: refused\" >&2; exit 1; fi",
             "echo \"ARGS=$*\"",
             "echo \"KIT_DIR=${KIT_DIR-}\"",
             "echo \"KIT_GIT=${KIT_GIT-}\"",
