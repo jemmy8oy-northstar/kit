@@ -89,7 +89,7 @@ function Detail({
     <>
       <TitleEditor app={project.app} behaviour={behaviour} onWrote={onWrote} />
       <div className="badges">
-        <Badge tone="primary">{behaviour.id}</Badge>
+        <span className="muted id">{behaviour.id}</span>
         <Badge tone="neutral">{behaviour.actor}</Badge>
         <Badge tone={behaviour.review.state === 'approved' ? 'success' : 'warning'}>
           {behaviour.review.state}

@@ -82,8 +82,8 @@ describe('the projects view', () => {
     expect(within(features).getAllByRole('link').map((a) => a.textContent)).toEqual(['The app'])
     expect(within(features).getByText('3 behaviours')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Behaviours in no feature' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: b0.id })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: rest[0].id })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: b0.title })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: rest[0].title })).toBeInTheDocument()
   })
 
   it('BEH-FEAT-1: a project with no features lists every behaviour, as before', async () => {
@@ -91,7 +91,7 @@ describe('the projects view', () => {
 
     expect(await screen.findByRole('heading', { name: 'Behaviours' })).toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Features' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: b0.id })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: b0.title })).toBeInTheDocument()
   })
 
   it('BEH-FEAT-2: a feature lists what is tagged into it and every parent as a tag', async () => {
@@ -101,9 +101,9 @@ describe('the projects view', () => {
     const parents = screen.getByRole('region', { name: 'In' })
     expect(within(parents).getAllByRole('link').map((a) => a.textContent)).toEqual(['Editor', 'Home'])
     const contents = screen.getByRole('region', { name: 'Contents' })
-    expect(within(contents).getByRole('link', { name: b0.id })).toBeInTheDocument()
-    expect(within(contents).getByRole('link', { name: b2.id })).toBeInTheDocument()
-    expect(within(contents).queryByRole('link', { name: b1.id })).not.toBeInTheDocument()
+    expect(within(contents).getByRole('link', { name: b0.title })).toBeInTheDocument()
+    expect(within(contents).getByRole('link', { name: b2.title })).toBeInTheDocument()
+    expect(within(contents).queryByRole('link', { name: b1.title })).not.toBeInTheDocument()
   })
 
   it('BEH-FEAT-2: one behaviour tagged into two features is listed under both', async () => {
@@ -111,7 +111,7 @@ describe('the projects view', () => {
 
     const contents = await screen.findByRole('region', { name: 'Contents' })
     expect(within(contents).getByRole('link', { name: 'Clip card' })).toBeInTheDocument()
-    expect(within(contents).getByRole('link', { name: b2.id })).toBeInTheDocument()
+    expect(within(contents).getByRole('link', { name: b2.title })).toBeInTheDocument()
   })
 
   it('BEH-FEAT-3: the crumbs are the path in the url, and a child link carries it on', async () => {
@@ -213,7 +213,7 @@ describe('BEH-FEAT-5: a project of several files is one page', () => {
     expect(within(features).getByRole('link', { name: 'Gate' })).toHaveAttribute('href', '/projects/kit/features/FEAT-GATE')
     expect(within(features).getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/projects/kit-ui/features/FEAT-BOARD')
     // The untagged behaviour of one file is listed; the counts are the sum over the files.
-    expect(screen.getByRole('link', { name: b1.id })).toHaveAttribute('href', `/projects/kit/behaviours/${b1.id}`)
+    expect(screen.getByRole('link', { name: b1.title })).toHaveAttribute('href', `/projects/kit/behaviours/${b1.id}`)
     expect(screen.getByText('3 behaviours')).toBeInTheDocument()
     expect(screen.queryByText('kit-ui')).toBeNull()
   })
