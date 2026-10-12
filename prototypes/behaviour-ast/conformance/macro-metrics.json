@@ -988,7 +988,7 @@
   "generate": [
     {
       "id": "BEH-MM-LOAD-1",
-      "code": "test(\"[BEH-MM-LOAD-1] The homepage renders its three sections\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.getByRole(\"heading\", { name: \"Preset Ratios\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Custom Comparison\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Macro Indicators\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): all 9 preset ratio fetches fire in parallel\n  // CONTRACT (not derivable from a behaviour): all 3 indicator fetches fire in parallel\n});",
+      "code": "test(\"[BEH-MM-LOAD-1] The homepage renders its three sections\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.getByRole(\"heading\", { name: \"Preset Ratios\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Custom Comparison\" })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Macro Indicators\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"all 9 preset ratio fetches fire in parallel\" });\n  // CONTRACT (not derivable from a behaviour): all 9 preset ratio fetches fire in parallel\n  test.info().annotations.push({ type: \"kit-contract\", description: \"all 3 indicator fetches fire in parallel\" });\n  // CONTRACT (not derivable from a behaviour): all 3 indicator fetches fire in parallel\n});",
       "missing": [],
       "stats": {
         "generated": 4,
@@ -1032,7 +1032,7 @@
     },
     {
       "id": "BEH-MM-PICK-2",
-      "code": "test(\"[BEH-MM-PICK-2] Choosing both metrics renders the comparison chart\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await page.getByRole(\"combobox\", { name: \"Numerator\" }).click();\n  await page.getByRole(\"option\", { name: \"Gold\", exact: true }).click();\n  await page.getByRole(\"combobox\", { name: \"Denominator\" }).click();\n  await page.getByRole(\"option\", { name: \"US CPI\" }).click();\n  await expect(page.locator('#compare')).toContainText(\"Gold / US CPI\");\n  // CONTRACT (not derivable from a behaviour): GET /api/metrics/ratio is fired with both metric ids\n});",
+      "code": "test(\"[BEH-MM-PICK-2] Choosing both metrics renders the comparison chart\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  await page.getByRole(\"combobox\", { name: \"Numerator\" }).click();\n  await page.getByRole(\"option\", { name: \"Gold\", exact: true }).click();\n  await page.getByRole(\"combobox\", { name: \"Denominator\" }).click();\n  await page.getByRole(\"option\", { name: \"US CPI\" }).click();\n  await expect(page.locator('#compare')).toContainText(\"Gold / US CPI\");\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/metrics/ratio is fired with both metric ids\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/metrics/ratio is fired with both metric ids\n});",
       "missing": [],
       "stats": {
         "generated": 6,
@@ -1052,7 +1052,7 @@
     },
     {
       "id": "BEH-MM-METRICS-1",
-      "code": "test(\"[BEH-MM-METRICS-1] Eleven metrics are comparable\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-MM-METRICS-1] Eleven metrics are comparable\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1062,7 +1062,7 @@
     },
     {
       "id": "BEH-MM-ERR-1",
-      "code": "test(\"[BEH-MM-ERR-1] A failed comparison fetch says so and offers a retry\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:Errored\" });\n  // UNGENERATED: given ratio:Errored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#compare')).toContainText(\"Could not load data.\");\n  await expect(page.getByRole(\"button\", { name: \"Try again\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the Try again button re-fires only that card's fetch\n});",
+      "code": "test(\"[BEH-MM-ERR-1] A failed comparison fetch says so and offers a retry\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:Errored\" });\n  // UNGENERATED: given ratio:Errored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#compare')).toContainText(\"Could not load data.\");\n  await expect(page.getByRole(\"button\", { name: \"Try again\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the Try again button re-fires only that card's fetch\" });\n  // CONTRACT (not derivable from a behaviour): the Try again button re-fires only that card's fetch\n});",
       "missing": [
         "ratio:Errored"
       ],
@@ -1086,7 +1086,7 @@
     },
     {
       "id": "BEH-MM-ISOLATION-1",
-      "code": "test(\"[BEH-MM-ISOLATION-1] One card's error leaves the others readable\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:OneErrored\" });\n  // UNGENERATED: given ratio:OneErrored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#presets')).toContainText(\"Could not load data.\");\n  await expect(page.locator('#indicators')).toContainText(\"Unavailable\");\n  // CONTRACT (not derivable from a behaviour): every other card still renders its value\n});",
+      "code": "test(\"[BEH-MM-ISOLATION-1] One card's error leaves the others readable\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given ratio:OneErrored\" });\n  // UNGENERATED: given ratio:OneErrored\n  await page.goto(\"/macro-metrics/\");\n  await expect(page.locator('#presets')).toContainText(\"Could not load data.\");\n  await expect(page.locator('#indicators')).toContainText(\"Unavailable\");\n  test.info().annotations.push({ type: \"kit-contract\", description: \"every other card still renders its value\" });\n  // CONTRACT (not derivable from a behaviour): every other card still renders its value\n});",
       "missing": [
         "ratio:OneErrored"
       ],

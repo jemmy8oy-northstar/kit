@@ -303,12 +303,17 @@ public sealed class KitReport(
         var symbols = resolution.Symbols.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
         int generated = 0, contract = 0, ungenerated = 0;
         var unbound = new List<string>();
+        var noSteps = new List<string>();
         foreach (var b in behaviours)
         {
             var test = generator.Generate(b, byApp.GetValueOrDefault(CorpusOf(b) ?? string.Empty) ?? [], symbols);
             generated += test.Stats.Generated;
             contract += test.Stats.Contract;
             ungenerated += test.Stats.Ungenerated;
+            if (test.Code.Contains(TestGenerator.NoStepToWalk, StringComparison.Ordinal))
+            {
+                noSteps.Add(b.Id);
+            }
             foreach (var m in test.Missing.Where(m => !unbound.Contains(m)))
             {
                 unbound.Add(m);
@@ -388,6 +393,10 @@ public sealed class KitReport(
         Out($"  wire contracts        {contract}   not expressible as a behaviour — something else must own these");
         Out($"  ungenerated           {ungenerated}   refused rather than guessed");
         Out($"  unbound nouns         {unbound.Count}   {string.Join(", ", unbound)}");
+        if (noSteps.Count > 0)
+        {
+            Out($"  no steps (skipped)    {noSteps.Count}   {string.Join(", ", noSteps)}");
+        }
         // 0/0 is not a rate. kit.js printed "NaN%" for it, and so did this port, until a corpus tagged
         // technical throughout (kit#193) made it the headline number of Kit's own spec.
         Out(steps == 0
