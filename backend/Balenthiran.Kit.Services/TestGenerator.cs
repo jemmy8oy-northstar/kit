@@ -33,6 +33,12 @@ public sealed class TestGenerator : ITestGenerator
     /// </summary>
     public const string UngeneratedAnnotation = "kit-ungenerated";
 
+    /// <summary>
+    /// The annotation type a wire-contract step carries into the Playwright report: a gap the
+    /// test does not check, visible to the same tooling that reads <see cref="UngeneratedAnnotation"/>.
+    /// </summary>
+    public const string ContractAnnotation = "kit-contract";
+
     /// <summary>Why a behaviour with no steps gets a skipped test, in its comment and the report.</summary>
     public const string NoStepToWalk = "no step to walk, so a test here would pass without asserting anything";
 
@@ -78,6 +84,9 @@ public sealed class TestGenerator : ITestGenerator
         {
             if (step.Kind == "contract")
             {
+                // kit#86: a bare comment no reporter can see, so a test missing its wire contract read
+                // as complete. Annotated like a refused step, ABOVE the comment for the same reason.
+                body.Add($"test.info().annotations.push({{ type: {Stringify(ContractAnnotation)}, description: {Stringify(step.Text)} }});");
                 body.Add($"// CONTRACT (not derivable from a behaviour): {step.Text}");
                 stats.Contract++;
                 continue;

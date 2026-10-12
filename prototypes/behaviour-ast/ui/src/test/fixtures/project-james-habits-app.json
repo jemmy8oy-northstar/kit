@@ -1089,7 +1089,7 @@
     },
     {
       "id": "BEH-LOOP-1",
-      "code": "test(\"[BEH-LOOP-1] The full day is loggable from one screen in under ~20 seconds\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the whole day is loggable from one screen in under ~20 seconds\n});",
+      "code": "test(\"[BEH-LOOP-1] The full day is loggable from one screen in under ~20 seconds\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the whole day is loggable from one screen in under ~20 seconds\" });\n  // CONTRACT (not derivable from a behaviour): the whole day is loggable from one screen in under ~20 seconds\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1099,7 +1099,7 @@
     },
     {
       "id": "BEH-DATE-1",
-      "code": "test(\"[BEH-DATE-1] The client's local calendar day is stored verbatim as YYYY-MM-DD\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the server stores the client-supplied YYYY-MM-DD date without timezone conversion\n});",
+      "code": "test(\"[BEH-DATE-1] The client's local calendar day is stored verbatim as YYYY-MM-DD\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the server stores the client-supplied YYYY-MM-DD date without timezone conversion\" });\n  // CONTRACT (not derivable from a behaviour): the server stores the client-supplied YYYY-MM-DD date without timezone conversion\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1109,7 +1109,7 @@
     },
     {
       "id": "BEH-SEED-1",
-      "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
+      "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  test.info().annotations.push({ type: \"kit-contract\", description: \"seeding is idempotent — a second run does not duplicate the starter set\" });\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
       "missing": [
         "page:Today",
         "region:HabitList"
@@ -1122,7 +1122,7 @@
     },
     {
       "id": "BEH-ORDER-1",
-      "code": "test(\"[BEH-ORDER-1] A newly created habit is appended to the end of the display order\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): POST /api/habits places the new habit last in sortOrder\n});",
+      "code": "test(\"[BEH-ORDER-1] A newly created habit is appended to the end of the display order\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"POST /api/habits places the new habit last in sortOrder\" });\n  // CONTRACT (not derivable from a behaviour): POST /api/habits places the new habit last in sortOrder\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1132,7 +1132,7 @@
     },
     {
       "id": "BEH-ARCHIVE-1",
-      "code": "test(\"[BEH-ARCHIVE-1] An archived habit disappears from the list but stays retrievable by id\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): DELETE /api/habits/{id} archives rather than deletes\n  // CONTRACT (not derivable from a behaviour): GET /api/habits omits the archived habit\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id} still returns it\n});",
+      "code": "test(\"[BEH-ARCHIVE-1] An archived habit disappears from the list but stays retrievable by id\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"DELETE /api/habits/{id} archives rather than deletes\" });\n  // CONTRACT (not derivable from a behaviour): DELETE /api/habits/{id} archives rather than deletes\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits omits the archived habit\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits omits the archived habit\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits/{id} still returns it\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id} still returns it\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1142,7 +1142,7 @@
     },
     {
       "id": "BEH-ARCHIVE-2",
-      "code": "test(\"[BEH-ARCHIVE-2] Archived habits can be asked for explicitly\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET /api/habits takes a flag that includes archived habits\n});",
+      "code": "test(\"[BEH-ARCHIVE-2] Archived habits can be asked for explicitly\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits takes a flag that includes archived habits\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits takes a flag that includes archived habits\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1152,7 +1152,7 @@
     },
     {
       "id": "BEH-STREAK-1",
-      "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
+      "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the streak counts back from today and tolerates today being unlogged\" });\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
       "missing": [
         "habit:BooleanSeeded",
         "page:Today",
@@ -1166,7 +1166,7 @@
     },
     {
       "id": "BEH-STREAK-2",
-      "code": "test(\"[BEH-STREAK-2] A streak stops at the first missed day\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the current streak ends at the first incomplete day before today\n});",
+      "code": "test(\"[BEH-STREAK-2] A streak stops at the first missed day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the current streak ends at the first incomplete day before today\" });\n  // CONTRACT (not derivable from a behaviour): the current streak ends at the first incomplete day before today\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1176,7 +1176,7 @@
     },
     {
       "id": "BEH-STREAK-3",
-      "code": "test(\"[BEH-STREAK-3] Longest streak ignores duplicate and out-of-order dates\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): duplicate and unordered entry dates do not inflate the longest streak\n});",
+      "code": "test(\"[BEH-STREAK-3] Longest streak ignores duplicate and out-of-order dates\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"duplicate and unordered entry dates do not inflate the longest streak\" });\n  // CONTRACT (not derivable from a behaviour): duplicate and unordered entry dates do not inflate the longest streak\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1186,7 +1186,7 @@
     },
     {
       "id": "BEH-ENTRY-1",
-      "code": "test(\"[BEH-ENTRY-1] Logging the same habit twice on one day overwrites rather than appends\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): PUT /api/entries is an upsert keyed on (habitId, date)\n});",
+      "code": "test(\"[BEH-ENTRY-1] Logging the same habit twice on one day overwrites rather than appends\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"PUT /api/entries is an upsert keyed on (habitId, date)\" });\n  // CONTRACT (not derivable from a behaviour): PUT /api/entries is an upsert keyed on (habitId, date)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1196,7 +1196,7 @@
     },
     {
       "id": "BEH-HISTORY-2",
-      "code": "test(\"[BEH-HISTORY-2] The history window length is requested by the caller, defaulting to 30\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\n});",
+      "code": "test(\"[BEH-HISTORY-2] The history window length is requested by the caller, defaulting to 30\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1206,7 +1206,7 @@
     },
     {
       "id": "BEH-HISTORY-3",
-      "code": "test(\"[BEH-HISTORY-3] The history window parameter is named historyDays, not days\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the query parameter is `historyDays`, and `?days=` is silently ignored\n});",
+      "code": "test(\"[BEH-HISTORY-3] The history window parameter is named historyDays, not days\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the query parameter is `historyDays`, and `?days=` is silently ignored\" });\n  // CONTRACT (not derivable from a behaviour): the query parameter is `historyDays`, and `?days=` is silently ignored\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1216,7 +1216,7 @@
     },
     {
       "id": "BEH-REORDER-1",
-      "code": "test(\"[BEH-REORDER-1] Habits can be reordered as a whole list in one call\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): PUT /api/habits/reorder rewrites every sort position\n});",
+      "code": "test(\"[BEH-REORDER-1] Habits can be reordered as a whole list in one call\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"PUT /api/habits/reorder rewrites every sort position\" });\n  // CONTRACT (not derivable from a behaviour): PUT /api/habits/reorder rewrites every sort position\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1226,7 +1226,7 @@
     },
     {
       "id": "BEH-ERROR-1",
-      "code": "test(\"[BEH-ERROR-1] An unknown habit is a 404 carrying a machine-readable error code\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): GET, PUT, DELETE and history for an unknown habit id all return 404\n  // CONTRACT (not derivable from a behaviour): the body is ProblemDetails and carries an error code\n  // CONTRACT (not derivable from a behaviour): an unexpected exception is a 500 that exposes nothing\n});",
+      "code": "test(\"[BEH-ERROR-1] An unknown habit is a 404 carrying a machine-readable error code\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET, PUT, DELETE and history for an unknown habit id all return 404\" });\n  // CONTRACT (not derivable from a behaviour): GET, PUT, DELETE and history for an unknown habit id all return 404\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the body is ProblemDetails and carries an error code\" });\n  // CONTRACT (not derivable from a behaviour): the body is ProblemDetails and carries an error code\n  test.info().annotations.push({ type: \"kit-contract\", description: \"an unexpected exception is a 500 that exposes nothing\" });\n  // CONTRACT (not derivable from a behaviour): an unexpected exception is a 500 that exposes nothing\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1236,7 +1236,7 @@
     },
     {
       "id": "BEH-COMPLETE-1",
-      "code": "test(\"[BEH-COMPLETE-1] Completion is defined per habit type\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): boolean habits complete when ticked\n  // CONTRACT (not derivable from a behaviour): numeric habits with a target complete at or above the target\n  // CONTRACT (not derivable from a behaviour): numeric habits without a target complete when any value is entered\n});",
+      "code": "test(\"[BEH-COMPLETE-1] Completion is defined per habit type\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"boolean habits complete when ticked\" });\n  // CONTRACT (not derivable from a behaviour): boolean habits complete when ticked\n  test.info().annotations.push({ type: \"kit-contract\", description: \"numeric habits with a target complete at or above the target\" });\n  // CONTRACT (not derivable from a behaviour): numeric habits with a target complete at or above the target\n  test.info().annotations.push({ type: \"kit-contract\", description: \"numeric habits without a target complete when any value is entered\" });\n  // CONTRACT (not derivable from a behaviour): numeric habits without a target complete when any value is entered\n});",
       "missing": [],
       "stats": {
         "generated": 0,
