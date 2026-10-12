@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
 import { noNotes } from '../test/noNotes'
@@ -138,16 +138,40 @@ describe('the question sheet', () => {
     expect(within(card).getByText(/^Against:/)).toBeInTheDocument()
   })
 
-  it('offers NO control on a conflict, and says why', async () => {
-    // Kit has no syntax for "BEH-A supersedes BEH-B" — no keyword, no writer
-    // function. A resolve button here would mean inventing the grammar it wrote
-    // into, which is a change to the corpus language and James's call. The page
-    // must say that rather than look unfinished.
-    renderApp(habits, 'james-habits-app')
+  it('resolves a decision in prose, as a note naming its key, never as corpus syntax', async () => {
+    // Kit still has no syntax for "BEH-A supersedes BEH-B" (BEH-NOTE-8). The
+    // answer is a note, and the fold is what edits the behaviours.
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posts.push({ url, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'james-habits-app', behaviour: null, file: 'x.notes.md', note: 'x' }) }
+        }
+        return noNotes(url, init) ?? { ok: true, status: 200, statusText: 'OK', json: async () => habits }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/james-habits-app']}>
+        <Routes>
+          <Route path="/projects/:app" element={<Project />} />
+        </Routes>
+      </MemoryRouter>,
+    )
 
     const card = (await screen.findByText(/Two behaviours disagree about/)).closest('div')!
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument()
-    expect(within(card).getByText(/no syntax for recording a resolution/)).toBeInTheDocument()
+    const resolve = within(card).getByRole('button', { name: 'Resolve' })
+    expect(resolve).toBeDisabled()
+    fireEvent.change(within(card).getByLabelText('How should this be resolved?'), { target: { value: 'the newer one wins' } })
+    fireEvent.click(resolve)
+
+    const key = habits.questions.find((q) => q.tier === 'decision')!.key
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { url: '/api/projects/james-habits-app/notes', body: { text: 'the newer one wins', kind: 'resolution', resolves: key } },
+      ]),
+    )
   })
 
   it('links every never-adjudicated inference to the page where it can be answered', async () => {
@@ -163,31 +187,42 @@ describe('the question sheet', () => {
     }
   })
 
-  it('will not submit a new behaviour without an id, and will not without a title', async () => {
-    // Both halves, because the button guards both and a test for one alone is
-    // satisfied by a form that dropped the other. An id is not a field the
-    // corpus can default: it is the key `check.js` gates on and the anchor every
-    // `serves`/`cites` line refers to, so a blank one is a behaviour nothing can
-    // ever name.
-    renderApp(snipIt, 'snip-it')
+  it('asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank', async () => {
+    // BEH-NOTE-4: the Id / Title / Actor form is gone. Whoever folds the request
+    // writes those, so asking for them here would be the chore he named.
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posts.push({ url, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'snip-it', behaviour: null, file: 'x.notes.md', note: 'x' }) }
+        }
+        return noNotes(url, init) ?? { ok: true, status: 200, statusText: 'OK', json: async () => snipIt }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/snip-it']}>
+        <Routes>
+          <Route path="/projects/:app" element={<Project />} />
+        </Routes>
+      </MemoryRouter>,
+    )
 
-    const add = await screen.findByRole('button', { name: 'Add behaviour' })
-    expect(add).toBeDisabled()
+    const ask = await screen.findByRole('button', { name: 'Ask for behaviour' })
+    expect(screen.queryByLabelText('Id')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument()
+    expect(ask).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: '  ' } })
+    expect(ask).toBeDisabled()
 
-    // Title only — still refused.
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'the cut is downloadable' } })
-    expect(add).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'a cut can be downloaded' } })
+    fireEvent.click(ask)
 
-    // Id as whitespace is the same as no id; `.trim()` is what makes that true.
-    fireEvent.change(screen.getByLabelText('Id'), { target: { value: '   ' } })
-    expect(add).toBeDisabled()
-
-    fireEvent.change(screen.getByLabelText('Id'), { target: { value: 'BEH-CUT-2' } })
-    expect(add).toBeEnabled()
-
-    // And the other direction: a title cleared after the fact re-disables it.
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: '' } })
-    expect(add).toBeDisabled()
+    await waitFor(() =>
+      expect(posts).toEqual([{ url: '/api/projects/snip-it/notes', body: { text: 'a cut can be downloaded', kind: 'request' } }]),
+    )
+    expect(screen.getByLabelText('Describe what should happen')).toHaveValue('')
   })
 
   it('shows no sheet at all when there is nothing to ask', async () => {

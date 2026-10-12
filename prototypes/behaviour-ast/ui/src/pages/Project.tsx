@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addBehaviour, fetchProject, fetchProjects } from '../api/client'
+import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
+import { askForBehaviour, fetchProject, fetchProjects, resolveDecision } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
 import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features'
@@ -33,7 +33,7 @@ async function filesOf(app: string): Promise<ProjectDetail[]> {
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
   const { app = '' } = useParams()
-  const { resource, reload } = useReloadableResource(() => filesOf(app), [app])
+  const { resource } = useReloadableResource(() => filesOf(app), [app])
 
   return (
     <>
@@ -44,9 +44,9 @@ export default function Project() {
       <ResourceView resource={resource}>
         {(files) =>
           files.length === 1 && files[0].app === app ? (
-            <Detail project={files[0]} onWrote={reload} />
+            <Detail project={files[0]} />
           ) : (
-            <OneProject name={app} files={files} onWrote={reload} />
+            <OneProject name={app} files={files} />
           )
         }
       </ResourceView>
@@ -54,9 +54,10 @@ export default function Project() {
   )
 }
 
-function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => void }) {
+function Detail({ project }: { project: ProjectDetail }) {
   const unreviewed = new Set(project.adjudication.unreviewed)
   const top = topLevel(project)
+  const [notes, bump] = useNotesVersion()
 
   return (
     <>
@@ -72,7 +73,8 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
       </div>
 
       {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
-      <NotesPanel app={project.app} />
+      <AskForBehaviour app={project.app} onAsked={bump} />
+      <NotesPanel app={project.app} version={notes} />
 
       {project.conflicts.length > 0 && (
         <section>
@@ -87,7 +89,7 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
         </section>
       )}
 
-      <QuestionSheet sheets={[project]} />
+      <QuestionSheet sheets={[project]} notesApp={project.app} onResolved={bump} />
 
       {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
           features has no section here and lists every behaviour, as it always did. */}
@@ -109,10 +111,15 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
             </li>
           ))}
         </ul>
-        <NewBehaviourForm app={project.app} onWrote={onWrote} />
       </section>
     </>
   )
+}
+
+/** A form elsewhere on the page writes a note; bumping the version makes the notes list re-read. */
+function useNotesVersion(): [number, () => void] {
+  const [version, setVersion] = useState(0)
+  return [version, () => setVersion((v) => v + 1)]
 }
 
 /**
@@ -123,8 +130,9 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
  * the file named like the project (Kit's command line), which is what this url showed
  * before it was merged — so neither moves under him.
  */
-function OneProject({ name, files, onWrote }: { name: string; files: ProjectDetail[]; onWrote: () => void }) {
+function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   const home = files.find((f) => f.app === name) ?? files[0]
+  const [notes, bump] = useNotesVersion()
   const tops = files.map((f) => ({ file: f, top: topLevel(f), unreviewed: new Set(f.adjudication.unreviewed) }))
   const features = tops.flatMap(({ file, top }) => top.features.map((feature) => ({ file, feature })))
   const loose = tops.flatMap(({ file, top, unreviewed }) =>
@@ -170,7 +178,8 @@ function OneProject({ name, files, onWrote }: { name: string; files: ProjectDeta
         </section>
       )}
 
-      <NotesPanel app={home.app} />
+      <AskForBehaviour app={home.app} onAsked={bump} />
+      <NotesPanel app={home.app} version={notes} />
 
       {conflicts.length > 0 && (
         <section>
@@ -185,84 +194,47 @@ function OneProject({ name, files, onWrote }: { name: string; files: ProjectDeta
         </section>
       )}
 
-      <QuestionSheet sheets={files} />
-
-      <section>
-        <NewBehaviourForm app={home.app} onWrote={onWrote} />
-      </section>
+      <QuestionSheet sheets={files} notesApp={home.app} onResolved={bump} />
     </>
   )
 }
 
 /**
- * His step 4: "what the desired behaviour really is" — a behaviour that did not
- * exist before, written into the corpus itself rather than into a report about
- * it.
+ * His step 4, "what the desired behaviour really is", in prose (BEH-NOTE-4,
+ * kit#118 2026-10-12): *"the way that you define behaviours is quite a chore …
+ * I am thinking more free form text inputs. In place of the behaviour input."*
  *
- * ⚠️ **The new behaviour is marked `inferred`, and this form does not offer to
- * change that.** `writer.js` defaults `source` to `inferred`, which `parse()`
- * then marks `unreviewed` — James's call on claude-code-bot#68: *"I like this
- * default included but marked unreviewed"*. A field here that let the writer
- * claim `defined` would let a machine spend the silence that means a human wrote
- * it, which is the one thing a corpus cannot get back. Promoting an inference to
- * defined is an adjudication, and adjudication is a separate act from authoring.
+ * It replaces the Id / Title / Actor form. What it writes is a `request` note,
+ * not a behaviour: whoever folds it writes the id, title, actor and steps, and
+ * the corpus is untouched until then. That keeps the one property the old form
+ * was careful of — a machine never writes `source defined` on his behalf —
+ * because nothing here writes the corpus at all.
  */
-function NewBehaviourForm({ app, onWrote }: { app: string; onWrote: () => void }) {
-  const [id, setId] = useState('')
-  const [title, setTitle] = useState('')
-  const [actor, setActor] = useState('')
-  const { write, run } = useWrite(onWrote)
+function AskForBehaviour({ app, onAsked }: { app: string; onAsked: () => void }) {
+  const [text, setText] = useState('')
+  const { write, run } = useWrite(onAsked)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     await run(async () => {
-      // `steps` is deliberately omitted rather than sent empty: a new behaviour
-      // starts with none, and the step form on its own page is where they are
-      // added — one grammar, one place that types it.
-      const result = await addBehaviour(app, {
-        id: id.trim(),
-        title: title.trim(),
-        // An empty actor must not become `actor ""` in the corpus. Sent only
-        // when it has a value; `writer.js` omits the line entirely then.
-        ...(actor.trim() ? { actor: actor.trim() } : {}),
-      })
-      setId('')
-      setTitle('')
-      setActor('')
+      const result = await askForBehaviour(app, text)
+      setText('')
       return result
     })
   }
 
   return (
     <form onSubmit={submit} className="write">
-      <h3>New behaviour</h3>
-      <label htmlFor="new-id">Id</label>
-      <Input
-        id="new-id"
-        placeholder="BEH-CUT-2"
-        value={id}
-        onChange={(e) => setId(e.target.value)}
-        invalid={write.state === 'refused'}
+      <label htmlFor="ask-behaviour">Describe what should happen</label>
+      <textarea
+        id="ask-behaviour"
+        className="note-text"
+        placeholder="e.g. dragging a habit reorders the list, and it stays that way"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
       />
-      <label htmlFor="new-title">Title</label>
-      <Input
-        id="new-title"
-        placeholder="the cut is downloadable"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <label htmlFor="new-actor">Actor</label>
-      <Input
-        id="new-actor"
-        placeholder="editor"
-        value={actor}
-        onChange={(e) => setActor(e.target.value)}
-      />
-      <Button
-        type="submit"
-        disabled={write.state === 'saving' || id.trim() === '' || title.trim() === ''}
-      >
-        {write.state === 'saving' ? 'Writing…' : 'Add behaviour'}
+      <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
+        {write.state === 'saving' ? 'Sending…' : 'Ask for behaviour'}
       </Button>
       <WriteFeedback write={write} />
     </form>
@@ -284,12 +256,24 @@ function NewBehaviourForm({ app, onWrote }: { app: string; onWrote: () => void }
  * the queue links to where it can be answered. A `decision` entry — two
  * behaviours disagreeing — has no answer Kit can record: there is no `supersede`
  * keyword in the corpus grammar, no writer function for one, and adding either
- * is a change to the LANGUAGE rather than a feature on top of it. So a conflict
- * shows everything the sheet knows and offers no button. Rendering a resolution
- * control here would mean inventing the syntax it wrote into, which is his call
- * and not a gap to quietly fill.
+ * is a change to the LANGUAGE rather than a feature on top of it.
+ *
+ * So a decision is resolved in prose (BEH-NOTE-8, his "Question where need a
+ * resolution input. This could be free form text as well"): the answer is a note
+ * naming the decision's key, and the fold is what edits the behaviours. Still no
+ * syntax invented; the conflict stays on the sheet until the note is folded.
+ * Resolutions go to `notesApp`, the notes the page shows, whichever file the
+ * decision came from — a note in a file nobody lists is a note nobody folds.
  */
-function QuestionSheet({ sheets }: { sheets: { app: string; questions: Question[] }[] }) {
+function QuestionSheet({
+  sheets,
+  notesApp,
+  onResolved,
+}: {
+  sheets: { app: string; questions: Question[] }[]
+  notesApp: string
+  onResolved: () => void
+}) {
   // One sheet over every file of the project; each question keeps the file it links into.
   const questions = sheets.flatMap((s) => s.questions.map((q) => ({ ...q, app: s.app })))
   if (!questions.length) return null
@@ -306,7 +290,7 @@ function QuestionSheet({ sheets }: { sheets: { app: string; questions: Question[
       </div>
 
       {decisions.map((q) => (
-        <DecisionCard key={q.key} question={q} />
+        <DecisionCard key={q.key} question={q} notesApp={notesApp} onResolved={onResolved} />
       ))}
 
       {reviews.length > 0 && (
@@ -346,7 +330,20 @@ function QuestionSheet({ sheets }: { sheets: { app: string; questions: Question[
   )
 }
 
-function DecisionCard({ question }: { question: Question }) {
+function DecisionCard({ question, notesApp, onResolved }: { question: Question; notesApp: string; onResolved: () => void }) {
+  const [text, setText] = useState('')
+  const { write, run } = useWrite(onResolved)
+  const fieldId = useId()
+
+  async function resolve(e: React.FormEvent) {
+    e.preventDefault()
+    await run(async () => {
+      const result = await resolveDecision(notesApp, question.key, text)
+      setText('')
+      return result
+    })
+  }
+
   return (
     <Card elevation="flat">
       <h3>{question.title}</h3>
@@ -380,10 +377,14 @@ function DecisionCard({ question }: { question: Question }) {
           folded away: a recommendation shown without its own counter-case is how
           a suggestion becomes a decision nobody made. */}
       {question.against && <p className="muted">Against: {question.against}</p>}
-      <p className="muted">
-        Kit has no syntax for recording a resolution to this, so there is nothing to click. It is a
-        change to the corpus language, and that is James's call.
-      </p>
+      <form onSubmit={resolve} className="write">
+        <label htmlFor={fieldId}>How should this be resolved?</label>
+        <textarea id={fieldId} className="note-text" value={text} onChange={(e) => setText(e.target.value)} />
+        <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
+          {write.state === 'saving' ? 'Sending…' : 'Resolve'}
+        </Button>
+        <WriteFeedback write={write} />
+      </form>
     </Card>
   )
 }

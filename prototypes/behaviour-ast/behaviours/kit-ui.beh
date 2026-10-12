@@ -142,7 +142,7 @@ behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   when opens page:KitProject
   then sees heading:KitQuestionSheet
   then sees heading:KitNeverAdjudicated
-  then sees button:KitAddBehaviour
+  then sees button:KitAskForBehaviour
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
@@ -238,7 +238,6 @@ behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spe
 behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
   in FEAT-NOTES
   in FEAT-PROJECT
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -251,7 +250,6 @@ behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
 
 behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with questions"
   in FEAT-NOTES
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -259,11 +257,11 @@ behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with 
   contract whoever folds a note it cannot decode leaves it open and writes numbered questions under it
   contract the questions are in a form a note's own text cannot forge, so prose never reads as a question
   contract notes with questions are listed above every other open note, newest question first
-  contract with none waiting, the region says nothing needs an answer, rather than vanishing
+  contract with none waiting there is no region at all — an empty one on every project page is the scrolling he asked to lose
+  contract a note waiting on an answer is listed only there, never again among the open notes
 
 behaviour BEH-NOTE-6 "A note's questions are answered in free text"
   in FEAT-NOTES
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -275,7 +273,6 @@ behaviour BEH-NOTE-6 "A note's questions are answered in free text"
 
 behaviour BEH-NOTE-7 "A note can be dismissed"
   in FEAT-NOTES
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -288,7 +285,6 @@ behaviour BEH-NOTE-7 "A note can be dismissed"
 behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
   in FEAT-NOTES
   in FEAT-PROJECT
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject

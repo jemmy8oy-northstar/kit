@@ -62,6 +62,7 @@ public sealed class KitRouter(
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
+    private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -205,7 +206,8 @@ public sealed class KitRouter(
 
         var bm = Bindings.Match(pathname);
         var nm = NotesRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : Behaviours.Match(pathname);
+        var na = NoteAction.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -236,7 +238,10 @@ public sealed class KitRouter(
         // would race on the same corpus text and on git's index lock (kit#165).
         lock (writeGate)
         {
-            return bm.Success ? Bind(app, b) : nm.Success ? LeaveNote(app, b) : Edit(app, m, b);
+            return bm.Success ? Bind(app, b)
+                : nm.Success ? LeaveNote(app, b)
+                : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
+                : Edit(app, m, b);
         }
     }
 
@@ -402,6 +407,11 @@ public sealed class KitRouter(
     /// kit#118: append one free-text note to <c>&lt;app&gt;.notes.md</c>, then commit and push it like
     /// any edit. A note on a behaviour names it, but the id is not looked up: a note may be about a
     /// behaviour that is being renamed, removed, or does not exist yet.
+    /// <para>
+    /// <c>kind</c> (kit#118, 2026-10-12): <c>request</c> asks for a behaviour in prose instead of the
+    /// id/title/actor form (BEH-NOTE-4); <c>resolution</c> says how a decision on the question sheet
+    /// should go, naming it by <c>resolves</c> (BEH-NOTE-8). Neither touches the corpus.
+    /// </para>
     /// </summary>
     private KitResponse LeaveNote(string app, JsonElement body)
     {
@@ -411,24 +421,52 @@ public sealed class KitRouter(
         }
 
         var text = Str(body, "text")!;
-        if (string.IsNullOrWhiteSpace(text))
+        if (TextError(text) is { } badText)
         {
-            return Json(400, new ApiError { Error = "bad-request", Reason = "a note needs some text" });
+            return Json(400, new ApiError { Error = "bad-request", Reason = badText });
         }
 
-        if (text.Length > Notes.MaxLength)
-        {
-            return Json(400, new ApiError { Error = "bad-request", Reason = $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}" });
-        }
-
+        var kind = Str(body, "kind") ?? Notes.NoteKind;
         var behaviour = Str(body, "behaviour");
-        if (behaviour is not null && !Notes.IsBehaviourId(behaviour))
+        var resolves = Str(body, "resolves");
+        if (kind is not (Notes.NoteKind or Notes.RequestKind or Notes.ResolutionKind))
         {
-            return Json(400, new ApiError { Error = "bad-request", Reason = "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+            return Json(400, new ApiError { Error = "bad-request", Reason = "kind must be note, request or resolution" });
         }
 
-        corpora.WriteNotesText(app, Notes.Append(corpora.ReadNotesText(app), app, text, behaviour, (clock ?? TimeProvider.System).GetUtcNow()));
-        return Json(200, GitOutcome(corpora.FullNotesPath(app), behaviour is null ? "leave a note" : $"leave a note on {behaviour}", app, new WriteOutcome
+        if (behaviour is not null && (kind != Notes.NoteKind || !Notes.IsBehaviourId(behaviour)))
+        {
+            return Json(400, new ApiError
+            {
+                Error = "bad-request",
+                Reason = kind != Notes.NoteKind
+                    ? "only a plain note can name a behaviour"
+                    : "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only",
+            });
+        }
+
+        if ((kind == Notes.ResolutionKind) != (resolves is not null) || (resolves is not null && !Notes.IsQuestionKey(resolves)))
+        {
+            return Json(400, new ApiError
+            {
+                Error = "bad-request",
+                Reason = kind == Notes.ResolutionKind
+                    ? $"a resolution names the decision it resolves: resolves must be its key, one token of at most {Notes.MaxKeyLength} characters"
+                    : "only a resolution names a decision to resolve",
+            });
+        }
+
+        var existing = corpora.ReadNotesText(app);
+        var now = (clock ?? TimeProvider.System).GetUtcNow();
+        var (written, summary) = kind switch
+        {
+            Notes.RequestKind => (Notes.AppendRequest(existing, app, text, now), "ask for a behaviour"),
+            Notes.ResolutionKind => (Notes.AppendResolution(existing, app, text, resolves!, now), $"resolve {resolves}"),
+            _ => (Notes.Append(existing, app, text, behaviour, now), behaviour is null ? "leave a note" : $"leave a note on {behaviour}"),
+        };
+
+        corpora.WriteNotesText(app, written);
+        return Json(200, GitOutcome(corpora.FullNotesPath(app), summary, app, new WriteOutcome
         {
             App = app,
             Behaviour = behaviour,
@@ -436,6 +474,54 @@ public sealed class KitRouter(
             Note = NotCommitted,
         }));
     }
+
+    /// <summary>
+    /// Answer a note's questions (BEH-NOTE-6) or dismiss it (BEH-NOTE-7). The note is named by its
+    /// place in the file AND its date, so an edit that lands between reading the list and pressing
+    /// the button cannot redirect the action onto a different note: it is refused with 409 instead.
+    /// </summary>
+    private KitResponse ActOnNote(string app, string action, JsonElement body)
+    {
+        var dismiss = action == "dismiss";
+        if (TypeError(body, dismiss ? DismissFields : ReplyFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var index = body.GetProperty("index").GetInt32();
+        var at = Str(body, "at")!;
+        var text = dismiss ? null : Str(body, "text")!;
+        if (text is not null && TextError(text) is { } badText)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = badText });
+        }
+
+        var existing = corpora.ReadNotesText(app);
+        var written = dismiss
+            ? Notes.Dismiss(existing, index, at)
+            : Notes.Reply(existing, index, at, text!, (clock ?? TimeProvider.System).GetUtcNow());
+        if (written is null)
+        {
+            return Json(409, new ApiError
+            {
+                Error = "no-such-note",
+                Reason = $"note {index} left at {at} is no longer in {corpora.RelativeNotesPath(app)} — it may have been folded or dismissed already. Reload to see what is open.",
+            });
+        }
+
+        corpora.WriteNotesText(app, written);
+        return Json(200, GitOutcome(corpora.FullNotesPath(app), dismiss ? $"dismiss the note left at {at}" : $"answer the note left at {at}", app, new WriteOutcome
+        {
+            App = app,
+            File = corpora.RelativeNotesPath(app),
+            Note = NotCommitted,
+        }));
+    }
+
+    private static string? TextError(string text) =>
+        string.IsNullOrWhiteSpace(text) ? "a note needs some text"
+        : text.Length > Notes.MaxLength ? $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}"
+        : null;
 
     /// <summary>
     /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
@@ -497,7 +583,9 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
     private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
-    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?")];
+    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
+    private static readonly (string Field, string Type)[] ReplyFields = [("index", "int"), ("at", "string"), ("text", "string")];
+    private static readonly (string Field, string Type)[] DismissFields = [("index", "int"), ("at", "string")];
 
     private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
     {
@@ -514,6 +602,11 @@ public sealed class KitRouter(
             if (type == "string?" && !absent && !isString)
             {
                 return $"{field} must be a string";
+            }
+
+            if (type == "int" && !(v is { ValueKind: JsonValueKind.Number } n && n.TryGetInt32(out _)))
+            {
+                return $"{field} must be a whole number";
             }
 
             if (type == "strings?" && !absent && !(v!.Value.ValueKind == JsonValueKind.Array && v.Value.EnumerateArray().All(x => x.ValueKind == JsonValueKind.String)))

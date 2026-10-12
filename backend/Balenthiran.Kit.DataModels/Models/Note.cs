@@ -10,8 +10,24 @@ public sealed class Note : INote
     public required string At { get; init; }
 
     [JsonPropertyOrder(2)]
-    public string? Behaviour { get; init; }
+    public string Kind { get; init; } = "note";
 
     [JsonPropertyOrder(3)]
+    public string? Behaviour { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? Resolves { get; init; }
+
+    [JsonPropertyOrder(5)]
     public required string Text { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public List<NoteEntry> Thread { get; init; } = [];
+
+    [JsonPropertyOrder(7)]
+    public List<string> Questions { get; init; } = [];
+
+    IReadOnlyList<INoteEntry> INote.Thread => Thread;
+
+    IReadOnlyList<string> INote.Questions => Questions;
 }
