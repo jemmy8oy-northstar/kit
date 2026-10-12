@@ -224,6 +224,91 @@ behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spe
   contract not ticked, in the same pull request that adds the behaviour or code it became
   contract with no open notes the region says so, rather than vanishing
 
+# ═══ Free text in place of forms (kit#118, 2026-10-12) ═══════════════════════
+# "the way that you define behaviours is quite a chore at the moment I really like
+# the note style input … I am thinking more free form text inputs. In place of the
+# behaviour input for example." And: "some ui to show rejected free form text if
+# the ai can't decode the intention, maybe with some directed questions … or
+# dismiss", and "Question where need a resolution input. This could be free form
+# text as well". So every input that asked for structure asks for prose instead,
+# and the structure is written by whoever folds the note. Who folds it — the agent
+# on its next wake, or a model call inside Kit — is open (kit#118); these screens
+# are the same either way. `pending` until built; the shape is his to change.
+
+behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
+  in FEAT-NOTES
+  in FEAT-PROJECT
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when fills field:KitDescribeBehaviour with "dragging a habit reorders the list and it stays that way"
+  when activates button:KitAskForBehaviour
+  then sees region:KitOpenNotes
+  contract it is saved as a request note in <app>.notes.md; the corpus is not touched until it is folded
+  contract no id, title or actor is asked for — whoever folds it writes those, and the steps
+  contract Ask for behaviour is disabled while the box is empty
+
+behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with questions"
+  in FEAT-NOTES
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitNeedsAnswer
+  contract whoever folds a note it cannot decode leaves it open and writes numbered questions under it
+  contract the questions are in a form a note's own text cannot forge, so prose never reads as a question
+  contract notes with questions are listed above every other open note, newest question first
+  contract with none waiting, the region says nothing needs an answer, rather than vanishing
+
+behaviour BEH-NOTE-6 "A note's questions are answered in free text"
+  in FEAT-NOTES
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when fills field:KitReply with "only on the today view, the history keeps date order"
+  when activates button:KitReply
+  then sees region:KitOpenNotes
+  contract the reply is appended under the note and its questions; the note stays open for the next fold
+  contract it is committed and pushed like any other edit, and the write result says so
+
+behaviour BEH-NOTE-7 "A note can be dismissed"
+  in FEAT-NOTES
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when activates button:KitDismiss
+  then sees region:KitOpenNotes
+  contract the note leaves <app>.notes.md in a commit of its own; git history keeps it, so dismissing is recoverable
+  contract it asks nothing further — dismiss is the cancel, and a second prompt would make it a chore again
+  contract dismissing a note that someone else already removed says so, rather than failing silently
+
+behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
+  in FEAT-NOTES
+  in FEAT-PROJECT
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  when fills field:KitResolution with "BEH-CUT-2 wins; a cut is always downloadable"
+  when activates button:KitResolve
+  then sees region:KitOpenNotes
+  contract it leaves a note tagged with the decision's key; the conflict stays on the sheet until the note is folded
+  contract no corpus keyword is invented to record it — the fold is what edits the behaviours
+
+behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
+  in FEAT-PROJECT
+  in FEAT-BEHAVIOUR
+  in FEAT-BOARD
+  pending
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  contract every card leads with the title; the id follows in muted type, still there to search and link by
+  contract an id is never removed from a URL or a commit — it is quieter, not gone
+
 # ═══ Navigation and the board (kit#237) ═══════════════════════════════════════
 # "What I am seeing is more like an agile tool … a navbar with two views for now:
 # board view and project view." The project view is the existing pages until the
