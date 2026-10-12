@@ -45,7 +45,7 @@ public interface ICorpusDirectory
     /// <summary>The app's open notes, <c>&lt;app&gt;.notes.md</c> (kit#118), or null when none was ever left.</summary>
     string? ReadNotesText(string app);
 
-    /// <summary>Replace (or create) the notes file. Only ever called with <c>Notes.Append</c>'s result.</summary>
+    /// <summary>Replace (or create) the notes file. Only ever called with the result of <c>Notes.Append</c>, <c>Reply</c> or <c>Dismiss</c>.</summary>
     void WriteNotesText(string app, string text);
 
     /// <summary>The notes file's path, as <see cref="RelativePath"/> gives the corpus's.</summary>
