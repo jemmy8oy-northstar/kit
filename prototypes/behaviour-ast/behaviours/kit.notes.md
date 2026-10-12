@@ -31,3 +31,7 @@ I think there should also be some ui to show rejected free form text if the ai c
 ## 2026-10-12 16:34Z
 
 Question where need a resolution input. This could be free form text as well
+
+## 2026-10-12 20:47Z · resolve BEH-ACT-4
+
+I thought we agreed this was fine because then the ai (kit) has to acknowledge the edit and actively merge it rather than edits passively being merged
