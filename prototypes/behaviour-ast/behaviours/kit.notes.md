@@ -27,3 +27,7 @@ I think the beh-sheet-1 style ids are quite heavy. I think the behaviours in gen
 I think the way that you define behaviours is quite a chore at the moment I really like the note style input. I think that ai has the capability to formalise what is given from a note. I am thinking more free form text inputs. In place of the behaviour input for example.
 
 I think there should also be some ui to show rejected free form text if the ai can’t decode the intention, maybe with some directed questions to help decipher or a cancel option to dismiss. Or maybe dismiss is the right wording.
+
+## 2026-10-12 16:34Z
+
+Question where need a resolution input. This could be free form text as well
