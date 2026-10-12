@@ -206,6 +206,7 @@ behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anyth
 behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and reaches dev only through Commit"
   in FEAT-EDIT
   source inferred kit#88
+  review approved by James in Kit, 2026-10-12 20:47Z: "the ai (kit) has to acknowledge the edit and actively merge it rather than edits passively being merged"
   actor engineer
   when opens page:KitHostedProject
   then sees button:KitHostedCommit
