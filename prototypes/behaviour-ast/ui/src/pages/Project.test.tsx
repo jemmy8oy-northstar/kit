@@ -27,7 +27,11 @@ describe('Project', () => {
 
     expect(await screen.findByRole('heading', { name: 'snip-it', level: 1 })).toBeInTheDocument()
     expect(screen.getByText('8 behaviours')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'BEH-EDIT-1' })).toBeInTheDocument()
+    // BEH-TITLE-1: the card links by its title; the id is still on it, quieter.
+    const edit = snipIt.behaviours.find((b) => b.id === 'BEH-EDIT-1')!
+    const link = screen.getByRole('link', { name: edit.title })
+    expect(link).toHaveAttribute('href', '/projects/snip-it/behaviours/BEH-EDIT-1')
+    expect(within(link.closest('h3')!).getByText('BEH-EDIT-1')).toHaveClass('muted')
   })
 
   it('COUNTS the detail endpoint’s coverage instead of concatenating its ids', async () => {

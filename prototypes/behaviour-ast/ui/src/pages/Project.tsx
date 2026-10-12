@@ -445,7 +445,7 @@ function FeatureCard({ app, project, feature, path }: { app: string; project: Ta
       </h3>
       <div className="badges">
         <Count n={behavioursUnder(project, feature.id).size} one="behaviour" tone="primary" />
-        <Badge tone="neutral">{feature.id}</Badge>
+        <span className="muted id">{feature.id}</span>
       </div>
     </Card>
   )
@@ -464,9 +464,10 @@ export function BehaviourRow({
     <Card interactive>
       <h3>
         <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(behaviour.id)}`}>
-          {behaviour.id}
+          {behaviour.title}
         </Link>{' '}
-        {behaviour.title}
+        {/* BEH-TITLE-1: the title leads; the id stays, quieter, to search and link by. */}
+        <span className="muted id">{behaviour.id}</span>
       </h3>
       <div className="badges">
         <Badge tone="neutral">{behaviour.actor}</Badge>
