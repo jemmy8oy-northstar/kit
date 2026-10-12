@@ -35,3 +35,7 @@ Question where need a resolution input. This could be free form text as well
 ## 2026-10-12 20:47Z · resolve BEH-ACT-4
 
 I thought we agreed this was fine because then the ai (kit) has to acknowledge the edit and actively merge it rather than edits passively being merged
+
+## 2026-10-12 20:49Z · resolve page:KitProject.app
+
+Maybe features and questions should be under a tab view, default to features
