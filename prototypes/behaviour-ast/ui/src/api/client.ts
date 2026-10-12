@@ -229,6 +229,32 @@ export function leaveNote(app: string, text: string, behaviour?: string): Promis
 }
 
 /**
+ * Ask for a behaviour in prose (BEH-NOTE-4). It is a note of kind `request`:
+ * whoever folds it writes the id, title, actor and steps, so none is asked for.
+ */
+export function askForBehaviour(app: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, { text, kind: 'request' })
+}
+
+/** Say how a decision should go (BEH-NOTE-8): a note naming the decision's key. */
+export function resolveDecision(app: string, key: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, { text, kind: 'resolution', resolves: key })
+}
+
+/**
+ * Answer a note's questions (BEH-NOTE-6). The note is named by its place in the
+ * list AND its date, so a file that changed underneath is refused, not misapplied.
+ */
+export function replyToNote(app: string, index: number, at: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes/reply`, { index, at, text })
+}
+
+/** Dismiss a note (BEH-NOTE-7). Git history keeps it. */
+export function dismissNote(app: string, index: number, at: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes/dismiss`, { index, at })
+}
+
+/**
  * Bind a noun — stage 4, and the write that touches this app's bindings rather
  * than its corpus.
  *
