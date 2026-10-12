@@ -139,24 +139,99 @@ describe('the projects view', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('No feature FEAT-GONE in snip-it.')
   })
 
-  it('BEH-FEAT-4: files naming one project are one card; a file of its own reads as before', async () => {
-    const row = (app: string, project: string): ProjectSummary => ({
-      app,
-      project,
-      corpus: `behaviours/${app}.beh`,
-      notReal: false,
-      duplicateOf: null,
-      behaviours: 2,
-      conflicts: 0,
-      coverage: { available: false, covered: null, uncovered: null, reason: 'no repo' },
-      unreviewed: 0,
-    })
+  it('BEH-FEAT-4: files naming one project are one card with one link; a file of its own reads as before', async () => {
     renderAt('/', { projects: [row('kit', 'kit'), row('kit-ui', 'kit'), row('snip-it', 'snip-it')] })
 
     const kit = (await screen.findByRole('heading', { name: 'kit', level: 2 })).closest('li')!
     expect(within(kit).getByText('4 behaviours')).toBeInTheDocument()
-    expect(within(kit).getByRole('link', { name: 'kit-ui' })).toBeInTheDocument()
+    expect(within(kit).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/projects/kit'])
+    expect(within(kit).queryByText('kit-ui')).toBeNull()
     expect(screen.getByRole('link', { name: 'snip-it' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'snip-it', level: 2 })?.closest('li')?.querySelector('ul')).toBeFalsy()
+  })
+})
+
+const row = (app: string, project: string, behaviours = 2): ProjectSummary => ({
+  app,
+  project,
+  corpus: `behaviours/${app}.beh`,
+  notReal: false,
+  duplicateOf: null,
+  behaviours,
+  conflicts: 0,
+  coverage: { available: false, covered: null, uncovered: null, reason: 'no repo' },
+  unreviewed: 0,
+})
+
+/** A fetch that answers by url, so the list and each file's detail can differ. */
+function renderRouted(url: string, routes: Record<string, unknown>) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (u: string, init?: RequestInit) => {
+      const notes = noNotes(u, init)
+      if (notes) return notes
+      const path = new URL(u, 'http://x').pathname.replace(/^.*\/api/, '/api')
+      const body = routes[path]
+      return body === undefined
+        ? { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-route', reason: path }) }
+        : { ok: true, status: 200, statusText: 'OK', json: async () => body }
+    }),
+  )
+  return render(
+    <MemoryRouter initialEntries={[url]}>
+      <Routes>
+        <Route path="/projects/:app" element={<Project />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+}
+
+describe('BEH-FEAT-5: a project of several files is one page', () => {
+  const file = (app: string, project: string, features: Feature[], behaviours: Behaviour[]): ProjectDetail => ({
+    ...base,
+    app,
+    project,
+    corpus: `behaviours/${app}.beh`,
+    features,
+    behaviours,
+    conflicts: [],
+    questions: [],
+    adjudication: { ...base.adjudication, unreviewed: [] },
+  })
+  const cli = file('kit', 'kit', [feature('FEAT-GATE', 'Gate')], [tag(b0, 'FEAT-GATE'), tag(b1)])
+  const ui = file('kit-ui', 'kit', [feature('FEAT-BOARD', 'Board')], [tag(b2, 'FEAT-BOARD')])
+  const routes = {
+    '/api/projects': { projects: [row('kit', 'kit'), row('kit-ui', 'kit'), row('snip-it', 'snip-it')] },
+    '/api/projects/kit': cli,
+    '/api/projects/kit-ui': ui,
+  }
+
+  it('draws every file’s features together, each linking into its own file, and names no file', async () => {
+    renderRouted('/projects/kit', routes)
+
+    expect(await screen.findByRole('heading', { name: 'kit', level: 1 })).toBeInTheDocument()
+    const features = screen.getByRole('region', { name: 'Features' })
+    expect(within(features).getByRole('link', { name: 'Gate' })).toHaveAttribute('href', '/projects/kit/features/FEAT-GATE')
+    expect(within(features).getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/projects/kit-ui/features/FEAT-BOARD')
+    // The untagged behaviour of one file is listed; the counts are the sum over the files.
+    expect(screen.getByRole('link', { name: b1.id })).toHaveAttribute('href', `/projects/kit/behaviours/${b1.id}`)
+    expect(screen.getByText('3 behaviours')).toBeInTheDocument()
+    expect(screen.queryByText('kit-ui')).toBeNull()
+  })
+
+  it('a file that is its own project is still the one-file page', async () => {
+    renderRouted('/projects/snip-it', { ...routes, '/api/projects/snip-it': base })
+
+    expect(await screen.findByRole('heading', { name: 'snip-it', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(base.corpus)).toBeInTheDocument()
+  })
+
+  it('a list that cannot be read still shows the one file, rather than nothing', async () => {
+    const { '/api/projects': _list, ...rest } = routes
+    void _list
+    renderRouted('/projects/kit', rest)
+
+    expect(await screen.findByRole('heading', { name: 'kit', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(cli.corpus)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Board' })).toBeNull()
   })
 })

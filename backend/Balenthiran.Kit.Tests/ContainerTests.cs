@@ -191,7 +191,42 @@ public class ContainerTests
         Assert.Contains("review approved", File.ReadAllText(Path.Combine(work, "behaviours", "demo.beh")));
         Assert.True(File.Exists(Path.Combine(work, "behaviours", "other.beh")), "the base's change must be served");
         Assert.Equal("kit/hosted", f.Git(work, "rev-parse", "--abbrev-ref", "HEAD").Trim());
-        // The merge is a descendant of the remote branch, so the next edit's push is a fast-forward.
+        // ...and it is ON the remote: reads come from there (KIT_PROJECTS), not the clone. 0.1.17
+        // left the merge for the next edit's push and served the stale remote two minutes later.
+        Assert.Equal(f.Git(work, "rev-parse", "HEAD"), f.Git(f.Root, "--git-dir", f.Bare, "rev-parse", "kit/hosted"));
+        Assert.Matches("pushed the merge to kit/hosted", r.Stdout);
+    }
+
+    [Fact]
+    public void A_merge_that_cannot_be_pushed_still_starts_Kit_writable_and_says_reads_are_behind()
+    {
+        using var f = new Remote();
+        f.Git(f.Clone, "checkout", "-q", "-b", "kit/hosted");
+        File.AppendAllText(f.File, "  review approved\n");
+        f.Git(f.Clone, "commit", "-q", "-am", "kit: adjudicate BEH-1 (demo)");
+        f.Git(f.Clone, "push", "-q", "origin", "kit/hosted");
+        var remoteBefore = f.Git(f.Root, "--git-dir", f.Bare, "rev-parse", "kit/hosted");
+        f.Git(f.Clone, "checkout", "-q", "main");
+        File.WriteAllText(Path.Combine(f.Clone, "behaviours", "other.beh"), "# kit:project demo\n");
+        f.Git(f.Clone, "add", "-A");
+        f.Git(f.Clone, "commit", "-q", "-m", "tag a file on the base");
+        f.Git(f.Clone, "push", "-q", "origin", "main");
+        var realGit = Run("sh", ["-c", "command -v git"], new()).Stdout.Trim();
+        var noPush = Directory.CreateTempSubdirectory("kit-nopush-").FullName;
+        Executable(Path.Combine(noPush, "git"),
+            "#!/bin/sh",
+            "case \"$*\" in *push*) echo \"remote: Permission denied\" >&2; exit 128;; esac",
+            $"exec {realGit} \"$@\"");
+
+        var work = Path.Combine(f.Root, "work");
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GIT_TOKEN"] = "t", ["KIT_GIT_WORKTREE"] = work }, prependPath: noPush);
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal("1", r.Out["KIT_GIT"]);
+        Assert.True(File.Exists(Path.Combine(work, "behaviours", "other.beh")), "the merge is still served from the clone");
+        Assert.Matches("could not push the merge to kit/hosted", r.Stderr);
+        Assert.Equal(remoteBefore, f.Git(f.Root, "--git-dir", f.Bare, "rev-parse", "kit/hosted"));
+        // The merge is a descendant of the remote branch, so the next edit's push still fast-forwards.
         f.Git(work, "merge-base", "--is-ancestor", "origin/kit/hosted", "HEAD");
     }
 
