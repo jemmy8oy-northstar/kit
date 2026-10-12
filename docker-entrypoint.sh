@@ -14,8 +14,12 @@
 #   3. if it does exist, merge `$KIT_GIT_BASE` into it. Without this the branch stays
 #      wherever it was first cut, so a release ships new code over old corpora: 0.1.15
 #      shipped project grouping and served files that had never been tagged. The merge
-#      reaches the remote with the next edit's push. A conflict is aborted and the
-#      branch served as it was, saying so: an out-of-date Kit is better than none.
+#      is PUSHED at once: reads come from the remote branch (`KIT_PROJECTS`, polled),
+#      not the clone, so a merge left for the next edit's push was served for two
+#      minutes and then replaced by the stale remote (0.1.17, kit#248). A failed push
+#      is said and Kit still starts; the next edit's push carries the merge. A conflict
+#      is aborted and the branch served as it was, saying so: an out-of-date Kit is
+#      better than none.
 #
 # Then every write commits and pushes to that branch (`KIT_GIT=1`), and nothing
 # reaches `dev` except through a PR from it (his kit#118).
@@ -69,6 +73,11 @@ if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
       && git -C "$work" -c user.name=kit -c user.email=kit@users.noreply.github.com \
         merge --quiet --no-edit -m "kit: bring ${branch} up to date with ${base}" FETCH_HEAD >/dev/null 2>&1; then
       echo "kit-start: merged ${base} into ${branch}"
+      if git -C "$work" push --quiet origin "HEAD:${branch}" 2>/dev/null; then
+        echo "kit-start: pushed the merge to ${branch}"
+      else
+        echo "kit-start: could not push the merge to ${branch}; reads stay behind ${base} until the next edit is pushed" >&2
+      fi
     else
       git -C "$work" merge --abort 2>/dev/null
       echo "kit-start: could not merge ${base} into ${branch}; serving ${branch} as it was, behind ${base}" >&2
