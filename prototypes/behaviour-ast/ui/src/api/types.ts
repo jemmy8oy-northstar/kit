@@ -374,8 +374,27 @@ export type AnyWriteResult = WriteResult | BindResult | NoteResult
 export interface Note {
   /** UTC, to the minute: `2026-10-10 20:41Z`. */
   at: string
+  /**
+   * `note`, a free comment; `request`, a behaviour asked for in prose (BEH-NOTE-4);
+   * `resolution`, how a decision on the question sheet should go (BEH-NOTE-8).
+   */
+  kind: 'note' | 'request' | 'resolution'
   /** The behaviour it was left on; null for one left on the project. */
   behaviour: string | null
+  /** The question-sheet key a resolution answers; null for every other kind. */
+  resolves: string | null
+  /** What was typed, without anything written under it since. */
+  text: string
+  /** Questions and answers written under the note, oldest first (BEH-NOTE-5/6). */
+  thread: NoteEntry[]
+  /** The latest round of questions while it is unanswered; empty otherwise. */
+  questions: string[]
+}
+
+/** One section under a note: the folder's questions, or the answer to them. */
+export interface NoteEntry {
+  kind: 'questions' | 'answer'
+  at: string | null
   text: string
 }
 
