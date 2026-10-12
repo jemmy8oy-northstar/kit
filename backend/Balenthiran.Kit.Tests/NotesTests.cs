@@ -201,6 +201,31 @@ public class NotesTests
         Assert.Empty(Notes.Parse(ThreeNotes())[1].Questions);
     }
 
+    /// <summary>The shapes a hand-written round of questions really takes: prose first, gaps, no list at all, nothing.</summary>
+    [Theory]
+    [InlineData("Two things:\n\n1. Which list?\n\n2. Per device?\n", new[] { "Which list?", "Per device?" })]
+    [InlineData("- Which list?\n- Per device?", new[] { "Which list?", "Per device?" })]
+    [InlineData("Is this per device?\n", new[] { "Is this per device?" })]
+    [InlineData("\n", new string[0])]
+    public void A_round_of_questions_is_read_whatever_shape_it_was_written_in(string round, string[] expected)
+    {
+        var text = Notes.Header("demo") + "\n## 2026-10-11 09:00Z\n\nkeep the order\n\n### Questions\n" + round;
+        Assert.Equal(expected, Assert.Single(Notes.Parse(text)).Questions);
+    }
+
+    [Fact]
+    public void A_file_with_no_header_and_blank_lines_first_still_dismisses_its_first_note()
+    {
+        Assert.Equal("\n## 2026-10-10 20:41Z\n\nb\n", Notes.Dismiss("\n\n## 2026-10-11 09:00Z\n\na\n\n## 2026-10-10 20:41Z\n\nb\n", 0, "2026-10-11 09:00Z"));
+    }
+
+    [Fact]
+    public void A_question_key_of_the_longest_allowed_length_is_one_and_a_character_more_is_not()
+    {
+        Assert.True(Notes.IsQuestionKey(new string('k', Notes.MaxKeyLength)));
+        Assert.False(Notes.IsQuestionKey(new string('k', Notes.MaxKeyLength + 1)));
+    }
+
     [Fact]
     public void Questions_typed_into_a_note_are_escaped_so_prose_never_reads_as_a_question()
     {

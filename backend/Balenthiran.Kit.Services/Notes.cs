@@ -82,7 +82,8 @@ public static partial class Notes
 
         var lines = Lines(existing!);
         var end = span.End;
-        while (end > span.Start + 1 && lines[end - 1].Length == 0)
+        // Stops at the heading at the latest, which is never blank.
+        while (lines[end - 1].Length == 0)
         {
             end--;
         }
