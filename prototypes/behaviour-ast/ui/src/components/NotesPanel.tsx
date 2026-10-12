@@ -189,7 +189,8 @@ function NoteCard({ app, note, index, onChanged }: { app: string; note: Note; in
       )}
 
       {/* BEH-NOTE-7: one tap and no confirm — git history is the undo. */}
-      <Button type="button" variant="secondary" disabled={busy} onClick={() => dismiss.run(() => dismissNote(app, index, note.at))}>
+      {/* Ghost, not filled: the quiet way out should never outshout the answer above it. */}
+      <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => dismiss.run(() => dismissNote(app, index, note.at))}>
         {dismiss.write.state === 'saving' ? 'Dismissing…' : 'Dismiss'}
       </Button>
       {answer.write.state === 'refused' && <p role="alert">{answer.write.message}</p>}
