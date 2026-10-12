@@ -6,14 +6,14 @@ import { noNotes } from '../test/noNotes'
 import snipIt from '../test/fixtures/project-snip-it.json'
 import habits from '../test/fixtures/project-james-habits-app.json'
 
-function renderApp(body: unknown, app: string) {
+function renderApp(body: unknown, app: string, search = '') {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
   )
 
   return render(
-    <MemoryRouter initialEntries={[`/projects/${app}`]}>
+    <MemoryRouter initialEntries={[`/projects/${app}${search}`]}>
       <Routes>
         <Route path="/projects/:app" element={<Project />} />
       </Routes>
@@ -106,6 +106,52 @@ describe('Project', () => {
   })
 })
 
+// ── BEH-FEAT-6: features and questions are two tabs, features first ─────────
+
+describe('the project tabs', () => {
+  const waiting = habits.conflicts.length + habits.questions.length
+
+  it('opens on Features, with the questions a tap away and counted', async () => {
+    renderApp(habits, 'james-habits-app')
+
+    const features = await screen.findByRole('tab', { name: 'Features' })
+    expect(features).toHaveAttribute('aria-selected', 'true')
+    const questions = screen.getByRole('tab', { name: `Questions ${waiting}` })
+    expect(questions).toHaveAttribute('aria-selected', 'false')
+    // Hidden, not merely below: role queries skip a hidden panel, so this fails
+    // if the sheet is still on screen under the features.
+    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'Features' })).toBeVisible()
+  })
+
+  it('switches to Questions on a tap, and back', async () => {
+    renderApp(habits, 'james-habits-app')
+
+    fireEvent.click(await screen.findByRole('tab', { name: `Questions ${waiting}` }))
+    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: `Questions ${waiting}` })).toBeVisible()
+    expect(screen.queryByRole('tabpanel', { name: 'Features' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Features' }))
+    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+  })
+
+  it('opens on Questions from a link carrying ?tab=questions', async () => {
+    renderApp(habits, 'james-habits-app', '?tab=questions')
+
+    expect(await screen.findByRole('tab', { name: `Questions ${waiting}` })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+  })
+
+  it('CONTROL: with nothing waiting the tab carries no count and says so when opened', async () => {
+    expect(snipIt.questions.length + snipIt.conflicts.length).toBe(0)
+    renderApp(snipIt, 'snip-it', '?tab=questions')
+
+    expect(await screen.findByRole('tab', { name: 'Questions' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Nothing is waiting on you.')).toBeVisible()
+  })
+})
+
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
 
 describe('the question sheet', () => {
@@ -118,7 +164,7 @@ describe('the question sheet', () => {
   it('renders the decision pack Kit already built — the ask, both options, the recommendation', async () => {
     // This is the most considered artefact Kit produces and the UI was
     // discarding it: `questions` was typed `unknown[]` and read by nothing.
-    renderApp(habits, 'james-habits-app')
+    renderApp(habits, 'james-habits-app', '?tab=questions')
 
     // Scoped to the one card. There are three decision-tier questions in this
     // fixture and each renders its own recommendation, so an unscoped query for
@@ -157,7 +203,7 @@ describe('the question sheet', () => {
       }),
     )
     render(
-      <MemoryRouter initialEntries={['/projects/james-habits-app']}>
+      <MemoryRouter initialEntries={['/projects/james-habits-app?tab=questions']}>
         <Routes>
           <Route path="/projects/:app" element={<Project />} />
         </Routes>
@@ -179,7 +225,7 @@ describe('the question sheet', () => {
   })
 
   it('links every never-adjudicated inference to the page where it can be answered', async () => {
-    renderApp(habits, 'james-habits-app')
+    renderApp(habits, 'james-habits-app', '?tab=questions')
 
     const reviews = habits.questions.filter((q) => q.tier === 'review')
     const queue = (await screen.findByRole('heading', { name: 'Never adjudicated' })).parentElement!

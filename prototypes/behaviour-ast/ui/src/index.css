@@ -253,6 +253,34 @@ pre {
   text-decoration: none;
 }
 
+/* The project page's two tabs (BEH-FEAT-6): an underline on the selected one, like the nav's bold. */
+.tabs {
+  display: flex;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  margin: var(--space-6) 0 var(--space-2);
+}
+
+.tabs [role='tab'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabs [role='tab'][aria-selected='true'] {
+  color: var(--color-text);
+  font-weight: 700;
+  border-bottom-color: var(--color-primary);
+}
+
 /*
  * The board (kit#237). A project's colour is one of these twelve, picked by a
  * hash of its name (board.ts), so it is the same on every visit. Spaced round

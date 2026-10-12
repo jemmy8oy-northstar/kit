@@ -428,3 +428,16 @@ behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn
   then sees region:KitProjectFeatures
   contract top level is every file's top-level features and untagged behaviours together, under no heading that names a file
   contract each feature and behaviour links into the file it lives in; the counts are the sum over the files
+
+# His Kit note, 2026-10-12 20:49Z, left on page:KitProject: "Maybe features and
+# questions should be under a tab view, default to features".
+behaviour BEH-FEAT-6 "A project's features and questions are two tabs, features first"
+  in FEAT-PROJECT
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees tab:KitProjectFeaturesTab
+  then sees tab:KitProjectQuestionsTab
+  contract features is the selected tab unless the url says ?tab=questions, so a link can open on the questions
+  contract the questions tab carries the count of conflicts and questions waiting, so nothing waits unseen behind it
+  contract the ask box and the notes stay outside the tabs, where they were
