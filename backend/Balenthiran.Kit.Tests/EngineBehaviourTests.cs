@@ -127,6 +127,21 @@ public class EngineBehaviourTests
         Assert.Contains("page.goto(\"./editor/abc\")", provided.Code, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void A_behaviour_with_no_steps_is_skipped_never_an_empty_test_that_passes()
+    {
+        // kit#86: a `provides`-only behaviour has nothing to walk. An empty `test(...)` body passes.
+        var test = Generate("behaviour B \"b\"\n  provides page:Editor.id = abc\n")[0];
+
+        Assert.StartsWith("test.skip(\"[B] b\"", test.Code, StringComparison.Ordinal);
+        Assert.Contains(TestGenerator.NoStepToWalk, test.Code, StringComparison.Ordinal);
+        Assert.DoesNotContain("async ({ page })", test.Code, StringComparison.Ordinal);
+
+        // The control: one step, and it is a real test again.
+        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n")[0];
+        Assert.StartsWith("test(\"[B] b\"", walked.Code, StringComparison.Ordinal);
+    }
+
     // ── parse and resolve (BEH-PARSE-1, BEH-RESOLVE-*, BEH-ADJ-1) ─────────────
 
     [Fact]

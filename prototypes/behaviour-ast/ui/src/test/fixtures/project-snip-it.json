@@ -683,7 +683,7 @@
     },
     {
       "id": "BEH-EDIT-0",
-      "code": "test(\"[BEH-EDIT-0] The editor addresses one transcription by id\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-EDIT-0] The editor addresses one transcription by id\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

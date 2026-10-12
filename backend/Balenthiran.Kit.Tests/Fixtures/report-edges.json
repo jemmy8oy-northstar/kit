@@ -1010,7 +1010,7 @@
     },
     {
       "id": "BEH-UNTRACED",
-      "code": "test(\"[BEH-UNTRACED] an inference with no reference\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-UNTRACED] an inference with no reference\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1020,7 +1020,7 @@
     },
     {
       "id": "BEH-HOLDER",
-      "code": "test(\"[BEH-HOLDER] holds a value nobody asks about\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-HOLDER] holds a value nobody asks about\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "BEH-CHALLENGER",
-      "code": "test(\"[BEH-CHALLENGER] challenges and carries the question\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-CHALLENGER] challenges and carries the question\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

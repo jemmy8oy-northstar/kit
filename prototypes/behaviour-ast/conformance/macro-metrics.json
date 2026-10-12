@@ -1052,7 +1052,7 @@
     },
     {
       "id": "BEH-MM-METRICS-1",
-      "code": "test(\"[BEH-MM-METRICS-1] Eleven metrics are comparable\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-MM-METRICS-1] Eleven metrics are comparable\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

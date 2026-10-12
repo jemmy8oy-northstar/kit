@@ -1932,7 +1932,7 @@
     },
     {
       "id": "BEH-WINDOW-MVP",
-      "code": "test(\"[BEH-WINDOW-MVP] The history window is 30 days\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-WINDOW-MVP] The history window is 30 days\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1942,7 +1942,7 @@
     },
     {
       "id": "BEH-WINDOW-API",
-      "code": "test(\"[BEH-WINDOW-API] The history window is whatever the caller asks for\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-WINDOW-API] The history window is whatever the caller asks for\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

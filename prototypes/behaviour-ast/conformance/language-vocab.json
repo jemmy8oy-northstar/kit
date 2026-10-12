@@ -2127,7 +2127,7 @@
     },
     {
       "id": "BEH-GRADE-3",
-      "code": "test(\"[BEH-GRADE-3] A wrong tone is reported as tones-provided-but-incorrect\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-GRADE-3] A wrong tone is reported as tones-provided-but-incorrect\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -2147,7 +2147,7 @@
     },
     {
       "id": "BEH-STRENGTH-1",
-      "code": "test(\"[BEH-STRENGTH-1] Strength moves by one and clamps to the 0..5 band\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-STRENGTH-1] Strength moves by one and clamps to the 0..5 band\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -2187,7 +2187,7 @@
     },
     {
       "id": "BEH-UNLOCK-2",
-      "code": "test(\"[BEH-UNLOCK-2] Unlocking adds the next batch by rank and stops when nothing is left\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-UNLOCK-2] Unlocking adds the next batch by rank and stops when nothing is left\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -2207,7 +2207,7 @@
     },
     {
       "id": "BEH-SEED-2",
-      "code": "test(\"[BEH-SEED-2] The real HSK1 list is embedded and loads 150 words\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-SEED-2] The real HSK1 list is embedded and loads 150 words\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
