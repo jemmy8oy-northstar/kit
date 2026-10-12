@@ -36,6 +36,20 @@ public sealed class BehaviourView : IBehaviourView
     [JsonPropertyOrder(10)]
     public required string At { get; init; }
 
+    // kit#237: the board sorts by these. After `at`, so every key already served keeps its place.
+    [JsonPropertyOrder(11)]
+    public required bool Pending { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required string Layer { get; init; }
+
+    // kit#237: the projects view draws a behaviour under each feature named here. Always
+    // written, empty when untagged, after `layer` — the rule `pending` and `layer` follow.
+    [JsonPropertyOrder(13)]
+    public required List<string> In { get; init; }
+
+    IReadOnlyList<string> IBehaviourView.In => In;
+
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;
 
     IReadOnlyList<string> IBehaviourView.Open => Open;

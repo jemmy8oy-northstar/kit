@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { addBehaviour, fetchProject } from '../api/client'
+import { addBehaviour, fetchProject, fetchProjects } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Conflict, ProjectDetail, Question } from '../api/types'
+import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
+import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
@@ -11,10 +12,28 @@ import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 
+/**
+ * BEH-FEAT-5 (kit#246): the files a project page draws from. A name that is a project of
+ * several files — or whose one file has another name — is every file naming it; anything
+ * else is the one file, as it always was. A list that cannot be read falls back to the one
+ * file: the page is still true of it, only no longer of its siblings.
+ */
+async function filesOf(app: string): Promise<ProjectDetail[]> {
+  const rows = await fetchProjects().then(
+    (r) => r.projects ?? [],
+    () => [],
+  )
+  const names = rows.filter((r) => !r.error && (r.project ?? r.app) === app).map((r) => r.app)
+  if (names.length > 1 || (names.length === 1 && names[0] !== app)) {
+    return Promise.all(names.map(fetchProject))
+  }
+  return [await fetchProject(app)]
+}
+
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
   const { app = '' } = useParams()
-  const { resource, reload } = useReloadableResource(() => fetchProject(app), [app])
+  const { resource, reload } = useReloadableResource(() => filesOf(app), [app])
 
   return (
     <>
@@ -23,7 +42,13 @@ export default function Project() {
       </p>
 
       <ResourceView resource={resource}>
-        {(value) => <Detail project={value} onWrote={reload} />}
+        {(files) =>
+          files.length === 1 && files[0].app === app ? (
+            <Detail project={files[0]} onWrote={reload} />
+          ) : (
+            <OneProject name={app} files={files} onWrote={reload} />
+          )
+        }
       </ResourceView>
     </>
   )
@@ -31,6 +56,7 @@ export default function Project() {
 
 function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => void }) {
   const unreviewed = new Set(project.adjudication.unreviewed)
+  const top = topLevel(project)
 
   return (
     <>
@@ -61,18 +87,108 @@ function Detail({ project, onWrote }: { project: ProjectDetail; onWrote: () => v
         </section>
       )}
 
-      <QuestionSheet app={project.app} questions={project.questions} />
+      <QuestionSheet sheets={[project]} />
+
+      {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
+          features has no section here and lists every behaviour, as it always did. */}
+      {top.features.length > 0 && (
+        <section aria-label="Features">
+          <FeatureCards app={project.app} project={project} features={top.features} path={[]} />
+        </section>
+      )}
 
       <section>
-        <h2>Behaviours</h2>
+        {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
+        {(top.features.length === 0 || top.behaviours.length > 0) && (
+          <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+        )}
         <ul className="cards">
-          {project.behaviours.map((b) => (
+          {top.behaviours.map((b) => (
             <li key={b.id}>
               <BehaviourRow app={project.app} behaviour={b} unreviewed={unreviewed.has(b.id)} />
             </li>
           ))}
         </ul>
         <NewBehaviourForm app={project.app} onWrote={onWrote} />
+      </section>
+    </>
+  )
+}
+
+/**
+ * BEH-FEAT-5 (kit#246): a project of several files as ONE page. James: "is kit ui not just
+ * part of kit and the pages would be the features". So every file's top level is drawn
+ * together and no heading names a file; each card still links into the file it lives in,
+ * because that is where its id means something. The notes and the new-behaviour form are
+ * the file named like the project (Kit's command line), which is what this url showed
+ * before it was merged — so neither moves under him.
+ */
+function OneProject({ name, files, onWrote }: { name: string; files: ProjectDetail[]; onWrote: () => void }) {
+  const home = files.find((f) => f.app === name) ?? files[0]
+  const tops = files.map((f) => ({ file: f, top: topLevel(f), unreviewed: new Set(f.adjudication.unreviewed) }))
+  const features = tops.flatMap(({ file, top }) => top.features.map((feature) => ({ file, feature })))
+  const loose = tops.flatMap(({ file, top, unreviewed }) =>
+    top.behaviours.map((behaviour) => ({ file, behaviour, unreviewed: unreviewed.has(behaviour.id) })),
+  )
+  const conflicts = files.flatMap((f) => f.conflicts)
+  const sum = (n: (f: ProjectDetail) => number) => files.reduce((t, f) => t + n(f), 0)
+  const inferred = sum((f) => f.adjudication.inferred)
+
+  return (
+    <>
+      <h1>{name}</h1>
+      <div className="badges">
+        <Count n={sum((f) => f.behaviours.length)} one="behaviour" tone="primary" />
+        <Badge tone="neutral">{sum((f) => f.adjudication.defined)} defined</Badge>
+        {inferred ? <Badge tone="warning">{inferred} inferred</Badge> : null}
+      </div>
+
+      {/* His ask (kit#246): features at the top. The notes come next, still above the sheet (kit#118). */}
+      {features.length > 0 && (
+        <section aria-label="Features">
+          <h2>Features</h2>
+          <ul className="cards">
+            {features.map(({ file, feature }) => (
+              <li key={`${file.app}/${feature.id}`}>
+                <FeatureCard app={file.app} project={file} feature={feature} path={[]} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {loose.length > 0 && (
+        <section>
+          <h2>{features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+          <ul className="cards">
+            {loose.map(({ file, behaviour, unreviewed }) => (
+              <li key={`${file.app}/${behaviour.id}`}>
+                <BehaviourRow app={file.app} behaviour={behaviour} unreviewed={unreviewed} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <NotesPanel app={home.app} />
+
+      {conflicts.length > 0 && (
+        <section>
+          <h2>Conflicts</h2>
+          <ul className="cards">
+            {conflicts.map((c) => (
+              <li key={c.key}>
+                <ConflictCard conflict={c} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <QuestionSheet sheets={files} />
+
+      <section>
+        <NewBehaviourForm app={home.app} onWrote={onWrote} />
       </section>
     </>
   )
@@ -173,7 +289,9 @@ function NewBehaviourForm({ app, onWrote }: { app: string; onWrote: () => void }
  * control here would mean inventing the syntax it wrote into, which is his call
  * and not a gap to quietly fill.
  */
-function QuestionSheet({ app, questions }: { app: string; questions: Question[] }) {
+function QuestionSheet({ sheets }: { sheets: { app: string; questions: Question[] }[] }) {
+  // One sheet over every file of the project; each question keeps the file it links into.
+  const questions = sheets.flatMap((s) => s.questions.map((q) => ({ ...q, app: s.app })))
   if (!questions.length) return null
 
   const decisions = questions.filter((q) => q.tier === 'decision')
@@ -204,7 +322,7 @@ function QuestionSheet({ app, questions }: { app: string; questions: Question[] 
                 <Card interactive>
                   <h4>
                     <Link
-                      to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(q.id ?? q.key)}`}
+                      to={`/projects/${encodeURIComponent(q.app)}/behaviours/${encodeURIComponent(q.id ?? q.key)}`}
                     >
                       {q.id ?? q.key}
                     </Link>{' '}
@@ -288,7 +406,51 @@ function ConflictCard({ conflict }: { conflict: Conflict }) {
   )
 }
 
-function BehaviourRow({
+/**
+ * Feature cards (BEH-FEAT-1/2): a title, and how many behaviours sit anywhere beneath it, each
+ * counted once. `path` is how the reader got here, carried into the link for the crumbs.
+ */
+export function FeatureCards({
+  app,
+  project,
+  features,
+  path,
+}: {
+  app: string
+  project: Tagged
+  features: Feature[]
+  path: string[]
+}) {
+  if (!features.length) return null
+  return (
+    <>
+      <h2>Features</h2>
+      <ul className="cards">
+        {features.map((f) => (
+          <li key={f.id}>
+            <FeatureCard app={app} project={project} feature={f} path={path} />
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+function FeatureCard({ app, project, feature, path }: { app: string; project: Tagged; feature: Feature; path: string[] }) {
+  return (
+    <Card interactive>
+      <h3>
+        <Link to={featureHref(app, feature.id, path)}>{feature.title}</Link>
+      </h3>
+      <div className="badges">
+        <Count n={behavioursUnder(project, feature.id).size} one="behaviour" tone="primary" />
+        <Badge tone="neutral">{feature.id}</Badge>
+      </div>
+    </Card>
+  )
+}
+
+export function BehaviourRow({
   app,
   behaviour,
   unreviewed,

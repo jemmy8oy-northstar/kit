@@ -1,4 +1,7 @@
-# kit:not-a-real-app
+# kit:project kit
+#   kit#237: Kit is one project. This file is its hosted service; Kit shows the three files
+#   as ONE page whose features are its pages and areas, never the files (kit#246),
+#   while check and report still read each file on its own.
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # HOSTED KIT — the app James described on kit#88
@@ -34,30 +37,11 @@
 #      invented", and there is no running app to read. Inventing locators for
 #      screens that do not exist is the one thing that rule forbids.
 #
-# ── Why `# kit:not-a-real-app`, and why that is the honest directive ─────────
-# saturation.js excludes this corpus from the binding-saturation study, whose
-# claim is about how REAL apps reuse nouns. Software that does not exist cannot
-# be evidence for it. `# kit:no-ui` would arguably also be true of the backend
-# half — `request:*`, `branch:*` and `status:*` will never bind to a locator —
-# but the frontend half genuinely is a browser surface, so declaring no-ui
-# would be a lie about this file, and existence is the axis that actually
-# disqualifies it. One directive, the true one.
-#
-# 🔴 **THAT LINE IS LOAD-BEARING FOR CI, AND NOT FOR THE REASON IT WAS CHOSEN.**
-# Measured on 2026-09-30 with this file's directive deleted and nothing else
-# changed: `node kit.test.js` goes from **351 passed, 0 failed** to **350 passed,
-# 1 failed**. The failing test is "--check goes RED when the write-up drifts from
-# the corpora" — saturation.js reads `behaviours/*.beh` as its POPULATION, so an
-# undeclared corpus joins the study and the frozen write-up stops matching.
-#
-# Two things follow, and the second is why this paragraph exists:
-#   * The directive was picked because it is TRUE, and it happens to also be the
-#     thing keeping the branch green. Do not read the green as evidence that
-#     adding a corpus is free.
-#   * **The red does not name its cause.** It says a write-up drifted; it does
-#     not say someone added a file. A future wake adding an eleventh corpus will
-#     see a saturation test fail on a change that never touched saturation. The
-#     fix is a directive or a refreshed write-up, never "revert the corpus".
+# ── `# kit:not-a-real-app` was DROPPED (kit#246, 2026-10-12) ─────────────────
+# It stood here while none of this existed, and kept the file out of a saturation
+# study (saturation.js, deleted with the Node engine). The hosted server is now
+# most of what is deployed, so the tag was false, and it hid these cards from the
+# board. The reasoning it carried is in git history.
 #
 # ── Why this is a THIRD Kit corpus and not more of the other two ────────────
 # `kit.beh` closes with "Every behaviour below is real, and every one is already
@@ -116,7 +100,16 @@
 # ═══ The read path ═══════════════════════════════════════════════════════════
 # "The backend can pull the projects and serve the behaviours to the frontend."
 
+# ═══ Features: the hosted server's areas (kit#246) ═══════════════════════════
+# The same reason as kit.beh's: on Kit's one page these read as features, not a file.
+
+feature FEAT-PULL "Reading from GitHub"
+feature FEAT-EDIT "Editing from a phone"
+feature FEAT-COMMIT "Commit"
+feature FEAT-LOCK "Sign-in lock"
+
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
+  in FEAT-PULL
   layer technical
   source defined kit#88
   actor engineer
@@ -128,6 +121,7 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
   contract pod whose clone is an implementation detail of its image
 
 behaviour BEH-PULL-2 "A public project's behaviours are served without a token, on a request of their own"
+  in FEAT-PULL
   layer technical
   source defined kit#88
   actor engineer
@@ -140,6 +134,7 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
   contract a public read that fails because a token could not be minted is a bug
 
 behaviour BEH-PULL-3 "A private project is served only against a live installation token"
+  in FEAT-PULL
   layer technical
   source defined kit#88
   actor engineer
@@ -153,6 +148,7 @@ behaviour BEH-PULL-3 "A private project is served only against a live installati
   contract is what he meant by "some similar refresh token mechanism to what you are using"
 
 behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend renders what it is handed"
+  in FEAT-PULL
   layer technical
   source defined kit#88
   actor engineer
@@ -171,6 +167,7 @@ behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend r
 # remove behaviours etc and then can 'Commit'."
 
 behaviour BEH-ACT-1 "A behaviour is added to a project from a phone"
+  in FEAT-EDIT
   source defined kit#88
   actor engineer
   when opens page:KitHostedProject
@@ -180,6 +177,7 @@ behaviour BEH-ACT-1 "A behaviour is added to a project from a phone"
   contract nothing here may depend on a loopback bind
 
 behaviour BEH-ACT-2 "An existing behaviour is updated without rewriting the file around it"
+  in FEAT-EDIT
   source defined kit#88
   actor engineer
   when opens page:KitHostedBehaviour
@@ -189,6 +187,7 @@ behaviour BEH-ACT-2 "An existing behaviour is updated without rewriting the file
   contract headers in this directory are where a corpus's caveats live
 
 behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anything still references it"
+  in FEAT-EDIT
   source defined kit#88
   actor engineer
   when opens page:KitHostedBehaviour
@@ -205,6 +204,7 @@ behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anyth
 # property his sentence wanted survives: nothing reaches dev until Commit's pull
 # request is merged.
 behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and reaches dev only through Commit"
+  in FEAT-EDIT
   source inferred kit#88
   actor engineer
   when opens page:KitHostedProject
@@ -221,6 +221,7 @@ behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and 
 # raise a PR (and potentially merge it)."
 
 behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on dev"
+  in FEAT-COMMIT
   layer technical
   source defined kit#88
   actor engineer
@@ -235,6 +236,7 @@ behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on d
   contract so today a pod would push a phone edit onto whatever branch its clone sits on
 
 behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who pressed Commit"
+  in FEAT-COMMIT
   layer technical
   source defined docs/design/process.md#3
   actor engineer
@@ -249,6 +251,7 @@ behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who p
   contract the condition for revisiting it is a SECOND USER, not a date
 
 behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is where the work is picked up"
+  in FEAT-COMMIT
   source defined kit#88
   actor engineer
   given branch:Pushed
@@ -261,6 +264,7 @@ behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is
   contract instrument that looks for work
 
 behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the work item"
+  in FEAT-COMMIT
   layer technical
   source inferred kit#88
   actor engineer
@@ -282,6 +286,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
 # to set up kit as a proper full stack app."
 
 behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every configuration"
+  in FEAT-LOCK
   layer technical
   source defined docs/design/process.md
   actor engineer
@@ -294,6 +299,7 @@ behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every 
   contract phone — to protect data that is already public
 
 behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the operator"
+  in FEAT-LOCK
   layer technical
   source defined docs/design/process.md
   actor engineer

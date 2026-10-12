@@ -1,5 +1,10 @@
 # Kit's UI, described in Kit's own notation — the other half of kit.beh.
 #
+# kit:project kit
+#   kit#237: Kit is one project. This file is its browser UI; Kit shows the three files
+#   as ONE page whose features are its pages and areas, never the files (kit#246),
+#   while check and report still read each file on its own.
+#
 # kit:self-authored
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. None of its other three axes is true here: this describes a UI, for
@@ -59,7 +64,29 @@
 # subject, and one file away from each other. Ids are corpus-scoped so nothing
 # would have broken; a reader would simply have been wrong.
 
+# ═══ Features: the pages, and the parts on more than one (kit#237) ═══════════
+# Each page is a feature, and a part shown on several pages is a feature in each of
+# them: the notes panel sits on the project page and the behaviour page, and the
+# schedule on the project page and the board. A tag says where a behaviour is
+# SHOWN; it is not a dependency (that is `serves`).
+
+feature FEAT-NAV "Navbar"
+feature FEAT-PROJECTS "Project list"
+feature FEAT-PROJECT "Project page"
+feature FEAT-BEHAVIOUR "Behaviour page"
+feature FEAT-BOARD "Board"
+feature FEAT-FEATURE "Feature page"
+
+feature FEAT-NOTES "Notes"
+  in FEAT-PROJECT
+  in FEAT-BEHAVIOUR
+
+feature FEAT-SCHEDULE "Schedule"
+  in FEAT-PROJECT
+  in FEAT-BOARD
+
 behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
+  in FEAT-PROJECTS
   actor engineer
   when opens page:KitProjects
   then sees heading:KitProjectsTitle
@@ -75,6 +102,7 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
 # `pending` until built; the shape is his to change (kit#118).
 
 behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart from its backlog"
+  in FEAT-SCHEDULE
   pending
   source defined kit#118
   actor engineer
@@ -86,6 +114,7 @@ behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart 
   contract a built behaviour is never listed in either, and an id on the schedule that is no longer pending is shown as done, not dropped silently
 
 behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule reordered"
+  in FEAT-SCHEDULE
   pending
   source defined kit#118
   actor engineer
@@ -97,6 +126,7 @@ behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule re
   contract each change is committed and pushed like any other edit, and the write result says so
 
 behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
+  in FEAT-SCHEDULE
   pending
   source defined kit#118
   actor engineer
@@ -106,6 +136,7 @@ behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
   contract with nothing scheduled the region says so, and does not fall back to the backlog
 
 behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
+  in FEAT-PROJECT
   actor engineer
   provides page:KitProject.app = james-habits-app
   when opens page:KitProject
@@ -114,6 +145,7 @@ behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   then sees button:KitAddBehaviour
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
+  in FEAT-BEHAVIOUR
   actor engineer
   provides page:KitBehaviour.app = james-habits-app
   provides page:KitBehaviour.id = BEH-SEED-1
@@ -124,6 +156,7 @@ behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one 
   contract the test is regenerated on every read, never cached
 
 behaviour BEH-ADJ-1 "An inference can be adjudicated from the browser"
+  in FEAT-BEHAVIOUR
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAdjudication
@@ -134,6 +167,7 @@ behaviour BEH-ADJ-1 "An inference can be adjudicated from the browser"
   contract nothing is committed to git
 
 behaviour BEH-ADJ-2 "Denying an inference asks for the correction it must carry"
+  in FEAT-BEHAVIOUR
   actor engineer
   when opens page:KitBehaviour
   then sees button:KitDeny
@@ -143,6 +177,7 @@ behaviour BEH-ADJ-2 "Denying an inference asks for the correction it must carry"
   contract a denial with no correction is refused by the parser, and its sentence reaches the screen
 
 behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
+  in FEAT-BEHAVIOUR
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAddAStep
@@ -158,6 +193,7 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 # Built in the same stack as this spec; the shape is his to change (kit#118, default 10-11).
 
 behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
+  in FEAT-NOTES
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -169,6 +205,7 @@ behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviou
   contract Leave note is disabled while the box is empty
 
 behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
+  in FEAT-NOTES
   source defined kit#118
   actor engineer
   when opens page:KitBehaviour
@@ -178,6 +215,7 @@ behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
   contract the note survives the behaviour being renamed or removed — it is text, not a link
 
 behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spec"
+  in FEAT-NOTES
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -185,3 +223,128 @@ behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spe
   contract <app>.notes.md holds only notes nobody has folded yet; a folded note is deleted,
   contract not ticked, in the same pull request that adds the behaviour or code it became
   contract with no open notes the region says so, rather than vanishing
+
+# ═══ Navigation and the board (kit#237) ═══════════════════════════════════════
+# "What I am seeing is more like an agile tool … a navbar with two views for now:
+# board view and project view." The project view is the existing pages until the
+# feature model is decided (kit#237). The board's columns map onto what the corpus
+# already says: proposed = an inference nobody has adjudicated, backlog = pending,
+# done = built. Scheduled and in-progress need data that does not exist yet — the
+# schedule is BEH-SCHED, and a completion time is not in the .beh — so they are
+# their own behaviours and stay `pending` until that data does.
+
+behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects"
+  in FEAT-NAV
+  source defined kit#237
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  when activates link:KitNavBoard
+  then sees heading:KitBoardTitle
+  contract the navbar marks the view you are on; the projects link is the existing project list
+
+behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
+  in FEAT-BOARD
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  then sees region:KitBoardBacklog
+  then sees region:KitBoardDone
+  contract proposed is source inferred and review unreviewed; backlog is pending; done is everything else
+  contract a denied inference is on no column — it is not work, it is a correction waiting to be written
+  contract each card is the behaviour's id and title, links to its behaviour page, and names its project
+  contract a corpus that will not parse is named on the board as an error, never silently left out
+
+behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filtered to projects"
+  in FEAT-BOARD
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  when activates button:KitBoardShowTrials
+  then sees region:KitBoardBacklog
+  contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
+  contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
+
+behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
+  in FEAT-BOARD
+  in FEAT-SCHEDULE
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardScheduled
+  then sees region:KitBoardInProgress
+  contract scheduled is the project's schedule in order (BEH-SCHED-1); in progress is its top, the one marked next (BEH-SCHED-3)
+  contract both wait on BEH-SCHED; until it is built they are not drawn, rather than drawn empty
+
+behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
+  in FEAT-BOARD
+  pending
+  source defined kit#237
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardDone
+  contract completed is when the behaviour last stopped being pending, read from git history, not stored in the .beh
+  contract a behaviour with no history (never pending) is completed when it was added
+
+# ═══ The projects view: features, and parents as tags (kit#237) ═══════════════
+# "Features can parent other features, they can also parent spec … consider the
+# parent relationships as tags … a feature can be a sub feature of multiple
+# features." Decided on kit#237 (2026-10-11); the language is in
+# docs/design/features.md. `feature FEAT-X "title"` declares a feature, and an
+# `in FEAT-X` line on a feature or a behaviour tags it under a parent — repeat
+# the line for several parents. Nothing has to be tagged: a corpus with no
+# features is shown exactly as it was, as a flat list.
+
+behaviour BEH-FEAT-1 "A project shows its top-level features, then its untagged behaviours"
+  in FEAT-PROJECT
+  source defined kit#237
+  actor engineer
+  provides page:KitProject.app = kit-ui
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract top level is every feature and every behaviour with no `in` line
+  contract a feature card names its title and how many behaviours sit anywhere beneath it, each counted once
+  contract a project with no features shows its behaviours as it always has
+
+behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and every parent as a tag"
+  in FEAT-FEATURE
+  source defined kit#237
+  actor engineer
+  provides page:KitFeature.app = kit-ui
+  provides page:KitFeature.id = FEAT-NOTES
+  when opens page:KitFeature
+  then sees region:KitFeatureChildren
+  then sees region:KitFeatureParents
+  contract a child is anything with an `in` line naming this feature; one thing tagged into two features is listed under both
+  contract each parent links to its own feature page; none of them is the owner
+
+behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
+  in FEAT-FEATURE
+  source defined kit#237
+  actor engineer
+  provides page:KitFeature.app = kit-ui
+  provides page:KitFeature.id = FEAT-NOTES
+  when opens page:KitFeature
+  then sees region:KitBreadcrumb
+  contract with several parents there is no single path, so the path is carried in the url and a shared link shows the same crumbs
+  contract with no path in the url the crumbs are the project and the feature, never a parent picked for you
+
+behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
+  in FEAT-PROJECTS
+  source defined kit#246
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitProjectList
+  contract `# kit:project <name>` groups files on the project list and the board; the card links to the project's one page and lists no file
+  contract a file without the directive is its own project, as today; check and report still read one file at a time
+
+behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
+  in FEAT-PROJECT
+  source defined kit#246
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract top level is every file's top-level features and untagged behaviours together, under no heading that names a file
+  contract each feature and behaviour links into the file it lives in; the counts are the sum over the files

@@ -30,5 +30,9 @@ public sealed class ProjectSummary : IProjectSummary
     [JsonPropertyOrder(8)]
     public required int Unreviewed { get; init; }
 
+    // kit#237. Last, so every key already served keeps its place.
+    [JsonPropertyOrder(9)]
+    public required string Project { get; init; }
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }

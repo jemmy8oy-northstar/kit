@@ -94,5 +94,62 @@
   "region:KitOpenNotes": {
     "role": "region",
     "name": "Notes"
+  },
+  "region:KitNav": {
+    "role": "navigation",
+    "name": "Main"
+  },
+  "link:KitNavBoard": {
+    "role": "link",
+    "name": "Board",
+    "exact": true
+  },
+  "region:KitBoardProposed": {
+    "role": "region",
+    "name": "Proposed"
+  },
+  "region:KitBoardBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "region:KitBoardDone": {
+    "role": "region",
+    "name": "Done"
+  },
+  "heading:KitBoardTitle": {
+    "role": "heading",
+    "name": "Board",
+    "exact": true
+  },
+  "button:KitBoardShowTrials": {
+    "role": "button",
+    "name": "Show trials",
+    "exact": true
+  },
+  "page:KitBoard": {
+    "route": "/board"
+  },
+  "page:KitFeature": {
+    "route": "/projects/:app/features/:id"
+  },
+  "region:KitProjectFeatures": {
+    "role": "region",
+    "name": "Features"
+  },
+  "region:KitFeatureChildren": {
+    "role": "region",
+    "name": "Contents"
+  },
+  "region:KitFeatureParents": {
+    "role": "region",
+    "name": "In"
+  },
+  "region:KitBreadcrumb": {
+    "role": "navigation",
+    "name": "Breadcrumb"
+  },
+  "region:KitProjectList": {
+    "role": "list",
+    "name": "Project list"
   }
 }
