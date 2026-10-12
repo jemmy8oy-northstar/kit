@@ -136,10 +136,10 @@ export default function Board() {
                                 <Link
                                   to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}
                                 >
-                                  {b.id}
-                                </Link>
+                                  {b.title}
+                                </Link>{' '}
+                                <span className="muted id">{b.id}</span>
                               </h3>
-                              <p>{b.title}</p>
                               <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                             </Card>
                           </li>

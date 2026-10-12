@@ -109,9 +109,9 @@ describe('Board', () => {
     renderBoard()
     await loaded()
 
-    const link = await column('Backlog').findByRole('link', { name: 'A-BACKLOG' })
+    const link = await column('Backlog').findByRole('link', { name: 'title of A-BACKLOG' })
     expect(link).toHaveAttribute('href', '/projects/alpha/behaviours/A-BACKLOG')
-    expect(column('Backlog').getByText('title of A-BACKLOG')).toBeInTheDocument()
+    expect(column('Backlog').getByText('A-BACKLOG')).toHaveClass('muted')
     expect(column('Backlog').getByText('alpha')).toBeInTheDocument()
   })
 

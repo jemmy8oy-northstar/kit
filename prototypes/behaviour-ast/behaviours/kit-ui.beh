@@ -298,7 +298,6 @@ behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
   in FEAT-PROJECT
   in FEAT-BEHAVIOUR
   in FEAT-BOARD
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
