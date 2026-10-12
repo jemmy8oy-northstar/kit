@@ -95,6 +95,35 @@
     "role": "region",
     "name": "Notes"
   },
+  "field:KitDescribeBehaviour": {
+    "label": "Describe what should happen"
+  },
+  "button:KitAskForBehaviour": {
+    "role": "button",
+    "name": "Ask for behaviour"
+  },
+  "region:KitNeedsAnswer": {
+    "role": "region",
+    "name": "Needs your answer"
+  },
+  "field:KitReply": {
+    "label": "Your answer"
+  },
+  "button:KitReply": {
+    "role": "button",
+    "name": "Reply"
+  },
+  "button:KitDismiss": {
+    "role": "button",
+    "name": "Dismiss"
+  },
+  "field:KitResolution": {
+    "label": "How should this be resolved?"
+  },
+  "button:KitResolve": {
+    "role": "button",
+    "name": "Resolve"
+  },
   "region:KitNav": {
     "role": "navigation",
     "name": "Main"
