@@ -964,7 +964,7 @@
     },
     {
       "id": "BEH-ROUTINE-1",
-      "code": "test(\"[BEH-ROUTINE-1] a routine inference\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:ab\" });\n  // UNGENERATED: then sees region:ab\n  // CONTRACT (not derivable from a behaviour): the first contract\n});",
+      "code": "test(\"[BEH-ROUTINE-1] a routine inference\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:ab\" });\n  // UNGENERATED: then sees region:ab\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the first contract\" });\n  // CONTRACT (not derivable from a behaviour): the first contract\n});",
       "missing": [
         "region:ab"
       ],
@@ -1000,7 +1000,7 @@
     },
     {
       "id": "BEH-CITED",
-      "code": "test(\"[BEH-CITED] an inference only ever seen as evidence\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the cited contract\n});",
+      "code": "test(\"[BEH-CITED] an inference only ever seen as evidence\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the cited contract\" });\n  // CONTRACT (not derivable from a behaviour): the cited contract\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1010,7 +1010,7 @@
     },
     {
       "id": "BEH-UNTRACED",
-      "code": "test(\"[BEH-UNTRACED] an inference with no reference\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-UNTRACED] an inference with no reference\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1020,7 +1020,7 @@
     },
     {
       "id": "BEH-HOLDER",
-      "code": "test(\"[BEH-HOLDER] holds a value nobody asks about\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-HOLDER] holds a value nobody asks about\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "BEH-CHALLENGER",
-      "code": "test(\"[BEH-CHALLENGER] challenges and carries the question\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-CHALLENGER] challenges and carries the question\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

@@ -44,6 +44,7 @@ public class GenerateConformanceTests
         Assert.Contains("exact: true", code, StringComparison.Ordinal);
         Assert.Contains("type: \"kit-ungenerated\"", code, StringComparison.Ordinal);
         Assert.Contains("// CONTRACT (not derivable from a behaviour):", code, StringComparison.Ordinal);
+        Assert.Contains("type: \"kit-contract\"", code, StringComparison.Ordinal);
     }
 
     /// <summary>The edge corpora still hold what they were built for — asserted on Node's output.</summary>
@@ -90,8 +91,11 @@ public class GenerateConformanceTests
     }
 
     [Fact]
-    public void The_annotation_type_is_the_string_tooling_reads() =>
+    public void The_annotation_types_are_the_strings_tooling_reads()
+    {
         Assert.Equal("kit-ungenerated", TestGenerator.UngeneratedAnnotation);
+        Assert.Equal("kit-contract", TestGenerator.ContractAnnotation);
+    }
 
     private void AssertSection(string goldenDir, string corpusDir, string corpus)
     {

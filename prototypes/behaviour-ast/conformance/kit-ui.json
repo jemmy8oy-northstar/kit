@@ -676,7 +676,7 @@
   "generate": [
     {
       "id": "BEH-LIST-1",
-      "code": "test(\"[BEH-LIST-1] Every corpus Kit can read is listed as a project\", async ({ page }) => {\n  await page.goto(\"/\");\n  await expect(page.getByRole(\"heading\", { name: \"Projects\", exact: true })).toBeVisible();\n  await expect(page.locator('main')).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): a corpus that will not parse is listed AS an error, not as zero behaviours\n});",
+      "code": "test(\"[BEH-LIST-1] Every corpus Kit can read is listed as a project\", async ({ page }) => {\n  await page.goto(\"/\");\n  await expect(page.getByRole(\"heading\", { name: \"Projects\", exact: true })).toBeVisible();\n  await expect(page.locator('main')).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a corpus that will not parse is listed AS an error, not as zero behaviours\" });\n  // CONTRACT (not derivable from a behaviour): a corpus that will not parse is listed AS an error, not as zero behaviours\n});",
       "missing": [],
       "stats": {
         "generated": 3,
@@ -696,7 +696,7 @@
     },
     {
       "id": "BEH-PAIR-1",
-      "code": "test(\"[BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Behaviour\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Generated test\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the two are side by side, not on separate screens — the output must be in view\n  // CONTRACT (not derivable from a behaviour): the test is regenerated on every read, never cached\n});",
+      "code": "test(\"[BEH-PAIR-1] A behaviour and the test Kit generates from it are on one screen\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Behaviour\", exact: true })).toBeVisible();\n  await expect(page.getByRole(\"heading\", { name: \"Generated test\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the two are side by side, not on separate screens — the output must be in view\" });\n  // CONTRACT (not derivable from a behaviour): the two are side by side, not on separate screens — the output must be in view\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the test is regenerated on every read, never cached\" });\n  // CONTRACT (not derivable from a behaviour): the test is regenerated on every read, never cached\n});",
       "missing": [],
       "stats": {
         "generated": 3,
@@ -706,7 +706,7 @@
     },
     {
       "id": "BEH-ADJ-1",
-      "code": "test(\"[BEH-ADJ-1] An inference can be adjudicated from the browser\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Adjudication\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Approve\" })).toBeVisible();\n  await page.getByRole(\"button\", { name: \"Approve\" }).click();\n  // CONTRACT (not derivable from a behaviour): the corpus file on disk gains `review approved` for this behaviour\n  // CONTRACT (not derivable from a behaviour): the existing `review unreviewed` line is REPLACED, not joined by a second\n  // CONTRACT (not derivable from a behaviour): nothing is committed to git\n});",
+      "code": "test(\"[BEH-ADJ-1] An inference can be adjudicated from the browser\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Adjudication\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Approve\" })).toBeVisible();\n  await page.getByRole(\"button\", { name: \"Approve\" }).click();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the corpus file on disk gains `review approved` for this behaviour\" });\n  // CONTRACT (not derivable from a behaviour): the corpus file on disk gains `review approved` for this behaviour\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the existing `review unreviewed` line is REPLACED, not joined by a second\" });\n  // CONTRACT (not derivable from a behaviour): the existing `review unreviewed` line is REPLACED, not joined by a second\n  test.info().annotations.push({ type: \"kit-contract\", description: \"nothing is committed to git\" });\n  // CONTRACT (not derivable from a behaviour): nothing is committed to git\n});",
       "missing": [],
       "stats": {
         "generated": 4,
@@ -716,7 +716,7 @@
     },
     {
       "id": "BEH-ADJ-2",
-      "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  await page.getByLabel(\"Correction (required to deny)\").fill(\"the starter set is re-seeded whenever the list is empty\");\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
+      "code": "test(\"[BEH-ADJ-2] Denying an inference asks for the correction it must carry\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"button\", { name: \"Deny\" })).toBeVisible();\n  await page.getByLabel(\"Correction (required to deny)\").fill(\"the starter set is re-seeded whenever the list is empty\");\n  await page.getByRole(\"button\", { name: \"Deny\" }).click();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"Deny is disabled while the correction is empty\" });\n  // CONTRACT (not derivable from a behaviour): Deny is disabled while the correction is empty\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a denial with no correction is refused by the parser, and its sentence reaches the screen\" });\n  // CONTRACT (not derivable from a behaviour): a denial with no correction is refused by the parser, and its sentence reaches the screen\n});",
       "missing": [],
       "stats": {
         "generated": 4,
@@ -726,7 +726,7 @@
     },
     {
       "id": "BEH-STEP-1",
-      "code": "test(\"[BEH-STEP-1] A step can be added while the generated test is in view\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Add a step\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Add step\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): the page re-reads after the write, so the REGENERATED test is what is on screen\n});",
+      "code": "test(\"[BEH-STEP-1] A step can be added while the generated test is in view\", async ({ page }) => {\n  await page.goto(\"/projects/james-habits-app/behaviours/BEH-SEED-1\");\n  await expect(page.getByRole(\"heading\", { name: \"Add a step\" })).toBeVisible();\n  await expect(page.getByRole(\"button\", { name: \"Add step\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the page re-reads after the write, so the REGENERATED test is what is on screen\" });\n  // CONTRACT (not derivable from a behaviour): the page re-reads after the write, so the REGENERATED test is what is on screen\n});",
       "missing": [],
       "stats": {
         "generated": 3,
