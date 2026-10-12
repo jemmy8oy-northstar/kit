@@ -44,39 +44,43 @@ export default function Projects() {
 }
 
 /**
- * Files that name one project with `# kit:project` (kit#237): one card, and each file is one of
- * its top-level features. The files stay separate underneath, so each keeps its own counts.
+ * Files that name one project with `# kit:project` (kit#237): one card with one link, to the
+ * project's one page (BEH-FEAT-4, kit#246). He found a sub-card per file confusing — the files
+ * are how the corpus is stored, not something he works in — so none is listed here.
  */
 function ProjectGroup({ project, files }: { project: string; files: ProjectSummary[] }) {
-  const total = files.reduce((n, f) => n + (f.behaviours ?? 0), 0)
+  const sum = (n: (f: ProjectSummary) => number | undefined) => files.reduce((t, f) => t + (n(f) ?? 0), 0)
+  const broken = files.filter((f) => f.error)
+  const conflicts = sum((f) => f.conflicts)
+  const unreviewed = sum((f) => f.unreviewed)
   return (
-    <Card elevation="flat">
-      <h2>{project}</h2>
+    <Card interactive>
+      <h2>
+        <Link to={`/projects/${encodeURIComponent(project)}`}>{project}</Link>
+      </h2>
       <div className="badges">
-        <Count n={total} one="behaviour" tone="primary" />
-        <Count n={files.length} one="file" />
+        <Count n={sum((f) => f.behaviours)} one="behaviour" tone="primary" />
+        {conflicts ? <Count n={conflicts} one="conflict" tone="warning" /> : null}
+        {unreviewed ? <Badge tone="warning">{unreviewed} unreviewed</Badge> : null}
       </div>
-      <ul className="cards">
-        {files.map((p) => (
-          <li key={p.app}>
-            <ProjectRow project={p} nested />
-          </li>
-        ))}
-      </ul>
+      {/* A file that will not parse is still said, never summed in as zero. */}
+      {broken.map((f) => (
+        <p role="alert" key={f.app}>
+          {f.app}: {f.error}
+        </p>
+      ))}
     </Card>
   )
 }
 
-function ProjectRow({ project, nested = false }: { project: ProjectSummary; nested?: boolean }) {
-  // Inside a project group the group has the h2, so each file is a level below it.
-  const H = nested ? 'h3' : 'h2'
+function ProjectRow({ project }: { project: ProjectSummary }) {
   // A corpus that will not parse is a state of the world, not a project with
   // nothing in it. ui.js reports it as an error and the row says so, rather
   // than showing a plausible-looking "0 behaviours".
   if (project.error) {
     return (
       <Card elevation="flat">
-        <H>{project.app}</H>
+        <h2>{project.app}</h2>
         <Badge tone="danger">corpus will not parse</Badge>
         <p role="alert">{project.error}</p>
       </Card>
@@ -85,9 +89,9 @@ function ProjectRow({ project, nested = false }: { project: ProjectSummary; nest
 
   return (
     <Card interactive>
-      <H>
+      <h2>
         <Link to={`/projects/${encodeURIComponent(project.app)}`}>{project.app}</Link>
-      </H>
+      </h2>
       <p className="muted">{project.corpus}</p>
       <div className="badges">
         {/* A trial corpus describes an app that does not exist. It belongs in

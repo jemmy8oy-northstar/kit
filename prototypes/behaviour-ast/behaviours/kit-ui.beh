@@ -342,10 +342,8 @@ behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
 
 behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
   in FEAT-PROJECT
-  pending
   source defined kit#246
   actor engineer
-  provides page:KitProject.app = kit
   when opens page:KitProject
   then sees region:KitProjectFeatures
   contract top level is every file's top-level features and untagged behaviours together, under no heading that names a file
