@@ -2,8 +2,8 @@
 #
 # kit:project kit
 #   kit#237: Kit is one project. This file is its browser UI; Kit shows the three files
-#   as one project, each file one of its top-level features, while check and report
-#   still read each file on its own.
+#   as ONE page whose features are its pages and areas, never the files (kit#246),
+#   while check and report still read each file on its own.
 #
 # kit:self-authored
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
@@ -331,11 +331,22 @@ behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
   contract with several parents there is no single path, so the path is carried in the url and a shared link shows the same crumbs
   contract with no path in the url the crumbs are the project and the feature, never a parent picked for you
 
-behaviour BEH-FEAT-4 "Files naming the same project are one project, each file a top-level feature"
+behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
   in FEAT-PROJECTS
-  source defined kit#237
+  source defined kit#246
   actor engineer
   when opens page:KitProjects
   then sees region:KitProjectList
-  contract `# kit:project <name>` groups files on the project list and the board; each file is a feature titled by its file name
+  contract `# kit:project <name>` groups files on the project list and the board; the card links to the project's one page and lists no file
   contract a file without the directive is its own project, as today; check and report still read one file at a time
+
+behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
+  in FEAT-PROJECT
+  pending
+  source defined kit#246
+  actor engineer
+  provides page:KitProject.app = kit
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract top level is every file's top-level features and untagged behaviours together, under no heading that names a file
+  contract each feature and behaviour links into the file it lives in; the counts are the sum over the files
