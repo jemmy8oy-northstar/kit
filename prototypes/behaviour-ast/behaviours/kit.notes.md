@@ -17,3 +17,13 @@ I think that instead of having strong child parent relationships we should consi
 Another thing why does kit have 3 different projects viewable in kit. I am envisioning these all being potentially different features of the kit project.
 
 Can you plan this and start working on this all please
+
+## 2026-10-12 16:33Z
+
+The new feature grouped kit looks incredible. I think the next direction is reducing developer technival fatigue.
+
+I think the beh-sheet-1 style ids are quite heavy. I think the behaviours in general are quite heavy but maybe this is ok because you have to specifically open it to find it.
+
+I think the way that you define behaviours is quite a chore at the moment I really like the note style input. I think that ai has the capability to formalise what is given from a note. I am thinking more free form text inputs. In place of the behaviour input for example.
+
+I think there should also be some ui to show rejected free form text if the ai can’t decode the intention, maybe with some directed questions to help decipher or a cancel option to dismiss. Or maybe dismiss is the right wording.
