@@ -52,6 +52,10 @@ public static class ServiceRegistration
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
+        services.TryAddSingleton<IPendingEditsReader>(sp => new GitHubPullRequestOpener(
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
+            settings.GitRepository));
         services.AddSingleton<IKitRouter>(sp => new KitRouter(
             sp.GetRequiredService<ICorpusDirectory>(),
             sp.GetRequiredService<IProjectViewer>(),
@@ -68,7 +72,8 @@ public static class ServiceRegistration
             pulls: sp.GetRequiredService<IPullRequestOpener>(),
             head: settings.GitBranch,
             baseBranch: settings.GitBase,
-            clock: sp.GetRequiredService<TimeProvider>()));
+            clock: sp.GetRequiredService<TimeProvider>(),
+            pending: sp.GetRequiredService<IPendingEditsReader>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
