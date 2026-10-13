@@ -1,6 +1,6 @@
 import type {
   Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
-  ProposeResult, ReviewState, SessionState, WriteResult,
+  PendingView, ProposeResult, ReviewState, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -275,6 +275,11 @@ export function addBinding(app: string, noun: string, binding: Binding): Promise
  */
 export function proposeEdits(): Promise<ProposeResult> {
   return post<ProposeResult>('/api/commit', {})
+}
+
+/** This project's edits on the edits branch that have not reached the base, and their pull request (BEH-COMMIT-5). */
+export function fetchPending(app: string): Promise<PendingView> {
+  return get<PendingView>(`/api/projects/${encodeURIComponent(app)}/pending`)
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {

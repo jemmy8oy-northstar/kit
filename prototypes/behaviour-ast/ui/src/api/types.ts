@@ -433,6 +433,28 @@ export interface SessionState {
  * kept apart, so a second press reads as "still waiting on review" rather than as
  * a second proposal. A refusal is a 409 whose `reason` the client throws.
  */
+/** One commit on the edits branch that the base lacks (BEH-COMMIT-5), read back from Kit's own message. */
+export interface PendingEdit {
+  sha: string
+  /** `adjudicate BEH-ORDER-1`: the message without `kit: ` or `(app)`. */
+  summary: string
+  app: string | null
+  behaviour: string | null
+  when: string | null
+}
+
+/** What `GET /api/projects/<app>/pending` returns: this project's share of the edits branch, newest first. */
+export interface PendingView {
+  app: string
+  head: string | null
+  base: string
+  edits: PendingEdit[]
+  pullNumber: number | null
+  pullUrl: string | null
+  /** Why the list may be incomplete or empty — write-back off, or GitHub's own words. */
+  reason: string | null
+}
+
 export interface ProposeResult {
   opened: boolean
   alreadyOpen: boolean

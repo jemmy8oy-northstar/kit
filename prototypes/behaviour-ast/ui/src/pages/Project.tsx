@@ -8,6 +8,7 @@ import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
+import PendingPanel from '../components/PendingPanel'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
@@ -75,6 +76,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
       <AskForBehaviour app={project.app} onAsked={bump} />
       <NotesPanel app={project.app} version={notes} />
+      <PendingPanel apps={[project.app]} />
 
       {project.conflicts.length > 0 && (
         <section>
@@ -180,6 +182,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
 
       <AskForBehaviour app={home.app} onAsked={bump} />
       <NotesPanel app={home.app} version={notes} />
+      <PendingPanel apps={files.map((f) => f.app)} />
 
       {conflicts.length > 0 && (
         <section>
