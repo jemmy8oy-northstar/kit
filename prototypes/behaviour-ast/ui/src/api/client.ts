@@ -1,6 +1,6 @@
 import type {
   Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
-  ProposeResult, ReviewState, SessionState, WriteResult,
+  ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -252,6 +252,20 @@ export function replyToNote(app: string, index: number, at: string, text: string
 /** Dismiss a note (BEH-NOTE-7). Git history keeps it. */
 export function dismissNote(app: string, index: number, at: string): Promise<NoteResult> {
   return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes/dismiss`, { index, at })
+}
+
+/** The project's schedule and backlog (BEH-SCHED-1). */
+export function fetchSchedule(app: string): Promise<ScheduleList> {
+  return get<ScheduleList>(`/api/projects/${encodeURIComponent(app)}/schedule`)
+}
+
+/**
+ * Change the schedule (BEH-SCHED-2): `add` a backlog behaviour to the end, `remove`
+ * one back to the backlog, or move one `up` or `down` a place. Only `<app>.schedule`
+ * is written; the corpus is not touched, so the result has a note's shape.
+ */
+export function reschedule(app: string, action: 'add' | 'remove' | 'up' | 'down', id: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/schedule`, { action, id })
 }
 
 /**

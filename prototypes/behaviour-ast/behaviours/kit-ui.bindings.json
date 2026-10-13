@@ -161,6 +161,19 @@
   "page:KitFeature": {
     "route": "/projects/:app/features/:id"
   },
+  "region:KitSchedule": {
+    "role": "region",
+    "name": "Schedule"
+  },
+  "region:KitBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "button:KitScheduleBehaviour": {
+    "role": "button",
+    "name": "Schedule",
+    "exact": true
+  },
   "region:KitProjectFeatures": {
     "role": "region",
     "name": "Features"
