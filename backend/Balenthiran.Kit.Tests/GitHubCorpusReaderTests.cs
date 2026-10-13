@@ -61,6 +61,18 @@ public class GitHubCorpusReaderTests
         Assert.Equal("# Notes on alpha\n", snap.Files["alpha.notes.md"].Text);
     }
 
+    /// <summary>BEH-SCHED-1: the schedule travels with its corpus too, or Kit would show nothing scheduled once GitHub answers.</summary>
+    [Fact]
+    public async Task A_schedule_file_is_read_with_its_corpus()
+    {
+        var gh = new FakeGitHub(Listed("""[{"type": "file", "name": "alpha.beh", "sha": "a1"}, {"type": "file", "name": "alpha.schedule", "sha": "s1"}]"""), Raw("behaviour BEH-A \"a\"\n"), Raw("BEH-A\n"));
+
+        var snap = await Reader(gh, "tok").ReadAsync(Kit);
+
+        Assert.Equal(["alpha.beh", "alpha.schedule"], snap.Files.Keys);
+        Assert.Equal("BEH-A\n", snap.Files["alpha.schedule"].Text);
+    }
+
     [Fact]
     public async Task A_BOM_survives_so_a_splice_written_back_changes_only_its_line()
     {
