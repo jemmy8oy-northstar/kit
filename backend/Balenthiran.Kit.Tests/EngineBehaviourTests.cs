@@ -142,6 +142,26 @@ public class EngineBehaviourTests
         Assert.StartsWith("test(\"[B] b\"", walked.Code, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void A_behaviour_whose_every_step_was_refused_is_skipped_and_keeps_its_refusals()
+    {
+        // kit#86, one step on: steps that were all refused left annotations and comments in a test that
+        // still passed asserting nothing. A contract alone asserts nothing either.
+        var test = Generate("behaviour B \"b\"\n  when opens page:Nowhere\n  then sees region:Nothing\n  contract the wire\n")[0];
+
+        Assert.StartsWith("test.skip(\"[B] b\"", test.Code, StringComparison.Ordinal);
+        Assert.Contains(TestGenerator.NothingGenerated, test.Code, StringComparison.Ordinal);
+        Assert.Contains("// UNGENERATED: when opens page:Nowhere", test.Code, StringComparison.Ordinal);
+        Assert.Contains("// CONTRACT (not derivable from a behaviour): the wire", test.Code, StringComparison.Ordinal);
+        Assert.DoesNotContain("annotations.push", test.Code, StringComparison.Ordinal);
+        Assert.Equal(2, test.Stats.Ungenerated);
+
+        // The control: one step that generates, and the refused ones ride along in a real test.
+        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n  then sees region:Nothing\n")[0];
+        Assert.StartsWith("test(\"[B] b\"", walked.Code, StringComparison.Ordinal);
+        Assert.Contains("annotations.push", walked.Code, StringComparison.Ordinal);
+    }
+
     // ── parse and resolve (BEH-PARSE-1, BEH-RESOLVE-*, BEH-ADJ-1) ─────────────
 
     [Fact]

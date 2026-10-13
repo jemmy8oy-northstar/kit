@@ -905,7 +905,7 @@
   "generate": [
     {
       "id": "BEH-SETUP-1",
-      "code": "test(\"[BEH-SETUP-1] James opens habit setup to add something new to track\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:ManageHabits\" });\n  // UNGENERATED: when opens page:ManageHabits\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:AddHabit\" });\n  // UNGENERATED: when activates button:AddHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewHabit\" });\n  // UNGENERATED: then lands on page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+      "code": "test.skip(\"[BEH-SETUP-1] James opens habit setup to add something new to track\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:ManageHabits\n  // UNGENERATED: when activates button:AddHabit\n  // UNGENERATED: then lands on page:NewHabit\n  // UNGENERATED: then sees field:HabitName\n});",
       "missing": [
         "page:ManageHabits",
         "button:AddHabit",
@@ -920,7 +920,7 @@
     },
     {
       "id": "BEH-SETUP-2",
-      "code": "test(\"[BEH-SETUP-2] Saving a new habit adds it to today's list\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewHabit with ?fields\" });\n  // UNGENERATED: when fills form:NewHabit with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveHabit\" });\n  // UNGENERATED: when activates button:SaveHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Today\" });\n  // UNGENERATED: then lands on page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "code": "test.skip(\"[BEH-SETUP-2] Saving a new habit adds it to today's list\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewHabit\n  // UNGENERATED: when fills form:NewHabit with ?fields\n  // UNGENERATED: when activates button:SaveHabit\n  // UNGENERATED: then lands on page:Today\n  // UNGENERATED: then sees region:HabitList\n});",
       "missing": [
         "page:NewHabit",
         "field:HabitName",
@@ -936,7 +936,7 @@
     },
     {
       "id": "BEH-SETUP-3",
-      "code": "test(\"[BEH-SETUP-3] A new habit needs nothing more than a name to be saved\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n});",
+      "code": "test.skip(\"[BEH-SETUP-3] A new habit needs nothing more than a name to be saved\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewHabit\n});",
       "missing": [
         "page:NewHabit"
       ],
@@ -948,7 +948,7 @@
     },
     {
       "id": "BEH-TODAY-1",
-      "code": "test(\"[BEH-TODAY-1] Today's page lists everything currently being tracked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+      "code": "test.skip(\"[BEH-TODAY-1] Today's page lists everything currently being tracked\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n});",
       "missing": [
         "page:Today",
         "region:HabitList"
@@ -961,7 +961,7 @@
     },
     {
       "id": "BEH-TODAY-2",
-      "code": "test(\"[BEH-TODAY-2] Before any habit is added, today's page says there is nothing to track yet\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habits:None\" });\n  // UNGENERATED: given habits:None\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "code": "test.skip(\"[BEH-TODAY-2] Before any habit is added, today's page says there is nothing to track yet\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habits:None\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:EmptyState\n});",
       "missing": [
         "habits:None",
         "page:Today",
@@ -975,7 +975,7 @@
     },
     {
       "id": "BEH-TODAY-3",
-      "code": "test(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:Pending\" });\n  // UNGENERATED: given habit:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitDone\" });\n  // UNGENERATED: when activates checkbox:HabitDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n  test.info().annotations.push({ type: \"kit-contract\", description: \"logging a habit is one tap, with no form or confirmation step in between\" });\n  // CONTRACT (not derivable from a behaviour): logging a habit is one tap, with no form or confirmation step in between\n});",
+      "code": "test.skip(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:Pending\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitDone\n  // UNGENERATED: then sees checkbox:HabitDone\n  // CONTRACT (not derivable from a behaviour): logging a habit is one tap, with no form or confirmation step in between\n});",
       "missing": [
         "habit:Pending",
         "page:Today",
@@ -989,7 +989,7 @@
     },
     {
       "id": "BEH-TODAY-4",
-      "code": "test(\"[BEH-TODAY-4] A habit ticked off earlier today still shows as done when the page is reopened\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:LoggedToday\" });\n  // UNGENERATED: given habit:LoggedToday\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n});",
+      "code": "test.skip(\"[BEH-TODAY-4] A habit ticked off earlier today still shows as done when the page is reopened\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:LoggedToday\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees checkbox:HabitDone\n});",
       "missing": [
         "habit:LoggedToday",
         "page:Today",
@@ -1003,7 +1003,7 @@
     },
     {
       "id": "BEH-TODAY-5",
-      "code": "test(\"[BEH-TODAY-5] Habits like sleeping hours or drinks drunk are logged as a number, not a tick\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:LogValue with ?fields\" });\n  // UNGENERATED: when fills form:LogValue with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveValue\" });\n  // UNGENERATED: when activates button:SaveValue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitValue\" });\n  // UNGENERATED: then sees field:HabitValue\n});",
+      "code": "test.skip(\"[BEH-TODAY-5] Habits like sleeping hours or drinks drunk are logged as a number, not a tick\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills form:LogValue with ?fields\n  // UNGENERATED: when activates button:SaveValue\n  // UNGENERATED: then sees field:HabitValue\n});",
       "missing": [
         "page:Today",
         "button:SaveValue",
@@ -1017,7 +1017,7 @@
     },
     {
       "id": "BEH-TODAY-6",
-      "code": "test(\"[BEH-TODAY-6] Each row in today's list shows the habit's own name\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+      "code": "test.skip(\"[BEH-TODAY-6] Each row in today's list shows the habit's own name\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees field:HabitName\n});",
       "missing": [
         "page:Today",
         "field:HabitName"
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "BEH-DERIVE-1",
-      "code": "test(\"[BEH-DERIVE-1] Logging a run also marks Exercised as done, without ticking it directly\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:Ran\" });\n  // UNGENERATED: when activates checkbox:Ran\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows badge:AutoTicked \\\"Auto\\\"\" });\n  // UNGENERATED: then shows badge:AutoTicked \"Auto\"\n});",
+      "code": "test.skip(\"[BEH-DERIVE-1] Logging a run also marks Exercised as done, without ticking it directly\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:Ran\n  // UNGENERATED: then shows badge:AutoTicked \"Auto\"\n});",
       "missing": [
         "page:Today",
         "checkbox:Ran",

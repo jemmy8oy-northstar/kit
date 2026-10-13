@@ -752,7 +752,7 @@
   "generate": [
     {
       "id": "BEH-SHELF-1",
-      "code": "test(\"[BEH-SHELF-1] The shelf lists everything currently lent out and who has it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees column:Borrower\" });\n  // UNGENERATED: then sees column:Borrower\n});",
+      "code": "test.skip(\"[BEH-SHELF-1] The shelf lists everything currently lent out and who has it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:LoanList\n  // UNGENERATED: then sees column:Borrower\n});",
       "missing": [
         "page:Shelf",
         "region:LoanList",
@@ -766,7 +766,7 @@
     },
     {
       "id": "BEH-SHELF-2",
-      "code": "test(\"[BEH-SHELF-2] An empty shelf says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given shelf:Empty\" });\n  // UNGENERATED: given shelf:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "code": "test.skip(\"[BEH-SHELF-2] An empty shelf says so rather than showing a blank page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given shelf:Empty\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:EmptyState\n});",
       "missing": [
         "shelf:Empty",
         "page:Shelf",
@@ -780,7 +780,7 @@
     },
     {
       "id": "BEH-SHELF-3",
-      "code": "test(\"[BEH-SHELF-3] Overdue loans are visibly marked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Overdue\" });\n  // UNGENERATED: given loan:Overdue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Overdue\" });\n  // UNGENERATED: then sees badge:Overdue\n});",
+      "code": "test.skip(\"[BEH-SHELF-3] Overdue loans are visibly marked\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:Overdue\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees badge:Overdue\n});",
       "missing": [
         "loan:Overdue",
         "page:Shelf",
@@ -794,7 +794,7 @@
     },
     {
       "id": "BEH-LEND-1",
-      "code": "test(\"[BEH-LEND-1] A new loan is recorded from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:LendSomething\" });\n  // UNGENERATED: when activates button:LendSomething\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewLoan\" });\n  // UNGENERATED: then lands on page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:ItemName\" });\n  // UNGENERATED: then sees field:ItemName\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Borrower\" });\n  // UNGENERATED: then sees field:Borrower\n});",
+      "code": "test.skip(\"[BEH-LEND-1] A new loan is recorded from the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: when activates button:LendSomething\n  // UNGENERATED: then lands on page:NewLoan\n  // UNGENERATED: then sees field:ItemName\n  // UNGENERATED: then sees field:Borrower\n});",
       "missing": [
         "page:Shelf",
         "button:LendSomething",
@@ -810,7 +810,7 @@
     },
     {
       "id": "BEH-LEND-2",
-      "code": "test(\"[BEH-LEND-2] Recording a loan puts it on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewLoan with ?fields\" });\n  // UNGENERATED: when fills form:NewLoan with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:ConfirmLoan\" });\n  // UNGENERATED: when activates button:ConfirmLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Shelf\" });\n  // UNGENERATED: then lands on page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+      "code": "test.skip(\"[BEH-LEND-2] Recording a loan puts it on the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewLoan\n  // UNGENERATED: when fills form:NewLoan with ?fields\n  // UNGENERATED: when activates button:ConfirmLoan\n  // UNGENERATED: then lands on page:Shelf\n  // UNGENERATED: then sees region:LoanList\n});",
       "missing": [
         "page:NewLoan",
         "field:ItemName",
@@ -828,7 +828,7 @@
     },
     {
       "id": "BEH-LEND-3",
-      "code": "test(\"[BEH-LEND-3] The loan form takes an item, a borrower and a due date\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n});",
+      "code": "test.skip(\"[BEH-LEND-3] The loan form takes an item, a borrower and a due date\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewLoan\n});",
       "missing": [
         "page:NewLoan"
       ],
@@ -840,7 +840,7 @@
     },
     {
       "id": "BEH-RETURN-1",
-      "code": "test(\"[BEH-RETURN-1] A loan is marked returned from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Outstanding\" });\n  // UNGENERATED: given loan:Outstanding\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:MarkReturned\" });\n  // UNGENERATED: when activates button:MarkReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+      "code": "test.skip(\"[BEH-RETURN-1] A loan is marked returned from the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:Outstanding\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: when activates button:MarkReturned\n  // UNGENERATED: then sees region:LoanList\n});",
       "missing": [
         "loan:Outstanding",
         "page:Shelf",
@@ -855,7 +855,7 @@
     },
     {
       "id": "BEH-RETURN-2",
-      "code": "test(\"[BEH-RETURN-2] A returned loan is no longer on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:JustReturned\" });\n  // UNGENERATED: given loan:JustReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "code": "test.skip(\"[BEH-RETURN-2] A returned loan is no longer on the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:JustReturned\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:EmptyState\n});",
       "missing": [
         "loan:JustReturned",
         "page:Shelf",

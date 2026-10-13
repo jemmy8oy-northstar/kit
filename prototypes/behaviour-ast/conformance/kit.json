@@ -1900,7 +1900,7 @@
   "generate": [
     {
       "id": "BEH-GATE-1",
-      "code": "test(\"[BEH-GATE-1] A behaviour with no test naming it fails the build\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:SnipIt\" });\n  // UNGENERATED: given corpus:SnipIt\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this is stage 0's stated deliverable in docs/timeline.md\" });\n  // CONTRACT (not derivable from a behaviour): this is stage 0's stated deliverable in docs/timeline.md\n});",
+      "code": "test.skip(\"[BEH-GATE-1] A behaviour with no test naming it fails the build\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:SnipIt\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this is stage 0's stated deliverable in docs/timeline.md\n});",
       "missing": [
         "corpus:SnipIt"
       ],
@@ -1912,7 +1912,7 @@
     },
     {
       "id": "BEH-GATE-2",
-      "code": "test(\"[BEH-GATE-2] Could-not-look is never reported as green\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:WithNoTests\" });\n  // UNGENERATED: given repo:WithNoTests\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  test.info().annotations.push({ type: \"kit-contract\", description: \"exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\" });\n  // CONTRACT (not derivable from a behaviour): exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"exits 0 is indistinguishable in CI from a passing one\" });\n  // CONTRACT (not derivable from a behaviour): exits 0 is indistinguishable in CI from a passing one\n});",
+      "code": "test.skip(\"[BEH-GATE-2] Could-not-look is never reported as green\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given repo:WithNoTests\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\n  // CONTRACT (not derivable from a behaviour): exits 0 is indistinguishable in CI from a passing one\n});",
       "missing": [
         "repo:WithNoTests"
       ],
@@ -1924,7 +1924,7 @@
     },
     {
       "id": "BEH-GATE-3",
-      "code": "test(\"[BEH-GATE-3] A mapping naming a test that no longer exists is a hard failure\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given mapping:Stale\" });\n  // UNGENERATED: given mapping:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this checkability is the whole argument for option C over markers\" });\n  // CONTRACT (not derivable from a behaviour): this checkability is the whole argument for option C over markers\n});",
+      "code": "test.skip(\"[BEH-GATE-3] A mapping naming a test that no longer exists is a hard failure\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given mapping:Stale\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this checkability is the whole argument for option C over markers\n});",
       "missing": [
         "mapping:Stale"
       ],
@@ -1936,7 +1936,7 @@
     },
     {
       "id": "BEH-READ-1",
-      "code": "test(\"[BEH-READ-1] The reader refuses when its two counts disagree\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given file:CountsDisagree\" });\n  // UNGENERATED: given file:CountsDisagree\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the two counts must be different MECHANISMS — position versus lexical\" });\n  // CONTRACT (not derivable from a behaviour): the two counts must be different MECHANISMS — position versus lexical\n  test.info().annotations.push({ type: \"kit-contract\", description: \"structure — or agreement between them proves nothing\" });\n  // CONTRACT (not derivable from a behaviour): structure — or agreement between them proves nothing\n});",
+      "code": "test.skip(\"[BEH-READ-1] The reader refuses when its two counts disagree\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given file:CountsDisagree\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): the two counts must be different MECHANISMS — position versus lexical\n  // CONTRACT (not derivable from a behaviour): structure — or agreement between them proves nothing\n});",
       "missing": [
         "file:CountsDisagree"
       ],
@@ -1948,7 +1948,7 @@
     },
     {
       "id": "BEH-GEN-1",
-      "code": "test(\"[BEH-GEN-1] An unbound noun is refused, and the missing noun is named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:UnboundNoun\" });\n  // UNGENERATED: given corpus:UnboundNoun\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  test.info().annotations.push({ type: \"kit-contract\", description: \"no locator is ever guessed from the noun's own name\" });\n  // CONTRACT (not derivable from a behaviour): no locator is ever guessed from the noun's own name\n});",
+      "code": "test.skip(\"[BEH-GEN-1] An unbound noun is refused, and the missing noun is named\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:UnboundNoun\n  // UNGENERATED: when runs command:KitGenerate\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): no locator is ever guessed from the noun's own name\n});",
       "missing": [
         "corpus:UnboundNoun"
       ],
@@ -1960,7 +1960,7 @@
     },
     {
       "id": "BEH-GEN-2",
-      "code": "test(\"[BEH-GEN-2] An unsupplied route param is refused rather than truncated\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:RouteParam\" });\n  // UNGENERATED: given corpus:RouteParam\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  test.info().annotations.push({ type: \"kit-contract\", description: \"emitting ./editor/ would navigate to the wrong page and look correct\" });\n  // CONTRACT (not derivable from a behaviour): emitting ./editor/ would navigate to the wrong page and look correct\n});",
+      "code": "test.skip(\"[BEH-GEN-2] An unsupplied route param is refused rather than truncated\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:RouteParam\n  // UNGENERATED: when runs command:KitGenerate\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): emitting ./editor/ would navigate to the wrong page and look correct\n});",
       "missing": [
         "corpus:RouteParam"
       ],
@@ -1972,7 +1972,7 @@
     },
     {
       "id": "BEH-PARSE-1",
-      "code": "test(\"[BEH-PARSE-1] An unrecognised keyword is an error, not silently dropped\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:BadKeyword\" });\n  // UNGENERATED: given corpus:BadKeyword\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitParse\" });\n  // UNGENERATED: when runs command:KitParse\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:UnrecognisedKeyword\" });\n  // UNGENERATED: then raises error:UnrecognisedKeyword\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a spec language that ignores what it does not understand is how a\" });\n  // CONTRACT (not derivable from a behaviour): a spec language that ignores what it does not understand is how a\n  test.info().annotations.push({ type: \"kit-contract\", description: \"spec becomes descriptive\" });\n  // CONTRACT (not derivable from a behaviour): spec becomes descriptive\n});",
+      "code": "test.skip(\"[BEH-PARSE-1] An unrecognised keyword is an error, not silently dropped\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:BadKeyword\n  // UNGENERATED: when runs command:KitParse\n  // UNGENERATED: then raises error:UnrecognisedKeyword\n  // CONTRACT (not derivable from a behaviour): a spec language that ignores what it does not understand is how a\n  // CONTRACT (not derivable from a behaviour): spec becomes descriptive\n});",
       "missing": [
         "corpus:BadKeyword"
       ],
@@ -1984,7 +1984,7 @@
     },
     {
       "id": "BEH-RESOLVE-1",
-      "code": "test(\"[BEH-RESOLVE-1] A hole in one behaviour is filled by a different behaviour\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:CrossBehaviourHole\" });\n  // UNGENERATED: given corpus:CrossBehaviourHole\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports slot:Filled\" });\n  // UNGENERATED: then reports slot:Filled\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this is the part no BDD tool has, and it needs ONE symbol table\" });\n  // CONTRACT (not derivable from a behaviour): this is the part no BDD tool has, and it needs ONE symbol table\n});",
+      "code": "test.skip(\"[BEH-RESOLVE-1] A hole in one behaviour is filled by a different behaviour\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:CrossBehaviourHole\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports slot:Filled\n  // CONTRACT (not derivable from a behaviour): this is the part no BDD tool has, and it needs ONE symbol table\n});",
       "missing": [
         "corpus:CrossBehaviourHole"
       ],
@@ -1996,7 +1996,7 @@
     },
     {
       "id": "BEH-RESOLVE-2",
-      "code": "test(\"[BEH-RESOLVE-2] Two behaviours disagreeing is a conflict, with both sides named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Disagreement\" });\n  // UNGENERATED: given corpus:Disagreement\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports conflict:BothSides\" });\n  // UNGENERATED: then reports conflict:BothSides\n});",
+      "code": "test.skip(\"[BEH-RESOLVE-2] Two behaviours disagreeing is a conflict, with both sides named\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:Disagreement\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports conflict:BothSides\n});",
       "missing": [
         "corpus:Disagreement"
       ],
@@ -2008,7 +2008,7 @@
     },
     {
       "id": "BEH-ADJ-1",
-      "code": "test(\"[BEH-ADJ-1] An inference is included by default and marked unreviewed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Inference\" });\n  // UNGENERATED: given corpus:Inference\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports review:Unreviewed\" });\n  // UNGENERATED: then reports review:Unreviewed\n  test.info().annotations.push({ type: \"kit-contract\", description: \"James's call on claude-code-bot#68 — default-include, marked\" });\n  // CONTRACT (not derivable from a behaviour): James's call on claude-code-bot#68 — default-include, marked\n});",
+      "code": "test.skip(\"[BEH-ADJ-1] An inference is included by default and marked unreviewed\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:Inference\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports review:Unreviewed\n  // CONTRACT (not derivable from a behaviour): James's call on claude-code-bot#68 — default-include, marked\n});",
       "missing": [
         "corpus:Inference"
       ],
@@ -2020,7 +2020,7 @@
     },
     {
       "id": "BEH-UI-1",
-      "code": "test(\"[BEH-UI-1] A verb the server has no meaning for reaches no handler\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Unsupported\" });\n  // UNGENERATED: given request:Unsupported\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:MethodNotAllowed\" });\n  // UNGENERATED: then reports status:MethodNotAllowed\n  test.info().annotations.push({ type: \"kit-contract\", description: \"decision 2 landed on 2026-09-08, so POST now has a handler and this\" });\n  // CONTRACT (not derivable from a behaviour): decision 2 landed on 2026-09-08, so POST now has a handler and this\n  test.info().annotations.push({ type: \"kit-contract\", description: \"behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\" });\n  // CONTRACT (not derivable from a behaviour): behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\n  test.info().annotations.push({ type: \"kit-contract\", description: \"one meaning each that nobody has decided, and a route accepting a verb it\" });\n  // CONTRACT (not derivable from a behaviour): one meaning each that nobody has decided, and a route accepting a verb it\n  test.info().annotations.push({ type: \"kit-contract\", description: \"cannot serve is a 405 waiting to be discovered as a 500\" });\n  // CONTRACT (not derivable from a behaviour): cannot serve is a 405 waiting to be discovered as a 500\n});",
+      "code": "test.skip(\"[BEH-UI-1] A verb the server has no meaning for reaches no handler\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given request:Unsupported\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:MethodNotAllowed\n  // CONTRACT (not derivable from a behaviour): decision 2 landed on 2026-09-08, so POST now has a handler and this\n  // CONTRACT (not derivable from a behaviour): behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\n  // CONTRACT (not derivable from a behaviour): one meaning each that nobody has decided, and a route accepting a verb it\n  // CONTRACT (not derivable from a behaviour): cannot serve is a 405 waiting to be discovered as a 500\n});",
       "missing": [
         "request:Unsupported"
       ],
@@ -2032,7 +2032,7 @@
     },
     {
       "id": "BEH-UI-2",
-      "code": "test(\"[BEH-UI-2] The server binds the loopback interface, not every interface\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given option:Default\" });\n  // UNGENERATED: given option:Default\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports host:Loopback\" });\n  // UNGENERATED: then reports host:Loopback\n  test.info().annotations.push({ type: \"kit-contract\", description: \"0.0.0.0 would publish every corpus in the working tree, and the absolute\" });\n  // CONTRACT (not derivable from a behaviour): 0.0.0.0 would publish every corpus in the working tree, and the absolute\n  test.info().annotations.push({ type: \"kit-contract\", description: \"path of every repo beside it, to anything that can reach the host\" });\n  // CONTRACT (not derivable from a behaviour): path of every repo beside it, to anything that can reach the host\n});",
+      "code": "test.skip(\"[BEH-UI-2] The server binds the loopback interface, not every interface\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given option:Default\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports host:Loopback\n  // CONTRACT (not derivable from a behaviour): 0.0.0.0 would publish every corpus in the working tree, and the absolute\n  // CONTRACT (not derivable from a behaviour): path of every repo beside it, to anything that can reach the host\n});",
       "missing": [
         "option:Default"
       ],
@@ -2044,7 +2044,7 @@
     },
     {
       "id": "BEH-UI-3",
-      "code": "test(\"[BEH-UI-3] A traversal in an app name is refused rather than resolved to a path\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Traversal\" });\n  // UNGENERATED: given request:Traversal\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:NotFound\" });\n  // UNGENERATED: then reports status:NotFound\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the name is looked UP in the set of corpora that exist; it is never\" });\n  // CONTRACT (not derivable from a behaviour): the name is looked UP in the set of corpora that exist; it is never\n  test.info().annotations.push({ type: \"kit-contract\", description: \"joined to a path, so there is nothing to traverse with\" });\n  // CONTRACT (not derivable from a behaviour): joined to a path, so there is nothing to traverse with\n});",
+      "code": "test.skip(\"[BEH-UI-3] A traversal in an app name is refused rather than resolved to a path\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given request:Traversal\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:NotFound\n  // CONTRACT (not derivable from a behaviour): the name is looked UP in the set of corpora that exist; it is never\n  // CONTRACT (not derivable from a behaviour): joined to a path, so there is nothing to traverse with\n});",
       "missing": [
         "request:Traversal"
       ],
@@ -2056,7 +2056,7 @@
     },
     {
       "id": "BEH-UI-4",
-      "code": "test(\"[BEH-UI-4] Coverage that could not be read is null in the list, never zero\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:Absent\" });\n  // UNGENERATED: given repo:Absent\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports coverage:Unavailable\" });\n  // UNGENERATED: then reports coverage:Unavailable\n  test.info().annotations.push({ type: \"kit-contract\", description: \"project.js's rule, carried through the transport — a UI that cannot tell\" });\n  // CONTRACT (not derivable from a behaviour): project.js's rule, carried through the transport — a UI that cannot tell\n  test.info().annotations.push({ type: \"kit-contract\", description: \"\\\"no mapping exists\\\" from \\\"nothing is covered\\\" renders the second\" });\n  // CONTRACT (not derivable from a behaviour): \"no mapping exists\" from \"nothing is covered\" renders the second\n});",
+      "code": "test.skip(\"[BEH-UI-4] Coverage that could not be read is null in the list, never zero\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given repo:Absent\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports coverage:Unavailable\n  // CONTRACT (not derivable from a behaviour): project.js's rule, carried through the transport — a UI that cannot tell\n  // CONTRACT (not derivable from a behaviour): \"no mapping exists\" from \"nothing is covered\" renders the second\n});",
       "missing": [
         "repo:Absent"
       ],
@@ -2068,7 +2068,7 @@
     },
     {
       "id": "BEH-WRITE-1",
-      "code": "test(\"[BEH-WRITE-1] An edit splices one block, so every comment in the corpus survives\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:WithComments\" });\n  // UNGENERATED: given corpus:WithComments\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports comment:Preserved\" });\n  // UNGENERATED: then reports comment:Preserved\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a round-trip through parse() would delete every comment in the file, and\" });\n  // CONTRACT (not derivable from a behaviour): a round-trip through parse() would delete every comment in the file, and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"snip-it.beh's nine opening lines are the caveat everything else rests on\" });\n  // CONTRACT (not derivable from a behaviour): snip-it.beh's nine opening lines are the caveat everything else rests on\n});",
+      "code": "test.skip(\"[BEH-WRITE-1] An edit splices one block, so every comment in the corpus survives\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:WithComments\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then reports comment:Preserved\n  // CONTRACT (not derivable from a behaviour): a round-trip through parse() would delete every comment in the file, and\n  // CONTRACT (not derivable from a behaviour): snip-it.beh's nine opening lines are the caveat everything else rests on\n});",
       "missing": [
         "corpus:WithComments"
       ],
@@ -2080,7 +2080,7 @@
     },
     {
       "id": "BEH-WRITE-2",
-      "code": "test(\"[BEH-WRITE-2] An edit that would not parse never reaches the disk\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given step:Malformed\" });\n  // UNGENERATED: given step:Malformed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:WouldNotParse\" });\n  // UNGENERATED: then raises error:WouldNotParse\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the corpus is the source of truth for everything else Kit says, so a\" });\n  // CONTRACT (not derivable from a behaviour): the corpus is the source of truth for everything else Kit says, so a\n  test.info().annotations.push({ type: \"kit-contract\", description: \"writer that can corrupt it is worse than one that cannot write at all\" });\n  // CONTRACT (not derivable from a behaviour): writer that can corrupt it is worse than one that cannot write at all\n});",
+      "code": "test.skip(\"[BEH-WRITE-2] An edit that would not parse never reaches the disk\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given step:Malformed\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then raises error:WouldNotParse\n  // CONTRACT (not derivable from a behaviour): the corpus is the source of truth for everything else Kit says, so a\n  // CONTRACT (not derivable from a behaviour): writer that can corrupt it is worse than one that cannot write at all\n});",
       "missing": [
         "step:Malformed"
       ],
@@ -2092,7 +2092,7 @@
     },
     {
       "id": "BEH-WRITE-3",
-      "code": "test(\"[BEH-WRITE-3] An edit that would change a neighbouring behaviour is refused\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given splice:OffByOne\" });\n  // UNGENERATED: given splice:OffByOne\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:CollateralChange\" });\n  // UNGENERATED: then raises error:CollateralChange\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a step landing in the next behaviour parses perfectly and is silently\" });\n  // CONTRACT (not derivable from a behaviour): a step landing in the next behaviour parses perfectly and is silently\n  test.info().annotations.push({ type: \"kit-contract\", description: \"wrong — the worst failure a writer can have\" });\n  // CONTRACT (not derivable from a behaviour): wrong — the worst failure a writer can have\n});",
+      "code": "test.skip(\"[BEH-WRITE-3] An edit that would change a neighbouring behaviour is refused\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given splice:OffByOne\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then raises error:CollateralChange\n  // CONTRACT (not derivable from a behaviour): a step landing in the next behaviour parses perfectly and is silently\n  // CONTRACT (not derivable from a behaviour): wrong — the worst failure a writer can have\n});",
       "missing": [
         "splice:OffByOne"
       ],
@@ -2104,7 +2104,7 @@
     },
     {
       "id": "BEH-WRITE-4",
-      "code": "test(\"[BEH-WRITE-4] The writer never touches git, and the file proves it rather than promising it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given decision:LapsedDefault\" });\n  // UNGENERATED: given decision:LapsedDefault\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports commit:None\" });\n  // UNGENERATED: then reports commit:None\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a bot that commits to a spec repo cannot be un-added after the first\" });\n  // CONTRACT (not derivable from a behaviour): a bot that commits to a spec repo cannot be un-added after the first\n  test.info().annotations.push({ type: \"kit-contract\", description: \"surprise, so the absence of child_process is asserted from source\" });\n  // CONTRACT (not derivable from a behaviour): surprise, so the absence of child_process is asserted from source\n});",
+      "code": "test.skip(\"[BEH-WRITE-4] The writer never touches git, and the file proves it rather than promising it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given decision:LapsedDefault\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then reports commit:None\n  // CONTRACT (not derivable from a behaviour): a bot that commits to a spec repo cannot be un-added after the first\n  // CONTRACT (not derivable from a behaviour): surprise, so the absence of child_process is asserted from source\n});",
       "missing": [
         "decision:LapsedDefault"
       ],
@@ -2116,7 +2116,7 @@
     },
     {
       "id": "BEH-WRITE-5",
-      "code": "test(\"[BEH-WRITE-5] A write route is unreachable unless the server is bound to loopback\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given host:Routable\" });\n  // UNGENERATED: given host:Routable\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Forbidden\" });\n  // UNGENERATED: then reports status:Forbidden\n  test.info().annotations.push({ type: \"kit-contract\", description: \"decision 1 said local tool; combining reachable-from-the-network with\" });\n  // CONTRACT (not derivable from a behaviour): decision 1 said local tool; combining reachable-from-the-network with\n  test.info().annotations.push({ type: \"kit-contract\", description: \"edits-files-in-the-working-tree is an unauthenticated remote write, and\" });\n  // CONTRACT (not derivable from a behaviour): edits-files-in-the-working-tree is an unauthenticated remote write, and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"it would arrive as a --host flag rather than as a decision of his\" });\n  // CONTRACT (not derivable from a behaviour): it would arrive as a --host flag rather than as a decision of his\n});",
+      "code": "test.skip(\"[BEH-WRITE-5] A write route is unreachable unless the server is bound to loopback\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given host:Routable\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:Forbidden\n  // CONTRACT (not derivable from a behaviour): decision 1 said local tool; combining reachable-from-the-network with\n  // CONTRACT (not derivable from a behaviour): edits-files-in-the-working-tree is an unauthenticated remote write, and\n  // CONTRACT (not derivable from a behaviour): it would arrive as a --host flag rather than as a decision of his\n});",
       "missing": [
         "host:Routable"
       ],
@@ -2128,7 +2128,7 @@
     },
     {
       "id": "BEH-WRITE-6",
-      "code": "test(\"[BEH-WRITE-6] A hostile page gets no CORS header, so it cannot write through the browser\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given origin:Hostile\" });\n  // UNGENERATED: given origin:Hostile\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports header:Absent\" });\n  // UNGENERATED: then reports header:Absent\n  test.info().annotations.push({ type: \"kit-contract\", description: \"access-control-allow-origin: * was defensible while the server could\" });\n  // CONTRACT (not derivable from a behaviour): access-control-allow-origin: * was defensible while the server could\n  test.info().annotations.push({ type: \"kit-contract\", description: \"not write; with a write route it means any page the developer has open\" });\n  // CONTRACT (not derivable from a behaviour): not write; with a write route it means any page the developer has open\n  test.info().annotations.push({ type: \"kit-contract\", description: \"can edit their working tree\" });\n  // CONTRACT (not derivable from a behaviour): can edit their working tree\n});",
+      "code": "test.skip(\"[BEH-WRITE-6] A hostile page gets no CORS header, so it cannot write through the browser\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given origin:Hostile\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports header:Absent\n  // CONTRACT (not derivable from a behaviour): access-control-allow-origin: * was defensible while the server could\n  // CONTRACT (not derivable from a behaviour): not write; with a write route it means any page the developer has open\n  // CONTRACT (not derivable from a behaviour): can edit their working tree\n});",
       "missing": [
         "origin:Hostile"
       ],

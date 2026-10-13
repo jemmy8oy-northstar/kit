@@ -321,7 +321,7 @@
   "generate": [
     {
       "id": "BEH-P1",
-      "code": "test(\"[BEH-P1] pending straight after the header\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Main\" });\n  // UNGENERATED: then sees region:Main\n});",
+      "code": "test.skip(\"[BEH-P1] pending straight after the header\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n  // UNGENERATED: then sees region:Main\n});",
       "missing": [
         "page:Home",
         "region:Main"
@@ -334,7 +334,7 @@
     },
     {
       "id": "BEH-B1",
-      "code": "test(\"[BEH-B1] a built behaviour between two pending ones\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
+      "code": "test.skip(\"[BEH-B1] a built behaviour between two pending ones\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n  // UNGENERATED: then sees button:Save\n});",
       "missing": [
         "page:Home",
         "button:Save"
@@ -347,7 +347,7 @@
     },
     {
       "id": "BEH-P2",
-      "code": "test(\"[BEH-P2] pending after its steps\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Name\" });\n  // UNGENERATED: then sees field:Name\n});",
+      "code": "test.skip(\"[BEH-P2] pending after its steps\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n  // UNGENERATED: then sees field:Name\n});",
       "missing": [
         "page:Home",
         "field:Name"
@@ -360,7 +360,7 @@
     },
     {
       "id": "BEH-P3",
-      "code": "test(\"[BEH-P3] pending with a trailing tab\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "code": "test.skip(\"[BEH-P3] pending with a trailing tab\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n});",
       "missing": [
         "page:Home"
       ],
@@ -372,7 +372,7 @@
     },
     {
       "id": "BEH-P4",
-      "code": "test(\"[BEH-P4] pending written twice\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "code": "test.skip(\"[BEH-P4] pending written twice\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n});",
       "missing": [
         "page:Home"
       ],
