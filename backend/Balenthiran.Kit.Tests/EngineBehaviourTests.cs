@@ -138,7 +138,7 @@ public class EngineBehaviourTests
         Assert.DoesNotContain("async ({ page })", test.Code, StringComparison.Ordinal);
 
         // The control: one step, and it is a real test again.
-        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n")[0];
+        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n  then sees button:Go\n")[0];
         Assert.StartsWith("test(\"[B] b\"", walked.Code, StringComparison.Ordinal);
     }
 
@@ -157,9 +157,26 @@ public class EngineBehaviourTests
         Assert.Equal(2, test.Stats.Ungenerated);
 
         // The control: one step that generates, and the refused ones ride along in a real test.
-        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n  then sees region:Nothing\n")[0];
+        var walked = Generate("behaviour B \"b\"\n  when opens page:Home\n  then sees button:Go\n  then sees region:Nothing\n")[0];
         Assert.StartsWith("test(\"[B] b\"", walked.Code, StringComparison.Ordinal);
         Assert.Contains("annotations.push", walked.Code, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_test_that_only_navigates_and_acts_is_skipped_until_something_asserts()
+    {
+        // Review of kit#273: `goto` and `click` generate real lines but fail on no wrong page, so
+        // the test still passed checking nothing. Kept in the skipped body, ready to come back.
+        var test = Generate("behaviour B \"b\"\n  when opens page:Home\n  when activates button:Go\n")[0];
+
+        Assert.StartsWith("test.skip(\"[B] b\"", test.Code, StringComparison.Ordinal);
+        Assert.Contains(TestGenerator.NothingAsserted, test.Code, StringComparison.Ordinal);
+        Assert.Contains("await page.goto(\"./\");", test.Code, StringComparison.Ordinal);
+        Assert.Equal(2, test.Stats.Generated);
+
+        // The control: one `sees`, and it is a test.
+        var checks = Generate("behaviour B \"b\"\n  when opens page:Home\n  when activates button:Go\n  then sees button:Go\n")[0];
+        Assert.StartsWith("test(\"[B] b\"", checks.Code, StringComparison.Ordinal);
     }
 
     // ── parse and resolve (BEH-PARSE-1, BEH-RESOLVE-*, BEH-ADJ-1) ─────────────

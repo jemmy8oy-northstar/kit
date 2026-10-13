@@ -97,6 +97,17 @@ public sealed class KitReport(
         b.Steps.SelectMany(s => s.Refs).Where(r => r.Kind != "literal").Select(r => $"{r.Kind}:{r.Name}").ToList();
 
     // `Math.round`: halves go UP, where .NET's default goes to even. Only ever called with whole > 0.
+    /// <summary>
+    /// A skipped test's reason is its SECOND line, exactly. Searching the whole code instead would count
+    /// a behaviour whose title or contract merely quotes the sentence (review of kit#273).
+    /// </summary>
+    private static bool SkippedFor(string code, string reason)
+    {
+        var lines = code.Split('\n');
+        return lines.Length > 1 && lines[0].StartsWith("test.skip(", StringComparison.Ordinal)
+            && lines[1] == $"  // NOT GENERATED: {reason} (kit#86)";
+    }
+
     private static string Percent(int part, int whole) =>
         Math.Floor(part / (double)whole * 100 + 0.5).ToString(CultureInfo.InvariantCulture);
 
@@ -305,20 +316,26 @@ public sealed class KitReport(
         var unbound = new List<string>();
         var noSteps = new List<string>();
         var nothingGenerated = new List<string>();
+        var nothingAsserted = new List<string>();
         foreach (var b in behaviours)
         {
             var test = generator.Generate(b, byApp.GetValueOrDefault(CorpusOf(b) ?? string.Empty) ?? [], symbols);
             generated += test.Stats.Generated;
             contract += test.Stats.Contract;
             ungenerated += test.Stats.Ungenerated;
-            if (test.Code.Contains(TestGenerator.NoStepToWalk, StringComparison.Ordinal))
+            if (SkippedFor(test.Code, TestGenerator.NoStepToWalk))
             {
                 noSteps.Add(b.Id);
             }
 
-            if (test.Code.Contains(TestGenerator.NothingGenerated, StringComparison.Ordinal))
+            if (SkippedFor(test.Code, TestGenerator.NothingGenerated))
             {
                 nothingGenerated.Add(b.Id);
+            }
+
+            if (SkippedFor(test.Code, TestGenerator.NothingAsserted))
+            {
+                nothingAsserted.Add(b.Id);
             }
             foreach (var m in test.Missing.Where(m => !unbound.Contains(m)))
             {
@@ -407,6 +424,11 @@ public sealed class KitReport(
         if (nothingGenerated.Count > 0)
         {
             Out($"  nothing generated (skipped) {nothingGenerated.Count}   {string.Join(", ", nothingGenerated)}");
+        }
+
+        if (nothingAsserted.Count > 0)
+        {
+            Out($"  nothing asserted (skipped) {nothingAsserted.Count}   {string.Join(", ", nothingAsserted)}");
         }
         // 0/0 is not a rate. kit.js printed "NaN%" for it, and so did this port, until a corpus tagged
         // technical throughout (kit#193) made it the headline number of Kit's own spec.

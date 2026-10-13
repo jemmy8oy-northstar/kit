@@ -45,6 +45,9 @@ public sealed class TestGenerator : ITestGenerator
     /// <summary>Why a behaviour whose every step was refused gets a skipped test — the same hole as <see cref="NoStepToWalk"/>, with comments in it.</summary>
     public const string NothingGenerated = "no step could be generated, so a test here would pass without asserting anything";
 
+    /// <summary>Why a test that navigates or acts but never checks is skipped: the same hole, with real lines in it.</summary>
+    public const string NothingAsserted = "no generated step asserts anything, so a test here would pass without checking the app";
+
     // `/:(\w+)/g`. JavaScript's `\w` is ASCII-only; .NET's is Unicode, so it is spelled out.
     private static readonly Regex RouteParam = new(":([A-Za-z0-9_]+)", RegexOptions.CultureInvariant);
 
@@ -151,6 +154,22 @@ public sealed class TestGenerator : ITestGenerator
                 $"  // NOT GENERATED: {NothingGenerated} (kit#86)",
             };
             skipped.AddRange(body.Where(l => l.StartsWith("//", StringComparison.Ordinal)).Select(l => "  " + l));
+            skipped.Add("});");
+            return new GeneratedTest { Code = string.Join("\n", skipped), Missing = missing, Stats = stats };
+        }
+
+        // kit#86 again, one step further (review of kit#273): lines that only navigate, click or fill
+        // — `goto`, `click`, `setInputFiles`, a `state` setup — never fail on a wrong page either. Only
+        // an `expect(` checks the app. Skipped with the generated lines kept, so adding an assertion
+        // (binding a `sees` noun) is all it takes to make it a test again.
+        if (!body.Any(l => !l.StartsWith("//", StringComparison.Ordinal) && l.Contains("expect(", StringComparison.Ordinal)))
+        {
+            var skipped = new List<string>
+            {
+                $"test.skip({Stringify($"[{behaviour.Id}] {behaviour.Title}")}, async ({{ page }}) => {{",
+                $"  // NOT GENERATED: {NothingAsserted} (kit#86)",
+            };
+            skipped.AddRange(body.Select(l => "  " + l));
             skipped.Add("});");
             return new GeneratedTest { Code = string.Join("\n", skipped), Missing = missing, Stats = stats };
         }

@@ -121,7 +121,7 @@
   "generate": [
     {
       "id": "BEH-FILL",
-      "code": "test(\"[BEH-FILL] a fill with nothing to attach\", async ({ page }) => {\n  await page.getByLabel(\"Name\").fill('');\n  await page.getByLabel(\"Email\").fill('');\n});",
+      "code": "test.skip(\"[BEH-FILL] a fill with nothing to attach\", async ({ page }) => {\n  // NOT GENERATED: no generated step asserts anything, so a test here would pass without checking the app (kit#86)\n  await page.getByLabel(\"Name\").fill('');\n  await page.getByLabel(\"Email\").fill('');\n});",
       "missing": [],
       "stats": {
         "generated": 2,
