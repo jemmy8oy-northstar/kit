@@ -84,6 +84,16 @@ describe('PendingPanel', () => {
     expect(await screen.findByRole('region', { name: 'Pending' })).toHaveTextContent('1 edit')
   })
 
+  it('an answer that is not a pending view renders nothing instead of breaking the page', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ notes: [] }) })))
+    const { container } = render(<PendingPanel apps={['snip-it']} />)
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('CONTROL: nothing pending renders nothing — no heading, no empty card', async () => {
     const calls = answer({ 'snip-it': { reason: 'git write-back is off, so no edit is waiting on a branch' } })
     const { container } = render(<PendingPanel apps={['snip-it']} />)

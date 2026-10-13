@@ -22,7 +22,12 @@ import { useResource } from '../hooks/useResource'
 export default function PendingPanel({ apps, version = 0 }: { apps: string[]; version?: number }) {
   // Settled, not all: one file of a project that cannot be read must not hide the others' edits.
   const resource = useResource(
-    () => Promise.allSettled(apps.map(fetchPending)).then((rs) => rs.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))),
+    // An answer without an `edits` list (an older server, a proxy's page) is skipped, never
+    // dereferenced: this panel is an extra, and must not be the thing that blanks the project page.
+    () =>
+      Promise.allSettled(apps.map(fetchPending)).then((rs) =>
+        rs.flatMap((r) => (r.status === 'fulfilled' && Array.isArray(r.value?.edits) ? [r.value] : [])),
+      ),
     [apps.join('\n'), version],
   )
   if (resource.state !== 'ready' || resource.value.length === 0) return null
