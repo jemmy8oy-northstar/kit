@@ -938,9 +938,9 @@
       "args": [
         "-h"
       ],
-      "exitCode": 2,
-      "stdout": "",
-      "stderr": "cannot look: unknown option -h\nusage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+      "exitCode": 0,
+      "stdout": "usage: node check.js <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n",
+      "stderr": ""
     },
     {
       "name": "flag-missing-value",
