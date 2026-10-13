@@ -346,7 +346,6 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
 behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
   in FEAT-BOARD
   in FEAT-SCHEDULE
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard

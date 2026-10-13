@@ -141,6 +141,14 @@
     "role": "region",
     "name": "Backlog"
   },
+  "region:KitBoardScheduled": {
+    "role": "region",
+    "name": "Scheduled"
+  },
+  "region:KitBoardInProgress": {
+    "role": "region",
+    "name": "In progress"
+  },
   "region:KitBoardDone": {
     "role": "region",
     "name": "Done"
