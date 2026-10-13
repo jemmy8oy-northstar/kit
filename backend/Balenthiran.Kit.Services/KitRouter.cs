@@ -601,6 +601,12 @@ public sealed class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = "action must be add, remove, up or down" });
         }
 
+        // One word on one line, or it would not read back as the id that was written.
+        if (!Notes.IsBehaviourId(id))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "id must be a behaviour id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+        }
+
         if (action == Schedule.Add)
         {
             IReadOnlyList<Abstractions.DataModels.IBehaviourView> behaviours;

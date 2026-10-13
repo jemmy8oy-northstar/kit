@@ -9,8 +9,9 @@ namespace Balenthiran.Kit.Services;
 /// reordering never shows up in its diff.
 /// </summary>
 /// <remarks>
-/// Kit writes the whole file on every change. A line starting <c>#</c> is a comment and a blank line
-/// is nothing, so a hand-edited file still reads; an id listed twice counts where it first appears.
+/// Kit writes the whole file on every change, so only the ids survive a write. Read back, a line
+/// starting <c>#</c> is a comment, a blank line is nothing, and an id is the line's first word — so a
+/// hand-written <c>BEH-1  # why</c> is still BEH-1. An id listed twice counts where it first appears.
 /// </remarks>
 public static class Schedule
 {
@@ -30,10 +31,10 @@ public static class Schedule
 
         foreach (var raw in text.TrimStart('﻿').Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
         {
-            var line = raw.Trim();
-            if (line.Length > 0 && line[0] != '#' && !ids.Contains(line, StringComparer.Ordinal))
+            var words = raw.Split((char[]?)null, 2, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length > 0 && words[0][0] != '#' && !ids.Contains(words[0], StringComparer.Ordinal))
             {
-                ids.Add(line);
+                ids.Add(words[0]);
             }
         }
 

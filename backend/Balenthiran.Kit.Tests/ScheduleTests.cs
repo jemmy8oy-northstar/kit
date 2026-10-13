@@ -25,6 +25,13 @@ public class ScheduleTests
         Assert.Equal(["BEH-B", "BEH-C"], Schedule.Parse("﻿# a comment\r\n\n  BEH-B  \nBEH-C\r\nBEH-B\n"));
     }
 
+    /// <summary>A hand-written reason after the id is not part of it, or the entry would read as missing and its behaviour as backlog.</summary>
+    [Fact]
+    public void An_id_is_the_first_word_of_its_line()
+    {
+        Assert.Equal(["BEH-B", "BEH-C"], Schedule.Parse("BEH-B  # he asked for this first\nBEH-C\tlater\n"));
+    }
+
     [Fact]
     public void A_rendered_schedule_parses_back_to_the_same_ids()
     {
@@ -231,6 +238,8 @@ public class ScheduleTests
     [InlineData("""{"action":"add"}""")]
     [InlineData("""{"action":"top","id":"BEH-B"}""")]
     [InlineData("""{"action":"add","id":7}""")]
+    [InlineData("""{"action":"add","id":"BEH-B\nBEH-C"}""")]
+    [InlineData("""{"action":"add","id":"# BEH-B"}""")]
     [InlineData("""[]""")]
     public void A_malformed_change_is_a_400_and_writes_nothing(string body)
     {
