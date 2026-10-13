@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { fetchSchedule, reschedule } from '../api/client'
@@ -23,17 +24,24 @@ import WriteResultNote from './WriteResultNote'
 export default function SchedulePanel({ apps }: { apps: string[] }) {
   const key = apps.join('\n')
   const { resource, reload } = useReloadableResource(() => Promise.all(apps.map(fetchSchedule)), [key])
-  const { write, run } = useWrite(reload)
+  const { write, run } = useWrite(() => {})
   const busy = write.state === 'saving'
-  const change = (app: string, action: 'add' | 'remove' | 'up' | 'down', id: string) => run(() => reschedule(app, action, id))
+  // Re-read after a refusal too: every refusal here means the list changed under him (moved,
+  // removed or built elsewhere), and the reason tells him to look again — so show him.
+  const change = async (app: string, action: 'add' | 'remove' | 'up' | 'down', id: string) => {
+    await run(() => reschedule(app, action, id))
+    reload()
+  }
   const named = apps.length > 1
+  const scheduleId = useId()
+  const backlogId = useId()
 
   return (
     <ResourceView resource={resource}>
       {(lists) => (
         <>
-          <section aria-labelledby="schedule">
-            <h2 id="schedule">Schedule</h2>
+          <section aria-labelledby={scheduleId}>
+            <h2 id={scheduleId}>Schedule</h2>
             {lists.every((l) => l.scheduled.length === 0) ? (
               // BEH-SCHED-3: says so, and does not promote the backlog to fill the gap.
               <p className="muted">Nothing is scheduled, so nothing is next. Schedule a behaviour from the backlog.</p>
@@ -48,8 +56,8 @@ export default function SchedulePanel({ apps }: { apps: string[] }) {
             {write.state === 'wrote' && <WriteResultNote result={write.result} subject="the schedule" />}
           </section>
 
-          <section aria-labelledby="backlog">
-            <h2 id="backlog">Backlog</h2>
+          <section aria-labelledby={backlogId}>
+            <h2 id={backlogId}>Backlog</h2>
             {lists.every((l) => l.backlog.length === 0) ? (
               <p className="muted">No pending behaviour is waiting to be scheduled.</p>
             ) : (

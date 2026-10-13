@@ -140,6 +140,21 @@ describe('SchedulePanel (BEH-SCHED-1..3)', () => {
     expect(await within(schedule()).findByRole('alert')).toHaveTextContent('already built')
   })
 
+  it('after a refusal, re-reads the schedule so the change that caused it is on screen', async () => {
+    const state = { demo: { scheduled: [pending('BEH-B', 'bee')], backlog: [] as ScheduleEntry[] } }
+    server(state, 'BEH-B is not on the schedule — it may have been moved or removed already. Reload to see the schedule.')
+    show()
+    const unschedule = await within(await screen.findByRole('region', { name: 'Schedule' })).findByRole('button', { name: 'Unschedule' })
+
+    // Another tab took it off first.
+    state.demo.backlog.push(state.demo.scheduled.pop()!)
+    fireEvent.click(unschedule)
+
+    expect(await within(schedule()).findByRole('alert')).toHaveTextContent('not on the schedule')
+    await waitFor(() => expect(titles(backlog())).toEqual(['bee']))
+    expect(titles(schedule())).toEqual([])
+  })
+
   it('a project of several files keeps one schedule per file, each under its name', async () => {
     const posts = server({
       kit: { scheduled: [], backlog: [pending('BEH-K', 'cli thing')] },
