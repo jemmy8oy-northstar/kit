@@ -52,7 +52,7 @@ public class PendingEditsTests
         Assert.Equal(("note", "kit", (string?)null), (r.Edits[1].Summary, r.Edits[1].App, r.Edits[1].Behaviour));
         Assert.Equal((12, "https://github.com/jemmy8oy-northstar/kit/pull/12"), (r.PullNumber, r.PullUrl));
         // The branch reaches GitHub as a path with its slash, not as %2F.
-        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/compare/dev...kit/hosted", gh.Sent[0].Uri.AbsoluteUri);
+        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/compare/dev...kit/hosted?per_page=100", gh.Sent[0].Uri.AbsoluteUri);
         Assert.Equal(
             "https://api.github.com/repos/jemmy8oy-northstar/kit/pulls?state=open&head=jemmy8oy-northstar%3Akit%2Fhosted&base=dev",
             gh.Sent[1].Uri.AbsoluteUri);
@@ -62,13 +62,56 @@ public class PendingEditsTests
     [Fact]
     public async Task An_edits_branch_nobody_has_pushed_yet_is_nothing_pending_not_a_failure()
     {
-        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.NotFound, """{"message":"Not Found"}"""));
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.NotFound, """{"message":"Not Found"}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"name":"dev"}"""));
 
         var r = await Reader(gh).PendingAsync("kit/hosted", "dev");
 
         Assert.Empty(r.Edits);
         Assert.Null(r.Reason);
-        Assert.Single(gh.Sent);
+        // The base is readable, so the 404 was the edits branch.
+        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/branches/dev", gh.Sent[1].Uri.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task A_404_that_could_be_the_repository_or_the_token_is_a_reason_not_an_empty_list()
+    {
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.NotFound, """{"message":"Not Found"}"""),
+            FakeGitHub.Json(HttpStatusCode.NotFound, """{"message":"Not Found"}"""));
+
+        var r = await Reader(gh).PendingAsync("kit/hosted", "dev");
+
+        Assert.Empty(r.Edits);
+        Assert.Equal(
+            "GitHub answered 404: Not Found, and dev could not be read either (GitHub answered 404: Not Found), so Kit cannot tell whether any edit is pending",
+            r.Reason);
+    }
+
+    [Fact]
+    public async Task A_branch_longer_than_one_page_says_its_list_is_partial()
+    {
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"total_commits":140,"commits":[{"sha":"aaaaaaa1111111","commit":{"message":"kit: add BEH-7 (snip-it)"}}]}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, "[]"));
+
+        var r = await Reader(gh).PendingAsync("kit/hosted", "dev");
+
+        Assert.Single(r.Edits);
+        Assert.Equal("kit/hosted is 140 commits ahead of dev; only the oldest 1 are listed", r.Reason);
+    }
+
+    [Fact]
+    public async Task An_app_name_with_a_space_is_still_read_off_the_end_of_the_message()
+    {
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"commits":[{"sha":"aaaaaaa1111111","commit":{"message":"kit: leave a note on BEH-1 (my app)"}}]}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, "[]"));
+
+        var edit = Assert.Single((await Reader(gh).PendingAsync("kit/hosted", "dev")).Edits);
+
+        Assert.Equal(("leave a note on BEH-1", "my app", "BEH-1"), (edit.Summary, edit.App, edit.Behaviour));
     }
 
     [Fact]
@@ -212,7 +255,7 @@ public class PendingEditsTests
         var r = router.Route("GET", $"/api/projects/{known}/pending");
 
         Assert.Equal(200, r.Status);
-        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/compare/main...kit/hosted", Assert.Single(gh.Sent).Uri.AbsoluteUri);
+        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/compare/main...kit/hosted?per_page=100", Assert.Single(gh.Sent).Uri.AbsoluteUri);
         Assert.Equal($"Bearer {Token}", gh.Sent[0].Authorization);
     }
 

@@ -14,10 +14,18 @@ import { useResource } from '../hooks/useResource'
  * scroll past it. A list that could not be read says so only if it has edits to
  * show beside the reason; otherwise the page loses nothing by staying quiet,
  * because Commit still names the failure when it is pressed.
+ *
+ * `version` re-reads it after a write elsewhere on the page (asking for a
+ * behaviour, resolving a decision): each of those pushes a commit that is now
+ * pending.
  */
-export default function PendingPanel({ apps }: { apps: string[] }) {
-  const resource = useResource(() => Promise.all(apps.map(fetchPending)), [apps.join('\n')])
-  if (resource.state !== 'ready') return null
+export default function PendingPanel({ apps, version = 0 }: { apps: string[]; version?: number }) {
+  // Settled, not all: one file of a project that cannot be read must not hide the others' edits.
+  const resource = useResource(
+    () => Promise.allSettled(apps.map(fetchPending)).then((rs) => rs.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))),
+    [apps.join('\n'), version],
+  )
+  if (resource.state !== 'ready' || resource.value.length === 0) return null
 
   const views = resource.value
   const edits = views.flatMap((v) => v.edits)

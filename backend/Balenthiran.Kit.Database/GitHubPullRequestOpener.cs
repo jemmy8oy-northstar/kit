@@ -131,11 +131,19 @@ public sealed partial class GitHubPullRequestOpener(
         }
 
         // Each path segment escaped on its own: `kit/hosted` must reach GitHub as a slash, not %2F.
-        var compare = new Uri(api ?? DefaultApi, $"repos/{repository}/compare/{Segments(baseBranch)}...{Segments(head)}");
+        // GitHub pages a comparison's commits; one page of 100 is more than one Commit ever carries,
+        // and a longer branch says so rather than silently losing its newest edits.
+        var compare = new Uri(api ?? DefaultApi, $"repos/{repository}/compare/{Segments(baseBranch)}...{Segments(head)}?per_page={PageSize}");
         var diff = await SendAsync(HttpMethod.Get, compare, token, null, cancellationToken);
         if (diff.Status == 404)
         {
-            return new PendingEdits();
+            // A 404 names no culprit: the edits branch, the base, the repository and a token that
+            // cannot see it all answer alike. Only a base GitHub can see makes it the edits branch
+            // that is missing, which is every Kit before its first edit — nothing pending.
+            var b = await SendAsync(HttpMethod.Get, new Uri(api ?? DefaultApi, $"repos/{repository}/branches/{Segments(baseBranch)}"), token, null, cancellationToken);
+            return b.Reason is null
+                ? new PendingEdits()
+                : new PendingEdits { Reason = $"{diff.Reason}, and {baseBranch} could not be read either ({b.Reason}), so Kit cannot tell whether any edit is pending" };
         }
 
         if (diff.Reason is not null)
@@ -156,18 +164,25 @@ public sealed partial class GitHubPullRequestOpener(
             return new PendingEdits();
         }
 
+        var total = c.TryGetProperty("total_commits", out var t) && t.ValueKind == JsonValueKind.Number && t.TryGetInt32(out var n) ? n : edits.Count;
+        var partial = total > commits.GetArrayLength()
+            ? $"{head} is {total} commits ahead of {baseBranch}; only the oldest {commits.GetArrayLength()} are listed"
+            : null;
+
         var query = $"?state=open&head={Uri.EscapeDataString($"{owner}:{head}")}&base={Uri.EscapeDataString(baseBranch)}";
         var found = await SendAsync(HttpMethod.Get, new Uri(new Uri(api ?? DefaultApi, $"repos/{repository}/pulls") + query), token, null, cancellationToken);
         if (found.Reason is not null)
         {
             // The edits are known even when the pull request is not: show them, and say what failed.
-            return new PendingEdits { Edits = edits, Reason = found.Reason };
+            return new PendingEdits { Edits = edits, Reason = partial is null ? found.Reason : $"{partial}; {found.Reason}" };
         }
 
         return found.Json is { ValueKind: JsonValueKind.Array } list && list.GetArrayLength() > 0 && Identify(list[0]) is var (number, url)
-            ? new PendingEdits { Edits = edits, PullNumber = number, PullUrl = url }
-            : new PendingEdits { Edits = edits };
+            ? new PendingEdits { Edits = edits, PullNumber = number, PullUrl = url, Reason = partial }
+            : new PendingEdits { Edits = edits, Reason = partial };
     }
+
+    private const int PageSize = 100;
 
     /// <summary>
     /// One compare entry as an edit, read back from the message <c>GitStore.Message</c> wrote
@@ -304,7 +319,7 @@ public sealed partial class GitHubPullRequestOpener(
     private static partial Regex RemotePattern();
 
     // GitStore.Message: `kit: {what}` or `kit: {what} ({app})`.
-    [GeneratedRegex(@"^kit: (?<what>.+?)(?: \((?<app>[^()\s]+)\))?$")]
+    [GeneratedRegex(@"^kit: (?<what>.+?)(?: \((?<app>[^()]+)\))?$")]
     private static partial Regex KitMessage();
 
     [GeneratedRegex(@"\bBEH-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*")]

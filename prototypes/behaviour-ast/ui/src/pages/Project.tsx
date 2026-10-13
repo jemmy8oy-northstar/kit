@@ -76,7 +76,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
       <AskForBehaviour app={project.app} onAsked={bump} />
       <NotesPanel app={project.app} version={notes} />
-      <PendingPanel apps={[project.app]} />
+      <PendingPanel apps={[project.app]} version={notes} />
 
       {project.conflicts.length > 0 && (
         <section>
@@ -182,7 +182,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
 
       <AskForBehaviour app={home.app} onAsked={bump} />
       <NotesPanel app={home.app} version={notes} />
-      <PendingPanel apps={files.map((f) => f.app)} />
+      <PendingPanel apps={files.map((f) => f.app)} version={notes} />
 
       {conflicts.length > 0 && (
         <section>

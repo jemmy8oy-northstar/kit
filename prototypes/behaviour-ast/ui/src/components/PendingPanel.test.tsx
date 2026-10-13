@@ -62,6 +62,28 @@ describe('PendingPanel', () => {
     expect(calls).toHaveLength(2)
   })
 
+  it("one file that cannot be read does not hide another file's edits", async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.includes('/gone/')) return { ok: false, status: 404, statusText: 'Not Found', json: async () => ({ error: 'no-such-project', reason: 'x' }) }
+      const body: PendingView = { app: 'kit', head: 'kit/hosted', base: 'dev', edits: [edit('aaaaaaa', 'add BEH-1')], pullNumber: null, pullUrl: null, reason: null }
+      return { ok: true, status: 200, statusText: 'OK', json: async () => body }
+    }))
+    render(<PendingPanel apps={['kit', 'gone']} />)
+
+    expect(await screen.findByRole('region', { name: 'Pending' })).toHaveTextContent('1 edit')
+  })
+
+  it('a write elsewhere on the page (a new version) reads the list again', async () => {
+    const calls = answer({ 'snip-it': { edits: [edit('aaaaaaa', 'add BEH-7')] } })
+    const { rerender } = render(<PendingPanel apps={['snip-it']} version={0} />)
+    await screen.findByRole('region', { name: 'Pending' })
+
+    rerender(<PendingPanel apps={['snip-it']} version={1} />)
+
+    await vi.waitFor(() => expect(calls).toHaveLength(2))
+    expect(await screen.findByRole('region', { name: 'Pending' })).toHaveTextContent('1 edit')
+  })
+
   it('CONTROL: nothing pending renders nothing — no heading, no empty card', async () => {
     const calls = answer({ 'snip-it': { reason: 'git write-back is off, so no edit is waiting on a branch' } })
     const { container } = render(<PendingPanel apps={['snip-it']} />)
