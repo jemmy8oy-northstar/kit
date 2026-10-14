@@ -94,6 +94,16 @@ jobs:
           --configuration Release
           -- check kit --repo . --dir prototypes/behaviour-ast/behaviours
 
+      # The same gate on Kit's own UI spec (kit-ui.beh, mapped in kit-ui.tests.json
+      # to the vitest suite). It reads test titles from the files, so it needs no
+      # npm install — only the build above.
+      - name: Stage-0 gate — every kit-ui behaviour is named by a test
+        run: >
+          dotnet run --project backend/Balenthiran.Kit.Cli
+          --no-build
+          --configuration Release
+          -- check kit-ui --repo . --dir prototypes/behaviour-ast/behaviours
+
   # The UI (#19) arrived with 20 passing tests and nothing that ran them. A
   # suite quoted in a PR body but executed by no gating job is a claim, not a
   # check — I have made that mistake before ([[passing-is-not-gating]]), so the

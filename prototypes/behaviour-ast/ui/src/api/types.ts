@@ -406,6 +406,26 @@ export interface NoteList {
   notes: Note[]
 }
 
+/** One behaviour on the schedule or in the backlog (BEH-SCHED-1..3). */
+export interface ScheduleEntry {
+  id: string
+  /** Null when the corpus no longer has the id. */
+  title: string | null
+  /** `pending` still to build; `done` built since it was scheduled; `missing` gone from the corpus. Backlog is always `pending`. */
+  state: 'pending' | 'done' | 'missing'
+  /** The first still-pending entry on the schedule: the one an agent picks up. Never true in the backlog. */
+  next: boolean
+}
+
+/** `GET /api/projects/<app>/schedule`: the schedule in order, then every pending behaviour it does not list. */
+export interface ScheduleList {
+  app: string
+  /** Where the schedule lives, whether or not the file exists yet. */
+  file: string
+  scheduled: ScheduleEntry[]
+  backlog: ScheduleEntry[]
+}
+
 /** What `POST /api/projects/<app>/notes` returns: a corpus write's shape, with the behaviour optional. */
 export interface NoteResult extends GitOutcome {
   app: string

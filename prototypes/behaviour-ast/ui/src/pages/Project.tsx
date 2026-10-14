@@ -10,6 +10,7 @@ import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
 import ResourceView from '../components/Resource'
+import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 
@@ -77,6 +78,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       <AskForBehaviour app={project.app} onAsked={bump} />
       <NotesPanel app={project.app} version={notes} />
       <PendingPanel apps={[project.app]} version={notes} />
+      <SchedulePanel apps={[project.app]} />
 
       {project.conflicts.length > 0 && (
         <section>
@@ -183,6 +185,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
       <AskForBehaviour app={home.app} onAsked={bump} />
       <NotesPanel app={home.app} version={notes} />
       <PendingPanel apps={files.map((f) => f.app)} version={notes} />
+      <SchedulePanel apps={files.map((f) => f.app)} />
 
       {conflicts.length > 0 && (
         <section>
