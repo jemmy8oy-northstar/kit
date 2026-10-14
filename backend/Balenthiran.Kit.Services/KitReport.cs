@@ -304,6 +304,7 @@ public sealed class KitReport(
         int generated = 0, contract = 0, ungenerated = 0;
         var unbound = new List<string>();
         var noSteps = new List<string>();
+        var nothingGenerated = new List<string>();
         foreach (var b in behaviours)
         {
             var test = generator.Generate(b, byApp.GetValueOrDefault(CorpusOf(b) ?? string.Empty) ?? [], symbols);
@@ -313,6 +314,11 @@ public sealed class KitReport(
             if (test.Code.Contains(TestGenerator.NoStepToWalk, StringComparison.Ordinal))
             {
                 noSteps.Add(b.Id);
+            }
+
+            if (test.Code.Contains(TestGenerator.NothingGenerated, StringComparison.Ordinal))
+            {
+                nothingGenerated.Add(b.Id);
             }
             foreach (var m in test.Missing.Where(m => !unbound.Contains(m)))
             {
@@ -396,6 +402,11 @@ public sealed class KitReport(
         if (noSteps.Count > 0)
         {
             Out($"  no steps (skipped)    {noSteps.Count}   {string.Join(", ", noSteps)}");
+        }
+
+        if (nothingGenerated.Count > 0)
+        {
+            Out($"  nothing generated (skipped) {nothingGenerated.Count}   {string.Join(", ", nothingGenerated)}");
         }
         // 0/0 is not a rate. kit.js printed "NaN%" for it, and so did this port, until a corpus tagged
         // technical throughout (kit#193) made it the headline number of Kit's own spec.

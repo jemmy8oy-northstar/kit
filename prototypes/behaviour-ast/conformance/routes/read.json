@@ -1222,7 +1222,7 @@
           "generated": [
             {
               "id": "BEH-TODAY-1",
-              "code": "test(\"[BEH-TODAY-1] The day's habits are listed in order so the whole day can be logged from one screen\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees control:DateStepper\" });\n  // UNGENERATED: then sees control:DateStepper\n});",
+              "code": "test.skip(\"[BEH-TODAY-1] The day's habits are listed in order so the whole day can be logged from one screen\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // UNGENERATED: then sees control:DateStepper\n});",
               "missing": [
                 "page:Today",
                 "region:HabitList",
@@ -1236,7 +1236,7 @@
             },
             {
               "id": "BEH-TODAY-2",
-              "code": "test(\"[BEH-TODAY-2] A checkbox habit is ticked inline\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitRow\" });\n  // UNGENERATED: when activates checkbox:HabitRow\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n});",
+              "code": "test.skip(\"[BEH-TODAY-2] A checkbox habit is ticked inline\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitRow\n  // UNGENERATED: then sees badge:Streak\n});",
               "missing": [
                 "habit:BooleanSeeded",
                 "page:Today",
@@ -1251,7 +1251,7 @@
             },
             {
               "id": "BEH-TODAY-3",
-              "code": "test(\"[BEH-TODAY-3] A numeric habit takes a value in a number field\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NumericSeeded\" });\n  // UNGENERATED: given habit:NumericSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:HabitValue with ?value\" });\n  // UNGENERATED: when fills field:HabitValue with ?value\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n});",
+              "code": "test.skip(\"[BEH-TODAY-3] A numeric habit takes a value in a number field\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:NumericSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills field:HabitValue with ?value\n  // UNGENERATED: then sees badge:Streak\n});",
               "missing": [
                 "habit:NumericSeeded",
                 "page:Today",
@@ -1266,7 +1266,7 @@
             },
             {
               "id": "BEH-TODAY-4",
-              "code": "test(\"[BEH-TODAY-4] Previous days can be reached with the date stepper and back-filled\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates control:DateStepperBack\" });\n  // UNGENERATED: when activates control:DateStepperBack\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+              "code": "test.skip(\"[BEH-TODAY-4] Previous days can be reached with the date stepper and back-filled\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates control:DateStepperBack\n  // UNGENERATED: then sees region:HabitList\n});",
               "missing": [
                 "page:Today",
                 "control:DateStepperBack",
@@ -1280,7 +1280,7 @@
             },
             {
               "id": "BEH-MANAGE-1",
-              "code": "test(\"[BEH-MANAGE-1] Habits can be added, renamed, reordered and archived\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Manage\" });\n  // UNGENERATED: when opens page:Manage\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:AddHabit\" });\n  // UNGENERATED: then sees button:AddHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitEditor\" });\n  // UNGENERATED: then sees region:HabitEditor\n});",
+              "code": "test.skip(\"[BEH-MANAGE-1] Habits can be added, renamed, reordered and archived\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Manage\n  // UNGENERATED: then sees button:AddHabit\n  // UNGENERATED: then sees region:HabitEditor\n});",
               "missing": [
                 "page:Manage",
                 "button:AddHabit",
@@ -1294,7 +1294,7 @@
             },
             {
               "id": "BEH-HISTORY-1",
-              "code": "test(\"[BEH-HISTORY-1] Each habit shows a 30-day completion grid with current and longest streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:History\" });\n  // UNGENERATED: when opens page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:CompletionGrid\" });\n  // UNGENERATED: then sees region:CompletionGrid\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:CurrentStreak\" });\n  // UNGENERATED: then sees badge:CurrentStreak\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:LongestStreak\" });\n  // UNGENERATED: then sees badge:LongestStreak\n});",
+              "code": "test.skip(\"[BEH-HISTORY-1] Each habit shows a 30-day completion grid with current and longest streak\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:History\n  // UNGENERATED: then sees region:CompletionGrid\n  // UNGENERATED: then sees badge:CurrentStreak\n  // UNGENERATED: then sees badge:LongestStreak\n});",
               "missing": [
                 "page:History",
                 "region:CompletionGrid",
@@ -1309,7 +1309,7 @@
             },
             {
               "id": "BEH-LOOP-1",
-              "code": "test(\"[BEH-LOOP-1] The full day is loggable from one screen in under ~20 seconds\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the whole day is loggable from one screen in under ~20 seconds\" });\n  // CONTRACT (not derivable from a behaviour): the whole day is loggable from one screen in under ~20 seconds\n});",
+              "code": "test.skip(\"[BEH-LOOP-1] The full day is loggable from one screen in under ~20 seconds\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the whole day is loggable from one screen in under ~20 seconds\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1319,7 +1319,7 @@
             },
             {
               "id": "BEH-DATE-1",
-              "code": "test(\"[BEH-DATE-1] The client's local calendar day is stored verbatim as YYYY-MM-DD\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the server stores the client-supplied YYYY-MM-DD date without timezone conversion\" });\n  // CONTRACT (not derivable from a behaviour): the server stores the client-supplied YYYY-MM-DD date without timezone conversion\n});",
+              "code": "test.skip(\"[BEH-DATE-1] The client's local calendar day is stored verbatim as YYYY-MM-DD\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the server stores the client-supplied YYYY-MM-DD date without timezone conversion\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1329,7 +1329,7 @@
             },
             {
               "id": "BEH-SEED-1",
-              "code": "test(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n  test.info().annotations.push({ type: \"kit-contract\", description: \"seeding is idempotent — a second run does not duplicate the starter set\" });\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
+              "code": "test.skip(\"[BEH-SEED-1] First run is not empty — a starter set of habits is seeded exactly once\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n  // CONTRACT (not derivable from a behaviour): seeding is idempotent — a second run does not duplicate the starter set\n});",
               "missing": [
                 "page:Today",
                 "region:HabitList"
@@ -1342,7 +1342,7 @@
             },
             {
               "id": "BEH-ORDER-1",
-              "code": "test(\"[BEH-ORDER-1] A newly created habit is appended to the end of the display order\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"POST /api/habits places the new habit last in sortOrder\" });\n  // CONTRACT (not derivable from a behaviour): POST /api/habits places the new habit last in sortOrder\n});",
+              "code": "test.skip(\"[BEH-ORDER-1] A newly created habit is appended to the end of the display order\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): POST /api/habits places the new habit last in sortOrder\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1352,7 +1352,7 @@
             },
             {
               "id": "BEH-ARCHIVE-1",
-              "code": "test(\"[BEH-ARCHIVE-1] An archived habit disappears from the list but stays retrievable by id\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"DELETE /api/habits/{id} archives rather than deletes\" });\n  // CONTRACT (not derivable from a behaviour): DELETE /api/habits/{id} archives rather than deletes\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits omits the archived habit\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits omits the archived habit\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits/{id} still returns it\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id} still returns it\n});",
+              "code": "test.skip(\"[BEH-ARCHIVE-1] An archived habit disappears from the list but stays retrievable by id\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): DELETE /api/habits/{id} archives rather than deletes\n  // CONTRACT (not derivable from a behaviour): GET /api/habits omits the archived habit\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id} still returns it\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1362,7 +1362,7 @@
             },
             {
               "id": "BEH-ARCHIVE-2",
-              "code": "test(\"[BEH-ARCHIVE-2] Archived habits can be asked for explicitly\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits takes a flag that includes archived habits\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits takes a flag that includes archived habits\n});",
+              "code": "test.skip(\"[BEH-ARCHIVE-2] Archived habits can be asked for explicitly\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): GET /api/habits takes a flag that includes archived habits\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1372,7 +1372,7 @@
             },
             {
               "id": "BEH-STREAK-1",
-              "code": "test(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:BooleanSeeded\" });\n  // UNGENERATED: given habit:BooleanSeeded\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Streak\" });\n  // UNGENERATED: then sees badge:Streak\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the streak counts back from today and tolerates today being unlogged\" });\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
+              "code": "test.skip(\"[BEH-STREAK-1] Today counts as a grace day — an unlogged today does not break the streak\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:BooleanSeeded\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees badge:Streak\n  // CONTRACT (not derivable from a behaviour): the streak counts back from today and tolerates today being unlogged\n});",
               "missing": [
                 "habit:BooleanSeeded",
                 "page:Today",
@@ -1386,7 +1386,7 @@
             },
             {
               "id": "BEH-STREAK-2",
-              "code": "test(\"[BEH-STREAK-2] A streak stops at the first missed day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the current streak ends at the first incomplete day before today\" });\n  // CONTRACT (not derivable from a behaviour): the current streak ends at the first incomplete day before today\n});",
+              "code": "test.skip(\"[BEH-STREAK-2] A streak stops at the first missed day\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the current streak ends at the first incomplete day before today\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1396,7 +1396,7 @@
             },
             {
               "id": "BEH-STREAK-3",
-              "code": "test(\"[BEH-STREAK-3] Longest streak ignores duplicate and out-of-order dates\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"duplicate and unordered entry dates do not inflate the longest streak\" });\n  // CONTRACT (not derivable from a behaviour): duplicate and unordered entry dates do not inflate the longest streak\n});",
+              "code": "test.skip(\"[BEH-STREAK-3] Longest streak ignores duplicate and out-of-order dates\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): duplicate and unordered entry dates do not inflate the longest streak\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1406,7 +1406,7 @@
             },
             {
               "id": "BEH-ENTRY-1",
-              "code": "test(\"[BEH-ENTRY-1] Logging the same habit twice on one day overwrites rather than appends\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"PUT /api/entries is an upsert keyed on (habitId, date)\" });\n  // CONTRACT (not derivable from a behaviour): PUT /api/entries is an upsert keyed on (habitId, date)\n});",
+              "code": "test.skip(\"[BEH-ENTRY-1] Logging the same habit twice on one day overwrites rather than appends\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): PUT /api/entries is an upsert keyed on (habitId, date)\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1416,7 +1416,7 @@
             },
             {
               "id": "BEH-HISTORY-2",
-              "code": "test(\"[BEH-HISTORY-2] The history window length is requested by the caller, defaulting to 30\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\" });\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\n});",
+              "code": "test.skip(\"[BEH-HISTORY-2] The history window length is requested by the caller, defaulting to 30\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): GET /api/habits/{id}/history takes a window-length parameter defaulting to 30\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1426,7 +1426,7 @@
             },
             {
               "id": "BEH-HISTORY-3",
-              "code": "test(\"[BEH-HISTORY-3] The history window parameter is named historyDays, not days\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the query parameter is `historyDays`, and `?days=` is silently ignored\" });\n  // CONTRACT (not derivable from a behaviour): the query parameter is `historyDays`, and `?days=` is silently ignored\n});",
+              "code": "test.skip(\"[BEH-HISTORY-3] The history window parameter is named historyDays, not days\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the query parameter is `historyDays`, and `?days=` is silently ignored\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1436,7 +1436,7 @@
             },
             {
               "id": "BEH-REORDER-1",
-              "code": "test(\"[BEH-REORDER-1] Habits can be reordered as a whole list in one call\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"PUT /api/habits/reorder rewrites every sort position\" });\n  // CONTRACT (not derivable from a behaviour): PUT /api/habits/reorder rewrites every sort position\n});",
+              "code": "test.skip(\"[BEH-REORDER-1] Habits can be reordered as a whole list in one call\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): PUT /api/habits/reorder rewrites every sort position\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1446,7 +1446,7 @@
             },
             {
               "id": "BEH-ERROR-1",
-              "code": "test(\"[BEH-ERROR-1] An unknown habit is a 404 carrying a machine-readable error code\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"GET, PUT, DELETE and history for an unknown habit id all return 404\" });\n  // CONTRACT (not derivable from a behaviour): GET, PUT, DELETE and history for an unknown habit id all return 404\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the body is ProblemDetails and carries an error code\" });\n  // CONTRACT (not derivable from a behaviour): the body is ProblemDetails and carries an error code\n  test.info().annotations.push({ type: \"kit-contract\", description: \"an unexpected exception is a 500 that exposes nothing\" });\n  // CONTRACT (not derivable from a behaviour): an unexpected exception is a 500 that exposes nothing\n});",
+              "code": "test.skip(\"[BEH-ERROR-1] An unknown habit is a 404 carrying a machine-readable error code\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): GET, PUT, DELETE and history for an unknown habit id all return 404\n  // CONTRACT (not derivable from a behaviour): the body is ProblemDetails and carries an error code\n  // CONTRACT (not derivable from a behaviour): an unexpected exception is a 500 that exposes nothing\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -1456,7 +1456,7 @@
             },
             {
               "id": "BEH-COMPLETE-1",
-              "code": "test(\"[BEH-COMPLETE-1] Completion is defined per habit type\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"boolean habits complete when ticked\" });\n  // CONTRACT (not derivable from a behaviour): boolean habits complete when ticked\n  test.info().annotations.push({ type: \"kit-contract\", description: \"numeric habits with a target complete at or above the target\" });\n  // CONTRACT (not derivable from a behaviour): numeric habits with a target complete at or above the target\n  test.info().annotations.push({ type: \"kit-contract\", description: \"numeric habits without a target complete when any value is entered\" });\n  // CONTRACT (not derivable from a behaviour): numeric habits without a target complete when any value is entered\n});",
+              "code": "test.skip(\"[BEH-COMPLETE-1] Completion is defined per habit type\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): boolean habits complete when ticked\n  // CONTRACT (not derivable from a behaviour): numeric habits with a target complete at or above the target\n  // CONTRACT (not derivable from a behaviour): numeric habits without a target complete when any value is entered\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -4037,7 +4037,7 @@
           "generated": [
             {
               "id": "BEH-GATE-1",
-              "code": "test(\"[BEH-GATE-1] A behaviour with no test naming it fails the build\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:SnipIt\" });\n  // UNGENERATED: given corpus:SnipIt\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this is stage 0's stated deliverable in docs/timeline.md\" });\n  // CONTRACT (not derivable from a behaviour): this is stage 0's stated deliverable in docs/timeline.md\n});",
+              "code": "test.skip(\"[BEH-GATE-1] A behaviour with no test naming it fails the build\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:SnipIt\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this is stage 0's stated deliverable in docs/timeline.md\n});",
               "missing": [
                 "corpus:SnipIt"
               ],
@@ -4049,7 +4049,7 @@
             },
             {
               "id": "BEH-GATE-2",
-              "code": "test(\"[BEH-GATE-2] Could-not-look is never reported as green\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:WithNoTests\" });\n  // UNGENERATED: given repo:WithNoTests\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  test.info().annotations.push({ type: \"kit-contract\", description: \"exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\" });\n  // CONTRACT (not derivable from a behaviour): exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"exits 0 is indistinguishable in CI from a passing one\" });\n  // CONTRACT (not derivable from a behaviour): exits 0 is indistinguishable in CI from a passing one\n});",
+              "code": "test.skip(\"[BEH-GATE-2] Could-not-look is never reported as green\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given repo:WithNoTests\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): exit 2 is distinct from 0 AND from 1 — a gate that reads nothing and\n  // CONTRACT (not derivable from a behaviour): exits 0 is indistinguishable in CI from a passing one\n});",
               "missing": [
                 "repo:WithNoTests"
               ],
@@ -4061,7 +4061,7 @@
             },
             {
               "id": "BEH-GATE-3",
-              "code": "test(\"[BEH-GATE-3] A mapping naming a test that no longer exists is a hard failure\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given mapping:Stale\" });\n  // UNGENERATED: given mapping:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:One\" });\n  // UNGENERATED: then exits status:One\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this checkability is the whole argument for option C over markers\" });\n  // CONTRACT (not derivable from a behaviour): this checkability is the whole argument for option C over markers\n});",
+              "code": "test.skip(\"[BEH-GATE-3] A mapping naming a test that no longer exists is a hard failure\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given mapping:Stale\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:One\n  // CONTRACT (not derivable from a behaviour): this checkability is the whole argument for option C over markers\n});",
               "missing": [
                 "mapping:Stale"
               ],
@@ -4073,7 +4073,7 @@
             },
             {
               "id": "BEH-READ-1",
-              "code": "test(\"[BEH-READ-1] The reader refuses when its two counts disagree\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given file:CountsDisagree\" });\n  // UNGENERATED: given file:CountsDisagree\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCheck\" });\n  // UNGENERATED: when runs command:KitCheck\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then exits status:Two\" });\n  // UNGENERATED: then exits status:Two\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the two counts must be different MECHANISMS — position versus lexical\" });\n  // CONTRACT (not derivable from a behaviour): the two counts must be different MECHANISMS — position versus lexical\n  test.info().annotations.push({ type: \"kit-contract\", description: \"structure — or agreement between them proves nothing\" });\n  // CONTRACT (not derivable from a behaviour): structure — or agreement between them proves nothing\n});",
+              "code": "test.skip(\"[BEH-READ-1] The reader refuses when its two counts disagree\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given file:CountsDisagree\n  // UNGENERATED: when runs command:KitCheck\n  // UNGENERATED: then exits status:Two\n  // CONTRACT (not derivable from a behaviour): the two counts must be different MECHANISMS — position versus lexical\n  // CONTRACT (not derivable from a behaviour): structure — or agreement between them proves nothing\n});",
               "missing": [
                 "file:CountsDisagree"
               ],
@@ -4085,7 +4085,7 @@
             },
             {
               "id": "BEH-GEN-1",
-              "code": "test(\"[BEH-GEN-1] An unbound noun is refused, and the missing noun is named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:UnboundNoun\" });\n  // UNGENERATED: given corpus:UnboundNoun\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  test.info().annotations.push({ type: \"kit-contract\", description: \"no locator is ever guessed from the noun's own name\" });\n  // CONTRACT (not derivable from a behaviour): no locator is ever guessed from the noun's own name\n});",
+              "code": "test.skip(\"[BEH-GEN-1] An unbound noun is refused, and the missing noun is named\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:UnboundNoun\n  // UNGENERATED: when runs command:KitGenerate\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): no locator is ever guessed from the noun's own name\n});",
               "missing": [
                 "corpus:UnboundNoun"
               ],
@@ -4097,7 +4097,7 @@
             },
             {
               "id": "BEH-GEN-2",
-              "code": "test(\"[BEH-GEN-2] An unsupplied route param is refused rather than truncated\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:RouteParam\" });\n  // UNGENERATED: given corpus:RouteParam\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitGenerate\" });\n  // UNGENERATED: when runs command:KitGenerate\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports marker:Ungenerated\" });\n  // UNGENERATED: then reports marker:Ungenerated\n  test.info().annotations.push({ type: \"kit-contract\", description: \"emitting ./editor/ would navigate to the wrong page and look correct\" });\n  // CONTRACT (not derivable from a behaviour): emitting ./editor/ would navigate to the wrong page and look correct\n});",
+              "code": "test.skip(\"[BEH-GEN-2] An unsupplied route param is refused rather than truncated\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:RouteParam\n  // UNGENERATED: when runs command:KitGenerate\n  // UNGENERATED: then reports marker:Ungenerated\n  // CONTRACT (not derivable from a behaviour): emitting ./editor/ would navigate to the wrong page and look correct\n});",
               "missing": [
                 "corpus:RouteParam"
               ],
@@ -4109,7 +4109,7 @@
             },
             {
               "id": "BEH-PARSE-1",
-              "code": "test(\"[BEH-PARSE-1] An unrecognised keyword is an error, not silently dropped\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:BadKeyword\" });\n  // UNGENERATED: given corpus:BadKeyword\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitParse\" });\n  // UNGENERATED: when runs command:KitParse\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:UnrecognisedKeyword\" });\n  // UNGENERATED: then raises error:UnrecognisedKeyword\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a spec language that ignores what it does not understand is how a\" });\n  // CONTRACT (not derivable from a behaviour): a spec language that ignores what it does not understand is how a\n  test.info().annotations.push({ type: \"kit-contract\", description: \"spec becomes descriptive\" });\n  // CONTRACT (not derivable from a behaviour): spec becomes descriptive\n});",
+              "code": "test.skip(\"[BEH-PARSE-1] An unrecognised keyword is an error, not silently dropped\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:BadKeyword\n  // UNGENERATED: when runs command:KitParse\n  // UNGENERATED: then raises error:UnrecognisedKeyword\n  // CONTRACT (not derivable from a behaviour): a spec language that ignores what it does not understand is how a\n  // CONTRACT (not derivable from a behaviour): spec becomes descriptive\n});",
               "missing": [
                 "corpus:BadKeyword"
               ],
@@ -4121,7 +4121,7 @@
             },
             {
               "id": "BEH-RESOLVE-1",
-              "code": "test(\"[BEH-RESOLVE-1] A hole in one behaviour is filled by a different behaviour\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:CrossBehaviourHole\" });\n  // UNGENERATED: given corpus:CrossBehaviourHole\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports slot:Filled\" });\n  // UNGENERATED: then reports slot:Filled\n  test.info().annotations.push({ type: \"kit-contract\", description: \"this is the part no BDD tool has, and it needs ONE symbol table\" });\n  // CONTRACT (not derivable from a behaviour): this is the part no BDD tool has, and it needs ONE symbol table\n});",
+              "code": "test.skip(\"[BEH-RESOLVE-1] A hole in one behaviour is filled by a different behaviour\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:CrossBehaviourHole\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports slot:Filled\n  // CONTRACT (not derivable from a behaviour): this is the part no BDD tool has, and it needs ONE symbol table\n});",
               "missing": [
                 "corpus:CrossBehaviourHole"
               ],
@@ -4133,7 +4133,7 @@
             },
             {
               "id": "BEH-RESOLVE-2",
-              "code": "test(\"[BEH-RESOLVE-2] Two behaviours disagreeing is a conflict, with both sides named\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Disagreement\" });\n  // UNGENERATED: given corpus:Disagreement\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports conflict:BothSides\" });\n  // UNGENERATED: then reports conflict:BothSides\n});",
+              "code": "test.skip(\"[BEH-RESOLVE-2] Two behaviours disagreeing is a conflict, with both sides named\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:Disagreement\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports conflict:BothSides\n});",
               "missing": [
                 "corpus:Disagreement"
               ],
@@ -4145,7 +4145,7 @@
             },
             {
               "id": "BEH-ADJ-1",
-              "code": "test(\"[BEH-ADJ-1] An inference is included by default and marked unreviewed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:Inference\" });\n  // UNGENERATED: given corpus:Inference\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitResolve\" });\n  // UNGENERATED: when runs command:KitResolve\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports review:Unreviewed\" });\n  // UNGENERATED: then reports review:Unreviewed\n  test.info().annotations.push({ type: \"kit-contract\", description: \"James's call on claude-code-bot#68 — default-include, marked\" });\n  // CONTRACT (not derivable from a behaviour): James's call on claude-code-bot#68 — default-include, marked\n});",
+              "code": "test.skip(\"[BEH-ADJ-1] An inference is included by default and marked unreviewed\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:Inference\n  // UNGENERATED: when runs command:KitResolve\n  // UNGENERATED: then reports review:Unreviewed\n  // CONTRACT (not derivable from a behaviour): James's call on claude-code-bot#68 — default-include, marked\n});",
               "missing": [
                 "corpus:Inference"
               ],
@@ -4157,7 +4157,7 @@
             },
             {
               "id": "BEH-UI-1",
-              "code": "test(\"[BEH-UI-1] A verb the server has no meaning for reaches no handler\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Unsupported\" });\n  // UNGENERATED: given request:Unsupported\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:MethodNotAllowed\" });\n  // UNGENERATED: then reports status:MethodNotAllowed\n  test.info().annotations.push({ type: \"kit-contract\", description: \"decision 2 landed on 2026-09-08, so POST now has a handler and this\" });\n  // CONTRACT (not derivable from a behaviour): decision 2 landed on 2026-09-08, so POST now has a handler and this\n  test.info().annotations.push({ type: \"kit-contract\", description: \"behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\" });\n  // CONTRACT (not derivable from a behaviour): behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\n  test.info().annotations.push({ type: \"kit-contract\", description: \"one meaning each that nobody has decided, and a route accepting a verb it\" });\n  // CONTRACT (not derivable from a behaviour): one meaning each that nobody has decided, and a route accepting a verb it\n  test.info().annotations.push({ type: \"kit-contract\", description: \"cannot serve is a 405 waiting to be discovered as a 500\" });\n  // CONTRACT (not derivable from a behaviour): cannot serve is a 405 waiting to be discovered as a 500\n});",
+              "code": "test.skip(\"[BEH-UI-1] A verb the server has no meaning for reaches no handler\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given request:Unsupported\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:MethodNotAllowed\n  // CONTRACT (not derivable from a behaviour): decision 2 landed on 2026-09-08, so POST now has a handler and this\n  // CONTRACT (not derivable from a behaviour): behaviour narrowed rather than disappeared — PUT, PATCH and DELETE have\n  // CONTRACT (not derivable from a behaviour): one meaning each that nobody has decided, and a route accepting a verb it\n  // CONTRACT (not derivable from a behaviour): cannot serve is a 405 waiting to be discovered as a 500\n});",
               "missing": [
                 "request:Unsupported"
               ],
@@ -4169,7 +4169,7 @@
             },
             {
               "id": "BEH-UI-2",
-              "code": "test(\"[BEH-UI-2] The server binds the loopback interface, not every interface\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given option:Default\" });\n  // UNGENERATED: given option:Default\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports host:Loopback\" });\n  // UNGENERATED: then reports host:Loopback\n  test.info().annotations.push({ type: \"kit-contract\", description: \"0.0.0.0 would publish every corpus in the working tree, and the absolute\" });\n  // CONTRACT (not derivable from a behaviour): 0.0.0.0 would publish every corpus in the working tree, and the absolute\n  test.info().annotations.push({ type: \"kit-contract\", description: \"path of every repo beside it, to anything that can reach the host\" });\n  // CONTRACT (not derivable from a behaviour): path of every repo beside it, to anything that can reach the host\n});",
+              "code": "test.skip(\"[BEH-UI-2] The server binds the loopback interface, not every interface\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given option:Default\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports host:Loopback\n  // CONTRACT (not derivable from a behaviour): 0.0.0.0 would publish every corpus in the working tree, and the absolute\n  // CONTRACT (not derivable from a behaviour): path of every repo beside it, to anything that can reach the host\n});",
               "missing": [
                 "option:Default"
               ],
@@ -4181,7 +4181,7 @@
             },
             {
               "id": "BEH-UI-3",
-              "code": "test(\"[BEH-UI-3] A traversal in an app name is refused rather than resolved to a path\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given request:Traversal\" });\n  // UNGENERATED: given request:Traversal\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:NotFound\" });\n  // UNGENERATED: then reports status:NotFound\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the name is looked UP in the set of corpora that exist; it is never\" });\n  // CONTRACT (not derivable from a behaviour): the name is looked UP in the set of corpora that exist; it is never\n  test.info().annotations.push({ type: \"kit-contract\", description: \"joined to a path, so there is nothing to traverse with\" });\n  // CONTRACT (not derivable from a behaviour): joined to a path, so there is nothing to traverse with\n});",
+              "code": "test.skip(\"[BEH-UI-3] A traversal in an app name is refused rather than resolved to a path\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given request:Traversal\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:NotFound\n  // CONTRACT (not derivable from a behaviour): the name is looked UP in the set of corpora that exist; it is never\n  // CONTRACT (not derivable from a behaviour): joined to a path, so there is nothing to traverse with\n});",
               "missing": [
                 "request:Traversal"
               ],
@@ -4193,7 +4193,7 @@
             },
             {
               "id": "BEH-UI-4",
-              "code": "test(\"[BEH-UI-4] Coverage that could not be read is null in the list, never zero\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given repo:Absent\" });\n  // UNGENERATED: given repo:Absent\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports coverage:Unavailable\" });\n  // UNGENERATED: then reports coverage:Unavailable\n  test.info().annotations.push({ type: \"kit-contract\", description: \"project.js's rule, carried through the transport — a UI that cannot tell\" });\n  // CONTRACT (not derivable from a behaviour): project.js's rule, carried through the transport — a UI that cannot tell\n  test.info().annotations.push({ type: \"kit-contract\", description: \"\\\"no mapping exists\\\" from \\\"nothing is covered\\\" renders the second\" });\n  // CONTRACT (not derivable from a behaviour): \"no mapping exists\" from \"nothing is covered\" renders the second\n});",
+              "code": "test.skip(\"[BEH-UI-4] Coverage that could not be read is null in the list, never zero\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given repo:Absent\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports coverage:Unavailable\n  // CONTRACT (not derivable from a behaviour): project.js's rule, carried through the transport — a UI that cannot tell\n  // CONTRACT (not derivable from a behaviour): \"no mapping exists\" from \"nothing is covered\" renders the second\n});",
               "missing": [
                 "repo:Absent"
               ],
@@ -4205,7 +4205,7 @@
             },
             {
               "id": "BEH-WRITE-1",
-              "code": "test(\"[BEH-WRITE-1] An edit splices one block, so every comment in the corpus survives\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given corpus:WithComments\" });\n  // UNGENERATED: given corpus:WithComments\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports comment:Preserved\" });\n  // UNGENERATED: then reports comment:Preserved\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a round-trip through parse() would delete every comment in the file, and\" });\n  // CONTRACT (not derivable from a behaviour): a round-trip through parse() would delete every comment in the file, and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"snip-it.beh's nine opening lines are the caveat everything else rests on\" });\n  // CONTRACT (not derivable from a behaviour): snip-it.beh's nine opening lines are the caveat everything else rests on\n});",
+              "code": "test.skip(\"[BEH-WRITE-1] An edit splices one block, so every comment in the corpus survives\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given corpus:WithComments\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then reports comment:Preserved\n  // CONTRACT (not derivable from a behaviour): a round-trip through parse() would delete every comment in the file, and\n  // CONTRACT (not derivable from a behaviour): snip-it.beh's nine opening lines are the caveat everything else rests on\n});",
               "missing": [
                 "corpus:WithComments"
               ],
@@ -4217,7 +4217,7 @@
             },
             {
               "id": "BEH-WRITE-2",
-              "code": "test(\"[BEH-WRITE-2] An edit that would not parse never reaches the disk\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given step:Malformed\" });\n  // UNGENERATED: given step:Malformed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:WouldNotParse\" });\n  // UNGENERATED: then raises error:WouldNotParse\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the corpus is the source of truth for everything else Kit says, so a\" });\n  // CONTRACT (not derivable from a behaviour): the corpus is the source of truth for everything else Kit says, so a\n  test.info().annotations.push({ type: \"kit-contract\", description: \"writer that can corrupt it is worse than one that cannot write at all\" });\n  // CONTRACT (not derivable from a behaviour): writer that can corrupt it is worse than one that cannot write at all\n});",
+              "code": "test.skip(\"[BEH-WRITE-2] An edit that would not parse never reaches the disk\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given step:Malformed\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then raises error:WouldNotParse\n  // CONTRACT (not derivable from a behaviour): the corpus is the source of truth for everything else Kit says, so a\n  // CONTRACT (not derivable from a behaviour): writer that can corrupt it is worse than one that cannot write at all\n});",
               "missing": [
                 "step:Malformed"
               ],
@@ -4229,7 +4229,7 @@
             },
             {
               "id": "BEH-WRITE-3",
-              "code": "test(\"[BEH-WRITE-3] An edit that would change a neighbouring behaviour is refused\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given splice:OffByOne\" });\n  // UNGENERATED: given splice:OffByOne\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then raises error:CollateralChange\" });\n  // UNGENERATED: then raises error:CollateralChange\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a step landing in the next behaviour parses perfectly and is silently\" });\n  // CONTRACT (not derivable from a behaviour): a step landing in the next behaviour parses perfectly and is silently\n  test.info().annotations.push({ type: \"kit-contract\", description: \"wrong — the worst failure a writer can have\" });\n  // CONTRACT (not derivable from a behaviour): wrong — the worst failure a writer can have\n});",
+              "code": "test.skip(\"[BEH-WRITE-3] An edit that would change a neighbouring behaviour is refused\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given splice:OffByOne\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then raises error:CollateralChange\n  // CONTRACT (not derivable from a behaviour): a step landing in the next behaviour parses perfectly and is silently\n  // CONTRACT (not derivable from a behaviour): wrong — the worst failure a writer can have\n});",
               "missing": [
                 "splice:OffByOne"
               ],
@@ -4241,7 +4241,7 @@
             },
             {
               "id": "BEH-WRITE-4",
-              "code": "test(\"[BEH-WRITE-4] The writer never touches git, and the file proves it rather than promising it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given decision:LapsedDefault\" });\n  // UNGENERATED: given decision:LapsedDefault\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitWrite\" });\n  // UNGENERATED: when runs command:KitWrite\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports commit:None\" });\n  // UNGENERATED: then reports commit:None\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a bot that commits to a spec repo cannot be un-added after the first\" });\n  // CONTRACT (not derivable from a behaviour): a bot that commits to a spec repo cannot be un-added after the first\n  test.info().annotations.push({ type: \"kit-contract\", description: \"surprise, so the absence of child_process is asserted from source\" });\n  // CONTRACT (not derivable from a behaviour): surprise, so the absence of child_process is asserted from source\n});",
+              "code": "test.skip(\"[BEH-WRITE-4] The writer never touches git, and the file proves it rather than promising it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given decision:LapsedDefault\n  // UNGENERATED: when runs command:KitWrite\n  // UNGENERATED: then reports commit:None\n  // CONTRACT (not derivable from a behaviour): a bot that commits to a spec repo cannot be un-added after the first\n  // CONTRACT (not derivable from a behaviour): surprise, so the absence of child_process is asserted from source\n});",
               "missing": [
                 "decision:LapsedDefault"
               ],
@@ -4253,7 +4253,7 @@
             },
             {
               "id": "BEH-WRITE-5",
-              "code": "test(\"[BEH-WRITE-5] A write route is unreachable unless the server is bound to loopback\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given host:Routable\" });\n  // UNGENERATED: given host:Routable\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports status:Forbidden\" });\n  // UNGENERATED: then reports status:Forbidden\n  test.info().annotations.push({ type: \"kit-contract\", description: \"decision 1 said local tool; combining reachable-from-the-network with\" });\n  // CONTRACT (not derivable from a behaviour): decision 1 said local tool; combining reachable-from-the-network with\n  test.info().annotations.push({ type: \"kit-contract\", description: \"edits-files-in-the-working-tree is an unauthenticated remote write, and\" });\n  // CONTRACT (not derivable from a behaviour): edits-files-in-the-working-tree is an unauthenticated remote write, and\n  test.info().annotations.push({ type: \"kit-contract\", description: \"it would arrive as a --host flag rather than as a decision of his\" });\n  // CONTRACT (not derivable from a behaviour): it would arrive as a --host flag rather than as a decision of his\n});",
+              "code": "test.skip(\"[BEH-WRITE-5] A write route is unreachable unless the server is bound to loopback\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given host:Routable\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports status:Forbidden\n  // CONTRACT (not derivable from a behaviour): decision 1 said local tool; combining reachable-from-the-network with\n  // CONTRACT (not derivable from a behaviour): edits-files-in-the-working-tree is an unauthenticated remote write, and\n  // CONTRACT (not derivable from a behaviour): it would arrive as a --host flag rather than as a decision of his\n});",
               "missing": [
                 "host:Routable"
               ],
@@ -4265,7 +4265,7 @@
             },
             {
               "id": "BEH-WRITE-6",
-              "code": "test(\"[BEH-WRITE-6] A hostile page gets no CORS header, so it cannot write through the browser\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given origin:Hostile\" });\n  // UNGENERATED: given origin:Hostile\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitUi\" });\n  // UNGENERATED: when runs command:KitUi\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports header:Absent\" });\n  // UNGENERATED: then reports header:Absent\n  test.info().annotations.push({ type: \"kit-contract\", description: \"access-control-allow-origin: * was defensible while the server could\" });\n  // CONTRACT (not derivable from a behaviour): access-control-allow-origin: * was defensible while the server could\n  test.info().annotations.push({ type: \"kit-contract\", description: \"not write; with a write route it means any page the developer has open\" });\n  // CONTRACT (not derivable from a behaviour): not write; with a write route it means any page the developer has open\n  test.info().annotations.push({ type: \"kit-contract\", description: \"can edit their working tree\" });\n  // CONTRACT (not derivable from a behaviour): can edit their working tree\n});",
+              "code": "test.skip(\"[BEH-WRITE-6] A hostile page gets no CORS header, so it cannot write through the browser\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given origin:Hostile\n  // UNGENERATED: when runs command:KitUi\n  // UNGENERATED: then reports header:Absent\n  // CONTRACT (not derivable from a behaviour): access-control-allow-origin: * was defensible while the server could\n  // CONTRACT (not derivable from a behaviour): not write; with a write route it means any page the developer has open\n  // CONTRACT (not derivable from a behaviour): can edit their working tree\n});",
               "missing": [
                 "origin:Hostile"
               ],
@@ -6457,7 +6457,7 @@
             },
             {
               "id": "BEH-ACT-1",
-              "code": "test(\"[BEH-ACT-1] A behaviour is added to a project from a phone\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedProject\" });\n  // UNGENERATED: when opens page:KitHostedProject\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedAddBehaviour\" });\n  // UNGENERATED: then sees button:KitHostedAddBehaviour\n  test.info().annotations.push({ type: \"kit-contract\", description: \"\\\"top priority now I think is deploying kit so that I can use it from my\" });\n  // CONTRACT (not derivable from a behaviour): \"top priority now I think is deploying kit so that I can use it from my\n  test.info().annotations.push({ type: \"kit-contract\", description: \"phone\\\" — the phone is the requirement, not a nice-to-have, and it is why\" });\n  // CONTRACT (not derivable from a behaviour): phone\" — the phone is the requirement, not a nice-to-have, and it is why\n  test.info().annotations.push({ type: \"kit-contract\", description: \"nothing here may depend on a loopback bind\" });\n  // CONTRACT (not derivable from a behaviour): nothing here may depend on a loopback bind\n});",
+              "code": "test.skip(\"[BEH-ACT-1] A behaviour is added to a project from a phone\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:KitHostedProject\n  // UNGENERATED: then sees button:KitHostedAddBehaviour\n  // CONTRACT (not derivable from a behaviour): \"top priority now I think is deploying kit so that I can use it from my\n  // CONTRACT (not derivable from a behaviour): phone\" — the phone is the requirement, not a nice-to-have, and it is why\n  // CONTRACT (not derivable from a behaviour): nothing here may depend on a loopback bind\n});",
               "missing": [
                 "page:KitHostedProject",
                 "button:KitHostedAddBehaviour"
@@ -6470,7 +6470,7 @@
             },
             {
               "id": "BEH-ACT-2",
-              "code": "test(\"[BEH-ACT-2] An existing behaviour is updated without rewriting the file around it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedBehaviour\" });\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedSave\" });\n  // UNGENERATED: then sees button:KitHostedSave\n  test.info().annotations.push({ type: \"kit-contract\", description: \"writer.js already splices one block so every comment survives\" });\n  // CONTRACT (not derivable from a behaviour): writer.js already splices one block so every comment survives\n  test.info().annotations.push({ type: \"kit-contract\", description: \"(kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the\" });\n  // CONTRACT (not derivable from a behaviour): (kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the\n  test.info().annotations.push({ type: \"kit-contract\", description: \"headers in this directory are where a corpus's caveats live\" });\n  // CONTRACT (not derivable from a behaviour): headers in this directory are where a corpus's caveats live\n});",
+              "code": "test.skip(\"[BEH-ACT-2] An existing behaviour is updated without rewriting the file around it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  // UNGENERATED: then sees button:KitHostedSave\n  // CONTRACT (not derivable from a behaviour): writer.js already splices one block so every comment survives\n  // CONTRACT (not derivable from a behaviour): (kit.beh BEH-WRITE-1); hosted Kit must keep that property, because the\n  // CONTRACT (not derivable from a behaviour): headers in this directory are where a corpus's caveats live\n});",
               "missing": [
                 "page:KitHostedBehaviour",
                 "button:KitHostedSave"
@@ -6483,7 +6483,7 @@
             },
             {
               "id": "BEH-ACT-3",
-              "code": "test(\"[BEH-ACT-3] A behaviour is removed, and the removal is refused if anything still references it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedBehaviour\" });\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedRemove\" });\n  // UNGENERATED: then sees button:KitHostedRemove\n  test.info().annotations.push({ type: \"kit-contract\", description: \"⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —\" });\n  // CONTRACT (not derivable from a behaviour): ⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —\n  test.info().annotations.push({ type: \"kit-contract\", description: \"writer.js can add a step and splice a block, and has no remove path\" });\n  // CONTRACT (not derivable from a behaviour): writer.js can add a step and splice a block, and has no remove path\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a behaviour can be the target of `serves` or `cites` from another one, so\" });\n  // CONTRACT (not derivable from a behaviour): a behaviour can be the target of `serves` or `cites` from another one, so\n  test.info().annotations.push({ type: \"kit-contract\", description: \"deleting it silently is how a corpus acquires a dangling reference\" });\n  // CONTRACT (not derivable from a behaviour): deleting it silently is how a corpus acquires a dangling reference\n});",
+              "code": "test.skip(\"[BEH-ACT-3] A behaviour is removed, and the removal is refused if anything still references it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:KitHostedBehaviour\n  // UNGENERATED: then sees button:KitHostedRemove\n  // CONTRACT (not derivable from a behaviour): ⚠️ THE ONLY ONE OF HIS THREE VERBS THAT HAS NO IMPLEMENTATION AT ALL —\n  // CONTRACT (not derivable from a behaviour): writer.js can add a step and splice a block, and has no remove path\n  // CONTRACT (not derivable from a behaviour): a behaviour can be the target of `serves` or `cites` from another one, so\n  // CONTRACT (not derivable from a behaviour): deleting it silently is how a corpus acquires a dangling reference\n});",
               "missing": [
                 "page:KitHostedBehaviour",
                 "button:KitHostedRemove"
@@ -6496,7 +6496,7 @@
             },
             {
               "id": "BEH-ACT-4",
-              "code": "test(\"[BEH-ACT-4] Edits are held until Commit, so a half-described change never reaches a branch\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:KitHostedProject\" });\n  // UNGENERATED: when opens page:KitHostedProject\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:KitHostedCommit\" });\n  // UNGENERATED: then sees button:KitHostedCommit\n});",
+              "code": "test.skip(\"[BEH-ACT-4] Edits are held until Commit, so a half-described change never reaches a branch\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:KitHostedProject\n  // UNGENERATED: then sees button:KitHostedCommit\n});",
               "missing": [
                 "page:KitHostedProject",
                 "button:KitHostedCommit"
@@ -6533,7 +6533,7 @@
             },
             {
               "id": "BEH-COMMIT-3",
-              "code": "test(\"[BEH-COMMIT-3] A pull request is opened for the branch, because that is where the work is picked up\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given branch:Pushed\" });\n  // UNGENERATED: given branch:Pushed\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:KitCommit\" });\n  // UNGENERATED: when runs command:KitCommit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then reports pull:Opened\" });\n  // UNGENERATED: then reports pull:Opened\n  test.info().annotations.push({ type: \"kit-contract\", description: \"\\\"Here the AI (you for now) can read the behaviour changes, update the\" });\n  // CONTRACT (not derivable from a behaviour): \"Here the AI (you for now) can read the behaviour changes, update the\n  test.info().annotations.push({ type: \"kit-contract\", description: \"generated tests, update inferences etc, implement changes in the app to get\" });\n  // CONTRACT (not derivable from a behaviour): generated tests, update inferences etc, implement changes in the app to get\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the tests passing - raise a PR\\\"\" });\n  // CONTRACT (not derivable from a behaviour): the tests passing - raise a PR\"\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the PR is the handover: a pushed branch with no PR is invisible to every\" });\n  // CONTRACT (not derivable from a behaviour): the PR is the handover: a pushed branch with no PR is invisible to every\n  test.info().annotations.push({ type: \"kit-contract\", description: \"instrument that looks for work\" });\n  // CONTRACT (not derivable from a behaviour): instrument that looks for work\n});",
+              "code": "test.skip(\"[BEH-COMMIT-3] A pull request is opened for the branch, because that is where the work is picked up\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given branch:Pushed\n  // UNGENERATED: when runs command:KitCommit\n  // UNGENERATED: then reports pull:Opened\n  // CONTRACT (not derivable from a behaviour): \"Here the AI (you for now) can read the behaviour changes, update the\n  // CONTRACT (not derivable from a behaviour): generated tests, update inferences etc, implement changes in the app to get\n  // CONTRACT (not derivable from a behaviour): the tests passing - raise a PR\"\n  // CONTRACT (not derivable from a behaviour): the PR is the handover: a pushed branch with no PR is invisible to every\n  // CONTRACT (not derivable from a behaviour): instrument that looks for work\n});",
               "missing": [
                 "branch:Pushed"
               ],
@@ -9406,7 +9406,7 @@
           "generated": [
             {
               "id": "BEH-DRILL-ZHEN",
-              "code": "test(\"[BEH-DRILL-ZHEN] Shown a Chinese word, the learner types the English meaning\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HanziLarge\" });\n  // UNGENERATED: then sees region:HanziLarge\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:PinyinUnderIt\" });\n  // UNGENERATED: then sees region:PinyinUnderIt\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?english\" });\n  // UNGENERATED: when fills field:Answer with ?english\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n});",
+              "code": "test.skip(\"[BEH-DRILL-ZHEN] Shown a Chinese word, the learner types the English meaning\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: then sees region:HanziLarge\n  // UNGENERATED: then sees region:PinyinUnderIt\n  // UNGENERATED: when fills field:Answer with ?english\n  // UNGENERATED: then sees region:Verdict\n});",
               "missing": [
                 "page:Drill",
                 "region:HanziLarge",
@@ -9422,7 +9422,7 @@
             },
             {
               "id": "BEH-DRILL-ENZH",
-              "code": "test(\"[BEH-DRILL-ENZH] Shown an English word, the learner types the pinyin\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EnglishPrompt\" });\n  // UNGENERATED: then sees region:EnglishPrompt\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?pinyin\" });\n  // UNGENERATED: when fills field:Answer with ?pinyin\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n});",
+              "code": "test.skip(\"[BEH-DRILL-ENZH] Shown an English word, the learner types the pinyin\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: then sees region:EnglishPrompt\n  // UNGENERATED: when fills field:Answer with ?pinyin\n  // UNGENERATED: then sees region:Verdict\n});",
               "missing": [
                 "page:Drill",
                 "region:EnglishPrompt",
@@ -9437,7 +9437,7 @@
             },
             {
               "id": "BEH-CHAR-1",
-              "code": "test(\"[BEH-CHAR-1] Chinese characters are always displayed and never required as input\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HanziLarge\" });\n  // UNGENERATED: then sees region:HanziLarge\n  test.info().annotations.push({ type: \"kit-contract\", description: \"no drill direction ever requires typing a hanzi character\" });\n  // CONTRACT (not derivable from a behaviour): no drill direction ever requires typing a hanzi character\n});",
+              "code": "test.skip(\"[BEH-CHAR-1] Chinese characters are always displayed and never required as input\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: then sees region:HanziLarge\n  // CONTRACT (not derivable from a behaviour): no drill direction ever requires typing a hanzi character\n});",
               "missing": [
                 "page:Drill",
                 "region:HanziLarge"
@@ -9450,7 +9450,7 @@
             },
             {
               "id": "BEH-TONE-1",
-              "code": "test(\"[BEH-TONE-1] Pinyin is displayed with tone marks and accepted three ways\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:PinyinUnderIt\" });\n  // UNGENERATED: then sees region:PinyinUnderIt\n  test.info().annotations.push({ type: \"kit-contract\", description: \"display uses tone marks (nǐ hǎo)\" });\n  // CONTRACT (not derivable from a behaviour): display uses tone marks (nǐ hǎo)\n  test.info().annotations.push({ type: \"kit-contract\", description: \"input accepts tone numbers (ni3 hao3), toneless (ni hao), or tone marks\" });\n  // CONTRACT (not derivable from a behaviour): input accepts tone numbers (ni3 hao3), toneless (ni hao), or tone marks\n});",
+              "code": "test.skip(\"[BEH-TONE-1] Pinyin is displayed with tone marks and accepted three ways\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: then sees region:PinyinUnderIt\n  // CONTRACT (not derivable from a behaviour): display uses tone marks (nǐ hǎo)\n  // CONTRACT (not derivable from a behaviour): input accepts tone numbers (ni3 hao3), toneless (ni hao), or tone marks\n});",
               "missing": [
                 "page:Drill",
                 "region:PinyinUnderIt"
@@ -9463,7 +9463,7 @@
             },
             {
               "id": "BEH-TONE-2",
-              "code": "test(\"[BEH-TONE-2] Tones are graded softly — right syllables with wrong tones is 'almost'\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?toneless\" });\n  // UNGENERATED: when fills field:Answer with ?toneless\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  test.info().annotations.push({ type: \"kit-contract\", description: \"an 'almost' shows the correct tones and makes the card repeat sooner\" });\n  // CONTRACT (not derivable from a behaviour): an 'almost' shows the correct tones and makes the card repeat sooner\n});",
+              "code": "test.skip(\"[BEH-TONE-2] Tones are graded softly — right syllables with wrong tones is 'almost'\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: when fills field:Answer with ?toneless\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): an 'almost' shows the correct tones and makes the card repeat sooner\n});",
               "missing": [
                 "page:Drill",
                 "field:Answer",
@@ -9477,7 +9477,7 @@
             },
             {
               "id": "BEH-NORMALISE-1",
-              "code": "test(\"[BEH-NORMALISE-1] Grading forgives everything that is not the point\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"answers are trimmed and case-folded\" });\n  // CONTRACT (not derivable from a behaviour): answers are trimmed and case-folded\n  test.info().annotations.push({ type: \"kit-contract\", description: \"an English answer matches ANY accepted gloss\" });\n  // CONTRACT (not derivable from a behaviour): an English answer matches ANY accepted gloss\n  test.info().annotations.push({ type: \"kit-contract\", description: \"pinyin accepts `v` for `ü` and ignores spacing and apostrophes\" });\n  // CONTRACT (not derivable from a behaviour): pinyin accepts `v` for `ü` and ignores spacing and apostrophes\n});",
+              "code": "test.skip(\"[BEH-NORMALISE-1] Grading forgives everything that is not the point\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): answers are trimmed and case-folded\n  // CONTRACT (not derivable from a behaviour): an English answer matches ANY accepted gloss\n  // CONTRACT (not derivable from a behaviour): pinyin accepts `v` for `ü` and ignores spacing and apostrophes\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9487,7 +9487,7 @@
             },
             {
               "id": "BEH-AUDIO-1",
-              "code": "test(\"[BEH-AUDIO-1] Every card can be heard in Mandarin\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:PlayAudio\" });\n  // UNGENERATED: when activates button:PlayAudio\n  test.info().annotations.push({ type: \"kit-contract\", description: \"audio is browser SpeechSynthesis with a zh-CN voice — no API key, no network call\" });\n  // CONTRACT (not derivable from a behaviour): audio is browser SpeechSynthesis with a zh-CN voice — no API key, no network call\n});",
+              "code": "test.skip(\"[BEH-AUDIO-1] Every card can be heard in Mandarin\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: when activates button:PlayAudio\n  // CONTRACT (not derivable from a behaviour): audio is browser SpeechSynthesis with a zh-CN voice — no API key, no network call\n});",
               "missing": [
                 "page:Drill",
                 "button:PlayAudio"
@@ -9500,7 +9500,7 @@
             },
             {
               "id": "BEH-POOL-MVP",
-              "code": "test(\"[BEH-POOL-MVP] The active pool starts at ten words and grows as they are mastered\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"sampling from the active pool is weighted towards weakness\" });\n  // CONTRACT (not derivable from a behaviour): sampling from the active pool is weighted towards weakness\n});",
+              "code": "test.skip(\"[BEH-POOL-MVP] The active pool starts at ten words and grows as they are mastered\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): sampling from the active pool is weighted towards weakness\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9510,7 +9510,7 @@
             },
             {
               "id": "BEH-STRENGTH-MVP",
-              "code": "test(\"[BEH-STRENGTH-MVP] A word's strength moves with the answer\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"full credit +1, a miss -1, an 'almost' leaves it unchanged\" });\n  // CONTRACT (not derivable from a behaviour): full credit +1, a miss -1, an 'almost' leaves it unchanged\n});",
+              "code": "test.skip(\"[BEH-STRENGTH-MVP] A word's strength moves with the answer\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): full credit +1, a miss -1, an 'almost' leaves it unchanged\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9520,7 +9520,7 @@
             },
             {
               "id": "BEH-STATS-1",
-              "code": "test(\"[BEH-STATS-1] The stats page shows pool size, per-word strength and accuracy over time\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Stats\" });\n  // UNGENERATED: when opens page:Stats\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:PoolSize\" });\n  // UNGENERATED: then sees region:PoolSize\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:StrengthBars\" });\n  // UNGENERATED: then sees region:StrengthBars\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:AccuracyOverTime\" });\n  // UNGENERATED: then sees region:AccuracyOverTime\n});",
+              "code": "test.skip(\"[BEH-STATS-1] The stats page shows pool size, per-word strength and accuracy over time\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Stats\n  // UNGENERATED: then sees region:PoolSize\n  // UNGENERATED: then sees region:StrengthBars\n  // UNGENERATED: then sees region:AccuracyOverTime\n});",
               "missing": [
                 "page:Stats",
                 "region:PoolSize",
@@ -9535,7 +9535,7 @@
             },
             {
               "id": "BEH-CARD-1",
-              "code": "test(\"[BEH-CARD-1] The card gives instant feedback and moves on with Enter\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Drill\" });\n  // UNGENERATED: when opens page:Drill\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills field:Answer with ?answer\" });\n  // UNGENERATED: when fills field:Answer with ?answer\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Verdict\" });\n  // UNGENERATED: then sees region:Verdict\n  test.info().annotations.push({ type: \"kit-contract\", description: \"feedback is green, amber with the correct tones, or red with the answer\" });\n  // CONTRACT (not derivable from a behaviour): feedback is green, amber with the correct tones, or red with the answer\n  test.info().annotations.push({ type: \"kit-contract\", description: \"Enter advances to the next card\" });\n  // CONTRACT (not derivable from a behaviour): Enter advances to the next card\n});",
+              "code": "test.skip(\"[BEH-CARD-1] The card gives instant feedback and moves on with Enter\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Drill\n  // UNGENERATED: when fills field:Answer with ?answer\n  // UNGENERATED: then sees region:Verdict\n  // CONTRACT (not derivable from a behaviour): feedback is green, amber with the correct tones, or red with the answer\n  // CONTRACT (not derivable from a behaviour): Enter advances to the next card\n});",
               "missing": [
                 "page:Drill",
                 "field:Answer",
@@ -9549,7 +9549,7 @@
             },
             {
               "id": "BEH-SEEDDATA-1",
-              "code": "test(\"[BEH-SEEDDATA-1] HSK1 is seeded from versioned data in the repo\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the seed is versioned JSON in-repo (hanzi, pinyin, accepted glosses, level, frequency rank)\" });\n  // CONTRACT (not derivable from a behaviour): the seed is versioned JSON in-repo (hanzi, pinyin, accepted glosses, level, frequency rank)\n  test.info().annotations.push({ type: \"kit-contract\", description: \"loading it twice changes nothing\" });\n  // CONTRACT (not derivable from a behaviour): loading it twice changes nothing\n});",
+              "code": "test.skip(\"[BEH-SEEDDATA-1] HSK1 is seeded from versioned data in the repo\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the seed is versioned JSON in-repo (hanzi, pinyin, accepted glosses, level, frequency rank)\n  // CONTRACT (not derivable from a behaviour): loading it twice changes nothing\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9559,7 +9559,7 @@
             },
             {
               "id": "BEH-GRADE-1",
-              "code": "test(\"[BEH-GRADE-1] An answer is graded correct, almost, or wrong\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the three verdicts are exhaustive\" });\n  // CONTRACT (not derivable from a behaviour): the three verdicts are exhaustive\n});",
+              "code": "test.skip(\"[BEH-GRADE-1] An answer is graded correct, almost, or wrong\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the three verdicts are exhaustive\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9569,7 +9569,7 @@
             },
             {
               "id": "BEH-GRADE-2",
-              "code": "test(\"[BEH-GRADE-2] A toneless answer is reported as toneless, not merely wrong\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the result flags that no tones were supplied, distinct from supplying wrong ones\" });\n  // CONTRACT (not derivable from a behaviour): the result flags that no tones were supplied, distinct from supplying wrong ones\n});",
+              "code": "test.skip(\"[BEH-GRADE-2] A toneless answer is reported as toneless, not merely wrong\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the result flags that no tones were supplied, distinct from supplying wrong ones\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9589,7 +9589,7 @@
             },
             {
               "id": "BEH-GRADE-4",
-              "code": "test(\"[BEH-GRADE-4] The grade carries the canonical form of the answer\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the canonical form is what the amber and red feedback display\" });\n  // CONTRACT (not derivable from a behaviour): the canonical form is what the amber and red feedback display\n});",
+              "code": "test.skip(\"[BEH-GRADE-4] The grade carries the canonical form of the answer\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the canonical form is what the amber and red feedback display\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9609,7 +9609,7 @@
             },
             {
               "id": "BEH-WEIGHT-1",
-              "code": "test(\"[BEH-WEIGHT-1] Sampling weight favours weakness and never reaches zero\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a mastered word still has a positive chance of coming up\" });\n  // CONTRACT (not derivable from a behaviour): a mastered word still has a positive chance of coming up\n});",
+              "code": "test.skip(\"[BEH-WEIGHT-1] Sampling weight favours weakness and never reaches zero\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): a mastered word still has a positive chance of coming up\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9619,7 +9619,7 @@
             },
             {
               "id": "BEH-UNLOCK-1",
-              "code": "test(\"[BEH-UNLOCK-1] Unlocking fires at the threshold and not below it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"out-of-band strengths are clamped before the mean is taken\" });\n  // CONTRACT (not derivable from a behaviour): out-of-band strengths are clamped before the mean is taken\n});",
+              "code": "test.skip(\"[BEH-UNLOCK-1] Unlocking fires at the threshold and not below it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): out-of-band strengths are clamped before the mean is taken\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9629,7 +9629,7 @@
             },
             {
               "id": "BEH-BOOTSTRAP-1",
-              "code": "test(\"[BEH-BOOTSTRAP-1] The pool bootstraps to the first ten by rank, and does so once\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a second bootstrap changes nothing\" });\n  // CONTRACT (not derivable from a behaviour): a second bootstrap changes nothing\n  test.info().annotations.push({ type: \"kit-contract\", description: \"fewer than ten available takes all of them\" });\n  // CONTRACT (not derivable from a behaviour): fewer than ten available takes all of them\n});",
+              "code": "test.skip(\"[BEH-BOOTSTRAP-1] The pool bootstraps to the first ten by rank, and does so once\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): a second bootstrap changes nothing\n  // CONTRACT (not derivable from a behaviour): fewer than ten available takes all of them\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9649,7 +9649,7 @@
             },
             {
               "id": "BEH-SEED-1",
-              "code": "test(\"[BEH-SEED-1] Seeding is idempotent and updates changed rows in place\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"a changed gloss updates the existing row rather than inserting a duplicate\" });\n  // CONTRACT (not derivable from a behaviour): a changed gloss updates the existing row rather than inserting a duplicate\n});",
+              "code": "test.skip(\"[BEH-SEED-1] Seeding is idempotent and updates changed rows in place\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): a changed gloss updates the existing row rather than inserting a duplicate\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9669,7 +9669,7 @@
             },
             {
               "id": "BEH-SEED-3",
-              "code": "test(\"[BEH-SEED-3] The loader derives normalised pinyin through the grader\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"seed data and typed answers are normalised by the same code\" });\n  // CONTRACT (not derivable from a behaviour): seed data and typed answers are normalised by the same code\n});",
+              "code": "test.skip(\"[BEH-SEED-3] The loader derives normalised pinyin through the grader\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): seed data and typed answers are normalised by the same code\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9679,7 +9679,7 @@
             },
             {
               "id": "BEH-LANG-1",
-              "code": "test(\"[BEH-LANG-1] Every pool operation is scoped to one language\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"bootstrap for one language leaves another language's pool untouched\" });\n  // CONTRACT (not derivable from a behaviour): bootstrap for one language leaves another language's pool untouched\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the loader throws when the language is missing\" });\n  // CONTRACT (not derivable from a behaviour): the loader throws when the language is missing\n});",
+              "code": "test.skip(\"[BEH-LANG-1] Every pool operation is scoped to one language\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): bootstrap for one language leaves another language's pool untouched\n  // CONTRACT (not derivable from a behaviour): the loader throws when the language is missing\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9689,7 +9689,7 @@
             },
             {
               "id": "BEH-ITEMTYPE-1",
-              "code": "test(\"[BEH-ITEMTYPE-1] A vocabulary item has a type, defaulting to word\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the schema reserves a Sentence type that nothing produces or consumes\" });\n  // CONTRACT (not derivable from a behaviour): the schema reserves a Sentence type that nothing produces or consumes\n});",
+              "code": "test.skip(\"[BEH-ITEMTYPE-1] A vocabulary item has a type, defaulting to word\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the schema reserves a Sentence type that nothing produces or consumes\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -9699,7 +9699,7 @@
             },
             {
               "id": "BEH-DETERMINISM-1",
-              "code": "test(\"[BEH-DETERMINISM-1] Selection is deterministic for a given seed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the same seed picks the same word, so the sampler is testable\" });\n  // CONTRACT (not derivable from a behaviour): the same seed picks the same word, so the sampler is testable\n});",
+              "code": "test.skip(\"[BEH-DETERMINISM-1] Selection is deterministic for a given seed\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the same seed picks the same word, so the sampler is testable\n});",
               "missing": [],
               "stats": {
                 "generated": 0,
@@ -11189,7 +11189,7 @@
           "generated": [
             {
               "id": "BEH-CAPTURE-1",
-              "code": "test(\"[BEH-CAPTURE-1] An idea is captured from anywhere in one field\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:NewIdea\" });\n  // UNGENERATED: then sees field:NewIdea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Capture\" });\n  // UNGENERATED: then sees button:Capture\n});",
+              "code": "test.skip(\"[BEH-CAPTURE-1] An idea is captured from anywhere in one field\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees field:NewIdea\n  // UNGENERATED: then sees button:Capture\n});",
               "missing": [
                 "page:Longlist",
                 "field:NewIdea",
@@ -11203,7 +11203,7 @@
             },
             {
               "id": "BEH-CAPTURE-2",
-              "code": "test(\"[BEH-CAPTURE-2] A captured idea joins the list without leaving the page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewIdea with ?fields\" });\n  // UNGENERATED: when fills form:NewIdea with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Capture\" });\n  // UNGENERATED: when activates button:Capture\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:IdeaList\" });\n  // UNGENERATED: then sees region:IdeaList\n});",
+              "code": "test.skip(\"[BEH-CAPTURE-2] A captured idea joins the list without leaving the page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: when fills form:NewIdea with ?fields\n  // UNGENERATED: when activates button:Capture\n  // UNGENERATED: then sees region:IdeaList\n});",
               "missing": [
                 "page:Longlist",
                 "field:Idea",
@@ -11219,7 +11219,7 @@
             },
             {
               "id": "BEH-CAPTURE-3",
-              "code": "test(\"[BEH-CAPTURE-3] Capture asks for the idea and why it came up, and nothing else\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n});",
+              "code": "test.skip(\"[BEH-CAPTURE-3] Capture asks for the idea and why it came up, and nothing else\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n});",
               "missing": [
                 "page:Longlist"
               ],
@@ -11231,7 +11231,7 @@
             },
             {
               "id": "BEH-CAPTURE-4",
-              "code": "test(\"[BEH-CAPTURE-4] An empty longlist says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given longlist:Empty\" });\n  // UNGENERATED: given longlist:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+              "code": "test.skip(\"[BEH-CAPTURE-4] An empty longlist says so rather than showing a blank page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given longlist:Empty\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees region:EmptyState\n});",
               "missing": [
                 "longlist:Empty",
                 "page:Longlist",
@@ -11245,7 +11245,7 @@
             },
             {
               "id": "BEH-DECIDE-1",
-              "code": "test(\"[BEH-DECIDE-1] An idea can be opened to decide on it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates link:IdeaTitle\" });\n  // UNGENERATED: when activates link:IdeaTitle\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Idea\" });\n  // UNGENERATED: then lands on page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:WhyNow\" });\n  // UNGENERATED: then sees region:WhyNow\n});",
+              "code": "test.skip(\"[BEH-DECIDE-1] An idea can be opened to decide on it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: when activates link:IdeaTitle\n  // UNGENERATED: then lands on page:Idea\n  // UNGENERATED: then sees region:WhyNow\n});",
               "missing": [
                 "idea:Captured",
                 "page:Longlist",
@@ -11261,7 +11261,7 @@
             },
             {
               "id": "BEH-DECIDE-2",
-              "code": "test(\"[BEH-DECIDE-2] Deciding to build an idea records the decision against it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Build\" });\n  // UNGENERATED: when activates button:Build\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+              "code": "test.skip(\"[BEH-DECIDE-2] Deciding to build an idea records the decision against it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Idea\n  // UNGENERATED: when activates button:Build\n  // UNGENERATED: then sees badge:Decision\n});",
               "missing": [
                 "idea:Captured",
                 "page:Idea",
@@ -11276,7 +11276,7 @@
             },
             {
               "id": "BEH-DECIDE-3",
-              "code": "test(\"[BEH-DECIDE-3] Declining an idea requires a reason, so the longlist teaches\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Decline\" });\n  // UNGENERATED: when activates button:Decline\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:DeclineReason\" });\n  // UNGENERATED: then sees field:DeclineReason\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+              "code": "test.skip(\"[BEH-DECIDE-3] Declining an idea requires a reason, so the longlist teaches\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Idea\n  // UNGENERATED: when activates button:Decline\n  // UNGENERATED: then sees field:DeclineReason\n  // UNGENERATED: then sees badge:Decision\n});",
               "missing": [
                 "idea:Captured",
                 "page:Idea",
@@ -11292,7 +11292,7 @@
             },
             {
               "id": "BEH-AGE-1",
-              "code": "test(\"[BEH-AGE-1] An idea nobody has decided on for a long time is visibly stale\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Stale\" });\n  // UNGENERATED: given idea:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Stale\" });\n  // UNGENERATED: then sees badge:Stale\n});",
+              "code": "test.skip(\"[BEH-AGE-1] An idea nobody has decided on for a long time is visibly stale\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Stale\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees badge:Stale\n});",
               "missing": [
                 "idea:Stale",
                 "page:Longlist",
@@ -15470,7 +15470,7 @@
           "generated": [
             {
               "id": "BEH-SETUP-1",
-              "code": "test(\"[BEH-SETUP-1] James opens habit setup to add something new to track\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:ManageHabits\" });\n  // UNGENERATED: when opens page:ManageHabits\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:AddHabit\" });\n  // UNGENERATED: when activates button:AddHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewHabit\" });\n  // UNGENERATED: then lands on page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+              "code": "test.skip(\"[BEH-SETUP-1] James opens habit setup to add something new to track\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:ManageHabits\n  // UNGENERATED: when activates button:AddHabit\n  // UNGENERATED: then lands on page:NewHabit\n  // UNGENERATED: then sees field:HabitName\n});",
               "missing": [
                 "page:ManageHabits",
                 "button:AddHabit",
@@ -15485,7 +15485,7 @@
             },
             {
               "id": "BEH-SETUP-2",
-              "code": "test(\"[BEH-SETUP-2] Saving a new habit adds it to today's list\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewHabit with ?fields\" });\n  // UNGENERATED: when fills form:NewHabit with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveHabit\" });\n  // UNGENERATED: when activates button:SaveHabit\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Today\" });\n  // UNGENERATED: then lands on page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+              "code": "test.skip(\"[BEH-SETUP-2] Saving a new habit adds it to today's list\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewHabit\n  // UNGENERATED: when fills form:NewHabit with ?fields\n  // UNGENERATED: when activates button:SaveHabit\n  // UNGENERATED: then lands on page:Today\n  // UNGENERATED: then sees region:HabitList\n});",
               "missing": [
                 "page:NewHabit",
                 "field:HabitName",
@@ -15501,7 +15501,7 @@
             },
             {
               "id": "BEH-SETUP-3",
-              "code": "test(\"[BEH-SETUP-3] A new habit needs nothing more than a name to be saved\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewHabit\" });\n  // UNGENERATED: when opens page:NewHabit\n});",
+              "code": "test.skip(\"[BEH-SETUP-3] A new habit needs nothing more than a name to be saved\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewHabit\n});",
               "missing": [
                 "page:NewHabit"
               ],
@@ -15513,7 +15513,7 @@
             },
             {
               "id": "BEH-TODAY-1",
-              "code": "test(\"[BEH-TODAY-1] Today's page lists everything currently being tracked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+              "code": "test.skip(\"[BEH-TODAY-1] Today's page lists everything currently being tracked\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n});",
               "missing": [
                 "page:Today",
                 "region:HabitList"
@@ -15526,7 +15526,7 @@
             },
             {
               "id": "BEH-TODAY-2",
-              "code": "test(\"[BEH-TODAY-2] Before any habit is added, today's page says there is nothing to track yet\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habits:None\" });\n  // UNGENERATED: given habits:None\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+              "code": "test.skip(\"[BEH-TODAY-2] Before any habit is added, today's page says there is nothing to track yet\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habits:None\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:EmptyState\n});",
               "missing": [
                 "habits:None",
                 "page:Today",
@@ -15540,7 +15540,7 @@
             },
             {
               "id": "BEH-TODAY-3",
-              "code": "test(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:Pending\" });\n  // UNGENERATED: given habit:Pending\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitDone\" });\n  // UNGENERATED: when activates checkbox:HabitDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n  test.info().annotations.push({ type: \"kit-contract\", description: \"logging a habit is one tap, with no form or confirmation step in between\" });\n  // CONTRACT (not derivable from a behaviour): logging a habit is one tap, with no form or confirmation step in between\n});",
+              "code": "test.skip(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:Pending\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitDone\n  // UNGENERATED: then sees checkbox:HabitDone\n  // CONTRACT (not derivable from a behaviour): logging a habit is one tap, with no form or confirmation step in between\n});",
               "missing": [
                 "habit:Pending",
                 "page:Today",
@@ -15554,7 +15554,7 @@
             },
             {
               "id": "BEH-TODAY-4",
-              "code": "test(\"[BEH-TODAY-4] A habit ticked off earlier today still shows as done when the page is reopened\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:LoggedToday\" });\n  // UNGENERATED: given habit:LoggedToday\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitDone\" });\n  // UNGENERATED: then sees checkbox:HabitDone\n});",
+              "code": "test.skip(\"[BEH-TODAY-4] A habit ticked off earlier today still shows as done when the page is reopened\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:LoggedToday\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees checkbox:HabitDone\n});",
               "missing": [
                 "habit:LoggedToday",
                 "page:Today",
@@ -15568,7 +15568,7 @@
             },
             {
               "id": "BEH-TODAY-5",
-              "code": "test(\"[BEH-TODAY-5] Habits like sleeping hours or drinks drunk are logged as a number, not a tick\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:LogValue with ?fields\" });\n  // UNGENERATED: when fills form:LogValue with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:SaveValue\" });\n  // UNGENERATED: when activates button:SaveValue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitValue\" });\n  // UNGENERATED: then sees field:HabitValue\n});",
+              "code": "test.skip(\"[BEH-TODAY-5] Habits like sleeping hours or drinks drunk are logged as a number, not a tick\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills form:LogValue with ?fields\n  // UNGENERATED: when activates button:SaveValue\n  // UNGENERATED: then sees field:HabitValue\n});",
               "missing": [
                 "page:Today",
                 "button:SaveValue",
@@ -15582,7 +15582,7 @@
             },
             {
               "id": "BEH-TODAY-6",
-              "code": "test(\"[BEH-TODAY-6] Each row in today's list shows the habit's own name\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:HabitName\" });\n  // UNGENERATED: then sees field:HabitName\n});",
+              "code": "test.skip(\"[BEH-TODAY-6] Each row in today's list shows the habit's own name\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees field:HabitName\n});",
               "missing": [
                 "page:Today",
                 "field:HabitName"
@@ -15595,7 +15595,7 @@
             },
             {
               "id": "BEH-DERIVE-1",
-              "code": "test(\"[BEH-DERIVE-1] Logging a run also marks Exercised as done, without ticking it directly\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:Ran\" });\n  // UNGENERATED: when activates checkbox:Ran\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows badge:AutoTicked \\\"Auto\\\"\" });\n  // UNGENERATED: then shows badge:AutoTicked \"Auto\"\n});",
+              "code": "test.skip(\"[BEH-DERIVE-1] Logging a run also marks Exercised as done, without ticking it directly\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:Ran\n  // UNGENERATED: then shows badge:AutoTicked \"Auto\"\n});",
               "missing": [
                 "page:Today",
                 "checkbox:Ran",
@@ -17196,7 +17196,7 @@
           "generated": [
             {
               "id": "BEH-TODAY-1",
-              "code": "test(\"[BEH-TODAY-1] Opening the app shows today's habits to track\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+              "code": "test.skip(\"[BEH-TODAY-1] Opening the app shows today's habits to track\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:HabitList\n});",
               "missing": [
                 "page:Today",
                 "region:HabitList"
@@ -17209,7 +17209,7 @@
             },
             {
               "id": "BEH-TODAY-2",
-              "code": "test(\"[BEH-TODAY-2] Each habit in today's list is shown as something to tick off\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:HabitItem\" });\n  // UNGENERATED: then sees checkbox:HabitItem\n});",
+              "code": "test.skip(\"[BEH-TODAY-2] Each habit in today's list is shown as something to tick off\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees checkbox:HabitItem\n});",
               "missing": [
                 "page:Today",
                 "checkbox:HabitItem"
@@ -17222,7 +17222,7 @@
             },
             {
               "id": "BEH-TODAY-3",
-              "code": "test(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NotDone\" });\n  // UNGENERATED: given habit:NotDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:HabitItem\" });\n  // UNGENERATED: when activates checkbox:HabitItem\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Done\" });\n  // UNGENERATED: then sees badge:Done\n});",
+              "code": "test.skip(\"[BEH-TODAY-3] Ticking a habit marks it done for today\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:NotDone\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:HabitItem\n  // UNGENERATED: then sees badge:Done\n});",
               "missing": [
                 "habit:NotDone",
                 "page:Today",
@@ -17237,7 +17237,7 @@
             },
             {
               "id": "BEH-MEALS-1",
-              "code": "test(\"[BEH-MEALS-1] Veg with lunch and veg with dinner are two separate habits, not one\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:VegLunch\" });\n  // UNGENERATED: then sees checkbox:VegLunch\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:VegDinner\" });\n  // UNGENERATED: then sees checkbox:VegDinner\n});",
+              "code": "test.skip(\"[BEH-MEALS-1] Veg with lunch and veg with dinner are two separate habits, not one\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees checkbox:VegLunch\n  // UNGENERATED: then sees checkbox:VegDinner\n});",
               "missing": [
                 "page:Today",
                 "checkbox:VegLunch",
@@ -17251,7 +17251,7 @@
             },
             {
               "id": "BEH-BREAKFAST-1",
-              "code": "test(\"[BEH-BREAKFAST-1] Eating breakfast is tracked as a plain checkbox\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees checkbox:AteBreakfast\" });\n  // UNGENERATED: then sees checkbox:AteBreakfast\n});",
+              "code": "test.skip(\"[BEH-BREAKFAST-1] Eating breakfast is tracked as a plain checkbox\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees checkbox:AteBreakfast\n});",
               "missing": [
                 "page:Today",
                 "checkbox:AteBreakfast"
@@ -17264,7 +17264,7 @@
             },
             {
               "id": "BEH-RUN-1",
-              "code": "test(\"[BEH-RUN-1] Logging a run also ticks off the exercised habit\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given habit:NotDone\" });\n  // UNGENERATED: given habit:NotDone\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates checkbox:Ran\" });\n  // UNGENERATED: when activates checkbox:Ran\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Done\" });\n  // UNGENERATED: then sees badge:Done\n  test.info().annotations.push({ type: \"kit-contract\", description: \"activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are \\\"Exercised - auto ticked by running\\\"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule\" });\n  // CONTRACT (not derivable from a behaviour): activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are \"Exercised - auto ticked by running\"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule\n});",
+              "code": "test.skip(\"[BEH-RUN-1] Logging a run also ticks off the exercised habit\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given habit:NotDone\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates checkbox:Ran\n  // UNGENERATED: then sees badge:Done\n  // CONTRACT (not derivable from a behaviour): activating checkbox:Ran also sets checkbox:Exercised to done for the same day without the user separately activating it — the brief's own words are \"Exercised - auto ticked by running\"; a generated test can see Ran's own badge appear but cannot see a DIFFERENT noun's state change as a consequence of this one, so the causal half of the rule is recorded here rather than smuggled into a given fixture no reviewer would read as a rule\n});",
               "missing": [
                 "habit:NotDone",
                 "page:Today",
@@ -17279,7 +17279,7 @@
             },
             {
               "id": "BEH-SLEEP-1",
-              "code": "test(\"[BEH-SLEEP-1] Sleep is a logged quantity shown like an activity ring, not a checkbox\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:SleepRing\" });\n  // UNGENERATED: then sees region:SleepRing\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the brief says \\\"take inspiration from the apple wheel\\\" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered\" });\n  // CONTRACT (not derivable from a behaviour): the brief says \"take inspiration from the apple wheel\" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered\n});",
+              "code": "test.skip(\"[BEH-SLEEP-1] Sleep is a logged quantity shown like an activity ring, not a checkbox\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: then sees region:SleepRing\n  // CONTRACT (not derivable from a behaviour): the brief says \"take inspiration from the apple wheel\" — a filled ring showing hours slept against a target, the way Apple's Activity rings show a quantity; an assertion can see that the region exists, not that it renders as a ring or that its fill reflects the number entered\n});",
               "missing": [
                 "page:Today",
                 "region:SleepRing"
@@ -17292,7 +17292,7 @@
             },
             {
               "id": "BEH-SLEEP-2",
-              "code": "test(\"[BEH-SLEEP-2] Sleep hours are entered for the day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:SleepHours with ?fields\" });\n  // UNGENERATED: when fills form:SleepHours with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:SleepRing\" });\n  // UNGENERATED: then sees region:SleepRing\n});",
+              "code": "test.skip(\"[BEH-SLEEP-2] Sleep hours are entered for the day\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills form:SleepHours with ?fields\n  // UNGENERATED: then sees region:SleepRing\n});",
               "missing": [
                 "page:Today",
                 "field:Hours",
@@ -17306,7 +17306,7 @@
             },
             {
               "id": "BEH-SLEEP-3",
-              "code": "test(\"[BEH-SLEEP-3] The sleep form takes a single hours value\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n});",
+              "code": "test.skip(\"[BEH-SLEEP-3] The sleep form takes a single hours value\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n});",
               "missing": [
                 "page:Today"
               ],
@@ -17318,7 +17318,7 @@
             },
             {
               "id": "BEH-DRINKS-1",
-              "code": "test(\"[BEH-DRINKS-1] Drinks are entered as a count for the day, not a single tick\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:DrinksCount with ?fields\" });\n  // UNGENERATED: when fills form:DrinksCount with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Count\" });\n  // UNGENERATED: then sees field:Count\n});",
+              "code": "test.skip(\"[BEH-DRINKS-1] Drinks are entered as a count for the day, not a single tick\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when fills form:DrinksCount with ?fields\n  // UNGENERATED: then sees field:Count\n});",
               "missing": [
                 "page:Today",
                 "field:Count"
@@ -17331,7 +17331,7 @@
             },
             {
               "id": "BEH-DRINKS-2",
-              "code": "test(\"[BEH-DRINKS-2] The drinks form takes a single count value\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n});",
+              "code": "test.skip(\"[BEH-DRINKS-2] The drinks form takes a single count value\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n});",
               "missing": [
                 "page:Today"
               ],
@@ -17343,7 +17343,7 @@
             },
             {
               "id": "BEH-HISTORY-1",
-              "code": "test(\"[BEH-HISTORY-1] Past days are reachable from today and listed\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Today\" });\n  // UNGENERATED: when opens page:Today\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:ViewHistory\" });\n  // UNGENERATED: when activates button:ViewHistory\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:History\" });\n  // UNGENERATED: then lands on page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:PastDaysList\" });\n  // UNGENERATED: then sees region:PastDaysList\n});",
+              "code": "test.skip(\"[BEH-HISTORY-1] Past days are reachable from today and listed\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Today\n  // UNGENERATED: when activates button:ViewHistory\n  // UNGENERATED: then lands on page:History\n  // UNGENERATED: then sees region:PastDaysList\n});",
               "missing": [
                 "page:Today",
                 "button:ViewHistory",
@@ -17358,7 +17358,7 @@
             },
             {
               "id": "BEH-HISTORY-2",
-              "code": "test(\"[BEH-HISTORY-2] Opening a past day shows which habits were done that day\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:History\" });\n  // UNGENERATED: when opens page:History\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates row:PastDay\" });\n  // UNGENERATED: when activates row:PastDay\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:HabitList\" });\n  // UNGENERATED: then sees region:HabitList\n});",
+              "code": "test.skip(\"[BEH-HISTORY-2] Opening a past day shows which habits were done that day\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:History\n  // UNGENERATED: when activates row:PastDay\n  // UNGENERATED: then sees region:HabitList\n});",
               "missing": [
                 "page:History",
                 "row:PastDay",
@@ -18724,7 +18724,7 @@
           "generated": [
             {
               "id": "BEH-SHELF-1",
-              "code": "test(\"[BEH-SHELF-1] The shelf lists everything currently lent out and who has it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees column:Borrower\" });\n  // UNGENERATED: then sees column:Borrower\n});",
+              "code": "test.skip(\"[BEH-SHELF-1] The shelf lists everything currently lent out and who has it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:LoanList\n  // UNGENERATED: then sees column:Borrower\n});",
               "missing": [
                 "page:Shelf",
                 "region:LoanList",
@@ -18738,7 +18738,7 @@
             },
             {
               "id": "BEH-SHELF-2",
-              "code": "test(\"[BEH-SHELF-2] An empty shelf says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given shelf:Empty\" });\n  // UNGENERATED: given shelf:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+              "code": "test.skip(\"[BEH-SHELF-2] An empty shelf says so rather than showing a blank page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given shelf:Empty\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:EmptyState\n});",
               "missing": [
                 "shelf:Empty",
                 "page:Shelf",
@@ -18752,7 +18752,7 @@
             },
             {
               "id": "BEH-SHELF-3",
-              "code": "test(\"[BEH-SHELF-3] Overdue loans are visibly marked\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Overdue\" });\n  // UNGENERATED: given loan:Overdue\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Overdue\" });\n  // UNGENERATED: then sees badge:Overdue\n});",
+              "code": "test.skip(\"[BEH-SHELF-3] Overdue loans are visibly marked\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:Overdue\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees badge:Overdue\n});",
               "missing": [
                 "loan:Overdue",
                 "page:Shelf",
@@ -18766,7 +18766,7 @@
             },
             {
               "id": "BEH-LEND-1",
-              "code": "test(\"[BEH-LEND-1] A new loan is recorded from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:LendSomething\" });\n  // UNGENERATED: when activates button:LendSomething\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:NewLoan\" });\n  // UNGENERATED: then lands on page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:ItemName\" });\n  // UNGENERATED: then sees field:ItemName\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:Borrower\" });\n  // UNGENERATED: then sees field:Borrower\n});",
+              "code": "test.skip(\"[BEH-LEND-1] A new loan is recorded from the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: when activates button:LendSomething\n  // UNGENERATED: then lands on page:NewLoan\n  // UNGENERATED: then sees field:ItemName\n  // UNGENERATED: then sees field:Borrower\n});",
               "missing": [
                 "page:Shelf",
                 "button:LendSomething",
@@ -18782,7 +18782,7 @@
             },
             {
               "id": "BEH-LEND-2",
-              "code": "test(\"[BEH-LEND-2] Recording a loan puts it on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewLoan with ?fields\" });\n  // UNGENERATED: when fills form:NewLoan with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:ConfirmLoan\" });\n  // UNGENERATED: when activates button:ConfirmLoan\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Shelf\" });\n  // UNGENERATED: then lands on page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+              "code": "test.skip(\"[BEH-LEND-2] Recording a loan puts it on the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewLoan\n  // UNGENERATED: when fills form:NewLoan with ?fields\n  // UNGENERATED: when activates button:ConfirmLoan\n  // UNGENERATED: then lands on page:Shelf\n  // UNGENERATED: then sees region:LoanList\n});",
               "missing": [
                 "page:NewLoan",
                 "field:ItemName",
@@ -18800,7 +18800,7 @@
             },
             {
               "id": "BEH-LEND-3",
-              "code": "test(\"[BEH-LEND-3] The loan form takes an item, a borrower and a due date\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:NewLoan\" });\n  // UNGENERATED: when opens page:NewLoan\n});",
+              "code": "test.skip(\"[BEH-LEND-3] The loan form takes an item, a borrower and a due date\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:NewLoan\n});",
               "missing": [
                 "page:NewLoan"
               ],
@@ -18812,7 +18812,7 @@
             },
             {
               "id": "BEH-RETURN-1",
-              "code": "test(\"[BEH-RETURN-1] A loan is marked returned from the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:Outstanding\" });\n  // UNGENERATED: given loan:Outstanding\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:MarkReturned\" });\n  // UNGENERATED: when activates button:MarkReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:LoanList\" });\n  // UNGENERATED: then sees region:LoanList\n});",
+              "code": "test.skip(\"[BEH-RETURN-1] A loan is marked returned from the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:Outstanding\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: when activates button:MarkReturned\n  // UNGENERATED: then sees region:LoanList\n});",
               "missing": [
                 "loan:Outstanding",
                 "page:Shelf",
@@ -18827,7 +18827,7 @@
             },
             {
               "id": "BEH-RETURN-2",
-              "code": "test(\"[BEH-RETURN-2] A returned loan is no longer on the shelf\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given loan:JustReturned\" });\n  // UNGENERATED: given loan:JustReturned\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Shelf\" });\n  // UNGENERATED: when opens page:Shelf\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+              "code": "test.skip(\"[BEH-RETURN-2] A returned loan is no longer on the shelf\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given loan:JustReturned\n  // UNGENERATED: when opens page:Shelf\n  // UNGENERATED: then sees region:EmptyState\n});",
               "missing": [
                 "loan:JustReturned",
                 "page:Shelf",
