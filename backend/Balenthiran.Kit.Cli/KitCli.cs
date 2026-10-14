@@ -16,9 +16,18 @@ public static class KitCli
         + "  report [<corpus-name>] [--dir <corpus-dir>]\n"
         + "  sheet [<corpus-name>] [--rev <rev>] [--dir <corpus-dir>]";
 
-    /// <summary>Run one command. Exit 2 — could not look — for anything that is not a command.</summary>
+    /// <summary>
+    /// Run one command. Exit 2 — could not look — for anything that is not a command, except
+    /// <c>--help</c>/<c>-h</c>, which print the usage to stdout at exit 0 as every command does (kit#103).
+    /// </summary>
     public static int Run(IReadOnlyList<string> args, TextWriter stdout, TextWriter stderr)
     {
+        if (args.Count > 0 && args[0] is "--help" or "-h")
+        {
+            stdout.Write(Usage + "\n");
+            return 0;
+        }
+
         var rest = args.Skip(1).ToList();
         var disk = new CheckFileSystem();
         var parser = new CorpusParser();

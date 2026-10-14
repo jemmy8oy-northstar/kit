@@ -71,9 +71,11 @@ public class CheckConformanceTests
             var check = new KitCheck(new CorpusParser(), new BehaviourResolver(), new TestTitleReader(), new CheckFileSystem(root));
             var run = check.Run(c["args"]!.AsArray().Select(a => a!.GetValue<string>()).ToList());
 
-            // The one intended difference: the usage line names the command, not the script.
+            // The one intended difference: the usage line names the command, not the script — on
+            // stdout too, where `-h` prints it since kit#103 (the help-flag case, edited from Node's refusal).
             var stderr = c["stderr"]!.GetValue<string>().Replace("usage: node check.js", "usage: kit check", StringComparison.Ordinal);
-            Assert.Equal(c["stdout"]!.GetValue<string>(), run.Stdout);
+            var stdout = c["stdout"]!.GetValue<string>().Replace("usage: node check.js", "usage: kit check", StringComparison.Ordinal);
+            Assert.Equal(stdout, run.Stdout);
             Assert.Equal(stderr, run.Stderr);
             Assert.Equal(c["exitCode"]!.GetValue<int>(), run.ExitCode);
         }
@@ -123,6 +125,42 @@ public class CheckConformanceTests
         Assert.Equal(2, KitCli.Run(["chek", "kit"], output, error));
         Assert.StartsWith("unknown command chek\n", error.ToString(), StringComparison.Ordinal);
         Assert.Equal(string.Empty, output.ToString());
+    }
+
+    /// <summary>
+    /// kit#103: every entry point answers --help and -h with its usage on stdout at exit 0 — the
+    /// convention `kit report --help` already had, where `kit --help` and `kit check --help` called
+    /// it an unknown command or option at exit 2, the answer a typo gets.
+    /// </summary>
+    [Theory]
+    [InlineData("usage: kit <command>", "--help")]
+    [InlineData("usage: kit <command>", "-h")]
+    [InlineData("usage: kit check <app>", "check", "--help")]
+    [InlineData("usage: kit check <app>", "check", "-h")]
+    [InlineData("usage: kit check <app>", "check", "kit", "--help")]
+    [InlineData("usage: kit report|sheet", "report", "--help")]
+    [InlineData("usage: kit report|sheet", "sheet", "-h")]
+    public void Help_is_an_answer_on_stdout_at_exit_0(string usage, params string[] args)
+    {
+        var output = new StringWriter();
+        var error = new StringWriter();
+
+        Assert.Equal(0, KitCli.Run(args, output, error));
+
+        Assert.StartsWith(usage, output.ToString(), StringComparison.Ordinal);
+        Assert.Equal(string.Empty, error.ToString());
+    }
+
+    /// <summary>A refusal earlier on the line still refuses: --help does not launder a typo before it.</summary>
+    [Fact]
+    public void An_unknown_option_before_help_is_still_refused()
+    {
+        var output = new StringWriter();
+        var error = new StringWriter();
+
+        Assert.Equal(2, KitCli.Run(["check", "--bogus", "--help"], output, error));
+
+        Assert.StartsWith("cannot look: unknown option --bogus", error.ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>Where Node would crash with a stack trace, the port says it could not look.</summary>
