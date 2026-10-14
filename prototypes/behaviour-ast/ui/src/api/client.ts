@@ -1,5 +1,5 @@
 import type {
-  Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
+  Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
   PendingView, ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
@@ -211,6 +211,11 @@ export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
 }
 
 /** The project's open notes (kit#118), oldest first. */
+/** When each built behaviour of the project was completed, from git (BEH-BOARD-4). */
+export function fetchHistory(app: string): Promise<CompletionList> {
+  return get<CompletionList>(`/api/projects/${encodeURIComponent(app)}/history`)
+}
+
 export function fetchNotes(app: string): Promise<NoteList> {
   return get<NoteList>(`/api/projects/${encodeURIComponent(app)}/notes`)
 }

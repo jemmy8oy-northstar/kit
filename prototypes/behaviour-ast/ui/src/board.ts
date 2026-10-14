@@ -29,6 +29,25 @@ export function columnOf(b: Behaviour, place?: Place): Column | null {
   return 'backlog'
 }
 
+/**
+ * When a done card was completed (BEH-BOARD-4): an ISO time; null when the corpus is built ahead
+ * of its newest commit; undefined when its project has no history on this server.
+ */
+export type Completed = string | null | undefined
+
+/**
+ * Done's order (BEH-BOARD-4): most recently completed first. Built ahead of the history is the
+ * newest of all, and a card with no history goes after every dated one. Use it with a stable
+ * sort, so ties keep corpus order.
+ */
+export function byCompletion(a: Completed, b: Completed): number {
+  const rank = (c: Completed) => (c === null ? 0 : c === undefined ? 2 : 1)
+  const r = rank(a) - rank(b)
+  if (r !== 0 || a == null || b == null) return r
+  // ISO 8601 in UTC compares as text.
+  return a < b ? 1 : a > b ? -1 : 0
+}
+
 /** The number of colours in `.hue-N` in index.css. */
 export const HUES = 12
 

@@ -399,6 +399,20 @@ export interface NoteEntry {
 }
 
 /** `GET /api/projects/<app>/notes`: every note still open, oldest first. */
+/** `GET /api/projects/<app>/history` (BEH-BOARD-4): when each built behaviour was completed. */
+export interface CompletionList {
+  app: string
+  file: string
+  /** `none` when this server has no git history for the corpus, and `reason` says why. */
+  history: 'git' | 'none'
+  reason: string | null
+  /**
+   * Every built behaviour, in corpus order. `at` is ISO 8601, or null when the corpus is
+   * built ahead of its newest commit — newer than anything git holds.
+   */
+  completed: { id: string; at: string | null }[]
+}
+
 export interface NoteList {
   app: string
   /** Where the notes live, whether or not the file exists yet. */
