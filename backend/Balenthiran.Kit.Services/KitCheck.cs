@@ -128,11 +128,18 @@ public sealed class KitCheck(
         string? app = null, repo = null;
         var via = "mapping";
         var dir = DefaultDir;
+        var help = false;
         for (var i = 0; i < argv.Count; i++)
         {
             var a = argv[i];
             string? error = null;
-            if (ValueFlags.Contains(a))
+
+            // kit#103: --help is an answer, not a typo — the same as `kit report --help`.
+            if (a == "--help" || a == "-h")
+            {
+                help = true;
+            }
+            else if (ValueFlags.Contains(a))
             {
                 var v = i + 1 < argv.Count ? argv[i + 1] : null;
                 if (v is null || LooksLikeAFlag(v))
@@ -176,6 +183,12 @@ public sealed class KitCheck(
                 Err(Usage);
                 return 2;
             }
+        }
+
+        if (help)
+        {
+            Out(Usage);
+            return 0;
         }
 
         if (string.IsNullOrEmpty(app) || string.IsNullOrEmpty(repo))

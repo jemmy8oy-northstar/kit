@@ -998,7 +998,7 @@
     },
     {
       "id": "BEH-MM-NAV-1",
-      "code": "test(\"[BEH-MM-NAV-1] The sticky mini-nav offers the three section anchors\", async ({ page }) => {\n  await page.goto(\"/macro-metrics/\");\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Presets\" });\n  // UNGENERATED: then sees link:Presets\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Compare\" });\n  // UNGENERATED: then sees link:Compare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Indicators\" });\n  // UNGENERATED: then sees link:Indicators\n});",
+      "code": "test.skip(\"[BEH-MM-NAV-1] The sticky mini-nav offers the three section anchors\", async ({ page }) => {\n  // NOT GENERATED: no generated step asserts anything, so a test here would pass without checking the app (kit#86)\n  await page.goto(\"/macro-metrics/\");\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Presets\" });\n  // UNGENERATED: then sees link:Presets\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Compare\" });\n  // UNGENERATED: then sees link:Compare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees link:Indicators\" });\n  // UNGENERATED: then sees link:Indicators\n});",
       "missing": [
         "link:Presets",
         "link:Compare",

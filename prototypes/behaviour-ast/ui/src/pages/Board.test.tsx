@@ -35,9 +35,23 @@ const details: Record<string, Behaviour[]> = {
     beh('A-BACKLOG', { pending: true }),
     beh('A-PROPOSED', { source: inferred, review: { state: 'unreviewed', note: null } }),
     beh('A-DENIED', { source: inferred, review: { state: 'denied', note: 'no' } }),
+    beh('A-NEXT', { pending: true }),
+    beh('A-SECOND', { pending: true }),
+    beh('A-THIRD', { pending: true }),
   ],
   beta: [beh('B-DONE')],
   trial: [beh('T-DONE')],
+}
+
+// alpha's schedule: a built entry first (it stays Done), then next, then two in an order
+// that is NOT corpus order — so the Scheduled column can only get it right by reading this.
+const schedules: Record<string, { id: string; next: boolean }[]> = {
+  alpha: [
+    { id: 'A-DONE', next: false },
+    { id: 'A-NEXT', next: true },
+    { id: 'A-THIRD', next: false },
+    { id: 'A-SECOND', next: false },
+  ],
 }
 
 const summaries = [
@@ -47,14 +61,22 @@ const summaries = [
   { app: 'broken', error: 'broken.beh:3 — expected a verb' },
 ]
 
+/** The read API: the project list, a project's detail, or its schedule (BEH-SCHED-1). */
+function answer(path: string, projects: object[] = summaries) {
+  const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
+  if (rest.endsWith('/schedule')) {
+    const app = rest.slice(0, -'/schedule'.length)
+    // The board reads only id, order and next; title and state are the panel's.
+    const scheduled = (schedules[app] ?? []).map((s) => ({ ...s, title: null, state: 'pending' }))
+    return { app, file: `${app}.schedule`, scheduled, backlog: [] }
+  }
+  return rest ? { app: rest, behaviours: details[rest] } : { projects }
+}
+
 function mockApi() {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (path: string) => {
-      const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
-      const body = app ? { app, behaviours: details[app] } : { projects: summaries }
-      return { ok: true, status: 200, statusText: 'OK', json: async () => body }
-    }),
+    vi.fn(async (path: string) => ({ ok: true, status: 200, statusText: 'OK', json: async () => answer(path) })),
   )
 }
 
@@ -118,13 +140,12 @@ describe('Board', () => {
   it('colours and filters by project, so files naming one # kit:project share a button and a colour', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (path: string) => {
-        const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
-        const body = app
-          ? { app, behaviours: details[app] }
-          : { projects: [{ app: 'alpha', project: 'one' }, { app: 'beta', project: 'one' }] }
-        return { ok: true, status: 200, statusText: 'OK', json: async () => body }
-      }),
+      vi.fn(async (path: string) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => answer(path, [{ app: 'alpha', project: 'one' }, { app: 'beta', project: 'one' }]),
+      })),
     )
     renderBoard()
     await loaded()
@@ -172,6 +193,42 @@ describe('Board', () => {
     expect(screen.getByTestId('search')).toHaveTextContent('?project=alpha')
   })
 
+  it('puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)', async () => {
+    mockApi()
+    renderBoard()
+    await loaded()
+
+    const inProgress = screen.getByRole('region', { name: 'In progress' })
+    expect(await within(inProgress).findByText('A-NEXT')).toBeInTheDocument()
+    expect(within(inProgress).getAllByRole('listitem')).toHaveLength(1)
+    const scheduled = within(screen.getByRole('region', { name: 'Scheduled' }))
+      .getAllByRole('link')
+      .map((a) => a.textContent)
+    expect(scheduled).toEqual(['title of A-THIRD', 'title of A-SECOND'])
+    // Built since it was scheduled: Done, not Scheduled. Unscheduled and pending: Backlog.
+    expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
+    expect(column('Backlog').getByText('A-BACKLOG')).toBeInTheDocument()
+    expect(column('Backlog').queryByText('A-NEXT')).not.toBeInTheDocument()
+  })
+
+  it('a schedule that cannot be read says so, and its pending behaviours stay on the board as backlog', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        path.endsWith('/alpha/schedule')
+          ? { ok: false, status: 500, statusText: 'x', json: async () => ({ reason: 'alpha.schedule is unreadable' }) }
+          : { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) },
+      ),
+    )
+    renderBoard()
+    await loaded()
+
+    expect(await screen.findByText(/schedule could not be read/)).toBeInTheDocument()
+    expect(screen.getAllByRole('alert').some((a) => a.textContent?.includes('alpha.schedule is unreadable'))).toBe(true)
+    expect(column('Backlog').getByText('A-NEXT')).toBeInTheDocument()
+    expect(column('In progress').queryByText('A-NEXT')).not.toBeInTheDocument()
+  })
+
   it('reads the filter from the url', async () => {
     mockApi()
     renderBoard('/board?project=beta')
@@ -191,6 +248,18 @@ describe('board rules', () => {
 
   it('an approved inference is not proposed', () => {
     expect(columnOf(beh('X', { source: inferred }))).toBe('done')
+  })
+
+  it('the schedule moves only pending, adjudicated work (BEH-BOARD-3)', () => {
+    const pending = beh('X', { pending: true })
+    expect(columnOf(pending)).toBe('backlog')
+    expect(columnOf(pending, { order: 1, next: false })).toBe('scheduled')
+    expect(columnOf(pending, { order: 0, next: true })).toBe('in-progress')
+    // A built behaviour is done whatever the schedule still says; an unadjudicated one is proposed.
+    expect(columnOf(beh('X'), { order: 0, next: true })).toBe('done')
+    expect(
+      columnOf(beh('X', { pending: true, source: inferred, review: { state: 'unreviewed', note: null } }), { order: 0, next: true }),
+    ).toBe('proposed')
   })
 
   it('a project keeps its colour', () => {

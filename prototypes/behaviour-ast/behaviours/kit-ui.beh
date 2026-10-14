@@ -99,11 +99,10 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
 # but not a candidate for execution for now." A `pending` behaviour is already
 # an unbuilt one; this splits the pending set in two. Backlog is the default, so
 # no existing corpus changes meaning. Estimated delivery is his "later" — not here.
-# `pending` until built; the shape is his to change (kit#118).
+# Built 2026-10-14 in the shape kit#231 proposed (his default lapsed unreshaped).
 
 behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart from its backlog"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -115,7 +114,6 @@ behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart 
 
 behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule reordered"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -127,7 +125,6 @@ behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule re
 
 behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -140,6 +137,7 @@ behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   actor engineer
   provides page:KitProject.app = james-habits-app
   when opens page:KitProject
+  when activates tab:KitProjectQuestionsTab
   then sees heading:KitQuestionSheet
   then sees heading:KitNeverAdjudicated
   then sees button:KitAskForBehaviour
@@ -349,7 +347,6 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
 behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
   in FEAT-BOARD
   in FEAT-SCHEDULE
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard

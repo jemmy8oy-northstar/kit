@@ -63,6 +63,7 @@ public sealed class KitRouter(
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
+    private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -155,6 +156,31 @@ public sealed class KitRouter(
                 : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
         }
 
+        // BEH-SCHED-1..3: a route of its own for the same reason as the notes.
+        var schedule = ScheduleRoute.Match(pathname);
+        if (schedule.Success)
+        {
+            if (DecodeUriComponent(schedule.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            if (!known.Contains(app, StringComparer.Ordinal))
+            {
+                return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+            }
+
+            try
+            {
+                return Json(200, ScheduleOf(app));
+            }
+            catch (ProjectionFailedException e)
+            {
+                return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+            }
+        }
+
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
     }
 
@@ -207,7 +233,8 @@ public sealed class KitRouter(
         var bm = Bindings.Match(pathname);
         var nm = NotesRoute.Match(pathname);
         var na = NoteAction.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : Behaviours.Match(pathname);
+        var sm = ScheduleRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -241,6 +268,7 @@ public sealed class KitRouter(
             return bm.Success ? Bind(app, b)
                 : nm.Success ? LeaveNote(app, b)
                 : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
+                : sm.Success ? Reschedule(app, b)
                 : Edit(app, m, b);
         }
     }
@@ -518,6 +546,106 @@ public sealed class KitRouter(
         }));
     }
 
+    /// <summary>
+    /// The schedule as BEH-SCHED-1 and -3 describe it: every listed id in order, each pending, done or
+    /// missing, the first pending one marked next; then every pending behaviour not listed, in corpus
+    /// order. Nothing here falls back to the backlog — with nothing scheduled, nothing is next.
+    /// </summary>
+    private ScheduleList ScheduleOf(string app)
+    {
+        var behaviours = viewer.View(app).Behaviours;
+        var byId = new Dictionary<string, (string Title, bool Pending)>(StringComparer.Ordinal);
+        foreach (var b in behaviours)
+        {
+            byId.TryAdd(b.Id, (b.Title, b.Pending));
+        }
+
+        var ids = Schedule.Parse(corpora.ReadScheduleText(app));
+        var scheduled = new List<ScheduleEntry>();
+        var nextTaken = false;
+        foreach (var id in ids)
+        {
+            var known = byId.TryGetValue(id, out var b);
+            var state = !known ? "missing" : b.Pending ? "pending" : "done";
+            var next = state == "pending" && !nextTaken;
+            nextTaken |= next;
+            scheduled.Add(new ScheduleEntry { Id = id, Title = known ? b.Title : null, State = state, Next = next });
+        }
+
+        var backlog = behaviours
+            .Where(b => b.Pending && !ids.Contains(b.Id, StringComparer.Ordinal))
+            .DistinctBy(b => b.Id, StringComparer.Ordinal)
+            .Select(b => new ScheduleEntry { Id = b.Id, Title = b.Title, State = "pending" })
+            .ToList();
+
+        return new ScheduleList { App = app, File = corpora.RelativeSchedulePath(app), Scheduled = scheduled, Backlog = backlog };
+    }
+
+    /// <summary>
+    /// BEH-SCHED-2: schedule a backlog behaviour (appended), return one to the backlog, or move one up
+    /// or down a place — then commit and push the schedule like any edit. The corpus is never touched.
+    /// Only a pending behaviour can be scheduled; anything already listed can be removed or moved,
+    /// a built or vanished one included, so a stale entry can always be cleared.
+    /// </summary>
+    private KitResponse Reschedule(string app, JsonElement body)
+    {
+        if (TypeError(body, ScheduleFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var action = Str(body, "action")!;
+        var id = Str(body, "id")!;
+        if (action is not (Schedule.Add or Schedule.Remove or Schedule.Up or Schedule.Down))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "action must be add, remove, up or down" });
+        }
+
+        // One word on one line, or it would not read back as the id that was written.
+        if (!Notes.IsBehaviourId(id))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "id must be a behaviour id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+        }
+
+        if (action == Schedule.Add)
+        {
+            IReadOnlyList<Abstractions.DataModels.IBehaviourView> behaviours;
+            try
+            {
+                behaviours = viewer.View(app).Behaviours;
+            }
+            catch (ProjectionFailedException e)
+            {
+                return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+            }
+
+            if (behaviours.FirstOrDefault(b => b.Id == id) is not { } found)
+            {
+                return Json(409, new ApiError { Error = "no-such-behaviour", Reason = $"{app} has no behaviour {id}" });
+            }
+
+            if (!found.Pending)
+            {
+                return Json(409, new ApiError { Error = "not-pending", Reason = $"{id} is already built; only a pending behaviour can be scheduled" });
+            }
+        }
+
+        var (ids, error, reason) = Schedule.Change(Schedule.Parse(corpora.ReadScheduleText(app)), action, id);
+        if (ids is null)
+        {
+            return Json(409, new ApiError { Error = error!, Reason = reason! });
+        }
+
+        corpora.WriteScheduleText(app, Schedule.Render(app, ids));
+        return Json(200, GitOutcome(corpora.FullSchedulePath(app), Schedule.Summary(action, id), app, new WriteOutcome
+        {
+            App = app,
+            Behaviour = id,
+            File = corpora.RelativeSchedulePath(app),
+            Note = NotCommitted,
+        }));
+    }
+
     private static string? TextError(string text) =>
         string.IsNullOrWhiteSpace(text) ? "a note needs some text"
         : text.Length > Notes.MaxLength ? $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}"
@@ -586,6 +714,7 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
     private static readonly (string Field, string Type)[] ReplyFields = [("index", "int"), ("at", "string"), ("text", "string")];
     private static readonly (string Field, string Type)[] DismissFields = [("index", "int"), ("at", "string")];
+    private static readonly (string Field, string Type)[] ScheduleFields = [("action", "string"), ("id", "string")];
 
     private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
     {

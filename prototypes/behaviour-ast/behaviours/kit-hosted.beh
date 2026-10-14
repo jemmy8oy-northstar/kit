@@ -206,6 +206,7 @@ behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anyth
 behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and reaches dev only through Commit"
   in FEAT-EDIT
   source inferred kit#88
+  review approved by James in Kit, 2026-10-12 20:47Z: "the ai (kit) has to acknowledge the edit and actively merge it rather than edits passively being merged"
   actor engineer
   when opens page:KitHostedProject
   then sees button:KitHostedCommit
@@ -278,6 +279,23 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
   contract so "the tests are failing" is the normal state of a fresh Kit branch, and
   contract anything that treats a red branch as a fault will fight the workflow he
   contract described rather than serve it
+
+behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached dev yet, and the pull request they wait in"
+  in FEAT-COMMIT
+  source inferred kit#118
+  actor engineer
+  given change:Pending
+  when opens page:KitHostedProject
+  then sees region:KitHostedPending
+  serves BEH-ACT-4
+  contract "some feature where we have some branch convention or kit/ or soemthing
+  contract where you can view in kit the pending updates before they are merged"
+  contract the branch half is already settled by BEH-ACT-4 (one edits branch, one
+  contract pull request), so what is left of his ask is the VIEW
+  contract pending = the commits on kit/hosted that dev does not have, newest first,
+  contract each with the behaviour id it touched; plus the open Commit pull request,
+  contract linked, when there is one
+  contract nothing pending shows nothing: no empty panel on a project with no edits
 
 
 # ═══ The deployed boundary ════════════════════════════════════════════════════

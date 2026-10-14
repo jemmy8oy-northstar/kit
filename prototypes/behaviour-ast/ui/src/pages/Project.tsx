@@ -9,6 +9,7 @@ import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import ResourceView from '../components/Resource'
+import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 
@@ -75,6 +76,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
       <AskForBehaviour app={project.app} onAsked={bump} />
       <NotesPanel app={project.app} version={notes} />
+      <SchedulePanel apps={[project.app]} />
 
       <ProjectTabs
         waiting={project.conflicts.length + project.questions.length}
@@ -269,6 +271,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
 
       <AskForBehaviour app={home.app} onAsked={bump} />
       <NotesPanel app={home.app} version={notes} />
+      <SchedulePanel apps={files.map((f) => f.app)} />
     </>
   )
 }

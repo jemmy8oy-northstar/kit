@@ -48,10 +48,15 @@ public class LayerTests
         var generated = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoLayout.Fixtures, "layer-edges.json")))!["generate"]!
             .AsArray().Select(g => g!["code"]!.GetValue<string>()).ToList();
 
-        Assert.Equal(3, generated.Count(c => c.StartsWith("test.skip(", StringComparison.Ordinal)));
+        Assert.Equal(3, generated.Count(c => c.StartsWith("test.skip(", StringComparison.Ordinal) && !c.Contains(TestGenerator.NothingGenerated, StringComparison.Ordinal)));
         Assert.Contains(generated, c => c.Contains("// NOT GENERATED: a technical behaviour is proven by a unit test", StringComparison.Ordinal));
         Assert.Contains(generated, c => c.Contains("// NOT GENERATED: a ui behaviour needs a visual check", StringComparison.Ordinal));
-        Assert.Equal(2, generated.Count(c => c.StartsWith("test(", StringComparison.Ordinal) && c.Contains("async ({ page })", StringComparison.Ordinal)));
+
+        // The two ux behaviours ARE walked — every step was tried — but this fixture binds no noun, so
+        // neither has a step to assert with and both are skipped for THAT reason, never for their layer (kit#86).
+        var ux = generated.Where(c => c.Contains(TestGenerator.NothingGenerated, StringComparison.Ordinal)).ToList();
+        Assert.Equal(2, ux.Count);
+        Assert.All(ux, c => Assert.Contains("// UNGENERATED:", c, StringComparison.Ordinal));
     }
 
     [Fact]

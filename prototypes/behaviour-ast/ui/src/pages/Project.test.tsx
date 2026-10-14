@@ -224,6 +224,17 @@ describe('the question sheet', () => {
     )
   })
 
+  it('shows the question sheet Kit built for a project, with its review queue and the way to ask for more', async () => {
+    // BEH-SHEET-1's three `then`s, on the project its `provides` names: the sheet's heading, the
+    // never-adjudicated queue under it, and the button that asks for a new behaviour. The sheet
+    // is behind the Questions tab since BEH-FEAT-6, so the test opens on it.
+    renderApp(habits, 'james-habits-app', '?tab=questions')
+
+    expect(await screen.findByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Never adjudicated' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ask for behaviour' })).toBeInTheDocument()
+  })
+
   it('links every never-adjudicated inference to the page where it can be answered', async () => {
     renderApp(habits, 'james-habits-app', '?tab=questions')
 
