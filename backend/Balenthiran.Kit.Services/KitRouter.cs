@@ -47,7 +47,8 @@ public sealed class KitRouter(
     string? head = null,
     string baseBranch = "dev",
     TimeProvider? clock = null,
-    IPendingEditsReader? pending = null) : IKitRouter
+    IPendingEditsReader? pending = null,
+    ICompletionReader? completions = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -60,11 +61,14 @@ public sealed class KitRouter(
 
     private readonly IGitStore git = git ?? new GitStore(enabled: false);
 
+    private readonly ICompletionReader completions = completions ?? new CompletionReader(corpora, new GitCorpusHistory());
+
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
     private static readonly Regex PendingRoute = new(@"^/api/projects/([^/]+)/pending\z", RegexOptions.Compiled);
+    private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
@@ -198,6 +202,22 @@ public sealed class KitRouter(
             {
                 return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
             }
+        }
+
+        // BEH-BOARD-4: when each built behaviour was completed, apart from the project view as the
+        // notes are — a history that cannot be read costs the board its order, never its cards.
+        var history = HistoryRoute.Match(pathname);
+        if (history.Success)
+        {
+            if (DecodeUriComponent(history.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, completions.For(app))
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
         }
 
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
