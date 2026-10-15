@@ -133,6 +133,10 @@
     "name": "Board",
     "exact": true
   },
+  "region:KitBoardReview": {
+    "role": "region",
+    "name": "Review requested"
+  },
   "region:KitBoardProposed": {
     "role": "region",
     "name": "Proposed"

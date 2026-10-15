@@ -60,7 +60,7 @@ not have is a build failure rather than a passing test.
 ```
 behaviour BEH-ID "one sentence a human would say"
   source   defined docs/DESIGN.md#mvp-3 | inferred backend/Foo.cs:BarTest
-  review   unreviewed | approved | denied <the correction, required on a denial>
+  review   unreviewed | approved | requested <what to look at> | denied <the correction, required on a denial>
   serves   BEH-OTHER            # inferred only; the documented behaviour this exists for
   priority 1..5                 # 1 first; orders Proposed and Backlog on the board (kit#284)
   actor    owner

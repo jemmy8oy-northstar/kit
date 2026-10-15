@@ -1,7 +1,10 @@
 import type { Behaviour, ProjectSummary } from './api/types'
 
-/** The five columns kit#237 asked for, left to right; scheduled and in progress read the schedule (BEH-BOARD-3). */
-export type Column = 'proposed' | 'backlog' | 'scheduled' | 'in-progress' | 'done'
+/**
+ * The five columns kit#237 asked for, left to right, after kit#284's review requests; scheduled
+ * and in progress read the schedule (BEH-BOARD-3).
+ */
+export type Column = 'review' | 'proposed' | 'backlog' | 'scheduled' | 'in-progress' | 'done'
 
 /** Where a pending behaviour sits on its file's schedule (BEH-SCHED-1/3), if it is on it at all. */
 export interface Place {
@@ -14,7 +17,9 @@ export interface Place {
 /**
  * Where a behaviour stands (BEH-BOARD-1), from what the corpus and the schedule say.
  * A denied behaviour is on no column: it is a correction waiting to be written,
- * not work. Proposed is checked before anything pending, so an unreviewed inference
+ * not work. A review request (BEH-BOARD-6) is the agent asking him to look at
+ * something, so it waits in Review requested whatever else is true of it until he
+ * approves or denies it. Proposed is checked before anything pending, so an unreviewed inference
  * is proposed even when scheduled — someone has to adjudicate it before it is work.
  * A pending behaviour is in progress when it is its schedule's next (BEH-BOARD-3),
  * scheduled when it is anywhere else on it, and backlog otherwise. A built one is
@@ -22,6 +27,7 @@ export interface Place {
  */
 export function columnOf(b: Behaviour, place?: Place): Column | null {
   if (b.review.state === 'denied') return null
+  if (b.review.state === 'requested') return 'review'
   if (b.source.origin === 'inferred' && b.review.state === 'unreviewed') return 'proposed'
   if (!b.pending) return 'done'
   if (place?.next) return 'in-progress'
@@ -48,8 +54,8 @@ export function byCompletion(a: Completed, b: Completed): number {
   return a < b ? 1 : a > b ? -1 : 0
 }
 
-/** The columns ordered by priority (BEH-BOARD-5): what is waiting on a decision or a pick. */
-export const RANKED: readonly Column[] = ['proposed', 'backlog']
+/** The columns ordered by priority (BEH-BOARD-5/6): what is waiting on a decision or a pick. */
+export const RANKED: readonly Column[] = ['review', 'proposed', 'backlog']
 
 /**
  * Priority order for Array.sort (BEH-BOARD-5, kit#284): 1 first, 5 last, and a card with no
