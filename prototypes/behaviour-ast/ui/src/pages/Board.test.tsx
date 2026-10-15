@@ -1,10 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import Board from './Board'
 import App from '../App'
-import { columnOf, hueOf, HUES } from '../board'
-import type { Behaviour } from '../api/types'
+import { byCompletion, columnOf, hueOf, HUES } from '../board'
+import type { Behaviour, CompletionList } from '../api/types'
 
 // Hand-built, not the generated fixtures: the board's rules are about the shape
 // of a behaviour, and a fixture regenerated from the real corpus would move them.
@@ -61,9 +61,16 @@ const summaries = [
   { app: 'broken', error: 'broken.beh:3 — expected a verb' },
 ]
 
-/** The read API: the project list, a project's detail, or its schedule (BEH-SCHED-1). */
+/** Each app's history (BEH-BOARD-4); one not named answers git with nothing dated. */
+let histories: Record<string, CompletionList> = {}
+
+/** The read API: the project list, a project's detail, its schedule (BEH-SCHED-1) or its history. */
 function answer(path: string, projects: object[] = summaries) {
   const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
+  if (rest.endsWith('/history')) {
+    const app = rest.slice(0, -'/history'.length)
+    return histories[app] ?? { app, file: `${app}.beh`, history: 'git', reason: null, completed: [] }
+  }
   if (rest.endsWith('/schedule')) {
     const app = rest.slice(0, -'/schedule'.length)
     // The board reads only id, order and next; title and state are the panel's.
@@ -73,11 +80,23 @@ function answer(path: string, projects: object[] = summaries) {
   return rest ? { app: rest, behaviours: details[rest] } : { projects }
 }
 
-function mockApi() {
+function mockApi(h: Record<string, CompletionList> = {}) {
+  histories = h
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string) => ({ ok: true, status: 200, statusText: 'OK', json: async () => answer(path) })),
   )
+}
+
+function done(app: string, completed: [string, string | null][]): CompletionList {
+  return { app, file: `${app}.beh`, history: 'git', reason: null, completed: completed.map(([id, at]) => ({ id, at })) }
+}
+
+/** The ids on Done's cards, top to bottom. */
+function doneOrder() {
+  return column('Done')
+    .getAllByRole('listitem')
+    .map((li) => li.querySelector('.id')!.textContent)
 }
 
 function Search() {
@@ -103,6 +122,11 @@ function column(name: string) {
 }
 
 describe('Board', () => {
+  // A test that stubs fetch itself still answers histories through `answer`; none may inherit another's.
+  beforeEach(() => {
+    histories = {}
+  })
+
   it('puts each behaviour in the column for where it stands', async () => {
     mockApi()
     renderBoard()
@@ -229,6 +253,53 @@ describe('Board', () => {
     expect(column('In progress').queryByText('A-NEXT')).not.toBeInTheDocument()
   })
 
+  it('orders Done most recently completed first, across projects (BEH-BOARD-4)', async () => {
+    details.alpha.push(beh('A-OLD'), beh('A-AHEAD'))
+    try {
+      mockApi({
+        alpha: done('alpha', [['A-DONE', '2026-10-02T09:00:00Z'], ['A-OLD', '2026-09-01T09:00:00Z'], ['A-AHEAD', null]]),
+        beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]),
+      })
+      renderBoard()
+      await loaded()
+      await column('Done').findByText('A-AHEAD')
+
+      // Built ahead of the history is newest of all; the rest by date, whichever project.
+      expect(doneOrder()).toEqual(['A-AHEAD', 'B-DONE', 'A-DONE', 'A-OLD'])
+      expect(column('Done').queryByText(/Not ordered by date/)).not.toBeInTheDocument()
+    } finally {
+      details.alpha.splice(-2)
+    }
+  })
+
+  it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
+    histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        path.endsWith('/alpha/history')
+          ? { ok: false, status: 500, statusText: 'x', json: async () => ({ reason: 'boom' }) }
+          : { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) },
+      ),
+    )
+    renderBoard()
+    await loaded()
+    await column('Done').findByText('A-DONE')
+
+    expect(doneOrder()).toEqual(['B-DONE', 'A-DONE'])
+    expect(column('Done').getByText(/Not ordered by date/)).toHaveTextContent('alpha (')
+    expect(column('Done').getByText(/Not ordered by date/)).toHaveTextContent('boom')
+  })
+
+  it('says why a project has no history when the server could not read one', async () => {
+    mockApi({ alpha: { app: 'alpha', file: 'alpha.beh', history: 'none', reason: 'the corpus is not in a git work tree', completed: [] } })
+    renderBoard()
+    await loaded()
+    await column('Done').findByText('A-DONE')
+
+    expect(column('Done').getByText(/Not ordered by date/)).toHaveTextContent('alpha (the corpus is not in a git work tree)')
+  })
+
   it('reads the filter from the url', async () => {
     mockApi()
     renderBoard('/board?project=beta')
@@ -260,6 +331,12 @@ describe('board rules', () => {
     expect(
       columnOf(beh('X', { pending: true, source: inferred, review: { state: 'unreviewed', note: null } }), { order: 0, next: true }),
     ).toBe('proposed')
+  })
+
+  it('Done sorts ahead-of-history first, then newest, then undated, keeping ties in place', () => {
+    const at: (string | null | undefined)[] = [undefined, '2026-01-01T00:00:00Z', null, '2026-03-01T00:00:00Z', undefined, '2026-01-01T00:00:00Z']
+    const sorted = at.map((a, i) => ({ a, i })).sort((x, y) => byCompletion(x.a, y.a))
+    expect(sorted.map((s) => s.i)).toEqual([2, 3, 1, 5, 0, 4])
   })
 
   it('a project keeps its colour', () => {

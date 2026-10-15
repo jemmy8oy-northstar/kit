@@ -30,6 +30,10 @@
   "BEH-BOARD-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)" }
   ],
+  "BEH-BOARD-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Done most recently completed first, across projects (BEH-BOARD-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps every card when a history cannot be read, says so, and puts them after the dated ones" }
+  ],
   "BEH-PAIR-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "shows the behaviour and the test Kit generated from it, together" }
   ],

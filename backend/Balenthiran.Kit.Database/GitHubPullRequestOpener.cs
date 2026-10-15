@@ -26,7 +26,7 @@ public sealed partial class GitHubPullRequestOpener(
     HttpClient http,
     IGitHubTokenSource tokens,
     string? repository,
-    Uri? api = null) : IPullRequestOpener
+    Uri? api = null) : IPullRequestOpener, IPendingEditsReader
 {
     private static readonly Uri DefaultApi = new("https://api.github.com/");
 
@@ -101,6 +101,124 @@ public sealed partial class GitHubPullRequestOpener(
             ? new PullRequestResult { Opened = true, Number = n, Url = u }
             : new PullRequestResult { Reason = NotAPullRequest(created.Status) };
     }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Two reads: GitHub's compare of the base against the head, then the open pull request
+    /// between them. A head GitHub answers 404 for is an edits branch nobody has pushed to yet —
+    /// nothing pending, not a failure, because that is every Kit before its first edit.
+    /// </remarks>
+    public async Task<IPendingEdits> PendingAsync(string head, string baseBranch, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(repository) || repository.Split('/') is not [{ Length: > 0 } owner, { Length: > 0 }])
+        {
+            return new PendingEdits { Reason = "Kit does not know which GitHub repository its clone came from, so it cannot list pending edits" };
+        }
+
+        string? token;
+        try
+        {
+            token = await tokens.TokenAsync(cancellationToken);
+        }
+        catch (GitHubTokenException e)
+        {
+            return new PendingEdits { Reason = e.Message };
+        }
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return new PendingEdits { Reason = "no GitHub token is set (KIT_GIT_TOKEN), so Kit cannot list pending edits" };
+        }
+
+        // Each path segment escaped on its own: `kit/hosted` must reach GitHub as a slash, not %2F.
+        // GitHub pages a comparison's commits; one page of 100 is more than one Commit ever carries,
+        // and a longer branch says so rather than silently losing its newest edits.
+        var compare = new Uri(api ?? DefaultApi, $"repos/{repository}/compare/{Segments(baseBranch)}...{Segments(head)}?per_page={PageSize}");
+        var diff = await SendAsync(HttpMethod.Get, compare, token, null, cancellationToken);
+        if (diff.Status == 404)
+        {
+            // A 404 names no culprit: the edits branch, the base, the repository and a token that
+            // cannot see it all answer alike. Only a base GitHub can see makes it the edits branch
+            // that is missing, which is every Kit before its first edit — nothing pending.
+            var b = await SendAsync(HttpMethod.Get, new Uri(api ?? DefaultApi, $"repos/{repository}/branches/{Segments(baseBranch)}"), token, null, cancellationToken);
+            return b.Reason is null
+                ? new PendingEdits()
+                : new PendingEdits { Reason = $"{diff.Reason}, and {baseBranch} could not be read either ({b.Reason}), so Kit cannot tell whether any edit is pending" };
+        }
+
+        if (diff.Reason is not null)
+        {
+            return new PendingEdits { Reason = diff.Reason };
+        }
+
+        if (diff.Json is not { ValueKind: JsonValueKind.Object } c
+            || !c.TryGetProperty("commits", out var commits) || commits.ValueKind != JsonValueKind.Array)
+        {
+            return new PendingEdits { Reason = $"GitHub answered {diff.Status} with JSON that is not a comparison" };
+        }
+
+        // GitHub lists them oldest first; the panel reads newest first.
+        var edits = commits.EnumerateArray().Select(Edit).OfType<IPendingEdit>().Reverse().ToList();
+        if (edits.Count == 0)
+        {
+            return new PendingEdits();
+        }
+
+        var total = c.TryGetProperty("total_commits", out var t) && t.ValueKind == JsonValueKind.Number && t.TryGetInt32(out var n) ? n : edits.Count;
+        var partial = total > commits.GetArrayLength()
+            ? $"{head} is {total} commits ahead of {baseBranch}; only the oldest {commits.GetArrayLength()} are listed"
+            : null;
+
+        var query = $"?state=open&head={Uri.EscapeDataString($"{owner}:{head}")}&base={Uri.EscapeDataString(baseBranch)}";
+        var found = await SendAsync(HttpMethod.Get, new Uri(new Uri(api ?? DefaultApi, $"repos/{repository}/pulls") + query), token, null, cancellationToken);
+        if (found.Reason is not null)
+        {
+            // The edits are known even when the pull request is not: show them, and say what failed.
+            return new PendingEdits { Edits = edits, Reason = partial is null ? found.Reason : $"{partial}; {found.Reason}" };
+        }
+
+        return found.Json is { ValueKind: JsonValueKind.Array } list && list.GetArrayLength() > 0 && Identify(list[0]) is var (number, url)
+            ? new PendingEdits { Edits = edits, PullNumber = number, PullUrl = url, Reason = partial }
+            : new PendingEdits { Edits = edits, Reason = partial };
+    }
+
+    private const int PageSize = 100;
+
+    /// <summary>
+    /// One compare entry as an edit, read back from the message <c>GitStore.Message</c> wrote
+    /// (<c>kit: add BEH-7 (snip-it)</c>). Null for an entry that is not a commit object. A commit
+    /// Kit did not write (a merge of dev, a hand push) keeps its first line and has no app.
+    /// </summary>
+    internal static PendingEdit? Edit(JsonElement entry)
+    {
+        if (entry.ValueKind != JsonValueKind.Object
+            || !entry.TryGetProperty("sha", out var s) || s.ValueKind != JsonValueKind.String
+            || !entry.TryGetProperty("commit", out var commit) || commit.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var message = commit.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String ? m.GetString()! : string.Empty;
+        var first = message.Split('\n', 2)[0].Trim();
+        string? when = commit.TryGetProperty("committer", out var who) && who.ValueKind == JsonValueKind.Object
+            && who.TryGetProperty("date", out var d) && d.ValueKind == JsonValueKind.String
+                ? d.GetString()
+                : null;
+
+        var sha = s.GetString()!;
+        var kit = KitMessage().Match(first);
+        var summary = kit.Success ? kit.Groups["what"].Value : first;
+        return new PendingEdit
+        {
+            Sha = sha.Length > 7 ? sha[..7] : sha,
+            Summary = summary,
+            App = kit.Success && kit.Groups["app"].Success ? kit.Groups["app"].Value : null,
+            Behaviour = kit.Success && BehaviourId().Match(summary) is { Success: true } b ? b.Value : null,
+            When = when,
+        };
+    }
+
+    private static string Segments(string branch) => string.Join('/', branch.Split('/').Select(Uri.EscapeDataString));
 
     // A 2xx whose JSON is the wrong SHAPE is a sentence like every other outcome, never a throw:
     // reading a property off a non-object threw, and Commit answered an unhandled 500 (kit#160's blind review).
@@ -199,4 +317,11 @@ public sealed partial class GitHubPullRequestOpener(
 
     [GeneratedRegex(@"^(?:https://(?:[^@/]+@)?github\.com/|(?:ssh://)?git@github\.com[:/])(?<owner>[A-Za-z0-9-]+)/(?<name>[A-Za-z0-9._-]+?)(?:\.git)?/?$")]
     private static partial Regex RemotePattern();
+
+    // GitStore.Message: `kit: {what}` or `kit: {what} ({app})`.
+    [GeneratedRegex(@"^kit: (?<what>.+?)(?: \((?<app>[^()]+)\))?$")]
+    private static partial Regex KitMessage();
+
+    [GeneratedRegex(@"\bBEH-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*")]
+    private static partial Regex BehaviourId();
 }

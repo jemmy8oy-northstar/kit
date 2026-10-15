@@ -22,6 +22,16 @@
       "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
     }
   ],
+  "BEH-COMMIT-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PendingEditsTests.cs",
+      "title": "The_route_lists_only_this_projects_edits_beside_the_pull_request"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/PendingPanel.test.tsx",
+      "title": "lists the edits on kit/hosted not yet on dev, newest first, linking the pull request they wait in"
+    }
+  ],
   "BEH-COMMIT-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",

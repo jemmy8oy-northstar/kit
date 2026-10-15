@@ -29,6 +29,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="pulls">Commit's door to <c>dev</c> (kit#155): proposes the edits branch as a pull request. None means Commit says so.</param>
 /// <param name="head">The branch every edit is pushed to (<c>KIT_GIT_BRANCH</c>, <c>kit/hosted</c> when deployed) — Commit's pull request is FROM it.</param>
 /// <param name="baseBranch">What Commit proposes the edits INTO: <c>KIT_GIT_BASE</c>, default <c>dev</c>, the branch the entrypoint starts <paramref name="head"/> from.</param>
+/// <param name="pending">Reads what <paramref name="head"/> holds that <paramref name="baseBranch"/> lacks (BEH-COMMIT-5). None means nothing is listed.</param>
 public sealed class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -45,7 +46,9 @@ public sealed class KitRouter(
     IPullRequestOpener? pulls = null,
     string? head = null,
     string baseBranch = "dev",
-    TimeProvider? clock = null) : IKitRouter
+    TimeProvider? clock = null,
+    IPendingEditsReader? pending = null,
+    ICompletionReader? completions = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -58,10 +61,14 @@ public sealed class KitRouter(
 
     private readonly IGitStore git = git ?? new GitStore(enabled: false);
 
+    private readonly ICompletionReader completions = completions ?? new CompletionReader(corpora, new GitCorpusHistory());
+
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
+    private static readonly Regex PendingRoute = new(@"^/api/projects/([^/]+)/pending\z", RegexOptions.Compiled);
+    private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
@@ -156,6 +163,22 @@ public sealed class KitRouter(
                 : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
         }
 
+        // BEH-COMMIT-5: this project's edits that have not reached the base, and the pull request
+        // they wait in. A read like the rest, so it is served to anyone (BEH-GATE-H1).
+        var pm = PendingRoute.Match(pathname);
+        if (pm.Success)
+        {
+            if (DecodeUriComponent(pm.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, Pending(app))
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
         // BEH-SCHED-1..3: a route of its own for the same reason as the notes.
         var schedule = ScheduleRoute.Match(pathname);
         if (schedule.Success)
@@ -181,7 +204,51 @@ public sealed class KitRouter(
             }
         }
 
+        // BEH-BOARD-4: when each built behaviour was completed, apart from the project view as the
+        // notes are — a history that cannot be read costs the board its order, never its cards.
+        var history = HistoryRoute.Match(pathname);
+        if (history.Success)
+        {
+            if (DecodeUriComponent(history.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, completions.For(app))
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
+    }
+
+    /// <summary>
+    /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull
+    /// request they wait in. Off — write-back off, no edits branch, no reader — is an empty list
+    /// with the reason, not an error: a page that lists nothing pending must still render.
+    /// </summary>
+    private PendingView Pending(string app)
+    {
+        if (!git.Enabled || string.IsNullOrEmpty(head) || pending is null)
+        {
+            return new PendingView { App = app, Head = head, Base = baseBranch, Reason = "git write-back is off, so no edit is waiting on a branch" };
+        }
+
+        // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
+        var all = pending.PendingAsync(head, baseBranch).GetAwaiter().GetResult();
+        var mine = all.Edits.Where(e => string.Equals(e.App, app, StringComparison.Ordinal)).ToList();
+        return new PendingView
+        {
+            App = app,
+            Head = head,
+            Base = baseBranch,
+            Edits = mine,
+            // The pull request carries every project's edits; it is only worth showing beside this one's.
+            PullNumber = mine.Count > 0 ? all.PullNumber : null,
+            PullUrl = mine.Count > 0 ? all.PullUrl : null,
+            Reason = all.Reason,
+        };
     }
 
     /// <summary><c>ui.js</c>'s <c>write()</c>, up to the write itself.</summary>

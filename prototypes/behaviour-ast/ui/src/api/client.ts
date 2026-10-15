@@ -1,6 +1,6 @@
 import type {
-  Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
-  ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
+  Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
+  PendingView, ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -211,6 +211,11 @@ export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
 }
 
 /** The project's open notes (kit#118), oldest first. */
+/** When each built behaviour of the project was completed, from git (BEH-BOARD-4). */
+export function fetchHistory(app: string): Promise<CompletionList> {
+  return get<CompletionList>(`/api/projects/${encodeURIComponent(app)}/history`)
+}
+
 export function fetchNotes(app: string): Promise<NoteList> {
   return get<NoteList>(`/api/projects/${encodeURIComponent(app)}/notes`)
 }
@@ -289,6 +294,11 @@ export function addBinding(app: string, noun: string, binding: Binding): Promise
  */
 export function proposeEdits(): Promise<ProposeResult> {
   return post<ProposeResult>('/api/commit', {})
+}
+
+/** This project's edits on the edits branch that have not reached the base, and their pull request (BEH-COMMIT-5). */
+export function fetchPending(app: string): Promise<PendingView> {
+  return get<PendingView>(`/api/projects/${encodeURIComponent(app)}/pending`)
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {
