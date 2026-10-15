@@ -115,6 +115,7 @@ public sealed class ProjectViewer(
                 Pending = b.Pending,
                 Layer = b.Layer,
                 In = (b.In ?? []).Select(t => t.Id).ToList(),
+                Priority = b.Priority,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,

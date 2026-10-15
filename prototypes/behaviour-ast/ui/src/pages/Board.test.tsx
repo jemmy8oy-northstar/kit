@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import Board from './Board'
 import App from '../App'
-import { byCompletion, columnOf, hueOf, HUES } from '../board'
+import { byCompletion, byPriority, columnOf, hueOf, HUES } from '../board'
 import type { Behaviour, CompletionList } from '../api/types'
 
 // Hand-built, not the generated fixtures: the board's rules are about the shape
@@ -272,6 +272,33 @@ describe('Board', () => {
     }
   })
 
+  it('orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)', async () => {
+    // Priorities that disagree with corpus AND project order, so only reading them sorts right.
+    details.beta.push(
+      beh('B-LATER', { pending: true, priority: 3 }),
+      beh('B-FIRST', { pending: true, priority: 1 }),
+      beh('B-SUGGESTED', { source: inferred, review: { state: 'unreviewed', note: null }, priority: 2 }),
+    )
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('B-FIRST')
+
+      const order = (name: string) =>
+        column(name)
+          .getAllByRole('listitem')
+          .map((li) => li.querySelector('.id')!.textContent)
+      expect(order('Backlog')).toEqual(['B-FIRST', 'B-LATER', 'A-BACKLOG'])
+      expect(order('Proposed')).toEqual(['B-SUGGESTED', 'A-PROPOSED'])
+      // The score is on the card, so the order can be read without opening anything.
+      expect(column('Backlog').getByText('P1')).toBeInTheDocument()
+      expect(column('Proposed').getByText('P2')).toBeInTheDocument()
+    } finally {
+      details.beta.splice(-3)
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(
@@ -337,6 +364,12 @@ describe('board rules', () => {
     const at: (string | null | undefined)[] = [undefined, '2026-01-01T00:00:00Z', null, '2026-03-01T00:00:00Z', undefined, '2026-01-01T00:00:00Z']
     const sorted = at.map((a, i) => ({ a, i })).sort((x, y) => byCompletion(x.a, y.a))
     expect(sorted.map((s) => s.i)).toEqual([2, 3, 1, 5, 0, 4])
+  })
+
+  it('priority sorts 1 first, unranked last, keeping ties in place', () => {
+    const p: (number | undefined)[] = [undefined, 3, 1, undefined, 3, 5]
+    const sorted = p.map((v, i) => ({ v, i })).sort((x, y) => byPriority(x.v, y.v))
+    expect(sorted.map((s) => s.i)).toEqual([2, 1, 4, 5, 0, 3])
   })
 
   it('a project keeps its colour', () => {

@@ -111,6 +111,8 @@ export interface Behaviour {
   at: string
   /** The features it is tagged into, one per `in` line (kit#237); empty when untagged. */
   in: string[]
+  /** 1 (first) to 5, from a `priority` line (kit#284); absent when there is none. */
+  priority?: number
 }
 
 /** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */
