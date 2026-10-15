@@ -48,6 +48,12 @@ public sealed class BehaviourView : IBehaviourView
     [JsonPropertyOrder(13)]
     public required List<string> In { get; init; }
 
+    // kit#284: the board orders Proposed and Backlog by it. Absent without a `priority` line,
+    // so no response that predates it changes shape.
+    [JsonPropertyOrder(14)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Priority { get; init; }
+
     IReadOnlyList<string> IBehaviourView.In => In;
 
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;

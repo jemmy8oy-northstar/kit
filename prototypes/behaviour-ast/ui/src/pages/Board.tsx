@@ -4,7 +4,7 @@ import { ApiError, fetchHistory, fetchProject, fetchProjects, fetchSchedule } fr
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
-import { byCompletion, columnOf, hueOf, isTrial, projectOf, type Column, type Place } from '../board'
+import { byCompletion, byPriority, columnOf, hueOf, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -170,7 +170,8 @@ export default function Board() {
               <div className="board">
                 {COLUMNS.map((col) => {
                   // Scheduled reads in schedule order within each file; Done most recently completed
-                  // first, across files (BEH-BOARD-4); every other column in corpus order.
+                  // first, across files (BEH-BOARD-4); Proposed and Backlog by priority, across files
+                  // (BEH-BOARD-5); in progress in corpus order.
                   const cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id)
@@ -183,6 +184,7 @@ export default function Board() {
                       })),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
+                  if (RANKED.includes(col.id)) cards.sort((x, y) => byPriority(x.b.priority, y.b.priority))
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
                   return (
                     <section key={col.id} aria-labelledby={`board-${col.id}`}>
@@ -207,6 +209,9 @@ export default function Board() {
                                 </Link>{' '}
                                 <span className="muted id">{b.id}</span>
                               </h3>
+                              {b.priority !== undefined && (
+                                <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
+                              )}
                               <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                             </Card>
                           </li>

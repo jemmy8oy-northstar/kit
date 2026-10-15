@@ -538,6 +538,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         review = new { state = b.Review.State, note = b.Review.Note },
         pending = b.Pending,
         layer = b.Layer,
+        priority = b.Priority,
         asks = b.Asks,
         options = b.Options.Select(o => $"{o.Label}|{o.Consequence}").ToList(),
         recommend = b.Recommend is { } r ? $"{r.Label}|{r.Why}" : null,

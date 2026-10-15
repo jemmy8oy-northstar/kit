@@ -34,6 +34,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Done most recently completed first, across projects (BEH-BOARD-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps every card when a history cannot be read, says so, and puts them after the dated ones" }
   ],
+  "BEH-BOARD-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "priority sorts 1 first, unranked last, keeping ties in place" }
+  ],
   "BEH-PAIR-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "shows the behaviour and the test Kit generated from it, together" }
   ],

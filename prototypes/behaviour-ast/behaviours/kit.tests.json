@@ -54,6 +54,20 @@
       "title": "A_malformed_feature_or_tag_line_is_refused"
     }
   ],
+  "BEH-PARSE-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "A_priority_Kit_cannot_rank_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "Without_a_line_there_is_no_priority_and_none_is_written"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "A_priority_line_is_read_as_its_number"
+    }
+  ],
   "BEH-RESOLVE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",

@@ -48,6 +48,18 @@ export function byCompletion(a: Completed, b: Completed): number {
   return a < b ? 1 : a > b ? -1 : 0
 }
 
+/** The columns ordered by priority (BEH-BOARD-5): what is waiting on a decision or a pick. */
+export const RANKED: readonly Column[] = ['proposed', 'backlog']
+
+/**
+ * Priority order for Array.sort (BEH-BOARD-5, kit#284): 1 first, 5 last, and a card with no
+ * priority after every card with one. Equal is 0, so the stable sort keeps corpus order among them.
+ */
+export function byPriority(a?: number, b?: number): number {
+  if (a === undefined || b === undefined) return a === b ? 0 : a === undefined ? 1 : -1
+  return a - b
+}
+
 /** The number of colours in `.hue-N` in index.css. */
 export const HUES = 12
 

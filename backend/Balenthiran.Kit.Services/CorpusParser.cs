@@ -169,6 +169,19 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
+            // ── James, kit#284 (2026-10-15) ─────────────────────────────────
+            // "You give it a priority score and this is used to rank it on the
+            // board. Top priority at the top." 1 is first, 5 is last — the scale
+            // the decision queue already uses. A second line is refused rather
+            // than silently winning: two scores is a disagreement, not a value.
+            if (kw == "priority")
+            {
+                if (rest.Length != 1 || rest[0] < '1' || rest[0] > '5') throw new CorpusParseException($"{at}: priority wants 1 (first) to 5, got: {rest}");
+                if (cur.Priority is not null) throw new CorpusParseException($"{at}: priority is already set on {cur.Id}");
+                cur.Priority = rest[0] - '0';
+                continue;
+            }
+
             if (kw == "layer")
             {
                 if (!Layers.Contains(rest)) throw new CorpusParseException($@"{at}: layer wants ""ux""|""technical""|""ui"", got: {rest}");
