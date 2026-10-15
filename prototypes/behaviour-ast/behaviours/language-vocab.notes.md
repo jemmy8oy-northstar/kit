@@ -23,3 +23,7 @@ however at the moment it is really hard for me to learn, i think we need some di
 what we have now seems like a practice mode but i have no learning mode
 
 i think i need a learning mode where i can flick through maybe 5 words where it shows the pinying and the english pairing and you have to click next, then after it questions you on them by showing the pinyin and asking you to guess, and then i guess also the other way round but that is harder so maybe that is another option again
+
+## 2026-10-15 23:08Z · new behaviour
+
+Another idea that I have had for language vocab is vocab packs, i am just thinking idrk how words are grouped yet but i would love to add a mahjong vocab pack. I did at one point know all the numbers and then obiously wan bing idek remember the other one and i am sure the spelling here is bad but you get it. I would love to contribute vocab packs and i think this is a fun and intuitive way to get interested in learning a language and i guess grouping lessons and drills.
