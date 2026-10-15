@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { askForBehaviour, fetchProject, fetchProjects, resolveDecision } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
@@ -78,43 +78,120 @@ function Detail({ project }: { project: ProjectDetail }) {
       <NotesPanel app={project.app} version={notes} />
       <SchedulePanel apps={[project.app]} />
 
-      {project.conflicts.length > 0 && (
-        <section>
-          <h2>Conflicts</h2>
-          <ul className="cards">
-            {project.conflicts.map((c) => (
-              <li key={c.key}>
-                <ConflictCard conflict={c} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <ProjectTabs
+        waiting={project.conflicts.length + project.questions.length}
+        features={
+          <>
+            {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
+                features has no section here and lists every behaviour, as it always did. */}
+            {top.features.length > 0 && (
+              <section aria-label="Features">
+                <FeatureCards app={project.app} project={project} features={top.features} path={[]} heading={false} />
+              </section>
+            )}
 
-      <QuestionSheet sheets={[project]} notesApp={project.app} onResolved={bump} />
-
-      {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
-          features has no section here and lists every behaviour, as it always did. */}
-      {top.features.length > 0 && (
-        <section aria-label="Features">
-          <FeatureCards app={project.app} project={project} features={top.features} path={[]} />
-        </section>
-      )}
-
-      <section>
-        {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
-        {(top.features.length === 0 || top.behaviours.length > 0) && (
-          <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
-        )}
-        <ul className="cards">
-          {top.behaviours.map((b) => (
-            <li key={b.id}>
-              <BehaviourRow app={project.app} behaviour={b} unreviewed={unreviewed.has(b.id)} />
-            </li>
-          ))}
-        </ul>
-      </section>
+            <section>
+              {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
+              {(top.features.length === 0 || top.behaviours.length > 0) && (
+                <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+              )}
+              <ul className="cards">
+                {top.behaviours.map((b) => (
+                  <li key={b.id}>
+                    <BehaviourRow app={project.app} behaviour={b} unreviewed={unreviewed.has(b.id)} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        }
+        questions={
+          <>
+            <Conflicts conflicts={project.conflicts} />
+            <QuestionSheet sheets={[project]} notesApp={project.app} onResolved={bump} />
+          </>
+        }
+      />
     </>
+  )
+}
+
+type Tab = 'features' | 'questions'
+
+/**
+ * BEH-FEAT-6 (kit#118, his note 2026-10-12 20:49Z): "Maybe features and questions should be
+ * under a tab view, default to features". What the project IS comes first; what is waiting on
+ * him is one tap away, with a count so it cannot hide there.
+ *
+ * The tab is in the url (`?tab=questions`) so a link can open on the questions and the back
+ * button undoes a switch. Both panels stay mounted and the other is `hidden`, so a resolution
+ * half-typed into a decision card survives a look at the features.
+ */
+function ProjectTabs({ waiting, features, questions }: { waiting: number; features: React.ReactNode; questions: React.ReactNode }) {
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('tab') === 'questions' ? 'questions' : 'features'
+  const id = useId()
+
+  function select(next: Tab) {
+    const out = new URLSearchParams(params)
+    if (next === 'features') out.delete('tab')
+    else out.set('tab', next)
+    setParams(out)
+  }
+
+  const tabs: { key: Tab; label: React.ReactNode }[] = [
+    { key: 'features', label: 'Features' },
+    {
+      key: 'questions',
+      label: (
+        <>
+          Questions {waiting > 0 && <Badge tone="warning">{waiting}</Badge>}
+        </>
+      ),
+    },
+  ]
+
+  return (
+    <>
+      <div role="tablist" aria-label="Project" className="tabs">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            id={`${id}-${t.key}-tab`}
+            aria-controls={`${id}-${t.key}`}
+            aria-selected={tab === t.key}
+            tabIndex={tab === t.key ? 0 : -1}
+            onClick={() => select(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={`${id}-features`} aria-labelledby={`${id}-features-tab`} hidden={tab !== 'features'}>
+        {features}
+      </div>
+      <div role="tabpanel" id={`${id}-questions`} aria-labelledby={`${id}-questions-tab`} hidden={tab !== 'questions'}>
+        {waiting > 0 ? questions : <p className="muted">Nothing is waiting on you.</p>}
+      </div>
+    </>
+  )
+}
+
+function Conflicts({ conflicts }: { conflicts: Conflict[] }) {
+  if (!conflicts.length) return null
+  return (
+    <section>
+      <h2>Conflicts</h2>
+      <ul className="cards">
+        {conflicts.map((c) => (
+          <li key={c.key}>
+            <ConflictCard conflict={c} />
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -153,51 +230,48 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         {inferred ? <Badge tone="warning">{inferred} inferred</Badge> : null}
       </div>
 
-      {/* His ask (kit#246): features at the top. The notes come next, still above the sheet (kit#118). */}
-      {features.length > 0 && (
-        <section aria-label="Features">
-          <h2>Features</h2>
-          <ul className="cards">
-            {features.map(({ file, feature }) => (
-              <li key={`${file.app}/${feature.id}`}>
-                <FeatureCard app={file.app} project={file} feature={feature} path={[]} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* His ask (kit#246): features at the top — now the default tab (BEH-FEAT-6). The notes come next (kit#118). */}
+      <ProjectTabs
+        waiting={conflicts.length + sum((f) => f.questions.length)}
+        features={
+          <>
+            {features.length > 0 && (
+              <section aria-label="Features">
+                <ul className="cards">
+                  {features.map(({ file, feature }) => (
+                    <li key={`${file.app}/${feature.id}`}>
+                      <FeatureCard app={file.app} project={file} feature={feature} path={[]} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
-      {loose.length > 0 && (
-        <section>
-          <h2>{features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
-          <ul className="cards">
-            {loose.map(({ file, behaviour, unreviewed }) => (
-              <li key={`${file.app}/${behaviour.id}`}>
-                <BehaviourRow app={file.app} behaviour={behaviour} unreviewed={unreviewed} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+            {loose.length > 0 && (
+              <section>
+                <h2>{features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+                <ul className="cards">
+                  {loose.map(({ file, behaviour, unreviewed }) => (
+                    <li key={`${file.app}/${behaviour.id}`}>
+                      <BehaviourRow app={file.app} behaviour={behaviour} unreviewed={unreviewed} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
+        }
+        questions={
+          <>
+            <Conflicts conflicts={conflicts} />
+            <QuestionSheet sheets={files} notesApp={home.app} onResolved={bump} />
+          </>
+        }
+      />
 
       <AskForBehaviour app={home.app} onAsked={bump} />
       <NotesPanel app={home.app} version={notes} />
       <SchedulePanel apps={files.map((f) => f.app)} />
-
-      {conflicts.length > 0 && (
-        <section>
-          <h2>Conflicts</h2>
-          <ul className="cards">
-            {conflicts.map((c) => (
-              <li key={c.key}>
-                <ConflictCard conflict={c} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <QuestionSheet sheets={files} notesApp={home.app} onResolved={bump} />
     </>
   )
 }
@@ -419,16 +493,19 @@ export function FeatureCards({
   project,
   features,
   path,
+  heading = true,
 }: {
   app: string
   project: Tagged
   features: Feature[]
   path: string[]
+  /** Off under the project page's Features tab, which already says it (BEH-FEAT-6). */
+  heading?: boolean
 }) {
   if (!features.length) return null
   return (
     <>
-      <h2>Features</h2>
+      {heading && <h2>Features</h2>}
       <ul className="cards">
         {features.map((f) => (
           <li key={f.id}>

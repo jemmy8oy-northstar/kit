@@ -186,6 +186,14 @@
     "role": "region",
     "name": "Features"
   },
+  "tab:KitProjectFeaturesTab": {
+    "role": "tab",
+    "name": "Features"
+  },
+  "tab:KitProjectQuestionsTab": {
+    "role": "tab",
+    "name": "Questions"
+  },
   "region:KitFeatureChildren": {
     "role": "region",
     "name": "Contents"

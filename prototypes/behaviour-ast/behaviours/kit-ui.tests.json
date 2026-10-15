@@ -22,6 +22,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "moves a behaviour up, and the top is next" },
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" }
   ],
+  "BEH-FEAT-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Features, with the questions a tap away and counted" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "switches to Questions on a tap, and back" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Questions from a link carrying ?tab=questions" }
+  ],
   "BEH-BOARD-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)" }
   ],
