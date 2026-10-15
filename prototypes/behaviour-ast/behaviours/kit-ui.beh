@@ -367,6 +367,8 @@ behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
 behaviour BEH-BOARD-5 "Proposed and backlog put the top priority at the top"
   in FEAT-BOARD
   source defined kit#284
+  priority 2
+  review requested the P1 chip sits on its own line under the title (kit#287); is that the look you want, or should it sit beside the id?
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardProposed
@@ -374,6 +376,16 @@ behaviour BEH-BOARD-5 "Proposed and backlog put the top priority at the top"
   contract a `priority` line ranks a card 1 (first) to 5, across projects; a card with none comes after every ranked one
   contract the score is shown on the card, so the order can be read without opening anything
   contract it is how the agent's suggestions reach the top: an unreviewed inference with `priority 1` leads Proposed
+
+behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants looked at, top priority at the top"
+  in FEAT-BOARD
+  source defined kit#284
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardReview
+  contract a `review requested <what to look at>` line puts a behaviour here whatever else is true of it, and the card says what
+  contract approving it moves it on (built is Done); denying it needs the correction, like any denial, and takes it off the board
+  contract it is how built-and-merged work asks for his eyes without blocking on them
 
 # ═══ The projects view: features, and parents as tags (kit#237) ═══════════════
 # "Features can parent other features, they can also parent spec … consider the

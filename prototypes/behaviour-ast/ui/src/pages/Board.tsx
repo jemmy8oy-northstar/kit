@@ -74,6 +74,8 @@ async function loadBoard(): Promise<Entry[]> {
 }
 
 const COLUMNS: { id: Column; title: string }[] = [
+  // First, beside Proposed: both are the agent waiting on him (kit#284).
+  { id: 'review', title: 'Review requested' },
   { id: 'proposed', title: 'Proposed' },
   { id: 'backlog', title: 'Backlog' },
   { id: 'scheduled', title: 'Scheduled' },
@@ -170,8 +172,8 @@ export default function Board() {
               <div className="board">
                 {COLUMNS.map((col) => {
                   // Scheduled reads in schedule order within each file; Done most recently completed
-                  // first, across files (BEH-BOARD-4); Proposed and Backlog by priority, across files
-                  // (BEH-BOARD-5); in progress in corpus order.
+                  // first, across files (BEH-BOARD-4); Review requested, Proposed and Backlog by priority,
+                  // across files (BEH-BOARD-5/6); in progress in corpus order.
                   const cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id)
@@ -209,6 +211,10 @@ export default function Board() {
                                 </Link>{' '}
                                 <span className="muted id">{b.id}</span>
                               </h3>
+                              {b.review.state === 'requested' && (
+                                // What the agent wants looked at, so the card can be triaged unopened.
+                                <p>{b.review.note}</p>
+                              )}
                               {b.priority !== undefined && (
                                 <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
                               )}

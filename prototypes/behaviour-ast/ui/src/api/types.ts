@@ -147,8 +147,8 @@ export interface Adjudication {
   untraceable: string[]
 }
 
-/** The three states `parse()` accepts on a `review` line, and nothing else. */
-export type ReviewState = 'unreviewed' | 'approved' | 'denied'
+/** The four states `parse()` accepts on a `review` line, and nothing else; `requested` is kit#284's. */
+export type ReviewState = 'unreviewed' | 'approved' | 'requested' | 'denied'
 
 /**
  * One entry of the question sheet `kit.js` already builds, which `ui.js` has

@@ -272,6 +272,32 @@ describe('Board', () => {
     }
   })
 
+  it('puts review requests first, by priority, with what to look at on the card (BEH-BOARD-6)', async () => {
+    details.beta.push(
+      beh('B-ASK-LATER', { priority: 3, review: { state: 'requested', note: 'the empty state wording' } }),
+      beh('B-ASK-FIRST', { priority: 1, review: { state: 'requested', note: 'the sort on a phone' } }),
+    )
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Review requested').findByText('B-ASK-FIRST')
+
+      const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))
+      expect(regions[0]).toBe('board-review')
+      expect(
+        column('Review requested')
+          .getAllByRole('listitem')
+          .map((li) => li.querySelector('.id')!.textContent),
+      ).toEqual(['B-ASK-FIRST', 'B-ASK-LATER'])
+      expect(column('Review requested').getByText('the sort on a phone')).toBeInTheDocument()
+      // Built, but not Done until he has looked.
+      expect(column('Done').queryByText('B-ASK-FIRST')).not.toBeInTheDocument()
+    } finally {
+      details.beta.splice(-2)
+    }
+  })
+
   it('orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)', async () => {
     // Priorities that disagree with corpus AND project order, so only reading them sorts right.
     details.beta.push(
@@ -346,6 +372,16 @@ describe('board rules', () => {
 
   it('an approved inference is not proposed', () => {
     expect(columnOf(beh('X', { source: inferred }))).toBe('done')
+  })
+
+  it('a review request waits in Review requested whatever else is true of it (BEH-BOARD-6)', () => {
+    const requested = { state: 'requested', note: 'the copy' }
+    expect(columnOf(beh('X', { review: requested }))).toBe('review')
+    expect(columnOf(beh('X', { review: requested, pending: true }), { order: 0, next: true })).toBe('review')
+    expect(columnOf(beh('X', { review: requested, source: inferred }))).toBe('review')
+    // Answered either way, it leaves: approved is done, denied is a correction on no column.
+    expect(columnOf(beh('X', { review: { state: 'approved', note: null } }))).toBe('done')
+    expect(columnOf(beh('X', { review: { state: 'denied', note: 'the copy is wrong' } }))).toBeNull()
   })
 
   it('the schedule moves only pending, adjudicated work (BEH-BOARD-3)', () => {

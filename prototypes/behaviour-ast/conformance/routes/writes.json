@@ -428,7 +428,7 @@
       "result": {
         "ok": false,
         "error": "empty-review",
-        "reason": "a review needs a state: unreviewed, approved or denied"
+        "reason": "a review needs a state: unreviewed, approved, requested or denied"
       }
     },
     {
@@ -504,7 +504,7 @@
       "result": {
         "ok": false,
         "error": "would-not-parse",
-        "reason": "after:11: review wants \"unreviewed\"|\"approved\"|\"denied\" [note], got: maybe"
+        "reason": "after:11: review wants \"unreviewed\"|\"approved\"|\"requested\"|\"denied\" [note], got: maybe"
       }
     },
     {
