@@ -39,3 +39,9 @@ I thought we agreed this was fine because then the ai (kit) has to acknowledge t
 ## 2026-10-12 20:49Z · resolve page:KitProject.app
 
 Maybe features and questions should be under a tab view, default to features
+
+## 2026-10-15 23:10Z · new behaviour
+
+I would love to have a section on kit where i can add app ideas
+
+just ramble about app ideas and begin to build a spec. Then maybe we can even grant kit gh app permission to create new repos in git and the kit spec can begin to get built there and it can get deployed completely from a fresh idea in kit
