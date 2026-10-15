@@ -249,7 +249,6 @@ behaviour BEH-DETERMINISM-1 "Selection is deterministic for a given seed"
 behaviour BEH-LEARN-1 "Learn mode shows five new words one at a time, hanzi, pinyin and English together"
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 1
-  pending
   actor learner
   when opens page:Learn
   then sees region:HanziLarge
@@ -261,7 +260,6 @@ behaviour BEH-LEARN-1 "Learn mode shows five new words one at a time, hanzi, pin
 behaviour BEH-LEARN-2 "After the five, the learner is quizzed on them: shown pinyin, recall the English"
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 1
-  pending
   actor learner
   when opens page:Learn
   then sees region:PinyinPrompt
