@@ -27,7 +27,8 @@ public static class ServiceRegistration
                 settings.Projects,
                 new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>())));
             services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
-            services.AddHostedService<ProjectPoller>();
+            services.AddSingleton<ProjectPoller>();
+            services.AddHostedService(sp => sp.GetRequiredService<ProjectPoller>());
         }
 
         services.AddSingleton<ICorpusParser, CorpusParser>();

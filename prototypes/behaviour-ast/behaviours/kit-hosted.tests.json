@@ -22,6 +22,20 @@
       "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
     }
   ],
+  "BEH-PULL-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusDirectoryTests.cs",
+      "title": "A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ExpiringRefreshTests.cs",
+      "title": "Requests_that_arrive_during_a_read_join_it_rather_than_start_another"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ExpiringRefreshTests.cs",
+      "title": "A_slow_read_lets_the_request_go_after_the_wait_and_carries_on"
+    }
+  ],
   "BEH-COMMIT-6": [
     {
       "file": "backend/Balenthiran.Kit.Tests/GitCatchUpTests.cs",

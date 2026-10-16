@@ -299,6 +299,58 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Same(app.Services.GetRequiredService<GitHubCorpusDirectory>(), app.Services.GetRequiredService<ICorpusDirectory>());
     }
 
+    /// <summary>
+    /// BEH-PULL-5 (kit#300) end to end, over HTTP: inside the age a request asks GitHub nothing;
+    /// past it, the request itself is what reads, and it is answered from that read. Nothing else
+    /// would read: there is no timer, so a server that ignored the age would still list gamma.
+    /// </summary>
+    [Fact]
+    public async Task A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read()
+    {
+        var env = new Dictionary<string, string?>
+        {
+            ["KIT_DIR"] = Path.Combine(root, "behaviours"),
+            ["KIT_PROJECTS"] = "o/kit@kit/hosted:behaviours",
+            ["KIT_GIT_TOKEN"] = "tok",
+        };
+        var settings = KitSettings.FromEnvironment(k => env.GetValueOrDefault(k), RepoLayout.Root);
+        static Func<HttpRequestMessage, HttpResponseMessage> Beh(string id) =>
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.UTF8.GetBytes($"behaviour {id} \"from GitHub\"\n  when opens page:Home\n")) };
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """[{"type": "file", "name": "gamma.beh", "sha": "g1"}]"""),
+            Beh("BEH-G"),
+            FakeGitHub.Json(HttpStatusCode.OK, """[{"type": "file", "name": "delta.beh", "sha": "d1"}]"""),
+            Beh("BEH-D"));
+        var clock = new ManualClock();
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings, s =>
+        {
+            s.AddSingleton<HttpMessageHandler>(gh);
+            s.AddSingleton<TimeProvider>(clock);
+        });
+        await app.StartAsync();
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+
+        Assert.Contains("\"gamma\"", await http.GetStringAsync("/api/projects"), StringComparison.Ordinal);
+        var asked = gh.Sent.Count;
+        clock.Now += settings.ProjectsPoll - TimeSpan.FromSeconds(1);
+        Assert.Contains("\"gamma\"", await http.GetStringAsync("/api/projects"), StringComparison.Ordinal);
+        Assert.Equal(asked, gh.Sent.Count);
+
+        clock.Now += TimeSpan.FromSeconds(1);
+        var listed = await http.GetStringAsync("/api/projects");
+
+        Assert.Contains("\"delta\"", listed, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"gamma\"", listed, StringComparison.Ordinal);
+        await app.StopAsync();
+    }
+
+    private sealed class ManualClock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
     [Fact]
     public async Task With_no_KIT_PROJECTS_the_server_reads_the_disk_exactly_as_before()
     {

@@ -27,6 +27,10 @@ public static class KitServer
 
         var host = app.Services.GetRequiredService<IKitHost>();
 
+        // BEH-PULL-5 (kit#300): GitHub is read when a request finds the last read expired. Only
+        // the API reads projects; the bundle's files never wait on GitHub.
+        var poller = app.Services.GetService<ProjectPoller>();
+
         app.Run(async ctx =>
         {
             // The RAW target, still percent-encoded and with its dot segments: Request.Path
@@ -37,6 +41,11 @@ public static class KitServer
             // Node joins a repeated header with ", " (StringValues.ToString() uses ",").
             var origin = Header(ctx.Request.Headers.Origin);
             var cookie = Header(ctx.Request.Headers.Cookie);
+
+            if (poller is not null && target.StartsWith("/api/", StringComparison.Ordinal))
+            {
+                await poller.EnsureFreshAsync(ctx.RequestAborted);
+            }
 
             var a = host.Answer(ctx.Request.Method, target, origin, cookie);
             if (a.Post is not null)

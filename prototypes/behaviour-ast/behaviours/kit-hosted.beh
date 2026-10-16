@@ -161,6 +161,23 @@ behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend r
   contract this is also what makes the engine's language a private decision rather
   contract than a public one
 
+# His kit#300 (2026-10-16): "Surely we don't need to reread every 120s could we not
+# just maintain some in memory cache which expires. So if a request is made it
+# checks if the cache has expired." An idle Kit then asks GitHub for nothing.
+behaviour BEH-PULL-5 "GitHub is read when a request finds the cached read expired, not on a timer"
+  in FEAT-PULL
+  layer technical
+  source defined kit#300
+  priority 1
+  actor engineer
+  given request:Project
+  when runs command:KitServe
+  then reports origin:GitHub
+  contract the cached read lives for KIT_PROJECTS_POLL seconds (default 120), counted from when the last read started
+  contract an /api request that finds it expired starts a read, and every request that arrives meanwhile joins that one read
+  contract the request waits up to 3 seconds for it; a slower or failed read serves the last snapshot and the read carries on
+  contract nothing reads GitHub while nobody is asking, except the one read at start-up
+
 
 # ═══ Acting on a project ══════════════════════════════════════════════════════
 # "Then the user can act on a project, add new behaviours, update behaviours,
@@ -299,7 +316,7 @@ behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached d
 
 # His kit#300 (2026-10-16): "When I merge spec into dev is it coming up on boards?"
 # It was not, until a restart: only the entrypoint merged dev into kit/hosted.
-behaviour BEH-COMMIT-6 "A spec merged into dev reaches the board within one poll, without a restart"
+behaviour BEH-COMMIT-6 "A spec merged into dev reaches the board on the next read, without a restart"
   in FEAT-COMMIT
   layer technical
   source defined kit#300
@@ -308,7 +325,7 @@ behaviour BEH-COMMIT-6 "A spec merged into dev reaches the board within one poll
   given change:MergedIntoDev
   when runs command:KitServe
   then reports origin:GitHub
-  contract on every KIT_PROJECTS poll the pod merges dev into its edits branch and pushes, as the entrypoint does at start-up
+  contract before every KIT_PROJECTS read (BEH-PULL-5) the pod merges dev into its edits branch and pushes, as the entrypoint does at start-up
   contract it holds the same lock as an edit, so a merge never lands between an edit's write and its commit
   contract already up to date does nothing; a merge that conflicts is aborted, the branch is left as it was, and stderr says so
 
