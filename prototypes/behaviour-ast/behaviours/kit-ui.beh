@@ -534,7 +534,7 @@ behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready t
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  review requested a folded note waits in its own list for your Dismiss rather than vanishing; would you rather it just disappeared?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
