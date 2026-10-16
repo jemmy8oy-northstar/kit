@@ -34,6 +34,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Done most recently completed first, across projects (BEH-BOARD-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps every card when a history cannot be read, says so, and puts them after the dated ones" }
   ],
+  "BEH-BOARD-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)" }
+  ],
   "BEH-BOARD-6": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts review requests first, by priority, with what to look at on the card (BEH-BOARD-6)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a review request waits in Review requested whatever else is true of it (BEH-BOARD-6)" }
