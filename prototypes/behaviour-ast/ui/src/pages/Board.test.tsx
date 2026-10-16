@@ -328,6 +328,71 @@ describe('Board', () => {
     }
   })
 
+  // ── BEH-BOARD-8 (his note 2026-10-16 07:30Z): free text on the board, for a project ──
+  function mockApiWithPosts(projects: object[] = summaries) {
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posts.push({ url: path, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'x', behaviour: null, file: 'x.notes.md', note: 'x' }) }
+        }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => answer(path, projects) }
+      }),
+    )
+    return posts
+  }
+
+  it('asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)', async () => {
+    const posts = mockApiWithPosts()
+    renderBoard()
+    await loaded()
+
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'remember my filter' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Ask for behaviour' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Which project is this for?')
+    expect(posts).toEqual([])
+
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    expect(screen.queryByText(/Which project is this for/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ask for behaviour' }))
+    expect(await screen.findByRole('link', { name: "See it in beta's notes" })).toHaveAttribute('href', '/projects/beta?tab=notes')
+    expect(posts).toEqual([{ url: '/api/projects/beta/notes', body: { text: 'remember my filter', kind: 'request' } }])
+    expect(screen.getByLabelText('Describe what should happen')).toHaveValue('')
+  })
+
+  it('sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)', async () => {
+    const saved = { ...details }
+    details['kit-ui'] = [beh('K-UI')]
+    details.kit = [beh('K-CLI')]
+    details.ideas = [beh('I-1')]
+    try {
+      const posts = mockApiWithPosts([
+        { app: 'kit-ui', project: 'kit' },
+        { app: 'kit', project: 'kit' },
+        { app: 'ideas', idea: true },
+        { app: 'trial', notReal: true },
+        { app: 'broken', error: 'x' },
+      ])
+      renderBoard()
+      await loaded()
+
+      const options = within(screen.getByLabelText('Project')).getAllByRole('option').map((o) => o.textContent)
+      expect(options).toEqual(['Pick a project…', 'kit'])
+
+      fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'x' } })
+      fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'kit' } })
+      fireEvent.click(screen.getByRole('button', { name: 'Ask for behaviour' }))
+      await screen.findByRole('link', { name: "See it in kit's notes" })
+      // kit-ui is listed first, but the request goes to kit.notes.md, the notes the project page shows.
+      expect(posts).toEqual([{ url: '/api/projects/kit/notes', body: { text: 'x', kind: 'request' } }])
+    } finally {
+      for (const k of ['kit-ui', 'kit', 'ideas']) delete details[k]
+      Object.assign(details, saved)
+    }
+  })
+
   it('caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)', async () => {
     // 22 more backlog cards beside alpha's one: 23, ranked so the top ten are the P1s.
     const extra = Array.from({ length: 22 }, (_, i) =>
