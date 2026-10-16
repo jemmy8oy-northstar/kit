@@ -280,9 +280,9 @@ behaviour BEH-LEARN-3 "The reverse quiz, English to pinyin, is a separate harder
 behaviour BEH-PACK-1 "Words can be learned in themed packs, starting with a mahjong pack"
   source defined language-vocab.notes.md#2026-10-15-2308
   priority 2
-  pending
   actor learner
   when opens page:Packs
   when activates button:MahjongPack
   then sees region:HanziLarge
   contract the mahjong pack holds the tile vocabulary: the numbers, the three suits, winds and dragons
+  contract a pack is a seed file naming its words by hanzi, so a word can sit in a list and in any number of packs (language-vocab#19)

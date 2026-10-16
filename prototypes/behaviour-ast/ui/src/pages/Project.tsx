@@ -1,10 +1,11 @@
-import { useId, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { askForBehaviour, fetchProject, fetchProjects, resolveDecision } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
 import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features'
+import { citationsOf } from '../notes'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
@@ -61,6 +62,8 @@ function Detail({ project }: { project: ProjectDetail }) {
   const unreviewed = new Set(project.adjudication.unreviewed)
   const top = topLevel(project)
   const [notes, bump] = useNotesVersion()
+  const [tab, select] = useTab()
+  const [open, setOpen] = useState<number | null>(null)
 
   return (
     <>
@@ -75,15 +78,22 @@ function Detail({ project }: { project: ProjectDetail }) {
         ) : null}
       </div>
 
-      {/* Near the top on purpose (kit#118): a thought is caught before it is lost, not after scrolling past the sheet. */}
-      <AskForBehaviour app={project.app} onAsked={bump} />
-      <NotesPanel app={project.app} version={notes} />
-      <PendingPanel apps={[project.app]} version={notes} />
-      <SchedulePanel apps={[project.app]} />
-      <PrinciplesList principles={project.principles ?? []} />
+      {/* Above the tabs on purpose (kit#118, BEH-FEAT-7): a thought is caught before it is lost, not after picking a tab. */}
+      <AskForBehaviour app={project.app} onAsked={() => (bump(), select('notes'))} />
 
       <ProjectTabs
+        tab={tab}
+        select={select}
         waiting={project.conflicts.length + project.questions.length}
+        open={open}
+        notes={
+          <>
+            <NotesPanel app={project.app} version={notes} citations={citationsOf(project.app, [project])} onOpenCount={setOpen} />
+            <PendingPanel apps={[project.app]} version={notes} />
+          </>
+        }
+        schedule={<SchedulePanel apps={[project.app]} />}
+        principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
         features={
           <>
             {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
@@ -120,31 +130,68 @@ function Detail({ project }: { project: ProjectDetail }) {
   )
 }
 
-type Tab = 'features' | 'questions'
+type Tab = 'features' | 'questions' | 'notes' | 'schedule' | 'principles'
+const TABS: Tab[] = ['features', 'questions', 'notes', 'schedule', 'principles']
+
+/**
+ * The tab is in the url (`?tab=questions`) so a link can open on it and the back button
+ * undoes a switch; features, the default, keeps the url bare. Shared by the page and its
+ * tabs so a form above them can open one (BEH-FEAT-7: asking opens Notes).
+ */
+function useTab(): [Tab, (next: Tab) => void] {
+  const [params, setParams] = useSearchParams()
+  const asked = params.get('tab') as Tab | null
+  const tab: Tab = asked && TABS.includes(asked) ? asked : 'features'
+  const select = useCallback(
+    (next: Tab) => {
+      setParams((current) => {
+        const out = new URLSearchParams(current)
+        if (next === 'features') out.delete('tab')
+        else out.set('tab', next)
+        return out
+      })
+    },
+    [setParams],
+  )
+  return [tab, select]
+}
 
 /**
  * BEH-FEAT-6 (kit#118, his note 2026-10-12 20:49Z): "Maybe features and questions should be
- * under a tab view, default to features". What the project IS comes first; what is waiting on
- * him is one tap away, with a count so it cannot hide there.
+ * under a tab view, default to features". BEH-FEAT-7 (his note 2026-10-16 07:13Z): "Let's
+ * leverage the tab view more" — so notes, the schedule and principles are tabs too, and above
+ * them is only the title and the describe box. What the project IS comes first; what is
+ * waiting on him carries a count so it cannot hide behind a tab.
  *
- * The tab is in the url (`?tab=questions`) so a link can open on the questions and the back
- * button undoes a switch. Both panels stay mounted and the other is `hidden`, so a resolution
- * half-typed into a decision card survives a look at the features.
+ * Every panel stays mounted and the others are `hidden`, so a resolution half-typed into a
+ * decision card survives a look at the features. A project with no principles has no tab.
  */
-function ProjectTabs({ waiting, features, questions }: { waiting: number; features: React.ReactNode; questions: React.ReactNode }) {
-  const [params, setParams] = useSearchParams()
-  const tab: Tab = params.get('tab') === 'questions' ? 'questions' : 'features'
+function ProjectTabs({
+  tab,
+  select,
+  waiting,
+  open,
+  features,
+  questions,
+  notes,
+  schedule,
+  principles,
+}: {
+  tab: Tab
+  select: (next: Tab) => void
+  waiting: number
+  /** Open notes, once the list has loaded (null until then). */
+  open: number | null
+  features: React.ReactNode
+  questions: React.ReactNode
+  notes: React.ReactNode
+  schedule: React.ReactNode
+  principles: React.ReactNode | null
+}) {
   const id = useId()
 
-  function select(next: Tab) {
-    const out = new URLSearchParams(params)
-    if (next === 'features') out.delete('tab')
-    else out.set('tab', next)
-    setParams(out)
-  }
-
-  const tabs: { key: Tab; label: React.ReactNode }[] = [
-    { key: 'features', label: 'Features' },
+  const tabs: { key: Tab; label: React.ReactNode; panel: React.ReactNode }[] = [
+    { key: 'features', label: 'Features', panel: features },
     {
       key: 'questions',
       label: (
@@ -152,8 +199,21 @@ function ProjectTabs({ waiting, features, questions }: { waiting: number; featur
           Questions {waiting > 0 && <Badge tone="warning">{waiting}</Badge>}
         </>
       ),
+      panel: waiting > 0 ? questions : <p className="muted">Nothing is waiting on you.</p>,
     },
+    {
+      key: 'notes',
+      label: (
+        <>
+          Notes {open ? <Badge tone="neutral">{open}</Badge> : null}
+        </>
+      ),
+      panel: notes,
+    },
+    { key: 'schedule', label: 'Schedule', panel: schedule },
+    ...(principles ? [{ key: 'principles' as Tab, label: 'Principles', panel: principles }] : []),
   ]
+  const shown = tabs.some((t) => t.key === tab) ? tab : 'features'
 
   return (
     <>
@@ -165,20 +225,19 @@ function ProjectTabs({ waiting, features, questions }: { waiting: number; featur
             role="tab"
             id={`${id}-${t.key}-tab`}
             aria-controls={`${id}-${t.key}`}
-            aria-selected={tab === t.key}
-            tabIndex={tab === t.key ? 0 : -1}
+            aria-selected={shown === t.key}
+            tabIndex={shown === t.key ? 0 : -1}
             onClick={() => select(t.key)}
           >
             {t.label}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`${id}-features`} aria-labelledby={`${id}-features-tab`} hidden={tab !== 'features'}>
-        {features}
-      </div>
-      <div role="tabpanel" id={`${id}-questions`} aria-labelledby={`${id}-questions-tab`} hidden={tab !== 'questions'}>
-        {waiting > 0 ? questions : <p className="muted">Nothing is waiting on you.</p>}
-      </div>
+      {tabs.map((t) => (
+        <div key={t.key} role="tabpanel" id={`${id}-${t.key}`} aria-labelledby={`${id}-${t.key}-tab`} hidden={shown !== t.key}>
+          {t.panel}
+        </div>
+      ))}
     </>
   )
 }
@@ -224,6 +283,9 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   const conflicts = files.flatMap((f) => f.conflicts)
   const sum = (n: (f: ProjectDetail) => number) => files.reduce((t, f) => t + n(f), 0)
   const inferred = sum((f) => f.adjudication.inferred)
+  const [tab, select] = useTab()
+  const [open, setOpen] = useState<number | null>(null)
+  const principles = files.flatMap((f) => f.principles ?? [])
 
   return (
     <>
@@ -234,9 +296,22 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         {inferred ? <Badge tone="warning">{inferred} inferred</Badge> : null}
       </div>
 
-      {/* His ask (kit#246): features at the top — now the default tab (BEH-FEAT-6). The notes come next (kit#118). */}
+      {/* Above the tabs (BEH-FEAT-7); features are the default tab (kit#246, BEH-FEAT-6), and notes a tab of their own. */}
+      <AskForBehaviour app={home.app} onAsked={() => (bump(), select('notes'))} />
+
       <ProjectTabs
+        tab={tab}
+        select={select}
         waiting={conflicts.length + sum((f) => f.questions.length)}
+        open={open}
+        notes={
+          <>
+            <NotesPanel app={home.app} version={notes} citations={citationsOf(home.app, files)} onOpenCount={setOpen} />
+            <PendingPanel apps={files.map((f) => f.app)} version={notes} />
+          </>
+        }
+        schedule={<SchedulePanel apps={files.map((f) => f.app)} />}
+        principles={principles.length ? <PrinciplesList principles={principles} /> : null}
         features={
           <>
             {features.length > 0 && (
@@ -272,11 +347,6 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
           </>
         }
       />
-
-      <AskForBehaviour app={home.app} onAsked={bump} />
-      <NotesPanel app={home.app} version={notes} />
-      <PendingPanel apps={files.map((f) => f.app)} version={notes} />
-      <SchedulePanel apps={files.map((f) => f.app)} />
     </>
   )
 }

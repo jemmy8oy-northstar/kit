@@ -259,9 +259,14 @@ pre {
   gap: var(--space-4);
   border-bottom: 1px solid var(--color-border);
   margin: var(--space-6) 0 var(--space-2);
+  /* Five tabs (BEH-FEAT-7) are wider than a phone: the row scrolls, the page does not. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .tabs [role='tab'] {
+  flex: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
