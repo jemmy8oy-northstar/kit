@@ -75,3 +75,9 @@ Notes should be ordered most recently written at the top, at some point there sh
 ## 2026-10-16 07:25Z · new behaviour
 
 Ui: the ui spacing needs work. Also thinking I want this ui to look more professional. Could we move towards a shadcn style ui?
+
+## 2026-10-16 07:30Z · new behaviour
+
+Boards could probably have a free form text input. Free form text input feels like a good way to interface with everything.
+
+The board input has to be slightly different tho since you aren’t in a page. Maybe you can select a project before you submit or if you submit without selecting a project a ui comes up and says which project is this for. I am thinking if you start to type a project it can come up as a suggestion and be selected to make selecting projects easier - perhaps this is its own enhancement rather than a requirement for the core feature.
