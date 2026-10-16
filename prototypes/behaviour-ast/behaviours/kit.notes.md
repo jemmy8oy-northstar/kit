@@ -85,3 +85,9 @@ The board input has to be slightly different tho since you aren’t in a page. M
 ## 2026-10-16 07:30Z · new behaviour
 
 Oo a backlog idea for when we have real users is the free form text boxes can also be used to give feedback on kit. Backlog for now
+
+## 2026-10-16 22:52Z · new behaviour
+
+I think we need some kind of /apps on balenthiran.co.uk to show the full suite of apps
+
+Maybe balenthiran.co.uk can be managed by kit as well
