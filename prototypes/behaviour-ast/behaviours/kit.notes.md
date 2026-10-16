@@ -71,3 +71,7 @@ Are ui/ux/logic implementation even treated as tags right now I am not seeing th
 ## 2026-10-16 07:24Z · new behaviour
 
 Notes should be ordered most recently written at the top, at some point there should be a load more button so we don’t have to pull all into the ui
+
+## 2026-10-16 07:25Z · new behaviour
+
+Ui: the ui spacing needs work. Also thinking I want this ui to look more professional. Could we move towards a shadcn style ui?
