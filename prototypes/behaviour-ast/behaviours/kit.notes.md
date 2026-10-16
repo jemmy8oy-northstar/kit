@@ -45,3 +45,11 @@ Maybe features and questions should be under a tab view, default to features
 I would love to have a section on kit where i can add app ideas
 
 just ramble about app ideas and begin to build a spec. Then maybe we can even grant kit gh app permission to create new repos in git and the kit spec can begin to get built there and it can get deployed completely from a fresh idea in kit
+
+## 2026-10-16 07:13Z · new behaviour
+
+I feel like describe what should happen should be either above features or in the tab view
+
+I think notes should probably be in the tab view as well maybe after posting a note it can navigate to notes tab
+
+Let’s leverage the tab view more
