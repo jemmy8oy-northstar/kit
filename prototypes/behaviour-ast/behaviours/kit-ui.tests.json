@@ -43,6 +43,7 @@
   "BEH-KIND-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "counts only the chosen layer under a feature, drops what is not of it, and keeps the filter in the link" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "hides a feature with nothing of the layer beneath it, on the feature page too" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "says so when nothing in the project is of the chosen layer, rather than showing a blank tab" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "CONTROL: with no layer chosen every feature shows, as before" }
   ],
   "BEH-NOTE-11": [

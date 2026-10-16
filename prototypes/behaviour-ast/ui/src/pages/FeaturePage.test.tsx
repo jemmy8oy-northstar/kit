@@ -181,6 +181,13 @@ describe('BEH-KIND-2: a project filters by layer', () => {
     expect(screen.getByRole('button', { name: 'Filter to the technical layer' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('says so when nothing in the project is of the chosen layer, rather than showing a blank tab', async () => {
+    // Every behaviour of the recorded snip-it view is ux.
+    renderAt('/projects/snip-it?layer=ui', snipIt)
+    expect(await screen.findByText('Nothing in this project is of the ui layer.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Behaviours' })).not.toBeInTheDocument()
+  })
+
   it('CONTROL: with no layer chosen every feature shows, as before', async () => {
     renderAt('/projects/snip-it/features/FEAT-APP', layered)
     const contents = await screen.findByRole('region', { name: 'Contents' })

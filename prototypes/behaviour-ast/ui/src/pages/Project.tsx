@@ -102,6 +102,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
+            <NoneOfLayers layers={layers} empty={shown.behaviours.length === 0} />
             {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
                 features has no section here and lists every behaviour, as it always did. */}
             {features.length > 0 && (
@@ -112,7 +113,7 @@ function Detail({ project }: { project: ProjectDetail }) {
 
             <section>
               {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
-              {(features.length === 0 || top.behaviours.length > 0) && (
+              {(features.length === 0 || top.behaviours.length > 0) && shown.behaviours.length > 0 && (
                 <h2>{features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
               )}
               <ul className="cards">
@@ -264,6 +265,12 @@ function Conflicts({ conflicts }: { conflicts: Conflict[] }) {
   )
 }
 
+/** BEH-KIND-2: a filter that leaves nothing says so, or it reads as a page that failed to load. */
+function NoneOfLayers({ layers, empty }: { layers: string[]; empty: boolean }) {
+  if (!layers.length || !empty) return null
+  return <p className="muted">Nothing in this project is of the {layers.join(' or ')} layer.</p>
+}
+
 /** A form elsewhere on the page writes a note; bumping the version makes the notes list re-read. */
 function useNotesVersion(): [number, () => void] {
   const [version, setVersion] = useState(0)
@@ -327,6 +334,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
+            <NoneOfLayers layers={layers} empty={tops.every(({ shown }) => shown.behaviours.length === 0)} />
             {features.length > 0 && (
               <section aria-label="Features">
                 <ul className="cards">
