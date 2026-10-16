@@ -362,6 +362,34 @@ describe('Board', () => {
     expect(screen.getByLabelText('Describe what should happen')).toHaveValue('')
   })
 
+  it('suggests a project the text names, and one tap picks it (BEH-BOARD-9)', async () => {
+    const posts = mockApiWithPosts()
+    renderBoard()
+    await loaded()
+
+    const box = screen.getByLabelText('Describe what should happen')
+    fireEvent.change(box, { target: { value: 'alphabet soup' } })
+    // A whole word only: "alphabet" is not alpha.
+    expect(screen.queryByRole('button', { name: /^For / })).not.toBeInTheDocument()
+
+    fireEvent.change(box, { target: { value: 'In Beta, remember my filter' } })
+    fireEvent.click(screen.getByRole('button', { name: 'For beta?' }))
+    expect(screen.getByLabelText('Project')).toHaveValue('beta')
+    expect(screen.queryByRole('button', { name: 'For beta?' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask for behaviour' }))
+    await screen.findByRole('link', { name: "See it in beta's notes" })
+    expect(posts).toEqual([{ url: '/api/projects/beta/notes', body: { text: 'In Beta, remember my filter', kind: 'request' } }])
+  })
+
+  it('CONTROL: a name nobody lists is never suggested (BEH-BOARD-9)', async () => {
+    mockApiWithPosts()
+    renderBoard()
+    await loaded()
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'for gamma please' } })
+    expect(screen.queryByRole('button', { name: /^For / })).not.toBeInTheDocument()
+  })
+
   it('sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)', async () => {
     const saved = { ...details }
     details['kit-ui'] = [beh('K-UI')]
