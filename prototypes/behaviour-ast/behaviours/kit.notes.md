@@ -63,3 +63,7 @@ Just to confirm - these notes are being wrapped into kit spec right?
 I feel like when browsing we should be able to filter the different types ui, ux and logic implementation
 
 Have the three types been implemented yet?
+
+## 2026-10-16 07:24Z · new behaviour
+
+Are ui/ux/logic implementation even treated as tags right now I am not seeing them anywhere. Let’s get that implemented
