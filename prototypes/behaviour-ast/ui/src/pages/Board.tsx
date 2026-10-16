@@ -5,7 +5,7 @@ import { ApiError, fetchHistory, fetchProject, fetchProjects, fetchSchedule } fr
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
-import { byCompletion, byPriority, CAP, columnOf, hueOf, isIdea, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
+import { byCompletion, byPriority, CAP, columnOf, hueOf, isIdea, isTrial, LAYERS, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -94,14 +94,23 @@ export default function Board() {
   // The filter lives in the url so a view can be shared (BEH-BOARD-2).
   const selected = (params.get('project') ?? '').split(',').filter(Boolean)
   const showTrials = params.get('trials') === '1'
+  // BEH-KIND-1 (his 2026-10-16 note): "filter the different types ui, ux and logic". The type is
+  // the corpus's existing `layer` line, so the filter reads it rather than inventing a tag.
+  const layers = (params.get('layer') ?? '').split(',').filter((l) => LAYERS.includes(l))
 
-  function update(next: { project?: string[]; trials?: boolean }) {
+  function update(next: { project?: string[]; trials?: boolean; layer?: string[] }) {
     const project = next.project ?? selected
     const trials = next.trials ?? showTrials
+    const layer = next.layer ?? layers
     const out = new URLSearchParams()
     if (project.length) out.set('project', project.join(','))
+    if (layer.length) out.set('layer', layer.join(','))
     if (trials) out.set('trials', '1')
     setParams(out)
+  }
+
+  function toggleLayer(layer: string) {
+    update({ layer: layers.includes(layer) ? layers.filter((l) => l !== layer) : [...layers, layer] })
   }
 
   function toggle(app: string) {
@@ -158,6 +167,21 @@ export default function Board() {
                   Show trials
                 </Button>
               </div>
+              <div className="board-controls" role="group" aria-label="Layer">
+                {LAYERS.map((l) => (
+                  <Button
+                    key={l}
+                    type="button"
+                    size="sm"
+                    variant={layers.includes(l) ? 'secondary' : 'ghost'}
+                    aria-pressed={layers.includes(l)}
+                    aria-label={`Filter to the ${l} layer`}
+                    onClick={() => toggleLayer(l)}
+                  >
+                    {l}
+                  </Button>
+                ))}
+              </div>
 
               {failed.map((e) => (
                 <Card key={e.summary.app} elevation="flat">
@@ -183,7 +207,7 @@ export default function Board() {
                   // across files (BEH-BOARD-5/6); in progress in corpus order.
                   const cards = shown.flatMap((e) =>
                     e.behaviours
-                      .filter((b) => columnOf(b, e.places.get(b.id)) === col.id)
+                      .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
                       .sort((a, b) => (col.id === 'scheduled' ? e.places.get(a.id)!.order - e.places.get(b.id)!.order : 0))
                       .map((b) => ({
                         app: e.summary.app,
@@ -225,9 +249,12 @@ export default function Board() {
                                 // What the agent wants looked at, so the card can be triaged unopened.
                                 <p>{b.review.note}</p>
                               )}
-                              {b.priority !== undefined && (
-                                <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
-                              )}
+                              <div className="badges">
+                                {b.priority !== undefined && (
+                                  <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
+                                )}
+                                <Badge tone="neutral">{b.layer}</Badge>
+                              </div>
                               <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                             </Card>
                           </li>

@@ -626,6 +626,8 @@ export function BehaviourRow({
       </h3>
       <div className="badges">
         <Badge tone="neutral">{behaviour.actor}</Badge>
+        {/* BEH-KIND-1: the layer the corpus gives it — ux unless a `layer` line or the file says otherwise. */}
+        <Badge tone="neutral">{behaviour.layer}</Badge>
         <Count n={behaviour.steps.length} one="step" />
         {behaviour.source.origin === 'inferred' && <Badge tone="warning">inferred</Badge>}
         {unreviewed && <Badge tone="warning">unreviewed</Badge>}

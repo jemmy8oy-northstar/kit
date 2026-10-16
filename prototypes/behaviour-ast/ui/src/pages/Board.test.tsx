@@ -217,6 +217,39 @@ describe('Board', () => {
     expect(screen.getByTestId('search')).toHaveTextContent('?project=alpha')
   })
 
+  it('shows each card its layer and filters by layer, in the url beside the project filter (BEH-KIND-1)', async () => {
+    const saved = details.beta
+    details.beta = [beh('B-DONE', { layer: 'technical' }), beh('B-UX', { layer: 'ux' })]
+    try {
+      mockApi()
+      renderBoard('/board?project=alpha,beta')
+      await loaded()
+      const card = (await column('Done').findByText('B-DONE')).closest('li')!
+      expect(within(card).getByText('technical')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Filter to the technical layer' }))
+      expect(column('Done').getByText('B-DONE')).toBeInTheDocument()
+      expect(column('Done').queryByText('B-UX')).not.toBeInTheDocument()
+      expect(column('Done').queryByText('A-DONE')).not.toBeInTheDocument() // alpha's are all ui
+      expect(screen.getByTestId('search')).toHaveTextContent('?project=alpha%2Cbeta&layer=technical')
+
+      // Two layers is either, not both.
+      fireEvent.click(screen.getByRole('button', { name: 'Filter to the ux layer' }))
+      expect(column('Done').getByText('B-UX')).toBeInTheDocument()
+      expect(column('Done').getByText('B-DONE')).toBeInTheDocument()
+    } finally {
+      details.beta = saved
+    }
+  })
+
+  it('CONTROL: a layer in the url that the corpus has no word for filters nothing out', async () => {
+    mockApi()
+    renderBoard('/board?layer=logic')
+    await loaded()
+    expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filter to the ui layer' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)', async () => {
     mockApi()
     renderBoard()
