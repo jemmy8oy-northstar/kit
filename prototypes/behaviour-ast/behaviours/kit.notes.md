@@ -53,3 +53,7 @@ I feel like describe what should happen should be either above features or in th
 I think notes should probably be in the tab view as well maybe after posting a note it can navigate to notes tab
 
 Let’s leverage the tab view more
+
+## 2026-10-16 07:14Z · new behaviour
+
+Just to confirm - these notes are being wrapped into kit spec right?
