@@ -560,7 +560,6 @@ behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is f
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0730
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
