@@ -17,8 +17,9 @@
 #               deny it. Numbers are copied from the code, not from the docs,
 #               which disagree with it (see BEH-SCORE-1).
 #
-# ⚠️ Nothing here is built for the web yet. Every behaviour describes the app
-# the rebuild must reproduce, plus the account layer the web adds.
+# Every behaviour describes the app the rebuild must reproduce, plus the
+# account layer the web adds. What is built is whatever earnyourbeers.tests.json
+# maps; `kit check earnyourbeers` names the rest.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-ACCOUNT "Accounts (new for the web)"
@@ -165,6 +166,7 @@ behaviour BEH-HISTORY-1 "Past weeks can be paged through, back to the first log"
   then sees region:WeekHeader
   contract headers read CURRENT WEEK or WEEK OF d/m; each entry shows its amount and "Logged at H:MM"
   contract a past week's balance uses TODAY's difficulty, not the one in force that week
+  contract the web pages weeks with ‹ › buttons rather than a swipe, and past weeks are read-only (an assumption, earnyourbeers#11)
 
 behaviour BEH-LEAGUE-1 "There are 20 tiers in four divisions, and the banner shows where you are"
   in FEAT-LEAGUE
@@ -202,6 +204,7 @@ behaviour BEH-SETTLE-2 "Settlement is shown as a report you must dismiss before 
   then sees region:Balance
   provides region:SettlementReport.states = promoted, double promotion, demoted, position secured
   contract the native app ran settlement on launch; the web runs it on the first request of a new week (an assumption)
+  contract the web report shows the week's net and the outcome but not tier names, which the API doesn't send yet (an assumption, earnyourbeers#11)
 
 behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, and a weekly vice count"
   in FEAT-ONBOARD
@@ -241,6 +244,8 @@ behaviour BEH-VICE-1 "The vice is any single emoji, pizza by default"
   when fills field:Vice with ?emoji
   then sees region:Balance
   contract at most 2 characters, no plain text; empty falls back to 🍕
+  contract characters are what a person sees, as Flutter's maxLength counts them, so two emoji are allowed (an assumption, earnyourbeers#9)
+  contract also at most 32 UTF-16 code units, a guard the Dart lacks (an assumption, earnyourbeers#9)
   contract docs/compliance_strategy.md: the neutral default is the App Store defence, which matters less on the web
 
 behaviour BEH-THEME-1 "The theme is auto, light, or dark"
@@ -255,6 +260,20 @@ behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   when activates button:Theme
   provides button:Theme.states = auto, light, dark
   contract accent 0xFFF28E1C on a 0xFF1A1A1A dark surface (lib/ui/theme.dart)
+
+# How the web dashboard looks (earnyourbeers#11), my choice where the Flutter app doesn't decide it.
+behaviour BEH-UI-1 "The web app is phone-first and dark by default, with the four log buttons in a 2×2 grid"
+  in FEAT-SETTINGS
+  layer ux
+  source defined earnyourbeers#11
+  review unreviewed
+  priority 3
+  actor athlete
+  when opens page:Dashboard
+  then sees region:Balance
+  contract dark is the default theme; the light theme uses the Flutter app's "foam white" #F2F2F2
+  contract the vice card comes first in a 2×2 grid with run, cycle and swim, where Flutter put them side by side
+  contract log times show in the viewer's local time while weeks run in UTC (BEH-BALANCE-1)
 
 behaviour BEH-RESET-1 "A person can wipe their data and start onboarding again"
   in FEAT-SETTINGS
