@@ -216,6 +216,18 @@ export interface ProjectDetail {
   features: Feature[]
   /** See `ProjectSummary.project`. */
   project: string
+  /** Its `# kit:principle` lines (kit#284 slice 5), in file order. Absent when it declares none. */
+  principles?: Principle[]
+}
+
+/** One `# kit:principle [global] <Name>: <what it means>` line. */
+export interface Principle {
+  name: string
+  text: string
+  /** Holds for every project, not just the one that declares it. */
+  global: boolean
+  /** `<corpus>.beh:<line>`, where it is changed. */
+  at: string
 }
 
 /**

@@ -12,6 +12,9 @@ public interface IProjectView
     /// <summary>A <c># kit:idea</c> file (kit#284): app ideas that are not projects yet, kept off the board.</summary>
     bool Idea { get; }
 
+    /// <summary>Its <c># kit:principle</c> lines (kit#284), in file order; empty when it declares none.</summary>
+    IReadOnlyList<IPrincipleView> Principles { get; }
+
     string? DuplicateOf { get; }
 
     IReadOnlyList<IBehaviourView> Behaviours { get; }

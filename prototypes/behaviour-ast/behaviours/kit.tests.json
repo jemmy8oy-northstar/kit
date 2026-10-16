@@ -96,6 +96,24 @@
       "title": "Only_the_directive_itself_flags_an_idea"
     }
   ],
+  "BEH-PRIN-API-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "Principles_are_read_in_order_with_their_scope_and_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_file_with_no_principles_writes_no_principles_key"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_principle_that_does_not_say_what_it_means_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_comment_that_only_mentions_principles_is_not_one"
+    }
+  ],
   "BEH-RESOLVE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
