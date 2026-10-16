@@ -293,6 +293,15 @@ function targetsOf(all: Entry[]): { project: string; app: string }[] {
  * ui comes up and says which project is this for." It writes the same request note as a project
  * page's describe box (BEH-NOTE-4). With no project picked it asks, and writes nothing.
  */
+/**
+ * BEH-BOARD-9: the projects the text names, as whole words in any case, offered one tap each.
+ * Only a listed project can be suggested, so a free-typed name is never written as one.
+ */
+function mentioned<T extends { project: string }>(text: string, targets: T[]): T[] {
+  const words = new Set(text.toLowerCase().split(/[^a-z0-9-]+/).filter(Boolean))
+  return targets.filter((t) => words.has(t.project.toLowerCase()))
+}
+
 function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) {
   const [text, setText] = useState('')
   const [project, setProject] = useState('')
@@ -348,6 +357,21 @@ function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) 
           </option>
         ))}
       </select>
+      {!project &&
+        mentioned(text, targets).map((t) => (
+          <Button
+            key={t.project}
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setProject(t.project)
+              setAsking(false)
+            }}
+          >
+            For {t.project}?
+          </Button>
+        ))}
       {asking && <p role="alert">Which project is this for? Pick one, then send it again.</p>}
       <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
         {write.state === 'saving' ? 'Sending…' : 'Ask for behaviour'}
