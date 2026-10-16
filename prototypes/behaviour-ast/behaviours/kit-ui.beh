@@ -387,6 +387,19 @@ behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants 
   contract approving it moves it on (built is Done); denying it needs the correction, like any denial, and takes it off the board
   contract it is how built-and-merged work asks for his eyes without blocking on them
 
+behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never on the board"
+  in FEAT-NAV
+  in FEAT-BOARD
+  source defined kit#284
+  priority 2
+  review requested the Ideas page is the ordinary project page (breadcrumb, Schedule and all); is that enough, or should ideas get a page of their own?
+  actor engineer
+  when opens page:KitBoard
+  then sees link:KitNavIdeas
+  contract the Ideas page is the `ideas` project: one `# kit:idea` file whose features are the ideas
+  contract a ramble is a note on it, and the agent folds rambles into that idea's behaviours
+  contract it is off the board and the project list even with trials shown: an idea is not work until it graduates to its own <app>.beh
+
 behaviour BEH-BOARD-7 "A long column shows its top ten, and more on request"
   in FEAT-BOARD
   source defined kit#284

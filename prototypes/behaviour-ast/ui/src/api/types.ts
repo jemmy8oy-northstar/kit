@@ -78,6 +78,8 @@ export interface ProjectSummary {
    * own name. Files sharing one are one project. Absent on an error row.
    */
   project?: string
+  /** A `# kit:idea` file (kit#284): app ideas, not a project. Absent, never false, otherwise. */
+  idea?: boolean
 }
 
 export interface StepRef {

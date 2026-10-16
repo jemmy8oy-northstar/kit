@@ -272,6 +272,29 @@ describe('Board', () => {
     }
   })
 
+  it('keeps the Ideas file off the board, even when trials are shown (BEH-IDEA-1)', async () => {
+    details.ideas = [beh('IDEA-1', { pending: true })]
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (path: string) => ({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => answer(path, [...summaries, { app: 'ideas', idea: true }]),
+        })),
+      )
+      renderBoard('/board?trials=1')
+      await loaded()
+      await column('Backlog').findByText('A-BACKLOG')
+
+      expect(screen.queryByText('IDEA-1')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'ideas' })).not.toBeInTheDocument()
+    } finally {
+      delete details.ideas
+    }
+  })
+
   it('caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)', async () => {
     // 22 more backlog cards beside alpha's one: 23, ranked so the top ten are the P1s.
     const extra = Array.from({ length: 22 }, (_, i) =>
@@ -466,5 +489,23 @@ describe('navbar', () => {
     const nav = await screen.findByRole('navigation', { name: 'Main' })
     expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('links Ideas from every page, to the Ideas project (BEH-IDEA-1)', async () => {
+    window.history.pushState({}, '', '/board')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () =>
+          path.endsWith('/api/session') ? { required: false, signedIn: true } : { projects: [] },
+      })),
+    )
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Ideas' })).toHaveAttribute('href', '/projects/ideas')
   })
 })

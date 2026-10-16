@@ -5,7 +5,7 @@ import { ApiError, fetchHistory, fetchProject, fetchProjects, fetchSchedule } fr
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
-import { byCompletion, byPriority, CAP, columnOf, hueOf, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
+import { byCompletion, byPriority, CAP, columnOf, hueOf, isIdea, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -119,13 +119,17 @@ export default function Board() {
 
       <ResourceView resource={entries}>
         {(all) => {
+          // Ideas are never work, so they are off the board whatever the filter (kit#284 slice 4).
           const shown = all.filter(
             (e) =>
+              !isIdea(e.summary) &&
               (showTrials || !isTrial(e.summary)) &&
               (selected.length === 0 || selected.includes(projectOf(e.summary))),
           )
           // One button per project, not per file: files naming one `# kit:project` share it (kit#237).
-          const projects = [...new Set(all.filter((e) => showTrials || !isTrial(e.summary)).map((e) => projectOf(e.summary)))]
+          const projects = [
+            ...new Set(all.filter((e) => !isIdea(e.summary) && (showTrials || !isTrial(e.summary))).map((e) => projectOf(e.summary))),
+          ]
           const failed = shown.filter((e) => e.error)
           return (
             <>

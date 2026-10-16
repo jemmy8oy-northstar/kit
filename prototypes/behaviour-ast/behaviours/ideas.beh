@@ -1,0 +1,36 @@
+# Ideas — apps that are not projects yet (kit#284 slice 4).
+#
+# kit:idea
+#   Read by Kit: this file is the Ideas page, and it is kept off the board — an idea
+#   is not work until it graduates. James, in Kit (2026-10-15 23:10Z): "I would love to
+#   have a section on kit where i can add app ideas… just ramble about app ideas and
+#   begin to build a spec."
+#
+# How it works: each `feature` below is one idea. Ramble about any of them (or a new
+# one) as a note on this project, and the agent folds the ramble into that idea's
+# behaviours here. An idea GRADUATES by moving its behaviours into their own
+# <app>.beh beside a repo — creating repos stays James's call (kit#284).
+
+feature FEAT-IDEA-MAHJONG "Mahjong: a polished app that prompts the tile names in English or pinyin"
+feature FEAT-IDEA-SHENGJI "Sheng ji: a polished, playable app"
+
+behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, the player's choice"
+  in FEAT-IDEA-MAHJONG
+  source defined claude-code-bot#110
+  pending
+  actor player
+  contract the bridge to language-vocab: its mahjong vocab pack (BEH-PACK-1) teaches the same tile names
+
+behaviour BEH-IDEA-MAHJONG-2 "A game of mahjong can be played in the browser or on a phone"
+  in FEAT-IDEA-MAHJONG
+  source defined claude-code-bot#110
+  pending
+  actor player
+  contract "just turn these amazing games into fun playable web apps and or mobile apps"
+
+behaviour BEH-IDEA-SHENGJI-1 "A game of sheng ji can be played in the browser or on a phone"
+  in FEAT-IDEA-SHENGJI
+  source defined claude-code-bot#110
+  pending
+  actor player
+  contract "just turn these amazing games into fun playable web apps and or mobile apps"
