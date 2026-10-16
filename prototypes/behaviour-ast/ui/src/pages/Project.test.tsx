@@ -311,7 +311,7 @@ describe('the question sheet', () => {
     await waitFor(() =>
       expect(posts).toEqual([{ url: '/api/projects/snip-it/notes', body: { text: 'a cut can be downloaded', kind: 'request' } }]),
     )
-    expect(screen.getByLabelText('Describe what should happen')).toHaveValue('')
+    await waitFor(() => expect(screen.getByLabelText('Describe what should happen')).toHaveValue(''))
     // BEH-FEAT-7: asking opens the Notes tab, so the note just left is in view.
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true'))
     expect(screen.getByRole('region', { name: 'Notes' })).toBeVisible()

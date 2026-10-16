@@ -304,14 +304,17 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
     /// past it, the request itself is what reads, and it is answered from that read. Nothing else
     /// would read: there is no timer, so a server that ignored the age would still list gamma.
     /// </summary>
-    [Fact]
-    public async Task A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read()
+    [Theory]
+    [InlineData("")]
+    [InlineData("/kit")] // deployed: the ingress does not strip the prefix, so the API is /kit/api/…
+    public async Task A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read(string basePath)
     {
         var env = new Dictionary<string, string?>
         {
             ["KIT_DIR"] = Path.Combine(root, "behaviours"),
             ["KIT_PROJECTS"] = "o/kit@kit/hosted:behaviours",
             ["KIT_GIT_TOKEN"] = "tok",
+            ["KIT_BASE_PATH"] = basePath,
         };
         var settings = KitSettings.FromEnvironment(k => env.GetValueOrDefault(k), RepoLayout.Root);
         static Func<HttpRequestMessage, HttpResponseMessage> Beh(string id) =>
@@ -330,14 +333,14 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         await app.StartAsync();
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
 
-        Assert.Contains("\"gamma\"", await http.GetStringAsync("/api/projects"), StringComparison.Ordinal);
+        Assert.Contains("\"gamma\"", await http.GetStringAsync($"{basePath}/api/projects"), StringComparison.Ordinal);
         var asked = gh.Sent.Count;
         clock.Now += settings.ProjectsPoll - TimeSpan.FromSeconds(1);
-        Assert.Contains("\"gamma\"", await http.GetStringAsync("/api/projects"), StringComparison.Ordinal);
+        Assert.Contains("\"gamma\"", await http.GetStringAsync($"{basePath}/api/projects"), StringComparison.Ordinal);
         Assert.Equal(asked, gh.Sent.Count);
 
         clock.Now += TimeSpan.FromSeconds(1);
-        var listed = await http.GetStringAsync("/api/projects");
+        var listed = await http.GetStringAsync($"{basePath}/api/projects");
 
         Assert.Contains("\"delta\"", listed, StringComparison.Ordinal);
         Assert.DoesNotContain("\"gamma\"", listed, StringComparison.Ordinal);
