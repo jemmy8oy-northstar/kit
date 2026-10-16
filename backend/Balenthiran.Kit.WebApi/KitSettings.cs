@@ -80,7 +80,8 @@ public sealed record KitSettings(
     public IReadOnlyList<ProjectSource> Projects { get; init; } = [];
 
     /// <summary>
-    /// <c>KIT_PROJECTS_POLL</c>, seconds between re-reads of <see cref="Projects"/>; default 120.
+    /// <c>KIT_PROJECTS_POLL</c>, seconds a read of <see cref="Projects"/> is served before the next
+    /// request starts another (kit#300, BEH-PULL-5); default 120. Idle, Kit reads nothing.
     /// A re-read of an unchanged directory is one conditional request, but WITHOUT a token even a
     /// 304 spends one of GitHub's 60 an hour, so the default stays well under that per source.
     /// </summary>

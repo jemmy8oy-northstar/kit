@@ -5,38 +5,56 @@ using Balenthiran.Kit.Database;
 namespace Balenthiran.Kit.WebApi;
 
 /// <summary>
-/// Re-reads the <c>KIT_PROJECTS</c> sources every <see cref="KitSettings.ProjectsPoll"/> (kit#88).
-/// The first read runs at start-up, in the background: until it lands the clone answers, so a slow
-/// or absent GitHub delays fresh projects rather than the server. A failed read is said on stderr
-/// and the last good snapshot keeps serving.
+/// Re-reads the <c>KIT_PROJECTS</c> sources when a request finds the last read older than
+/// <see cref="KitSettings.ProjectsPoll"/> (kit#300, BEH-PULL-5) — not on a timer, so an idle Kit
+/// asks GitHub for nothing. The first read runs at start-up, in the background: until it lands the
+/// clone answers, so a slow or absent GitHub delays fresh projects rather than the server. A failed
+/// read is said on stderr and the last good snapshot keeps serving.
 ///
 /// Before each read it brings the edits branch up to date with dev (kit#300, BEH-COMMIT-6), so a
 /// spec merged into dev is on the branch the read is about to fetch. What that did is said on
-/// stderr only when it differs from last time: "already up to date" every two minutes is noise,
+/// stderr only when it differs from last time: "already up to date" on every read is noise,
 /// and a conflict said once, then again only when it clears or changes, is still said.
 /// </summary>
-public sealed class ProjectPoller(GitHubCorpusDirectory directory, KitSettings settings, TimeProvider clock, IKitRouter router) : BackgroundService
+public sealed class ProjectPoller : BackgroundService
 {
+    /// <summary>How long a request waits for an expired read before it serves the last snapshot.</summary>
+    public static readonly TimeSpan Wait = TimeSpan.FromSeconds(3);
+
+    private readonly GitHubCorpusDirectory directory;
+    private readonly KitSettings settings;
+    private readonly IKitRouter router;
+    private readonly ExpiringRefresh refresh;
     private string? lastCatchUp;
 
-    /// <inheritdoc />
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public ProjectPoller(GitHubCorpusDirectory directory, KitSettings settings, TimeProvider clock, IKitRouter router)
     {
-        using var timer = new PeriodicTimer(settings.ProjectsPoll, clock);
-        do
+        this.directory = directory;
+        this.settings = settings;
+        this.router = router;
+        refresh = new ExpiringRefresh(ReadAsync, settings.ProjectsPoll, clock);
+    }
+
+    /// <summary>Called by every /api request before it is answered; see <see cref="Wait"/>.</summary>
+    public Task<bool> EnsureFreshAsync(CancellationToken cancellationToken) => refresh.EnsureFreshAsync(Wait, cancellationToken);
+
+    /// <inheritdoc />
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => refresh.EnsureFresh();
+
+    private async Task ReadAsync()
+    {
+        await CatchUpAsync();
+        try
         {
-            await CatchUpAsync();
-            try
-            {
-                await directory.RefreshAsync(stoppingToken);
-            }
-            catch (GitHubReadException e)
-            {
-                var serving = directory.FromGitHub ? "the last snapshot" : "the clone";
-                await Console.Error.WriteLineAsync($"kit: could not read KIT_PROJECTS — {e.Message}; serving {serving}");
-            }
+            await directory.RefreshAsync();
         }
-        while (await timer.WaitForNextTickAsync(stoppingToken));
+        catch (Exception e)
+        {
+            // Nothing awaits this read to the end, so a throw here would be lost, not said.
+            var serving = directory.FromGitHub ? "the last snapshot" : "the clone";
+            var why = e is GitHubReadException ? e.Message : $"{e.GetType().Name}: {e.Message}";
+            await Console.Error.WriteLineAsync($"kit: could not read KIT_PROJECTS — {why}; serving {serving}");
+        }
     }
 
     private async Task CatchUpAsync()
@@ -51,7 +69,7 @@ public sealed class ProjectPoller(GitHubCorpusDirectory directory, KitSettings s
         }
         catch (Exception e)
         {
-            // A background loop that throws stops polling for good; the read below must still run.
+            // A catch-up that throws must not stop the read below.
             said = $"kit: catching up with {settings.GitBase} failed — {e.Message}";
         }
 
