@@ -57,3 +57,9 @@ Let’s leverage the tab view more
 ## 2026-10-16 07:14Z · new behaviour
 
 Just to confirm - these notes are being wrapped into kit spec right?
+
+## 2026-10-16 07:14Z · new behaviour
+
+I feel like when browsing we should be able to filter the different types ui, ux and logic implementation
+
+Have the three types been implemented yet?
