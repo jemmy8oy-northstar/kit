@@ -494,4 +494,110 @@ behaviour BEH-FEAT-6 "A project's features and questions are two tabs, features 
   then sees tab:KitProjectQuestionsTab
   contract features is the selected tab unless the url says ?tab=questions, so a link can open on the questions
   contract the questions tab carries the count of conflicts and questions waiting, so nothing waits unseen behind it
-  contract the ask box and the notes stay outside the tabs, where they were
+  contract the ask box sits above the tabs; the notes are a tab of their own (BEH-FEAT-7)
+
+# ═══ His Kit notes, 2026-10-16 07:13–07:30Z ════════════════════════════════════
+# "Let's leverage the tab view more", "Are ui/ux/logic implementation even treated
+# as tags right now … Let's get that implemented", "Notes should be ordered most
+# recently written at the top", "Boards could probably have a free form text input",
+# "Could we move towards a shadcn style ui?", and "these notes are being wrapped into
+# kit spec right?". Each behaviour below names the note it folds in its source line,
+# which is what BEH-NOTE-10 reads. Where I had to choose a shape, the build marks it
+# `review requested` so he can say no in Kit.
+
+behaviour BEH-FEAT-7 "The describe box sits above the tabs, and notes are a tab of their own"
+  in FEAT-PROJECT
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-16-0713
+  priority 1
+  review requested the schedule is a tab too, and resolving a decision keeps you on Questions (only asking opens Notes); is that the split you want?
+  actor engineer
+  when opens page:KitProject
+  then sees tab:KitProjectNotesTab
+  contract above the tabs is only the title, its badges and the describe box, so asking never needs a tab
+  contract the Notes tab holds the notes needing an answer, the open notes and the edits waiting to land; its label counts the open notes
+  contract the schedule is a tab, and so are principles when the project has any
+  contract asking for a behaviour opens the Notes tab, so the note just left is in view
+
+behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-16-0724
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract newest written at the top, in Needs your answer and the open notes alike
+  contract ten are shown and a button shows more, saying how many are hidden, as a board column does (BEH-BOARD-7)
+  contract the API still sends every open note; paging the request waits until a notes file is long enough to be slow
+
+behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready to dismiss"
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-16-0714
+  priority 1
+  review requested a folded note waits in its own list for your Dismiss rather than vanishing; would you rather it just disappeared?
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract a behaviour folds a note by naming it in its source line: `source defined <app>.notes.md#<yyyy-mm-dd>-<hhmm>`
+  contract a cited note leaves the open notes for a Folded list that links every behaviour citing it, so open means nobody has folded it yet
+  contract dismissing a folded note is still his tap: the fold is a pull request into dev, and the notes file lives on the branch Kit writes, so the fold cannot delete it (BEH-NOTE-3)
+
+behaviour BEH-KIND-1 "A behaviour is tagged ui, ux or logic, and a list can be filtered to one"
+  in FEAT-PROJECT
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-16-0714
+  priority 1
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract a `kind ui`, `kind ux` or `kind logic` line tags a behaviour; repeat the line for more than one, as with `in`
+  contract ui is how it looks, ux is how it works for the person using it, logic is the implementation under both: the three named in kit#284
+  contract every card shows its kinds; the board and the project page filter by kind from chips, kept in the url
+  contract a behaviour with no kind line is untagged and has its own chip; nothing is given a kind by a guess
+
+behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is for"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-16-0730
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract it writes the same request note the project page's describe box writes, on the project picked
+  contract a project can be picked before sending; sending with none asks which project, and nothing is written until one is picked
+  contract suggesting a project as its name is typed is BEH-BOARD-9, not needed for the box to work
+
+behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-16-0730
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract a suggestion is picked with one tap and fills the project; no free-typed name is ever written as a project
+
+behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
+  in FEAT-NAV
+  in FEAT-BOARD
+  in FEAT-PROJECT
+  source defined kit.notes.md#2026-10-16-0725
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitNav
+  contract the shadcn look: neutral greys, thin borders, a small radius, even whitespace, and colour kept for meaning
+  contract the look, not the library: Kit draws on the design-system package, and swapping that is a platform choice that stays his
+  contract every gap between blocks comes from one spacing scale, so a page has no one-off margins
+
+behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback on Kit itself"
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-16-0730
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract backlog until Kit has users other than him; written down so the idea is not lost

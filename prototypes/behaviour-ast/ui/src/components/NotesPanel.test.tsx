@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import NotesPanel from './NotesPanel'
+import { citationsOf, noteAnchor } from '../notes'
 import type { Note } from '../api/types'
 
 function note(at: string, behaviour: string | null, text: string, more: Partial<Note> = {}): Note {
@@ -180,5 +182,85 @@ describe('NotesPanel (kit#118)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('is no longer in demo.notes.md'))
+  })
+})
+
+// ── BEH-NOTE-9/10 (his 2026-10-16 notes): newest first, ten at a time, folded apart ──
+
+describe('NotesPanel order, cap and folded notes', () => {
+  const texts = () => within(region()).getAllByText(/^n\d+$/).map((p) => p.textContent)
+
+  it('lists the newest note first', async () => {
+    server([note('2026-10-09 08:00Z', null, 'n1'), note('2026-10-10 08:00Z', null, 'n2'), note('2026-10-11 08:00Z', null, 'n3')])
+    render(<NotesPanel app="demo" />)
+    await within(region()).findByText('n3')
+    expect(texts()).toEqual(['n3', 'n2', 'n1'])
+  })
+
+  it('shows ten, and a button that says how many more it shows and how many are hidden', async () => {
+    server(Array.from({ length: 13 }, (_, i) => note(`2026-10-${String(i + 1).padStart(2, '0')} 08:00Z`, null, `n${i + 1}`)))
+    render(<NotesPanel app="demo" />)
+    await within(region()).findByText('n13')
+    expect(texts()).toHaveLength(10)
+    // The cap cuts the OLDEST: what is hidden is the bottom of the order.
+    expect(texts()).not.toContain('n3')
+    fireEvent.click(within(region()).getByRole('button', { name: 'Show 3 more (3 hidden)' }))
+    expect(texts()).toHaveLength(13)
+    expect(within(region()).queryByRole('button', { name: /more/ })).not.toBeInTheDocument()
+  })
+
+  it('moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one', async () => {
+    const posts = server([note('2026-10-16 07:13Z', null, 'tabs please'), note('2026-10-16 07:24Z', null, 'newest first')])
+    const counts: number[] = []
+    const citations = citationsOf('demo', [
+      { app: 'demo-ui', behaviours: [{ id: 'BEH-FEAT-7', title: 'Notes are a tab', source: { ref: 'demo.notes.md#2026-10-16-0713' } }] },
+    ])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" citations={citations} onOpenCount={(n) => counts.push(n)} />
+      </MemoryRouter>,
+    )
+
+    const folded = await screen.findByRole('region', { name: 'Folded into the spec' })
+    expect(within(folded).getByText('tabs please')).toBeInTheDocument()
+    expect(within(folded).getByRole('link', { name: 'Notes are a tab' })).toHaveAttribute('href', '/projects/demo-ui/behaviours/BEH-FEAT-7')
+    expect(within(region()).queryByText('tabs please')).not.toBeInTheDocument()
+    expect(within(region()).getByText('newest first')).toBeInTheDocument()
+    await waitFor(() => expect(counts.at(-1)).toBe(1))
+
+    // Its place in the FILE is 0 even though it is listed elsewhere: that index names it to the server.
+    fireEvent.click(within(folded).getByRole('button', { name: 'Dismiss' }))
+    await waitFor(() => expect(posts).toEqual([{ url: '/api/projects/demo/notes/dismiss', body: { index: 0, at: '2026-10-16 07:13Z' } }]))
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Folded into the spec' })).not.toBeInTheDocument())
+  })
+
+  it('CONTROL: with no citations there is no folded list, and every note is open', async () => {
+    server([note('2026-10-16 07:13Z', null, 'tabs please')])
+    render(<NotesPanel app="demo" />)
+    expect(await within(region()).findByText('tabs please')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Folded into the spec' })).not.toBeInTheDocument()
+  })
+})
+
+describe('note anchors (BEH-NOTE-10)', () => {
+  it('turns a heading time into the anchor a source line cites', () => {
+    expect(noteAnchor('2026-10-16 07:13Z')).toBe('2026-10-16-0713')
+    expect(noteAnchor('not a time')).toBeNull()
+  })
+
+  it('counts only refs to THIS notes file, so another project citing the same minute folds nothing here', () => {
+    const c = citationsOf('kit', [
+      {
+        app: 'kit-ui',
+        behaviours: [
+          { id: 'A', title: 'a', source: { ref: 'kit.notes.md#2026-10-16-0713' } },
+          { id: 'B', title: 'b', source: { ref: 'language-vocab.notes.md#2026-10-16-0713' } },
+          { id: 'C', title: 'c', source: { ref: 'kit#284' } },
+          { id: 'D', title: 'd', source: { ref: null } },
+        ],
+      },
+    ])
+    expect([...c.keys()]).toEqual(['2026-10-16-0713'])
+    expect(c.get('2026-10-16-0713')!.map((x) => x.id)).toEqual(['A'])
   })
 })

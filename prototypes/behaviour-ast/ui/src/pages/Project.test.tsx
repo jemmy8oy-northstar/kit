@@ -150,6 +150,34 @@ describe('the project tabs', () => {
     expect(await screen.findByRole('tab', { name: 'Questions' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('Nothing is waiting on you.')).toBeVisible()
   })
+
+  // BEH-FEAT-7 (his note 2026-10-16 07:13Z): "Let's leverage the tab view more".
+  it('keeps only the describe box above the tabs; notes and the schedule are tabs of their own', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    expect(await screen.findByLabelText('Describe what should happen')).toBeVisible()
+    expect(screen.getByRole('tab', { name: 'Schedule' })).toBeInTheDocument()
+    // Hidden behind the Notes tab until it is picked.
+    expect(screen.queryByRole('region', { name: 'Notes' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Notes' }))
+    expect(screen.getByRole('region', { name: 'Notes' })).toBeVisible()
+    expect(screen.queryByRole('tabpanel', { name: 'Features' })).not.toBeInTheDocument()
+  })
+
+  it('opens on Notes from ?tab=notes, and has no Principles tab for a project with none', async () => {
+    expect(snipIt).not.toHaveProperty('principles')
+    renderApp(snipIt, 'snip-it', '?tab=notes')
+
+    expect(await screen.findByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('tab', { name: 'Principles' })).not.toBeInTheDocument()
+  })
+
+  it('CONTROL: a project with principles has the tab, and an unknown ?tab falls back to Features', async () => {
+    renderApp({ ...snipIt, principles: [{ name: 'Readability', text: 'a human can read it', global: false, at: 'x:1' }] }, 'snip-it', '?tab=nonsense')
+
+    expect(await screen.findByRole('tab', { name: 'Principles' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Features' })).toHaveAttribute('aria-selected', 'true')
+  })
 })
 
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
@@ -284,6 +312,9 @@ describe('the question sheet', () => {
       expect(posts).toEqual([{ url: '/api/projects/snip-it/notes', body: { text: 'a cut can be downloaded', kind: 'request' } }]),
     )
     expect(screen.getByLabelText('Describe what should happen')).toHaveValue('')
+    // BEH-FEAT-7: asking opens the Notes tab, so the note just left is in view.
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true'))
+    expect(screen.getByRole('region', { name: 'Notes' })).toBeVisible()
   })
 
   it('shows no sheet at all when there is nothing to ask', async () => {

@@ -208,6 +208,10 @@
     "role": "tab",
     "name": "Questions"
   },
+  "tab:KitProjectNotesTab": {
+    "role": "tab",
+    "name": "Notes"
+  },
   "region:KitFeatureChildren": {
     "role": "region",
     "name": "Contents"
