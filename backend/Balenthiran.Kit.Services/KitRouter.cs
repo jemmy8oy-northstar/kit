@@ -342,6 +342,17 @@ public sealed class KitRouter(
 
     private readonly object writeGate = new();
 
+    /// <inheritdoc />
+    public IGitWriteBack CatchUp(string dir)
+    {
+        // Behind the edits' own lock (BEH-COMMIT-6): a merge that touched the working tree between
+        // an edit's write and its commit would be committed as part of the edit, or break it.
+        lock (writeGate)
+        {
+            return git.CatchUp(dir);
+        }
+    }
+
     /// <summary><c>write()</c> past its gates: create, add or replace a step, retitle, adjudicate, or remove.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
     {

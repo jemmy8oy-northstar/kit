@@ -15,4 +15,10 @@ public interface IKitRouter
     /// path already removed; <paramref name="body"/> is the parsed JSON body of a POST.
     /// </summary>
     IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null);
+
+    /// <summary>
+    /// <see cref="IGitStore.CatchUp"/> on the clone at <paramref name="dir"/>, holding the same lock
+    /// as an edit (kit#300, BEH-COMMIT-6). Called by the poller, never by a request.
+    /// </summary>
+    IGitWriteBack CatchUp(string dir);
 }

@@ -25,4 +25,13 @@ public interface IGitStore
     /// <param name="summary">What the edit was, for the commit message (<c>add BEH-7</c>).</param>
     /// <param name="app">The corpus, named in the commit message.</param>
     IGitWriteBack WriteBack(string file, string summary, string? app);
+
+    /// <summary>
+    /// Merge the base branch into the edits branch the clone at <paramref name="dir"/> is on, and
+    /// push it (kit#300, BEH-COMMIT-6): what the entrypoint does at start-up, done again while Kit
+    /// runs, so a spec merged into dev reaches the board without a restart. <c>Committed</c> means a
+    /// merge was made; a reason with nothing committed is "nothing to do" or "could not", never a
+    /// half-finished merge — a conflict is aborted and the branch left exactly as it was.
+    /// </summary>
+    IGitWriteBack CatchUp(string dir);
 }

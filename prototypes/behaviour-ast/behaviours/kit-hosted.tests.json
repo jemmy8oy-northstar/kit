@@ -22,6 +22,16 @@
       "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
     }
   ],
+  "BEH-COMMIT-6": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitCatchUpTests.cs",
+      "title": "A_commit_merged_into_dev_reaches_the_edits_branch_on_the_remote"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitCatchUpTests.cs",
+      "title": "A_conflict_is_aborted_and_the_branch_left_exactly_as_it_was"
+    }
+  ],
   "BEH-COMMIT-5": [
     {
       "file": "backend/Balenthiran.Kit.Tests/PendingEditsTests.cs",
