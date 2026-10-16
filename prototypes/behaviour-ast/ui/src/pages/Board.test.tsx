@@ -272,6 +272,38 @@ describe('Board', () => {
     }
   })
 
+  it('caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)', async () => {
+    // 22 more backlog cards beside alpha's one: 23, ranked so the top ten are the P1s.
+    const extra = Array.from({ length: 22 }, (_, i) =>
+      beh(`B-${String(i).padStart(2, '0')}`, { pending: true, priority: i < 10 ? 1 : 4 }),
+    )
+    details.beta.push(...extra)
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('B-00')
+
+      const ids = () =>
+        column('Backlog')
+          .getAllByRole('listitem')
+          .map((li) => li.querySelector('.id')!.textContent)
+      // The header still counts every card; only ten are drawn, and they are the top ten.
+      expect(column('Backlog').getByText('23')).toBeInTheDocument()
+      expect(ids()).toEqual(extra.slice(0, 10).map((b) => b.id))
+
+      fireEvent.click(column('Backlog').getByRole('button', { name: 'Show 10 more (13 hidden)' }))
+      expect(ids()).toHaveLength(20)
+      fireEvent.click(column('Backlog').getByRole('button', { name: 'Show 3 more (3 hidden)' }))
+      expect(ids()).toHaveLength(23)
+      expect(column('Backlog').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
+      // A column under the cap has no button at all.
+      expect(column('Done').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
+    } finally {
+      details.beta.splice(-22)
+    }
+  })
+
   it('puts review requests first, by priority, with what to look at on the card (BEH-BOARD-6)', async () => {
     details.beta.push(
       beh('B-ASK-LATER', { priority: 3, review: { state: 'requested', note: 'the empty state wording' } }),

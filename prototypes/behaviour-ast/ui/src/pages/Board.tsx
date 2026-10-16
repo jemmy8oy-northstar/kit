@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
-import { byCompletion, byPriority, columnOf, hueOf, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
+import { byCompletion, byPriority, CAP, columnOf, hueOf, isTrial, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -87,6 +88,8 @@ const COLUMNS: { id: Column; title: string }[] = [
 export default function Board() {
   const entries = useResource(loadBoard, [])
   const [params, setParams] = useSearchParams()
+  // How many cards each column shows (BEH-BOARD-7); a column not in here shows the first CAP.
+  const [limits, setLimits] = useState<Partial<Record<Column, number>>>({})
 
   // The filter lives in the url so a view can be shared (BEH-BOARD-2).
   const selected = (params.get('project') ?? '').split(',').filter(Boolean)
@@ -188,6 +191,9 @@ export default function Board() {
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
                   if (RANKED.includes(col.id)) cards.sort((x, y) => byPriority(x.b.priority, y.b.priority))
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
+                  // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
+                  const limit = limits[col.id] ?? CAP
+                  const hidden = Math.max(0, cards.length - limit)
                   return (
                     <section key={col.id} aria-labelledby={`board-${col.id}`}>
                       <h2>
@@ -200,7 +206,7 @@ export default function Board() {
                         </p>
                       )}
                       <ul className="cards">
-                        {cards.map(({ app, project, b }) => (
+                        {cards.slice(0, limit).map(({ app, project, b }) => (
                           <li key={`${app}/${b.id}`}>
                             <Card className={`board-card hue-${hueOf(project)}`}>
                               <h3>
@@ -223,6 +229,15 @@ export default function Board() {
                           </li>
                         ))}
                       </ul>
+                      {hidden > 0 && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => setLimits({ ...limits, [col.id]: limit + CAP })}
+                        >
+                          Show {Math.min(CAP, hidden)} more ({hidden} hidden)
+                        </Button>
+                      )}
                     </section>
                   )
                 })}

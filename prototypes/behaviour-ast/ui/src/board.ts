@@ -54,6 +54,12 @@ export function byCompletion(a: Completed, b: Completed): number {
   return a < b ? 1 : a > b ? -1 : 0
 }
 
+/**
+ * Cards a column shows before "Show more" (BEH-BOARD-7, kit#284: "we are going to need limits on
+ * the board… with a load more"). Ten fills a phone screen about three times over.
+ */
+export const CAP = 10
+
 /** The columns ordered by priority (BEH-BOARD-5/6): what is waiting on a decision or a pick. */
 export const RANKED: readonly Column[] = ['review', 'proposed', 'backlog']
 
