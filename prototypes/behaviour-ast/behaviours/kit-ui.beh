@@ -400,6 +400,19 @@ behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never
   contract a ramble is a note on it, and the agent folds rambles into that idea's behaviours
   contract it is off the board and the project list even with trials shown: an idea is not work until it graduates to its own <app>.beh
 
+behaviour BEH-PRIN-1 "Principles have their own page in the navbar: global ones first, then each project's own"
+  in FEAT-NAV
+  source defined kit#284
+  priority 2
+  review requested principles are `# kit:principle` lines in each project's own corpus, so a repo owns its principles as it owns its spec, and you change one with a note on that project; is that the shape you want?
+  actor engineer
+  when opens page:KitBoard
+  then sees link:KitNavPrinciples
+  contract a principle lives in the corpus it governs, as a `# kit:principle [global] <Name>: <what it means>` line; `global` means it holds for every project
+  contract the project page shows its own principles; the Principles page gathers every project's, global first, and names the line each lives on
+  contract a note on the project is how he changes one; the agent edits the line
+  contract the Ideas file is never read for principles: an idea is not a project
+
 behaviour BEH-BOARD-7 "A long column shows its top ten, and more on request"
   in FEAT-BOARD
   source defined kit#284

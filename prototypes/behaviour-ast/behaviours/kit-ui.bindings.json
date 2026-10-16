@@ -133,6 +133,11 @@
     "name": "Ideas",
     "exact": true
   },
+  "link:KitNavPrinciples": {
+    "role": "link",
+    "name": "Principles",
+    "exact": true
+  },
   "link:KitNavBoard": {
     "role": "link",
     "name": "Board",
