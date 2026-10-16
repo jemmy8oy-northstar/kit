@@ -323,7 +323,9 @@ behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the 
   actor engineer
   given request:Unauthenticated
   when runs command:KitCommit
-  then reports status:Forbidden
+  then reports status:Unauthorized
+  contract Unauthorized (401), not Forbidden (403): the caller has not signed in, which is 401's meaning;
+  contract the spec said Forbidden until 2026-10-16 (kit#181), and the server always answered 401
   contract this is the half BEH-WRITE-5 used to hold by binding loopback, which a
   contract hosted service cannot do — so the gate moves from the interface to a
   contract credential, and kit#47's KIT_PASSWORD is the first one
