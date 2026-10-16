@@ -4,9 +4,11 @@ import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { askForBehaviour, fetchProject, fetchProjects, resolveDecision } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
-import { behavioursUnder, featureHref, topLevel, type Tagged } from '../features'
+import { behavioursUnder, featureHref, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
 import { citationsOf } from '../notes'
 import CoverageBadge from '../components/CoverageBadge'
+import LayerChips from '../components/LayerChips'
+import { useLayers } from '../hooks/useLayers'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
@@ -60,7 +62,10 @@ export default function Project() {
 
 function Detail({ project }: { project: ProjectDetail }) {
   const unreviewed = new Set(project.adjudication.unreviewed)
-  const top = topLevel(project)
+  const [layers, toggleLayer] = useLayers()
+  const shown = ofLayers(project, layers)
+  const top = topLevel(shown)
+  const features = withAnyUnder(shown, top.features, layers)
   const [notes, bump] = useNotesVersion()
   const [tab, select] = useTab()
   const [open, setOpen] = useState<number | null>(null)
@@ -96,18 +101,19 @@ function Detail({ project }: { project: ProjectDetail }) {
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
         features={
           <>
+            <LayerChips layers={layers} onToggle={toggleLayer} />
             {/* BEH-FEAT-1: the top level is everything with no `in` line. A corpus with no
                 features has no section here and lists every behaviour, as it always did. */}
-            {top.features.length > 0 && (
+            {features.length > 0 && (
               <section aria-label="Features">
-                <FeatureCards app={project.app} project={project} features={top.features} path={[]} heading={false} />
+                <FeatureCards app={project.app} project={shown} features={features} path={[]} layers={layers} heading={false} />
               </section>
             )}
 
             <section>
               {/* With every behaviour tagged, an empty heading would read as "nothing here". */}
-              {(top.features.length === 0 || top.behaviours.length > 0) && (
-                <h2>{top.features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
+              {(features.length === 0 || top.behaviours.length > 0) && (
+                <h2>{features.length > 0 ? 'Behaviours in no feature' : 'Behaviours'}</h2>
               )}
               <ul className="cards">
                 {top.behaviours.map((b) => (
@@ -275,8 +281,14 @@ function useNotesVersion(): [number, () => void] {
 function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   const home = files.find((f) => f.app === name) ?? files[0]
   const [notes, bump] = useNotesVersion()
-  const tops = files.map((f) => ({ file: f, top: topLevel(f), unreviewed: new Set(f.adjudication.unreviewed) }))
-  const features = tops.flatMap(({ file, top }) => top.features.map((feature) => ({ file, feature })))
+  const [layers, toggleLayer] = useLayers()
+  const tops = files.map((f) => {
+    const shown = ofLayers(f, layers)
+    return { file: f, shown, top: topLevel(shown), unreviewed: new Set(f.adjudication.unreviewed) }
+  })
+  const features = tops.flatMap(({ file, shown, top }) =>
+    withAnyUnder(shown, top.features, layers).map((feature) => ({ file, shown, feature })),
+  )
   const loose = tops.flatMap(({ file, top, unreviewed }) =>
     top.behaviours.map((behaviour) => ({ file, behaviour, unreviewed: unreviewed.has(behaviour.id) })),
   )
@@ -314,12 +326,13 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         principles={principles.length ? <PrinciplesList principles={principles} /> : null}
         features={
           <>
+            <LayerChips layers={layers} onToggle={toggleLayer} />
             {features.length > 0 && (
               <section aria-label="Features">
                 <ul className="cards">
-                  {features.map(({ file, feature }) => (
+                  {features.map(({ file, shown, feature }) => (
                     <li key={`${file.app}/${feature.id}`}>
-                      <FeatureCard app={file.app} project={file} feature={feature} path={[]} />
+                      <FeatureCard app={file.app} project={shown} feature={feature} path={[]} layers={layers} />
                     </li>
                   ))}
                 </ul>
@@ -568,12 +581,15 @@ export function FeatureCards({
   project,
   features,
   path,
+  layers = [],
   heading = true,
 }: {
   app: string
   project: Tagged
   features: Feature[]
   path: string[]
+  /** The layer filter, carried into each feature's link (BEH-KIND-2). */
+  layers?: string[]
   /** Off under the project page's Features tab, which already says it (BEH-FEAT-6). */
   heading?: boolean
 }) {
@@ -584,7 +600,7 @@ export function FeatureCards({
       <ul className="cards">
         {features.map((f) => (
           <li key={f.id}>
-            <FeatureCard app={app} project={project} feature={f} path={path} />
+            <FeatureCard app={app} project={project} feature={f} path={path} layers={layers} />
           </li>
         ))}
       </ul>
@@ -592,11 +608,23 @@ export function FeatureCards({
   )
 }
 
-function FeatureCard({ app, project, feature, path }: { app: string; project: Tagged; feature: Feature; path: string[] }) {
+function FeatureCard({
+  app,
+  project,
+  feature,
+  path,
+  layers = [],
+}: {
+  app: string
+  project: Tagged
+  feature: Feature
+  path: string[]
+  layers?: string[]
+}) {
   return (
     <Card interactive>
       <h3>
-        <Link to={featureHref(app, feature.id, path)}>{feature.title}</Link>
+        <Link to={featureHref(app, feature.id, path, layers)}>{feature.title}</Link>
       </h3>
       <div className="badges">
         <Count n={behavioursUnder(project, feature.id).size} one="behaviour" tone="primary" />

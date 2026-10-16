@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import FeaturePage from './FeaturePage'
 import Project from './Project'
@@ -147,6 +147,45 @@ describe('the projects view', () => {
     expect(within(kit).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/projects/kit'])
     expect(within(kit).queryByText('kit-ui')).toBeNull()
     expect(screen.getByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+  })
+})
+
+describe('BEH-KIND-2: a project filters by layer', () => {
+  // b0 (in Clip card) is ui, b1 (in Editor) technical; b2 (Clip card and Home) and the untagged rest stay ux.
+  const layered: ProjectDetail = {
+    ...tagged,
+    behaviours: tagged.behaviours.map((b) => (b.id === b0.id ? { ...b, layer: 'ui' } : b.id === b1.id ? { ...b, layer: 'technical' } : b)),
+  }
+
+  it('the fixture carries three layers, or the filter below proves nothing', () => {
+    expect(new Set(layered.behaviours.map((b) => b.layer))).toEqual(new Set(['ui', 'technical', 'ux']))
+  })
+
+  it('counts only the chosen layer under a feature, drops what is not of it, and keeps the filter in the link', async () => {
+    renderAt('/projects/snip-it', layered)
+    const features = await screen.findByRole('region', { name: 'Features' })
+    expect(within(features).getByText('3 behaviours')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to the technical layer' }))
+    expect(within(features).getByText('1 behaviour')).toBeInTheDocument()
+    expect(within(features).getByRole('link', { name: 'The app' })).toHaveAttribute('href', '/projects/snip-it/features/FEAT-APP?layer=technical')
+    // The untagged behaviours are all ux, so none is listed.
+    expect(screen.queryByRole('link', { name: rest[0].title })).not.toBeInTheDocument()
+  })
+
+  it('hides a feature with nothing of the layer beneath it, on the feature page too', async () => {
+    renderAt('/projects/snip-it/features/FEAT-APP?layer=technical', layered)
+    const contents = await screen.findByRole('region', { name: 'Contents' })
+    expect(within(contents).getByRole('link', { name: 'Editor' })).toBeInTheDocument()
+    expect(within(contents).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filter to the technical layer' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('CONTROL: with no layer chosen every feature shows, as before', async () => {
+    renderAt('/projects/snip-it/features/FEAT-APP', layered)
+    const contents = await screen.findByRole('region', { name: 'Contents' })
+    expect(within(contents).getByRole('link', { name: 'Editor' })).toBeInTheDocument()
+    expect(within(contents).getByRole('link', { name: 'Home' })).toBeInTheDocument()
   })
 })
 

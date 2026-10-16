@@ -40,6 +40,15 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows each card its layer and filters by layer, in the url beside the project filter (BEH-KIND-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a layer in the url that the corpus has no word for filters nothing out" }
   ],
+  "BEH-KIND-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "counts only the chosen layer under a feature, drops what is not of it, and keeps the filter in the link" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "hides a feature with nothing of the layer beneath it, on the feature page too" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "CONTROL: with no layer chosen every feature shows, as before" }
+  ],
+  "BEH-NOTE-11": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "hides archived notes again, and counts them on the button (BEH-NOTE-11)" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" }
+  ],
   "BEH-NOTE-9": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows ten, and a button that says how many more it shows and how many are hidden" }
