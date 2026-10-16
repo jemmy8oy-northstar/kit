@@ -29,6 +29,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     private const string Suffix = ".beh";
     private const string BindingsSuffix = ".bindings.json";
     private const string NotesSuffix = ".notes.md";
+    private const string ScheduleSuffix = ".schedule";
 
     private readonly ICorpusSnapshot?[] last = new ICorpusSnapshot?[sources.Count];
     private readonly ConcurrentDictionary<string, Override> overrides = new(StringComparer.Ordinal);
@@ -72,7 +73,8 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 
                     snap.Files.TryGetValue(app + BindingsSuffix, out var bindings);
                     snap.Files.TryGetValue(app + NotesSuffix, out var notes);
-                    apps[app] = new Entry(snap.Source, file, bindings, notes);
+                    snap.Files.TryGetValue(app + ScheduleSuffix, out var schedule);
+                    apps[app] = new Entry(snap.Source, file, bindings, notes, schedule);
                 }
             }
 
@@ -204,6 +206,35 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     /// <inheritdoc />
     public string FullNotesPath(string app) => clone.FullNotesPath(app);
 
+    /// <inheritdoc />
+    public string? ReadScheduleText(string app)
+    {
+        if (overrides.TryGetValue(app + ScheduleSuffix, out var o))
+        {
+            return o.Text;
+        }
+
+        return served is { } s
+            ? s.Apps.TryGetValue(app, out var e) ? e.Schedule?.Text : null
+            : clone.ReadScheduleText(app);
+    }
+
+    /// <inheritdoc />
+    public void WriteScheduleText(string app, string text)
+    {
+        Writable(app);
+        clone.WriteScheduleText(app, text);
+        overrides[app + ScheduleSuffix] = new Override(text, Sha(app + ScheduleSuffix));
+    }
+
+    /// <inheritdoc />
+    public string RelativeSchedulePath(string app) => served?.Apps.TryGetValue(app, out var e) == true
+        ? $"{e.Source.Path}/{app}{ScheduleSuffix}"
+        : clone.RelativeSchedulePath(app);
+
+    /// <inheritdoc />
+    public string FullSchedulePath(string app) => clone.FullSchedulePath(app);
+
     // An app read from a repository this pod has no clone of has nowhere to be written; writing
     // into the clone would create a corpus in the WRONG repository and push it there.
     private void Writable(string app)
@@ -223,7 +254,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             return null;
         }
 
-        var suffix = new[] { BindingsSuffix, NotesSuffix, Suffix }.First(x => fileName.EndsWith(x, StringComparison.Ordinal));
+        var suffix = new[] { BindingsSuffix, NotesSuffix, ScheduleSuffix, Suffix }.First(x => fileName.EndsWith(x, StringComparison.Ordinal));
         if (!s.Apps.TryGetValue(fileName[..^suffix.Length], out var e))
         {
             return null;
@@ -233,13 +264,14 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         {
             BindingsSuffix => e.Bindings?.Sha,
             NotesSuffix => e.Notes?.Sha,
+            ScheduleSuffix => e.Schedule?.Sha,
             _ => e.Corpus.Sha,
         };
     }
 
     private static string Key(IProjectSource s) => $"{s.Owner}/{s.Repository}@{s.Branch}:{s.Path}";
 
-    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes);
+    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes, ISnapshotFile? Schedule);
 
     private sealed record Served(SortedDictionary<string, Entry> Apps);
 

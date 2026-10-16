@@ -91,7 +91,7 @@ function Detail({
       <div className="badges">
         <span className="muted id">{behaviour.id}</span>
         <Badge tone="neutral">{behaviour.actor}</Badge>
-        <Badge tone={behaviour.review.state === 'approved' ? 'success' : 'warning'}>
+        <Badge tone={behaviour.review.state === 'approved' ? 'success' : behaviour.review.state === 'requested' ? 'primary' : 'warning'}>
           {behaviour.review.state}
         </Badge>
         <Badge tone="neutral">{behaviour.source.origin}</Badge>
@@ -464,7 +464,10 @@ function AdjudicateForm({
         )}
       </p>
       {behaviour.review.note && (
-        <p className="muted">Recorded correction: {behaviour.review.note}</p>
+        <p className="muted">
+          {behaviour.review.state === 'requested' ? 'Built, and asked to look at' : 'Recorded correction'}:{' '}
+          {behaviour.review.note}
+        </p>
       )}
 
       <label htmlFor="deny-note">Correction (required to deny)</label>

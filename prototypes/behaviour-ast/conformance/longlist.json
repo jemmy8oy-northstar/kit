@@ -761,7 +761,7 @@
   "generate": [
     {
       "id": "BEH-CAPTURE-1",
-      "code": "test(\"[BEH-CAPTURE-1] An idea is captured from anywhere in one field\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:NewIdea\" });\n  // UNGENERATED: then sees field:NewIdea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Capture\" });\n  // UNGENERATED: then sees button:Capture\n});",
+      "code": "test.skip(\"[BEH-CAPTURE-1] An idea is captured from anywhere in one field\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees field:NewIdea\n  // UNGENERATED: then sees button:Capture\n});",
       "missing": [
         "page:Longlist",
         "field:NewIdea",
@@ -775,7 +775,7 @@
     },
     {
       "id": "BEH-CAPTURE-2",
-      "code": "test(\"[BEH-CAPTURE-2] A captured idea joins the list without leaving the page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when fills form:NewIdea with ?fields\" });\n  // UNGENERATED: when fills form:NewIdea with ?fields\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Capture\" });\n  // UNGENERATED: when activates button:Capture\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:IdeaList\" });\n  // UNGENERATED: then sees region:IdeaList\n});",
+      "code": "test.skip(\"[BEH-CAPTURE-2] A captured idea joins the list without leaving the page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: when fills form:NewIdea with ?fields\n  // UNGENERATED: when activates button:Capture\n  // UNGENERATED: then sees region:IdeaList\n});",
       "missing": [
         "page:Longlist",
         "field:Idea",
@@ -791,7 +791,7 @@
     },
     {
       "id": "BEH-CAPTURE-3",
-      "code": "test(\"[BEH-CAPTURE-3] Capture asks for the idea and why it came up, and nothing else\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n});",
+      "code": "test.skip(\"[BEH-CAPTURE-3] Capture asks for the idea and why it came up, and nothing else\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Longlist\n});",
       "missing": [
         "page:Longlist"
       ],
@@ -803,7 +803,7 @@
     },
     {
       "id": "BEH-CAPTURE-4",
-      "code": "test(\"[BEH-CAPTURE-4] An empty longlist says so rather than showing a blank page\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given longlist:Empty\" });\n  // UNGENERATED: given longlist:Empty\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:EmptyState\" });\n  // UNGENERATED: then sees region:EmptyState\n});",
+      "code": "test.skip(\"[BEH-CAPTURE-4] An empty longlist says so rather than showing a blank page\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given longlist:Empty\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees region:EmptyState\n});",
       "missing": [
         "longlist:Empty",
         "page:Longlist",
@@ -817,7 +817,7 @@
     },
     {
       "id": "BEH-DECIDE-1",
-      "code": "test(\"[BEH-DECIDE-1] An idea can be opened to decide on it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates link:IdeaTitle\" });\n  // UNGENERATED: when activates link:IdeaTitle\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then lands on page:Idea\" });\n  // UNGENERATED: then lands on page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:WhyNow\" });\n  // UNGENERATED: then sees region:WhyNow\n});",
+      "code": "test.skip(\"[BEH-DECIDE-1] An idea can be opened to decide on it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: when activates link:IdeaTitle\n  // UNGENERATED: then lands on page:Idea\n  // UNGENERATED: then sees region:WhyNow\n});",
       "missing": [
         "idea:Captured",
         "page:Longlist",
@@ -833,7 +833,7 @@
     },
     {
       "id": "BEH-DECIDE-2",
-      "code": "test(\"[BEH-DECIDE-2] Deciding to build an idea records the decision against it\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Build\" });\n  // UNGENERATED: when activates button:Build\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+      "code": "test.skip(\"[BEH-DECIDE-2] Deciding to build an idea records the decision against it\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Idea\n  // UNGENERATED: when activates button:Build\n  // UNGENERATED: then sees badge:Decision\n});",
       "missing": [
         "idea:Captured",
         "page:Idea",
@@ -848,7 +848,7 @@
     },
     {
       "id": "BEH-DECIDE-3",
-      "code": "test(\"[BEH-DECIDE-3] Declining an idea requires a reason, so the longlist teaches\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Captured\" });\n  // UNGENERATED: given idea:Captured\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Idea\" });\n  // UNGENERATED: when opens page:Idea\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when activates button:Decline\" });\n  // UNGENERATED: when activates button:Decline\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:DeclineReason\" });\n  // UNGENERATED: then sees field:DeclineReason\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Decision\" });\n  // UNGENERATED: then sees badge:Decision\n});",
+      "code": "test.skip(\"[BEH-DECIDE-3] Declining an idea requires a reason, so the longlist teaches\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Captured\n  // UNGENERATED: when opens page:Idea\n  // UNGENERATED: when activates button:Decline\n  // UNGENERATED: then sees field:DeclineReason\n  // UNGENERATED: then sees badge:Decision\n});",
       "missing": [
         "idea:Captured",
         "page:Idea",
@@ -864,7 +864,7 @@
     },
     {
       "id": "BEH-AGE-1",
-      "code": "test(\"[BEH-AGE-1] An idea nobody has decided on for a long time is visibly stale\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"given idea:Stale\" });\n  // UNGENERATED: given idea:Stale\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Longlist\" });\n  // UNGENERATED: when opens page:Longlist\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees badge:Stale\" });\n  // UNGENERATED: then sees badge:Stale\n});",
+      "code": "test.skip(\"[BEH-AGE-1] An idea nobody has decided on for a long time is visibly stale\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: given idea:Stale\n  // UNGENERATED: when opens page:Longlist\n  // UNGENERATED: then sees badge:Stale\n});",
       "missing": [
         "idea:Stale",
         "page:Longlist",

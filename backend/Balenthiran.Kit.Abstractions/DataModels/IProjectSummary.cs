@@ -24,4 +24,7 @@ public interface IProjectSummary
     /// its own name when it has none. Files sharing one are one project.
     /// </summary>
     string Project { get; }
+
+    /// <summary>A <c># kit:idea</c> file (kit#284): app ideas that are not projects yet, kept off the board.</summary>
+    bool Idea { get; }
 }

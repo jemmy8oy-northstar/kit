@@ -99,11 +99,10 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
 # but not a candidate for execution for now." A `pending` behaviour is already
 # an unbuilt one; this splits the pending set in two. Backlog is the default, so
 # no existing corpus changes meaning. Estimated delivery is his "later" — not here.
-# `pending` until built; the shape is his to change (kit#118).
+# Built 2026-10-14 in the shape kit#231 proposed (his default lapsed unreshaped).
 
 behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart from its backlog"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -115,7 +114,6 @@ behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart 
 
 behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule reordered"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -127,7 +125,6 @@ behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule re
 
 behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
   in FEAT-SCHEDULE
-  pending
   source defined kit#118
   actor engineer
   when opens page:KitProject
@@ -140,6 +137,7 @@ behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   actor engineer
   provides page:KitProject.app = james-habits-app
   when opens page:KitProject
+  when activates tab:KitProjectQuestionsTab
   then sees heading:KitQuestionSheet
   then sees heading:KitNeverAdjudicated
   then sees button:KitAskForBehaviour
@@ -309,9 +307,9 @@ behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
 # board view and project view." The project view is the existing pages until the
 # feature model is decided (kit#237). The board's columns map onto what the corpus
 # already says: proposed = an inference nobody has adjudicated, backlog = pending,
-# done = built. Scheduled and in-progress need data that does not exist yet — the
-# schedule is BEH-SCHED, and a completion time is not in the .beh — so they are
-# their own behaviours and stay `pending` until that data does.
+# done = built. Scheduled and in progress are not in the .beh: they read each
+# file's schedule (BEH-SCHED, BEH-BOARD-3). Nor is when a behaviour was done:
+# BEH-BOARD-4 reads that from git, through GET /api/projects/<app>/history.
 
 behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects"
   in FEAT-NAV
@@ -349,7 +347,6 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
 behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
   in FEAT-BOARD
   in FEAT-SCHEDULE
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard
@@ -360,13 +357,57 @@ behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and
 
 behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
   in FEAT-BOARD
-  pending
   source defined kit#237
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardDone
   contract completed is when the behaviour last stopped being pending, read from git history, not stored in the .beh
   contract a behaviour with no history (never pending) is completed when it was added
+
+behaviour BEH-BOARD-5 "Proposed and backlog put the top priority at the top"
+  in FEAT-BOARD
+  source defined kit#284
+  priority 2
+  review requested the P1 chip sits on its own line under the title (kit#287); is that the look you want, or should it sit beside the id?
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  then sees region:KitBoardBacklog
+  contract a `priority` line ranks a card 1 (first) to 5, across projects; a card with none comes after every ranked one
+  contract the score is shown on the card, so the order can be read without opening anything
+  contract it is how the agent's suggestions reach the top: an unreviewed inference with `priority 1` leads Proposed
+
+behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants looked at, top priority at the top"
+  in FEAT-BOARD
+  source defined kit#284
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardReview
+  contract a `review requested <what to look at>` line puts a behaviour here whatever else is true of it, and the card says what
+  contract approving it moves it on (built is Done); denying it needs the correction, like any denial, and takes it off the board
+  contract it is how built-and-merged work asks for his eyes without blocking on them
+
+behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never on the board"
+  in FEAT-NAV
+  in FEAT-BOARD
+  source defined kit#284
+  priority 2
+  review requested the Ideas page is the ordinary project page (breadcrumb, Schedule and all); is that enough, or should ideas get a page of their own?
+  actor engineer
+  when opens page:KitBoard
+  then sees link:KitNavIdeas
+  contract the Ideas page is the `ideas` project: one `# kit:idea` file whose features are the ideas
+  contract a ramble is a note on it, and the agent folds rambles into that idea's behaviours
+  contract it is off the board and the project list even with trials shown: an idea is not work until it graduates to its own <app>.beh
+
+behaviour BEH-BOARD-7 "A long column shows its top ten, and more on request"
+  in FEAT-BOARD
+  source defined kit#284
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract capped after sorting, so what is hidden is always the bottom of the column's order
+  contract the header still counts every card, and the button says how many it will show and how many are hidden
 
 # ═══ The projects view: features, and parents as tags (kit#237) ═══════════════
 # "Features can parent other features, they can also parent spec … consider the
@@ -428,3 +469,16 @@ behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn
   then sees region:KitProjectFeatures
   contract top level is every file's top-level features and untagged behaviours together, under no heading that names a file
   contract each feature and behaviour links into the file it lives in; the counts are the sum over the files
+
+# His Kit note, 2026-10-12 20:49Z, left on page:KitProject: "Maybe features and
+# questions should be under a tab view, default to features".
+behaviour BEH-FEAT-6 "A project's features and questions are two tabs, features first"
+  in FEAT-PROJECT
+  source defined kit#118
+  actor engineer
+  when opens page:KitProject
+  then sees tab:KitProjectFeaturesTab
+  then sees tab:KitProjectQuestionsTab
+  contract features is the selected tab unless the url says ?tab=questions, so a link can open on the questions
+  contract the questions tab carries the count of conflicts and questions waiting, so nothing waits unseen behind it
+  contract the ask box and the notes stay outside the tabs, where they were

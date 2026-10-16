@@ -36,6 +36,14 @@ describe('Projects', () => {
     }
   })
 
+  it('leaves the Ideas file off the project list: ideas are not projects yet (BEH-IDEA-1)', async () => {
+    mockFetch({ projects: [...projectsFixture.projects, { ...projectsFixture.projects[0], app: 'ideas', project: 'ideas', idea: true }] })
+    renderProjects()
+
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'ideas' })).not.toBeInTheDocument()
+  })
+
   it('marks a trial corpus, so an invented app is not shown as a project', async () => {
     // Every notReal corpus must appear in the list (hiding one would make the
     // list lie about what Kit reads) AND be distinguishable, because 0% against

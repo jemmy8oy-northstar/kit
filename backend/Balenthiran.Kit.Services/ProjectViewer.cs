@@ -31,6 +31,10 @@ public sealed class ProjectViewer(
     private static readonly Regex NotReal = new(
         $@"(?:^|(?<=[\n\r\u2028\u2029]))#[{CorpusParser.Ws}]*kit:not-a-real-app(?![A-Za-z0-9_])", RegexOptions.Compiled);
 
+    // kit#284 slice 4, the same shape as the two directives either side of it.
+    private static readonly Regex Idea = new(
+        $@"(?:^|(?<=[\n\r  ]))#[{CorpusParser.Ws}]*kit:idea(?![A-Za-z0-9_-])", RegexOptions.Compiled);
+
     private static readonly Regex DuplicateOf = new(
         $@"(?:^|(?<=[\n\r\u2028\u2029]))#[{CorpusParser.Ws}]*kit:duplicate-corpus[{CorpusParser.Ws}]+([^{CorpusParser.Ws}]+)", RegexOptions.Compiled);
 
@@ -115,6 +119,7 @@ public sealed class ProjectViewer(
                 Pending = b.Pending,
                 Layer = b.Layer,
                 In = (b.In ?? []).Select(t => t.Id).ToList(),
+                Priority = b.Priority,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,
@@ -132,6 +137,7 @@ public sealed class ProjectViewer(
             Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At }).ToList(),
             // kit#237: files naming the same project are shown as one; no directive, its own.
             Project = corpus.Project ?? app,
+            Idea = Idea.IsMatch(src) ? true : null,
         };
     }
 
@@ -159,6 +165,7 @@ public sealed class ProjectViewer(
             Coverage = new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = p.Coverage.Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
             Project = p.Project,
+            Idea = p.Idea,
         };
     }
 

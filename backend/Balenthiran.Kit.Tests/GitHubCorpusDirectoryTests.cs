@@ -166,6 +166,28 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal("pushed", d.ReadNotesText("alpha"));
     }
 
+    /// <summary>BEH-SCHED-2: the schedule is read from GitHub the same way, and a change is read back until GitHub has it.</summary>
+    [Fact]
+    public async Task The_schedule_comes_from_GitHub_and_a_change_is_read_back_until_GitHub_has_it()
+    {
+        var reader = new Scripted(
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s1", "BEH-1\n")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s1", "BEH-1\n")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s2", "BEH-2\nBEH-1\n")));
+        var d = new GitHubCorpusDirectory(clone, [Kit], reader);
+        await d.RefreshAsync();
+        Assert.Equal("BEH-1\n", d.ReadScheduleText("alpha"));
+        Assert.Equal("prototypes/corpora/alpha.schedule", d.RelativeSchedulePath("alpha"));
+
+        d.WriteScheduleText("alpha", "BEH-1\nBEH-2\n");
+        Assert.Equal("BEH-1\nBEH-2\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.schedule")));
+        await d.RefreshAsync();
+        Assert.Equal("BEH-1\nBEH-2\n", d.ReadScheduleText("alpha"));
+
+        await d.RefreshAsync();
+        Assert.Equal("BEH-2\nBEH-1\n", d.ReadScheduleText("alpha"));
+    }
+
     [Fact]
     public async Task An_app_from_a_repository_with_no_clone_cannot_be_edited_here()
     {

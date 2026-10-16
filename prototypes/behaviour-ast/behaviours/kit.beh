@@ -137,6 +137,36 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
   contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
   contract card on a page can never change what Kit refuses to delete
 
+behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
+  in FEAT-PARSER
+  source defined kit#284
+  actor engineer
+  given corpus:BadPriority
+  when runs command:KitParse
+  then raises error:BadPriority
+  contract 1 is first and 5 is last, the decision queue's scale; a second `priority` line is refused, not silently last-wins
+  contract no line is no priority, and nothing is written for it, so no corpus that predates it changes shape
+
+behaviour BEH-PARSE-4 "A review request must say what to look at"
+  in FEAT-PARSER
+  source defined kit#284
+  actor engineer
+  given corpus:BareReviewRequest
+  when runs command:KitParse
+  then raises error:ReviewRequestWithoutWhat
+  contract `review requested <what>` is the agent asking for his eyes on built work; like a denial, a bare one is refused
+  contract it is explicit, so a later `source inferred` line does not reset it to unreviewed
+
+behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
+  in FEAT-SERVER
+  source defined kit#284
+  actor engineer
+  given corpus:IdeasFile
+  when runs command:KitUi
+  then reports project:Idea
+  contract true or absent, never false, so no response that predates it changes shape
+  contract only the directive line counts; a comment that mentions kit:idea does not
+
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
   in FEAT-RESOLVER
   actor engineer
