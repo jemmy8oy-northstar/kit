@@ -556,6 +556,29 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
 
+behaviour BEH-KIND-2 "A project's features filter by layer too"
+  in FEAT-PROJECT
+  source defined kit-ui.notes.md#2026-10-16-1145
+  priority 2
+  review requested a feature with nothing of that layer beneath it is hidden rather than shown with a zero; would you rather see it?
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract the same three chips as the board (BEH-KIND-1), at the top of the Features tab, kept in the url as `?layer=`
+  contract a feature card counts only the behaviours of the chosen layers beneath it, and a feature with none is hidden
+  contract opening a feature keeps the filter, so its page lists the same layers
+
+behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
+  in FEAT-NOTES
+  source defined kit-ui.notes.md#2026-10-16-1153
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
+  contract an archived note can still be dismissed, which deletes it from the notes file as before
+  contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
+
 behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is for"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0730

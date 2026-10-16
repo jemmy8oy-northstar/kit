@@ -4,8 +4,10 @@ import { Badge } from '@jemmy8oy-northstar/design-system'
 import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
+import LayerChips from '../components/LayerChips'
+import { useLayers } from '../hooks/useLayers'
 import ResourceView from '../components/Resource'
-import { childrenOf, featureHref, pathFrom } from '../features'
+import { childrenOf, featureHref, ofLayers, pathFrom, withAnyUnder } from '../features'
 import { BehaviourRow, FeatureCards } from './Project'
 
 /** One feature (kit#237): what is tagged into it, and every feature it is tagged into. */
@@ -27,6 +29,7 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
   const feature = byId.get(id)
   const path = pathFrom(params.get('path'), project, id)
   const unreviewed = new Set(project.adjudication.unreviewed)
+  const [layers, toggleLayer] = useLayers()
 
   if (!feature) {
     return (
@@ -37,7 +40,10 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
     )
   }
 
-  const children = childrenOf(project, id)
+  // BEH-KIND-2: the project page's layer filter, carried in the url, narrows this page the same way.
+  const shown = ofLayers(project, layers)
+  const children = childrenOf(shown, id)
+  const subFeatures = withAnyUnder(shown, children.features, layers)
   const here = [...path, id]
 
   return (
@@ -66,7 +72,8 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
       </section>
 
       <section aria-label="Contents">
-        <FeatureCards app={app} project={project} features={children.features} path={here} />
+        <LayerChips layers={layers} onToggle={toggleLayer} />
+        <FeatureCards app={app} project={shown} features={subFeatures} path={here} layers={layers} />
         {children.behaviours.length > 0 && (
           <>
             <h2>Behaviours</h2>
@@ -79,8 +86,10 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
             </ul>
           </>
         )}
-        {children.features.length === 0 && children.behaviours.length === 0 && (
-          <p className="muted">Nothing is tagged into this feature yet.</p>
+        {subFeatures.length === 0 && children.behaviours.length === 0 && (
+          <p className="muted">
+            {layers.length ? `Nothing of the ${layers.join(' or ')} layer is in this feature.` : 'Nothing is tagged into this feature yet.'}
+          </p>
         )}
       </section>
     </>
