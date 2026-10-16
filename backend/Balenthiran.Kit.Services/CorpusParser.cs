@@ -66,7 +66,7 @@ public sealed class CorpusParser : ICorpusParser
     private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
     private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex SourceRest = new($@"^(defined|inferred)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
-    private static readonly Regex ReviewRest = new($@"^(unreviewed|approved|denied)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
+    private static readonly Regex ReviewRest = new($@"^(unreviewed|approved|requested|denied)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ServesRest = new(@"^([A-Z][A-Z0-9-]*)\z", RegexOptions.Compiled);
     private static readonly Regex Quoted = new(@"^""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex LabelAndText = new($@"^""([^""]*)""[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
@@ -169,6 +169,19 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
+            // ── James, kit#284 (2026-10-15) ─────────────────────────────────
+            // "You give it a priority score and this is used to rank it on the
+            // board. Top priority at the top." 1 is first, 5 is last — the scale
+            // the decision queue already uses. A second line is refused rather
+            // than silently winning: two scores is a disagreement, not a value.
+            if (kw == "priority")
+            {
+                if (rest.Length != 1 || rest[0] < '1' || rest[0] > '5') throw new CorpusParseException($"{at}: priority wants 1 (first) to 5, got: {rest}");
+                if (cur.Priority is not null) throw new CorpusParseException($"{at}: priority is already set on {cur.Id}");
+                cur.Priority = rest[0] - '0';
+                continue;
+            }
+
             if (kw == "layer")
             {
                 if (!Layers.Contains(rest)) throw new CorpusParseException($@"{at}: layer wants ""ux""|""technical""|""ui"", got: {rest}");
@@ -207,7 +220,18 @@ public sealed class CorpusParser : ICorpusParser
             if (kw == "review")
             {
                 var r = ReviewRest.Match(rest);
-                if (!r.Success) throw new CorpusParseException($@"{at}: review wants ""unreviewed""|""approved""|""denied"" [note], got: {rest}");
+                if (!r.Success) throw new CorpusParseException($@"{at}: review wants ""unreviewed""|""approved""|""requested""|""denied"" [note], got: {rest}");
+
+                // ── James, kit#284 (2026-10-15) ─────────────────────────────
+                // "There is another board section which is requests review where you
+                // ask for a review over implemented logic. This can be implemented and
+                // merged but you would like a review." So `requested` is the agent
+                // asking, and like a denial it must say what — a bare request is a
+                // card that says "look at me" about nothing in particular.
+                if (r.Groups[1].Value == "requested" && !r.Groups[2].Success)
+                {
+                    throw new CorpusParseException($"{at}: a review request must say what to look at");
+                }
 
                 // A denial without a correction is a hole, not a decision — his
                 // #68 point that a deny must say what correct behaviour looks

@@ -50,6 +50,14 @@ public sealed class ProjectView : IProjectView
     [JsonPropertyOrder(14)]
     public required string Project { get; init; }
 
+    // kit#284 slice 4: a `# kit:idea` file is the Ideas page, not work. True or absent — never
+    // false — so no response that predates it changes shape.
+    [JsonPropertyOrder(15)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Idea { get; init; }
+
+    bool IProjectView.Idea => Idea == true;
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

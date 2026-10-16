@@ -39,6 +39,9 @@ public interface IBehaviour
     /// <summary>The layer whose tests prove it (kit#89): <c>ux</c>, <c>technical</c> or <c>ui</c>.</summary>
     string Layer { get; }
 
+    /// <summary>How soon it should be looked at (kit#284): 1 is first, 5 is last; null when no <c>priority</c> line was written.</summary>
+    int? Priority { get; }
+
     /// <summary>The features it is tagged into, one per <c>in</c> line (kit#237); empty when untagged.</summary>
     IReadOnlyList<IIdRef> In { get; }
 

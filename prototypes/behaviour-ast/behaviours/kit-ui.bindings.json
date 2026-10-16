@@ -128,10 +128,19 @@
     "role": "navigation",
     "name": "Main"
   },
+  "link:KitNavIdeas": {
+    "role": "link",
+    "name": "Ideas",
+    "exact": true
+  },
   "link:KitNavBoard": {
     "role": "link",
     "name": "Board",
     "exact": true
+  },
+  "region:KitBoardReview": {
+    "role": "region",
+    "name": "Review requested"
   },
   "region:KitBoardProposed": {
     "role": "region",
@@ -140,6 +149,14 @@
   "region:KitBoardBacklog": {
     "role": "region",
     "name": "Backlog"
+  },
+  "region:KitBoardScheduled": {
+    "role": "region",
+    "name": "Scheduled"
+  },
+  "region:KitBoardInProgress": {
+    "role": "region",
+    "name": "In progress"
   },
   "region:KitBoardDone": {
     "role": "region",
@@ -161,9 +178,30 @@
   "page:KitFeature": {
     "route": "/projects/:app/features/:id"
   },
+  "region:KitSchedule": {
+    "role": "region",
+    "name": "Schedule"
+  },
+  "region:KitBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "button:KitScheduleBehaviour": {
+    "role": "button",
+    "name": "Schedule",
+    "exact": true
+  },
   "region:KitProjectFeatures": {
     "role": "region",
     "name": "Features"
+  },
+  "tab:KitProjectFeaturesTab": {
+    "role": "tab",
+    "name": "Features"
+  },
+  "tab:KitProjectQuestionsTab": {
+    "role": "tab",
+    "name": "Questions"
   },
   "region:KitFeatureChildren": {
     "role": "region",

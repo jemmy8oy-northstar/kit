@@ -115,6 +115,12 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<OpenHole>? Open { get; set; }
 
+    // kit#284: a `priority` line, 1 (first) to 5. Absent, not null, without one — the
+    // rule `in` follows, so no committed golden is rewritten to say nothing.
+    [JsonPropertyOrder(22)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Priority { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.

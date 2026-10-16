@@ -673,7 +673,7 @@
     },
     {
       "id": "BEH-UP-2",
-      "code": "test(\"[BEH-UP-2] The upload form takes a single video or audio file\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n});",
+      "code": "test.skip(\"[BEH-UP-2] The upload form takes a single video or audio file\", async ({ page }) => {\n  // NOT GENERATED: no generated step asserts anything, so a test here would pass without checking the app (kit#86)\n  await page.goto(\"./editor\");\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n});",
       "missing": [],
       "stats": {
         "generated": 2,

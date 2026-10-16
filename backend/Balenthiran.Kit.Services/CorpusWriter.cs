@@ -116,7 +116,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var nt = note is null ? string.Empty : Trim(note);
         if (st.Length == 0)
         {
-            return WriteResult.Refuse("empty-review", "a review needs a state: unreviewed, approved or denied");
+            return WriteResult.Refuse("empty-review", "a review needs a state: unreviewed, approved, requested or denied");
         }
 
         // 🔴 A security guard, not tidiness: rule 3 exempts the TARGET, so a newline in a
@@ -538,6 +538,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         review = new { state = b.Review.State, note = b.Review.Note },
         pending = b.Pending,
         layer = b.Layer,
+        priority = b.Priority,
         asks = b.Asks,
         options = b.Options.Select(o => $"{o.Label}|{o.Consequence}").ToList(),
         recommend = b.Recommend is { } r ? $"{r.Label}|{r.Why}" : null,

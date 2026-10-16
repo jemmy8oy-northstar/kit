@@ -186,5 +186,13 @@ public class RouteShapeTests
         public string RelativeNotesPath(string app) => inner.RelativeNotesPath(app);
 
         public string FullNotesPath(string app) => inner.FullNotesPath(app);
+
+        public string? ReadScheduleText(string app) => inner.ReadScheduleText(app);
+
+        public void WriteScheduleText(string app, string text) => inner.WriteScheduleText(app, text);
+
+        public string RelativeSchedulePath(string app) => inner.RelativeSchedulePath(app);
+
+        public string FullSchedulePath(string app) => inner.FullSchedulePath(app);
     }
 }
