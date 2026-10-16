@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
-import { ApiError, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
+import { ApiError, askForBehaviour, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import ResourceView from '../components/Resource'
+import { useWrite } from '../components/useWrite'
+import { WriteFeedback } from './BehaviourPage'
 import { byCompletion, byPriority, CAP, columnOf, hueOf, isIdea, isTrial, LAYERS, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
@@ -142,6 +144,8 @@ export default function Board() {
           const failed = shown.filter((e) => e.error)
           return (
             <>
+              <BoardAsk targets={targetsOf(all)} />
+
               <div className="board-controls">
                 {projects.map((p) => (
                   <Button
@@ -278,5 +282,95 @@ export default function Board() {
         }}
       </ResourceView>
     </>
+  )
+}
+
+/**
+ * Where a request for each project goes: the notes file named like the project, which is the one
+ * its page shows (BEH-FEAT-5), else its first file. Ideas, trials and unreadable files are not
+ * offered: a request is work, and none of those is.
+ */
+function targetsOf(all: Entry[]): { project: string; app: string }[] {
+  const out = new Map<string, string>()
+  for (const e of all) {
+    if (e.error || isIdea(e.summary) || isTrial(e.summary)) continue
+    const project = projectOf(e.summary)
+    if (!out.has(project) || e.summary.app === project) out.set(project, e.summary.app)
+  }
+  return [...out].map(([project, app]) => ({ project, app })).sort((a, b) => a.project.localeCompare(b.project))
+}
+
+/**
+ * BEH-BOARD-8 (his note 2026-10-16 07:30Z): "Boards could probably have a free form text input …
+ * Maybe you can select a project before you submit or if you submit without selecting a project a
+ * ui comes up and says which project is this for." It writes the same request note as a project
+ * page's describe box (BEH-NOTE-4). With no project picked it asks, and writes nothing.
+ */
+function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) {
+  const [text, setText] = useState('')
+  const [project, setProject] = useState('')
+  const [asking, setAsking] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const picker = useRef<HTMLSelectElement>(null)
+  const { write, run } = useWrite(() => undefined)
+  const id = useId()
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const target = targets.find((t) => t.project === project)
+    if (!target) {
+      setAsking(true)
+      picker.current?.focus()
+      return
+    }
+    setAsking(false)
+    await run(async () => {
+      const result = await askForBehaviour(target.app, text)
+      setText('')
+      setSentTo(target.project)
+      return result
+    })
+  }
+
+  return (
+    <form onSubmit={submit} className="write">
+      <label htmlFor={`${id}-text`}>Describe what should happen</label>
+      <textarea
+        id={`${id}-text`}
+        className="note-text"
+        placeholder="e.g. the board remembers the filter I last used"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <label htmlFor={`${id}-project`}>Project</label>
+      <select
+        id={`${id}-project`}
+        className="note-select"
+        ref={picker}
+        value={project}
+        aria-invalid={asking || undefined}
+        onChange={(e) => {
+          setProject(e.target.value)
+          setAsking(false)
+        }}
+      >
+        <option value="">Pick a project…</option>
+        {targets.map((t) => (
+          <option key={t.project} value={t.project}>
+            {t.project}
+          </option>
+        ))}
+      </select>
+      {asking && <p role="alert">Which project is this for? Pick one, then send it again.</p>}
+      <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
+        {write.state === 'saving' ? 'Sending…' : 'Ask for behaviour'}
+      </Button>
+      <WriteFeedback write={write} />
+      {write.state === 'wrote' && sentTo && (
+        <p>
+          <Link to={`/projects/${encodeURIComponent(sentTo)}?tab=notes`}>See it in {sentTo}'s notes</Link>
+        </p>
+      )}
+    </form>
   )
 }
