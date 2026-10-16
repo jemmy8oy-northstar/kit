@@ -1,8 +1,11 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { dismissNote, fetchNotes, leaveNote, replyToNote } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Note } from '../api/types'
+import { CAP } from '../board'
+import { foldedBy, type Citation } from '../notes'
 import Count from './Count'
 import ResourceView from './Resource'
 import { useWrite } from './useWrite'
@@ -25,8 +28,26 @@ import WriteResultNote from './WriteResultNote'
  *
  * `version` lets a form elsewhere on the page (asking for a behaviour, resolving
  * a decision) make this list re-read after it writes a note.
+ *
+ * BEH-NOTE-9/10 (his 2026-10-16 notes): newest first, ten at a time. And a note a
+ * behaviour already cites in its source line (`citations`) is FOLDED: it leaves the
+ * open notes for a list of its own, so "open" means nobody has picked it up yet. Only
+ * the project page knows the corpus, so only it passes `citations`.
  */
-export default function NotesPanel({ app, behaviour, version = 0 }: { app: string; behaviour?: string; version?: number }) {
+export default function NotesPanel({
+  app,
+  behaviour,
+  version = 0,
+  citations,
+  onOpenCount,
+}: {
+  app: string
+  behaviour?: string
+  version?: number
+  citations?: Map<string, Citation[]>
+  /** Told how many notes are still open, for a tab label (BEH-FEAT-7). */
+  onOpenCount?: (n: number) => void
+}) {
   const { resource, reload } = useReloadableResource(() => fetchNotes(app), [app, version])
   const [text, setText] = useState('')
   const { write, run } = useWrite(reload)
@@ -41,13 +62,23 @@ export default function NotesPanel({ app, behaviour, version = 0 }: { app: strin
   }
 
   // Each note keeps its place in the FILE: that index is how a reply or a dismissal names it.
+  // Newest first (BEH-NOTE-9): the file is oldest first, so the list is read backwards.
   const mine = (notes: Note[]) =>
-    notes.map((note, index) => ({ note, index })).filter(({ note }) => !behaviour || note.behaviour === behaviour)
+    notes
+      .map((note, index) => ({ note, index, folded: foldedBy(note, citations) }))
+      .filter(({ note }) => !behaviour || note.behaviour === behaviour)
+      .reverse()
+  const open = resource.state === 'ready' ? mine(resource.value.notes).filter((p) => !p.folded.length).length : null
+  useEffect(() => {
+    if (open !== null) onOpenCount?.(open)
+  }, [open, onOpenCount])
 
   return (
     <>
       <ResourceView resource={resource}>
-        {(list) => <NeedsAnswer app={app} notes={mine(list.notes).filter(({ note }) => note.questions.length > 0)} onChanged={reload} />}
+        {(list) => (
+          <NeedsAnswer app={app} notes={mine(list.notes).filter(({ note, folded }) => note.questions.length > 0 && !folded.length)} onChanged={reload} />
+        )}
       </ResourceView>
 
       <section aria-labelledby="open-notes">
@@ -56,7 +87,7 @@ export default function NotesPanel({ app, behaviour, version = 0 }: { app: strin
           {(list) => (
             <OpenNotes
               app={app}
-              notes={mine(list.notes).filter(({ note }) => note.questions.length === 0)}
+              notes={mine(list.notes).filter(({ note, folded }) => note.questions.length === 0 && !folded.length)}
               file={list.file}
               onChanged={reload}
             />
@@ -85,11 +116,56 @@ export default function NotesPanel({ app, behaviour, version = 0 }: { app: strin
           {write.state === 'wrote' && <WriteResultNote result={write.result} subject="a note" />}
         </form>
       </section>
+
+      <ResourceView resource={resource}>
+        {(list) => <Folded app={app} notes={mine(list.notes).filter(({ folded }) => folded.length > 0)} onChanged={reload} />}
+      </ResourceView>
     </>
   )
 }
 
-type Placed = { note: Note; index: number }
+type Placed = { note: Note; index: number; folded: Citation[] }
+
+/** BEH-NOTE-9: the first ten of a list already in order, and a button for ten more. */
+function Capped({ items, render }: { items: Placed[]; render: (p: Placed) => React.ReactNode }) {
+  const [limit, setLimit] = useState(CAP)
+  const hidden = items.length - limit
+  return (
+    <>
+      <ul className="cards">
+        {items.slice(0, limit).map((p) => (
+          <li key={`${p.note.at}:${p.index}`}>{render(p)}</li>
+        ))}
+      </ul>
+      {hidden > 0 && (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setLimit(limit + CAP)}>
+          Show {Math.min(CAP, hidden)} more ({hidden} hidden)
+        </Button>
+      )}
+    </>
+  )
+}
+
+/**
+ * BEH-NOTE-10: notes a behaviour already cites. The fold is a pull request into dev and the
+ * notes file lives on the branch Kit writes to, so the fold cannot delete the note; this list
+ * is where it waits for his Dismiss, with the behaviours it became one tap away.
+ */
+function Folded({ app, notes, onChanged }: { app: string; notes: Placed[]; onChanged: () => void }) {
+  if (!notes.length) return null
+  return (
+    <section aria-labelledby="folded-notes">
+      <h2 id="folded-notes">Folded into the spec</h2>
+      <p className="muted">Each of these is cited by a behaviour now. Dismiss it once you have looked.</p>
+      <Capped
+        items={notes}
+        render={({ note, index, folded }) => (
+          <NoteCard app={app} note={note} index={index} onChanged={onChanged} folded={folded} />
+        )}
+      />
+    </section>
+  )
+}
 
 /**
  * BEH-NOTE-5: absent when nothing is waiting. An empty "Needs your answer" on
@@ -102,13 +178,7 @@ function NeedsAnswer({ app, notes, onChanged }: { app: string; notes: Placed[]; 
   return (
     <section aria-labelledby="needs-answer">
       <h2 id="needs-answer">Needs your answer</h2>
-      <ul className="cards">
-        {[...notes].reverse().map(({ note, index }) => (
-          <li key={`${note.at}:${index}`}>
-            <NoteCard app={app} note={note} index={index} onChanged={onChanged} />
-          </li>
-        ))}
-      </ul>
+      <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
     </section>
   )
 }
@@ -127,18 +197,24 @@ function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed
       <p className="muted">
         In <code>{file}</code>. Each one is deleted when it is folded into the spec.
       </p>
-      <ul className="cards">
-        {notes.map(({ note, index }) => (
-          <li key={`${note.at}:${index}`}>
-            <NoteCard app={app} note={note} index={index} onChanged={onChanged} />
-          </li>
-        ))}
-      </ul>
+      <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
     </>
   )
 }
 
-function NoteCard({ app, note, index, onChanged }: { app: string; note: Note; index: number; onChanged: () => void }) {
+function NoteCard({
+  app,
+  note,
+  index,
+  onChanged,
+  folded = [],
+}: {
+  app: string
+  note: Note
+  index: number
+  onChanged: () => void
+  folded?: Citation[]
+}) {
   const answer = useWrite(onChanged)
   const dismiss = useWrite(onChanged)
   const [text, setText] = useState('')
@@ -164,6 +240,17 @@ function NoteCard({ app, note, index, onChanged }: { app: string; note: Note; in
         {note.behaviour && <Badge tone="primary">{note.behaviour}</Badge>}
       </div>
       <p className="note-body">{note.text}</p>
+      {folded.length > 0 && (
+        <p className="muted">
+          Became{' '}
+          {folded.map((c, i) => (
+            <span key={`${c.app}/${c.id}`}>
+              {i > 0 && ', '}
+              <Link to={`/projects/${encodeURIComponent(c.app)}/behaviours/${encodeURIComponent(c.id)}`}>{c.title}</Link>
+            </span>
+          ))}
+        </p>
+      )}
 
       {/* Earlier rounds stay visible, so an answer is read beside what it answered. */}
       {note.thread.slice(0, note.questions.length ? -1 : undefined).map((entry, i) => (
