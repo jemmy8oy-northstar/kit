@@ -58,10 +58,28 @@ export function pathFrom(param: string | null, t: Tagged, id: string): string[] 
   return ids
 }
 
-/** The url of a feature page, reached by `path`. */
-export function featureHref(app: string, id: string, path: string[]): string {
+/** The url of a feature page, reached by `path`, keeping any layer filter (BEH-KIND-2). */
+export function featureHref(app: string, id: string, path: string[], layers: string[] = []): string {
   const base = `/projects/${encodeURIComponent(app)}/features/${encodeURIComponent(id)}`
-  return path.length ? `${base}?path=${encodeURIComponent(path.join(','))}` : base
+  const query = [
+    ...(path.length ? [`path=${encodeURIComponent(path.join(','))}`] : []),
+    ...(layers.length ? [`layer=${encodeURIComponent(layers.join(','))}`] : []),
+  ]
+  return query.length ? `${base}?${query.join('&')}` : base
+}
+
+/**
+ * BEH-KIND-2: only the behaviours of the chosen layers; every feature stays, so the tag graph
+ * is intact and a feature with nothing of those layers beneath it counts zero. None chosen is all.
+ */
+export function ofLayers(t: Tagged, layers: string[]): Tagged {
+  if (!layers.length) return t
+  return { features: t.features, behaviours: t.behaviours.filter((b) => layers.includes(b.layer)) }
+}
+
+/** The features worth a card under a filter: those with something beneath them. Unfiltered, all of them. */
+export function withAnyUnder(t: Tagged, features: Feature[], layers: string[]): Feature[] {
+  return layers.length ? features.filter((f) => behavioursUnder(t, f.id).size > 0) : features
 }
 
 /**

@@ -55,6 +55,20 @@ behaviour BEH-AUTH-1 "A person signs up and signs in with a username and passwor
   then sees page:Dashboard
   contract "username auth to keep it simple": no email, no social login, no password reset by email
 
+# The shape I chose for his "username auth" (earnyourbeers#7). Auth stays his to merge, so
+# this sits in Proposed until he approves or denies it.
+behaviour BEH-AUTH-3 "Usernames are 3 to 32 characters, passwords at least 8, and a session lasts 30 days"
+  in FEAT-ACCOUNT
+  layer technical
+  source defined earnyourbeers#7
+  review unreviewed
+  priority 1
+  actor athlete
+  contract a username is letters, digits, dot, underscore or hyphen, unique ignoring case
+  contract passwords are stored as PBKDF2-SHA256 hashes, never as text
+  contract the session is an HTTP-only SameSite=Lax cookie that slides for 30 days
+  contract a wrong password and an unknown username fail with the same message
+
 behaviour BEH-AUTH-2 "Each person's logs, league and settings are their own"
   in FEAT-ACCOUNT
   layer technical
@@ -103,7 +117,8 @@ behaviour BEH-BALANCE-1 "The dashboard shows this week's balance to 2dp, as cred
   when opens page:Dashboard
   then sees region:Balance
   provides region:Balance.states = credit, debt, square
-  contract a week runs Monday 00:00 to Monday 00:00, and the balance counts that week's logs only
+  contract a week runs Monday 00:00 to Monday 00:00 UTC, and the balance counts that week's logs only
+  contract UTC is an assumption (earnyourbeers#6): the phone app used local time, and the web has no phone
   contract the number is followed by the vice emoji; the label reads POINTS IN CREDIT, POINTS IN DEBT, or SQUARE at exactly 0
 
 behaviour BEH-LOG-1 "One tap logs one unit: a vice, a km run, a km cycled, or a length swum"

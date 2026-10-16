@@ -4,6 +4,7 @@ import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, askForBehaviour, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
+import LayerChips from '../components/LayerChips'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
@@ -171,21 +172,7 @@ export default function Board() {
                   Show trials
                 </Button>
               </div>
-              <div className="board-controls" role="group" aria-label="Layer">
-                {LAYERS.map((l) => (
-                  <Button
-                    key={l}
-                    type="button"
-                    size="sm"
-                    variant={layers.includes(l) ? 'secondary' : 'ghost'}
-                    aria-pressed={layers.includes(l)}
-                    aria-label={`Filter to the ${l} layer`}
-                    onClick={() => toggleLayer(l)}
-                  >
-                    {l}
-                  </Button>
-                ))}
-              </div>
+              <LayerChips layers={layers} onToggle={toggleLayer} />
 
               {failed.map((e) => (
                 <Card key={e.summary.app} elevation="flat">

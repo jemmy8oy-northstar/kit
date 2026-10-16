@@ -1,23 +1,76 @@
 {
   "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/earnyourbeers. Keyed on file + title (a C# test's title is its method name).",
-  "_authored": "2026-10-16, from earnyourbeers#5 (the rules ported from the Flutter code). Only the pure rules exist on the web so far; every page, the accounts and the DB are still to build, so `kit check earnyourbeers` names them.",
+  "_authored": "2026-10-16, from earnyourbeers#5 (the rules ported from the Flutter code). Only the pure rules exist on the web so far; every page, the accounts and the DB are still to build, so `kit check earnyourbeers` names them. 2026-10-16 later: LOG-2/3 and AUTH-2 (data half) from earnyourbeers#6.",
   "BEH-SCORE-1": [
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs", "title": "Each_activity_earns_its_rate_per_unit" },
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs", "title": "An_unknown_activity_earns_nothing" }
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Each_activity_earns_its_rate_per_unit"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "An_unknown_activity_earns_nothing"
+    }
   ],
   "BEH-SCORE-2": [
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs", "title": "Difficulty_runs_from_ten_times_at_tier_zero_to_a_tenth_at_tier_twenty" },
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs", "title": "Difficulty_scales_activity_and_never_the_vice" }
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Difficulty_runs_from_ten_times_at_tier_zero_to_a_tenth_at_tier_twenty"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Difficulty_scales_activity_and_never_the_vice"
+    }
   ],
   "BEH-LEAGUE-1": [
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs", "title": "There_are_twenty_tiers_in_four_divisions_of_five" }
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "There_are_twenty_tiers_in_four_divisions_of_five"
+    }
   ],
   "BEH-SETTLE-1": [
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs", "title": "A_week_moves_the_tally_and_the_tally_moves_the_tier" },
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs", "title": "The_tier_is_clamped_but_the_tally_is_still_spent" }
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "A_week_moves_the_tally_and_the_tally_moves_the_tier"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "The_tier_is_clamped_but_the_tally_is_still_spent"
+    }
   ],
   "BEH-ONBOARD-2": [
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs", "title": "Onboarding_seeds_the_tier_from_weekly_volume" },
-    { "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs", "title": "An_unsustainable_vice_count_starts_five_tiers_lower" }
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "Onboarding_seeds_the_tier_from_weekly_volume"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "An_unsustainable_vice_count_starts_five_tiers_lower"
+    }
+  ],
+  "BEH-LOG-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "A_repeat_tap_within_the_hour_adds_to_the_newest_entry"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "Only_the_newest_entry_of_all_is_merged_into"
+    }
+  ],
+  "BEH-LOG-3": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "An_older_entry_cannot_be_edited_or_deleted"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "The_newest_entry_can_be_edited_to_zero_or_more"
+    }
+  ],
+  "BEH-AUTH-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "Another_users_entries_are_neither_listed_nor_merged_nor_changeable"
+    }
   ]
 }
