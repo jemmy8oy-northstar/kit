@@ -67,3 +67,7 @@ Have the three types been implemented yet?
 ## 2026-10-16 07:24Z · new behaviour
 
 Are ui/ux/logic implementation even treated as tags right now I am not seeing them anywhere. Let’s get that implemented
+
+## 2026-10-16 07:24Z · new behaviour
+
+Notes should be ordered most recently written at the top, at some point there should be a load more button so we don’t have to pull all into the ui
