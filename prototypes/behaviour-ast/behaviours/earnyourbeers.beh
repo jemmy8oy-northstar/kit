@@ -1,0 +1,266 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# earnyourbeers — onboarded 2026-10-16 at James's earnyourbeers#1
+#
+#   "Let's migrate this to a react frontend dotnet backend just like the
+#   template. This can be kit managed. We can have username auth to keep it
+#   simple. It can use a db." … "Onboard the app by finding any spec you can
+#   find and creating kit spec. Make inferred spec as well."
+#
+# Read at earnyourbeers@main 4b6e4f4: a single-user, offline Flutter app,
+# branded "Earn Your Vices" in the UI. Its docs/ are mostly brainstorms, so the
+# CODE is the reference implementation the web rebuild has to match.
+#
+#   DEFINED   — his words on earnyourbeers#1, or a doc that describes what the
+#               code also does. Cites the issue or the doc.
+#   INFERRED  — a rule only the Dart code states. Cites file:line (or a test).
+#               Each is `review unreviewed`: it shows in Proposed, and he can
+#               deny it. Numbers are copied from the code, not from the docs,
+#               which disagree with it (see BEH-SCORE-1).
+#
+# ⚠️ Nothing here is built for the web yet. Every behaviour describes the app
+# the rebuild must reproduce, plus the account layer the web adds.
+# ─────────────────────────────────────────────────────────────────────────────
+
+feature FEAT-ACCOUNT "Accounts (new for the web)"
+feature FEAT-LOG "Logging activities and vices"
+feature FEAT-BALANCE "The weekly balance"
+feature FEAT-LEAGUE "Leagues and weekly settlement"
+feature FEAT-ONBOARD "Onboarding"
+feature FEAT-SETTINGS "Settings"
+
+
+# ═══ DEFINED — earnyourbeers#1 ═══
+
+behaviour BEH-WEB-1 "Earn Your Vices is a website: a React frontend on a .NET backend, like web-template"
+  in FEAT-ACCOUNT
+  layer technical
+  source defined earnyourbeers#1
+  priority 1
+  actor athlete
+  when opens page:Dashboard
+  then sees region:Balance
+  contract the Flutter app is the reference implementation, not the product: the web app replaces it
+  contract state lives in a server database, not on the device
+
+behaviour BEH-AUTH-1 "A person signs up and signs in with a username and password"
+  in FEAT-ACCOUNT
+  layer ux
+  source defined earnyourbeers#1
+  priority 1
+  actor athlete
+  when opens page:SignIn
+  when fills field:Username with ?username
+  when fills field:Password with ?password
+  when activates button:SignIn
+  then sees page:Dashboard
+  contract "username auth to keep it simple": no email, no social login, no password reset by email
+
+behaviour BEH-AUTH-2 "Each person's logs, league and settings are their own"
+  in FEAT-ACCOUNT
+  layer technical
+  source defined earnyourbeers#1
+  priority 1
+  actor athlete
+  given account:Other
+  when opens page:Dashboard
+  then sees region:Balance
+  contract every row the app stores belongs to one user, and no route returns another user's rows
+  contract the device-local app had no user at all, so this is the one rule the rebuild adds rather than ports
+
+
+# ═══ INFERRED — what the Flutter code does today ═══
+
+behaviour BEH-SCORE-1 "Activities earn points: run 0.5 a km, cycle 1/6 a km, swim 1/60 a length"
+  in FEAT-BALANCE
+  layer technical
+  source inferred lib/core/logic/pint_calculator.dart:13
+  review unreviewed
+  priority 1
+  actor athlete
+  provides activity:Run.pointsPerKm = 0.5
+  provides activity:Cycle.pointsPerKm = 1/6
+  provides activity:Swim.pointsPerLength = 1/60
+  contract an unknown activity type earns nothing
+  contract test/pint_calculator_test.dart still expects 3, 1 and 0.1 and the README says 1 pint = 5 km run; the code's numbers win here
+
+behaviour BEH-SCORE-2 "Activity points are scaled by the league's difficulty; a vice always costs 1 point"
+  in FEAT-BALANCE
+  layer technical
+  source inferred lib/core/logic/pint_calculator.dart:48
+  review unreviewed
+  priority 1
+  actor athlete
+  contract balance = (sum of activity points × difficulty) − (sum of vice units)
+  contract difficulty = 10 × 0.794328^level (app_state.dart:268): 10× at tier 0, about 1× at tier 10, 0.1× at tier 20
+
+behaviour BEH-BALANCE-1 "The dashboard shows this week's balance to 2dp, as credit, debt, or square"
+  in FEAT-BALANCE
+  layer ux
+  source inferred lib/ui/screens/dashboard_screen.dart:290
+  review unreviewed
+  priority 1
+  actor athlete
+  when opens page:Dashboard
+  then sees region:Balance
+  provides region:Balance.states = credit, debt, square
+  contract a week runs Monday 00:00 to Monday 00:00, and the balance counts that week's logs only
+  contract the number is followed by the vice emoji; the label reads POINTS IN CREDIT, POINTS IN DEBT, or SQUARE at exactly 0
+
+behaviour BEH-LOG-1 "One tap logs one unit: a vice, a km run, a km cycled, or a length swum"
+  in FEAT-LOG
+  layer ux
+  source inferred lib/ui/screens/dashboard_screen.dart:844
+  review unreviewed
+  priority 1
+  actor athlete
+  when opens page:Dashboard
+  when activates button:LogRun
+  then sees region:Balance
+  contract each activity button shows how many points one unit earns at the current tier
+  contract tapping the vice card logs 1; a long press asks for an amount, which must be above 0
+
+behaviour BEH-LOG-2 "Repeat taps within an hour add to the latest entry instead of making a new one"
+  in FEAT-LOG
+  layer technical
+  source inferred lib/core/logic/app_state.dart:486
+  review unreviewed
+  priority 2
+  actor athlete
+  contract only the newest entry of all is checked: same activity type, or a vice after a vice, logged under 1 hour ago
+
+behaviour BEH-LOG-3 "Only the newest entry this week can be edited or deleted"
+  in FEAT-LOG
+  layer ux
+  source inferred lib/ui/screens/dashboard_screen.dart:368
+  review unreviewed
+  priority 2
+  actor athlete
+  when opens page:Dashboard
+  then sees region:LogList
+  contract an edit accepts 0 or more; anything else closes the dialog without saving
+
+behaviour BEH-HISTORY-1 "Past weeks can be paged through, back to the first log"
+  in FEAT-BALANCE
+  layer ux
+  source inferred test/dashboard_interaction_test.dart:Weekly History Swipe Navigation
+  review unreviewed
+  priority 3
+  actor athlete
+  when opens page:Dashboard
+  then sees region:WeekHeader
+  contract headers read CURRENT WEEK or WEEK OF d/m; each entry shows its amount and "Logged at H:MM"
+  contract a past week's balance uses TODAY's difficulty, not the one in force that week
+
+behaviour BEH-LEAGUE-1 "There are 20 tiers in four divisions, and the banner shows where you are"
+  in FEAT-LEAGUE
+  layer ux
+  source inferred lib/core/logic/app_state.dart:23
+  review unreviewed
+  priority 2
+  actor athlete
+  when opens page:Dashboard
+  then sees region:LeagueBanner
+  contract divisions are Apprenticeship, Practice, Mastery and Legacy, five tiers each
+  contract the banner shows the division, the tier name, and the tally to 2dp on a bar from −25 to +25
+
+behaviour BEH-SETTLE-1 "Each new week settles the last: its net balance moves the tally, and the tally moves the tier"
+  in FEAT-LEAGUE
+  layer technical
+  source inferred test/league_settlement_test.dart:single promotion at +25 points
+  review unreviewed
+  priority 2
+  actor athlete
+  contract tally ≥ 50: up two tiers and −50; tally ≥ 25: up one and −25; tally ≤ −25: down one and +25; otherwise it carries over
+  contract the tier is clamped to the list; several missed weeks settle as one
+  contract the first ever run records the date and settles nothing
+
+behaviour BEH-SETTLE-2 "Settlement is shown as a report you must dismiss before the new week starts"
+  in FEAT-LEAGUE
+  layer ux
+  source inferred lib/ui/dialogs/weekly_settlement_dialog.dart:98
+  review unreviewed
+  priority 3
+  actor athlete
+  when opens page:Dashboard
+  then sees region:SettlementReport
+  when activates button:StartNewWeek
+  then sees region:Balance
+  provides region:SettlementReport.states = promoted, double promotion, demoted, position secured
+  contract the native app ran settlement on launch; the web runs it on the first request of a new week (an assumption)
+
+behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, and a weekly vice count"
+  in FEAT-ONBOARD
+  layer ux
+  source inferred lib/ui/screens/onboarding_screen.dart:86
+  review unreviewed
+  priority 2
+  actor athlete
+  when opens page:Onboarding
+  when activates button:Sport
+  when fills field:WeeklyVolume with ?volume
+  when fills field:Vice with ?emoji
+  when fills field:WeeklyVices with ?count
+  when activates button:EnterTheArena
+  then sees page:Dashboard
+  contract volume slider maxes: 100 km run, 300 km cycle, 3000 lengths swim; vices 0 to 40 a week
+
+behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
+  in FEAT-ONBOARD
+  layer technical
+  source inferred lib/ui/screens/onboarding_screen.dart:471
+  review unreviewed
+  priority 2
+  actor athlete
+  contract weekly points at tier 0 = volume × base rate × 10; tier = round(ln(points / 25) / 0.23025), clamped 0 to 20
+  contract if points − vices < −15 the tier drops by 5, floored at 0
+  contract the step bands in app_state.dart:438 are dead code and are not ported
+
+behaviour BEH-VICE-1 "The vice is any single emoji, pizza by default"
+  in FEAT-SETTINGS
+  layer ux
+  source inferred test/rebrand_flow_test.dart:defaults to Pizza emoji
+  review unreviewed
+  priority 2
+  actor athlete
+  when opens page:Settings
+  when fills field:Vice with ?emoji
+  then sees region:Balance
+  contract at most 2 characters, no plain text; empty falls back to 🍕
+  contract docs/compliance_strategy.md: the neutral default is the App Store defence, which matters less on the web
+
+behaviour BEH-THEME-1 "The theme is auto, light, or dark"
+  in FEAT-SETTINGS
+  layer ui
+  source inferred test/rebrand_flow_test.dart:updates theme mode
+  review unreviewed
+  priority 4
+  actor athlete
+  when opens page:Settings
+  when activates button:Theme
+  provides button:Theme.states = auto, light, dark
+  contract accent 0xFFF28E1C on a 0xFF1A1A1A dark surface (lib/ui/theme.dart)
+
+behaviour BEH-RESET-1 "A person can wipe their data and start onboarding again"
+  in FEAT-SETTINGS
+  layer ux
+  source inferred lib/core/logic/app_state.dart:468
+  review unreviewed
+  priority 4
+  actor athlete
+  when opens page:Settings
+  when activates button:Reset
+  then sees page:Onboarding
+  contract the native app asks for no confirmation; the web asks once (an assumption)
+
+
+# ═══ DOCUMENTED, NOT BUILT ═══
+#
+# Brainstorms in docs/ the code never reached. Kept as one line each so they
+# are a list rather than a feeling; none is planned. Wearable sync
+# (Strava, Garmin, Apple Health, README.md) is the one a website changes the
+# cost of: Strava has a web API; Apple Health has none.
+#   docs/leagues_progression.md — a 12-tier "Master Brewer" track per discipline
+#   docs/progression_brainstorm.md — "The Path of Discipline" progression themes
+#   docs/banking_philosophy.md, docs/debt_mechanics.md — a vault and a debt floor
+#   docs/premium_ui_ideas.md, docs/lovable_comparison.md — UI polish ideas
+#   docs/pivot.md — "Run for Fun", several reward categories
