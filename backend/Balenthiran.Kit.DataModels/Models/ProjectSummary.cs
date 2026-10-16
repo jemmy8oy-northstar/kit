@@ -34,5 +34,12 @@ public sealed class ProjectSummary : IProjectSummary
     [JsonPropertyOrder(9)]
     public required string Project { get; init; }
 
+    // kit#284 slice 4, after `project` for the same reason; true or absent.
+    [JsonPropertyOrder(10)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Idea { get; init; }
+
+    bool IProjectSummary.Idea => Idea == true;
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }

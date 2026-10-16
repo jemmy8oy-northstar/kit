@@ -157,6 +157,16 @@ behaviour BEH-PARSE-4 "A review request must say what to look at"
   contract `review requested <what>` is the agent asking for his eyes on built work; like a denial, a bare one is refused
   contract it is explicit, so a later `source inferred` line does not reset it to unreviewed
 
+behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
+  in FEAT-SERVER
+  source defined kit#284
+  actor engineer
+  given corpus:IdeasFile
+  when runs command:KitUi
+  then reports project:Idea
+  contract true or absent, never false, so no response that predates it changes shape
+  contract only the directive line counts; a comment that mentions kit:idea does not
+
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
   in FEAT-RESOLVER
   actor engineer

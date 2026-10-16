@@ -7,6 +7,7 @@ import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
 import { byProject } from '../features'
+import { isIdea } from '../board'
 
 /** Step 1 of his loop: see the projects Kit knows about. */
 export default function Projects() {
@@ -24,7 +25,8 @@ export default function Projects() {
       <ResourceView resource={projects}>
         {({ projects: rows }) => (
           <ul className="cards" aria-label="Project list">
-            {byProject(rows).map((g) =>
+            {/* Ideas have their own page in the nav, and are not projects yet (kit#284 slice 4). */}
+            {byProject(rows.filter((r) => !isIdea(r))).map((g) =>
               // BEH-FEAT-4: one file that is its own project reads as it always did.
               g.files.length === 1 && g.files[0].app === g.project ? (
                 <li key={g.project}>

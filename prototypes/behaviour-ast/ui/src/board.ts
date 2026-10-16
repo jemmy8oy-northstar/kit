@@ -87,6 +87,14 @@ export function projectOf(p: ProjectSummary): string {
   return p.project ?? p.app
 }
 
+/** The Ideas corpus's name (kit#284 slice 4): the nav links to it, so it is one well-known file. */
+export const IDEAS = 'ideas'
+
+/** An Ideas file (`# kit:idea`): apps that are not projects yet. Never on the board or the project list. */
+export function isIdea(p: ProjectSummary): boolean {
+  return Boolean(p.idea)
+}
+
 /** Trial corpora: an app that does not exist, or a second spec of one that does. */
 export function isTrial(p: ProjectSummary): boolean {
   return Boolean(p.notReal || p.duplicateOf)

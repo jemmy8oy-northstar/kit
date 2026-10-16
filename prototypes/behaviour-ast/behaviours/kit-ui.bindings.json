@@ -128,6 +128,11 @@
     "role": "navigation",
     "name": "Main"
   },
+  "link:KitNavIdeas": {
+    "role": "link",
+    "name": "Ideas",
+    "exact": true
+  },
   "link:KitNavBoard": {
     "role": "link",
     "name": "Board",

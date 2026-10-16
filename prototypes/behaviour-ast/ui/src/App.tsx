@@ -5,6 +5,7 @@ import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
 import FeaturePage from './pages/FeaturePage'
 import SignIn from './components/SignIn'
+import { IDEAS } from './board'
 
 export default function App() {
   return (
@@ -52,6 +53,8 @@ export default function App() {
                 `end` on Projects, or "/" would match every route. */}
             <nav aria-label="Main" className="nav">
               <NavLink to="/board">Board</NavLink>
+              {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
+              <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <NavLink to="/" end>
                 Projects
               </NavLink>
