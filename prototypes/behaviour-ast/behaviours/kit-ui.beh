@@ -392,7 +392,7 @@ behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never
   in FEAT-BOARD
   source defined kit#284
   priority 2
-  review requested the Ideas page is the ordinary project page (breadcrumb, Schedule and all); is that enough, or should ideas get a page of their own?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees link:KitNavIdeas
