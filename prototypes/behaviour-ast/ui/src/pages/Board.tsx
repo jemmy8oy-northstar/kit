@@ -345,6 +345,7 @@ function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) 
       <label htmlFor={`${id}-project`}>Project</label>
       <select
         id={`${id}-project`}
+        className="note-select"
         ref={picker}
         value={project}
         aria-invalid={asking || undefined}

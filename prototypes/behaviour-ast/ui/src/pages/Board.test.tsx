@@ -351,7 +351,7 @@ describe('Board', () => {
 
     fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'remember my filter' } })
     fireEvent.click(screen.getByRole('button', { name: 'Ask for behaviour' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Which project is this for?')
+    expect(await screen.findByText('Which project is this for? Pick one, then send it again.')).toHaveAttribute('role', 'alert')
     expect(posts).toEqual([])
 
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
