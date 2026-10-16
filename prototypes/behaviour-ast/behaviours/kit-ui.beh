@@ -547,7 +547,7 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  review requested the notation already had these three as `layer` (kit#89), so no new line was invented, and it says `technical` where you said logic; rename it to `logic` across every corpus, or keep the word?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
