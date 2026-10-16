@@ -32,6 +32,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Notes from ?tab=notes, and has no Principles tab for a project with none" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank" }
   ],
+  "BEH-KIND-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows each card its layer and filters by layer, in the url beside the project filter (BEH-KIND-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a layer in the url that the corpus has no word for filters nothing out" }
+  ],
   "BEH-NOTE-9": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows ten, and a button that says how many more it shows and how many are hidden" }

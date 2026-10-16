@@ -542,19 +542,19 @@ behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready t
   contract a cited note leaves the open notes for a Folded list that links every behaviour citing it, so open means nobody has folded it yet
   contract dismissing a folded note is still his tap: the fold is a pull request into dev, and the notes file lives on the branch Kit writes, so the fold cannot delete it (BEH-NOTE-3)
 
-behaviour BEH-KIND-1 "A behaviour is tagged ui, ux or logic, and a list can be filtered to one"
+behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the board filters by it"
   in FEAT-PROJECT
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  pending
+  review requested the notation already had these three as `layer` (kit#89), so no new line was invented, and it says `technical` where you said logic; rename it to `logic` across every corpus, or keep the word?
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
-  contract a `kind ui`, `kind ux` or `kind logic` line tags a behaviour; repeat the line for more than one, as with `in`
-  contract ui is how it looks, ux is how it works for the person using it, logic is the implementation under both: the three named in kit#284
-  contract every card shows its kinds; the board and the project page filter by kind from chips, kept in the url
-  contract a behaviour with no kind line is untagged and has its own chip; nothing is given a kind by a guess
+  contract the type is the existing `layer` line: ux unless a `layer` line or the file's `# kit:layer` says otherwise, so every behaviour has exactly one
+  contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
+  contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
+  contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
 
 behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is for"
   in FEAT-BOARD
