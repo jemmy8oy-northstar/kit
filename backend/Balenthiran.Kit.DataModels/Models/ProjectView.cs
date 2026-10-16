@@ -58,6 +58,14 @@ public sealed class ProjectView : IProjectView
 
     bool IProjectView.Idea => Idea == true;
 
+    // kit#284 slice 5: its `# kit:principle` lines, in file order. Absent when it declares none,
+    // so no response that predates it changes shape.
+    [JsonPropertyOrder(16)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<PrincipleView>? Principles { get; init; }
+
+    IReadOnlyList<IPrincipleView> IProjectView.Principles => (IReadOnlyList<IPrincipleView>?)Principles ?? [];
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

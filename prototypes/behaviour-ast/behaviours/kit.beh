@@ -18,6 +18,15 @@
 #   whole file is the technical layer (kit#89, kit#193). That is the reason for
 #   the 0% below, stated in the notation rather than only in this prose.
 #
+# ── Principles (kit#284 slice 5) ──────────────────────────────────────────
+# Kit is the platform every spec is written in, so its notation principles hold for
+# every project: they are `global`. James, kit#285 (2026-10-15): "Over time we need to
+# refine it with a few things in mind. Flexibility… function… readability."
+#
+# kit:principle global Flexibility: the spec is easy to change — a new idea is one optional line, and nothing written before it moves
+# kit:principle global Function: the spec turns into tests — every line Kit reads is parsed, refused when wrong, and gated
+# kit:principle global Readability: a human can read the spec without Kit — a line says what it means in words
+
 # James asked (claude-code-bot#89): "think about how kit looks as a kit managed
 # project". This corpus is the attempt, and the attempt is the measurement.
 #
@@ -166,6 +175,18 @@ behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project
   then reports project:Idea
   contract true or absent, never false, so no response that predates it changes shape
   contract only the directive line counts; a comment that mentions kit:idea does not
+
+behaviour BEH-PRIN-API-1 "A `# kit:principle [global] <Name>: <what it means>` line is a principle in the project view"
+  in FEAT-SERVER
+  source defined kit#284
+  actor engineer
+  given corpus:PrincipleLines
+  when runs command:KitUi
+  then reports project:Principles
+  contract in file order, each with its `<corpus>.beh:<line>`, because the file is the only place one is changed
+  contract absent when a file declares none, so no response that predates it changes shape
+  contract a line that does not say a name and what it means is refused, never skipped: a principle that silently vanished is one nobody knows was lost
+  contract only the directive line counts; a comment that mentions kit:principle does not
 
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
   in FEAT-RESOLVER

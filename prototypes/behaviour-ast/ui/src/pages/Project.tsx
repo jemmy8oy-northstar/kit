@@ -9,6 +9,7 @@ import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
+import PrinciplesList from '../components/PrinciplesList'
 import ResourceView from '../components/Resource'
 import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
@@ -79,6 +80,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       <NotesPanel app={project.app} version={notes} />
       <PendingPanel apps={[project.app]} version={notes} />
       <SchedulePanel apps={[project.app]} />
+      <PrinciplesList principles={project.principles ?? []} />
 
       <ProjectTabs
         waiting={project.conflicts.length + project.questions.length}

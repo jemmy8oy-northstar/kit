@@ -138,7 +138,50 @@ public sealed class ProjectViewer(
             // kit#237: files naming the same project are shown as one; no directive, its own.
             Project = corpus.Project ?? app,
             Idea = Idea.IsMatch(src) ? true : null,
+            Principles = Principles(src, app) is { Count: > 0 } p ? p : null,
         };
+    }
+
+    // kit#284 slice 5: `# kit:principle [global] <Name>: <what it means>`, one per line.
+    private static readonly Regex PrincipleLine = new(
+        $@"^#[{CorpusParser.Ws}]*kit:principle(?![A-Za-z0-9_-])(.*)\z", RegexOptions.Compiled);
+
+    private static readonly Regex PrincipleRest = new(
+        $@"^[{CorpusParser.Ws}]+(global[{CorpusParser.Ws}]+)?([^:]+?)[{CorpusParser.Ws}]*:[{CorpusParser.Ws}]*(\S.*?)[{CorpusParser.Ws}]*\z", RegexOptions.Compiled);
+
+    /// <summary>
+    /// The file's principles in order. A `kit:principle` line that does not say a name and what it
+    /// means is REFUSED rather than skipped — a principle that silently vanished is one nobody
+    /// knows they lost, which is the failure this whole feature exists to prevent.
+    /// </summary>
+    private static List<PrincipleView> Principles(string src, string app)
+    {
+        var found = new List<PrincipleView>();
+        var lines = src.TrimStart('﻿').Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var m = PrincipleLine.Match(lines[i]);
+            if (!m.Success)
+            {
+                continue;
+            }
+
+            var rest = PrincipleRest.Match(m.Groups[1].Value);
+            if (!rest.Success)
+            {
+                throw new ProjectionFailedException($"{app}.beh:{i + 1}: kit:principle wants \"[global] <Name>: <what it means>\", got: {m.Groups[1].Value.Trim()}");
+            }
+
+            found.Add(new PrincipleView
+            {
+                Name = rest.Groups[2].Value.Trim(),
+                Text = rest.Groups[3].Value,
+                Global = rest.Groups[1].Success,
+                At = $"{app}.beh:{i + 1}",
+            });
+        }
+
+        return found;
     }
 
     /// <inheritdoc />
