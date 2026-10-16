@@ -6,6 +6,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }
   ],
+  "BEH-BOARD-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "suggests a project the text names, and one tap picks it (BEH-BOARD-9)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a name nobody lists is never suggested (BEH-BOARD-9)" }
+  ],
   "BEH-LIST-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "lists every corpus the read API returned" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "reports a corpus that will not parse as an error, not as zero behaviours" }
