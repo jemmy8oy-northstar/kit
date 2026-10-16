@@ -368,7 +368,7 @@ behaviour BEH-BOARD-5 "Proposed and backlog put the top priority at the top"
   in FEAT-BOARD
   source defined kit#284
   priority 2
-  review requested the P1 chip sits on its own line under the title (kit#287); is that the look you want, or should it sit beside the id?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardProposed
@@ -392,7 +392,7 @@ behaviour BEH-IDEA-1 "App ideas have their own page in the navbar, and are never
   in FEAT-BOARD
   source defined kit#284
   priority 2
-  review requested the Ideas page is the ordinary project page (breadcrumb, Schedule and all); is that enough, or should ideas get a page of their own?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees link:KitNavIdeas
@@ -404,7 +404,7 @@ behaviour BEH-PRIN-1 "Principles have their own page in the navbar: global ones 
   in FEAT-NAV
   source defined kit#284
   priority 2
-  review requested principles are `# kit:principle` lines in each project's own corpus, so a repo owns its principles as it owns its spec, and you change one with a note on that project; is that the shape you want?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees link:KitNavPrinciples
@@ -510,7 +510,7 @@ behaviour BEH-FEAT-7 "The describe box sits above the tabs, and notes are a tab 
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0713
   priority 1
-  review requested the schedule is a tab too, and resolving a decision keeps you on Questions (only asking opens Notes); is that the split you want?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees tab:KitProjectNotesTab
@@ -534,7 +534,7 @@ behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready t
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  review requested a folded note waits in its own list for your Dismiss rather than vanishing; would you rather it just disappeared?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
@@ -547,7 +547,7 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  review requested the notation already had these three as `layer` (kit#89), so no new line was invented, and it says `technical` where you said logic; rename it to `logic` across every corpus, or keep the word?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -555,6 +555,29 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
+
+behaviour BEH-KIND-2 "A project's features filter by layer too"
+  in FEAT-PROJECT
+  source defined kit-ui.notes.md#2026-10-16-1145
+  priority 2
+  review requested a feature with nothing of that layer beneath it is hidden rather than shown with a zero; would you rather see it?
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitProjectFeatures
+  contract the same three chips as the board (BEH-KIND-1), at the top of the Features tab, kept in the url as `?layer=`
+  contract a feature card counts only the behaviours of the chosen layers beneath it, and a feature with none is hidden
+  contract opening a feature keeps the filter, so its page lists the same layers
+
+behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
+  in FEAT-NOTES
+  source defined kit-ui.notes.md#2026-10-16-1153
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
+  contract an archived note can still be dismissed, which deletes it from the notes file as before
+  contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
 
 behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is for"
   in FEAT-BOARD

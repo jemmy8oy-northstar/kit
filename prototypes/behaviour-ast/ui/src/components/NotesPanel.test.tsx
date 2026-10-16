@@ -221,7 +221,10 @@ describe('NotesPanel order, cap and folded notes', () => {
       </MemoryRouter>,
     )
 
-    const folded = await screen.findByRole('region', { name: 'Folded into the spec' })
+    const folded = await screen.findByRole('region', { name: 'Archived' })
+    // BEH-NOTE-11: archived means out of sight until he asks.
+    expect(within(folded).queryByText('tabs please')).not.toBeInTheDocument()
+    fireEvent.click(within(folded).getByRole('button', { name: 'Show archived (1)' }))
     expect(within(folded).getByText('tabs please')).toBeInTheDocument()
     expect(within(folded).getByRole('link', { name: 'Notes are a tab' })).toHaveAttribute('href', '/projects/demo-ui/behaviours/BEH-FEAT-7')
     expect(within(region()).queryByText('tabs please')).not.toBeInTheDocument()
@@ -231,14 +234,39 @@ describe('NotesPanel order, cap and folded notes', () => {
     // Its place in the FILE is 0 even though it is listed elsewhere: that index names it to the server.
     fireEvent.click(within(folded).getByRole('button', { name: 'Dismiss' }))
     await waitFor(() => expect(posts).toEqual([{ url: '/api/projects/demo/notes/dismiss', body: { index: 0, at: '2026-10-16 07:13Z' } }]))
-    await waitFor(() => expect(screen.queryByRole('region', { name: 'Folded into the spec' })).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Archived' })).not.toBeInTheDocument())
+  })
+
+  it('hides archived notes again, and counts them on the button (BEH-NOTE-11)', async () => {
+    server([note('2026-10-16 07:13Z', null, 'tabs please'), note('2026-10-16 07:14Z', null, 'kinds please')])
+    const citations = citationsOf('demo', [
+      {
+        app: 'demo-ui',
+        behaviours: [
+          { id: 'BEH-A', title: 'A', source: { ref: 'demo.notes.md#2026-10-16-0713' } },
+          { id: 'BEH-B', title: 'B', source: { ref: 'demo.notes.md#2026-10-16-0714' } },
+        ],
+      },
+    ])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" citations={citations} />
+      </MemoryRouter>,
+    )
+    const archived = await screen.findByRole('region', { name: 'Archived' })
+    const show = within(archived).getByRole('button', { name: 'Show archived (2)' })
+    expect(show).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(show)
+    expect(within(archived).getByText('kinds please')).toBeInTheDocument()
+    fireEvent.click(within(archived).getByRole('button', { name: 'Hide archived' }))
+    expect(within(archived).queryByText('kinds please')).not.toBeInTheDocument()
   })
 
   it('CONTROL: with no citations there is no folded list, and every note is open', async () => {
     server([note('2026-10-16 07:13Z', null, 'tabs please')])
     render(<NotesPanel app="demo" />)
     expect(await within(region()).findByText('tabs please')).toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Folded into the spec' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Archived' })).not.toBeInTheDocument()
   })
 })
 

@@ -149,20 +149,29 @@ function Capped({ items, render }: { items: Placed[]; render: (p: Placed) => Rea
 /**
  * BEH-NOTE-10: notes a behaviour already cites. The fold is a pull request into dev and the
  * notes file lives on the branch Kit writes to, so the fold cannot delete the note; this list
- * is where it waits for his Dismiss, with the behaviours it became one tap away.
+ * is where it waits, with the behaviours it became one tap away.
+ *
+ * BEH-NOTE-11 (his 2026-10-16 11:53Z note): "auto archive them … and then have an option to
+ * show archived". So the list is shut until he asks, and Dismiss still deletes one for good.
  */
 function Folded({ app, notes, onChanged }: { app: string; notes: Placed[]; onChanged: () => void }) {
+  const [shown, setShown] = useState(false)
   if (!notes.length) return null
   return (
     <section aria-labelledby="folded-notes">
-      <h2 id="folded-notes">Folded into the spec</h2>
-      <p className="muted">Each of these is cited by a behaviour now. Dismiss it once you have looked.</p>
-      <Capped
-        items={notes}
-        render={({ note, index, folded }) => (
-          <NoteCard app={app} note={note} index={index} onChanged={onChanged} folded={folded} />
-        )}
-      />
+      <h2 id="folded-notes">Archived</h2>
+      <p className="muted">Notes a behaviour cites now, so they are folded into the spec.</p>
+      <Button type="button" variant="ghost" size="sm" aria-expanded={shown} onClick={() => setShown(!shown)}>
+        {shown ? 'Hide archived' : `Show archived (${notes.length})`}
+      </Button>
+      {shown && (
+        <Capped
+          items={notes}
+          render={({ note, index, folded }) => (
+            <NoteCard app={app} note={note} index={index} onChanged={onChanged} folded={folded} />
+          )}
+        />
+      )}
     </section>
   )
 }
@@ -195,7 +204,7 @@ function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed
         <Count n={notes.length} one="open note" />
       </div>
       <p className="muted">
-        In <code>{file}</code>. Once a behaviour cites one, it moves to Folded below.
+        In <code>{file}</code>. Once a behaviour cites one, it is archived below.
       </p>
       <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
     </>
