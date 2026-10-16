@@ -297,6 +297,20 @@ behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached d
   contract linked, when there is one
   contract nothing pending shows nothing: no empty panel on a project with no edits
 
+# His kit#300 (2026-10-16): "When I merge spec into dev is it coming up on boards?"
+# It was not, until a restart: only the entrypoint merged dev into kit/hosted.
+behaviour BEH-COMMIT-6 "A spec merged into dev reaches the board within one poll, without a restart"
+  in FEAT-COMMIT
+  layer technical
+  source defined kit#300
+  priority 1
+  actor engineer
+  given change:MergedIntoDev
+  when runs command:KitServe
+  then reports origin:GitHub
+  contract on every KIT_PROJECTS poll the pod merges dev into its edits branch and pushes, as the entrypoint does at start-up
+  contract it holds the same lock as an edit, so a merge never lands between an edit's write and its commit
+  contract already up to date does nothing; a merge that conflicts is aborted, the branch is left as it was, and stderr says so
 
 # ═══ The deployed boundary ════════════════════════════════════════════════════
 # What changes the moment Kit is reachable from a phone rather than from

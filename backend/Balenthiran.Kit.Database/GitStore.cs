@@ -222,6 +222,78 @@ public sealed class GitStore(
         return new GitWriteBack { Committed = true, Pushed = true, Commit = commit, Branch = target };
     }
 
+    /// <inheritdoc />
+    public IGitWriteBack CatchUp(string dir)
+    {
+        if (!enabled)
+        {
+            return new GitWriteBack { Reason = "git write-back is off, so there is no edits branch to bring up to date" };
+        }
+
+        if (baseBranch is null)
+        {
+            return new GitWriteBack { Reason = "no base branch (KIT_GIT_BASE), so there is nothing to catch up with" };
+        }
+
+        // Asked from INSIDE the directory: WorkTreeFor takes a file and looks at its parent.
+        var top = Git(["rev-parse", "--show-toplevel"], dir);
+        var cwd = top.Ok && top.Stdout.Trim().Length > 0 ? top.Stdout.Trim() : null;
+        if (cwd is null)
+        {
+            return new GitWriteBack { Reason = $"{dir} is not inside a git work tree" };
+        }
+
+        var target = branch ?? CurrentBranch(cwd);
+        if (target is null || target == baseBranch)
+        {
+            return new GitWriteBack { Branch = target, Reason = $"the clone is on {target ?? "a detached HEAD"}, not an edits branch, so it is left alone" };
+        }
+
+        Dictionary<string, string>? credential;
+        try
+        {
+            var token = tokens?.TokenAsync().GetAwaiter().GetResult();
+            credential = token is null ? null : new() { ["KIT_GIT_TOKEN"] = token };
+        }
+        catch (GitHubTokenException e)
+        {
+            return new GitWriteBack { Branch = target, Reason = e.Message };
+        }
+
+        var fetched = Git(["fetch", "--quiet", Remote, baseBranch], cwd, credential);
+        if (!fetched.Ok)
+        {
+            return new GitWriteBack { Branch = target, Reason = fetched.Failure };
+        }
+
+        // The common case, every poll: nothing new on the base. Nothing is written.
+        if (Git(["merge-base", "--is-ancestor", "FETCH_HEAD", "HEAD"], cwd).Ok)
+        {
+            return new GitWriteBack { Branch = target, Reason = $"{target} already has everything on {baseBranch}" };
+        }
+
+        // The entrypoint's merge, word for word, so the history reads the same whichever ran it.
+        var merged = Git(["-c", $"user.name={name ?? DefaultName}", "-c", $"user.email={email ?? DefaultEmail}", "merge", "--quiet", "--no-edit", "-m", $"kit: bring {target} up to date with {baseBranch}", "FETCH_HEAD"], cwd);
+        if (!merged.Ok)
+        {
+            // A conflict is his to resolve, never a merge this tool finishes by guessing.
+            Git(["merge", "--abort"], cwd);
+            return new GitWriteBack { Branch = target, Reason = $"{baseBranch} does not merge cleanly into {target}, so it was left as it was ({merged.Failure})" };
+        }
+
+        var sha = Git(["rev-parse", "HEAD"], cwd);
+        var commit = sha.Ok ? sha.Stdout.Trim()[..Math.Min(10, sha.Stdout.Trim().Length)] : null;
+        if (!push)
+        {
+            return new GitWriteBack { Committed = true, Commit = commit, Branch = target, Reason = "merged; pushing is switched off" };
+        }
+
+        var pushed = Git(["push", Remote, $"HEAD:{target}"], cwd, credential);
+        return pushed.Ok
+            ? new GitWriteBack { Committed = true, Pushed = true, Commit = commit, Branch = target }
+            : new GitWriteBack { Committed = true, Commit = commit, Branch = target, Reason = pushed.Failure };
+    }
+
     // Node's `error.code` names: the two a spawn reaches in practice, else .NET's own sentence.
     private static string Errno(Win32Exception e) => e.NativeErrorCode switch
     {
