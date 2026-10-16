@@ -60,6 +60,9 @@ export function byCompletion(a: Completed, b: Completed): number {
  */
 export const CAP = 10
 
+/** A behaviour's `layer` values (kit#89), in the order he named them (BEH-KIND-1): how it looks, how it works, what is underneath. */
+export const LAYERS = ['ui', 'ux', 'technical']
+
 /** The columns ordered by priority (BEH-BOARD-5/6): what is waiting on a decision or a pick. */
 export const RANKED: readonly Column[] = ['review', 'proposed', 'backlog']
 
