@@ -27,6 +27,19 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "switches to Questions on a tap, and back" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Questions from a link carrying ?tab=questions" }
   ],
+  "BEH-FEAT-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "keeps only the describe box above the tabs; notes and the schedule are tabs of their own" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Notes from ?tab=notes, and has no Principles tab for a project with none" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank" }
+  ],
+  "BEH-NOTE-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows ten, and a button that says how many more it shows and how many are hidden" }
+  ],
+  "BEH-NOTE-10": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "counts only refs to THIS notes file, so another project citing the same minute folds nothing here" }
+  ],
   "BEH-BOARD-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)" }
   ],

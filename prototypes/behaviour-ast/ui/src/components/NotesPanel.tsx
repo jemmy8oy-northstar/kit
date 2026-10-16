@@ -195,7 +195,7 @@ function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed
         <Count n={notes.length} one="open note" />
       </div>
       <p className="muted">
-        In <code>{file}</code>. Each one is deleted when it is folded into the spec.
+        In <code>{file}</code>. Once a behaviour cites one, it moves to Folded below.
       </p>
       <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
     </>
