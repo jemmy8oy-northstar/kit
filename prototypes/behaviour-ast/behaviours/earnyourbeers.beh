@@ -231,6 +231,7 @@ behaviour BEH-VICE-1 "The vice is any single emoji, pizza by default"
 behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   in FEAT-SETTINGS
   layer ui
+  pending
   source inferred test/rebrand_flow_test.dart:updates theme mode
   review unreviewed
   priority 4
