@@ -510,7 +510,7 @@ behaviour BEH-FEAT-7 "The describe box sits above the tabs, and notes are a tab 
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0713
   priority 1
-  pending
+  review requested the schedule is a tab too, and resolving a decision keeps you on Questions (only asking opens Notes); is that the split you want?
   actor engineer
   when opens page:KitProject
   then sees tab:KitProjectNotesTab
@@ -523,7 +523,6 @@ behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0724
   priority 2
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
@@ -535,7 +534,7 @@ behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready t
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0714
   priority 1
-  pending
+  review requested a folded note waits in its own list for your Dismiss rather than vanishing; would you rather it just disappeared?
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
