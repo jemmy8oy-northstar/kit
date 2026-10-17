@@ -594,7 +594,7 @@ behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0730
   priority 4
-  review requested a project is suggested when the text names it as a whole word, as a "For snip-it?" button under the picker, rather than as autocomplete in a separate project field; is that the shape you meant?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
