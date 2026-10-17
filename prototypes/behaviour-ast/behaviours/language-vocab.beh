@@ -270,7 +270,6 @@ behaviour BEH-LEARN-2 "After the five, the learner is quizzed on them: shown pin
 behaviour BEH-LEARN-3 "The reverse quiz, English to pinyin, is a separate harder option"
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 3
-  pending
   actor learner
   when opens page:Learn
   when activates button:ReverseDirection
