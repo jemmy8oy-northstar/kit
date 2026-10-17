@@ -7,7 +7,7 @@
 #   find and creating kit spec. Make inferred spec as well."
 #
 # Read at earnyourbeers@main 4b6e4f4: a single-user, offline Flutter app,
-# branded "Earn Your Vices" in the UI. Its docs/ are mostly brainstorms, so the
+# branded "Earn Your Vices" in the UI (renamed Earn Your Beers: BEH-BRAND-1). Its docs/ are mostly brainstorms, so the
 # CODE is the reference implementation the web rebuild has to match.
 #
 #   DEFINED   — his words on earnyourbeers#1, or a doc that describes what the
@@ -32,7 +32,19 @@ feature FEAT-SETTINGS "Settings"
 
 # ═══ DEFINED — earnyourbeers#1 ═══
 
-behaviour BEH-WEB-1 "Earn Your Vices is a website: a React frontend on a .NET backend, like web-template"
+behaviour BEH-BRAND-1 "The app is called Earn Your Beers everywhere a person reads its name, matching its URL"
+  in FEAT-ACCOUNT
+  layer ux
+  source defined earnyourbeers.notes.md#2026-10-17
+  review unreviewed
+  priority 1
+  actor athlete
+  when opens page:SignIn
+  then sees page:SignIn
+  contract "Maybe even a rename from earn your vices to earn your beers. I think worth making it consistent with the url"
+  contract unreviewed because he wrote "maybe": the page title and both headings say Earn Your Beers, and code names (eyv-*, Vice) stay as they are
+
+behaviour BEH-WEB-1 "Earn Your Beers is a website: a React frontend on a .NET backend, like web-template"
   in FEAT-ACCOUNT
   layer technical
   source defined earnyourbeers#1
@@ -234,17 +246,18 @@ behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
   contract if points − vices < −15 the tier drops by 5, floored at 0
   contract the step bands in app_state.dart:438 are dead code and are not ported
 
-behaviour BEH-VICE-1 "The vice is any single emoji, pizza by default"
+behaviour BEH-VICE-1 "The vice is any single emoji, beer by default"
   in FEAT-SETTINGS
   layer ux
-  source inferred test/rebrand_flow_test.dart:defaults to Pizza emoji
-  review unreviewed
+  source defined earnyourbeers.notes.md#2026-10-17
   priority 2
   actor athlete
   when opens page:Settings
   when fills field:Vice with ?emoji
   then sees region:Balance
-  contract at most 2 characters, no plain text; empty falls back to 🍕
+  contract "beer is an important voice let's make that the primary" (his Kit note, 2026-10-17): the Flutter app defaulted to pizza
+  contract at most 2 characters, no plain text; empty falls back to 🍺
+  contract 🍺 is first among the quick picks; a person's saved emoji is never changed for them
   contract characters are what a person sees, as Flutter's maxLength counts them, so two emoji are allowed (an assumption, earnyourbeers#9)
   contract also at most 32 UTF-16 code units, a guard the Dart lacks (an assumption, earnyourbeers#9)
   contract docs/compliance_strategy.md: the neutral default is the App Store defence, which matters less on the web
