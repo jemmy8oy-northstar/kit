@@ -90,6 +90,20 @@ behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest on
   contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
   contract unreviewed because the store is in memory until there is a database: a restart forgets runs, and a database is his call
 
+behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played during it"
+  in FEAT-SYNC
+  layer ux
+  source inferred tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Home
+  then sees region:Runs
+  contract a plain list, newest run first: its name, date and elapsed time (GET /api/runs carries no distance yet), then its songs in the order they played (title and artist)
+  contract no map and no cover-art visuals, per "let's not worry about the track visuals for now" on tracks#3
+  contract with no runs yet, it says so and explains a run appears after the next one finishes on Strava
+  contract unreviewed because the layout and the fields shown are my guess
+
 
 # ═══ INFERRED — what the idea needs ═══
 
