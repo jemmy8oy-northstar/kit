@@ -296,6 +296,41 @@ public class ContainerTests
         Assert.False(Directory.Exists(work));
         Assert.Contains("kit github-token: refused", r.Stderr);
         Assert.Contains("could not mint a GitHub App token", r.Stderr);
+        Assert.Equal("could not mint a GitHub App token to clone with (kit github-token: refused)", r.Out["KIT_GIT_OFF_REASON"]);
+    }
+
+    /// <summary>kit#233: the UI said "write-back is off" and nothing said why; with no secret at all there was not even a log line.</summary>
+    [Fact]
+    public void With_no_credential_the_server_is_told_why_write_back_is_off()
+    {
+        using var f = new Remote();
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GIT_WORKTREE"] = Path.Combine(f.Root, "work") });
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.StartsWith("no credential reached the pod", r.Out["KIT_GIT_OFF_REASON"]);
+        Assert.Contains("kit-start: no credential reached the pod", r.Stderr);
+    }
+
+    [Fact]
+    public void A_clone_that_fails_tells_the_server_why()
+    {
+        using var f = new Remote();
+        var r = StartKit(new()
+        {
+            ["KIT_GIT_CLONE"] = Path.Combine(f.Root, "no-such-remote.git"),
+            ["KIT_GIT_TOKEN"] = "t",
+            ["KIT_GIT_WORKTREE"] = Path.Combine(f.Root, "work"),
+        });
+        Assert.StartsWith("could not clone", r.Out["KIT_GIT_OFF_REASON"]);
+        Assert.DoesNotContain("password", r.Out["KIT_GIT_OFF_REASON"]);
+    }
+
+    [Fact]
+    public void A_working_clone_leaves_no_reason()
+    {
+        using var f = new Remote();
+        var r = StartKit(new() { ["KIT_GIT_CLONE"] = f.Bare, ["KIT_GIT_TOKEN"] = "t", ["KIT_GIT_WORKTREE"] = Path.Combine(f.Root, "work") });
+        Assert.Equal("1", r.Out["KIT_GIT"]);
+        Assert.Equal("", r.Out["KIT_GIT_OFF_REASON"]);
     }
 
     [Fact]
@@ -322,6 +357,7 @@ public class ContainerTests
             "echo \"KIT_DIR=${KIT_DIR-}\"",
             "echo \"KIT_GIT=${KIT_GIT-}\"",
             "echo \"KIT_GIT_BRANCH=${KIT_GIT_BRANCH-}\"",
+            "echo \"KIT_GIT_OFF_REASON=${KIT_GIT_OFF_REASON-}\"",
             // What git will hand a push to github.com, through the helper the entrypoint configured.
             "printf \"protocol=https\\nhost=github.com\\n\\n\" | git credential fill 2>/dev/null | grep \"^password=\" || echo \"password=<none>\"");
         var path = (prependPath == "" ? "" : prependPath + ":") + bin + ":" + Environment.GetEnvironmentVariable("PATH");

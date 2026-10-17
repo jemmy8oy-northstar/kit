@@ -38,16 +38,36 @@
 # environment, configured through GIT_CONFIG_* so nothing is written to disk.
 set -u
 
+# kit#233: every path that leaves write-back OFF says why in KIT_GIT_OFF_REASON, and the
+# server repeats it in the "write-back is off" warning. Before this the only record was a
+# pod log line, and the no-credential path wrote none, so the UI could not tell "no secret
+# reached the pod" from "GitHub refused the key".
+off() {
+  export KIT_GIT_OFF_REASON="$1"
+  echo "kit-start: $1; serving the image's own corpus with write-back OFF" >&2
+}
+
 # The GitHub App credential (kit#88: the App does writes too) is a key, not a token, and a shell
 # cannot sign its JWT — so the server mints one to clone with. That token expires within the hour;
 # every push after it asks the server's token source for a fresh one (GitStore), not this variable.
 # A static KIT_GIT_TOKEN, if both are set, is what the clone uses, as before.
 if [ -n "${KIT_GIT_CLONE:-}" ] && [ -z "${KIT_GIT_TOKEN:-}" ] && [ -n "${KIT_GITHUB_APP_ID:-}" ]; then
-  if minted=$(dotnet Balenthiran.Kit.WebApi.dll github-token) && [ -n "$minted" ]; then
+  mint_err="${TMPDIR:-/tmp}/kit-mint.err"
+  if minted=$(dotnet Balenthiran.Kit.WebApi.dll github-token 2>"$mint_err") && [ -n "$minted" ]; then
     export KIT_GIT_TOKEN="$minted"
   else
-    echo "kit-start: could not mint a GitHub App token to clone with; serving the image's own corpus with write-back OFF" >&2
+    cat "$mint_err" >&2
+    # GitHubTokenCommand's reason is the LAST line it writes (the runtime may warn first). None of
+    # its messages carry the key or a token.
+    off "could not mint a GitHub App token to clone with ($(tail -n 1 "$mint_err" | cut -c 1-300))"
   fi
+  rm -f "$mint_err"
+fi
+
+if [ -z "${KIT_GIT_CLONE:-}" ]; then
+  off "KIT_GIT_CLONE is not set, so there is no repository to clone"
+elif [ -z "${KIT_GIT_TOKEN:-}" ] && [ -z "${KIT_GITHUB_APP_ID:-}" ]; then
+  off "no credential reached the pod: KIT_GIT_TOKEN and KIT_GITHUB_APP_ID are both empty (check the kit-github secret has GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID and private-key.pem)"
 fi
 
 if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
@@ -84,13 +104,13 @@ if [ -n "${KIT_GIT_CLONE:-}" ] && [ -n "${KIT_GIT_TOKEN:-}" ]; then
     fi
   elif git ls-remote --exit-code --heads "$KIT_GIT_CLONE" "$branch" >/dev/null 2>&1; then
     rm -rf "$work"
-    echo "kit-start: ${branch} exists on ${KIT_GIT_CLONE} but could not be cloned; serving the image's own corpus with write-back OFF rather than forking it" >&2
+    off "${branch} exists on ${KIT_GIT_CLONE} but could not be cloned, and forking it would lose edits"
   elif [ $? -eq 2 ] && git clone --quiet --single-branch --branch "$base" "$KIT_GIT_CLONE" "$work" \
     && git -C "$work" checkout --quiet -b "$branch"; then
     echo "kit-start: ${branch} does not exist yet; started it from ${base}. The first edit creates it"
   else
     rm -rf "$work"
-    echo "kit-start: could not clone ${KIT_GIT_CLONE} (${branch} or ${base}); serving the image's own corpus with write-back OFF" >&2
+    off "could not clone ${KIT_GIT_CLONE} (${branch} or ${base}); the credential may lack access to the repository"
   fi
 
   if [ -d "$work/.git" ]; then

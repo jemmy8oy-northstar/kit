@@ -378,4 +378,21 @@ public class NotesTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    /// <summary>kit#233: a deployed Kit with write-back off says WHY, as the entrypoint recorded it, not just that it is off.</summary>
+    [Theory]
+    [InlineData(null, "Git write-back is off on this deployed Kit.")]
+    [InlineData("no credential reached the pod", "Git write-back is off on this deployed Kit. Why: no credential reached the pod.")]
+    public void A_deployed_write_with_write_back_off_says_why(string? reason, string warning)
+    {
+        using var rig = new Rig();
+        var corpora = new CorpusDirectory(rig.Root, rig.Root);
+        var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
+        var router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(rig.Root, "no-bundle")), null, deployed: true, offReason: reason);
+
+        var r = router.Route("POST", "/api/projects/demo/notes", body: JsonDocument.Parse("""{"text":"fold me"}""").RootElement);
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal(warning, JsonSerializer.SerializeToElement(r.Body, Web).GetProperty("warning").GetString());
+    }
 }

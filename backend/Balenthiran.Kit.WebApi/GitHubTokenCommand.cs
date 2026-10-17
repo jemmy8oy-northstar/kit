@@ -1,4 +1,5 @@
 using Balenthiran.Kit.Abstractions.Exceptions;
+using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.WebApi;
 
@@ -16,9 +17,12 @@ public static class GitHubTokenCommand
     public static async Task<int> RunAsync(KitSettings settings, TextWriter stdout, TextWriter stderr, HttpMessageHandler? handler = null)
     {
         using var http = new HttpClient(handler ?? new SocketsHttpHandler(), disposeHandler: handler is null) { Timeout = TimeSpan.FromSeconds(20) };
-        var source = ServiceRegistration.TokenSource(settings, http, TimeProvider.System);
+        IGitHubTokenSource? source = null;
         try
         {
+            // Inside the try (kit#233): a key that is not PEM throws from the constructor, and an
+            // unhandled exception put a stack trace where the entrypoint expects one line of reason.
+            source = ServiceRegistration.TokenSource(settings, http, TimeProvider.System);
             var token = await source.TokenAsync();
             if (token is null)
             {
