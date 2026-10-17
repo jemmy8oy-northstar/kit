@@ -1,23 +1,22 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# music-miles — "Tracks" — onboarded 2026-10-17 at James's music-miles#1
+# tracks — onboarded 2026-10-17 at James's tracks#1 (the repo was music-miles)
 #
 #   "Can you onboard these projects onto kit even if you don't start working
 #   on them yet" … "I am kind of thinking just call it "Tracks" with a tag line
 #   of track your tracks tracks"
 #
-# The repo is empty, so there is no code to infer from. Everything here comes
-# from what he has written on music-miles#1: a running app that puts the music
-# you listened to onto the route you ran. The corpus keeps the repo's name
-# until the repo is renamed (renaming it is his call); the product name is in
-# BEH-BRAND-1.
+# The repo was empty at onboarding, so there was no code to infer from. Everything here comes
+# from what he has written on tracks#1: a running app that puts the music
+# you listened to onto the route you ran. He renamed the repo to tracks on 2026-10-17, and
+# the corpus follows it.
 #
-#   DEFINED   — his words on music-miles#1. Cites the issue.
+#   DEFINED   — his words on tracks#1. Cites the issue.
 #   INFERRED  — my reading of the idea, or a detail it needs that he hasn't
 #               stated. Each is `review unreviewed`: it shows in Proposed, and
 #               he can deny it. Some lean on the Gemini reply he pasted there,
 #               which he has not endorsed line by line.
 #
-# Nothing is built. `kit check music-miles` names every behaviour as missing.
+# Nothing is built. The first slice is tracks#2 (scaffold) and tracks#3 (BEH-MAP-1/2/3).
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-BRAND "Name and voice"
@@ -26,12 +25,12 @@ feature FEAT-MAP "The music map of a workout"
 feature FEAT-SHARE "Sharing a workout"
 
 
-# ═══ DEFINED — music-miles#1 ═══
+# ═══ DEFINED — tracks#1 ═══
 
 behaviour BEH-BRAND-1 "The app is called Tracks, and its tagline is: Track your tracks' tracks"
   in FEAT-BRAND
   layer ux
-  source defined music-miles#1
+  source defined tracks#1
   review unreviewed
   priority 1
   actor runner
@@ -46,7 +45,7 @@ behaviour BEH-BRAND-1 "The app is called Tracks, and its tagline is: Track your 
 behaviour BEH-CONNECT-1 "A runner connects their Strava account so Tracks can read their workouts"
   in FEAT-CONNECT
   layer ux
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
@@ -58,7 +57,7 @@ behaviour BEH-CONNECT-1 "A runner connects their Strava account so Tracks can re
 behaviour BEH-CONNECT-2 "A runner connects their Spotify account so Tracks can read what they listened to"
   in FEAT-CONNECT
   layer ux
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
@@ -70,7 +69,7 @@ behaviour BEH-CONNECT-2 "A runner connects their Spotify account so Tracks can r
 behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along its route"
   in FEAT-MAP
   layer ux
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
@@ -84,7 +83,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
 behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to where the runner was"
   in FEAT-MAP
   layer technical
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
@@ -95,7 +94,7 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
 behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no map"
   in FEAT-MAP
   layer ux
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 2
   actor runner
@@ -107,7 +106,7 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
 behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with the song covers on it"
   in FEAT-SHARE
   layer ux
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 2
   actor runner
@@ -121,7 +120,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
 behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's description"
   in FEAT-SHARE
   layer technical
-  source inferred music-miles#1
+  source inferred tracks#1
   review unreviewed
   priority 3
   actor runner
