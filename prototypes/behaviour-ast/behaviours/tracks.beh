@@ -88,7 +88,7 @@ behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest on
   priority 1
   actor runner
   contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
-  contract unreviewed because the store is in memory until there is a database: a restart forgets runs, and a database is his call
+  contract runs are kept in the database per runner (BEH-CONNECT-3), so a restart forgets nothing
 
 behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played during it"
   in FEAT-SYNC
@@ -130,6 +130,26 @@ behaviour BEH-CONNECT-2 "A runner connects their Spotify account so Tracks can r
   when activates button:ConnectSpotify
   then sees region:Workouts
   contract read-only: Tracks reads listening history and never controls playback
+
+
+# ═══ DEFINED — tracks#6 (multi-user) ═══
+
+behaviour BEH-CONNECT-3 "Anyone can sign in and connect their own accounts; each runner sees only their own runs"
+  in FEAT-CONNECT
+  layer technical
+  source defined tracks#6
+  review unreviewed
+  priority 1
+  actor runner
+  contract "We should have multi user sign in I want this to be used by other people"
+  contract signing in with Strava is the account: the Strava athlete is the user, so there is no password. Unreviewed: my choice
+  contract the session is an HttpOnly cookie, the same mechanism as earnyourbeers. Unreviewed: my choice
+  contract each OAuth round-trip carries a random state that must come back unchanged, or the sign-in is refused
+  contract each runner's Strava and Spotify refresh tokens live in the database, not in config; config holds only the app's client id and secret per provider and the webhook verify token
+  contract a Strava webhook event is routed by its owner_id to that runner; an athlete who never signed in is acknowledged and ignored
+  contract a runner who revokes Tracks on Strava is deleted with their runs. Unreviewed: delete rather than keep is my choice
+  contract GET /api/runs needs a signed-in runner and returns only their runs
+  contract Spotify allows 5 users and Strava 10 before a provider review, so this is a friends-and-family ceiling until he asks for more
 
 behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along its route"
   in FEAT-MAP
