@@ -355,7 +355,7 @@
   "generate": [
     {
       "id": "BEH-A",
-      "code": "test(\"[BEH-A] a\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when types \\\"x\\\" with ?count\" });\n  // UNGENERATED: when types \"x\" with ?count\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:F with ?value\" });\n  // UNGENERATED: then sees field:F with ?value\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees field:F with ?other\" });\n  // UNGENERATED: then sees field:F with ?other\n});",
+      "code": "test.skip(\"[BEH-A] a\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when types \"x\" with ?count\n  // UNGENERATED: then sees field:F with ?value\n  // UNGENERATED: then sees field:F with ?other\n});",
       "missing": [
         "field:F"
       ],
@@ -367,7 +367,7 @@
     },
     {
       "id": "BEH-B",
-      "code": "test(\"[BEH-B] b\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-B] b\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -377,7 +377,7 @@
     },
     {
       "id": "BEH-C",
-      "code": "test(\"[BEH-C] c\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-C] c\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

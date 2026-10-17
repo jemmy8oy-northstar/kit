@@ -16,7 +16,7 @@ namespace Balenthiran.Kit.DataModels.Models;
 // corpora), not read off `kit.js`:
 //
 //   behaviour   id,title,actor,steps,unknowns,provides,serves,at,asks,options,
-//               recommend,against,cites,source,review,pending,layer[,reviewExplicit]
+//               recommend,against,cites,source,review,pending,layer[,in][,reviewExplicit]
 //   step        kind,verb,text,refs,holes,at
 //   ref         kind,name          hole      slot
 //   unknown     slot,at            provide   kind,name,slot,value,from,at
@@ -91,21 +91,35 @@ public sealed class Behaviour : IBehaviour
     [JsonPropertyOrder(17)]
     public string Layer { get; set; } = "ux";
 
-    // Absent, not null, when no `review` line was written — see the header.
+    // kit#237: one entry per `in` line. Absent, not empty, when there is none — unlike
+    // `pending` and `layer`, because every committed golden predates it and no frozen
+    // corpus has an `in` line, so writing `[]` would rewrite all eleven to say nothing.
+    // The project view's `in` (BehaviourView) is the always-written one the page reads.
     [JsonPropertyOrder(18)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<IdRef>? In { get; set; }
+
+    // Absent, not null, when no `review` line was written — see the header.
+    [JsonPropertyOrder(19)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? ReviewExplicit { get; set; }
 
     // Written by `resolve` and absent before it, for the same reason as
     // `Step.Resolved`. `kit.js` returns `{ ...b, filled, open }`, so they follow
     // every parsed key — including `reviewExplicit` — in that order.
-    [JsonPropertyOrder(19)]
+    [JsonPropertyOrder(20)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<Filled>? Filled { get; set; }
 
-    [JsonPropertyOrder(20)]
+    [JsonPropertyOrder(21)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<OpenHole>? Open { get; set; }
+
+    // kit#284: a `priority` line, 1 (first) to 5. Absent, not null, without one — the
+    // rule `in` follows, so no committed golden is rewritten to say nothing.
+    [JsonPropertyOrder(22)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Priority { get; set; }
 
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
@@ -119,6 +133,7 @@ public sealed class Behaviour : IBehaviour
     IReadOnlyList<IIdRef> IBehaviour.Cites => Cites;
     ISource IBehaviour.Source => Source;
     IReview IBehaviour.Review => Review;
+    IReadOnlyList<IIdRef> IBehaviour.In => (IReadOnlyList<IIdRef>?)In ?? [];
     IReadOnlyList<IFilled>? IBehaviour.Filled => Filled;
     IReadOnlyList<IOpenHole>? IBehaviour.Open => Open;
 }

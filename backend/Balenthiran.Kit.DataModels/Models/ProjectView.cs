@@ -43,6 +43,29 @@ public sealed class ProjectView : IProjectView
     [JsonPropertyOrder(12)]
     public required RequiresView Requires { get; init; }
 
+    // kit#237. Last, so every key already served keeps its place; empty when none are declared.
+    [JsonPropertyOrder(13)]
+    public required List<FeatureView> Features { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required string Project { get; init; }
+
+    // kit#284 slice 4: a `# kit:idea` file is the Ideas page, not work. True or absent — never
+    // false — so no response that predates it changes shape.
+    [JsonPropertyOrder(15)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Idea { get; init; }
+
+    bool IProjectView.Idea => Idea == true;
+
+    // kit#284 slice 5: its `# kit:principle` lines, in file order. Absent when it declares none,
+    // so no response that predates it changes shape.
+    [JsonPropertyOrder(16)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<PrincipleView>? Principles { get; init; }
+
+    IReadOnlyList<IPrincipleView> IProjectView.Principles => (IReadOnlyList<IPrincipleView>?)Principles ?? [];
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;
@@ -58,4 +81,6 @@ public sealed class ProjectView : IProjectView
     IReadOnlyList<IQuestion> IProjectView.Questions => Questions.Cast<IQuestion>().ToList();
 
     IRequiresView IProjectView.Requires => Requires;
+
+    IReadOnlyList<IFeatureView> IProjectView.Features => Features;
 }

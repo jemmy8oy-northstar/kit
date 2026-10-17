@@ -22,4 +22,14 @@ public interface IBehaviourView
     string? Asks { get; }
 
     string At { get; }
+
+    bool Pending { get; }
+
+    string Layer { get; }
+
+    /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>
+    IReadOnlyList<string> In { get; }
+
+    /// <summary>1 (first) to 5, from a <c>priority</c> line (kit#284); null when there is none.</summary>
+    int? Priority { get; }
 }

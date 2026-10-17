@@ -104,7 +104,7 @@ behaviour BEH-SEED-1 "First run is not empty — a starter set of habits is seed
 
 behaviour BEH-ORDER-1 "A newly created habit is appended to the end of the display order"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:Create_appends_to_the_end_of_the_order
-  review unreviewed
+  review approved
   serves BEH-TODAY-1
   actor owner
   contract POST /api/habits places the new habit last in sortOrder

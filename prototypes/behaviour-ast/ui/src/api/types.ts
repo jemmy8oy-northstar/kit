@@ -73,6 +73,13 @@ export interface ProjectSummary {
   conflicts?: number
   coverage?: SummaryCoverage
   unreviewed?: number
+  /**
+   * The project this corpus is shown under (kit#237): its `# kit:project` directive, or its
+   * own name. Files sharing one are one project. Absent on an error row.
+   */
+  project?: string
+  /** A `# kit:idea` file (kit#284): app ideas, not a project. Absent, never false, otherwise. */
+  idea?: boolean
 }
 
 export interface StepRef {
@@ -98,7 +105,23 @@ export interface Behaviour {
   source: { origin: string; ref: string | null }
   review: { state: string; note: string | null }
   asks: unknown
+  /** Marked `pending` in the corpus: specified, not built. */
+  pending: boolean
+  /** The layer the behaviour belongs to, as the server derives it. */
+  layer: string
   /** `<corpus>.beh:<line>` — where a human goes to edit it. */
+  at: string
+  /** The features it is tagged into, one per `in` line (kit#237); empty when untagged. */
+  in: string[]
+  /** 1 (first) to 5, from a `priority` line (kit#284); absent when there is none. */
+  priority?: number
+}
+
+/** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */
+export interface Feature {
+  id: string
+  title: string
+  in: string[]
   at: string
 }
 
@@ -126,8 +149,8 @@ export interface Adjudication {
   untraceable: string[]
 }
 
-/** The three states `parse()` accepts on a `review` line, and nothing else. */
-export type ReviewState = 'unreviewed' | 'approved' | 'denied'
+/** The four states `parse()` accepts on a `review` line, and nothing else; `requested` is kit#284's. */
+export type ReviewState = 'unreviewed' | 'approved' | 'requested' | 'denied'
 
 /**
  * One entry of the question sheet `kit.js` already builds, which `ui.js` has
@@ -189,6 +212,22 @@ export interface ProjectDetail {
   surface: { errors: string[]; served: string[]; unserved: string[] }
   questions: Question[]
   requires: Requires
+  /** Empty for a corpus that declares no features — it is then shown as a flat list, as before. */
+  features: Feature[]
+  /** See `ProjectSummary.project`. */
+  project: string
+  /** Its `# kit:principle` lines (kit#284 slice 5), in file order. Absent when it declares none. */
+  principles?: Principle[]
+}
+
+/** One `# kit:principle [global] <Name>: <what it means>` line. */
+export interface Principle {
+  name: string
+  text: string
+  /** Holds for every project, not just the one that declares it. */
+  global: boolean
+  /** `<corpus>.beh:<line>`, where it is changed. */
+  at: string
 }
 
 /**
@@ -351,17 +390,70 @@ export type AnyWriteResult = WriteResult | BindResult | NoteResult
 export interface Note {
   /** UTC, to the minute: `2026-10-10 20:41Z`. */
   at: string
+  /**
+   * `note`, a free comment; `request`, a behaviour asked for in prose (BEH-NOTE-4);
+   * `resolution`, how a decision on the question sheet should go (BEH-NOTE-8).
+   */
+  kind: 'note' | 'request' | 'resolution'
   /** The behaviour it was left on; null for one left on the project. */
   behaviour: string | null
+  /** The question-sheet key a resolution answers; null for every other kind. */
+  resolves: string | null
+  /** What was typed, without anything written under it since. */
+  text: string
+  /** Questions and answers written under the note, oldest first (BEH-NOTE-5/6). */
+  thread: NoteEntry[]
+  /** The latest round of questions while it is unanswered; empty otherwise. */
+  questions: string[]
+}
+
+/** One section under a note: the folder's questions, or the answer to them. */
+export interface NoteEntry {
+  kind: 'questions' | 'answer'
+  at: string | null
   text: string
 }
 
 /** `GET /api/projects/<app>/notes`: every note still open, oldest first. */
+/** `GET /api/projects/<app>/history` (BEH-BOARD-4): when each built behaviour was completed. */
+export interface CompletionList {
+  app: string
+  file: string
+  /** `none` when this server has no git history for the corpus, and `reason` says why. */
+  history: 'git' | 'none'
+  reason: string | null
+  /**
+   * Every built behaviour, in corpus order. `at` is ISO 8601, or null when the corpus is
+   * built ahead of its newest commit — newer than anything git holds.
+   */
+  completed: { id: string; at: string | null }[]
+}
+
 export interface NoteList {
   app: string
   /** Where the notes live, whether or not the file exists yet. */
   file: string
   notes: Note[]
+}
+
+/** One behaviour on the schedule or in the backlog (BEH-SCHED-1..3). */
+export interface ScheduleEntry {
+  id: string
+  /** Null when the corpus no longer has the id. */
+  title: string | null
+  /** `pending` still to build; `done` built since it was scheduled; `missing` gone from the corpus. Backlog is always `pending`. */
+  state: 'pending' | 'done' | 'missing'
+  /** The first still-pending entry on the schedule: the one an agent picks up. Never true in the backlog. */
+  next: boolean
+}
+
+/** `GET /api/projects/<app>/schedule`: the schedule in order, then every pending behaviour it does not list. */
+export interface ScheduleList {
+  app: string
+  /** Where the schedule lives, whether or not the file exists yet. */
+  file: string
+  scheduled: ScheduleEntry[]
+  backlog: ScheduleEntry[]
 }
 
 /** What `POST /api/projects/<app>/notes` returns: a corpus write's shape, with the behaviour optional. */
@@ -391,6 +483,28 @@ export interface SessionState {
  * kept apart, so a second press reads as "still waiting on review" rather than as
  * a second proposal. A refusal is a 409 whose `reason` the client throws.
  */
+/** One commit on the edits branch that the base lacks (BEH-COMMIT-5), read back from Kit's own message. */
+export interface PendingEdit {
+  sha: string
+  /** `adjudicate BEH-ORDER-1`: the message without `kit: ` or `(app)`. */
+  summary: string
+  app: string | null
+  behaviour: string | null
+  when: string | null
+}
+
+/** What `GET /api/projects/<app>/pending` returns: this project's share of the edits branch, newest first. */
+export interface PendingView {
+  app: string
+  head: string | null
+  base: string
+  edits: PendingEdit[]
+  pullNumber: number | null
+  pullUrl: string | null
+  /** Why the list may be incomplete or empty — write-back off, or GitHub's own words. */
+  reason: string | null
+}
+
 export interface ProposeResult {
   opened: boolean
   alreadyOpen: boolean

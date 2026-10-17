@@ -27,7 +27,8 @@ public static class ServiceRegistration
                 settings.Projects,
                 new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>())));
             services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
-            services.AddHostedService<ProjectPoller>();
+            services.AddSingleton<ProjectPoller>();
+            services.AddHostedService(sp => sp.GetRequiredService<ProjectPoller>());
         }
 
         services.AddSingleton<ICorpusParser, CorpusParser>();
@@ -37,6 +38,8 @@ public static class ServiceRegistration
         services.AddSingleton<IEngineJsonSerialiser, EngineJsonSerialiser>();
         services.AddSingleton<IProjectViewer, ProjectViewer>();
         services.AddSingleton<ICorpusWriter, CorpusWriter>();
+        services.AddSingleton<ICorpusHistory, GitCorpusHistory>();
+        services.AddSingleton<ICompletionReader, CompletionReader>();
         services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IUrlParser, UrlParser>();
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
@@ -49,6 +52,10 @@ public static class ServiceRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(sp => TokenSource(settings, GitHubClient(sp), sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
+            settings.GitRepository));
+        services.TryAddSingleton<IPendingEditsReader>(sp => new GitHubPullRequestOpener(
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
@@ -69,7 +76,9 @@ public static class ServiceRegistration
             pulls: sp.GetRequiredService<IPullRequestOpener>(),
             head: settings.GitBranch,
             baseBranch: settings.GitBase,
-            clock: sp.GetRequiredService<TimeProvider>()));
+            clock: sp.GetRequiredService<TimeProvider>(),
+            pending: sp.GetRequiredService<IPendingEditsReader>(),
+            completions: sp.GetRequiredService<ICompletionReader>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

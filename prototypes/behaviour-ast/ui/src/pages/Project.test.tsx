@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Project from './Project'
 import { noNotes } from '../test/noNotes'
 import snipIt from '../test/fixtures/project-snip-it.json'
 import habits from '../test/fixtures/project-james-habits-app.json'
 
-function renderApp(body: unknown, app: string) {
+function renderApp(body: unknown, app: string, search = '') {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
   )
 
   return render(
-    <MemoryRouter initialEntries={[`/projects/${app}`]}>
+    <MemoryRouter initialEntries={[`/projects/${app}${search}`]}>
       <Routes>
         <Route path="/projects/:app" element={<Project />} />
       </Routes>
@@ -27,7 +27,11 @@ describe('Project', () => {
 
     expect(await screen.findByRole('heading', { name: 'snip-it', level: 1 })).toBeInTheDocument()
     expect(screen.getByText('8 behaviours')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'BEH-EDIT-1' })).toBeInTheDocument()
+    // BEH-TITLE-1: the card links by its title; the id is still on it, quieter.
+    const edit = snipIt.behaviours.find((b) => b.id === 'BEH-EDIT-1')!
+    const link = screen.getByRole('link', { name: edit.title })
+    expect(link).toHaveAttribute('href', '/projects/snip-it/behaviours/BEH-EDIT-1')
+    expect(within(link.closest('h3')!).getByText('BEH-EDIT-1')).toHaveClass('muted')
   })
 
   it('COUNTS the detail endpoint’s coverage instead of concatenating its ids', async () => {
@@ -102,6 +106,80 @@ describe('Project', () => {
   })
 })
 
+// ── BEH-FEAT-6: features and questions are two tabs, features first ─────────
+
+describe('the project tabs', () => {
+  const waiting = habits.conflicts.length + habits.questions.length
+
+  it('opens on Features, with the questions a tap away and counted', async () => {
+    renderApp(habits, 'james-habits-app')
+
+    const features = await screen.findByRole('tab', { name: 'Features' })
+    expect(features).toHaveAttribute('aria-selected', 'true')
+    const questions = screen.getByRole('tab', { name: `Questions ${waiting}` })
+    expect(questions).toHaveAttribute('aria-selected', 'false')
+    // Hidden, not merely below: role queries skip a hidden panel, so this fails
+    // if the sheet is still on screen under the features.
+    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: 'Features' })).toBeVisible()
+  })
+
+  it('switches to Questions on a tap, and back', async () => {
+    renderApp(habits, 'james-habits-app')
+
+    fireEvent.click(await screen.findByRole('tab', { name: `Questions ${waiting}` }))
+    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('tabpanel', { name: `Questions ${waiting}` })).toBeVisible()
+    expect(screen.queryByRole('tabpanel', { name: 'Features' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Features' }))
+    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+  })
+
+  it('opens on Questions from a link carrying ?tab=questions', async () => {
+    renderApp(habits, 'james-habits-app', '?tab=questions')
+
+    expect(await screen.findByRole('tab', { name: `Questions ${waiting}` })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+  })
+
+  it('CONTROL: with nothing waiting the tab carries no count and says so when opened', async () => {
+    expect(snipIt.questions.length + snipIt.conflicts.length).toBe(0)
+    renderApp(snipIt, 'snip-it', '?tab=questions')
+
+    expect(await screen.findByRole('tab', { name: 'Questions' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Nothing is waiting on you.')).toBeVisible()
+  })
+
+  // BEH-FEAT-7 (his note 2026-10-16 07:13Z): "Let's leverage the tab view more".
+  it('keeps only the describe box above the tabs; notes and the schedule are tabs of their own', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    expect(await screen.findByLabelText('Describe what should happen')).toBeVisible()
+    expect(screen.getByRole('tab', { name: 'Schedule' })).toBeInTheDocument()
+    // Hidden behind the Notes tab until it is picked.
+    expect(screen.queryByRole('region', { name: 'Notes' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: 'Notes' }))
+    expect(screen.getByRole('region', { name: 'Notes' })).toBeVisible()
+    expect(screen.queryByRole('tabpanel', { name: 'Features' })).not.toBeInTheDocument()
+  })
+
+  it('opens on Notes from ?tab=notes, and has no Principles tab for a project with none', async () => {
+    expect(snipIt).not.toHaveProperty('principles')
+    renderApp(snipIt, 'snip-it', '?tab=notes')
+
+    expect(await screen.findByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('tab', { name: 'Principles' })).not.toBeInTheDocument()
+  })
+
+  it('CONTROL: a project with principles has the tab, and an unknown ?tab falls back to Features', async () => {
+    renderApp({ ...snipIt, principles: [{ name: 'Readability', text: 'a human can read it', global: false, at: 'x:1' }] }, 'snip-it', '?tab=nonsense')
+
+    expect(await screen.findByRole('tab', { name: 'Principles' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Features' })).toHaveAttribute('aria-selected', 'true')
+  })
+})
+
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
 
 describe('the question sheet', () => {
@@ -114,7 +192,7 @@ describe('the question sheet', () => {
   it('renders the decision pack Kit already built — the ask, both options, the recommendation', async () => {
     // This is the most considered artefact Kit produces and the UI was
     // discarding it: `questions` was typed `unknown[]` and read by nothing.
-    renderApp(habits, 'james-habits-app')
+    renderApp(habits, 'james-habits-app', '?tab=questions')
 
     // Scoped to the one card. There are three decision-tier questions in this
     // fixture and each renders its own recommendation, so an unscoped query for
@@ -138,20 +216,55 @@ describe('the question sheet', () => {
     expect(within(card).getByText(/^Against:/)).toBeInTheDocument()
   })
 
-  it('offers NO control on a conflict, and says why', async () => {
-    // Kit has no syntax for "BEH-A supersedes BEH-B" — no keyword, no writer
-    // function. A resolve button here would mean inventing the grammar it wrote
-    // into, which is a change to the corpus language and James's call. The page
-    // must say that rather than look unfinished.
-    renderApp(habits, 'james-habits-app')
+  it('resolves a decision in prose, as a note naming its key, never as corpus syntax', async () => {
+    // Kit still has no syntax for "BEH-A supersedes BEH-B" (BEH-NOTE-8). The
+    // answer is a note, and the fold is what edits the behaviours.
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posts.push({ url, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'james-habits-app', behaviour: null, file: 'x.notes.md', note: 'x' }) }
+        }
+        return noNotes(url, init) ?? { ok: true, status: 200, statusText: 'OK', json: async () => habits }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/james-habits-app?tab=questions']}>
+        <Routes>
+          <Route path="/projects/:app" element={<Project />} />
+        </Routes>
+      </MemoryRouter>,
+    )
 
     const card = (await screen.findByText(/Two behaviours disagree about/)).closest('div')!
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument()
-    expect(within(card).getByText(/no syntax for recording a resolution/)).toBeInTheDocument()
+    const resolve = within(card).getByRole('button', { name: 'Resolve' })
+    expect(resolve).toBeDisabled()
+    fireEvent.change(within(card).getByLabelText('How should this be resolved?'), { target: { value: 'the newer one wins' } })
+    fireEvent.click(resolve)
+
+    const key = habits.questions.find((q) => q.tier === 'decision')!.key
+    await waitFor(() =>
+      expect(posts).toEqual([
+        { url: '/api/projects/james-habits-app/notes', body: { text: 'the newer one wins', kind: 'resolution', resolves: key } },
+      ]),
+    )
+  })
+
+  it('shows the question sheet Kit built for a project, with its review queue and the way to ask for more', async () => {
+    // BEH-SHEET-1's three `then`s, on the project its `provides` names: the sheet's heading, the
+    // never-adjudicated queue under it, and the button that asks for a new behaviour. The sheet
+    // is behind the Questions tab since BEH-FEAT-6, so the test opens on it.
+    renderApp(habits, 'james-habits-app', '?tab=questions')
+
+    expect(await screen.findByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Never adjudicated' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ask for behaviour' })).toBeInTheDocument()
   })
 
   it('links every never-adjudicated inference to the page where it can be answered', async () => {
-    renderApp(habits, 'james-habits-app')
+    renderApp(habits, 'james-habits-app', '?tab=questions')
 
     const reviews = habits.questions.filter((q) => q.tier === 'review')
     const queue = (await screen.findByRole('heading', { name: 'Never adjudicated' })).parentElement!
@@ -163,31 +276,45 @@ describe('the question sheet', () => {
     }
   })
 
-  it('will not submit a new behaviour without an id, and will not without a title', async () => {
-    // Both halves, because the button guards both and a test for one alone is
-    // satisfied by a form that dropped the other. An id is not a field the
-    // corpus can default: it is the key `check.js` gates on and the anchor every
-    // `serves`/`cites` line refers to, so a blank one is a behaviour nothing can
-    // ever name.
-    renderApp(snipIt, 'snip-it')
+  it('asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank', async () => {
+    // BEH-NOTE-4: the Id / Title / Actor form is gone. Whoever folds the request
+    // writes those, so asking for them here would be the chore he named.
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posts.push({ url, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'snip-it', behaviour: null, file: 'x.notes.md', note: 'x' }) }
+        }
+        return noNotes(url, init) ?? { ok: true, status: 200, statusText: 'OK', json: async () => snipIt }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/snip-it']}>
+        <Routes>
+          <Route path="/projects/:app" element={<Project />} />
+        </Routes>
+      </MemoryRouter>,
+    )
 
-    const add = await screen.findByRole('button', { name: 'Add behaviour' })
-    expect(add).toBeDisabled()
+    const ask = await screen.findByRole('button', { name: 'Ask for behaviour' })
+    expect(screen.queryByLabelText('Id')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Title')).not.toBeInTheDocument()
+    expect(ask).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: '  ' } })
+    expect(ask).toBeDisabled()
 
-    // Title only — still refused.
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'the cut is downloadable' } })
-    expect(add).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Describe what should happen'), { target: { value: 'a cut can be downloaded' } })
+    fireEvent.click(ask)
 
-    // Id as whitespace is the same as no id; `.trim()` is what makes that true.
-    fireEvent.change(screen.getByLabelText('Id'), { target: { value: '   ' } })
-    expect(add).toBeDisabled()
-
-    fireEvent.change(screen.getByLabelText('Id'), { target: { value: 'BEH-CUT-2' } })
-    expect(add).toBeEnabled()
-
-    // And the other direction: a title cleared after the fact re-disables it.
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: '' } })
-    expect(add).toBeDisabled()
+    await waitFor(() =>
+      expect(posts).toEqual([{ url: '/api/projects/snip-it/notes', body: { text: 'a cut can be downloaded', kind: 'request' } }]),
+    )
+    await waitFor(() => expect(screen.getByLabelText('Describe what should happen')).toHaveValue(''))
+    // BEH-FEAT-7: asking opens the Notes tab, so the note just left is in view.
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'true'))
+    expect(screen.getByRole('region', { name: 'Notes' })).toBeVisible()
   })
 
   it('shows no sheet at all when there is nothing to ask', async () => {

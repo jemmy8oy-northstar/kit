@@ -30,6 +30,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="pulls">Commit's door to <c>dev</c> (kit#155): proposes the edits branch as a pull request. None means Commit says so.</param>
 /// <param name="head">The branch every edit is pushed to (<c>KIT_GIT_BRANCH</c>, <c>kit/hosted</c> when deployed) — Commit's pull request is FROM it.</param>
 /// <param name="baseBranch">What Commit proposes the edits INTO: <c>KIT_GIT_BASE</c>, default <c>dev</c>, the branch the entrypoint starts <paramref name="head"/> from.</param>
+/// <param name="pending">Reads what <paramref name="head"/> holds that <paramref name="baseBranch"/> lacks (BEH-COMMIT-5). None means nothing is listed.</param>
 public sealed class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -47,6 +48,8 @@ public sealed class KitRouter(
     string? head = null,
     string baseBranch = "dev",
     TimeProvider? clock = null,
+    IPendingEditsReader? pending = null,
+    ICompletionReader? completions = null,
     string? offReason = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
@@ -60,10 +63,16 @@ public sealed class KitRouter(
 
     private readonly IGitStore git = git ?? new GitStore(enabled: false);
 
+    private readonly ICompletionReader completions = completions ?? new CompletionReader(corpora, new GitCorpusHistory());
+
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
+    private static readonly Regex PendingRoute = new(@"^/api/projects/([^/]+)/pending\z", RegexOptions.Compiled);
+    private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
+    private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
+    private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -156,7 +165,92 @@ public sealed class KitRouter(
                 : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
         }
 
+        // BEH-COMMIT-5: this project's edits that have not reached the base, and the pull request
+        // they wait in. A read like the rest, so it is served to anyone (BEH-GATE-H1).
+        var pm = PendingRoute.Match(pathname);
+        if (pm.Success)
+        {
+            if (DecodeUriComponent(pm.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, Pending(app))
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
+        // BEH-SCHED-1..3: a route of its own for the same reason as the notes.
+        var schedule = ScheduleRoute.Match(pathname);
+        if (schedule.Success)
+        {
+            if (DecodeUriComponent(schedule.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            if (!known.Contains(app, StringComparer.Ordinal))
+            {
+                return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+            }
+
+            try
+            {
+                return Json(200, ScheduleOf(app));
+            }
+            catch (ProjectionFailedException e)
+            {
+                return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+            }
+        }
+
+        // BEH-BOARD-4: when each built behaviour was completed, apart from the project view as the
+        // notes are — a history that cannot be read costs the board its order, never its cards.
+        var history = HistoryRoute.Match(pathname);
+        if (history.Success)
+        {
+            if (DecodeUriComponent(history.Groups[1].Value) is not { } app)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "the app name is not valid percent-encoding" });
+            }
+
+            var known = corpora.Corpora();
+            return known.Contains(app, StringComparer.Ordinal)
+                ? Json(200, completions.For(app))
+                : Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'", Known = known.ToList() });
+        }
+
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
+    }
+
+    /// <summary>
+    /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull
+    /// request they wait in. Off — write-back off, no edits branch, no reader — is an empty list
+    /// with the reason, not an error: a page that lists nothing pending must still render.
+    /// </summary>
+    private PendingView Pending(string app)
+    {
+        if (!git.Enabled || string.IsNullOrEmpty(head) || pending is null)
+        {
+            return new PendingView { App = app, Head = head, Base = baseBranch, Reason = "git write-back is off, so no edit is waiting on a branch" };
+        }
+
+        // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
+        var all = pending.PendingAsync(head, baseBranch).GetAwaiter().GetResult();
+        var mine = all.Edits.Where(e => string.Equals(e.App, app, StringComparison.Ordinal)).ToList();
+        return new PendingView
+        {
+            App = app,
+            Head = head,
+            Base = baseBranch,
+            Edits = mine,
+            // The pull request carries every project's edits; it is only worth showing beside this one's.
+            PullNumber = mine.Count > 0 ? all.PullNumber : null,
+            PullUrl = mine.Count > 0 ? all.PullUrl : null,
+            Reason = all.Reason,
+        };
     }
 
     /// <summary><c>ui.js</c>'s <c>write()</c>, up to the write itself.</summary>
@@ -207,7 +301,9 @@ public sealed class KitRouter(
 
         var bm = Bindings.Match(pathname);
         var nm = NotesRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : Behaviours.Match(pathname);
+        var na = NoteAction.Match(pathname);
+        var sm = ScheduleRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -238,11 +334,26 @@ public sealed class KitRouter(
         // would race on the same corpus text and on git's index lock (kit#165).
         lock (writeGate)
         {
-            return bm.Success ? Bind(app, b) : nm.Success ? LeaveNote(app, b) : Edit(app, m, b);
+            return bm.Success ? Bind(app, b)
+                : nm.Success ? LeaveNote(app, b)
+                : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
+                : sm.Success ? Reschedule(app, b)
+                : Edit(app, m, b);
         }
     }
 
     private readonly object writeGate = new();
+
+    /// <inheritdoc />
+    public IGitWriteBack CatchUp(string dir)
+    {
+        // Behind the edits' own lock (BEH-COMMIT-6): a merge that touched the working tree between
+        // an edit's write and its commit would be committed as part of the edit, or break it.
+        lock (writeGate)
+        {
+            return git.CatchUp(dir);
+        }
+    }
 
     /// <summary><c>write()</c> past its gates: create, add or replace a step, retitle, adjudicate, or remove.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
@@ -404,6 +515,11 @@ public sealed class KitRouter(
     /// kit#118: append one free-text note to <c>&lt;app&gt;.notes.md</c>, then commit and push it like
     /// any edit. A note on a behaviour names it, but the id is not looked up: a note may be about a
     /// behaviour that is being renamed, removed, or does not exist yet.
+    /// <para>
+    /// <c>kind</c> (kit#118, 2026-10-12): <c>request</c> asks for a behaviour in prose instead of the
+    /// id/title/actor form (BEH-NOTE-4); <c>resolution</c> says how a decision on the question sheet
+    /// should go, naming it by <c>resolves</c> (BEH-NOTE-8). Neither touches the corpus.
+    /// </para>
     /// </summary>
     private KitResponse LeaveNote(string app, JsonElement body)
     {
@@ -413,24 +529,52 @@ public sealed class KitRouter(
         }
 
         var text = Str(body, "text")!;
-        if (string.IsNullOrWhiteSpace(text))
+        if (TextError(text) is { } badText)
         {
-            return Json(400, new ApiError { Error = "bad-request", Reason = "a note needs some text" });
+            return Json(400, new ApiError { Error = "bad-request", Reason = badText });
         }
 
-        if (text.Length > Notes.MaxLength)
-        {
-            return Json(400, new ApiError { Error = "bad-request", Reason = $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}" });
-        }
-
+        var kind = Str(body, "kind") ?? Notes.NoteKind;
         var behaviour = Str(body, "behaviour");
-        if (behaviour is not null && !Notes.IsBehaviourId(behaviour))
+        var resolves = Str(body, "resolves");
+        if (kind is not (Notes.NoteKind or Notes.RequestKind or Notes.ResolutionKind))
         {
-            return Json(400, new ApiError { Error = "bad-request", Reason = "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+            return Json(400, new ApiError { Error = "bad-request", Reason = "kind must be note, request or resolution" });
         }
 
-        corpora.WriteNotesText(app, Notes.Append(corpora.ReadNotesText(app), app, text, behaviour, (clock ?? TimeProvider.System).GetUtcNow()));
-        return Json(200, GitOutcome(corpora.FullNotesPath(app), behaviour is null ? "leave a note" : $"leave a note on {behaviour}", app, new WriteOutcome
+        if (behaviour is not null && (kind != Notes.NoteKind || !Notes.IsBehaviourId(behaviour)))
+        {
+            return Json(400, new ApiError
+            {
+                Error = "bad-request",
+                Reason = kind != Notes.NoteKind
+                    ? "only a plain note can name a behaviour"
+                    : "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only",
+            });
+        }
+
+        if ((kind == Notes.ResolutionKind) != (resolves is not null) || (resolves is not null && !Notes.IsQuestionKey(resolves)))
+        {
+            return Json(400, new ApiError
+            {
+                Error = "bad-request",
+                Reason = kind == Notes.ResolutionKind
+                    ? $"a resolution names the decision it resolves: resolves must be its key, one token of at most {Notes.MaxKeyLength} characters"
+                    : "only a resolution names a decision to resolve",
+            });
+        }
+
+        var existing = corpora.ReadNotesText(app);
+        var now = (clock ?? TimeProvider.System).GetUtcNow();
+        var (written, summary) = kind switch
+        {
+            Notes.RequestKind => (Notes.AppendRequest(existing, app, text, now), "ask for a behaviour"),
+            Notes.ResolutionKind => (Notes.AppendResolution(existing, app, text, resolves!, now), $"resolve {resolves}"),
+            _ => (Notes.Append(existing, app, text, behaviour, now), behaviour is null ? "leave a note" : $"leave a note on {behaviour}"),
+        };
+
+        corpora.WriteNotesText(app, written);
+        return Json(200, GitOutcome(corpora.FullNotesPath(app), summary, app, new WriteOutcome
         {
             App = app,
             Behaviour = behaviour,
@@ -438,6 +582,154 @@ public sealed class KitRouter(
             Note = NotCommitted,
         }));
     }
+
+    /// <summary>
+    /// Answer a note's questions (BEH-NOTE-6) or dismiss it (BEH-NOTE-7). The note is named by its
+    /// place in the file AND its date, so an edit that lands between reading the list and pressing
+    /// the button cannot redirect the action onto a different note: it is refused with 409 instead.
+    /// </summary>
+    private KitResponse ActOnNote(string app, string action, JsonElement body)
+    {
+        var dismiss = action == "dismiss";
+        if (TypeError(body, dismiss ? DismissFields : ReplyFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var index = body.GetProperty("index").GetInt32();
+        var at = Str(body, "at")!;
+        var text = dismiss ? null : Str(body, "text")!;
+        if (text is not null && TextError(text) is { } badText)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = badText });
+        }
+
+        var existing = corpora.ReadNotesText(app);
+        var written = dismiss
+            ? Notes.Dismiss(existing, index, at)
+            : Notes.Reply(existing, index, at, text!, (clock ?? TimeProvider.System).GetUtcNow());
+        if (written is null)
+        {
+            return Json(409, new ApiError
+            {
+                Error = "no-such-note",
+                Reason = $"note {index} left at {at} is no longer in {corpora.RelativeNotesPath(app)} — it may have been folded or dismissed already. Reload to see what is open.",
+            });
+        }
+
+        corpora.WriteNotesText(app, written);
+        return Json(200, GitOutcome(corpora.FullNotesPath(app), dismiss ? $"dismiss the note left at {at}" : $"answer the note left at {at}", app, new WriteOutcome
+        {
+            App = app,
+            File = corpora.RelativeNotesPath(app),
+            Note = NotCommitted,
+        }));
+    }
+
+    /// <summary>
+    /// The schedule as BEH-SCHED-1 and -3 describe it: every listed id in order, each pending, done or
+    /// missing, the first pending one marked next; then every pending behaviour not listed, in corpus
+    /// order. Nothing here falls back to the backlog — with nothing scheduled, nothing is next.
+    /// </summary>
+    private ScheduleList ScheduleOf(string app)
+    {
+        var behaviours = viewer.View(app).Behaviours;
+        var byId = new Dictionary<string, (string Title, bool Pending)>(StringComparer.Ordinal);
+        foreach (var b in behaviours)
+        {
+            byId.TryAdd(b.Id, (b.Title, b.Pending));
+        }
+
+        var ids = Schedule.Parse(corpora.ReadScheduleText(app));
+        var scheduled = new List<ScheduleEntry>();
+        var nextTaken = false;
+        foreach (var id in ids)
+        {
+            var known = byId.TryGetValue(id, out var b);
+            var state = !known ? "missing" : b.Pending ? "pending" : "done";
+            var next = state == "pending" && !nextTaken;
+            nextTaken |= next;
+            scheduled.Add(new ScheduleEntry { Id = id, Title = known ? b.Title : null, State = state, Next = next });
+        }
+
+        var backlog = behaviours
+            .Where(b => b.Pending && !ids.Contains(b.Id, StringComparer.Ordinal))
+            .DistinctBy(b => b.Id, StringComparer.Ordinal)
+            .Select(b => new ScheduleEntry { Id = b.Id, Title = b.Title, State = "pending" })
+            .ToList();
+
+        return new ScheduleList { App = app, File = corpora.RelativeSchedulePath(app), Scheduled = scheduled, Backlog = backlog };
+    }
+
+    /// <summary>
+    /// BEH-SCHED-2: schedule a backlog behaviour (appended), return one to the backlog, or move one up
+    /// or down a place — then commit and push the schedule like any edit. The corpus is never touched.
+    /// Only a pending behaviour can be scheduled; anything already listed can be removed or moved,
+    /// a built or vanished one included, so a stale entry can always be cleared.
+    /// </summary>
+    private KitResponse Reschedule(string app, JsonElement body)
+    {
+        if (TypeError(body, ScheduleFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var action = Str(body, "action")!;
+        var id = Str(body, "id")!;
+        if (action is not (Schedule.Add or Schedule.Remove or Schedule.Up or Schedule.Down))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "action must be add, remove, up or down" });
+        }
+
+        // One word on one line, or it would not read back as the id that was written.
+        if (!Notes.IsBehaviourId(id))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "id must be a behaviour id such as BEH-1: letters, digits, '.', '_' and '-' only" });
+        }
+
+        if (action == Schedule.Add)
+        {
+            IReadOnlyList<Abstractions.DataModels.IBehaviourView> behaviours;
+            try
+            {
+                behaviours = viewer.View(app).Behaviours;
+            }
+            catch (ProjectionFailedException e)
+            {
+                return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+            }
+
+            if (behaviours.FirstOrDefault(b => b.Id == id) is not { } found)
+            {
+                return Json(409, new ApiError { Error = "no-such-behaviour", Reason = $"{app} has no behaviour {id}" });
+            }
+
+            if (!found.Pending)
+            {
+                return Json(409, new ApiError { Error = "not-pending", Reason = $"{id} is already built; only a pending behaviour can be scheduled" });
+            }
+        }
+
+        var (ids, error, reason) = Schedule.Change(Schedule.Parse(corpora.ReadScheduleText(app)), action, id);
+        if (ids is null)
+        {
+            return Json(409, new ApiError { Error = error!, Reason = reason! });
+        }
+
+        corpora.WriteScheduleText(app, Schedule.Render(app, ids));
+        return Json(200, GitOutcome(corpora.FullSchedulePath(app), Schedule.Summary(action, id), app, new WriteOutcome
+        {
+            App = app,
+            Behaviour = id,
+            File = corpora.RelativeSchedulePath(app),
+            Note = NotCommitted,
+        }));
+    }
+
+    private static string? TextError(string text) =>
+        string.IsNullOrWhiteSpace(text) ? "a note needs some text"
+        : text.Length > Notes.MaxLength ? $"a note is at most {Notes.MaxLength} characters; this one is {text.Length}"
+        : null;
 
     /// <summary>
     /// <c>gitOutcome()</c>: what git did with this edit, as fields a caller can act on — one
@@ -499,7 +791,10 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
     private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
-    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?")];
+    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
+    private static readonly (string Field, string Type)[] ReplyFields = [("index", "int"), ("at", "string"), ("text", "string")];
+    private static readonly (string Field, string Type)[] DismissFields = [("index", "int"), ("at", "string")];
+    private static readonly (string Field, string Type)[] ScheduleFields = [("action", "string"), ("id", "string")];
 
     private static string? TypeError(JsonElement body, (string Field, string Type)[] spec)
     {
@@ -516,6 +811,11 @@ public sealed class KitRouter(
             if (type == "string?" && !absent && !isString)
             {
                 return $"{field} must be a string";
+            }
+
+            if (type == "int" && !(v is { ValueKind: JsonValueKind.Number } n && n.TryGetInt32(out _)))
+            {
+                return $"{field} must be a whole number";
             }
 
             if (type == "strings?" && !absent && !(v!.Value.ValueKind == JsonValueKind.Array && v.Value.EnumerateArray().All(x => x.ValueKind == JsonValueKind.String)))

@@ -1,8 +1,12 @@
-import { BrowserRouter as Router, Link, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Link, NavLink, Routes, Route } from 'react-router-dom'
+import Board from './pages/Board'
 import Projects from './pages/Projects'
 import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
+import FeaturePage from './pages/FeaturePage'
+import Principles from './pages/Principles'
 import SignIn from './components/SignIn'
+import { IDEAS } from './board'
 
 export default function App() {
   return (
@@ -46,12 +50,26 @@ export default function App() {
             says what git did with it.
             */}
             <span className="muted">writes the corpus file</span>
+            {/* NavLink sets aria-current="page" on the active link itself.
+                `end` on Projects, or "/" would match every route. */}
+            <nav aria-label="Main" className="nav">
+              <NavLink to="/board">Board</NavLink>
+              {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
+              <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
+              <NavLink to="/principles">Principles</NavLink>
+              <NavLink to="/" end>
+                Projects
+              </NavLink>
+            </nav>
           </header>
           <main>
             <Routes>
               <Route path="/" element={<Projects />} />
-              <Route path="/projects/:app" element={<Project />} />
+              <Route path="/board" element={<Board />} />
+              <Route path="/principles" element={<Principles />} />
+              <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
+              <Route path="/projects/:app/features/:id" element={<FeaturePage />} />
             </Routes>
           </main>
         </div>

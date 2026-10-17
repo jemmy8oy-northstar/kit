@@ -1,5 +1,10 @@
 # Kit, described in Kit's own notation.
 #
+# kit:project kit
+#   kit#237: Kit is one project. This file is its command line; Kit shows the three files
+#   as ONE page whose features are its pages and areas, never the files (kit#246),
+#   while check and report still read each file on its own.
+#
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. That study asks whether the glue binding a spec to a UI saturates as
@@ -13,6 +18,15 @@
 #   whole file is the technical layer (kit#89, kit#193). That is the reason for
 #   the 0% below, stated in the notation rather than only in this prose.
 #
+# ── Principles (kit#284 slice 5) ──────────────────────────────────────────
+# Kit is the platform every spec is written in, so its notation principles hold for
+# every project: they are `global`. James, kit#285 (2026-10-15): "Over time we need to
+# refine it with a few things in mind. Flexibility… function… readability."
+#
+# kit:principle global Flexibility: the spec is easy to change — a new idea is one optional line, and nothing written before it moves
+# kit:principle global Function: the spec turns into tests — every line Kit reads is parsed, refused when wrong, and gated
+# kit:principle global Readability: a human can read the spec without Kit — a line says what it means in words
+
 # James asked (claude-code-bot#89): "think about how kit looks as a kit managed
 # project". This corpus is the attempt, and the attempt is the measurement.
 #
@@ -48,7 +62,21 @@
 # `kit check kit` fails the build if one loses its test. (`kit.test.js`, which
 # this line used to name, went with the Node engine in kit#202.)
 
+# ═══ Features: the command line's areas (kit#246) ════════════════════════════
+# Kit is one project (kit#237), and James asked that nothing on its page read as a
+# file. So the command line's areas are features beside the UI's pages. A tag says
+# where a behaviour is SHOWN; it is not a dependency (that is `serves`).
+
+feature FEAT-GATE "Gate"
+feature FEAT-READER "Reader"
+feature FEAT-PARSER "Parser"
+feature FEAT-GENERATOR "Generator"
+feature FEAT-RESOLVER "Resolver"
+feature FEAT-SERVER "Local server"
+feature FEAT-WRITER "Writer"
+
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
+  in FEAT-GATE
   actor engineer
   given corpus:SnipIt
   when runs command:KitCheck
@@ -56,6 +84,7 @@ behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   contract this is stage 0's stated deliverable in docs/timeline.md
 
 behaviour BEH-GATE-2 "Could-not-look is never reported as green"
+  in FEAT-GATE
   actor engineer
   given repo:WithNoTests
   when runs command:KitCheck
@@ -64,6 +93,7 @@ behaviour BEH-GATE-2 "Could-not-look is never reported as green"
   contract exits 0 is indistinguishable in CI from a passing one
 
 behaviour BEH-GATE-3 "A mapping naming a test that no longer exists is a hard failure"
+  in FEAT-GATE
   actor engineer
   given mapping:Stale
   when runs command:KitCheck
@@ -71,6 +101,7 @@ behaviour BEH-GATE-3 "A mapping naming a test that no longer exists is a hard fa
   contract this checkability is the whole argument for option C over markers
 
 behaviour BEH-READ-1 "The reader refuses when its two counts disagree"
+  in FEAT-READER
   actor engineer
   given file:CountsDisagree
   when runs command:KitCheck
@@ -79,6 +110,7 @@ behaviour BEH-READ-1 "The reader refuses when its two counts disagree"
   contract structure — or agreement between them proves nothing
 
 behaviour BEH-GEN-1 "An unbound noun is refused, and the missing noun is named"
+  in FEAT-GENERATOR
   actor engineer
   given corpus:UnboundNoun
   when runs command:KitGenerate
@@ -86,6 +118,7 @@ behaviour BEH-GEN-1 "An unbound noun is refused, and the missing noun is named"
   contract no locator is ever guessed from the noun's own name
 
 behaviour BEH-GEN-2 "An unsupplied route param is refused rather than truncated"
+  in FEAT-GENERATOR
   actor engineer
   given corpus:RouteParam
   when runs command:KitGenerate
@@ -93,6 +126,7 @@ behaviour BEH-GEN-2 "An unsupplied route param is refused rather than truncated"
   contract emitting ./editor/ would navigate to the wrong page and look correct
 
 behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped"
+  in FEAT-PARSER
   actor engineer
   given corpus:BadKeyword
   when runs command:KitParse
@@ -100,7 +134,62 @@ behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped
   contract a spec language that ignores what it does not understand is how a
   contract spec becomes descriptive
 
+behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error naming its line"
+  in FEAT-PARSER
+  source defined kit#237
+  actor engineer
+  given corpus:BadFeatureTags
+  when runs command:KitParse
+  then raises error:BadFeatureTag
+  contract three refusals: an `in` naming no feature in the project, a feature that is its own ancestor,
+  contract and a feature id declared twice; silence on any of them leaves a behaviour drawn nowhere
+  contract a tag is not a dependency: `in` names only FEAT- ids and `serves` only BEH- ids, so moving a
+  contract card on a page can never change what Kit refuses to delete
+
+behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
+  in FEAT-PARSER
+  source defined kit#284
+  actor engineer
+  given corpus:BadPriority
+  when runs command:KitParse
+  then raises error:BadPriority
+  contract 1 is first and 5 is last, the decision queue's scale; a second `priority` line is refused, not silently last-wins
+  contract no line is no priority, and nothing is written for it, so no corpus that predates it changes shape
+
+behaviour BEH-PARSE-4 "A review request must say what to look at"
+  in FEAT-PARSER
+  source defined kit#284
+  actor engineer
+  given corpus:BareReviewRequest
+  when runs command:KitParse
+  then raises error:ReviewRequestWithoutWhat
+  contract `review requested <what>` is the agent asking for his eyes on built work; like a denial, a bare one is refused
+  contract it is explicit, so a later `source inferred` line does not reset it to unreviewed
+
+behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
+  in FEAT-SERVER
+  source defined kit#284
+  actor engineer
+  given corpus:IdeasFile
+  when runs command:KitUi
+  then reports project:Idea
+  contract true or absent, never false, so no response that predates it changes shape
+  contract only the directive line counts; a comment that mentions kit:idea does not
+
+behaviour BEH-PRIN-API-1 "A `# kit:principle [global] <Name>: <what it means>` line is a principle in the project view"
+  in FEAT-SERVER
+  source defined kit#284
+  actor engineer
+  given corpus:PrincipleLines
+  when runs command:KitUi
+  then reports project:Principles
+  contract in file order, each with its `<corpus>.beh:<line>`, because the file is the only place one is changed
+  contract absent when a file declares none, so no response that predates it changes shape
+  contract a line that does not say a name and what it means is refused, never skipped: a principle that silently vanished is one nobody knows was lost
+  contract only the directive line counts; a comment that mentions kit:principle does not
+
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
+  in FEAT-RESOLVER
   actor engineer
   given corpus:CrossBehaviourHole
   when runs command:KitResolve
@@ -108,12 +197,14 @@ behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behavi
   contract this is the part no BDD tool has, and it needs ONE symbol table
 
 behaviour BEH-RESOLVE-2 "Two behaviours disagreeing is a conflict, with both sides named"
+  in FEAT-RESOLVER
   actor engineer
   given corpus:Disagreement
   when runs command:KitResolve
   then reports conflict:BothSides
 
 behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
+  in FEAT-RESOLVER
   actor engineer
   given corpus:Inference
   when runs command:KitResolve
@@ -127,6 +218,7 @@ behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
 # by check.js, and mutated by mutate.js.
 
 behaviour BEH-UI-1 "A verb the server has no meaning for reaches no handler"
+  in FEAT-SERVER
   actor engineer
   given request:Unsupported
   when runs command:KitUi
@@ -137,6 +229,7 @@ behaviour BEH-UI-1 "A verb the server has no meaning for reaches no handler"
   contract cannot serve is a 405 waiting to be discovered as a 500
 
 behaviour BEH-UI-2 "The server binds the loopback interface, not every interface"
+  in FEAT-SERVER
   actor engineer
   given option:Default
   when runs command:KitUi
@@ -145,6 +238,7 @@ behaviour BEH-UI-2 "The server binds the loopback interface, not every interface
   contract path of every repo beside it, to anything that can reach the host
 
 behaviour BEH-UI-3 "A traversal in an app name is refused rather than resolved to a path"
+  in FEAT-SERVER
   actor engineer
   given request:Traversal
   when runs command:KitUi
@@ -153,6 +247,7 @@ behaviour BEH-UI-3 "A traversal in an app name is refused rather than resolved t
   contract joined to a path, so there is nothing to traverse with
 
 behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never zero"
+  in FEAT-SERVER
   actor engineer
   given repo:Absent
   when runs command:KitUi
@@ -167,6 +262,7 @@ behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never z
 # CHANGES a file rather than reading one.
 
 behaviour BEH-WRITE-1 "An edit splices one block, so every comment in the corpus survives"
+  in FEAT-WRITER
   actor engineer
   source defined
   given corpus:WithComments
@@ -176,6 +272,7 @@ behaviour BEH-WRITE-1 "An edit splices one block, so every comment in the corpus
   contract snip-it.beh's nine opening lines are the caveat everything else rests on
 
 behaviour BEH-WRITE-2 "An edit that would not parse never reaches the disk"
+  in FEAT-WRITER
   actor engineer
   source defined
   given step:Malformed
@@ -185,6 +282,7 @@ behaviour BEH-WRITE-2 "An edit that would not parse never reaches the disk"
   contract writer that can corrupt it is worse than one that cannot write at all
 
 behaviour BEH-WRITE-3 "An edit that would change a neighbouring behaviour is refused"
+  in FEAT-WRITER
   actor engineer
   source defined
   given splice:OffByOne
@@ -194,6 +292,7 @@ behaviour BEH-WRITE-3 "An edit that would change a neighbouring behaviour is ref
   contract wrong — the worst failure a writer can have
 
 behaviour BEH-WRITE-4 "The writer never touches git, and the file proves it rather than promising it"
+  in FEAT-WRITER
   actor engineer
   source defined
   given decision:LapsedDefault
@@ -203,6 +302,7 @@ behaviour BEH-WRITE-4 "The writer never touches git, and the file proves it rath
   contract surprise, so the absence of child_process is asserted from source
 
 behaviour BEH-WRITE-5 "A write route is unreachable unless the server is bound to loopback"
+  in FEAT-WRITER
   actor engineer
   source defined
   given host:Routable
@@ -213,6 +313,7 @@ behaviour BEH-WRITE-5 "A write route is unreachable unless the server is bound t
   contract it would arrive as a --host flag rather than as a decision of his
 
 behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write through the browser"
+  in FEAT-WRITER
   actor engineer
   source defined
   given origin:Hostile

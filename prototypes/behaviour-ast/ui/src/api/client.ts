@@ -1,6 +1,6 @@
 import type {
-  Binding, BindResult, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
-  ProposeResult, ReviewState, SessionState, WriteResult,
+  Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, ProjectDetail, ProjectSummary,
+  PendingView, ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -211,6 +211,11 @@ export function removeBehaviour(app: string, id: string): Promise<WriteResult> {
 }
 
 /** The project's open notes (kit#118), oldest first. */
+/** When each built behaviour of the project was completed, from git (BEH-BOARD-4). */
+export function fetchHistory(app: string): Promise<CompletionList> {
+  return get<CompletionList>(`/api/projects/${encodeURIComponent(app)}/history`)
+}
+
 export function fetchNotes(app: string): Promise<NoteList> {
   return get<NoteList>(`/api/projects/${encodeURIComponent(app)}/notes`)
 }
@@ -226,6 +231,46 @@ export function leaveNote(app: string, text: string, behaviour?: string): Promis
     text,
     ...(behaviour ? { behaviour } : {}),
   })
+}
+
+/**
+ * Ask for a behaviour in prose (BEH-NOTE-4). It is a note of kind `request`:
+ * whoever folds it writes the id, title, actor and steps, so none is asked for.
+ */
+export function askForBehaviour(app: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, { text, kind: 'request' })
+}
+
+/** Say how a decision should go (BEH-NOTE-8): a note naming the decision's key. */
+export function resolveDecision(app: string, key: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, { text, kind: 'resolution', resolves: key })
+}
+
+/**
+ * Answer a note's questions (BEH-NOTE-6). The note is named by its place in the
+ * list AND its date, so a file that changed underneath is refused, not misapplied.
+ */
+export function replyToNote(app: string, index: number, at: string, text: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes/reply`, { index, at, text })
+}
+
+/** Dismiss a note (BEH-NOTE-7). Git history keeps it. */
+export function dismissNote(app: string, index: number, at: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes/dismiss`, { index, at })
+}
+
+/** The project's schedule and backlog (BEH-SCHED-1). */
+export function fetchSchedule(app: string): Promise<ScheduleList> {
+  return get<ScheduleList>(`/api/projects/${encodeURIComponent(app)}/schedule`)
+}
+
+/**
+ * Change the schedule (BEH-SCHED-2): `add` a backlog behaviour to the end, `remove`
+ * one back to the backlog, or move one `up` or `down` a place. Only `<app>.schedule`
+ * is written; the corpus is not touched, so the result has a note's shape.
+ */
+export function reschedule(app: string, action: 'add' | 'remove' | 'up' | 'down', id: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/schedule`, { action, id })
 }
 
 /**
@@ -249,6 +294,11 @@ export function addBinding(app: string, noun: string, binding: Binding): Promise
  */
 export function proposeEdits(): Promise<ProposeResult> {
   return post<ProposeResult>('/api/commit', {})
+}
+
+/** This project's edits on the edits branch that have not reached the base, and their pull request (BEH-COMMIT-5). */
+export function fetchPending(app: string): Promise<PendingView> {
+  return get<PendingView>(`/api/projects/${encodeURIComponent(app)}/pending`)
 }
 
 export function fetchProject(app: string): Promise<ProjectDetail> {

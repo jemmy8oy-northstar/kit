@@ -22,6 +22,40 @@
       "title": "POSTs an empty body to the remove route, then says it is gone and what git did"
     }
   ],
+  "BEH-PULL-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusDirectoryTests.cs",
+      "title": "A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ExpiringRefreshTests.cs",
+      "title": "Requests_that_arrive_during_a_read_join_it_rather_than_start_another"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ExpiringRefreshTests.cs",
+      "title": "A_slow_read_lets_the_request_go_after_the_wait_and_carries_on"
+    }
+  ],
+  "BEH-COMMIT-6": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitCatchUpTests.cs",
+      "title": "A_commit_merged_into_dev_reaches_the_edits_branch_on_the_remote"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/GitCatchUpTests.cs",
+      "title": "A_conflict_is_aborted_and_the_branch_left_exactly_as_it_was"
+    }
+  ],
+  "BEH-COMMIT-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PendingEditsTests.cs",
+      "title": "The_route_lists_only_this_projects_edits_beside_the_pull_request"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/PendingPanel.test.tsx",
+      "title": "lists the edits on kit/hosted not yet on dev, newest first, linking the pull request they wait in"
+    }
+  ],
   "BEH-COMMIT-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",
@@ -60,6 +94,12 @@
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
       "title": "Locked_a_write_needs_a_session_and_a_read_still_does_not"
+    }
+  ],
+  "BEH-GATE-H2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/CommitRouteTests.cs",
+      "title": "Locked_it_needs_a_session_like_every_edit"
     }
   ],
   "BEH-PULL-1": [

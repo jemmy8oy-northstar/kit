@@ -94,5 +94,138 @@
   "region:KitOpenNotes": {
     "role": "region",
     "name": "Notes"
+  },
+  "field:KitDescribeBehaviour": {
+    "label": "Describe what should happen"
+  },
+  "button:KitAskForBehaviour": {
+    "role": "button",
+    "name": "Ask for behaviour"
+  },
+  "region:KitNeedsAnswer": {
+    "role": "region",
+    "name": "Needs your answer"
+  },
+  "field:KitReply": {
+    "label": "Your answer"
+  },
+  "button:KitReply": {
+    "role": "button",
+    "name": "Reply"
+  },
+  "button:KitDismiss": {
+    "role": "button",
+    "name": "Dismiss"
+  },
+  "field:KitResolution": {
+    "label": "How should this be resolved?"
+  },
+  "button:KitResolve": {
+    "role": "button",
+    "name": "Resolve"
+  },
+  "region:KitNav": {
+    "role": "navigation",
+    "name": "Main"
+  },
+  "link:KitNavIdeas": {
+    "role": "link",
+    "name": "Ideas",
+    "exact": true
+  },
+  "link:KitNavPrinciples": {
+    "role": "link",
+    "name": "Principles",
+    "exact": true
+  },
+  "link:KitNavBoard": {
+    "role": "link",
+    "name": "Board",
+    "exact": true
+  },
+  "region:KitBoardReview": {
+    "role": "region",
+    "name": "Review requested"
+  },
+  "region:KitBoardProposed": {
+    "role": "region",
+    "name": "Proposed"
+  },
+  "region:KitBoardBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "region:KitBoardScheduled": {
+    "role": "region",
+    "name": "Scheduled"
+  },
+  "region:KitBoardInProgress": {
+    "role": "region",
+    "name": "In progress"
+  },
+  "region:KitBoardDone": {
+    "role": "region",
+    "name": "Done"
+  },
+  "heading:KitBoardTitle": {
+    "role": "heading",
+    "name": "Board",
+    "exact": true
+  },
+  "button:KitBoardShowTrials": {
+    "role": "button",
+    "name": "Show trials",
+    "exact": true
+  },
+  "page:KitBoard": {
+    "route": "/board"
+  },
+  "page:KitFeature": {
+    "route": "/projects/:app/features/:id"
+  },
+  "region:KitSchedule": {
+    "role": "region",
+    "name": "Schedule"
+  },
+  "region:KitBacklog": {
+    "role": "region",
+    "name": "Backlog"
+  },
+  "button:KitScheduleBehaviour": {
+    "role": "button",
+    "name": "Schedule",
+    "exact": true
+  },
+  "region:KitProjectFeatures": {
+    "role": "region",
+    "name": "Features"
+  },
+  "tab:KitProjectFeaturesTab": {
+    "role": "tab",
+    "name": "Features"
+  },
+  "tab:KitProjectQuestionsTab": {
+    "role": "tab",
+    "name": "Questions"
+  },
+  "tab:KitProjectNotesTab": {
+    "role": "tab",
+    "name": "Notes"
+  },
+  "region:KitFeatureChildren": {
+    "role": "region",
+    "name": "Contents"
+  },
+  "region:KitFeatureParents": {
+    "role": "region",
+    "name": "In"
+  },
+  "region:KitBreadcrumb": {
+    "role": "navigation",
+    "name": "Breadcrumb"
+  },
+  "region:KitProjectList": {
+    "role": "list",
+    "name": "Project list"
   }
 }

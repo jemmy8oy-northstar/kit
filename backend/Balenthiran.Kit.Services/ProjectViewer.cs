@@ -31,6 +31,10 @@ public sealed class ProjectViewer(
     private static readonly Regex NotReal = new(
         $@"(?:^|(?<=[\n\r\u2028\u2029]))#[{CorpusParser.Ws}]*kit:not-a-real-app(?![A-Za-z0-9_])", RegexOptions.Compiled);
 
+    // kit#284 slice 4, the same shape as the two directives either side of it.
+    private static readonly Regex Idea = new(
+        $@"(?:^|(?<=[\n\r  ]))#[{CorpusParser.Ws}]*kit:idea(?![A-Za-z0-9_-])", RegexOptions.Compiled);
+
     private static readonly Regex DuplicateOf = new(
         $@"(?:^|(?<=[\n\r\u2028\u2029]))#[{CorpusParser.Ws}]*kit:duplicate-corpus[{CorpusParser.Ws}]+([^{CorpusParser.Ws}]+)", RegexOptions.Compiled);
 
@@ -63,8 +67,8 @@ public sealed class ProjectViewer(
     private ProjectView Project(string app)
     {
         var src = corpora.Read(app);
-        var parsed = parser.Parse(src, $"{app}.beh");
-        var resolution = resolver.Resolve(parsed);
+        var corpus = parser.ParseCorpus(src, $"{app}.beh");
+        var resolution = resolver.Resolve(corpus.Behaviours);
         var behaviours = resolution.Behaviours.Cast<Behaviour>().ToList();
         if (behaviours.Count == 0)
         {
@@ -112,6 +116,10 @@ public sealed class ProjectViewer(
                 Review = b.Review,
                 Asks = b.Asks,
                 At = b.At,
+                Pending = b.Pending,
+                Layer = b.Layer,
+                In = (b.In ?? []).Select(t => t.Id).ToList(),
+                Priority = b.Priority,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,
@@ -126,7 +134,54 @@ public sealed class ProjectViewer(
                 Insufficient = report.Requires.Insufficient.Select(Decorate).ToList(),
                 Satisfied = report.Requires.Satisfied,
             },
+            Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At }).ToList(),
+            // kit#237: files naming the same project are shown as one; no directive, its own.
+            Project = corpus.Project ?? app,
+            Idea = Idea.IsMatch(src) ? true : null,
+            Principles = Principles(src, app) is { Count: > 0 } p ? p : null,
         };
+    }
+
+    // kit#284 slice 5: `# kit:principle [global] <Name>: <what it means>`, one per line.
+    private static readonly Regex PrincipleLine = new(
+        $@"^#[{CorpusParser.Ws}]*kit:principle(?![A-Za-z0-9_-])(.*)\z", RegexOptions.Compiled);
+
+    private static readonly Regex PrincipleRest = new(
+        $@"^[{CorpusParser.Ws}]+(global[{CorpusParser.Ws}]+)?([^:]+?)[{CorpusParser.Ws}]*:[{CorpusParser.Ws}]*(\S.*?)[{CorpusParser.Ws}]*\z", RegexOptions.Compiled);
+
+    /// <summary>
+    /// The file's principles in order. A `kit:principle` line that does not say a name and what it
+    /// means is REFUSED rather than skipped — a principle that silently vanished is one nobody
+    /// knows they lost, which is the failure this whole feature exists to prevent.
+    /// </summary>
+    private static List<PrincipleView> Principles(string src, string app)
+    {
+        var found = new List<PrincipleView>();
+        var lines = src.TrimStart('﻿').Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var m = PrincipleLine.Match(lines[i]);
+            if (!m.Success)
+            {
+                continue;
+            }
+
+            var rest = PrincipleRest.Match(m.Groups[1].Value);
+            if (!rest.Success)
+            {
+                throw new ProjectionFailedException($"{app}.beh:{i + 1}: kit:principle wants \"[global] <Name>: <what it means>\", got: {m.Groups[1].Value.Trim()}");
+            }
+
+            found.Add(new PrincipleView
+            {
+                Name = rest.Groups[2].Value.Trim(),
+                Text = rest.Groups[3].Value,
+                Global = rest.Groups[1].Success,
+                At = $"{app}.beh:{i + 1}",
+            });
+        }
+
+        return found;
     }
 
     /// <inheritdoc />
@@ -152,6 +207,8 @@ public sealed class ProjectViewer(
             Conflicts = p.Conflicts.Count,
             Coverage = new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = p.Coverage.Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
+            Project = p.Project,
+            Idea = p.Idea,
         };
     }
 

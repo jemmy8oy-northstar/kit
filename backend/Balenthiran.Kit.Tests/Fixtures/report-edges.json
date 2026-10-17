@@ -940,7 +940,7 @@
     },
     {
       "id": "BEH-INF-OK",
-      "code": "test(\"[BEH-INF-OK] an inference serving a defined behaviour\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:a-b\" });\n  // UNGENERATED: then sees region:a-b\n});",
+      "code": "test.skip(\"[BEH-INF-OK] an inference serving a defined behaviour\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: then sees region:a-b\n});",
       "missing": [
         "region:a"
       ],
@@ -952,7 +952,7 @@
     },
     {
       "id": "BEH-INF-BAD",
-      "code": "test(\"[BEH-INF-BAD] an inference serving an inference and a ghost\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:a_b\" });\n  // UNGENERATED: then sees region:a_b\n});",
+      "code": "test.skip(\"[BEH-INF-BAD] an inference serving an inference and a ghost\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: then sees region:a_b\n});",
       "missing": [
         "region:a_b"
       ],
@@ -964,7 +964,7 @@
     },
     {
       "id": "BEH-ROUTINE-1",
-      "code": "test(\"[BEH-ROUTINE-1] a routine inference\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:ab\" });\n  // UNGENERATED: then sees region:ab\n  // CONTRACT (not derivable from a behaviour): the first contract\n});",
+      "code": "test.skip(\"[BEH-ROUTINE-1] a routine inference\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: then sees region:ab\n  // CONTRACT (not derivable from a behaviour): the first contract\n});",
       "missing": [
         "region:ab"
       ],
@@ -988,7 +988,7 @@
     },
     {
       "id": "BEH-ROUTINE-2",
-      "code": "test(\"[BEH-ROUTINE-2] another routine inference, after the promoted one\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Null\" });\n  // UNGENERATED: then sees region:Null\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees region:Bare\" });\n  // UNGENERATED: then sees region:Bare\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when runs command:Anything\" });\n  // UNGENERATED: when runs command:Anything\n});",
+      "code": "test.skip(\"[BEH-ROUTINE-2] another routine inference, after the promoted one\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: then sees region:Null\n  // UNGENERATED: then sees region:Bare\n  // UNGENERATED: when runs command:Anything\n});",
       "missing": [
         "region:Null"
       ],
@@ -1000,7 +1000,7 @@
     },
     {
       "id": "BEH-CITED",
-      "code": "test(\"[BEH-CITED] an inference only ever seen as evidence\", async ({ page }) => {\n  // CONTRACT (not derivable from a behaviour): the cited contract\n});",
+      "code": "test.skip(\"[BEH-CITED] an inference only ever seen as evidence\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // CONTRACT (not derivable from a behaviour): the cited contract\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1010,7 +1010,7 @@
     },
     {
       "id": "BEH-UNTRACED",
-      "code": "test(\"[BEH-UNTRACED] an inference with no reference\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-UNTRACED] an inference with no reference\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1020,7 +1020,7 @@
     },
     {
       "id": "BEH-HOLDER",
-      "code": "test(\"[BEH-HOLDER] holds a value nobody asks about\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-HOLDER] holds a value nobody asks about\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,
@@ -1030,7 +1030,7 @@
     },
     {
       "id": "BEH-CHALLENGER",
-      "code": "test(\"[BEH-CHALLENGER] challenges and carries the question\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-CHALLENGER] challenges and carries the question\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

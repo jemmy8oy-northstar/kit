@@ -102,13 +102,16 @@ public class GitHubAppTokenSourceTests
         Assert.Equal(2, gh.Sent.Count);
     }
 
+    // 30s, not 5s: the handler blocks a pool thread, and on a 2-core runner the git-process tests
+    // running in parallel can starve the pool past 5s (it failed dev and main CI on 2026-10-16). A
+    // real deadlock still fails; it just takes 30s to say so.
     [Fact]
     public async Task Two_callers_on_a_cold_cache_mint_ONE_token()
     {
         var release = new TaskCompletionSource();
         var gh = new FakeGitHub(_ =>
         {
-            release.Task.Wait(TimeSpan.FromSeconds(5));
+            release.Task.Wait(TimeSpan.FromSeconds(30));
             return Token(Minted, Now.AddHours(1))(null!);
         });
         var source = Source(gh, new Clock(Now));
@@ -118,7 +121,7 @@ public class GitHubAppTokenSourceTests
         await Task.Delay(100);
         release.SetResult();
 
-        Assert.All(await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(5)), t => Assert.Equal(Minted, t));
+        Assert.All(await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(30)), t => Assert.Equal(Minted, t));
         Assert.Single(gh.Sent);
     }
 

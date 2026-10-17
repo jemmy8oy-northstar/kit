@@ -897,7 +897,7 @@
     },
     {
       "id": "BEH-CUT-1",
-      "code": "test(\"[BEH-CUT-1] Sending for export submits a cut and surfaces the finished job\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await page.getByRole(\"button\", { name: \"Send for export\" }).click();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows region:CutStatus \\\"is complete\\\"\" });\n  // UNGENERATED: then shows region:CutStatus \"is complete\"\n  await expect(page.getByRole(\"link\", { name: \"Download\" })).toBeVisible();\n  // CONTRACT (not derivable from a behaviour): POST /api/cuts is sent exactly once\n  // CONTRACT (not derivable from a behaviour): the body carries transcriptionJobId\n  // CONTRACT (not derivable from a behaviour): the body carries every word\n  // CONTRACT (not derivable from a behaviour): at least one word is marked not kept\n});",
+      "code": "test(\"[BEH-CUT-1] Sending for export submits a cut and surfaces the finished job\", async ({ page }) => {\n  await mockApi(page);\n  await page.goto(\"./editor/11111111-1111-1111-1111-111111111111\");\n  await page.getByRole(\"button\", { name: \"Remove filler words\" }).click();\n  await page.getByRole(\"button\", { name: \"Send for export\" }).click();\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then shows region:CutStatus \\\"is complete\\\"\" });\n  // UNGENERATED: then shows region:CutStatus \"is complete\"\n  await expect(page.getByRole(\"link\", { name: \"Download\" })).toBeVisible();\n  test.info().annotations.push({ type: \"kit-contract\", description: \"POST /api/cuts is sent exactly once\" });\n  // CONTRACT (not derivable from a behaviour): POST /api/cuts is sent exactly once\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the body carries transcriptionJobId\" });\n  // CONTRACT (not derivable from a behaviour): the body carries transcriptionJobId\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the body carries every word\" });\n  // CONTRACT (not derivable from a behaviour): the body carries every word\n  test.info().annotations.push({ type: \"kit-contract\", description: \"at least one word is marked not kept\" });\n  // CONTRACT (not derivable from a behaviour): at least one word is marked not kept\n});",
       "missing": [
         "region:CutStatus"
       ],
@@ -909,7 +909,7 @@
     },
     {
       "id": "BEH-UP-1",
-      "code": "test(\"[BEH-UP-1] Uploading a file transcribes it and opens the editor\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await expect(page.getByRole(\"heading\", { name: \"Transcribe a video\" })).toBeVisible();\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n  await page.getByRole(\"button\", { name: \"Transcribe\" }).click();\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page).toHaveURL(new RegExp(\"/editor/[0-9a-f-]+$\"));\n  // CONTRACT (not derivable from a behaviour): the upload is multipart/form-data\n  // CONTRACT (not derivable from a behaviour): the request path is /snipit/api/transcriptions\n});",
+      "code": "test(\"[BEH-UP-1] Uploading a file transcribes it and opens the editor\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await expect(page.getByRole(\"heading\", { name: \"Transcribe a video\" })).toBeVisible();\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n  await page.getByRole(\"button\", { name: \"Transcribe\" }).click();\n  await expect(page.getByRole(\"button\", { name: \"Select All\", exact: true })).toBeVisible();\n  await expect(page).toHaveURL(new RegExp(\"/editor/[0-9a-f-]+$\"));\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the upload is multipart/form-data\" });\n  // CONTRACT (not derivable from a behaviour): the upload is multipart/form-data\n  test.info().annotations.push({ type: \"kit-contract\", description: \"the request path is /snipit/api/transcriptions\" });\n  // CONTRACT (not derivable from a behaviour): the request path is /snipit/api/transcriptions\n});",
       "missing": [],
       "stats": {
         "generated": 6,
@@ -929,7 +929,7 @@
     },
     {
       "id": "BEH-UP-2",
-      "code": "test(\"[BEH-UP-2] The upload form takes a single video or audio file\", async ({ page }) => {\n  await page.goto(\"./editor\");\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n});",
+      "code": "test.skip(\"[BEH-UP-2] The upload form takes a single video or audio file\", async ({ page }) => {\n  // NOT GENERATED: no generated step asserts anything, so a test here would pass without checking the app (kit#86)\n  await page.goto(\"./editor\");\n  await page.getByLabel(\"Video or audio file\").setInputFiles({\"name\":\"talk.mp4\",\"mimeType\":\"video/mp4\"});\n});",
       "missing": [],
       "stats": {
         "generated": 2,
@@ -939,7 +939,7 @@
     },
     {
       "id": "BEH-EDIT-0",
-      "code": "test(\"[BEH-EDIT-0] The editor addresses one transcription by id\", async ({ page }) => {\n});",
+      "code": "test.skip(\"[BEH-EDIT-0] The editor addresses one transcription by id\", async () => {\n  // NOT GENERATED: no step to walk, so a test here would pass without asserting anything (kit#86)\n});",
       "missing": [],
       "stats": {
         "generated": 0,

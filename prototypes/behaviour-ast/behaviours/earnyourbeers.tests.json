@@ -1,0 +1,208 @@
+{
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/earnyourbeers. Keyed on file + title (a C# test's title is its method name).",
+  "_authored": "2026-10-16, from earnyourbeers#5 (the rules ported from the Flutter code). Only the pure rules exist on the web so far; every page, the accounts and the DB are still to build, so `kit check earnyourbeers` names them. 2026-10-16 later: LOG-2/3 and AUTH-2 (data half) from earnyourbeers#6. Later still: ONBOARD-1, VICE-1, RESET-1 from earnyourbeers#9/#10; the dashboard UI (AUTH-1, BALANCE-1, LOG-1/3, LEAGUE-1, SETTLE-2, HISTORY-1) from earnyourbeers#11. Then the onboarding and settings screens (ONBOARD-1, VICE-1, THEME-1, RESET-1) from earnyourbeers#12.",
+  "BEH-SCORE-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Each_activity_earns_its_rate_per_unit"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "An_unknown_activity_earns_nothing"
+    }
+  ],
+  "BEH-SCORE-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Difficulty_runs_from_ten_times_at_tier_zero_to_a_tenth_at_tier_twenty"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ScoringTests.cs",
+      "title": "Difficulty_scales_activity_and_never_the_vice"
+    }
+  ],
+  "BEH-LEAGUE-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "There_are_twenty_tiers_in_four_divisions_of_five"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "an existing session goes straight to the dashboard: balance, league, log"
+    }
+  ],
+  "BEH-SETTLE-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "A_week_moves_the_tally_and_the_tally_moves_the_tier"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "The_tier_is_clamped_but_the_tally_is_still_spent"
+    }
+  ],
+  "BEH-ONBOARD-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "Onboarding_seeds_the_tier_from_weekly_volume"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LeagueTests.cs",
+      "title": "An_unsustainable_vice_count_starts_five_tiers_lower"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/OnboardingTests.cs",
+      "title": "The_starting_tier_follows_the_flutter_formula"
+    }
+  ],
+  "BEH-LOG-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "A_repeat_tap_within_the_hour_adds_to_the_newest_entry"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "Only_the_newest_entry_of_all_is_merged_into"
+    }
+  ],
+  "BEH-LOG-3": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "An_older_entry_cannot_be_edited_or_deleted"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "The_newest_entry_can_be_edited_to_zero_or_more"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "the newest entry can be edited (down to 0) and deleted"
+    }
+  ],
+  "BEH-AUTH-2": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/LogServiceTests.cs",
+      "title": "Another_users_entries_are_neither_listed_nor_merged_nor_changeable"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ProfileApiTests.cs",
+      "title": "Reset_needs_a_confirmation_and_wipes_only_my_data"
+    }
+  ],
+  "BEH-ONBOARD-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/OnboardingTests.cs",
+      "title": "Answers_out_of_range_are_refused"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ProfileApiTests.cs",
+      "title": "Onboarding_seeds_the_tier_and_shows_on_the_dashboard"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ProfileApiTests.cs",
+      "title": "Onboarding_twice_is_409_and_bad_answers_are_400"
+    },
+    {
+      "file": "frontend/e2e/settings.spec.ts",
+      "title": "onboarding walks four steps, sends the choices, and lands on the dashboard"
+    },
+    {
+      "file": "frontend/e2e/settings.spec.ts",
+      "title": "onboarding can step back, and shows a server refusal inline"
+    }
+  ],
+  "BEH-VICE-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/OnboardingTests.cs",
+      "title": "A_vice_is_trimmed_and_empty_falls_back_to_pizza"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/OnboardingTests.cs",
+      "title": "Plain_text_and_too_many_characters_are_refused"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ProfileApiTests.cs",
+      "title": "The_vice_can_be_changed_and_empty_falls_back_to_pizza"
+    },
+    {
+      "file": "frontend/e2e/settings.spec.ts",
+      "title": "settings: change the vice, and the dashboard reflects it"
+    }
+  ],
+  "BEH-RESET-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/ProfileApiTests.cs",
+      "title": "Reset_needs_a_confirmation_and_wipes_only_my_data"
+    },
+    {
+      "file": "frontend/e2e/settings.spec.ts",
+      "title": "settings: reset asks once, can be backed out of, then returns to onboarding"
+    }
+  ],
+  "BEH-AUTH-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "sign in with wrong then right credentials reaches the dashboard, and sign out returns"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "creating an account lands on onboarding; a taken name shows inline"
+    }
+  ],
+  "BEH-BALANCE-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "an existing session goes straight to the dashboard: balance, league, log"
+    }
+  ],
+  "BEH-LOG-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "logging a run updates the balance and shows the points one unit earns"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "a long press on the vice asks for an amount greater than zero"
+    }
+  ],
+  "BEH-SETTLE-2": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "a pending settlement shows as a modal until \"Start new week\""
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "each settlement outcome has its own wording"
+    }
+  ],
+  "BEH-HISTORY-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "past weeks can be paged back through and are read-only"
+    }
+  ],
+  "BEH-AUTH-3": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/AccountServiceTests.cs",
+      "title": "A_username_is_taken_ignoring_case"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/AccountServiceTests.cs",
+      "title": "A_password_under_eight_characters_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/AccountServiceTests.cs",
+      "title": "A_wrong_password_and_an_unknown_username_fail_the_same_way"
+    },
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/AccountServiceTests.cs",
+      "title": "The_password_is_never_stored"
+    }
+  ],
+  "BEH-THEME-1": [
+    {
+      "file": "frontend/e2e/settings.spec.ts",
+      "title": "settings: appearance offers Auto, Light and Dark; Auto follows the device"
+    }
+  ]
+}

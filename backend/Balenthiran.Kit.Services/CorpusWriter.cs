@@ -26,7 +26,10 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
     // `/^behaviour\s+([A-Z][A-Z0-9-]*)\s+"/` — JavaScript's `\s`, which is not .NET's.
     private static readonly Regex Header = new($@"\Gbehaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""", RegexOptions.Compiled);
-    private static readonly Regex BehaviourId = new(@"^[A-Z][A-Z0-9-]*\z", RegexOptions.Compiled);
+    // kit#237: a `feature` block ends the behaviour above it, or an edit to that behaviour
+    // would splice into the feature — and a remove would delete it.
+    private static readonly Regex FeatureHeader = new($@"\Gfeature[{Ws}]", RegexOptions.Compiled);
+    private static readonly Regex BehaviourId =new(@"^[A-Z][A-Z0-9-]*\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IWriteResult AddStep(string text, string id, string line)
@@ -113,7 +116,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var nt = note is null ? string.Empty : Trim(note);
         if (st.Length == 0)
         {
-            return WriteResult.Refuse("empty-review", "a review needs a state: unreviewed, approved or denied");
+            return WriteResult.Refuse("empty-review", "a review needs a state: unreviewed, approved, requested or denied");
         }
 
         // 🔴 A security guard, not tidiness: rule 3 exempts the TARGET, so a newline in a
@@ -440,11 +443,11 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     /// <summary>The one gate every edit goes through. Never throws, never writes.</summary>
     private WriteResult Validate(string before, string after, string id)
     {
-        IReadOnlyList<IBehaviour> oldAst;
-        IReadOnlyList<IBehaviour> newAst;
+        IParsedCorpus oldCorpus;
+        IParsedCorpus newCorpus;
         try
         {
-            oldAst = parser.Parse(before, "before");
+            oldCorpus = parser.ParseCorpus(before, "before");
         }
         catch (CorpusParseException e)
         {
@@ -454,12 +457,21 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
         try
         {
-            newAst = parser.Parse(after, "after");
+            newCorpus = parser.ParseCorpus(after, "after");
         }
         catch (CorpusParseException e)
         {
             return WriteResult.Refuse("would-not-parse", e.Message);
         }
+
+        // Every write targets one behaviour, so no feature may change at all (kit#237).
+        if (Shape(oldCorpus.Features) != Shape(newCorpus.Features))
+        {
+            return WriteResult.Refuse("collateral-change", $"a feature changed, and only {id} was meant to");
+        }
+
+        var oldAst = oldCorpus.Behaviours;
+        var newAst = newCorpus.Behaviours;
 
         // `new Map(ast.map(b => [b.id, b]))`: first position, last value.
         var (oldIds, oldById) = ById(oldAst);
@@ -526,12 +538,17 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         review = new { state = b.Review.State, note = b.Review.Note },
         pending = b.Pending,
         layer = b.Layer,
+        priority = b.Priority,
         asks = b.Asks,
         options = b.Options.Select(o => $"{o.Label}|{o.Consequence}").ToList(),
         recommend = b.Recommend is { } r ? $"{r.Label}|{r.Why}" : null,
         against = b.Against,
         cites = b.Cites.Select(c => c.Id).ToList(),
+        @in = b.In.Select(t => t.Id).ToList(),
     });
+
+    private static string Shape(IReadOnlyList<IFeature> features) =>
+        JsonSerializer.Serialize(features.Select(f => new { id = f.Id, title = f.Title, @in = f.In.Select(t => t.Id).ToList() }));
 
     /// <summary>
     /// One behaviour's line range. <c>End</c> is its LAST CONTENT line, so blanks and
@@ -558,7 +575,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var end = start;
         for (var i = start + 1; i < lines.Length; i++)
         {
-            if (Header.IsMatch(lines[i]))
+            if (Header.IsMatch(lines[i]) || FeatureHeader.IsMatch(lines[i]))
             {
                 break;
             }

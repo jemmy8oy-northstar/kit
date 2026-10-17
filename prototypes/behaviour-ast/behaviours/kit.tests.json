@@ -44,6 +44,76 @@
       "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped"
     }
   ],
+  "BEH-PARSE-2": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
+      "title": "A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
+      "title": "A_malformed_feature_or_tag_line_is_refused"
+    }
+  ],
+  "BEH-PARSE-3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "A_priority_Kit_cannot_rank_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "Without_a_line_there_is_no_priority_and_none_is_written"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
+      "title": "A_priority_line_is_read_as_its_number"
+    }
+  ],
+  "BEH-PARSE-4": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
+      "title": "A_review_request_that_does_not_say_what_to_look_at_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
+      "title": "A_review_request_is_read_with_what_to_look_at"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
+      "title": "A_request_on_an_inference_is_not_overwritten_back_to_unreviewed"
+    }
+  ],
+  "BEH-IDEA-API-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
+      "title": "A_kit_idea_file_is_flagged_in_the_list_and_the_view"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
+      "title": "A_corpus_that_is_not_an_idea_writes_no_idea_key"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
+      "title": "Only_the_directive_itself_flags_an_idea"
+    }
+  ],
+  "BEH-PRIN-API-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "Principles_are_read_in_order_with_their_scope_and_line"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_file_with_no_principles_writes_no_principles_key"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_principle_that_does_not_say_what_it_means_is_refused"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
+      "title": "A_comment_that_only_mentions_principles_is_not_one"
+    }
+  ],
   "BEH-RESOLVE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",

@@ -334,7 +334,7 @@
     },
     {
       "id": "BEH-L2",
-      "code": "test(\"[BEH-L2] overridden back to ux\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"then sees button:Save\" });\n  // UNGENERATED: then sees button:Save\n});",
+      "code": "test.skip(\"[BEH-L2] overridden back to ux\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n  // UNGENERATED: then sees button:Save\n});",
       "missing": [
         "page:Home",
         "button:Save"
@@ -372,7 +372,7 @@
     },
     {
       "id": "BEH-L5",
-      "code": "test(\"[BEH-L5] written twice, the last wins\", async ({ page }) => {\n  test.info().annotations.push({ type: \"kit-ungenerated\", description: \"when opens page:Home\" });\n  // UNGENERATED: when opens page:Home\n});",
+      "code": "test.skip(\"[BEH-L5] written twice, the last wins\", async () => {\n  // NOT GENERATED: no step could be generated, so a test here would pass without asserting anything (kit#86)\n  // UNGENERATED: when opens page:Home\n});",
       "missing": [
         "page:Home"
       ],

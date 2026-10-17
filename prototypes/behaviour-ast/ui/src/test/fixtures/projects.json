@@ -13,7 +13,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 11
+      "unreviewed": 11,
+      "project": "james-habits-app"
     },
     {
       "app": "kit",
@@ -28,7 +29,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "kit"
     },
     {
       "app": "kit-hosted",
@@ -43,7 +45,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 2
+      "unreviewed": 2,
+      "project": "kit-hosted"
     },
     {
       "app": "kit-ui",
@@ -58,7 +61,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "kit-ui"
     },
     {
       "app": "language-vocab",
@@ -73,7 +77,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 15
+      "unreviewed": 15,
+      "project": "language-vocab"
     },
     {
       "app": "longlist",
@@ -88,7 +93,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "longlist"
     },
     {
       "app": "macro-metrics",
@@ -103,7 +109,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "macro-metrics"
     },
     {
       "app": "snip-it",
@@ -118,7 +125,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "snip-it"
     },
     {
       "app": "trial-habits-a",
@@ -133,7 +141,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "trial-habits-a"
     },
     {
       "app": "trial-habits-b",
@@ -148,7 +157,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "trial-habits-b"
     },
     {
       "app": "trial-lend",
@@ -163,7 +173,8 @@
         "uncovered": null,
         "reason": "no --repo given, so no test files were read"
       },
-      "unreviewed": 0
+      "unreviewed": 0,
+      "project": "trial-lend"
     }
   ]
 }

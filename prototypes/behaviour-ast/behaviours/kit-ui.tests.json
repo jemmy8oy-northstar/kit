@@ -1,0 +1,168 @@
+{
+  "_": "behaviour -> the test(s) that name it. Same shape as kit-hosted.tests.json: the corpus carries the mapping, keyed on file + title (a vitest title is the exact it() string, without its describe() prefix).",
+  "_authored": "2026-10-13, by reading kit-ui.beh against the UI's vitest suite (claude-code-bot#105). Only behaviours whose then-steps or main contract a test ASSERTS are mapped; pending ones stay unmapped, so `kit check kit-ui` keeps naming them. BEH-SHEET-1 had no asserting test and got one in the same change.",
+  "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. kit check proves the test exists, not what it asserts. Several entries cover the contract rather than every then-step (PAIR-1 and STEP-1 do not assert their headings; NAV-1 does not click through).",
+  "BEH-BOARD-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }
+  ],
+  "BEH-BOARD-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "suggests a project the text names, and one tap picks it (BEH-BOARD-9)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a name nobody lists is never suggested (BEH-BOARD-9)" }
+  ],
+  "BEH-LIST-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "lists every corpus the read API returned" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "reports a corpus that will not parse as an error, not as zero behaviours" }
+  ],
+  "BEH-SHEET-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "shows the question sheet Kit built for a project, with its review queue and the way to ask for more" }
+  ],
+  "BEH-SCHED-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "shows a built or vanished entry as such rather than dropping it, and neither is next" }
+  ],
+  "BEH-SCHED-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "schedules a backlog behaviour, which moves across and is marked next" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "moves a behaviour up, and the top is next" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "unschedules back to the backlog" }
+  ],
+  "BEH-SCHED-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "moves a behaviour up, and the top is next" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" }
+  ],
+  "BEH-FEAT-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Features, with the questions a tap away and counted" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "switches to Questions on a tap, and back" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Questions from a link carrying ?tab=questions" }
+  ],
+  "BEH-FEAT-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "keeps only the describe box above the tabs; notes and the schedule are tabs of their own" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "opens on Notes from ?tab=notes, and has no Principles tab for a project with none" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank" }
+  ],
+  "BEH-KIND-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows each card its layer and filters by layer, in the url beside the project filter (BEH-KIND-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a layer in the url that the corpus has no word for filters nothing out" }
+  ],
+  "BEH-KIND-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "counts only the chosen layer under a feature, drops what is not of it, and keeps the filter in the link" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "hides a feature with nothing of the layer beneath it, on the feature page too" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "says so when nothing in the project is of the chosen layer, rather than showing a blank tab" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "CONTROL: with no layer chosen every feature shows, as before" }
+  ],
+  "BEH-NOTE-11": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "hides archived notes again, and counts them on the button (BEH-NOTE-11)" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" }
+  ],
+  "BEH-NOTE-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows ten, and a button that says how many more it shows and how many are hidden" }
+  ],
+  "BEH-NOTE-10": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "counts only refs to THIS notes file, so another project citing the same minute folds nothing here" }
+  ],
+  "BEH-BOARD-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)" }
+  ],
+  "BEH-BOARD-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Done most recently completed first, across projects (BEH-BOARD-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps every card when a history cannot be read, says so, and puts them after the dated ones" }
+  ],
+  "BEH-IDEA-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "links Ideas from every page, to the Ideas project (BEH-IDEA-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps the Ideas file off the board, even when trials are shown (BEH-IDEA-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "leaves the Ideas file off the project list: ideas are not projects yet (BEH-IDEA-1)" }
+  ],
+  "BEH-PRIN-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "lists global principles first, then each project with its own (BEH-PRIN-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "never reads the Ideas file for principles (BEH-PRIN-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Principles.test.tsx", "title": "links Principles from every page (BEH-PRIN-1)" }
+  ],
+  "BEH-BOARD-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)" }
+  ],
+  "BEH-BOARD-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts review requests first, by priority, with what to look at on the card (BEH-BOARD-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a review request waits in Review requested whatever else is true of it (BEH-BOARD-6)" }
+  ],
+  "BEH-BOARD-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "priority sorts 1 first, unranked last, keeping ties in place" }
+  ],
+  "BEH-PAIR-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "shows the behaviour and the test Kit generated from it, together" }
+  ],
+  "BEH-ADJ-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "approves it, then re-reads so the corpus on screen is the corpus on disk" }
+  ],
+  "BEH-ADJ-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "will not deny without the correction, and sends it when there is one" }
+  ],
+  "BEH-STEP-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "POSTs the line as typed, then re-reads so the regenerated test is what you see" }
+  ],
+  "BEH-NOTE-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "sends the text as typed, then re-reads so the new note is in the list, and says what git did" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "will not send an empty note" }
+  ],
+  "BEH-NOTE-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "on a behaviour page, tags the note with that behaviour and lists only its notes" }
+  ],
+  "BEH-NOTE-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "says there are no open notes rather than showing nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists every open note on the project page, with the behaviour each one names" }
+  ],
+  "BEH-NOTE-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "asks for a new behaviour in prose: no id, title or actor, and nothing sent while it is blank" }
+  ],
+  "BEH-NOTE-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "puts a note with questions under \"Needs your answer\", numbered, and not in the open list too" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows no \"Needs your answer\" at all when nothing is waiting" }
+  ],
+  "BEH-NOTE-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "answers a note by its place in the FILE and its date, then it leaves \"Needs your answer\"" }
+  ],
+  "BEH-NOTE-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "dismisses a note in one tap, by its place and date" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "says why a dismissal was refused, on the card it was pressed on" }
+  ],
+  "BEH-NOTE-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "resolves a decision in prose, as a note naming its key, never as corpus syntax" }
+  ],
+  "BEH-TITLE-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "lists the corpus" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "links a card to its behaviour page and names its project" }
+  ],
+  "BEH-NAV-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "links the board and the projects and marks the current view" }
+  ],
+  "BEH-BOARD-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts each behaviour in the column for where it stands" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts a denied inference on no column" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "names a corpus that will not parse, not drops it" }
+  ],
+  "BEH-BOARD-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "colours and filters by project, so files naming one # kit:project share a button and a colour" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "hides trial corpora until asked, and records the ask in the url" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "filters to the selected projects, in the url" }
+  ],
+  "BEH-FEAT-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-1: a project shows its top-level features, then only its untagged behaviours" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-1: a project with no features lists every behaviour, as before" }
+  ],
+  "BEH-FEAT-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-2: a feature lists what is tagged into it and every parent as a tag" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-2: one behaviour tagged into two features is listed under both" }
+  ],
+  "BEH-FEAT-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-3: the crumbs are the path in the url, and a child link carries it on" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-3: with no path the crumbs are the project and the feature, never a picked parent" }
+  ],
+  "BEH-FEAT-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "BEH-FEAT-4: files naming one project are one card with one link; a file of its own reads as before" }
+  ],
+  "BEH-FEAT-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "draws every file’s features together, each linking into its own file, and names no file" }
+  ]
+}

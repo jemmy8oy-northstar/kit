@@ -166,6 +166,28 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal("pushed", d.ReadNotesText("alpha"));
     }
 
+    /// <summary>BEH-SCHED-2: the schedule is read from GitHub the same way, and a change is read back until GitHub has it.</summary>
+    [Fact]
+    public async Task The_schedule_comes_from_GitHub_and_a_change_is_read_back_until_GitHub_has_it()
+    {
+        var reader = new Scripted(
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s1", "BEH-1\n")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s1", "BEH-1\n")),
+            Snap(Kit, ("alpha.beh", "a1", "x"), ("alpha.schedule", "s2", "BEH-2\nBEH-1\n")));
+        var d = new GitHubCorpusDirectory(clone, [Kit], reader);
+        await d.RefreshAsync();
+        Assert.Equal("BEH-1\n", d.ReadScheduleText("alpha"));
+        Assert.Equal("prototypes/corpora/alpha.schedule", d.RelativeSchedulePath("alpha"));
+
+        d.WriteScheduleText("alpha", "BEH-1\nBEH-2\n");
+        Assert.Equal("BEH-1\nBEH-2\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.schedule")));
+        await d.RefreshAsync();
+        Assert.Equal("BEH-1\nBEH-2\n", d.ReadScheduleText("alpha"));
+
+        await d.RefreshAsync();
+        Assert.Equal("BEH-2\nBEH-1\n", d.ReadScheduleText("alpha"));
+    }
+
     [Fact]
     public async Task An_app_from_a_repository_with_no_clone_cannot_be_edited_here()
     {
@@ -275,6 +297,61 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.DoesNotContain("\"alpha\"", listed, StringComparison.Ordinal);
         Assert.Equal("Bearer tok", gh.Sent[0].Authorization);
         Assert.Same(app.Services.GetRequiredService<GitHubCorpusDirectory>(), app.Services.GetRequiredService<ICorpusDirectory>());
+    }
+
+    /// <summary>
+    /// BEH-PULL-5 (kit#300) end to end, over HTTP: inside the age a request asks GitHub nothing;
+    /// past it, the request itself is what reads, and it is answered from that read. Nothing else
+    /// would read: there is no timer, so a server that ignored the age would still list gamma.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("/kit")] // deployed: the ingress does not strip the prefix, so the API is /kit/api/…
+    public async Task A_request_past_the_age_reads_GitHub_and_is_answered_from_that_read(string basePath)
+    {
+        var env = new Dictionary<string, string?>
+        {
+            ["KIT_DIR"] = Path.Combine(root, "behaviours"),
+            ["KIT_PROJECTS"] = "o/kit@kit/hosted:behaviours",
+            ["KIT_GIT_TOKEN"] = "tok",
+            ["KIT_BASE_PATH"] = basePath,
+        };
+        var settings = KitSettings.FromEnvironment(k => env.GetValueOrDefault(k), RepoLayout.Root);
+        static Func<HttpRequestMessage, HttpResponseMessage> Beh(string id) =>
+            _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(Encoding.UTF8.GetBytes($"behaviour {id} \"from GitHub\"\n  when opens page:Home\n")) };
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """[{"type": "file", "name": "gamma.beh", "sha": "g1"}]"""),
+            Beh("BEH-G"),
+            FakeGitHub.Json(HttpStatusCode.OK, """[{"type": "file", "name": "delta.beh", "sha": "d1"}]"""),
+            Beh("BEH-D"));
+        var clock = new ManualClock();
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings, s =>
+        {
+            s.AddSingleton<HttpMessageHandler>(gh);
+            s.AddSingleton<TimeProvider>(clock);
+        });
+        await app.StartAsync();
+        using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
+
+        Assert.Contains("\"gamma\"", await http.GetStringAsync($"{basePath}/api/projects"), StringComparison.Ordinal);
+        var asked = gh.Sent.Count;
+        clock.Now += settings.ProjectsPoll - TimeSpan.FromSeconds(1);
+        Assert.Contains("\"gamma\"", await http.GetStringAsync($"{basePath}/api/projects"), StringComparison.Ordinal);
+        Assert.Equal(asked, gh.Sent.Count);
+
+        clock.Now += TimeSpan.FromSeconds(1);
+        var listed = await http.GetStringAsync($"{basePath}/api/projects");
+
+        Assert.Contains("\"delta\"", listed, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"gamma\"", listed, StringComparison.Ordinal);
+        await app.StopAsync();
+    }
+
+    private sealed class ManualClock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = new(2026, 10, 16, 9, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => Now;
     }
 
     [Fact]
