@@ -139,6 +139,12 @@
       "title": "settings: reset asks once, can be backed out of, then returns to onboarding"
     }
   ],
+  "BEH-BRAND-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "sign in with wrong then right credentials reaches the dashboard, and sign out returns"
+    }
+  ],
   "BEH-AUTH-1": [
     {
       "file": "frontend/e2e/dashboard.spec.ts",

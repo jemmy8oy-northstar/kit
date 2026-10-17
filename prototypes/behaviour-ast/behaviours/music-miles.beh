@@ -1,0 +1,128 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# music-miles — "Tracks" — onboarded 2026-10-17 at James's music-miles#1
+#
+#   "Can you onboard these projects onto kit even if you don't start working
+#   on them yet" … "I am kind of thinking just call it "Tracks" with a tag line
+#   of track your tracks tracks"
+#
+# The repo is empty, so there is no code to infer from. Everything here comes
+# from what he has written on music-miles#1: a running app that puts the music
+# you listened to onto the route you ran. The corpus keeps the repo's name
+# until the repo is renamed (renaming it is his call); the product name is in
+# BEH-BRAND-1.
+#
+#   DEFINED   — his words on music-miles#1. Cites the issue.
+#   INFERRED  — my reading of the idea, or a detail it needs that he hasn't
+#               stated. Each is `review unreviewed`: it shows in Proposed, and
+#               he can deny it. Some lean on the Gemini reply he pasted there,
+#               which he has not endorsed line by line.
+#
+# Nothing is built. `kit check music-miles` names every behaviour as missing.
+# ─────────────────────────────────────────────────────────────────────────────
+
+feature FEAT-BRAND "Name and voice"
+feature FEAT-CONNECT "Connecting Strava and Spotify"
+feature FEAT-MAP "The music map of a workout"
+feature FEAT-SHARE "Sharing a workout"
+
+
+# ═══ DEFINED — music-miles#1 ═══
+
+behaviour BEH-BRAND-1 "The app is called Tracks, and its tagline is: Track your tracks' tracks"
+  in FEAT-BRAND
+  layer ux
+  source defined music-miles#1
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Home
+  then sees region:Hero
+  contract "just call it "Tracks" with a tag line of track your tracks tracks": a running track, a GPS track and a music track
+  contract unreviewed because he wrote "kind of thinking"; the name and the repo rename stay his
+
+
+# ═══ INFERRED — what the idea needs ═══
+
+behaviour BEH-CONNECT-1 "A runner connects their Strava account so Tracks can read their workouts"
+  in FEAT-CONNECT
+  layer ux
+  source inferred music-miles#1
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Connect
+  when activates button:ConnectStrava
+  then sees region:Workouts
+  contract read-only: Tracks never writes to Strava unless BEH-SHARE-2 is approved
+
+behaviour BEH-CONNECT-2 "A runner connects their Spotify account so Tracks can read what they listened to"
+  in FEAT-CONNECT
+  layer ux
+  source inferred music-miles#1
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Connect
+  when activates button:ConnectSpotify
+  then sees region:Workouts
+  contract read-only: Tracks reads listening history and never controls playback
+
+behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along its route"
+  in FEAT-MAP
+  layer ux
+  source inferred music-miles#1
+  review unreviewed
+  priority 1
+  actor runner
+  given workout:WithSongs
+  when opens page:Workout
+  then sees region:RouteMap
+  then sees region:SongList
+  contract each song sits on the map at the point where it started, shown by its cover art
+  contract the list below the map shows the same songs in order, with the distance each one covered
+
+behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to where the runner was"
+  in FEAT-MAP
+  layer technical
+  source inferred music-miles#1
+  review unreviewed
+  priority 1
+  actor runner
+  contract a song belongs to a workout when it started between the workout's start and end
+  contract its pin is the route point whose timestamp is nearest the song's start
+  contract a workout with no songs in its window still shows its route, with no pins
+
+behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no map"
+  in FEAT-MAP
+  layer ux
+  source inferred music-miles#1
+  review unreviewed
+  priority 2
+  actor runner
+  given workout:Indoor
+  when opens page:Workout
+  then sees region:SongList
+  contract treadmill and indoor workouts have time but no route, so songs are listed by elapsed time
+
+behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with the song covers on it"
+  in FEAT-SHARE
+  layer ux
+  source inferred music-miles#1
+  review unreviewed
+  priority 2
+  actor runner
+  given workout:WithSongs
+  when opens page:Workout
+  when activates button:Share
+  then sees region:ShareCard
+  contract sized for an Instagram or Strava story, from the Gemini reply he pasted
+  contract minimal and high-contrast: the word TRACKS, the route line, the covers
+
+behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's description"
+  in FEAT-SHARE
+  layer technical
+  source inferred music-miles#1
+  review unreviewed
+  priority 3
+  actor runner
+  contract only when the runner turns it on: it is the one write Tracks would make to Strava
