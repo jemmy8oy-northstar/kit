@@ -72,6 +72,7 @@ public static class ServiceRegistration
             sp.GetRequiredService<ICorpusWriter>(),
             sp.GetRequiredService<IGitStore>(),
             deployed: settings.PublicOrigin is not null,
+            offReason: settings.GitOffReason,
             pulls: sp.GetRequiredService<IPullRequestOpener>(),
             head: settings.GitBranch,
             baseBranch: settings.GitBase,

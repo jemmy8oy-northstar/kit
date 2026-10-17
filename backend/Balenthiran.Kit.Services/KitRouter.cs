@@ -26,6 +26,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="secure">Set the cookie's <c>Secure</c> flag (an https public origin).</param>
 /// <param name="git">Write-back (<c>--git</c>); off when not given, as <c>ui.js</c> without the flag.</param>
 /// <param name="deployed">A public origin is configured (<c>KIT_PUBLIC_ORIGIN</c>): with write-back off, a write says the edit is on the server's disk only.</param>
+/// <param name="offReason">Why the entrypoint left write-back off (<c>KIT_GIT_OFF_REASON</c>, kit#233), appended to the deployed warning.</param>
 /// <param name="pulls">Commit's door to <c>dev</c> (kit#155): proposes the edits branch as a pull request. None means Commit says so.</param>
 /// <param name="head">The branch every edit is pushed to (<c>KIT_GIT_BRANCH</c>, <c>kit/hosted</c> when deployed) — Commit's pull request is FROM it.</param>
 /// <param name="baseBranch">What Commit proposes the edits INTO: <c>KIT_GIT_BASE</c>, default <c>dev</c>, the branch the entrypoint starts <paramref name="head"/> from.</param>
@@ -48,7 +49,8 @@ public sealed class KitRouter(
     string baseBranch = "dev",
     TimeProvider? clock = null,
     IPendingEditsReader? pending = null,
-    ICompletionReader? completions = null) : IKitRouter
+    ICompletionReader? completions = null,
+    string? offReason = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -753,7 +755,7 @@ public sealed class KitRouter(
                     SharedWith = plain.SharedWith,
                     UnreadableCorpora = plain.UnreadableCorpora,
                     Note = DeployedNote,
-                    Warning = DeployedWarning,
+                    Warning = offReason is null ? DeployedWarning : $"{DeployedWarning} Why: {offReason}.",
                 }
                 : plain;
         }
