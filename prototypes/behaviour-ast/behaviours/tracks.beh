@@ -17,9 +17,20 @@
 #               which he has not endorsed line by line.
 #
 # Nothing is built. The first slice is tracks#2 (scaffold) and tracks#3 (BEH-MAP-1/2/3).
+#
+# 2026-10-17, his steer on tracks#3:
+#
+#   "Let's not worry about the track visuals for now the main focus is we need
+#   to be able to identify when the user has finished a Strava run and identify
+#   which songs they have been listening to … This will require Strava and
+#   Spotify integration … This will probably create kit backend specs"
+#
+# So FEAT-SYNC below is the priority, and the visual behaviours (BEH-MAP-1,
+# BEH-SHARE-1) drop to priority 3 until he says otherwise.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-BRAND "Name and voice"
+feature FEAT-SYNC "Noticing a finished run and the songs played during it"
 feature FEAT-CONNECT "Connecting Strava and Spotify"
 feature FEAT-MAP "The music map of a workout"
 feature FEAT-SHARE "Sharing a workout"
@@ -38,6 +49,46 @@ behaviour BEH-BRAND-1 "The app is called Tracks, and its tagline is: Track your 
   then sees region:Hero
   contract "just call it "Tracks" with a tag line of track your tracks tracks": a running track, a GPS track and a music track
   contract unreviewed because he wrote "kind of thinking"; the name and the repo rename stay his
+
+
+# ═══ DEFINED — tracks#3 (his steer) ═══
+
+behaviour BEH-SYNC-1 "Tracks notices when a runner has finished a Strava run"
+  in FEAT-SYNC
+  layer technical
+  source defined tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract "identify when the user has finished a Strava run": Strava pushes a webhook event when an activity is created, so Tracks listens rather than polls
+  contract the subscription handshake echoes hub.challenge only when hub.verify_token matches the configured token; any other token is refused
+  contract an event counts only when it is an activity create for a connected athlete; updates, deletes and athlete events are acknowledged and ignored
+  contract the event is acknowledged at once and processed after, because Strava expects a reply within 2 seconds and retries otherwise
+  contract a retried or duplicated event for the same activity is processed once
+  contract only runs count (sport types Run, TrailRun, VirtualRun); a ride or a swim is ignored. Unreviewed: the list is my guess
+
+behaviour BEH-SYNC-2 "Tracks identifies the songs the runner listened to during that run"
+  in FEAT-SYNC
+  layer technical
+  source defined tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract "identify which songs they have been listening to": read the runner's Spotify recently-played history for the run's time window
+  contract a song counts when its play overlaps the window from the run's start to its start plus elapsed time
+  contract Spotify's played_at is taken as the moment the play ended, so a play spans played_at minus the track's duration up to played_at. Unreviewed: unverified against real data, so recheck it once his account is connected
+  contract recently-played returns at most the last 50 plays, so the history is read as soon as the run is noticed, not later
+  contract songs are returned in the order they played; a run with no songs in its window gives an empty list, not an error
+
+behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest one can be fetched"
+  in FEAT-SYNC
+  layer technical
+  source inferred tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
+  contract unreviewed because the store is in memory until there is a database: a restart forgets runs, and a database is his call
 
 
 # ═══ INFERRED — what the idea needs ═══
@@ -71,7 +122,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   layer ux
   source inferred tracks#1
   review unreviewed
-  priority 1
+  priority 3
   actor runner
   given workout:WithSongs
   when opens page:Workout
@@ -108,7 +159,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   layer ux
   source inferred tracks#1
   review unreviewed
-  priority 2
+  priority 3
   actor runner
   given workout:WithSongs
   when opens page:Workout
