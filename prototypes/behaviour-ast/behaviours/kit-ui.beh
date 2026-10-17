@@ -560,7 +560,7 @@ behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
   source defined kit-ui.notes.md#2026-10-16-1145
   priority 2
-  review requested a feature with nothing of that layer beneath it is hidden rather than shown with a zero; would you rather see it?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees region:KitProjectFeatures
