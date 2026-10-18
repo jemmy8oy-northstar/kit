@@ -147,6 +147,5 @@ behaviour BEH-PIPE-6 "A creator marks a video Published with its link, so the bo
   source inferred claude-code-bot#114
   review unreviewed
   priority 3
-  pending
   actor creator
   contract publishing stays manual (a pasted YouTube link); posting to YouTube for him is out of scope
