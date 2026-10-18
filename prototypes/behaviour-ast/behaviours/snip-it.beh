@@ -136,10 +136,10 @@ behaviour BEH-PIPE-5 "A recorded take is cut in the editor from its card, and th
   source inferred claude-code-bot#114
   review unreviewed
   priority 3
-  pending
   actor creator
   contract the card links to the existing upload, transcribe and cut flow (BEH-UP-1, BEH-CUT-1) rather than rebuilding it
-  contract the browser holds the video (snip-it#22), so the card keeps the cut list and the export link, never the footage
+  contract the browser holds the video (snip-it#22), so the card keeps only the take's transcript id: never the footage, nor the export link (single-use, deleted as it streams), nor the edits (the editor reloads every word kept)
+  contract a transcribed take moves the card to Recorded and a finished export moves it to Cut; neither ever moves a card backwards
 
 behaviour BEH-PIPE-6 "A creator marks a video Published with its link, so the board records what shipped"
   in FEAT-PIPELINE
