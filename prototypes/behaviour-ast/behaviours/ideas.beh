@@ -13,6 +13,7 @@
 
 feature FEAT-IDEA-MAHJONG "Mahjong: a polished app that prompts the tile names in English or pinyin"
 feature FEAT-IDEA-SHENGJI "Sheng ji: a polished, playable app"
+feature FEAT-IDEA-PHLOG "Phlog: a photo blog, where the words lead and the photos sit in tiles"
 
 behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, the player's choice"
   in FEAT-IDEA-MAHJONG
@@ -34,3 +35,27 @@ behaviour BEH-IDEA-SHENGJI-1 "A game of sheng ji can be played in the browser or
   pending
   actor player
   contract "just turn these amazing games into fun playable web apps and or mobile apps"
+
+behaviour BEH-IDEA-PHLOG-1 "A post's photos can be arranged and resized in a tiled layout, several to a row"
+  in FEAT-IDEA-PHLOG
+  source defined ideas.notes.md#2026-10-18-1517
+  pending
+  actor writer
+  contract "On Substack it only allows you to upload photos one per row… She would love to be able to arrange and resize the photos in a tile format"
+  contract the arrangement is made inside the post editor, so no separate app (Canva today) is needed
+
+behaviour BEH-IDEA-PHLOG-2 "A post reads as words first, with the photo tiles placed between its paragraphs"
+  in FEAT-IDEA-PHLOG
+  source inferred ideas.notes.md#2026-10-18-1517
+  review unreviewed
+  pending
+  actor reader
+  contract "Like Instagram or Pinterest but more focused on the words"
+
+behaviour BEH-IDEA-PHLOG-3 "Readers can subscribe to a phlog and receive each new post"
+  in FEAT-IDEA-PHLOG
+  source inferred ideas.notes.md#2026-10-18-1517
+  review unreviewed
+  pending
+  actor reader
+  contract "pretty much like Substack but more focused on images", so following a writer is part of it
