@@ -107,29 +107,51 @@ behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played
 
 # ═══ INFERRED — what the idea needs ═══
 
-behaviour BEH-CONNECT-1 "A runner connects their Strava account so Tracks can read their workouts"
+behaviour BEH-CONNECT-1 "A runner signs in to Tracks with their Strava account"
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
-  when opens page:Connect
-  when activates button:ConnectStrava
-  then sees region:Workouts
+  when opens page:Home
+  when activates button:SignInWithStrava
+  then sees region:Runs
+  contract signed out, the home page shows the hero and one action, Sign in with Strava, with a note that Tracks only reads Strava and Spotify
+  contract the button goes to Strava and returns to the home page signed in. Signing in is how Strava gets connected (BEH-CONNECT-3), so there is no separate Connect page
   contract read-only: Tracks never writes to Strava unless BEH-SHARE-2 is approved
+  contract unreviewed because the single-page flow is my choice; it replaced the Connect page this spec first named
 
-behaviour BEH-CONNECT-2 "A runner connects their Spotify account so Tracks can read what they listened to"
+behaviour BEH-CONNECT-2 "A signed-in runner connects Spotify so their runs get songs"
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
   review unreviewed
   priority 1
   actor runner
-  when opens page:Connect
+  given runner:SignedInWithoutSpotify
+  when opens page:Home
   when activates button:ConnectSpotify
-  then sees region:Workouts
+  then sees region:Runs
+  contract until Spotify is connected, the home page shows Connect Spotify and says songs cannot be matched without it
+  contract once connected, that button goes; Disconnect Spotify and Sign out sit in region:Account below the runs
+  contract a run that finishes before Spotify is connected keeps no songs, and none can be added later, because recently-played cannot be read back (BEH-SYNC-2)
   contract read-only: Tracks reads listening history and never controls playback
+
+behaviour BEH-SYNC-5 "After a run, the runner opens Tracks and finds it there with its songs"
+  in FEAT-SYNC
+  layer ux
+  source defined oke-fleet#28
+  review unreviewed
+  priority 1
+  actor runner
+  given runner:SignedInWithSpotify
+  when opens page:Home
+  then sees region:Runs
+  contract "It uses Strava hook and then pulls Spotify tracks then records everything in the db for the next time that I go and see it"
+  contract there is nothing to press: the run arrives by the Strava webhook (BEH-SYNC-1), its songs are read at once (BEH-SYNC-2) and kept (BEH-SYNC-3), so it is waiting on the next visit
+  contract only runs that finish after both accounts are connected appear; older runs are not backfilled
+  contract unreviewed because "no backfill" follows from Spotify keeping only the last 50 plays, not from anything he said
 
 
 # ═══ DEFINED — tracks#6 (multi-user) ═══
