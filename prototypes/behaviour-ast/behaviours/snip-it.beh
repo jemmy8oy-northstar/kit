@@ -94,7 +94,6 @@ behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages:
   source inferred claude-code-bot#114
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "reviewing what the pipeline / boards look like": the board is the first screen, so the pipeline is visible before any content exists
   contract the five stages are a guess at his flow, from note to upload; he can rename, add or drop a stage
@@ -106,7 +105,6 @@ behaviour BEH-PIPE-2 "A creator adds a video idea as a card with a working title
   source inferred claude-code-bot#114
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "beginning to plan videos": an idea needs only a title, so capturing one takes seconds
   contract a new card lands in Idea
@@ -117,7 +115,6 @@ behaviour BEH-PIPE-3 "A creator writes a video's script on its card, and the car
   source inferred claude-code-bot#114
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "plan videos and scripts there": the script is plain text, edited in the browser and saved with the card
   contract a card moves stage by the creator's choice; nothing moves it behind his back
