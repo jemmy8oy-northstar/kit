@@ -98,6 +98,7 @@ behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages:
   actor creator
   contract "reviewing what the pipeline / boards look like": the board is the first screen, so the pipeline is visible before any content exists
   contract the five stages are a guess at his flow, from note to upload; he can rename, add or drop a stage
+  contract the board is saved in the creator's browser, like the footage (snip-it#22): snip-it has no sign-in, so a server-side board would be readable by anyone with the link
 
 behaviour BEH-PIPE-2 "A creator adds a video idea as a card with a working title and a few lines of notes"
   in FEAT-PIPELINE
