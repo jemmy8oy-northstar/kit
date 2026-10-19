@@ -91,22 +91,3 @@ Oo a backlog idea for when we have real users is the free form text boxes can al
 I think we need some kind of /apps on balenthiran.co.uk to show the full suite of apps
 
 Maybe balenthiran.co.uk can be managed by kit as well
-
-## 2026-10-19 08:23Z · new behaviour
-
-- We need a way to define a complex feature
-- A complex feature could be created from a note. Agent identifies complex feature and creates a feature
-- Alternatively instead of only complex features, all features have this required workflow it just requires less planning for less complex features
-- So the vision I see is a board view which enforces the feature creation pipeline. Let’s make this separate from the existing board for now and we can unify them later if it makes sense before public release
-- This board basically follows a feature creation pipeline:
-	- Define problem statement
-	- Define UX requirements
-	- Define business logic details
-	- Development stage - iterative development to implement and refine behaviour - driven through spec updates
-	- Define UI requirements - UI can be specced out prior nothing stopping you but I have found that sometimes well defined ui requirements can be restrictive and often change - keep flexible, refine later
-
-
-Considerations
-- Worth considering overlap between this feature and other features but I feel like we can abstract this away from the humans concern and make this the agents concern
-	- Identifying shared upstream dependencies and ensuring DRY during development
-- I guess technically this is just one way to approach development, in the future we could have different approaches : eg frontend first or even user custom approaches but I think the above is what I want to use for now so we can just use this one
