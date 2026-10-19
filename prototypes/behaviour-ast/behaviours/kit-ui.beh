@@ -560,7 +560,7 @@ behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
   source defined kit-ui.notes.md#2026-10-16-1145
   priority 2
-  review requested a feature with nothing of that layer beneath it is hidden rather than shown with a zero; would you rather see it?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees region:KitProjectFeatures
@@ -594,7 +594,7 @@ behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0730
   priority 4
-  review requested a project is suggested when the text names it as a whole word, as a "For snip-it?" button under the picker, rather than as autocomplete in a separate project field; is that the shape you meant?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -624,3 +624,82 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
   when opens page:KitBoard
   then sees region:KitBoardBacklog
   contract backlog until Kit has users other than him; written down so the idea is not lost
+
+# ═══ Feature stages (kit.notes.md 2026-10-19 08:23Z) ═════════════════════════
+# "a board view which enforces the feature creation pipeline. Let's make this
+# separate from the existing board for now and we can unify them later if it
+# makes sense before public release". Ids are STAGE, not PIPELINE: snip-it.beh
+# already has a FEAT-PIPELINE for its video board, and one word meaning two
+# boards a corpus apart is the trap the BEH-UI note above describes.
+#
+# ⚠️ Not built yet, and not buildable by me alone: a feature's stage has to live
+# in the corpus, and a new keyword is a change to the corpus LANGUAGE (claude-code-bot#58), so
+# the shape is his. BEH-STAGE-1 asks him.
+
+feature FEAT-STAGES "Feature stages"
+
+behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 2
+  pending
+  review requested a feature's stage has to be written in its .beh, which is a new keyword (say `stage ux` under `feature`). Is that the shape, or should the stage be worked out from what the feature already holds?
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the stages, in order: problem statement, UX requirements, business logic, development, UI requirements
+  contract separate from the behaviour board (FEAT-BOARD) for now; unifying the two is a later call, before a public release
+  contract a column per stage, a card per feature, coloured by project as the behaviour board's are
+
+behaviour BEH-STAGE-2 "Every feature goes through the stages; a simple one just needs less written at each"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the stages are required, not reserved for complex features; a one-line answer at a stage is enough
+  contract a feature moves on only when the stage it is in has been written
+
+behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract a feature in development shows its behaviours' progress, built out of total, from the same counts the project page uses
+
+behaviour BEH-STAGE-4 "UI requirements come last but are never locked: they can be written at any stage and refined later"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "well defined ui requirements can be restrictive and often change": writing UI early never moves a feature past development
+
+behaviour BEH-STAGE-5 "The agent turns a note that describes a complex feature into a feature at the problem stage"
+  in FEAT-STAGES
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the note's words become the problem statement's draft, and the note is deleted in the same change, as every folded note is
+  contract the agent decides a note is a feature; he can move it back to a note by denying it
+
+behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the agent finds shared upstream dependencies between features and keeps them DRY during development; the board never asks him to
