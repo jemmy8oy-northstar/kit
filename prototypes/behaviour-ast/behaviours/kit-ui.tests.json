@@ -2,6 +2,23 @@
   "_": "behaviour -> the test(s) that name it. Same shape as kit-hosted.tests.json: the corpus carries the mapping, keyed on file + title (a vitest title is the exact it() string, without its describe() prefix).",
   "_authored": "2026-10-13, by reading kit-ui.beh against the UI's vitest suite (claude-code-bot#105). Only behaviours whose then-steps or main contract a test ASSERTS are mapped; pending ones stay unmapped, so `kit check kit-ui` keeps naming them. BEH-SHEET-1 had no asserting test and got one in the same change.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. kit check proves the test exists, not what it asserts. Several entries cover the contract rather than every then-step (PAIR-1 and STEP-1 do not assert their headings; NAV-1 does not click through).",
+  "BEH-STAGE-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a column per stage, in order, and a card per staged feature in its column (BEH-STAGE-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "links a card to its feature page and colours it by project (BEH-STAGE-1)" }
+  ],
+  "BEH-STAGE-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a feature in development its behaviours built out of total, counting child features (BEH-STAGE-3)" }
+  ],
+  "BEH-STAGE-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" }
+  ],
+  "BEH-STAGE-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the feature and behaviour views, with one Board link current on both (BEH-STAGE-8)" }
+  ],
+  "BEH-BOARD-10": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)" }
+  ],
   "BEH-BOARD-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }

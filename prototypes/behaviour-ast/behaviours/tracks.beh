@@ -1,0 +1,235 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# tracks — onboarded 2026-10-17 at James's tracks#1 (the repo was music-miles)
+#
+#   "Can you onboard these projects onto kit even if you don't start working
+#   on them yet" … "I am kind of thinking just call it "Tracks" with a tag line
+#   of track your tracks tracks"
+#
+# The repo was empty at onboarding, so there was no code to infer from. Everything here comes
+# from what he has written on tracks#1: a running app that puts the music
+# you listened to onto the route you ran. He renamed the repo to tracks on 2026-10-17, and
+# the corpus follows it.
+#
+#   DEFINED   — his words on tracks#1. Cites the issue.
+#   INFERRED  — my reading of the idea, or a detail it needs that he hasn't
+#               stated. Each is `review unreviewed`: it shows in Proposed, and
+#               he can deny it. Some lean on the Gemini reply he pasted there,
+#               which he has not endorsed line by line.
+#
+# Nothing is built. The first slice is tracks#2 (scaffold) and tracks#3 (BEH-MAP-1/2/3).
+#
+# 2026-10-17, his steer on tracks#3:
+#
+#   "Let's not worry about the track visuals for now the main focus is we need
+#   to be able to identify when the user has finished a Strava run and identify
+#   which songs they have been listening to … This will require Strava and
+#   Spotify integration … This will probably create kit backend specs"
+#
+# So FEAT-SYNC below is the priority, and the visual behaviours (BEH-MAP-1,
+# BEH-SHARE-1) drop to priority 3 until he says otherwise.
+# ─────────────────────────────────────────────────────────────────────────────
+
+feature FEAT-BRAND "Name and voice"
+feature FEAT-SYNC "Noticing a finished run and the songs played during it"
+feature FEAT-CONNECT "Connecting Strava and Spotify"
+feature FEAT-MAP "The music map of a workout"
+feature FEAT-SHARE "Sharing a workout"
+
+
+# ═══ DEFINED — tracks#1 ═══
+
+behaviour BEH-BRAND-1 "The app is called Tracks, and its tagline is: Track your tracks' tracks"
+  in FEAT-BRAND
+  layer ux
+  source defined tracks#1
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Home
+  then sees region:Hero
+  contract "just call it "Tracks" with a tag line of track your tracks tracks": a running track, a GPS track and a music track
+  contract unreviewed because he wrote "kind of thinking"; the name and the repo rename stay his
+
+
+# ═══ DEFINED — tracks#3 (his steer) ═══
+
+behaviour BEH-SYNC-1 "Tracks notices when a runner has finished a Strava run"
+  in FEAT-SYNC
+  layer technical
+  source defined tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract "identify when the user has finished a Strava run": Strava pushes a webhook event when an activity is created, so Tracks listens rather than polls
+  contract the subscription handshake echoes hub.challenge only when hub.verify_token matches the configured token; any other token is refused
+  contract Tracks creates its own push subscription once it is serving, when Strava has none, and never replaces one that points at another callback; GET /api/status reports the outcome as stravaWebhook. Unreviewed: self-registering, and showing it publicly, are my choices
+  contract an event counts only when it is an activity create for a connected athlete; updates, deletes and athlete events are acknowledged and ignored
+  contract the event is acknowledged at once and processed after, because Strava expects a reply within 2 seconds and retries otherwise
+  contract a retried or duplicated event for the same activity is processed once
+  contract only runs count (sport types Run, TrailRun, VirtualRun); a ride or a swim is ignored. Unreviewed: the list is my guess
+
+behaviour BEH-SYNC-2 "Tracks identifies the songs the runner listened to during that run"
+  in FEAT-SYNC
+  layer technical
+  source defined tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract "identify which songs they have been listening to": read the runner's Spotify recently-played history for the run's time window
+  contract a song counts when its play overlaps the window from the run's start to its start plus elapsed time
+  contract Spotify's played_at is taken as the moment the play ended, so a play spans played_at minus the track's duration up to played_at. Unreviewed: unverified against real data, so recheck it once his account is connected
+  contract recently-played returns at most the last 50 plays, so the history is read as soon as the run is noticed, not later
+  contract songs are returned in the order they played; a run with no songs in its window gives an empty list, not an error
+
+behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest one can be fetched"
+  in FEAT-SYNC
+  layer technical
+  source inferred tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
+  contract runs are kept in the database per runner (BEH-CONNECT-3), so a restart forgets nothing
+
+behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played during it"
+  in FEAT-SYNC
+  layer ux
+  source inferred tracks#3
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Home
+  then sees region:Runs
+  contract a plain list, newest run first: its name, date and elapsed time (GET /api/runs carries no distance yet), then its songs in the order they played (title and artist)
+  contract no map and no cover-art visuals, per "let's not worry about the track visuals for now" on tracks#3
+  contract with no runs yet, it says so and explains a run appears after the next one finishes on Strava
+  contract unreviewed because the layout and the fields shown are my guess
+
+
+# ═══ INFERRED — what the idea needs ═══
+
+behaviour BEH-CONNECT-1 "A runner signs in to Tracks with their Strava account"
+  in FEAT-CONNECT
+  layer ux
+  source inferred tracks#1
+  review unreviewed
+  priority 1
+  actor runner
+  when opens page:Home
+  when activates button:SignInWithStrava
+  then sees region:Runs
+  contract signed out, the home page shows the hero and one action, Sign in with Strava, with a note that Tracks only reads Strava and Spotify
+  contract the button goes to Strava and returns to the home page signed in. Signing in is how Strava gets connected (BEH-CONNECT-3), so there is no separate Connect page
+  contract read-only: Tracks never writes to Strava unless BEH-SHARE-2 is approved
+  contract unreviewed because the single-page flow is my choice; it replaced the Connect page this spec first named
+
+behaviour BEH-CONNECT-2 "A signed-in runner connects Spotify so their runs get songs"
+  in FEAT-CONNECT
+  layer ux
+  source inferred tracks#1
+  review unreviewed
+  priority 1
+  actor runner
+  given runner:SignedInWithoutSpotify
+  when opens page:Home
+  when activates button:ConnectSpotify
+  then sees region:Runs
+  contract until Spotify is connected, the home page shows Connect Spotify and says songs cannot be matched without it
+  contract once connected, that button goes; Disconnect Spotify and Sign out sit in region:Account below the runs
+  contract a run that finishes before Spotify is connected keeps no songs, and none can be added later, because recently-played cannot be read back (BEH-SYNC-2)
+  contract read-only: Tracks reads listening history and never controls playback
+
+behaviour BEH-SYNC-5 "After a run, the runner opens Tracks and finds it there with its songs"
+  in FEAT-SYNC
+  layer ux
+  source defined oke-fleet#28
+  review unreviewed
+  priority 1
+  actor runner
+  given runner:SignedInWithSpotify
+  when opens page:Home
+  then sees region:Runs
+  contract "It uses Strava hook and then pulls Spotify tracks then records everything in the db for the next time that I go and see it"
+  contract there is nothing to press: the run arrives by the Strava webhook (BEH-SYNC-1), its songs are read at once (BEH-SYNC-2) and kept (BEH-SYNC-3), so it is waiting on the next visit
+  contract only runs that finish after both accounts are connected appear; older runs are not backfilled
+  contract unreviewed because "no backfill" follows from Spotify keeping only the last 50 plays, not from anything he said
+
+
+# ═══ DEFINED — tracks#6 (multi-user) ═══
+
+behaviour BEH-CONNECT-3 "Anyone can sign in and connect their own accounts; each runner sees only their own runs"
+  in FEAT-CONNECT
+  layer technical
+  source defined tracks#6
+  review unreviewed
+  priority 1
+  actor runner
+  contract "We should have multi user sign in I want this to be used by other people"
+  contract signing in with Strava is the account: the Strava athlete is the user, so there is no password. Unreviewed: my choice
+  contract the session is an HttpOnly cookie, the same mechanism as earnyourbeers. Unreviewed: my choice
+  contract each OAuth round-trip carries a random state that must come back unchanged, or the sign-in is refused
+  contract each runner's Strava and Spotify refresh tokens live in the database, not in config; config holds only the app's client id and secret per provider and the webhook verify token
+  contract a Strava webhook event is routed by its owner_id to that runner; an athlete who never signed in is acknowledged and ignored
+  contract a runner who revokes Tracks on Strava is deleted with their runs. Unreviewed: delete rather than keep is my choice
+  contract GET /api/runs needs a signed-in runner and returns only their runs
+  contract Spotify allows 5 users and Strava 10 before a provider review, so this is a friends-and-family ceiling until he asks for more
+
+behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along its route"
+  in FEAT-MAP
+  layer ux
+  source inferred tracks#1
+  review unreviewed
+  priority 3
+  actor runner
+  given workout:WithSongs
+  when opens page:Workout
+  then sees region:RouteMap
+  then sees region:SongList
+  contract each song sits on the map at the point where it started, shown by its cover art
+  contract the list below the map shows the same songs in order, with the distance each one covered
+
+behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to where the runner was"
+  in FEAT-MAP
+  layer technical
+  source inferred tracks#1
+  review unreviewed
+  priority 1
+  actor runner
+  contract a song belongs to a workout when it started between the workout's start and end
+  contract its pin is the route point whose timestamp is nearest the song's start
+  contract a workout with no songs in its window still shows its route, with no pins
+
+behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no map"
+  in FEAT-MAP
+  layer ux
+  source inferred tracks#1
+  review unreviewed
+  priority 2
+  actor runner
+  given workout:Indoor
+  when opens page:Workout
+  then sees region:SongList
+  contract treadmill and indoor workouts have time but no route, so songs are listed by elapsed time
+
+behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with the song covers on it"
+  in FEAT-SHARE
+  layer ux
+  source inferred tracks#1
+  review unreviewed
+  priority 3
+  actor runner
+  given workout:WithSongs
+  when opens page:Workout
+  when activates button:Share
+  then sees region:ShareCard
+  contract sized for an Instagram or Strava story, from the Gemini reply he pasted
+  contract minimal and high-contrast: the word TRACKS, the route line, the covers
+
+behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's description"
+  in FEAT-SHARE
+  layer technical
+  source inferred tracks#1
+  review unreviewed
+  priority 3
+  actor runner
+  contract only when the runner turns it on: it is the one write Tracks would make to Strava

@@ -123,7 +123,12 @@ export interface Feature {
   title: string
   in: string[]
   at: string
+  /** Its `stage` line (FEAT-STAGES); absent when it is not on the stages board. */
+  stage?: Stage
 }
+
+/** The five stages, in his order (BEH-STAGE-1). */
+export type Stage = 'problem' | 'ux' | 'logic' | 'development' | 'ui'
 
 export interface Generated {
   id: string

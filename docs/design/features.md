@@ -30,8 +30,11 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
   ...
 ```
 
-- **`feature <ID> "<title>"`** opens a block exactly as `behaviour` does. Its body takes only `in`
-  and `#` comments. A page is a feature: no separate `page` kind, because his note folds them together.
+- **`feature <ID> "<title>"`** opens a block exactly as `behaviour` does. Its body takes only `in`,
+  `stage` and `#` comments. A page is a feature: no separate `page` kind, because his note folds them together.
+- **`stage <problem|ux|logic|development|ui>`** (FEAT-STAGES, added 2026-10-19 after he approved
+  BEH-STAGE-1) puts the feature on the stages board in that column. At most one per feature; none
+  keeps it off the board (BEH-STAGE-7, proposed).
 - **`in <FEAT-ID>`** names a parent. It can be repeated, and each line is a tag, not an ownership, so a
   card can sit under the board *and* the project page. It is valid on a feature and on a behaviour.
 - **No `in` means top level** of the project. Nothing has to be tagged, so every existing corpus

@@ -180,6 +180,13 @@
   "page:KitBoard": {
     "route": "/board"
   },
+  "page:KitStages": {
+    "route": "/stages"
+  },
+  "region:KitStagesBoard": {
+    "role": "region",
+    "name": "Feature stages"
+  },
   "page:KitFeature": {
     "route": "/projects/:app/features/:id"
   },

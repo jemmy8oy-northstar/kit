@@ -4,11 +4,12 @@ import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, askForBehaviour, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
+import BoardViews from '../components/BoardViews'
 import LayerChips from '../components/LayerChips'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriority, CAP, columnOf, hueOf, isIdea, isTrial, LAYERS, projectOf, RANKED, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isTrial, LAYERS, projectOf, RANKED, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -123,6 +124,7 @@ export default function Board() {
   return (
     <>
       <h1>Board</h1>
+      <BoardViews />
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a
         pending one is backlog until it is scheduled, and in progress at the top of its schedule;
@@ -196,7 +198,7 @@ export default function Board() {
                   // Scheduled reads in schedule order within each file; Done most recently completed
                   // first, across files (BEH-BOARD-4); Review requested, Proposed and Backlog by priority,
                   // across files (BEH-BOARD-5/6); in progress in corpus order.
-                  const cards = shown.flatMap((e) =>
+                  let cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
                       .sort((a, b) => (col.id === 'scheduled' ? e.places.get(a.id)!.order - e.places.get(b.id)!.order : 0))
@@ -208,7 +210,7 @@ export default function Board() {
                       })),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
-                  if (RANKED.includes(col.id)) cards.sort((x, y) => byPriority(x.b.priority, y.b.priority))
+                  if (RANKED.includes(col.id)) cards = byPriorityAcrossProjects(cards)
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
                   // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
                   const limit = limits[col.id] ?? CAP

@@ -7,7 +7,7 @@
 #   find and creating kit spec. Make inferred spec as well."
 #
 # Read at earnyourbeers@main 4b6e4f4: a single-user, offline Flutter app,
-# branded "Earn Your Vices" in the UI. Its docs/ are mostly brainstorms, so the
+# branded "Earn Your Vices" in the UI (renamed Earn Your Beers: BEH-BRAND-1). Its docs/ are mostly brainstorms, so the
 # CODE is the reference implementation the web rebuild has to match.
 #
 #   DEFINED   — his words on earnyourbeers#1, or a doc that describes what the
@@ -17,8 +17,9 @@
 #               deny it. Numbers are copied from the code, not from the docs,
 #               which disagree with it (see BEH-SCORE-1).
 #
-# ⚠️ Nothing here is built for the web yet. Every behaviour describes the app
-# the rebuild must reproduce, plus the account layer the web adds.
+# Every behaviour describes the app the rebuild must reproduce, plus the
+# account layer the web adds. What is built is whatever earnyourbeers.tests.json
+# maps; `kit check earnyourbeers` names the rest.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-ACCOUNT "Accounts (new for the web)"
@@ -31,7 +32,19 @@ feature FEAT-SETTINGS "Settings"
 
 # ═══ DEFINED — earnyourbeers#1 ═══
 
-behaviour BEH-WEB-1 "Earn Your Vices is a website: a React frontend on a .NET backend, like web-template"
+behaviour BEH-BRAND-1 "The app is called Earn Your Beers everywhere a person reads its name, matching its URL"
+  in FEAT-ACCOUNT
+  layer ux
+  source defined earnyourbeers.notes.md#2026-10-17
+  review unreviewed
+  priority 1
+  actor athlete
+  when opens page:SignIn
+  then sees page:SignIn
+  contract "Maybe even a rename from earn your vices to earn your beers. I think worth making it consistent with the url"
+  contract unreviewed because he wrote "maybe": the page title and both headings say Earn Your Beers, and code names (eyv-*, Vice) stay as they are
+
+behaviour BEH-WEB-1 "Earn Your Beers is a website: a React frontend on a .NET backend, like web-template"
   in FEAT-ACCOUNT
   layer technical
   source defined earnyourbeers#1
@@ -165,6 +178,7 @@ behaviour BEH-HISTORY-1 "Past weeks can be paged through, back to the first log"
   then sees region:WeekHeader
   contract headers read CURRENT WEEK or WEEK OF d/m; each entry shows its amount and "Logged at H:MM"
   contract a past week's balance uses TODAY's difficulty, not the one in force that week
+  contract the web pages weeks with ‹ › buttons rather than a swipe, and past weeks are read-only (an assumption, earnyourbeers#11)
 
 behaviour BEH-LEAGUE-1 "There are 20 tiers in four divisions, and the banner shows where you are"
   in FEAT-LEAGUE
@@ -202,6 +216,7 @@ behaviour BEH-SETTLE-2 "Settlement is shown as a report you must dismiss before 
   then sees region:Balance
   provides region:SettlementReport.states = promoted, double promotion, demoted, position secured
   contract the native app ran settlement on launch; the web runs it on the first request of a new week (an assumption)
+  contract the web report shows the week's net and the outcome but not tier names, which the API doesn't send yet (an assumption, earnyourbeers#11)
 
 behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, and a weekly vice count"
   in FEAT-ONBOARD
@@ -218,6 +233,7 @@ behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, a
   when activates button:EnterTheArena
   then sees page:Dashboard
   contract volume slider maxes: 100 km run, 300 km cycle, 3000 lengths swim; vices 0 to 40 a week
+  contract the web skips the intro page, the "ANALYZING LIFESTYLE…" animation and the rank reveal (an assumption, earnyourbeers#12)
 
 behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
   in FEAT-ONBOARD
@@ -230,23 +246,25 @@ behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
   contract if points − vices < −15 the tier drops by 5, floored at 0
   contract the step bands in app_state.dart:438 are dead code and are not ported
 
-behaviour BEH-VICE-1 "The vice is any single emoji, pizza by default"
+behaviour BEH-VICE-1 "The vice is any single emoji, beer by default"
   in FEAT-SETTINGS
   layer ux
-  source inferred test/rebrand_flow_test.dart:defaults to Pizza emoji
-  review unreviewed
+  source defined earnyourbeers.notes.md#2026-10-17
   priority 2
   actor athlete
   when opens page:Settings
   when fills field:Vice with ?emoji
   then sees region:Balance
-  contract at most 2 characters, no plain text; empty falls back to 🍕
+  contract "beer is an important voice let's make that the primary" (his Kit note, 2026-10-17): the Flutter app defaulted to pizza
+  contract at most 2 characters, no plain text; empty falls back to 🍺
+  contract 🍺 is first among the quick picks; a person's saved emoji is never changed for them
+  contract characters are what a person sees, as Flutter's maxLength counts them, so two emoji are allowed (an assumption, earnyourbeers#9)
+  contract also at most 32 UTF-16 code units, a guard the Dart lacks (an assumption, earnyourbeers#9)
   contract docs/compliance_strategy.md: the neutral default is the App Store defence, which matters less on the web
 
 behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   in FEAT-SETTINGS
-  layer ui
-  pending
+  layer ux
   source inferred test/rebrand_flow_test.dart:updates theme mode
   review unreviewed
   priority 4
@@ -255,6 +273,21 @@ behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   when activates button:Theme
   provides button:Theme.states = auto, light, dark
   contract accent 0xFFF28E1C on a 0xFF1A1A1A dark surface (lib/ui/theme.dart)
+  contract the choice applies at once and is remembered on the device, not saved to the account; with none saved it is dark (an assumption, earnyourbeers#12)
+
+# How the web dashboard looks (earnyourbeers#11), my choice where the Flutter app doesn't decide it.
+behaviour BEH-UI-1 "The web app is phone-first and dark by default, with the four log buttons in a 2×2 grid"
+  in FEAT-SETTINGS
+  layer ux
+  source defined earnyourbeers#11
+  review unreviewed
+  priority 3
+  actor athlete
+  when opens page:Dashboard
+  then sees region:Balance
+  contract dark is the default theme; the light theme uses the Flutter app's "foam white" #F2F2F2
+  contract the vice card comes first in a 2×2 grid with run, cycle and swim, where Flutter put them side by side
+  contract log times show in the viewer's local time while weeks run in UTC (BEH-BALANCE-1)
 
 behaviour BEH-RESET-1 "A person can wipe their data and start onboarding again"
   in FEAT-SETTINGS

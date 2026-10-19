@@ -285,6 +285,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
   in FEAT-COMMIT
   layer technical
   source inferred kit#88
+  priority 4
   actor engineer
   given branch:Pushed
   when runs command:KitCheck
@@ -300,6 +301,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
 behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached dev yet, and the pull request they wait in"
   in FEAT-COMMIT
   source inferred kit#118
+  priority 3
   actor engineer
   given change:Pending
   when opens page:KitHostedProject

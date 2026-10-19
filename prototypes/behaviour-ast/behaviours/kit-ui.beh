@@ -560,7 +560,7 @@ behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
   source defined kit-ui.notes.md#2026-10-16-1145
   priority 2
-  review requested a feature with nothing of that layer beneath it is hidden rather than shown with a zero; would you rather see it?
+  review approved
   actor engineer
   when opens page:KitProject
   then sees region:KitProjectFeatures
@@ -594,12 +594,24 @@ behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-16-0730
   priority 4
-  review requested a project is suggested when the text names it as a whole word, as a "For snip-it?" button under the picker, rather than as autocomplete in a separate project field; is that the shape you meant?
+  review approved
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
   contract a suggestion is picked with one tap and fills the project; no free-typed name is ever written as a project
   contract a project the text names as a whole word, in any case, is offered while no project is picked
+
+behaviour BEH-BOARD-10 "The agent scores every card it wants looked at, and equal scores take each project in turn"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-19-1340
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  contract "would be good for the ai to score the proposed items so that top is the one that it most wants to be reviewed. Currently it seems to be ordered by project"
+  contract the score is the existing priority line (BEH-BOARD-5): every proposed card carries one, written by the agent
+  contract within one priority the column takes each project in turn, so a tie never reads as a block of one project
+  contract inferences of code that already ships are scored 4 or 5: confirming what runs is the least urgent review
 
 behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
   in FEAT-NAV
@@ -624,3 +636,178 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
   when opens page:KitBoard
   then sees region:KitBoardBacklog
   contract backlog until Kit has users other than him; written down so the idea is not lost
+
+# ═══ Feature stages (kit.notes.md 2026-10-19 08:23Z) ═════════════════════════
+# "a board view which enforces the feature creation pipeline. Let's make this
+# separate from the existing board for now and we can unify them later if it
+# makes sense before public release". Ids are STAGE, not PIPELINE: snip-it.beh
+# already has a FEAT-PIPELINE for its video board, and one word meaning two
+# boards a corpus apart is the trap the BEH-UI note above describes.
+#
+# A feature's stage lives in the corpus as `stage <problem|ux|logic|development|ui>`
+# under its `feature` line: a corpus LANGUAGE change (claude-code-bot#58), which he
+# approved on BEH-STAGE-1 at 2026-10-19 13:39Z. Built: BEH-STAGE-1, -3 and -8. Still
+# pending: the agent's halves (BEH-STAGE-2's reading, -5, -6).
+
+feature FEAT-STAGES "Feature stages"
+  stage development
+
+behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 2
+  review approved
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the stages, in order: problem statement, UX requirements, business logic, development, UI requirements
+  contract separate from the behaviour board (FEAT-BOARD) for now; unifying the two is a later call, before a public release
+  contract a column per stage, a card per feature, coloured by project as the behaviour board's are
+
+# Rewritten from his 16:16Z note, which answered what "written" means here: the
+# stage is the agent's rough reading of the spec and the code, not a gate he fills.
+behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from how much of its spec is written and how much is built"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  source defined kit.notes.md#2026-10-19-1616
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "used by the bot to group features into a rough completion stage based off the provided spec that the dev has filled in and implementation state"
+  contract "the human can use it to quickly identify what work is left to be done": the board is for reading, and he never has to move a card
+  contract every feature goes through the stages; a simple one just needs less written at each, and a one-line answer is enough
+  contract the agent writes the stage line and moves it on when it rereads the feature; "rough" means a stage can lag the spec by a wake
+
+behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract a feature in development shows its behaviours' progress, built out of total, from the same counts the project page uses
+
+behaviour BEH-STAGE-4 "UI requirements come last but are never locked: they can be written at any stage and refined later"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "well defined ui requirements can be restrictive and often change": writing UI early never moves a feature past development
+
+behaviour BEH-STAGE-5 "The agent turns a note that describes a complex feature into a feature at the problem stage"
+  in FEAT-STAGES
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the note's words become the problem statement's draft, and the note is deleted in the same change, as every folded note is
+  contract the agent decides a note is a feature; he can move it back to a note by denying it
+
+behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-19-0823
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract the agent finds shared upstream dependencies between features and keeps them DRY during development; the board never asks him to
+
+# My assumption from building BEH-STAGE-1, written as an inference so it sits in
+# Proposed until he approves or denies it.
+behaviour BEH-STAGE-7 "Only a feature whose block has a stage line is on the stages board"
+  in FEAT-STAGES
+  source inferred kit.notes.md#2026-10-19-0823
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract most existing features are pages and parts of pages (kit#237), not product features; staging all of them would bury the board, so a feature with no stage line stays off it
+  contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
+
+behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
+  in FEAT-STAGES
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-19-1619
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "just another level of granularity to view the tasks left to be done. The existing board is just a more granular view. Feature board is higher level"
+  contract "could be good to be able to easily switch between the two board views": a switch on both pages, and one Board link in the header for both
+  contract "we aren't really integrating them I don't think we should be. They are different ways of viewing it": the two stay separate pages
+  contract a project board was his idea too, backlogged in the same note; an epic level comes from FEAT-EPICS instead
+
+# ═══ Epics (kit.notes.md 2026-10-19 16:44Z) ══════════════════════════════════
+# "On second thought I think we actually need to support epics." Features group
+# bottom up (a behaviour is written, then placed); an epic is defined top down
+# and reaches in at any depth. All pending: an `epic` tag is a corpus LANGUAGE
+# change (claude-code-bot#58), so BEH-EPIC-2 asks him before anything is built.
+
+feature FEAT-EPICS "Epics"
+  stage problem
+
+behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever features and behaviours it needs, at any depth"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-19-1644
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
+  contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
+
+behaviour BEH-EPIC-2 "The epic tag is an `epic FEAT-…` line, so it names a feature as the epic and reuses its block"
+  in FEAT-EPICS
+  source inferred kit.notes.md#2026-10-19-1644
+  priority 2
+  review requested a corpus language change: is an epic a feature block marked as one, or a new kind of block of its own?
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic"
+  contract my assumption: an epic is a feature with `kind epic`, so it gets a page, a stage and a progress count for free, and `epic FEAT-X` on any feature or behaviour tags it
+  contract an `epic` line naming something that is not an epic is refused, as an unknown parent is
+  contract a language change waits for his answer (claude-code-bot#58): nothing in FEAT-EPICS is built until then
+
+behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-19-1644
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "these tags need to be distinguishable probably with colour"
+
+behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
+  in FEAT-EPICS
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-19-1644
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "or even just another abstraction level in the boards for epic. I feel like this makes the most sense": a third option on the BEH-STAGE-8 switch
+  contract each epic shows its tagged items' progress, built out of total, as a feature in development does (BEH-STAGE-3)
+
+behaviour BEH-EPIC-5 "A new epic's children start pending"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-19-1644
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "when you create an epic, all of its children and grand children will likely be created as pending or new"

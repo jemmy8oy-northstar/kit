@@ -11,4 +11,7 @@ public interface IFeatureView
     IReadOnlyList<string> In { get; }
 
     string At { get; }
+
+    /// <summary>The feature's stage (FEAT-STAGES), absent when it is not on the stages board.</summary>
+    string? Stage { get; }
 }

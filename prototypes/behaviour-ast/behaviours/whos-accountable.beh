@@ -1,0 +1,229 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# whos-accountable — onboarded 2026-10-17 at James's request on music-miles#1
+#
+#   "Can you onboard these projects onto kit even if you don't start working on them yet"
+#
+# The empty repo `climate-accountability` appears to be the same idea, so this
+# corpus is named for the repo that holds the work: whos-accountable.
+#
+# Read at whos-accountable@dev: a .NET scoring core (ScoreEngine, DatasetLoader,
+# a synthetic cohort and a golden-file test) and docs/DESIGN.md. There is no web
+# API and no frontend yet.
+#
+#   DEFINED   — his words on whos-accountable#1 (the idea, plus his scope answers:
+#               UK-first, companies-only, read-only v1, sentiment and individuals
+#               in the backlog). Cites the issue.
+#   INFERRED  — what the code or the bot's own backlog issues (#4-#15) state.
+#               Each is `review unreviewed`: it shows in Proposed, and he can
+#               deny it. Numbers are copied from ScoringConstants.cs.
+#
+# Nothing here is wired to a test map yet; `kit check whos-accountable` names
+# what is not built.
+# ─────────────────────────────────────────────────────────────────────────────
+
+feature FEAT-LEADERBOARD "Leaderboards of the worst offenders and the top do-gooders"
+feature FEAT-SCORING "The credibility score: a published formula over open data"
+feature FEAT-DATA "Datasets and sourcing"
+feature FEAT-COMPANY "Company pages"
+feature FEAT-BACKLOG "Later: other countries, individuals, sentiment"
+
+
+# ═══ DEFINED — whos-accountable#1 ═══
+
+behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offenders"
+  in FEAT-LEADERBOARD
+  layer ux
+  source defined whos-accountable#1
+  priority 1
+  actor visitor
+  when opens page:WorstOffenders
+  then sees region:Leaderboard
+  contract "The core part will be company and individual leaderboards. Showing both ways - worse offenders leaderboard and top do gooders"
+  contract the aim is visibility: "keep billionairs and corporations accountable for their actions"
+
+behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
+  in FEAT-LEADERBOARD
+  layer ux
+  source defined whos-accountable#1
+  priority 1
+  actor visitor
+  when opens page:TopDoGooders
+  then sees region:Leaderboard
+  contract the same companies, ordered the other way round
+
+behaviour BEH-SCOPE-1 "Version 1 covers UK companies only"
+  in FEAT-LEADERBOARD
+  layer technical
+  source defined whos-accountable#1
+  priority 1
+  actor visitor
+  contract "keep it simple with uk": the US, EU and global come later (BEH-BACKLOG-1)
+  contract individuals are out of v1 and sit in the backlog (BEH-BACKLOG-2)
+
+behaviour BEH-SCOPE-2 "Version 1 is read-only: no accounts, no contributions"
+  in FEAT-LEADERBOARD
+  layer technical
+  source defined whos-accountable#1
+  priority 1
+  actor visitor
+  contract "Maybe read only v1, sentiment as a backlog": a visitor reads, and nothing a visitor does changes the data
+
+
+# ═══ INFERRED — design doc, backlog issues, code ═══
+
+behaviour BEH-SCORE-1 "A company's composite is a 0-100 score from published pillars with published weights"
+  in FEAT-SCORING
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:21
+  review unreviewed
+  priority 1
+  actor visitor
+  provides pillar:Emissions.weight = 0.40
+  provides pillar:Violations.weight = 0.60
+  contract weights live in code as named constants, so changing how companies are scored is a reviewed diff
+  contract scores are rounded to 2 decimal places so results are reproducible
+
+behaviour BEH-SCORE-2 "The emissions sub-score falls as emissions intensity rises"
+  in FEAT-SCORING
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:35
+  review unreviewed
+  priority 1
+  actor visitor
+  contract score = 100 * e^(-intensity / 200), intensity in tCO2e per million pounds of revenue
+  contract the v1 values are chosen for a sensible spread, not calibrated against the full cohort
+
+behaviour BEH-SCORE-3 "The violations sub-score falls with fines, incidents and discharge hours"
+  in FEAT-SCORING
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:40
+  review unreviewed
+  priority 1
+  actor visitor
+  contract harm = 1.0 per million pounds of fines + 0.5 per incident + 1.0 per 1,000 hours of sewage or storm-overflow discharge
+  contract score = 100 * e^(-harm / 5); a company with no recorded enforcement scores 100
+
+behaviour BEH-SCORE-4 "Missing data is unknown, never a neutral 50"
+  in FEAT-SCORING
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.Services/Scoring/ScoreEngine.cs:91
+  review unreviewed
+  priority 1
+  actor visitor
+  contract a pillar with no data is excluded and the composite is renormalised over the pillars that have a value
+  contract a company with no data at all stays unknown: it is not crowned a do-gooder by its own absence
+  contract unknown composites sort last, whichever direction the leaderboard runs
+
+behaviour BEH-SCORE-5 "A methodology page explains the formula, the weights and every source"
+  in FEAT-SCORING
+  layer ux
+  source inferred docs/DESIGN.md:1
+  review unreviewed
+  priority 2
+  actor visitor
+  when opens page:Methodology
+  then sees region:Formula
+  contract the credibility of the whole app rests on this page (bot's own framing on whos-accountable#1)
+
+behaviour BEH-SCORE-6 "A golden-file test pins the whole leaderboard over a synthetic cohort"
+  in FEAT-SCORING
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.Tests/GoldenLeaderboardTests.cs:1
+  review unreviewed
+  priority 2
+  actor maintainer
+  contract any change to the formula shows up as a visible diff in the leaderboard
+  contract the cohort is synthetic, so there is no risk of a wrong real figure
+
+behaviour BEH-DATA-1 "Only open-government data feeds the composite: UK ETS emissions and EA/Ofwat enforcement"
+  in FEAT-DATA
+  layer technical
+  source inferred whos-accountable#9
+  review unreviewed
+  priority 1
+  actor maintainer
+  contract CDP, SBTi and InfluenceMap cannot be folded into the score without written permission (licence audit, whos-accountable#9)
+  contract the permission emails are tracked in whos-accountable#11
+
+behaviour BEH-DATA-2 "Every record carries its source link and retrieval date"
+  in FEAT-DATA
+  layer technical
+  source inferred backend/Balenthiran.WhosAccountable.DomainModels/Models/SourceRef.cs:1
+  review unreviewed
+  priority 1
+  actor maintainer
+  contract "every number links to its source" (bot's proposal on whos-accountable#1)
+
+behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: about 150 UK-linked companies, hand-curated"
+  in FEAT-DATA
+  layer technical
+  source inferred whos-accountable#13
+  review unreviewed
+  priority 2
+  actor maintainer
+  pending
+  contract data is versioned in the repo as data-as-code
+  contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
+
+behaviour BEH-COMPANY-1 "A company page shows its score, its pillar sub-scores and the evidence behind them"
+  in FEAT-COMPANY
+  layer ux
+  source inferred whos-accountable#15
+  review unreviewed
+  priority 2
+  actor visitor
+  pending
+  when opens page:Company
+  then sees region:PillarScores
+
+behaviour BEH-COMPANY-2 "Restricted sources appear on a company page as attributed third-party signals, outside the score"
+  in FEAT-COMPANY
+  layer ux
+  source inferred whos-accountable#9
+  review unreviewed
+  priority 3
+  actor visitor
+  pending
+  contract each signal credits its source and links to it; CDP is link-only until licensed
+  contract if ads ever go live, even this needs the permission emails to have landed first
+
+behaviour BEH-API-1 "A read-only web API serves the leaderboards and company pages"
+  in FEAT-LEADERBOARD
+  layer technical
+  source inferred whos-accountable#14
+  review unreviewed
+  priority 2
+  actor visitor
+  pending
+  contract a WebApi with an EF read model; there is no API in the repo yet
+
+
+# ═══ BACKLOG — the bot's issues, lowest priority ═══
+
+behaviour BEH-BACKLOG-1 "Coverage expands from the UK to the US, then the EU, then global"
+  in FEAT-BACKLOG
+  layer technical
+  source defined whos-accountable#1
+  priority 3
+  actor visitor
+  pending
+  contract "create an issue to expand to uk + us and then maybe eu and global later" (issue whos-accountable#4)
+
+behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entries"
+  in FEAT-BACKLOG
+  layer technical
+  source defined whos-accountable#1
+  priority 3
+  actor visitor
+  pending
+  contract "Fine to park maybe also backlog": parked pending a defamation review (whos-accountable#5)
+
+behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside the evidence-based score"
+  in FEAT-BACKLOG
+  layer ux
+  source defined whos-accountable#1
+  priority 3
+  actor visitor
+  pending
+  contract "sentiment as a backlog" (whos-accountable#6)
+  contract sentiment never feeds the evidence score: crowd voting invites brigading and defamation risk

@@ -18,5 +18,9 @@ public sealed class FeatureView : IFeatureView
     [JsonPropertyOrder(4)]
     public required string At { get; init; }
 
+    [JsonPropertyOrder(5)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Stage { get; init; }
+
     IReadOnlyList<string> IFeatureView.In => In;
 }
