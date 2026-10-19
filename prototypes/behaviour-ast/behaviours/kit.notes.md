@@ -89,3 +89,9 @@ Oo a backlog idea for when we have real users is the free form text boxes can al
 ## 2026-10-19 13:40Z · new behaviour
 
 Board item ordering currently doesnt seem to be ordered. Would be good for the ai to score the proposed items so that top is the one that it lists wants to be reviewed. Currently it seems to be ordered by project.
+
+## 2026-10-19 16:16Z · new behaviour
+
+The feature pipeline is used by the bot to group features into a rough completion stage based off the provided spec that the dev has filled in and implementation state.
+
+The human can use it to quickly identify what work is left to he done.
