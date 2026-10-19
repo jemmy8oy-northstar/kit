@@ -1,9 +1,9 @@
 namespace Balenthiran.Kit.Abstractions.Services;
 
 /// <summary>
-/// The live session tokens (<c>auth.js</c>'s <c>sessions()</c>): in memory, so a restart
-/// signs everyone out — deliberately, because a session table would be the database he
-/// parked on kit#41 arriving as an implementation detail.
+/// The live session tokens (<c>auth.js</c>'s <c>sessions()</c>). A server with a password uses
+/// <c>SignedSessionStore</c>, whose tokens survive a restart without a session table (the
+/// database he parked on kit#41); the in-memory <c>SessionStore</c> is the oracle's.
 /// </summary>
 public interface ISessionStore
 {
