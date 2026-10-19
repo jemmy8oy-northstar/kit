@@ -962,3 +962,51 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
   when opens page:KitProjects
   then sees region:KitMain
   contract my proposal, answering "feel free to propose other items": today every signed-in visitor is James, so nothing checks whose project a URL names; with a second user, every read and write has to
+
+# His note of 2026-10-19 19:33Z: a "nudge", maybe a bell ("fits in with the cat theme"),
+# comments under items, and a floating button for notes. Captured, not scheduled.
+feature FEAT-BELL "Ring an item's bell"
+  stage problem
+
+behaviour BEH-BELL-1 "Ringing an item's bell asks the AI to look at it again"
+  in FEAT-BELL
+  source inferred kit.notes.md#2026-10-19-1933
+  pending
+  actor engineer
+  when opens page:KitBehaviour
+  then sees region:KitMain
+  contract "Nudge just brings the ais attention to this item again"; his name for it may be bell or ring, which fits the cat theme
+  contract my assumption: an epic, feature or behaviour can be rung; ringing it again before the AI answers adds nothing
+
+behaviour BEH-BELL-2 "A rung item is either reprioritised or answered with why not"
+  in FEAT-BELL
+  source inferred kit.notes.md#2026-10-19-1933
+  pending
+  actor engineer
+  when opens page:KitBehaviour
+  then sees region:KitMain
+  contract "the ai can choose to prioritise it higher or leave a comment on it … to explain why this is not higher priority"
+  contract my assumption: the answer is a comment on the item (FEAT-COMMENTS), so a bell is never silently dropped
+
+feature FEAT-COMMENTS "Comments under an item"
+  stage problem
+
+behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry their own comments"
+  in FEAT-COMMENTS
+  source inferred kit.notes.md#2026-10-19-1933
+  pending
+  actor engineer
+  when opens page:KitBehaviour
+  then sees region:KitMain
+  contract "this is different from a note because it is under a specific item"; a note is a new thought the AI turns into spec, a comment stays attached to its item
+  contract open question for him: a note left on a behaviour (BEH-NOTE-2) already names its item, so a comment may replace that half of notes rather than sit beside it
+
+behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
+  in FEAT-NOTES
+  source inferred kit.notes.md#2026-10-19-1933
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Maybe from anywhere there is a floating action button which can add a note"
+  contract my assumption: the note lands on the project of the page it was added from, or asks which project when there is none
