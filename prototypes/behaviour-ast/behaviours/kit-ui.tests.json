@@ -181,5 +181,13 @@
   ],
   "BEH-FEAT-5": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "draws every file’s features together, each linking into its own file, and names no file" }
+  ],
+  "BEH-EPIC-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/EpicTests.cs", "title": "An_epic_is_its_own_block_and_a_feature_joins_it_without_changing_its_parents" },
+    { "file": "backend/Balenthiran.Kit.Tests/EpicTests.cs", "title": "A_malformed_epic_or_epic_tag_is_refused_naming_the_line" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3)" }
+  ],
+  "BEH-EPIC-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3)" }
   ]
 }

@@ -613,6 +613,17 @@ behaviour BEH-BOARD-10 "The agent scores every card it wants looked at, and equa
   contract within one priority the column takes each project in turn, so a tie never reads as a block of one project
   contract inferences of code that already ships are scored 4 or 5: confirming what runs is the least urgent review
 
+behaviour BEH-BOARD-11 "The agent's open questions show on the board"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-19-1725
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  contract "questions should probably appear on the board as well"
+  contract my assumption: a question is a `review requested` line that asks him something, and it sits at the top of the review column, worded as the question, so it is not missed among cards that only want a look
+
 behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
   in FEAT-NAV
   in FEAT-BOARD
@@ -749,8 +760,8 @@ behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one
 # ═══ Epics (kit.notes.md 2026-10-19 16:44Z) ══════════════════════════════════
 # "On second thought I think we actually need to support epics." Features group
 # bottom up (a behaviour is written, then placed); an epic is defined top down
-# and reaches in at any depth. All pending: an `epic` tag is a corpus LANGUAGE
-# change (claude-code-bot#58), so BEH-EPIC-2 asks him before anything is built.
+# and reaches in at any depth. He answered the language question at 17:25Z
+# (BEH-EPIC-2): an epic is its own block, and features take it as a parent.
 
 feature FEAT-EPICS "Epics"
   stage problem
@@ -766,29 +777,29 @@ behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever fe
   contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
   contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
 
-behaviour BEH-EPIC-2 "The epic tag is an `epic FEAT-…` line, so it names a feature as the epic and reuses its block"
+behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project, and a feature names it as one of its parents"
   in FEAT-EPICS
-  source inferred kit.notes.md#2026-10-19-1644
+  source defined kit.notes.md#2026-10-19-1725
   priority 2
-  review requested a corpus language change: is an epic a feature block marked as one, or a new kind of block of its own?
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract "we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic"
-  contract my assumption: an epic is a feature with `kind epic`, so it gets a page, a stage and a progress count for free, and `epic FEAT-X` on any feature or behaviour tags it
-  contract an `epic` line naming something that is not an epic is refused, as an unknown parent is
-  contract a language change waits for his answer (claude-code-bot#58): nothing in FEAT-EPICS is built until then
+  contract "epics are separate blocks to features. An epics parent is a project. Features can have multiple parents and they can be other features projects or epics"
+  contract my assumption: the block is `epic EPIC-… "title"`, and a feature tags it with the `in EPIC-…` line it already uses for a parent feature, so no second tagging keyword is needed
+  contract an `in` line naming an epic that does not exist is refused, as an unknown parent feature is
+  contract the parser that reads `epic` reaches main before any corpus uses it: kit/hosted takes the corpus from dev, so a keyword on dev alone breaks production (it did on 10-19 with `stage`)
+  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes; an epic takes no lines yet, and a behaviour reaches an epic through its feature
+  contract a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
   source defined kit.notes.md#2026-10-19-1644
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "these tags need to be distinguishable probably with colour"
+  contract shown on the feature page beside its parents, in the design system's secondary colour, which no badge tone or project colour uses; it links nowhere until epics have a view (BEH-EPIC-4)
 
 behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   in FEAT-EPICS
@@ -811,3 +822,34 @@ behaviour BEH-EPIC-5 "A new epic's children start pending"
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when you create an epic, all of its children and grand children will likely be created as pending or new"
+
+behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and proposes them"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-19-1721
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
+  contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
+
+behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-19-1721
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract written as EPIC-KIT-USERS below; his description is kept here until its children are drafted (BEH-EPIC-6)
+  contract his list: works with the user's own GitHub (OAuth and a GitHub App, with a smooth sign-up); no central spec in the kit repo; projects inferred from their GitHub; new kit projects get new repos
+  contract his list: the dev process and context move to a shared, generic place for every user, with per-user memory (perhaps a database)
+  contract his list: production security such as secret management; per-user databases (a cheaper dev tier, and a production tier); usage, cost and payment, charging for compute and AI tokens
+  contract "let's mark onboarding existing projects as out of scope for now": onboarding existing projects is a separate backlog epic
+  contract "feel free to propose other items": the agent's proposals go in as inferred children once the epic block exists
+
+# His two epics (kit.notes.md 2026-10-19 17:21Z). No feature is in either yet.
+epic EPIC-KIT-USERS "Kit supports users other than James"
+
+epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for now)"

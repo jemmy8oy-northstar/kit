@@ -9,9 +9,13 @@ public sealed class ParsedCorpus : IParsedCorpus
 
     public required List<Feature> Features { get; init; }
 
+    public List<Epic> Epics { get; init; } = [];
+
     public string? Project { get; init; }
 
     IReadOnlyList<IBehaviour> IParsedCorpus.Behaviours => Behaviours;
 
     IReadOnlyList<IFeature> IParsedCorpus.Features => Features;
+
+    IReadOnlyList<IEpic> IParsedCorpus.Epics => Epics;
 }

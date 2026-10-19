@@ -35,6 +35,10 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
 - **`stage <problem|ux|logic|development|ui>`** (FEAT-STAGES, added 2026-10-19 after he approved
   BEH-STAGE-1) puts the feature on the stages board in that column. At most one per feature; none
   keeps it off the board (BEH-STAGE-7, proposed).
+- **`epic EPIC-<ID> "<title>"`** (BEH-EPIC-2, his 2026-10-19 17:25Z note) is its own block, with
+  the file's project as its parent and no lines yet. A feature joins it with `in EPIC-…`, which is
+  kept in `epics` apart from `in`, so the project tree never changes. A behaviour reaches an epic
+  through its feature. ⚠️ A corpus may use `epic` only once the parser is on main.
 - **`in <FEAT-ID>`** names a parent. It can be repeated, and each line is a tag, not an ownership, so a
   card can sit under the board *and* the project page. It is valid on a feature and on a behaviour.
 - **No `in` means top level** of the project. Nothing has to be tagged, so every existing corpus
