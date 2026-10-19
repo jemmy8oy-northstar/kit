@@ -4,6 +4,7 @@ import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, askForBehaviour, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
+import BoardViews from '../components/BoardViews'
 import LayerChips from '../components/LayerChips'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
@@ -123,6 +124,7 @@ export default function Board() {
   return (
     <>
       <h1>Board</h1>
+      <BoardViews />
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a
         pending one is backlog until it is scheduled, and in progress at the top of its schedule;

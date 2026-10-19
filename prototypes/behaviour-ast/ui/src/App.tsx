@@ -7,6 +7,7 @@ import BehaviourPage from './pages/BehaviourPage'
 import FeaturePage from './pages/FeaturePage'
 import Principles from './pages/Principles'
 import SignIn from './components/SignIn'
+import { BoardNavLink } from './components/BoardViews'
 import { IDEAS } from './board'
 
 export default function App() {
@@ -54,9 +55,8 @@ export default function App() {
             {/* NavLink sets aria-current="page" on the active link itself.
                 `end` on Projects, or "/" would match every route. */}
             <nav aria-label="Main" className="nav">
-              <NavLink to="/board">Board</NavLink>
-              {/* FEAT-STAGES: separate from the board for now (BEH-STAGE-1), so its own link. */}
-              <NavLink to="/stages">Stages</NavLink>
+              {/* One link for both board views; each page carries the switch between them (BEH-STAGE-8). */}
+              <BoardNavLink />
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <NavLink to="/principles">Principles</NavLink>

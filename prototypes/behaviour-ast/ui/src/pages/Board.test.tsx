@@ -637,6 +637,34 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Projects' })).not.toHaveAttribute('aria-current')
   })
 
+  it('switches between the feature and behaviour views, with one Board link current on both (BEH-STAGE-8)', async () => {
+    window.history.pushState({}, '', '/stages')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () =>
+          path.endsWith('/api/session') ? { required: false, signedIn: true } : { projects: [] },
+      })),
+    )
+    render(<App />)
+
+    const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).queryByRole('link', { name: 'Stages' })).not.toBeInTheDocument()
+    const views = screen.getByRole('navigation', { name: 'Board view' })
+    expect(within(views).getByRole('link', { name: 'Features' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(within(views).getByRole('link', { name: 'Behaviours' }))
+    expect(await screen.findByRole('navigation', { name: 'Board view' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Board view' })).getByRole('link', { name: 'Behaviours' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    expect(window.location.pathname).toBe('/board')
+  })
+
   it('links Ideas from every page, to the Ideas project (BEH-IDEA-1)', async () => {
     window.history.pushState({}, '', '/board')
     vi.stubGlobal(
