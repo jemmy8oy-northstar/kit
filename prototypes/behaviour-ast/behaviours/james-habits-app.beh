@@ -95,6 +95,7 @@ behaviour BEH-DATE-1 "The client's local calendar day is stored verbatim as YYYY
 
 behaviour BEH-SEED-1 "First run is not empty — a starter set of habits is seeded exactly once"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:EnsureSeeded_creates_the_starter_set_once
+  priority 5
   review unreviewed
   serves BEH-TODAY-1
   actor owner
@@ -111,6 +112,7 @@ behaviour BEH-ORDER-1 "A newly created habit is appended to the end of the displ
 
 behaviour BEH-ARCHIVE-1 "An archived habit disappears from the list but stays retrievable by id"
   source inferred backend/Balenthiran.Habits.Tests/HabitApiTests.cs:Archive_hides_the_habit_but_keeps_it_retrievable
+  priority 5
   review unreviewed
   serves BEH-MANAGE-1
   actor owner
@@ -125,6 +127,7 @@ behaviour BEH-ARCHIVE-1 "An archived habit disappears from the list but stays re
 # design forgot to state, or the flag should go. Kit will not pick.
 behaviour BEH-ARCHIVE-2 "Archived habits can be asked for explicitly"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked
+  priority 5
   review unreviewed
   actor owner
   contract GET /api/habits takes a flag that includes archived habits
@@ -136,6 +139,7 @@ behaviour BEH-ARCHIVE-2 "Archived habits can be asked for explicitly"
 
 behaviour BEH-STREAK-1 "Today counts as a grace day — an unlogged today does not break the streak"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_treats_today_as_a_grace_day_when_not_yet_done
+  priority 5
   review unreviewed
   serves BEH-TODAY-2
   serves BEH-HISTORY-1
@@ -147,6 +151,7 @@ behaviour BEH-STREAK-1 "Today counts as a grace day — an unlogged today does n
 
 behaviour BEH-STREAK-2 "A streak stops at the first missed day"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_stops_at_the_first_gap
+  priority 5
   review unreviewed
   serves BEH-HISTORY-1
   actor owner
@@ -154,6 +159,7 @@ behaviour BEH-STREAK-2 "A streak stops at the first missed day"
 
 behaviour BEH-STREAK-3 "Longest streak ignores duplicate and out-of-order dates"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:LongestStreak_ignores_duplicate_and_unordered_dates
+  priority 5
   review unreviewed
   serves BEH-HISTORY-1
   actor owner
@@ -161,6 +167,7 @@ behaviour BEH-STREAK-3 "Longest streak ignores duplicate and out-of-order dates"
 
 behaviour BEH-ENTRY-1 "Logging the same habit twice on one day overwrites rather than appends"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:UpsertEntry_inserts_then_overwrites_the_same_day
+  priority 5
   review unreviewed
   serves BEH-TODAY-2
   serves BEH-TODAY-4
@@ -181,6 +188,7 @@ behaviour BEH-HISTORY-2 "The history window length is requested by the caller, d
 
 behaviour BEH-HISTORY-3 "The history window parameter is named historyDays, not days"
   source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:68
+  priority 5
   review unreviewed
   serves BEH-HISTORY-1
   actor owner
@@ -188,6 +196,7 @@ behaviour BEH-HISTORY-3 "The history window parameter is named historyDays, not 
 
 behaviour BEH-REORDER-1 "Habits can be reordered as a whole list in one call"
   source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:ReorderHabits
+  priority 5
   review unreviewed
   serves BEH-MANAGE-1
   actor owner
@@ -202,6 +211,7 @@ behaviour BEH-REORDER-1 "Habits can be reordered as a whole list in one call"
 # that collapsed them into one recommendation would be wrong half the time.
 behaviour BEH-ERROR-1 "An unknown habit is a 404 carrying a machine-readable error code"
   source inferred backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code
+  priority 5
   review unreviewed
   actor owner
   contract GET, PUT, DELETE and history for an unknown habit id all return 404

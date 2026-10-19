@@ -601,6 +601,18 @@ behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
   contract a suggestion is picked with one tap and fills the project; no free-typed name is ever written as a project
   contract a project the text names as a whole word, in any case, is offered while no project is picked
 
+behaviour BEH-BOARD-10 "The agent scores every card it wants looked at, and equal scores take each project in turn"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-19-1340
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  contract "would be good for the ai to score the proposed items so that top is the one that it most wants to be reviewed. Currently it seems to be ordered by project"
+  contract the score is the existing priority line (BEH-BOARD-5): every proposed card carries one, written by the agent
+  contract within one priority the column takes each project in turn, so a tie never reads as a block of one project
+  contract inferences of code that already ships are scored 4 or 5: confirming what runs is the least urgent review
+
 behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
   in FEAT-NAV
   in FEAT-BOARD

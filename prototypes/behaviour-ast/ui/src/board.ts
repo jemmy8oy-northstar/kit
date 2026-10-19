@@ -75,6 +75,30 @@ export function byPriority(a?: number, b?: number): number {
   return a - b
 }
 
+/**
+ * BEH-BOARD-10 (his 2026-10-19 13:40Z note: "Currently it seems to be ordered by project"): a ranked
+ * column by priority, and within one priority taking each project in turn, so equal scores never
+ * read as a block of one project. A project's own cards keep their corpus order.
+ */
+export function byPriorityAcrossProjects<T extends { project: string; b: { priority?: number } }>(cards: T[]): T[] {
+  const tiers = new Map<number, T[]>()
+  for (const c of cards) {
+    const p = c.b.priority ?? 6
+    tiers.set(p, [...(tiers.get(p) ?? []), c])
+  }
+  return [...tiers.keys()]
+    .sort((a, b) => a - b)
+    .flatMap((p) => {
+      const queues = new Map<string, T[]>()
+      for (const c of tiers.get(p)!) queues.set(c.project, [...(queues.get(c.project) ?? []), c])
+      const out: T[] = []
+      for (let i = 0; out.length < tiers.get(p)!.length; i++) {
+        for (const q of queues.values()) if (i < q.length) out.push(q[i])
+      }
+      return out
+    })
+}
+
 /** The number of colours in `.hue-N` in index.css. */
 export const HUES = 12
 
