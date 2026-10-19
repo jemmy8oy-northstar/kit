@@ -18,5 +18,10 @@ public sealed class Feature : IFeature
     [JsonPropertyOrder(4)]
     public required string At { get; init; }
 
+    /// <summary>Where it stands on the stages board (FEAT-STAGES), or null when it is not on it.</summary>
+    [JsonPropertyOrder(5)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Stage { get; set; }
+
     IReadOnlyList<IIdRef> IFeature.In => In;
 }

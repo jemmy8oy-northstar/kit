@@ -14,4 +14,10 @@ public interface IFeature
     IReadOnlyList<IIdRef> In { get; }
 
     string At { get; }
+
+    /// <summary>
+    /// Its <c>stage</c> line (FEAT-STAGES): <c>problem</c>, <c>ux</c>, <c>logic</c>,
+    /// <c>development</c> or <c>ui</c>. Null when it has none, which keeps it off the stages board.
+    /// </summary>
+    string? Stage { get; }
 }

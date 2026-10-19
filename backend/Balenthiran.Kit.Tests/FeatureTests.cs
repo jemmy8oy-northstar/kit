@@ -90,13 +90,32 @@ public class FeatureTests
     [Theory]
     [InlineData("behaviour BEH-A \"a\"\n  in BEH-B\nbehaviour BEH-B \"b\"\n", "t.beh:2: in wants a feature id (FEAT-…), got: BEH-B")]
     [InlineData("feature BOARD \"a\"\n", "t.beh:1: feature wants FEAT-<ID> \"<title>\", got: feature BOARD \"a\"")]
-    [InlineData("feature FEAT-A \"a\"\n  when opens page:Home\n", "t.beh:2: a feature takes only \"in\" lines, got: when opens page:Home")]
+    [InlineData("feature FEAT-A \"a\"\n  when opens page:Home\n", "t.beh:2: a feature takes only \"in\" and \"stage\" lines, got: when opens page:Home")]
+    [InlineData("feature FEAT-A \"a\"\n  stage design\n", "t.beh:2: stage wants \"problem\"|\"ux\"|\"logic\"|\"development\"|\"ui\", got: design")]
+    [InlineData("feature FEAT-A \"a\"\n  stage ux\n  stage logic\n", "t.beh:3: stage is already set on FEAT-A")]
     [InlineData("feature FEAT-A \"a\"\nbehaviour BEH-A \"a\"\n  in FEAT-A\n  in FEAT-A\n", "t.beh:4: already in FEAT-A at t.beh:3")]
     [InlineData("in FEAT-A\n", "t.beh:1: line outside a behaviour: in FEAT-A")]
     public void A_malformed_feature_or_tag_line_is_refused(string corpus, string message)
     {
         var e = Assert.Throws<CorpusParseException>(() => _parser.Parse(corpus, "t.beh"));
         Assert.Equal(message, e.Message);
+    }
+
+    [Fact]
+    public void A_stage_line_puts_a_feature_on_the_stages_board_and_no_line_keeps_it_off()
+    {
+        var c = _parser.ParseCorpus("feature FEAT-A \"a\"\n  stage logic\n  in FEAT-B\nfeature FEAT-B \"b\"\n", "t.beh");
+
+        Assert.Equal("logic", c.Features[0].Stage);
+        Assert.Equal(["FEAT-B"], c.Features[0].In.Select(t => t.Id));
+        Assert.Null(c.Features[1].Stage);
+
+        // On the wire after `at`, and absent rather than null, so a feature off the board serves as before.
+        var ser = new EngineJsonSerialiser();
+        var on = JsonNode.Parse(ser.Serialise(new FeatureView { Id = "FEAT-A", Title = "a", In = [], At = "t.beh:1", Stage = "logic" }))!.AsObject();
+        var off = JsonNode.Parse(ser.Serialise(new FeatureView { Id = "FEAT-B", Title = "b", In = [], At = "t.beh:4" }))!.AsObject();
+        Assert.Equal(["id", "title", "in", "at", "stage"], on.Select(kv => kv.Key));
+        Assert.False(off.ContainsKey("stage"));
     }
 
     [Fact]

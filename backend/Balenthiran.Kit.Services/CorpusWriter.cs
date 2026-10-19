@@ -548,7 +548,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     });
 
     private static string Shape(IReadOnlyList<IFeature> features) =>
-        JsonSerializer.Serialize(features.Select(f => new { id = f.Id, title = f.Title, @in = f.In.Select(t => t.Id).ToList() }));
+        JsonSerializer.Serialize(features.Select(f => new { id = f.Id, title = f.Title, @in = f.In.Select(t => t.Id).ToList(), stage = f.Stage }));
 
     /// <summary>
     /// One behaviour's line range. <c>End</c> is its LAST CONTENT line, so blanks and

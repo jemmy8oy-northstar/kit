@@ -28,6 +28,10 @@ public sealed class CorpusParser : ICorpusParser
     // by the gate until visual checks are designed).
     private static readonly HashSet<string> Layers = ["ux", "technical", "ui"];
 
+    // FEAT-STAGES (kit.notes.md 2026-10-19 08:23Z, BEH-STAGE-1 approved 13:39Z): the five
+    // stages in his order. A list, not a set, because the order is the board's columns.
+    internal static readonly string[] Stages = ["problem", "ux", "logic", "development", "ui"];
+
     // ── Whitespace, which is NOT `\s` ───────────────────────────────────────
     //
     // ⚠️ .NET's `\s` and JavaScript's `\s` are different sets, and the goldens
@@ -152,7 +156,17 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
-            if (feat is not null) throw new CorpusParseException($@"{at}: a feature takes only ""in"" lines, got: {line}");
+            // A feature's place on the stages board. One line, like `priority`: two
+            // stages is a disagreement, not a value. No line keeps it off the board.
+            if (kw == "stage" && feat is not null)
+            {
+                if (!Stages.Contains(rest)) throw new CorpusParseException($@"{at}: stage wants ""{string.Join(@"""|""", Stages)}"", got: {rest}");
+                if (feat.Stage is not null) throw new CorpusParseException($"{at}: stage is already set on {feat.Id}");
+                feat.Stage = rest;
+                continue;
+            }
+
+            if (feat is not null) throw new CorpusParseException($@"{at}: a feature takes only ""in"" and ""stage"" lines, got: {line}");
             if (cur is null) throw new CorpusParseException($"{at}: line outside a behaviour: {line}");
 
             if (kw == "actor") { cur.Actor = rest; continue; }
