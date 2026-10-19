@@ -102,6 +102,12 @@
       "title": "Locked_it_needs_a_session_like_every_edit"
     }
   ],
+  "BEH-GATE-H3": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/SignedSessionStoreTests.cs",
+      "title": "A_token_minted_before_a_restart_is_valid_after_it"
+    }
+  ],
   "BEH-PULL-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/GitHubCorpusDirectoryTests.cs",
