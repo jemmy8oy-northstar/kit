@@ -135,3 +135,7 @@ Features can have multiple parents and they can be other features projects or ep
 ## 2026-10-19 17:25Z · new behaviour
 
 Questions should probably appear on the board as well
+
+## 2026-10-19 19:28Z · new behaviour
+
+Everytime kit updates, my browser signs out. I really thought that the cookie would stick around and that I would stay signed in. Can we keep me signed in?
