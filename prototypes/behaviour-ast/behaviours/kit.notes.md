@@ -117,3 +117,7 @@ Another thing is when you create an epic, all of its children and grand children
 I guess what we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic. These tags need to be distinguishable probably with colour.
 
 Then in projects maybe there is an option to navigate by epic. Or maybe instead there is a separate epic page which can be organised by  project. Or even just another abstraction level in the boards for epic. I feel like this makes the most sense. No need to complicate the projects view.
+
+## 2026-10-19 17:21Z · new behaviour
+
+When epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children nested etc based on the proposal.
