@@ -261,9 +261,11 @@ pre {
 }
 
 /* The navbar (kit#237). NavLink sets aria-current="page" on the active link. */
+/* Wraps rather than widening the page: five links overflowed a 390px phone once Stages joined. */
 .nav {
   display: flex;
-  gap: var(--space-4);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
   margin-left: auto;
 }
 
