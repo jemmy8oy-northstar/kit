@@ -95,3 +95,9 @@ Board item ordering currently doesnt seem to be ordered. Would be good for the a
 The feature pipeline is used by the bot to group features into a rough completion stage based off the provided spec that the dev has filled in and implementation state.
 
 The human can use it to quickly identify what work is left to he done.
+
+## 2026-10-19 16:19Z · new behaviour
+
+The feature board, just like ado or any other, is just another level of granularity to view the tasks left to be done. The existing board is just a more granular view. Feature board is higher level. Technically we couod also have a project board but i don’t see much need for that right now I guess we could backlog the idea. Could have an epic board but that relates roughly to a project board - both very top level backlog for now could return later.
+
+Could be good to be able to easily switch between the two board views, this seems like a good way to integration them. We aren’t really integrating them I don’t think we should be. They are different ways of viewing it.
