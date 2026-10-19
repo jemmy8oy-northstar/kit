@@ -116,6 +116,13 @@ public sealed class CorpusParser : ICorpusParser
             var m = BehaviourLine.Match(line);
             if (m.Success)
             {
+                // As for features: a second block under one id was drawn twice and
+                // generated two tests, and nothing said so (BEH-NOTE-8, 2026-10-19).
+                if (behaviours.Find(x => x.Id == m.Groups[1].Value) is { } dup)
+                {
+                    throw new CorpusParseException($"{at}: behaviour {dup.Id} is already declared at {dup.At}");
+                }
+
                 cur = new Behaviour { Id = m.Groups[1].Value, Title = m.Groups[2].Value, At = at, Layer = defaultLayer };
                 behaviours.Add(cur);
                 feat = null;
