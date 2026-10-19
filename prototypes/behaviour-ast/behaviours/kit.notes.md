@@ -101,3 +101,19 @@ The human can use it to quickly identify what work is left to he done.
 The feature board, just like ado or any other, is just another level of granularity to view the tasks left to be done. The existing board is just a more granular view. Feature board is higher level. Technically we couod also have a project board but i don’t see much need for that right now I guess we could backlog the idea. Could have an epic board but that relates roughly to a project board - both very top level backlog for now could return later.
 
 Could be good to be able to easily switch between the two board views, this seems like a good way to integration them. We aren’t really integrating them I don’t think we should be. They are different ways of viewing it.
+
+## 2026-10-19 16:44Z · new behaviour
+
+On second thought I think we actually need to support epics.
+
+I think this is an interesting thing to support. I am almost thinking that the project views groups are kind of defined bottom up. A behaviour is defined or a ui request or a business logic spec and then it is about ok how is this grouped in the app. What component or page or more general user workflow does this fit into. Tag it. Then it forms into this project -> feature -> feature navigation.
+
+An epic however. You define the epic top level. Then it is about what features are required to fulfill this epic. But is this feature grouping the same as in the project navigation? I can’t tell right now.
+
+I guess it can be, a component might be important for an epic, a new page might be important for an epic, new logic, new ux etc also can be important for an epic. Ok that’s good progress. The difference is that it doesn’t come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because it’s parents are not specifically important to the epic.
+
+Another thing is when you create an epic, all of its children and grand children will likely be created as pending or new.
+
+I guess what we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic. These tags need to be distinguishable probably with colour.
+
+Then in projects maybe there is an option to navigate by epic. Or maybe instead there is a separate epic page which can be organised by  project. Or even just another abstraction level in the boards for epic. I feel like this makes the most sense. No need to complicate the projects view.
