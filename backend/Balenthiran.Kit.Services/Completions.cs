@@ -108,6 +108,7 @@ public static partial class Completions
     [GeneratedRegex($@"^behaviour[{CorpusParser.Ws}]+([A-Z][A-Z0-9-]*)(?:[{CorpusParser.Ws}]|\z)")]
     private static partial Regex BehaviourLine();
 
-    [GeneratedRegex($@"^feature(?:[{CorpusParser.Ws}]|\z)")]
+    // An `epic` block ends a behaviour as a `feature` does (BEH-EPIC-2).
+    [GeneratedRegex($@"^(?:feature|epic)(?:[{CorpusParser.Ws}]|\z)")]
     private static partial Regex FeatureLine();
 }

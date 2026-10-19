@@ -67,8 +67,10 @@ public sealed class CorpusParser : ICorpusParser
     // the difference here today — `\z` means it cannot come back.
     private static readonly Regex BehaviourLine = new($@"^behaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex FeatureLine = new($@"^feature[{Ws}]+(FEAT-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
+    private static readonly Regex EpicLine = new($@"^epic[{Ws}]+(EPIC-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
     private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
+    private static readonly Regex InEpic = new(@"^EPIC-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex SourceRest = new($@"^(defined|inferred)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ReviewRest = new($@"^(unreviewed|approved|requested|denied)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
     private static readonly Regex ServesRest = new(@"^([A-Z][A-Z0-9-]*)\z", RegexOptions.Compiled);
@@ -94,8 +96,10 @@ public sealed class CorpusParser : ICorpusParser
     {
         var behaviours = new List<Behaviour>();
         var features = new List<Feature>();
+        var epics = new List<Epic>();
         Behaviour? cur = null;
         Feature? feat = null;
+        Epic? epic = null;
 
         // `String.prototype.split('\n')` — a single-character split, not a
         // line-break-aware one. A lone `\r` is left on the end of the line and
@@ -115,6 +119,7 @@ public sealed class CorpusParser : ICorpusParser
                 cur = new Behaviour { Id = m.Groups[1].Value, Title = m.Groups[2].Value, At = at, Layer = defaultLayer };
                 behaviours.Add(cur);
                 feat = null;
+                epic = null;
                 continue;
             }
 
@@ -137,6 +142,45 @@ public sealed class CorpusParser : ICorpusParser
                 feat = new Feature { Id = f.Groups[1].Value, Title = f.Groups[2].Value, At = at };
                 features.Add(feat);
                 cur = null;
+                epic = null;
+                continue;
+            }
+
+            // ── James, kit.notes.md 2026-10-19 17:25Z (BEH-EPIC-2) ───────────
+            // "Epics are separate blocks to features. An epics parent is a project.
+            // Features can have multiple parents and they can be other features
+            // projects or epics." Its project is the file's, so it takes no lines yet.
+            if (kw == "epic")
+            {
+                var e = EpicLine.Match(line);
+                if (!e.Success) throw new CorpusParseException($@"{at}: epic wants EPIC-<ID> ""<title>"", got: {line}");
+                if (epics.Find(x => x.Id == e.Groups[1].Value) is { } dup)
+                {
+                    throw new CorpusParseException($"{at}: epic {dup.Id} is already declared at {dup.At}");
+                }
+
+                epic = new Epic { Id = e.Groups[1].Value, Title = e.Groups[2].Value, At = at };
+                epics.Add(epic);
+                cur = null;
+                feat = null;
+                continue;
+            }
+
+            if (epic is not null) throw new CorpusParseException($"{at}: an epic takes no lines, got: {line}");
+
+            // A feature joins an epic with the `in` line it already uses for a parent
+            // feature, kept apart from `In` so the project's navigation never changes.
+            // Only features: a behaviour reaches an epic through its feature.
+            if (kw == "in" && InEpic.IsMatch(rest))
+            {
+                if (feat is null) throw new CorpusParseException($"{at}: only a feature can be in an epic; tag the behaviour's feature with {rest}");
+                var tags = feat.Epics ??= [];
+                if (tags.Find(t => t.Id == rest) is { } again)
+                {
+                    throw new CorpusParseException($"{at}: already in {rest} at {again.At}");
+                }
+
+                tags.Add(new IdRef { Id = rest, At = at });
                 continue;
             }
 
@@ -366,8 +410,8 @@ public sealed class CorpusParser : ICorpusParser
             throw new CorpusParseException($@"{at}: unrecognised keyword ""{kw}""");
         }
 
-        CheckTags(behaviours, features);
-        return new ParsedCorpus { Behaviours = behaviours, Features = features, Project = FileProject(lines, file) };
+        CheckTags(behaviours, features, epics);
+        return new ParsedCorpus { Behaviours = behaviours, Features = features, Epics = epics, Project = FileProject(lines, file) };
     }
 
     /// <summary>
@@ -403,8 +447,13 @@ public sealed class CorpusParser : ICorpusParser
     /// duplicate feature id, is caught as it is read). Each leaves something drawn
     /// nowhere, so each is refused with the line that caused it.
     /// </summary>
-    private static void CheckTags(List<Behaviour> behaviours, List<Feature> features)
+    private static void CheckTags(List<Behaviour> behaviours, List<Feature> features, List<Epic> epics)
     {
+        // An epic is a parent with no parents of its own, so it can dangle but never loop.
+        var epicIds = epics.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var lost = features.SelectMany(f => f.Epics ?? []).FirstOrDefault(t => !epicIds.Contains(t.Id));
+        if (lost is not null) throw new CorpusParseException($"{lost.At}: in names {lost.Id}, which is not an epic in this file");
+
         var byId = features.ToDictionary(f => f.Id, StringComparer.Ordinal);
         // In file order, so the first dangling line in the file is the one named, whichever
         // kind of block it sits in. `At` is `<file>:<line>` and every tag is in one file.

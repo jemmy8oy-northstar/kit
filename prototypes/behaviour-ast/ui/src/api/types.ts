@@ -125,6 +125,15 @@ export interface Feature {
   at: string
   /** Its `stage` line (FEAT-STAGES); absent when it is not on the stages board. */
   stage?: Stage
+  /** The epics it is in (BEH-EPIC-2), kept apart from `in`; absent when none. */
+  epics?: string[]
+}
+
+/** An `epic` block (BEH-EPIC-2): defined top down, joined by features. */
+export interface Epic {
+  id: string
+  title: string
+  at: string
 }
 
 /** The five stages, in his order (BEH-STAGE-1). */
@@ -223,6 +232,8 @@ export interface ProjectDetail {
   project: string
   /** Its `# kit:principle` lines (kit#284 slice 5), in file order. Absent when it declares none. */
   principles?: Principle[]
+  /** Its `epic` blocks (BEH-EPIC-2), in file order. Absent when it declares none. */
+  epics?: Epic[]
 }
 
 /** One `# kit:principle [global] <Name>: <what it means>` line. */
