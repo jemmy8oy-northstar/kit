@@ -285,7 +285,8 @@ pre {
   scrollbar-width: none;
 }
 
-.tabs [role='tab'] {
+.tabs [role='tab'],
+.tabs a {
   flex: none;
   white-space: nowrap;
   display: inline-flex;
@@ -301,7 +302,13 @@ pre {
   cursor: pointer;
 }
 
-.tabs [role='tab'][aria-selected='true'] {
+/* The board's two views (BEH-STAGE-8) are links, so they share the tabs' look by aria-current. */
+.tabs a {
+  text-decoration: none;
+}
+
+.tabs [role='tab'][aria-selected='true'],
+.tabs a[aria-current='page'] {
   color: var(--color-text);
   font-weight: 700;
   border-bottom-color: var(--color-primary);
