@@ -22,5 +22,12 @@ public sealed class FeatureView : IFeatureView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Stage { get; init; }
 
+    // BEH-EPIC-2: absent when it is in no epic, so no response that predates epics changes shape.
+    [JsonPropertyOrder(6)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? Epics { get; init; }
+
     IReadOnlyList<string> IFeatureView.In => In;
+
+    IReadOnlyList<string> IFeatureView.Epics => (IReadOnlyList<string>?)Epics ?? [];
 }

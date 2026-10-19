@@ -36,6 +36,9 @@ public interface IProjectView
     /// <summary>The corpus's features (kit#237); empty for a corpus that declares none.</summary>
     IReadOnlyList<IFeatureView> Features { get; }
 
+    /// <summary>The corpus's epics (BEH-EPIC-2); empty for a corpus that declares none.</summary>
+    IReadOnlyList<IEpic> Epics { get; }
+
     /// <summary>See <see cref="IProjectSummary.Project"/>.</summary>
     string Project { get; }
 }

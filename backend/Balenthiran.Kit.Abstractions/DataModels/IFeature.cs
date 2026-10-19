@@ -20,4 +20,10 @@ public interface IFeature
     /// <c>development</c> or <c>ui</c>. Null when it has none, which keeps it off the stages board.
     /// </summary>
     string? Stage { get; }
+
+    /// <summary>
+    /// The epics it is in (BEH-EPIC-2), one per <c>in EPIC-…</c> line. Kept apart from
+    /// <see cref="In"/> so the project's navigation is unchanged by an epic.
+    /// </summary>
+    IReadOnlyList<IIdRef> Epics { get; }
 }
