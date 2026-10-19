@@ -778,6 +778,7 @@ behaviour BEH-EPIC-2 "The epic tag is an `epic FEAT-…` line, so it names a fea
   contract "we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic"
   contract my assumption: an epic is a feature with `kind epic`, so it gets a page, a stage and a progress count for free, and `epic FEAT-X` on any feature or behaviour tags it
   contract an `epic` line naming something that is not an epic is refused, as an unknown parent is
+  contract a language change waits for his answer (claude-code-bot#58): nothing in FEAT-EPICS is built until then
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
