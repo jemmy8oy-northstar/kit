@@ -43,7 +43,10 @@ public static class ServiceRegistration
         services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IUrlParser, UrlParser>();
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
-        services.TryAddSingleton<ISessionStore>(_ => new SessionStore());
+        // BEH-GATE-H3: a signed token, so a deploy does not sign him out. No password, no sessions.
+        services.TryAddSingleton<ISessionStore>(_ => settings.Password is { Length: > 0 } password
+            ? new SignedSessionStore(SignedSessionStore.KeyFor(password))
+            : new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
         services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 

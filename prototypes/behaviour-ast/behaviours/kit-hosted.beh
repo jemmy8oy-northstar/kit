@@ -365,3 +365,20 @@ behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the 
   contract ⚠️ TWO DIFFERENT LAYERS, and a later reader must not collapse them: the
   contract App installation token is how KIT talks to GITHUB; the password is how a
   contract PERSON is let into Kit. Neither substitutes for the other
+
+# His note of 2026-10-19 19:28Z: "Everytime kit updates, my browser signs out. I really
+# thought that the cookie would stick around and that I would stay signed in."
+behaviour BEH-GATE-H3 "A sign-in survives a deploy, and lasts until its seven days run out"
+  in FEAT-LOCK
+  layer technical
+  source inferred kit.notes.md#2026-10-19-1928
+  actor engineer
+  given session:SignedIn
+  when runs command:KitServe
+  then reports status:Ok
+  contract the cookie was always seven days; the server forgot its own tokens on restart,
+  contract so every deploy signed him out while the browser still held a live cookie
+  contract my choice: the token carries its expiry and an HMAC keyed from KIT_PASSWORD,
+  contract so it is checked without remembering it and without a session table (kit#41)
+  contract changing the password signs every session out; sign-out before a restart is
+  contract forgotten by it, which leaves a token the browser has already deleted
