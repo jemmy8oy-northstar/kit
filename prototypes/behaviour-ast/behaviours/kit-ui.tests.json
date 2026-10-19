@@ -13,6 +13,9 @@
   "BEH-STAGE-7": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" }
   ],
+  "BEH-STAGE-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the feature and behaviour views, with one Board link current on both (BEH-STAGE-8)" }
+  ],
   "BEH-BOARD-10": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)" }
   ],

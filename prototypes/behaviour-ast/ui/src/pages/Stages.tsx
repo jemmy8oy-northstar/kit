@@ -3,6 +3,7 @@ import { Badge, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, fetchProject, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
+import BoardViews from '../components/BoardViews'
 import { hueOf, isIdea, isTrial, projectOf } from '../board'
 import { featureHref } from '../features'
 import { STAGES, stageCards, type StageCard } from '../stages'
@@ -39,7 +40,8 @@ export default function Stages() {
   const loaded = useResource(loadStages, [])
   return (
     <>
-      <h1>Stages</h1>
+      <h1>Board</h1>
+      <BoardViews />
       <p className="muted">
         Every feature by the stage it is at: problem statement, UX requirements, business logic,
         development, then UI requirements. A feature is here once its block in the corpus has a
