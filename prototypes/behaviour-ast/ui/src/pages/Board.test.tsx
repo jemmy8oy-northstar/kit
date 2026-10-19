@@ -506,6 +506,26 @@ describe('Board', () => {
     }
   })
 
+  it('takes each project in turn within one priority, so equal scores never read as a block of one project (BEH-BOARD-10)', async () => {
+    // Two alpha P1s written before two beta P1s: corpus order alone would show alpha, alpha, beta, beta.
+    details.alpha.push(beh('A-P1-ONE', { pending: true, priority: 1 }), beh('A-P1-TWO', { pending: true, priority: 1 }))
+    details.beta.push(beh('B-P1-ONE', { pending: true, priority: 1 }), beh('B-P1-TWO', { pending: true, priority: 1 }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('B-P1-ONE')
+
+      const order = column('Backlog')
+        .getAllByRole('listitem')
+        .map((li) => li.querySelector('.id')!.textContent)
+      expect(order.slice(0, 4)).toEqual(['A-P1-ONE', 'B-P1-ONE', 'A-P1-TWO', 'B-P1-TWO'])
+    } finally {
+      details.alpha.splice(-2)
+      details.beta.splice(-2)
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(

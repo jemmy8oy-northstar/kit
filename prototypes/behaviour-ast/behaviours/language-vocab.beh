@@ -131,46 +131,54 @@ behaviour BEH-SEEDDATA-1 "HSK1 is seeded from versioned data in the repo"
 
 behaviour BEH-GRADE-1 "An answer is graded correct, almost, or wrong"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Grade_correct
+  priority 4
   review unreviewed
   serves BEH-TONE-2
   contract the three verdicts are exhaustive
 
 behaviour BEH-GRADE-2 "A toneless answer is reported as toneless, not merely wrong"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Toneless_answer_reports_flags
+  priority 4
   review unreviewed
   serves BEH-TONE-2
   contract the result flags that no tones were supplied, distinct from supplying wrong ones
 
 behaviour BEH-GRADE-3 "A wrong tone is reported as tones-provided-but-incorrect"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Wrong_tone_reports_tones_provided_but_incorrect
+  priority 4
   review unreviewed
   serves BEH-TONE-2
 
 behaviour BEH-GRADE-4 "The grade carries the canonical form of the answer"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Result_carries_the_canonical_form
+  priority 4
   review unreviewed
   serves BEH-CARD-1
   contract the canonical form is what the amber and red feedback display
 
 behaviour BEH-STRENGTH-1 "Strength moves by one and clamps to the 0..5 band"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:NextStrength_moves_and_clamps
+  priority 4
   review unreviewed
   serves BEH-STRENGTH-MVP
 
 behaviour BEH-WEIGHT-1 "Sampling weight favours weakness and never reaches zero"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:Weight_favours_weakness_and_stays_positive
+  priority 4
   review unreviewed
   serves BEH-POOL-MVP
   contract a mastered word still has a positive chance of coming up
 
 behaviour BEH-UNLOCK-1 "Unlocking fires at the threshold and not below it"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:ShouldUnlock_true_at_threshold
+  priority 4
   review unreviewed
   serves BEH-POOL-MVP
   contract out-of-band strengths are clamped before the mean is taken
 
 behaviour BEH-BOOTSTRAP-1 "The pool bootstraps to the first ten by rank, and does so once"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_creates_first_ten_by_rank
+  priority 4
   review unreviewed
   serves BEH-POOL-MVP
   contract a second bootstrap changes nothing
@@ -178,22 +186,26 @@ behaviour BEH-BOOTSTRAP-1 "The pool bootstraps to the first ten by rank, and doe
 
 behaviour BEH-UNLOCK-2 "Unlocking adds the next batch by rank and stops when nothing is left"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:TryUnlock_adds_next_batch_by_rank_when_mastered
+  priority 4
   review unreviewed
   serves BEH-POOL-MVP
 
 behaviour BEH-SEED-1 "Seeding is idempotent and updates changed rows in place"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_is_idempotent_second_run_changes_nothing
+  priority 4
   review unreviewed
   serves BEH-SEEDDATA-1
   contract a changed gloss updates the existing row rather than inserting a duplicate
 
 behaviour BEH-SEED-2 "The real HSK1 list is embedded and loads 150 words"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_the_real_hsk1_list_inserts_150_words
+  priority 4
   review unreviewed
   serves BEH-SEEDDATA-1
 
 behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_derives_normalised_pinyin_via_the_grader
+  priority 4
   review unreviewed
   serves BEH-NORMALISE-1
   contract seed data and typed answers are normalised by the same code
@@ -225,6 +237,7 @@ behaviour BEH-LANG-1 "The app drills one language, fixed in code, and every word
 
 behaviour BEH-ITEMTYPE-1 "A vocabulary item has a type, defaulting to word"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_defaults_item_type_to_word
+  priority 4
   review unreviewed
   contract the schema reserves a Sentence type that nothing produces or consumes
   asks "The string `Sentence` occurs exactly twice in this repo: the enum member, and the DESIGN.md line reserving it. No seed entry sets a type, no route exposes one, the frontend has no such field. Does the reservation stay, or does the type arrive with sentence mode?"
@@ -235,6 +248,7 @@ behaviour BEH-ITEMTYPE-1 "A vocabulary item has a type, defaulting to word"
 
 behaviour BEH-DETERMINISM-1 "Selection is deterministic for a given seed"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:SelectNext_is_deterministic_for_the_same_seed
+  priority 4
   review unreviewed
   contract the same seed picks the same word, so the sampler is testable
   asks "SelectNextAsync takes a required `int seed` and NOTHING calls it outside the tests — the drill API is PR 4 and does not exist. So where the seed comes from in production has never been decided, and it is a user-visible choice, not an implementation detail. Which is it: the client sends a seed, or the server makes one?"
