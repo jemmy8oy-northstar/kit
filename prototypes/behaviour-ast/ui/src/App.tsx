@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Link, NavLink, Routes, Route } from 'react-router-dom'
 import Board from './pages/Board'
 import Stages from './pages/Stages'
+import Epics from './pages/Epics'
 import Projects from './pages/Projects'
 import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
@@ -70,6 +71,7 @@ export default function App() {
               <Route path="/" element={<Projects />} />
               <Route path="/board" element={<Board />} />
               <Route path="/stages" element={<Stages />} />
+              <Route path="/epics" element={<Epics />} />
               <Route path="/principles" element={<Principles />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
