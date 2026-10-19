@@ -208,19 +208,20 @@ behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
 # the UI yet. Whether that bet is still wanted is his call, and the value here is
 # that it is now a list rather than a feeling.
 #
+# BEH-LANG-1 has since been answered by his 10-12 23:00 note, and now
+# describes what the code does; the other two are still open.
+#
 # ⚠️ Do NOT read this as "delete these". habits produced two unserved behaviours
 # that needed opposite fixes; these three need a third answer again.
 
-behaviour BEH-LANG-1 "Every pool operation is scoped to one language"
-  source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:Bootstrap_only_touches_the_requested_language
+behaviour BEH-LANG-1 "The app drills one language, fixed in code, and every word still records its language"
+  source defined language-vocab.notes.md#2026-10-12-2300
   review unreviewed
-  contract bootstrap for one language leaves another language's pool untouched
-  contract the loader throws when the language is missing
-  asks "DESIGN.md defers other languages but promises the data model is language-tagged from day one. It got more than a column: `language` is a required parameter on all three IPoolService methods, so every drill route in PR 4 has to carry it too. Is language a PARAMETER, or a setting the app is configured with?"
-  option "Keep it threaded" "IPoolService.cs:17,24,31 keep `string language`, and the drill routes take it as a path segment or query param. The isolation property stays enforced. Adding Cantonese is then a seed file and a config value, with no signature to change and no migration. Cost: every route, client call and test in PR 4 carries an argument whose only possible value today is `zh`."
-  option "Make it ambient" "Drop the parameter; one configured language, resolved from settings or an owner record. VocabItemEntity.cs:14 already defaults Language to \"zh\", so the column and the seed loader's per-language files survive untouched — the roadmap promise DESIGN.md actually makes is kept. The isolation test loses its subject, and language 2 becomes a signature change across the service, the routes and the client."
-  recommend "Keep it threaded" "The parameter is not speculative surface — it is the roadmap promise DESIGN.md:36-37 states, made executable. And the moment to pay for it is now, before PR 4 exists: threading it through routes that are not written yet costs one argument each, where retrofitting it later means changing a shipped API and regenerating a client. A6-style single-user apps are also where an ambient global is hardest to unpick, because the assumption gets read into a dozen call sites first."
-  against "The isolation test seeds a synthetic \"fr\" that exists nowhere else in the repo — 150 HSK1 entries in one file, one language, zero users asking for a second. So a required argument is being carried on every method and every future route to satisfy a property no caller can exercise, and the test proves the code does what it was written to do rather than anything about the product. \"Other languages\" is under **Explicitly deferred**, and a deferred feature that still shapes today's signatures has not really been deferred. The cheap version is to keep the Language COLUMN — which is all DESIGN.md literally promises — and let the parameter arrive with the second language, when its shape will be known rather than guessed."
+  contract PoolService.Language ("zh") is the one drilled language; no route or service method takes a language argument
+  contract the Language column stays on every vocab row and every seed file, so a second language is a signature change, not a data migration
+  # His middle ground ("one language for now ... is there a good middle ground?"),
+  # and what the code has done since 9f49187 (10-13): the old threaded-parameter
+  # version and its isolation test are gone.
 
 behaviour BEH-ITEMTYPE-1 "A vocabulary item has a type, defaulting to word"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_defaults_item_type_to_word
