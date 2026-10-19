@@ -27,8 +27,8 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     // `/^behaviour\s+([A-Z][A-Z0-9-]*)\s+"/` — JavaScript's `\s`, which is not .NET's.
     private static readonly Regex Header = new($@"\Gbehaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""", RegexOptions.Compiled);
     // kit#237: a `feature` block ends the behaviour above it, or an edit to that behaviour
-    // would splice into the feature — and a remove would delete it.
-    private static readonly Regex FeatureHeader = new($@"\Gfeature[{Ws}]", RegexOptions.Compiled);
+    // would splice into the feature — and a remove would delete it. An `epic` block too (BEH-EPIC-2).
+    private static readonly Regex FeatureHeader = new($@"\G(?:feature|epic)[{Ws}]", RegexOptions.Compiled);
     private static readonly Regex BehaviourId =new(@"^[A-Z][A-Z0-9-]*\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -470,6 +470,11 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             return WriteResult.Refuse("collateral-change", $"a feature changed, and only {id} was meant to");
         }
 
+        if (Shape(oldCorpus.Epics) != Shape(newCorpus.Epics))
+        {
+            return WriteResult.Refuse("collateral-change", $"an epic changed, and only {id} was meant to");
+        }
+
         var oldAst = oldCorpus.Behaviours;
         var newAst = newCorpus.Behaviours;
 
@@ -548,7 +553,10 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     });
 
     private static string Shape(IReadOnlyList<IFeature> features) =>
-        JsonSerializer.Serialize(features.Select(f => new { id = f.Id, title = f.Title, @in = f.In.Select(t => t.Id).ToList(), stage = f.Stage }));
+        JsonSerializer.Serialize(features.Select(f => new { id = f.Id, title = f.Title, @in = f.In.Select(t => t.Id).ToList(), stage = f.Stage, epics = f.Epics.Select(t => t.Id).ToList() }));
+
+    private static string Shape(IReadOnlyList<IEpic> epics) =>
+        JsonSerializer.Serialize(epics.Select(e => new { id = e.Id, title = e.Title }));
 
     /// <summary>
     /// One behaviour's line range. <c>End</c> is its LAST CONTENT line, so blanks and

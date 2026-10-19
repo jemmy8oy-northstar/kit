@@ -105,6 +105,16 @@ a {
   margin: var(--space-2) 0;
 }
 
+/* BEH-EPIC-3: the secondary role, which no Badge tone and no project colour uses. */
+.epic-tag {
+  font-size: var(--text-xs);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full, 999px);
+  color: var(--color-secondary);
+  background: var(--color-secondary-subtle);
+  border: 1px solid var(--color-secondary);
+}
+
 .cards {
   list-style: none;
   padding: 0;

@@ -23,5 +23,12 @@ public sealed class Feature : IFeature
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Stage { get; set; }
 
+    /// <summary>The epics it is in (BEH-EPIC-2), or null when none, so the shape predating epics holds.</summary>
+    [JsonPropertyOrder(6)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<IdRef>? Epics { get; set; }
+
     IReadOnlyList<IIdRef> IFeature.In => In;
+
+    IReadOnlyList<IIdRef> IFeature.Epics => (IReadOnlyList<IIdRef>?)Epics ?? [];
 }

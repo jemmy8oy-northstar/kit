@@ -66,6 +66,13 @@ public sealed class ProjectView : IProjectView
 
     IReadOnlyList<IPrincipleView> IProjectView.Principles => (IReadOnlyList<IPrincipleView>?)Principles ?? [];
 
+    // BEH-EPIC-2: its `epic` blocks, in file order. Absent when it declares none.
+    [JsonPropertyOrder(17)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<Epic>? Epics { get; init; }
+
+    IReadOnlyList<IEpic> IProjectView.Epics => (IReadOnlyList<IEpic>?)Epics ?? [];
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

@@ -14,4 +14,7 @@ public interface IFeatureView
 
     /// <summary>The feature's stage (FEAT-STAGES), absent when it is not on the stages board.</summary>
     string? Stage { get; }
+
+    /// <summary>The epic ids it is in (BEH-EPIC-2); empty when none.</summary>
+    IReadOnlyList<string> Epics { get; }
 }
