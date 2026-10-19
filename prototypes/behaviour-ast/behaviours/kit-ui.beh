@@ -632,18 +632,19 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
 # already has a FEAT-PIPELINE for its video board, and one word meaning two
 # boards a corpus apart is the trap the BEH-UI note above describes.
 #
-# ⚠️ Not built yet, and not buildable by me alone: a feature's stage has to live
-# in the corpus, and a new keyword is a change to the corpus LANGUAGE (claude-code-bot#58), so
-# the shape is his. BEH-STAGE-1 asks him.
+# A feature's stage lives in the corpus as `stage <problem|ux|logic|development|ui>`
+# under its `feature` line: a corpus LANGUAGE change (claude-code-bot#58), which he
+# approved on BEH-STAGE-1 at 2026-10-19 13:39Z. Built: BEH-STAGE-1 and -3. Still
+# pending: what "written" means for a stage (BEH-STAGE-2) and the agent's halves.
 
 feature FEAT-STAGES "Feature stages"
+  stage development
 
 behaviour BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 2
-  pending
-  review requested a feature's stage has to be written in its .beh, which is a new keyword (say `stage ux` under `feature`). Is that the shape, or should the stage be worked out from what the feature already holds?
+  review approved
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
@@ -666,7 +667,6 @@ behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behav
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
@@ -703,3 +703,15 @@ behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract the agent finds shared upstream dependencies between features and keeps them DRY during development; the board never asks him to
+
+# My assumption from building BEH-STAGE-1, written as an inference so it sits in
+# Proposed until he approves or denies it.
+behaviour BEH-STAGE-7 "Only a feature whose block has a stage line is on the stages board"
+  in FEAT-STAGES
+  source inferred kit.notes.md#2026-10-19-0823
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract most existing features are pages and parts of pages (kit#237), not product features; staging all of them would bury the board, so a feature with no stage line stays off it
+  contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is

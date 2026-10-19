@@ -85,3 +85,7 @@ The board input has to be slightly different tho since you aren’t in a page. M
 ## 2026-10-16 07:30Z · new behaviour
 
 Oo a backlog idea for when we have real users is the free form text boxes can also be used to give feedback on kit. Backlog for now
+
+## 2026-10-19 13:40Z · new behaviour
+
+Board item ordering currently doesnt seem to be ordered. Would be good for the ai to score the proposed items so that top is the one that it lists wants to be reviewed. Currently it seems to be ordered by project.

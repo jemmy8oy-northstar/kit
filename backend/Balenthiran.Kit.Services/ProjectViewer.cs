@@ -134,7 +134,7 @@ public sealed class ProjectViewer(
                 Insufficient = report.Requires.Insufficient.Select(Decorate).ToList(),
                 Satisfied = report.Requires.Satisfied,
             },
-            Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At }).ToList(),
+            Features = corpus.Features.Select(f => new FeatureView { Id = f.Id, Title = f.Title, In = f.In.Select(t => t.Id).ToList(), At = f.At, Stage = f.Stage }).ToList(),
             // kit#237: files naming the same project are shown as one; no directive, its own.
             Project = corpus.Project ?? app,
             Idea = Idea.IsMatch(src) ? true : null,

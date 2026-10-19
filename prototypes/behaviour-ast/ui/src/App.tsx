@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Link, NavLink, Routes, Route } from 'react-router-dom'
 import Board from './pages/Board'
+import Stages from './pages/Stages'
 import Projects from './pages/Projects'
 import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
@@ -54,6 +55,8 @@ export default function App() {
                 `end` on Projects, or "/" would match every route. */}
             <nav aria-label="Main" className="nav">
               <NavLink to="/board">Board</NavLink>
+              {/* FEAT-STAGES: separate from the board for now (BEH-STAGE-1), so its own link. */}
+              <NavLink to="/stages">Stages</NavLink>
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <NavLink to="/principles">Principles</NavLink>
@@ -66,6 +69,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Projects />} />
               <Route path="/board" element={<Board />} />
+              <Route path="/stages" element={<Stages />} />
               <Route path="/principles" element={<Principles />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
