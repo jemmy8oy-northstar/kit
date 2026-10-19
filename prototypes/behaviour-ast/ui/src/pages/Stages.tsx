@@ -1,34 +1,17 @@
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
-import { ApiError, fetchProject, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import BoardViews from '../components/BoardViews'
-import { hueOf, isIdea, isTrial, projectOf } from '../board'
+import { hueOf } from '../board'
 import { featureHref } from '../features'
-import { STAGES, stageCards, type StageCard } from '../stages'
+import { loadRealProjects } from '../realProjects'
+import { STAGES, stageCards } from '../stages'
 
-interface Loaded {
-  cards: StageCard[]
-  /** Files that could not be read, by name, so the board never shows less than Kit reads without saying so. */
-  failed: { app: string; error: string }[]
-}
-
-const messageOf = (e: unknown) => (e instanceof ApiError || e instanceof Error ? e.message : String(e))
-
-/** Every real project's features, with what is built beneath each. Ideas and trials are not work, so not here. */
-async function loadStages(): Promise<Loaded> {
-  const { projects } = await fetchProjects()
-  const wanted = projects.filter((p) => !isIdea(p) && !isTrial(p))
-  const failed = wanted.filter((p) => p.error).map((p) => ({ app: p.app, error: p.error! }))
-  const readable = wanted.filter((p) => !p.error)
-  const details = await Promise.allSettled(readable.map((p) => fetchProject(p.app)))
-  const cards: StageCard[] = []
-  details.forEach((r, i) => {
-    const p = readable[i]
-    if (r.status === 'fulfilled') cards.push(...stageCards(p.app, projectOf(p), r.value.features ?? [], r.value.behaviours))
-    else failed.push({ app: p.app, error: messageOf(r.reason) })
-  })
+/** Every real project's features, with what is built beneath each. */
+async function loadStages() {
+  const { read, failed } = await loadRealProjects()
+  const cards = read.flatMap(({ app, project, detail }) => stageCards(app, project, detail.features ?? [], detail.behaviours))
   return { cards, failed }
 }
 

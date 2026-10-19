@@ -69,14 +69,14 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
         ) : (
           <p className="muted">Top level of {app}.</p>
         )}
-        {/* BEH-EPIC-3: an epic tag is coloured apart from feature and project tags. */}
+        {/* BEH-EPIC-3: an epic tag is coloured apart from feature and project tags, and opens the epic board (BEH-EPIC-4). */}
         {feature.epics?.length ? (
           <div className="badges">
             <span className="muted">Epic</span>
             {feature.epics.map((e) => (
-              <span key={e} className="epic-tag">
+              <Link key={e} to="/epics" className="epic-tag">
                 {project.epics?.find((x) => x.id === e)?.title ?? e}
-              </span>
+              </Link>
             ))}
           </div>
         ) : null}
