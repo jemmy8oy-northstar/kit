@@ -799,19 +799,19 @@ behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "these tags need to be distinguishable probably with colour"
-  contract shown on the feature page beside its parents, in the design system's secondary colour, which no badge tone or project colour uses; it links nowhere until epics have a view (BEH-EPIC-4)
+  contract shown on the feature page beside its parents, in the design system's secondary colour, which no badge tone or project colour uses; it opens the epic board (BEH-EPIC-4)
 
 behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   in FEAT-EPICS
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1644
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "or even just another abstraction level in the boards for epic. I feel like this makes the most sense": a third option on the BEH-STAGE-8 switch
   contract each epic shows its tagged items' progress, built out of total, as a feature in development does (BEH-STAGE-3)
+  contract my assumption: the switch reads Epics, Features, Behaviours, top level first; an epic's card lists the features tagged into it, and its count is their behaviours at any depth, each counted once
 
 behaviour BEH-EPIC-5 "A new epic's children start pending"
   in FEAT-EPICS
