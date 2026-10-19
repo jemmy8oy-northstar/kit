@@ -131,3 +131,7 @@ epic:%20Kit%20supports%20additional%20users.%20There%20are%20so%20many%20factors
 Epics are separate blocks to features.
 An epics parent is a project.
 Features can have multiple parents and they can be other features projects or epics
+
+## 2026-10-19 17:25Z · new behaviour
+
+Questions should probably appear on the board as well
