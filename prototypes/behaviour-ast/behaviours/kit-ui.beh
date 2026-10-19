@@ -643,7 +643,7 @@ behaviour BEH-STAGE-1 "A separate board takes every feature through five stages:
   source defined kit.notes.md#2026-10-19-0823
   priority 2
   pending
-  review requested a feature's stage has to be written in its .beh, which is a new keyword (say `stage ux` under `feature`). Is that the shape, or should the stage be worked out from what the feature already holds?
+  review approved
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
