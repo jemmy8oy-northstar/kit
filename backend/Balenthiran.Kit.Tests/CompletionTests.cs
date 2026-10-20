@@ -315,6 +315,8 @@ public class CompletionTests
             return new CommitLog { Reason = null, Commits = [new CommitStamp { Commit = "c1", At = T1 }] };
         }
 
+        public ICommitHeadlines Recent(string file, string notes, int limit) => throw new NotSupportedException();
+
         public bool FailFirst { get; init; }
 
         public string? Text(string file, string commit)

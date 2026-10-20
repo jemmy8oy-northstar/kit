@@ -445,6 +445,28 @@ export interface CompletionList {
   completed: { id: string; at: string | null }[]
 }
 
+/** One commit's effect on one project (BEH-ACTIVITY-1). */
+export interface ActivityEntry {
+  commit: string
+  /** ISO 8601 UTC. */
+  at: string
+  app: string
+  /** The commit's own subject line. */
+  summary: string
+}
+
+/** A project this server has no git history for, and why. */
+export interface ActivityGap {
+  app: string
+  reason: string
+}
+
+/** `GET /api/activity` (BEH-ACTIVITY-1): recent commits that touched any corpus or its notes, newest first. */
+export interface ActivityFeed {
+  entries: ActivityEntry[]
+  noHistory: ActivityGap[]
+}
+
 export interface NoteList {
   app: string
   /** Where the notes live, whether or not the file exists yet. */

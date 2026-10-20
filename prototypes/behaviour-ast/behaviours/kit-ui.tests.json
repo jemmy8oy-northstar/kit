@@ -201,5 +201,8 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "names an epic the corpus does not have, instead of an empty page (BEH-EPIC-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what the epic board card title opens (BEH-EPIC-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what a feature page epic tag opens (BEH-EPIC-8)" }
+  ],
+  "BEH-ACTIVITY-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Activity.test.tsx", "title": "lists commits newest first and says which projects have no history here (BEH-ACTIVITY-1)" }
   ]
 }

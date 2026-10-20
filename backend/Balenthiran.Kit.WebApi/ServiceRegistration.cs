@@ -40,6 +40,7 @@ public static class ServiceRegistration
         services.AddSingleton<ICorpusWriter, CorpusWriter>();
         services.AddSingleton<ICorpusHistory, GitCorpusHistory>();
         services.AddSingleton<ICompletionReader, CompletionReader>();
+        services.AddSingleton<IActivityReader, ActivityReader>();
         services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IUrlParser, UrlParser>();
         services.AddSingleton<IOriginPolicy>(sp => new OriginPolicy(sp.GetRequiredService<IUrlParser>(), settings.PublicOrigin));
@@ -81,7 +82,8 @@ public static class ServiceRegistration
             baseBranch: settings.GitBase,
             clock: sp.GetRequiredService<TimeProvider>(),
             pending: sp.GetRequiredService<IPendingEditsReader>(),
-            completions: sp.GetRequiredService<ICompletionReader>()));
+            completions: sp.GetRequiredService<ICompletionReader>(),
+            activity: sp.GetRequiredService<IActivityReader>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
