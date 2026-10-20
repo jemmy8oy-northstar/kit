@@ -91,6 +91,38 @@ public class ActivityTests
     }
 
     [Fact]
+    public void Every_sync_reads_as_what_it_brought_not_only_the_first()
+    {
+        // Live on kit/hosted after kit#352: the second sync came back as its own line, because
+        // `log p1..p2 -- file` drops a merge whose first parent the range excludes.
+        var root = Repo();
+        try
+        {
+            Commit(root, "alpha.beh", "behaviour BEH-A \"a\"\n", "kit: approve BEH-A (alpha)", T1);
+            Git(root, T1, "checkout", "-q", "-b", "dev");
+            foreach (var (n, at) in new[] { (1, T2), (2, T3) })
+            {
+                Git(root, at, "checkout", "-q", "-b", $"feat/{n}");
+                Commit(root, "alpha.beh", $"behaviour BEH-A \"a{n}\"\n", $"spec: a{n}", at);
+                Git(root, at, "checkout", "-q", "dev");
+                Git(root, at, "merge", "-q", "--no-ff", $"feat/{n}", "-m", $"Merge pull request #{n} from org/feat/{n}\n\nPage {n}");
+                Git(root, at, "checkout", "-q", "main");
+                Git(root, at, "merge", "-q", "--no-ff", "dev", "-m", "kit: bring kit/hosted up to date with dev");
+                Git(root, at, "checkout", "-q", "dev");
+            }
+
+            Git(root, T3, "checkout", "-q", "main");
+            var feed = new ActivityReader(new CorpusDirectory(root, root), new GitCorpusHistory()).Recent();
+
+            Assert.Equal(["Page 2 (#2)", "Page 1 (#1)", "kit: approve BEH-A (alpha)"], feed.Entries.Select(e => e.Summary));
+        }
+        finally
+        {
+            Delete(root);
+        }
+    }
+
+    [Fact]
     public void The_feed_is_capped_at_its_newest_entries()
     {
         var root = Repo();
