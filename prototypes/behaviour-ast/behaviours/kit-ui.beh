@@ -972,6 +972,7 @@ feature FEAT-BELL "Ring an item's bell"
 behaviour BEH-BELL-1 "Ringing an item's bell asks the AI to look at it again"
   in FEAT-BELL
   source inferred kit.notes.md#2026-10-19-1933
+  review approved
   pending
   actor engineer
   when opens page:KitBehaviour
