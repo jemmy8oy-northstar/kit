@@ -17,3 +17,7 @@ maybe even model management in settings rather than it just trying to download w
 ## 2026-10-20 22:43Z · new behaviour
 
 please set up approprriate code magic build hooks as well maybe we need a ios release branch
+
+## 2026-10-20 22:44Z · new behaviour
+
+I would like some camera controls as well I would like to be able to use the iphone 17s landscape selfie video recording
