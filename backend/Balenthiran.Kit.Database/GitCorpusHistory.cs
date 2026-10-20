@@ -75,34 +75,79 @@ public sealed class GitCorpusHistory : ICorpusHistory
             return CommitHeadlines.None("the corpus is not in a git work tree");
         }
 
-        // Unit separator between fields, record separator between commits: a message can hold any
-        // printable character and any newline, never these. The body is read for merges (below).
-        var r = GitStore.Git(
-            ["log", "--first-parent", $"--max-count={limit}", "--format=%H%x1f%cI%x1f%s%x1f%b%x1e", "--", Path.GetFileName(file), Path.GetFileName(notes)],
-            dir);
-        if (!r.Ok)
+        string[] paths = [Path.GetFileName(file), Path.GetFileName(notes)];
+        var top = Commits(dir, null, paths, limit);
+        if (top.Failure is { } failure)
         {
-            return CommitHeadlines.None(r.Failure!);
+            return CommitHeadlines.None(failure);
         }
 
         var commits = new List<ICommitHeadline>();
+        foreach (var c in top.Commits)
+        {
+            // A merge that is not a pull request is a branch sync — on kit/hosted, "bring kit/hosted
+            // up to date with dev" — and says nothing about what it brought. Show what it brought:
+            // the merged side's own first-parent commits that touched these files, one level deep.
+            if (c.Parents.Length == 2 && !PullRequestMerge.IsMatch(c.Subject))
+            {
+                var side = Commits(dir, $"{c.Parents[0]}..{c.Parents[1]}", paths, limit);
+                if (side.Failure is null && side.Commits.Count > 0)
+                {
+                    commits.AddRange(side.Commits.Select(s => s.Headline));
+                    continue;
+                }
+            }
+
+            commits.Add(c.Headline);
+        }
+
+        return new CommitHeadlines { Reason = null, Commits = commits.Take(limit).ToList() };
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex PullRequestMerge =
+        new(@"^Merge pull request (#\d+) from \S*?([^/\s]+)\s*\z", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private sealed record Raw(string[] Parents, string Subject, ICommitHeadline Headline);
+
+    private static (string? Failure, IReadOnlyList<Raw> Commits) Commits(string dir, string? range, string[] paths, int limit)
+    {
+        // Unit separator between fields, record separator between commits: a message can hold any
+        // printable character and any newline, never these. The body is read for merges (Headline).
+        List<string> args = ["log", "--first-parent", $"--max-count={limit}", "--format=%H%x1f%P%x1f%cI%x1f%s%x1f%b%x1e"];
+        if (range is not null)
+        {
+            args.Add(range);
+        }
+
+        args.Add("--");
+        args.AddRange(paths);
+        var r = GitStore.Git([.. args], dir);
+        if (!r.Ok)
+        {
+            return (r.Failure!, []);
+        }
+
+        var commits = new List<Raw>();
         foreach (var record in r.Stdout.Split('\u001e'))
         {
-            var parts = record.Trim().Split('\u001f', 4);
-            if (parts.Length != 4)
+            var parts = record.Trim().Split('\u001f', 5);
+            if (parts.Length != 5)
             {
                 continue;
             }
 
-            commits.Add(new CommitHeadline
-            {
-                Commit = parts[0][..Math.Min(7, parts[0].Length)],
-                At = DateTimeOffset.Parse(parts[1], CultureInfo.InvariantCulture),
-                Subject = Headline(parts[2], parts[3]),
-            });
+            commits.Add(new Raw(
+                parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries),
+                parts[3],
+                new CommitHeadline
+                {
+                    Commit = parts[0][..Math.Min(7, parts[0].Length)],
+                    At = DateTimeOffset.Parse(parts[2], CultureInfo.InvariantCulture),
+                    Subject = Headline(parts[3], parts[4]),
+                }));
         }
 
-        return new CommitHeadlines { Reason = null, Commits = commits };
+        return (null, commits);
     }
 
     /// <summary>
@@ -114,7 +159,7 @@ public sealed class GitCorpusHistory : ICorpusHistory
     /// </summary>
     internal static string Headline(string subject, string body)
     {
-        var pr = System.Text.RegularExpressions.Regex.Match(subject, @"^Merge pull request (#\d+) from \S*?([^/\s]+)\s*\z");
+        var pr = PullRequestMerge.Match(subject);
         if (!pr.Success)
         {
             return subject;
