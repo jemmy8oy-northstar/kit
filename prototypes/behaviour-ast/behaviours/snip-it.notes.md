@@ -29,3 +29,7 @@ Maybe some in app video viewing as well - is this difficult?
 ## 2026-10-20 23:52Z · new behaviour
 
 The teleprompter should auto progress as the user speaks
+
+## 2026-10-20 23:53Z
+
+The teleprompter should highlight words that it has heard being spoken in a take. Currently the feedback is low I can tell if it’s hearing me at all.
