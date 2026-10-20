@@ -90,11 +90,21 @@ public sealed class GitCorpusHistory : ICorpusHistory
             // the merged side's own first-parent commits that touched these files, one level deep.
             if (c.Parents.Length == 2 && !PullRequestMerge.IsMatch(c.Subject))
             {
-                var side = Commits(dir, $"{c.Parents[0]}..{c.Parents[1]}", paths, limit);
-                if (side.Failure is null && side.Commits.Count > 0)
+                // Not `log p1..p2 -- paths`: with a range, a merge whose first parent is excluded is
+                // compared only to its other parent, which carries the same file, so git drops it —
+                // every sync after the first came back empty (kit#352 live). Walk the merged side's
+                // path-limited history from its tip instead, and keep what the range says is new.
+                var brought = GitStore.Git(["rev-list", $"{c.Parents[0]}..{c.Parents[1]}"], dir);
+                var side = Commits(dir, c.Parents[1], paths, limit);
+                if (brought.Ok && side.Failure is null)
                 {
-                    commits.AddRange(side.Commits.Select(s => s.Headline));
-                    continue;
+                    var fresh = brought.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                    var shown = side.Commits.Where(s => fresh.Contains(s.Full)).Select(s => s.Headline).ToList();
+                    if (shown.Count > 0)
+                    {
+                        commits.AddRange(shown);
+                        continue;
+                    }
                 }
             }
 
@@ -107,16 +117,16 @@ public sealed class GitCorpusHistory : ICorpusHistory
     private static readonly System.Text.RegularExpressions.Regex PullRequestMerge =
         new(@"^Merge pull request (#\d+) from \S*?([^/\s]+)\s*\z", System.Text.RegularExpressions.RegexOptions.Compiled);
 
-    private sealed record Raw(string[] Parents, string Subject, ICommitHeadline Headline);
+    private sealed record Raw(string Full, string[] Parents, string Subject, ICommitHeadline Headline);
 
-    private static (string? Failure, IReadOnlyList<Raw> Commits) Commits(string dir, string? range, string[] paths, int limit)
+    private static (string? Failure, IReadOnlyList<Raw> Commits) Commits(string dir, string? from, string[] paths, int limit)
     {
         // Unit separator between fields, record separator between commits: a message can hold any
         // printable character and any newline, never these. The body is read for merges (Headline).
         List<string> args = ["log", "--first-parent", $"--max-count={limit}", "--format=%H%x1f%P%x1f%cI%x1f%s%x1f%b%x1e"];
-        if (range is not null)
+        if (from is not null)
         {
-            args.Add(range);
+            args.Add(from);
         }
 
         args.Add("--");
@@ -137,6 +147,7 @@ public sealed class GitCorpusHistory : ICorpusHistory
             }
 
             commits.Add(new Raw(
+                parts[0],
                 parts[1].Split(' ', StringSplitOptions.RemoveEmptyEntries),
                 parts[3],
                 new CommitHeadline
