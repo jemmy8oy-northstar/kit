@@ -8,7 +8,7 @@
 # `contract` steps are the honest part: they are assertions the tree CANNOT
 # express, kept in so the coverage number is not flattered by omitting them.
 
-# ── features (snip-it.notes.md 2026-10-20 22:42Z: "snip it needs feature organisation") ──
+# ── features (snip-it.notes.md#2026-10-20-2242: "snip it needs feature organisation") ──
 # The grouping is the agent's reading of that note: deny it if it is the wrong cut.
 feature FEAT-EDITOR "The web editor: upload a take, transcribe it, cut words and pauses, export"
 feature FEAT-TELEPROMPTER "The iPhone teleprompter app: read the script, record the take, send it to snip-it"
