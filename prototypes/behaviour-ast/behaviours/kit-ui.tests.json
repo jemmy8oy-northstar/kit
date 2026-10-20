@@ -4,14 +4,15 @@
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. kit check proves the test exists, not what it asserts. Several entries cover the contract rather than every then-step (PAIR-1 and STEP-1 do not assert their headings; NAV-1 does not click through).",
   "BEH-STAGE-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a column per stage, in order, and a card per staged feature in its column (BEH-STAGE-1)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "links a card to its feature page and colours it by project (BEH-STAGE-1)" }
   ],
   "BEH-STAGE-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a feature in development its behaviours built out of total, counting child features (BEH-STAGE-3)" }
   ],
   "BEH-STAGE-7": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "puts the Unstaged column first, holding the features with no stage line and none that has one (BEH-STAGE-7)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "counts a behaviour under two staged features once in each, and a stage-less one gets a card too (BEH-STAGE-7)" }
   ],
   "BEH-STAGE-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
@@ -185,15 +186,20 @@
   "BEH-EPIC-2": [
     { "file": "backend/Balenthiran.Kit.Tests/EpicTests.cs", "title": "An_epic_is_its_own_block_and_a_feature_joins_it_without_changing_its_parents" },
     { "file": "backend/Balenthiran.Kit.Tests/EpicTests.cs", "title": "A_malformed_epic_or_epic_tag_is_refused_naming_the_line" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-8)" }
   ],
   "BEH-EPIC-3": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-8)" }
   ],
   "BEH-EPIC-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows a card per epic in every real project, coloured by project (BEH-EPIC-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Epics.test.tsx", "title": "shows an epic its tagged features, linked, and their behaviours built out of total at any depth (BEH-EPIC-4)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/FeaturePage.test.tsx", "title": "shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-4)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
+  ],
+  "BEH-EPIC-8": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "names an epic the corpus does not have, instead of an empty page (BEH-EPIC-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what the epic board card title opens (BEH-EPIC-8)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what a feature page epic tag opens (BEH-EPIC-8)" }
   ]
 }

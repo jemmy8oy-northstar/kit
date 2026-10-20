@@ -61,7 +61,7 @@ function renderAt(url: string) {
 }
 
 describe('EpicPage (BEH-EPIC-8)', () => {
-  it('shows the epic its title, id and project, its behaviours built out of total, and its features linked', async () => {
+  it('shows the epic its title, id and project, its behaviours built out of total, and its features linked (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/epics/EPIC-SHIP')
 
     expect(await screen.findByRole('heading', { name: 'title of EPIC-SHIP', level: 1 })).toBeInTheDocument()
@@ -72,25 +72,25 @@ describe('EpicPage (BEH-EPIC-8)', () => {
     expect(features.getByRole('link', { name: 'title of FEAT-TOP' })).toHaveAttribute('href', '/projects/alpha/features/FEAT-TOP')
   })
 
-  it('says so when no feature is in the epic', async () => {
+  it('says so when no feature is in the epic (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/epics/EPIC-EMPTY')
 
     expect(await screen.findByText('0 of 0 behaviours built')).toBeInTheDocument()
     expect(screen.getByText('No feature is in it yet.')).toBeInTheDocument()
   })
 
-  it('names an epic the corpus does not have, instead of an empty page', async () => {
+  it('names an epic the corpus does not have, instead of an empty page (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/epics/EPIC-GONE')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No epic EPIC-GONE in alpha.')
   })
 
-  it('is what the epic board card title opens', async () => {
+  it('is what the epic board card title opens (BEH-EPIC-8)', async () => {
     renderAt('/epics')
     expect(await screen.findByRole('link', { name: 'title of EPIC-SHIP' })).toHaveAttribute('href', '/projects/alpha/epics/EPIC-SHIP')
   })
 
-  it('is what a feature page epic tag opens', async () => {
+  it('is what a feature page epic tag opens (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/features/FEAT-TOP')
     expect(await screen.findByRole('link', { name: 'title of EPIC-SHIP' })).toHaveAttribute('href', '/projects/alpha/epics/EPIC-SHIP')
   })
