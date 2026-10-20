@@ -301,6 +301,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
 behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached dev yet, and the pull request they wait in"
   in FEAT-COMMIT
   source inferred kit#118
+  review approved
   priority 3
   actor engineer
   given change:Pending
