@@ -207,9 +207,9 @@ behaviour BEH-TELE-4 "The prompter has camera controls: zoom, tap to focus and e
   source defined snip-it.notes.md#2026-10-20-2244
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "I would like some camera controls": which controls is the agent's guess; he can add or drop any
+  contract built in snip-it#56: a switch-camera button (not while recording), pinch to zoom up to 5x, tap the preview to focus and expose
 
 behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take while the phone is held upright"
   in FEAT-TELEPROMPTER
@@ -222,6 +222,7 @@ behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take
   contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
   contract on a phone without that camera the choice is hidden, not shown disabled
   contract the script stays at the top of the upright screen, nearest the lens, in both shapes
+  contract blocked on snip-it#55: its API is iOS 26 only, and the PR compile check ran Xcode 16.4 until that workflow change, which is James's to merge
 
 behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
   in FEAT-TELEPROMPTER
