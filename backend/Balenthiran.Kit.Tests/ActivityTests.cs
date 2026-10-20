@@ -43,6 +43,28 @@ public class ActivityTests
     }
 
     [Fact]
+    public void A_pull_request_merge_reads_as_its_title_and_a_body_never_leaks_into_another_entry()
+    {
+        var root = Repo();
+        try
+        {
+            Commit(root, "alpha.beh", "behaviour BEH-A \"a\"\n", "add alpha\n\nwhy, over\nseveral lines", T1);
+            Commit(root, "alpha.notes.md", "# notes\n", "Merge pull request #348 from org/feat/epic-page\n\nAn epic page", T2);
+            Commit(root, "beta.beh", "behaviour BEH-B \"b\"\n", "Merge pull request #343 from org/feat/session-survives-restart", T3);
+
+            var feed = new ActivityReader(new CorpusDirectory(root, root), new GitCorpusHistory()).Recent();
+
+            Assert.Equal(
+                ["session survives restart (#343)", "An epic page (#348)", "add alpha"],
+                feed.Entries.Select(e => e.Summary));
+        }
+        finally
+        {
+            Delete(root);
+        }
+    }
+
+    [Fact]
     public void The_feed_is_capped_at_its_newest_entries()
     {
         var root = Repo();

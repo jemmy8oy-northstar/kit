@@ -30,7 +30,10 @@ export default function Activity() {
               <ol aria-label="Recent activity" className="activity">
                 {entries.map((e) => (
                   <li key={`${e.commit}:${e.app}`}>
-                    <time dateTime={e.at}>{when(e.at)}</time> <Link to={`/projects/${encodeURIComponent(e.app)}`}>{e.app}</Link>{' '}
+                    {/* When and where on a muted line of their own, so on a phone the summary reads first. */}
+                    <div className="muted">
+                      <time dateTime={e.at}>{when(e.at)}</time> · <Link to={`/projects/${encodeURIComponent(e.app)}`}>{e.app}</Link>
+                    </div>
                     {e.summary}
                   </li>
                 ))}

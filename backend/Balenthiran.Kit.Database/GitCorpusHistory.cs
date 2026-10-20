@@ -75,9 +75,10 @@ public sealed class GitCorpusHistory : ICorpusHistory
             return CommitHeadlines.None("the corpus is not in a git work tree");
         }
 
-        // Unit separator between fields: a subject can hold any printable character, never this one.
+        // Unit separator between fields, record separator between commits: a message can hold any
+        // printable character and any newline, never these. The body is read for merges (below).
         var r = GitStore.Git(
-            ["log", "--first-parent", $"--max-count={limit}", "--format=%H\u001f%cI\u001f%s", "--", Path.GetFileName(file), Path.GetFileName(notes)],
+            ["log", "--first-parent", $"--max-count={limit}", "--format=%H%x1f%cI%x1f%s%x1f%b%x1e", "--", Path.GetFileName(file), Path.GetFileName(notes)],
             dir);
         if (!r.Ok)
         {
@@ -85,10 +86,10 @@ public sealed class GitCorpusHistory : ICorpusHistory
         }
 
         var commits = new List<ICommitHeadline>();
-        foreach (var line in r.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var record in r.Stdout.Split('\u001e'))
         {
-            var parts = line.TrimEnd('\r').Split('\u001f', 3);
-            if (parts.Length != 3)
+            var parts = record.Trim().Split('\u001f', 4);
+            if (parts.Length != 4)
             {
                 continue;
             }
@@ -97,11 +98,31 @@ public sealed class GitCorpusHistory : ICorpusHistory
             {
                 Commit = parts[0][..Math.Min(7, parts[0].Length)],
                 At = DateTimeOffset.Parse(parts[1], CultureInfo.InvariantCulture),
-                Subject = parts[2],
+                Subject = Headline(parts[2], parts[3]),
             });
         }
 
         return new CommitHeadlines { Reason = null, Commits = commits };
+    }
+
+    /// <summary>
+    /// What a reader should see for a commit. <c>--first-parent</c> makes every pull request on
+    /// <c>dev</c> its merge commit, whose subject is "Merge pull request #N from owner/branch" — it
+    /// names the branch, not the change. GitHub puts the PR's title on the body's first line, so that
+    /// is the headline, with the number kept. A merge with no body falls back to its branch's last
+    /// segment in words, which still says more than the owner does.
+    /// </summary>
+    internal static string Headline(string subject, string body)
+    {
+        var pr = System.Text.RegularExpressions.Regex.Match(subject, @"^Merge pull request (#\d+) from \S*?([^/\s]+)\s*\z");
+        if (!pr.Success)
+        {
+            return subject;
+        }
+
+        var title = body.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0)
+            ?? pr.Groups[2].Value.Replace('-', ' ');
+        return $"{title} ({pr.Groups[1].Value})";
     }
 
     /// <inheritdoc />
