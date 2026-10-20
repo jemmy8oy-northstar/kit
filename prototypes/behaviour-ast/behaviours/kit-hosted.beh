@@ -373,6 +373,7 @@ behaviour BEH-GATE-H3 "A sign-in survives a deploy, and lasts until its seven da
   in FEAT-LOCK
   layer technical
   source inferred kit.notes.md#2026-10-19-1928
+  review approved
   actor engineer
   given session:SignedIn
   when runs command:KitServe
