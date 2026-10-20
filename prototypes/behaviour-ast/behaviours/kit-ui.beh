@@ -997,6 +997,7 @@ feature FEAT-COMMENTS "Comments under an item"
 behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry their own comments"
   in FEAT-COMMENTS
   source inferred kit.notes.md#2026-10-19-1933
+  review approved
   pending
   actor engineer
   when opens page:KitBehaviour
