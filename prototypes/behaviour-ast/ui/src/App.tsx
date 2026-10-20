@@ -8,6 +8,7 @@ import BehaviourPage from './pages/BehaviourPage'
 import FeaturePage from './pages/FeaturePage'
 import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
+import Activity from './pages/Activity'
 import SignIn from './components/SignIn'
 import { BoardNavLink } from './components/BoardViews'
 import { IDEAS } from './board'
@@ -62,6 +63,7 @@ export default function App() {
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <NavLink to="/principles">Principles</NavLink>
+              <NavLink to="/activity">Activity</NavLink>
               <NavLink to="/" end>
                 Projects
               </NavLink>
@@ -74,6 +76,7 @@ export default function App() {
               <Route path="/stages" element={<Stages />} />
               <Route path="/epics" element={<Epics />} />
               <Route path="/principles" element={<Principles />} />
+              <Route path="/activity" element={<Activity />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
               <Route path="/projects/:app/features/:id" element={<FeaturePage />} />
