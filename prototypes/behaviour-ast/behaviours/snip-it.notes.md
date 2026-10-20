@@ -21,3 +21,7 @@ please set up approprriate code magic build hooks as well maybe we need a ios re
 ## 2026-10-20 22:44Z · new behaviour
 
 I would like some camera controls as well I would like to be able to use the iphone 17s landscape selfie video recording
+
+## 2026-10-20 22:45Z · new behaviour
+
+Maybe some in app video viewing as well - is this difficult?
