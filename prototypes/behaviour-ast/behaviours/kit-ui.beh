@@ -1008,6 +1008,7 @@ behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry the
 behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
   source inferred kit.notes.md#2026-10-19-1933
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
