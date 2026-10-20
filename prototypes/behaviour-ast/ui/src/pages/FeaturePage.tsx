@@ -7,7 +7,7 @@ import type { ProjectDetail } from '../api/types'
 import LayerChips from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
 import ResourceView from '../components/Resource'
-import { childrenOf, featureHref, ofLayers, pathFrom, withAnyUnder } from '../features'
+import { childrenOf, epicHref, featureHref, ofLayers, pathFrom, withAnyUnder } from '../features'
 import { BehaviourRow, FeatureCards } from './Project'
 
 /** One feature (kit#237): what is tagged into it, and every feature it is tagged into. */
@@ -69,12 +69,12 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
         ) : (
           <p className="muted">Top level of {app}.</p>
         )}
-        {/* BEH-EPIC-3: an epic tag is coloured apart from feature and project tags, and opens the epic board (BEH-EPIC-4). */}
+        {/* BEH-EPIC-3: an epic tag is coloured apart from feature and project tags, and opens the epic's own page (BEH-EPIC-8). */}
         {feature.epics?.length ? (
           <div className="badges">
             <span className="muted">Epic</span>
             {feature.epics.map((e) => (
-              <Link key={e} to="/epics" className="epic-tag">
+              <Link key={e} to={epicHref(app, e)} className="epic-tag">
                 {project.epics?.find((x) => x.id === e)?.title ?? e}
               </Link>
             ))}

@@ -68,6 +68,11 @@ export function featureHref(app: string, id: string, path: string[], layers: str
   return query.length ? `${base}?${query.join('&')}` : base
 }
 
+/** The url of an epic's own page (BEH-EPIC-8). */
+export function epicHref(app: string, id: string): string {
+  return `/projects/${encodeURIComponent(app)}/epics/${encodeURIComponent(id)}`
+}
+
 /**
  * BEH-KIND-2: only the behaviours of the chosen layers; every feature stays, so the tag graph
  * is intact and a feature with nothing of those layers beneath it counts zero. None chosen is all.

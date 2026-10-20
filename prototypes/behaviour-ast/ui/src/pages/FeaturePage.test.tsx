@@ -106,7 +106,7 @@ describe('the projects view', () => {
     expect(within(contents).queryByRole('link', { name: b1.title })).not.toBeInTheDocument()
   })
 
-  it('shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-4)', async () => {
+  it('shows a feature its epics as tags coloured apart, and leaves its parents and the project tree alone (BEH-EPIC-2, BEH-EPIC-3, BEH-EPIC-8)', async () => {
     const withEpic: ProjectDetail = {
       ...tagged,
       epics: [{ id: 'EPIC-SHARE', title: 'Share clips', at: 'snip-it.beh:1' }],
@@ -118,7 +118,7 @@ describe('the projects view', () => {
     expect(within(parents).getAllByRole('link').map((a) => a.textContent)).toEqual(['Editor', 'Home', 'Share clips'])
     const epic = within(parents).getByRole('link', { name: 'Share clips' })
     expect(epic).toHaveClass('epic-tag')
-    expect(epic).toHaveAttribute('href', '/epics')
+    expect(epic).toHaveAttribute('href', '/projects/snip-it/epics/EPIC-SHARE')
   })
 
   it('BEH-FEAT-2: one behaviour tagged into two features is listed under both', async () => {
