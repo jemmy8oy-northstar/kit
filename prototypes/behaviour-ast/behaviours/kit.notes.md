@@ -145,3 +145,7 @@ Everytime kit updates, my browser signs out. I really thought that the cookie wo
 A nudge feature. A mechanism such that a behaviour or feature or epic can be nudged to raise attention to it. Maybe nudge is not the right word since it is not being nudged itself. Maybe bell or ring. Kind of fits in with the cat theme as well. Maybe later on the bell means that kit comes and plays with it in the ui or something. Anyway getting side tracked. Nudge just brings the ais attention to this item again and the ai can choose to prioritise it higher or leave a comment on it or soemthing to explain why this is not higher priority.
 
 I guess another feature would be comments under items - epics, behaviours, specs, projects. I guess this is different from a note because it is under a specific item. Maybe the ui needs to be restructured a bit for notes. Maybe from anywhere there is a floating action button which can add a note? And a note is not a comment on an item it’s just a new thought which the ai will pick up and turn into something else.
+
+## 2026-10-20 07:12Z · new behaviour
+
+Epics page shows an epic page just like behaviours and features
