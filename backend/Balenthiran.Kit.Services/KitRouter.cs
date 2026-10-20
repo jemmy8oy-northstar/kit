@@ -68,7 +68,7 @@ public sealed class KitRouter(
 
     private readonly IActivityReader activity = activity ?? new ActivityReader(corpora, new GitCorpusHistory());
 
-    private static readonly Regex Api =new(@"^/api(/|\z)", RegexOptions.Compiled);
+    private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
