@@ -65,6 +65,32 @@ public class ActivityTests
     }
 
     [Fact]
+    public void A_branch_sync_reads_as_the_pull_requests_it_brought_in()
+    {
+        // kit/hosted's shape: dev merges each PR, then hosted merges dev with a sync subject.
+        var root = Repo();
+        try
+        {
+            Commit(root, "alpha.beh", "behaviour BEH-A \"a\"\n", "kit: approve BEH-A (alpha)", T1);
+            Git(root, T1, "checkout", "-q", "-b", "dev");
+            Git(root, T1, "checkout", "-q", "-b", "feat/x");
+            Commit(root, "alpha.beh", "behaviour BEH-A \"a2\"\n", "spec: a2", T2);
+            Git(root, T2, "checkout", "-q", "dev");
+            Git(root, T2, "merge", "-q", "--no-ff", "feat/x", "-m", "Merge pull request #9 from org/feat/x\n\nThe x page");
+            Git(root, T3, "checkout", "-q", "main");
+            Git(root, T3, "merge", "-q", "--no-ff", "dev", "-m", "kit: bring kit/hosted up to date with dev");
+
+            var feed = new ActivityReader(new CorpusDirectory(root, root), new GitCorpusHistory()).Recent();
+
+            Assert.Equal(["The x page (#9)", "kit: approve BEH-A (alpha)"], feed.Entries.Select(e => e.Summary));
+        }
+        finally
+        {
+            Delete(root);
+        }
+    }
+
+    [Fact]
     public void The_feed_is_capped_at_its_newest_entries()
     {
         var root = Repo();

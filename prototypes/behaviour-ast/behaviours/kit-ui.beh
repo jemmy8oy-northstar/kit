@@ -1046,4 +1046,5 @@ behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest f
   contract "a chronological feed which shows recent actions so i can easily [see] what has happened recently"
   contract my assumption: an action is a commit that touched a corpus or its notes, since every Kit edit, approval, note and build already lands as one, so nothing new is stored
   contract my assumption: each entry shows when, which project, and the commit's own summary, and the page is reached from the navbar as Activity
+  contract my assumption: a pull request's merge reads as its title, and a branch sync (kit/hosted taking dev) reads as the pull requests it brought in, not as one "up to date with dev" line
   contract a project this server reads from GitHub without a local clone has no history here, and the page says so rather than showing it as quiet
