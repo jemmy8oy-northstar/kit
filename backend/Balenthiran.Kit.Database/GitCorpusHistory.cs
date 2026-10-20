@@ -62,6 +62,49 @@ public sealed class GitCorpusHistory : ICorpusHistory
     }
 
     /// <inheritdoc />
+    public ICommitHeadlines Recent(string file, string notes, int limit)
+    {
+        var dir = Path.GetDirectoryName(Path.GetFullPath(file))!;
+        if (!File.Exists(file))
+        {
+            return CommitHeadlines.None("the corpus is not on this server's disk, so it has no history here");
+        }
+
+        if (GitStore.WorkTreeFor(file) is null)
+        {
+            return CommitHeadlines.None("the corpus is not in a git work tree");
+        }
+
+        // Unit separator between fields: a subject can hold any printable character, never this one.
+        var r = GitStore.Git(
+            ["log", "--first-parent", $"--max-count={limit}", "--format=%H\u001f%cI\u001f%s", "--", Path.GetFileName(file), Path.GetFileName(notes)],
+            dir);
+        if (!r.Ok)
+        {
+            return CommitHeadlines.None(r.Failure!);
+        }
+
+        var commits = new List<ICommitHeadline>();
+        foreach (var line in r.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.TrimEnd('\r').Split('\u001f', 3);
+            if (parts.Length != 3)
+            {
+                continue;
+            }
+
+            commits.Add(new CommitHeadline
+            {
+                Commit = parts[0][..Math.Min(7, parts[0].Length)],
+                At = DateTimeOffset.Parse(parts[1], CultureInfo.InvariantCulture),
+                Subject = parts[2],
+            });
+        }
+
+        return new CommitHeadlines { Reason = null, Commits = commits };
+    }
+
+    /// <inheritdoc />
     public string? Text(string file, string commit)
     {
         // `<rev>:./<name>` is relative to the cwd, so the repository root never has to be known.

@@ -16,6 +16,14 @@ public interface ICorpusHistory
     /// </summary>
     ICommitLog Log(string file);
 
+    /// <summary>
+    /// The newest <paramref name="limit"/> commits that changed <paramref name="file"/> or its
+    /// <paramref name="notes"/> (BEH-ACTIVITY-1), newest first, each with its subject. Both sit in one
+    /// directory. Never throws: a corpus not on this server's disk, outside a work tree, or git that
+    /// cannot run is a <see cref="ICommitHeadlines.Reason"/>.
+    /// </summary>
+    ICommitHeadlines Recent(string file, string notes, int limit);
+
     /// <summary>The file's text at <paramref name="commit"/>, or null when git could not give it.</summary>
     string? Text(string file, string commit);
 }
