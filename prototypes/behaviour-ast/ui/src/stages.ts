@@ -13,6 +13,14 @@ export const STAGES: { id: Stage; title: string }[] = [
   { id: 'ui', title: 'UI requirements' },
 ]
 
+/**
+ * BEH-STAGE-7: a feature with no `stage` line sits in an Unstaged column, first, before problem,
+ * since staging a feature moves it rightwards out of it. It is a column, not a `Stage`: the corpus
+ * has no such word, so it is not in STAGES, which the parser must agree with.
+ */
+export const UNSTAGED = 'unstaged'
+export const COLUMNS: { id: Stage | typeof UNSTAGED; title: string }[] = [{ id: UNSTAGED, title: 'Unstaged' }, ...STAGES]
+
 /** One feature's card on the stages board. */
 export interface StageCard {
   app: string
@@ -24,15 +32,13 @@ export interface StageCard {
 }
 
 /**
- * A file's cards: every feature with a `stage` line. A feature without one is not on the board,
- * so the structural features that group pages (kit#237) never crowd it.
+ * A file's cards: every feature, the one with no `stage` line in the Unstaged column
+ * (BEH-STAGE-7), so it can be found and staged.
  */
 export function stageCards(app: string, project: string, features: Feature[], behaviours: Behaviour[]): StageCard[] {
   const pending = new Map(behaviours.map((b) => [b.id, b.pending]))
-  return features
-    .filter((f) => f.stage !== undefined)
-    .map((feature) => {
-      const under = [...behavioursUnder({ features, behaviours }, feature.id)]
-      return { app, project, feature, built: under.filter((id) => !pending.get(id)).length, total: under.length }
-    })
+  return features.map((feature) => {
+    const under = [...behavioursUnder({ features, behaviours }, feature.id)]
+    return { app, project, feature, built: under.filter((id) => !pending.get(id)).length, total: under.length }
+  })
 }
