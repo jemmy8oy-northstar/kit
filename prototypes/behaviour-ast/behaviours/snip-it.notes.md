@@ -25,3 +25,7 @@ I would like some camera controls as well I would like to be able to use the iph
 ## 2026-10-20 22:45Z · new behaviour
 
 Maybe some in app video viewing as well - is this difficult?
+
+## 2026-10-20 23:52Z · new behaviour
+
+The teleprompter should auto progress as the user speaks
