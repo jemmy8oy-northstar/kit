@@ -82,6 +82,7 @@ describe('Stages', () => {
     renderStages()
     const board = await screen.findByRole('region', { name: 'Feature stages' })
     expect(within(board).getAllByRole('heading', { level: 2 }).map((h) => h.firstChild!.textContent)).toEqual([
+      'Unstaged',
       'Problem statement',
       'UX requirements',
       'Business logic',
@@ -93,13 +94,22 @@ describe('Stages', () => {
     expect((await stage('UX requirements')).getByText('kit · kit-ui')).toBeInTheDocument()
   })
 
-  it('keeps a feature with no stage line, an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)', async () => {
+  it('keeps an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)', async () => {
     renderStages()
     await stage('Development')
-    expect(screen.queryByText('FEAT-PAGE')).not.toBeInTheDocument()
-    expect(screen.queryByText('FEAT-PART')).not.toBeInTheDocument()
     expect(screen.queryByText('FEAT-IDEA')).not.toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('broken.beh:3: expected a verb')
+  })
+
+  it('puts the Unstaged column first, holding the features with no stage line and none that has one (BEH-STAGE-7)', async () => {
+    renderStages()
+    const board = await screen.findByRole('region', { name: 'Feature stages' })
+    expect(within(board).getAllByRole('heading', { level: 2 })[0].firstChild!.textContent).toBe('Unstaged')
+    const col = await stage('Unstaged')
+    expect(col.getByText('FEAT-PAGE')).toBeInTheDocument()
+    expect(col.getByText('FEAT-PART')).toBeInTheDocument()
+    expect(col.getByText('FEAT-PAGE').closest('.board-card')).toHaveClass(`hue-${hueOf('alpha')}`)
+    expect(col.queryByText('FEAT-PROBLEM')).not.toBeInTheDocument()
   })
 
   it('links a card to its feature page and colours it by project (BEH-STAGE-1)', async () => {
@@ -117,13 +127,14 @@ describe('Stages', () => {
 })
 
 describe('stage rules', () => {
-  it('counts a behaviour under two staged features once in each, and only staged features get a card', () => {
+  it('counts a behaviour under two staged features once in each, and a stage-less one gets a card too (BEH-STAGE-7)', () => {
     const features = [feat('FEAT-A', { stage: 'logic' }), feat('FEAT-B', { stage: 'development' }), feat('FEAT-C')]
     const behaviours = [beh('X', { in: ['FEAT-A', 'FEAT-B'], pending: true })]
     const cards = stageCards('app', 'app', features, behaviours)
     expect(cards.map((c) => [c.feature.id, c.built, c.total])).toEqual([
       ['FEAT-A', 0, 1],
       ['FEAT-B', 0, 1],
+      ['FEAT-C', 0, 0],
     ])
   })
 })

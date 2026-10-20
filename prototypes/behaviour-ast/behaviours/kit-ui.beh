@@ -732,16 +732,18 @@ behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
   then sees region:KitStagesBoard
   contract the agent finds shared upstream dependencies between features and keeps them DRY during development; the board never asks him to
 
-# My assumption from building BEH-STAGE-1, written as an inference so it sits in
-# Proposed until he approves or denies it.
-behaviour BEH-STAGE-7 "Only a feature whose block has a stage line is on the stages board"
+# Was "only a feature with a stage line is on the board", my inference. His answer
+# on it (kit-ui.notes.md 2026-10-20 07:13Z) replaced it with a column.
+behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, so it can be found and staged"
   in FEAT-STAGES
   source inferred kit.notes.md#2026-10-19-0823
+  source defined kit-ui.notes.md#2026-10-20-0713
   priority 2
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract most existing features are pages and parts of pages (kit#237), not product features; staging all of them would bury the board, so a feature with no stage line stays off it
+  contract "I think we need some unstated column rather than leaving it off the board so that they can be found and staged"
+  contract my assumption: Unstaged is the first column, before problem, since staging a feature moves it rightwards out of it
   contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
 
 behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
@@ -799,7 +801,7 @@ behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "these tags need to be distinguishable probably with colour"
-  contract shown on the feature page beside its parents, in the design system's secondary colour, which no badge tone or project colour uses; it opens the epic board (BEH-EPIC-4)
+  contract shown on the feature page beside its parents, in the design system's secondary colour, which no badge tone or project colour uses; it opens the epic's own page (BEH-EPIC-8)
 
 behaviour BEH-EPIC-4 "The board gets an epic view above the feature view"
   in FEAT-EPICS
@@ -848,6 +850,17 @@ behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   contract his list: production security such as secret management; per-user databases (a cheaper dev tier, and a production tier); usage, cost and payment, charging for compute and AI tokens
   contract "let's mark onboarding existing projects as out of scope for now": onboarding existing projects is a separate backlog epic
   contract "feel free to propose other items": the agent's proposals go in as inferred children once the epic block exists
+
+behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
+  in FEAT-EPICS
+  source defined kit.notes.md#2026-10-20-0712
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "Epics page shows an epic page just like behaviours and features"
+  contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
+  contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z). EPIC-ONBOARD has no feature yet.
 epic EPIC-KIT-USERS "Kit supports users other than James"

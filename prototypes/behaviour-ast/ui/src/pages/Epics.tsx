@@ -5,7 +5,7 @@ import ResourceView from '../components/Resource'
 import BoardViews from '../components/BoardViews'
 import { hueOf } from '../board'
 import { epicCards } from '../epics'
-import { featureHref } from '../features'
+import { epicHref, featureHref } from '../features'
 import { loadRealProjects } from '../realProjects'
 
 /** Every real project's epics, with what is built beneath the features in each. */
@@ -48,7 +48,7 @@ export default function Epics() {
                   <li key={`${app}/${epic.id}`}>
                     <Card className={`board-card hue-${hueOf(project)}`}>
                       <h3>
-                        {epic.title} <span className="muted id">{epic.id}</span>
+                        <Link to={epicHref(app, epic.id)}>{epic.title}</Link> <span className="muted id">{epic.id}</span>
                       </h3>
                       <p>
                         {built} of {total} behaviours built
