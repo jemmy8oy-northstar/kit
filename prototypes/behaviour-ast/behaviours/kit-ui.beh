@@ -890,6 +890,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
