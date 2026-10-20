@@ -6,6 +6,7 @@ import Projects from './pages/Projects'
 import Project from './pages/Project'
 import BehaviourPage from './pages/BehaviourPage'
 import FeaturePage from './pages/FeaturePage'
+import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import SignIn from './components/SignIn'
 import { BoardNavLink } from './components/BoardViews'
@@ -76,6 +77,7 @@ export default function App() {
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
               <Route path="/projects/:app/features/:id" element={<FeaturePage />} />
+              <Route path="/projects/:app/epics/:id" element={<EpicPage />} />
             </Routes>
           </main>
         </div>

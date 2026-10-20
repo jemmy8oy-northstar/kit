@@ -6,7 +6,7 @@ import BoardViews from '../components/BoardViews'
 import { hueOf } from '../board'
 import { featureHref } from '../features'
 import { loadRealProjects } from '../realProjects'
-import { STAGES, stageCards } from '../stages'
+import { COLUMNS, UNSTAGED, stageCards } from '../stages'
 
 /** Every real project's features, with what is built beneath each. */
 async function loadStages() {
@@ -17,7 +17,7 @@ async function loadStages() {
 
 /**
  * FEAT-STAGES (his 2026-10-19 08:23Z note): every feature by the stage it is at, separate from the
- * behaviour board for now (BEH-STAGE-1). A feature is on it when its corpus block has a `stage` line.
+ * behaviour board for now (BEH-STAGE-1). A feature with no `stage` line is in the Unstaged column (BEH-STAGE-7).
  */
 export default function Stages() {
   const loaded = useResource(loadStages, [])
@@ -27,8 +27,8 @@ export default function Stages() {
       <BoardViews />
       <p className="muted">
         Every feature by the stage it is at: problem statement, UX requirements, business logic,
-        development, then UI requirements. A feature is here once its block in the corpus has a
-        <code> stage</code> line.
+        development, then UI requirements. A feature is staged once its block in the corpus has a
+        <code> stage</code> line; until then it is Unstaged.
       </p>
       <ResourceView resource={loaded}>
         {({ cards, failed }) => (
@@ -41,8 +41,8 @@ export default function Stages() {
               </Card>
             ))}
             <div className="board" role="region" aria-label="Feature stages">
-              {STAGES.map((stage) => {
-                const here = cards.filter((c) => c.feature.stage === stage.id)
+              {COLUMNS.map((stage) => {
+                const here = cards.filter((c) => (c.feature.stage ?? UNSTAGED) === stage.id)
                 return (
                   <section key={stage.id} aria-labelledby={`stage-${stage.id}`}>
                     <h2>
