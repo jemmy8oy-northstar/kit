@@ -149,3 +149,7 @@ I guess another feature would be comments under items - epics, behaviours, specs
 ## 2026-10-20 07:12Z · new behaviour
 
 Epics page shows an epic page just like behaviours and features
+
+## 2026-10-20 12:21Z · new behaviour
+
+Maybe a chronological feed which shows recent actions so i can easily what has happened recently
