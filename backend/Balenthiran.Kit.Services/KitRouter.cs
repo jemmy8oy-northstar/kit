@@ -50,7 +50,8 @@ public sealed class KitRouter(
     TimeProvider? clock = null,
     IPendingEditsReader? pending = null,
     ICompletionReader? completions = null,
-    string? offReason = null) : IKitRouter
+    string? offReason = null,
+    IActivityReader? activity = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -64,6 +65,8 @@ public sealed class KitRouter(
     private readonly IGitStore git = git ?? new GitStore(enabled: false);
 
     private readonly ICompletionReader completions = completions ?? new CompletionReader(corpora, new GitCorpusHistory());
+
+    private readonly IActivityReader activity = activity ?? new ActivityReader(corpora, new GitCorpusHistory());
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
@@ -121,6 +124,12 @@ public sealed class KitRouter(
         if (pathname == "/api/projects")
         {
             return Json(200, new ProjectList { Projects = corpora.Corpora().Select(viewer.Summary).ToList() });
+        }
+
+        // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
+        if (pathname == "/api/activity")
+        {
+            return Json(200, activity.Recent());
         }
 
         var match = OneProject.Match(pathname);

@@ -234,5 +234,13 @@
   "region:KitProjectList": {
     "role": "list",
     "name": "Project list"
+  },
+  "page:KitActivity": {
+    "route": "/activity"
+  },
+  "heading:KitActivityTitle": {
+    "role": "heading",
+    "name": "Activity",
+    "exact": true
   }
 }

@@ -1028,3 +1028,22 @@ behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   then sees region:KitMain
   contract "Maybe from anywhere there is a floating action button which can add a note"
   contract my assumption: the note lands on the project of the page it was added from, or asks which project when there is none
+
+# His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
+# easily [see] what has happened recently".
+feature FEAT-ACTIVITY "Recent activity"
+  stage development
+
+behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest first"
+  in FEAT-ACTIVITY
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-20-1221
+  priority 2
+  actor engineer
+  when opens page:KitActivity
+  then sees heading:KitActivityTitle
+  then sees region:KitMain
+  contract "a chronological feed which shows recent actions so i can easily [see] what has happened recently"
+  contract my assumption: an action is a commit that touched a corpus or its notes, since every Kit edit, approval, note and build already lands as one, so nothing new is stored
+  contract my assumption: each entry shows when, which project, and the commit's own summary, and the page is reached from the navbar as Activity
+  contract a project this server reads from GitHub without a local clone has no history here, and the page says so rather than showing it as quiet
