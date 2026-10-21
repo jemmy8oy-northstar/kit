@@ -249,9 +249,10 @@ function NoteCard({
         <Badge tone="neutral">{note.at}</Badge>
         {note.kind === 'request' && <Badge tone="primary">asks for a behaviour</Badge>}
         {note.kind === 'resolution' && <Badge tone="warning">resolves {note.resolves}</Badge>}
+        {note.kind === 'bell' && <Badge tone="warning">🔔 rung</Badge>}
         {note.behaviour && <Badge tone="primary">{note.behaviour}</Badge>}
       </div>
-      <p className="note-body">{note.text}</p>
+      {note.text && <p className="note-body">{note.text}</p>}
       {folded.length > 0 && (
         <p className="muted">
           Became{' '}

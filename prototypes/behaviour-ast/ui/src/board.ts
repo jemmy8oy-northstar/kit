@@ -102,6 +102,23 @@ export function byPriorityAcrossProjects<T extends { project: string; b: { prior
     })
 }
 
+/**
+ * BEH-BELL-3 (his 2026-10-21 06:50Z note: "Bell ordered board items"): a rung card goes to the top of
+ * its column, above every priority, until the agent answers the bell. Both halves keep the order they
+ * came in, so rung cards are still by priority among themselves.
+ */
+export function rungFirst<T extends { rung: boolean }>(cards: T[]): T[] {
+  return [...cards.filter((c) => c.rung), ...cards.filter((c) => !c.rung)]
+}
+
+/**
+ * Whether a behaviour is rung (BEH-BELL-1): its own bell, or the bell of a feature it is in, so ringing
+ * a feature lifts the cards that build it. `bells` holds the item ids of a file's unanswered bells.
+ */
+export function isRung(b: { id: string; in: string[] }, bells: ReadonlySet<string>): boolean {
+  return bells.has(b.id) || b.in.some((f) => bells.has(f))
+}
+
 /** The number of colours in `.hue-N` in index.css. */
 export const HUES = 12
 
