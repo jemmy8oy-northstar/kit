@@ -7,6 +7,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "links a card to its feature page and colours it by project (BEH-STAGE-1)" }
   ],
+  "BEH-STAGE-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/stageReading.test.ts", "title": "gives every feature in a real project a stage line (BEH-STAGE-2)" },
+    { "file": "prototypes/behaviour-ast/ui/src/test/stageReading.test.ts", "title": "writes only the stage words the board has columns for (BEH-STAGE-2)" }
+  ],
   "BEH-STAGE-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a feature in development its behaviours built out of total, counting child features (BEH-STAGE-3)" }
   ],
