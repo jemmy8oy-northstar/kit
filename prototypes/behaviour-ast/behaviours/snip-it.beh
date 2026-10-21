@@ -217,12 +217,11 @@ behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take
   source defined snip-it.notes.md#2026-10-20-2244
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
   contract on a phone without that camera the choice is hidden, not shown disabled
   contract the script stays at the top of the upright screen, nearest the lens, in both shapes
-  contract its API is iOS 26 only; the PR compile check runs Xcode 26 since snip-it#55, so it is buildable now
+  contract built in snip-it#62: a shape button above switch-camera; it measures the buffer after setting the ratio and says on screen if neither ratio gives landscape. Unverified on a real iPhone 17
 
 behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
   in FEAT-TELEPROMPTER
