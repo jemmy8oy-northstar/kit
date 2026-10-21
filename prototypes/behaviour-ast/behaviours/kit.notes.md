@@ -169,3 +169,9 @@ Bell ordered board items
 ## 2026-10-21 07:10Z · new behaviour
 
 Ability for me to reorganise the order of the backlog. Idk how this works on ado I think it changes some value for its order number. This would be expensive I. Kit having to commit to every repo. What is a good approach here
+
+## 2026-10-21 15:47Z · new behaviour
+
+Proposed column is organised by developer review priority.
+
+Current state i cannot identify the order
