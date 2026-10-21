@@ -443,6 +443,11 @@ export interface CompletionList {
    * built ahead of its newest commit — newer than anything git holds.
    */
   completed: { id: string; at: string | null }[]
+  /**
+   * BEH-BOARD-12: every behaviour, in corpus order, with when it was added — the first commit
+   * holding it, or null when none does yet (the newest of all).
+   */
+  added: { id: string; at: string | null }[]
 }
 
 /** One commit's effect on one project (BEH-ACTIVITY-1). */
