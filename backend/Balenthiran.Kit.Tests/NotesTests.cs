@@ -395,4 +395,65 @@ public class NotesTests
         Assert.Equal(200, r.Status);
         Assert.Equal(warning, JsonSerializer.SerializeToElement(r.Body, Web).GetProperty("warning").GetString());
     }
+
+    // ---- ringing an item's bell (BEH-BELL-1, his 2026-10-21 06:50Z note) -----------------------
+
+    [Fact]
+    public void A_bell_needs_no_words_and_parses_back_as_a_bell_on_its_item()
+    {
+        using var rig = new Rig();
+
+        var r = rig.Post("/api/projects/demo/notes", """{"kind":"bell","behaviour":"FEAT-BELL"}""");
+
+        Assert.Equal(200, r.Status);
+        var text = File.ReadAllText(rig.NotesFile);
+        Assert.Contains("\n## 2026-10-10 20:41Z · bell FEAT-BELL\n", text);
+        Assert.Equal(Corpus, File.ReadAllText(rig.Beh));
+        var note = Assert.Single(rig.Get("/api/projects/demo/notes").GetProperty("notes").EnumerateArray());
+        Assert.Equal(("bell", "FEAT-BELL", ""), (note.GetProperty("kind").GetString(), note.GetProperty("behaviour").GetString(), note.GetProperty("text").GetString()));
+    }
+
+    [Fact]
+    public void A_bell_may_say_why_and_the_why_is_its_text()
+    {
+        var note = Assert.Single(Notes.Parse(Notes.AppendBell(null, "demo", "BEH-B2", "still waiting on this", At)));
+        Assert.Equal(("bell", "BEH-B2", "still waiting on this"), (note.Kind, note.Behaviour, note.Text));
+    }
+
+    [Fact]
+    public void Ringing_again_before_it_is_answered_adds_nothing()
+    {
+        using var rig = new Rig();
+        rig.Post("/api/projects/demo/notes", """{"kind":"bell","behaviour":"BEH-B2"}""");
+        var before = File.ReadAllText(rig.NotesFile);
+
+        var r = rig.Post("/api/projects/demo/notes", """{"kind":"bell","behaviour":"BEH-B2","text":"again"}""");
+
+        Assert.Equal(409, r.Status);
+        Assert.Equal(before, File.ReadAllText(rig.NotesFile));
+        // A plain note on the same behaviour is not a bell, and a different item rings on its own.
+        Assert.Equal(200, rig.Post("/api/projects/demo/notes", """{"text":"x","behaviour":"BEH-B3"}""").Status);
+        Assert.False(Notes.IsRung(File.ReadAllText(rig.NotesFile), "BEH-B3"));
+        Assert.Equal(200, rig.Post("/api/projects/demo/notes", """{"kind":"bell","behaviour":"BEH-B3"}""").Status);
+    }
+
+    /// <summary>A note on a behaviour called "bell" is a note: the bell kind word carries a space.</summary>
+    [Fact]
+    public void A_behaviour_called_bell_is_still_a_note_on_that_behaviour()
+    {
+        var note = Assert.Single(Notes.Parse(Notes.Append(null, "demo", "x", "bell", At)));
+        Assert.Equal(("note", "bell"), (note.Kind, note.Behaviour));
+    }
+
+    [Theory]
+    [InlineData("""{"kind":"bell"}""")]
+    [InlineData("""{"kind":"bell","behaviour":"BEH 1"}""")]
+    [InlineData("""{"kind":"bell","behaviour":"BEH-1","text":"  "}""")]
+    [InlineData("""{"kind":"chime","behaviour":"BEH-1","text":"x"}""")]
+    public void A_bell_with_no_item_a_bad_id_or_blank_words_is_refused_and_writes_nothing(string body)
+    {
+        using var rig = new Rig();
+        Assert.Equal(400, rig.Post("/api/projects/demo/notes", body).Status);
+        Assert.False(File.Exists(rig.NotesFile));
+    }
 }

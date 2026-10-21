@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
+import BellButton from '../components/BellButton'
 import ResourceView from '../components/Resource'
 import { epicCards } from '../epics'
 import { featureHref } from '../features'
@@ -47,6 +48,7 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
       <p className="muted">
         {card.epic.id} · {card.project === app ? app : `${card.project} · ${app}`}
       </p>
+      <BellButton app={app} item={card.epic.id} />
       <p>
         {card.built} of {card.total} behaviours built
       </p>

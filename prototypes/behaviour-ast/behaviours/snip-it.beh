@@ -261,6 +261,20 @@ behaviour BEH-TELE-8 "The prompter shows what it hears: words light up as they a
   contract "I can['t] tell if it's hearing me at all": a level meter shows the microphone's loudness against the mark below which the speech engine ignores sound, with the last few words heard beneath it
   contract the meter's colours and placement (above the record button) are the agent's guess
 
+behaviour BEH-TELE-9 "Settings choose where the script sits on screen, how big it is and how wide it runs"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0708
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "Settings to change teleprompting location and size … the screen width that it uses … on which point of the screen it shows"
+  contract "When close up you can see my eyes flickering as I read": a narrower column keeps the eyes still, so width is its own setting, not a side effect of size
+  contract "when recording in a selfie camera it can look more natural to be looking at yourself. So maybe we move the focus down to the centre": position is top, centre or bottom, and my assumption is centre by default on the front camera and top on the back
+  contract this replaces BEH-TELE-5's "the script stays at the top of the upright screen" as the default; top stays one tap away
+  contract changes show live behind the settings sheet, so he can set them while looking at himself
+
 feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
   stage ui
 

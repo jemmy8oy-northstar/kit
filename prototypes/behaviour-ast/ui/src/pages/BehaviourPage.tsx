@@ -13,6 +13,7 @@ import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
 import { useWrite } from '../components/useWrite'
 import NotesPanel from '../components/NotesPanel'
+import BellButton from '../components/BellButton'
 
 /**
  * Steps 2 and 3 of his loop, on one page, which is the point: "iterating on the
@@ -97,6 +98,7 @@ function Detail({
         <Badge tone="neutral">{behaviour.source.origin}</Badge>
       </div>
       <p className="muted">{behaviour.at}</p>
+      <BellButton app={project.app} item={behaviour.id} />
 
       <AdjudicateForm app={project.app} behaviour={behaviour} onWrote={onWrote} />
 

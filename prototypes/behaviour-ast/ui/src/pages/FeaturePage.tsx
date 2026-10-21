@@ -4,6 +4,7 @@ import { Badge } from '@jemmy8oy-northstar/design-system'
 import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
+import BellButton from '../components/BellButton'
 import LayerChips from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
 import ResourceView from '../components/Resource'
@@ -53,6 +54,7 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
       <p className="muted">
         {feature.id} · {feature.at}
       </p>
+      <BellButton app={app} item={feature.id} />
 
       {/* BEH-FEAT-2: every parent, as a tag. None of them is the owner, so none is
           singled out — the crumbs above are only the way you happened to come. */}

@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
-import { ApiError, askForBehaviour, fetchHistory, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
+import { ApiError, askForBehaviour, fetchHistory, fetchNotes, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import BoardViews from '../components/BoardViews'
@@ -10,7 +10,7 @@ import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isTrial, LAYERS, projectOf, RANKED, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isRung, isTrial, LAYERS, projectOf, RANKED, rungFirst, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -27,6 +27,8 @@ interface Entry {
   added: Map<string, string | null>
   /** Why there is no history: Done shows this project's cards after the dated ones, in corpus order. */
   historyMissing: string | null
+  /** The items whose bell is rung and unanswered (BEH-BELL-3); empty when the notes could not be read. */
+  bells: Set<string>
 }
 
 const messageOf = (e: unknown) => (e instanceof ApiError || e instanceof Error ? e.message : String(e))
@@ -49,12 +51,14 @@ async function loadBoard(): Promise<Entry[]> {
         completed: new Map<string, string | null>(),
         added: new Map<string, string | null>(),
         historyMissing: null,
+        bells: new Set<string>(),
       }
       if (summary.error) return { ...empty, error: summary.error }
-      const [detail, schedule, history] = await Promise.allSettled([
+      const [detail, schedule, history, notes] = await Promise.allSettled([
         fetchProject(summary.app),
         fetchSchedule(summary.app),
         fetchHistory(summary.app),
+        fetchNotes(summary.app),
       ])
       if (detail.status === 'rejected') return { ...empty, error: messageOf(detail.reason) }
       const places = new Map<string, Place>()
@@ -80,6 +84,10 @@ async function loadBoard(): Promise<Entry[]> {
         completed,
         added,
         historyMissing,
+        // Notes that fail cost the rung cards their lift, never a card.
+        bells: new Set(
+          notes.status === 'fulfilled' ? notes.value.notes.flatMap((n) => (n.kind === 'bell' && n.behaviour ? [n.behaviour] : [])) : [],
+        ),
       }
     }),
   )
@@ -135,7 +143,8 @@ export default function Board() {
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a
         pending one is backlog until it is scheduled, and in progress at the top of its schedule;
-        the rest is done, the most recently completed first.
+        the rest is done, the most recently completed first. A card whose bell is rung sits at the
+        top of its column until Kit answers it.
       </p>
 
       <ResourceView resource={entries}>
@@ -215,10 +224,12 @@ export default function Board() {
                         project: projectOf(e.summary),
                         b,
                         at: e.historyMissing === null ? (col.id === 'done' ? e.completed : e.added).get(b.id) : undefined,
+                        rung: isRung(b, e.bells),
                       })),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
-                  if (RANKED.includes(col.id)) cards = byPriorityAcrossProjects(cards)
+                  // Rung cards above every priority (BEH-BELL-3), until the agent answers the bell.
+                  if (RANKED.includes(col.id)) cards = rungFirst(byPriorityAcrossProjects(cards))
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
                   // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
                   const limit = limits[col.id] ?? CAP
@@ -235,7 +246,7 @@ export default function Board() {
                         </p>
                       )}
                       <ul className="cards">
-                        {cards.slice(0, limit).map(({ app, project, b }) => (
+                        {cards.slice(0, limit).map(({ app, project, b, rung }) => (
                           <li key={`${app}/${b.id}`}>
                             <Card className={`board-card hue-${hueOf(project)}`}>
                               <h3>
@@ -251,6 +262,7 @@ export default function Board() {
                                 <p>{b.review.note}</p>
                               )}
                               <div className="badges">
+                                {rung && <Badge tone="warning">🔔 rung</Badge>}
                                 {b.priority !== undefined && (
                                   <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
                                 )}

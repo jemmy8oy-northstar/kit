@@ -252,6 +252,14 @@ export function resolveDecision(app: string, key: string, text: string): Promise
 }
 
 /**
+ * Ring an item's bell (BEH-BELL-1): a note of kind `bell` asking the agent to look at the item
+ * again. It needs no words. Ringing an item that is already rung is refused with 409.
+ */
+export function ringBell(app: string, item: string): Promise<NoteResult> {
+  return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, { kind: 'bell', behaviour: item })
+}
+
+/**
  * Answer a note's questions (BEH-NOTE-6). The note is named by its place in the
  * list AND its date, so a file that changed underneath is refused, not misapplied.
  */
