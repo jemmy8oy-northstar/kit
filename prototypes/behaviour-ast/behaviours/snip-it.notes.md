@@ -83,3 +83,7 @@ I guess whenever it is in premium/experimental mode for me I can always optional
 Base general release version: for now no api integration, fully on device
 
 App premium feature: integrates with kit, kit has a volume on which it takes can be saved to - not saved by default - kit can then operate on the videos on server with low friction.
+
+## 2026-10-21 16:52Z · new behaviour
+
+Kit shows transcript with take locally
