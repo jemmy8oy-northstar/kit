@@ -161,3 +161,7 @@ Ai works through backlog top priority first. Ai is able to assign a priority sco
 ## 2026-10-21 06:50Z · new behaviour
 
 Bell the bell feature. Cna u make this higher priority
+
+## 2026-10-21 06:50Z · new behaviour
+
+Bell ordered board items
