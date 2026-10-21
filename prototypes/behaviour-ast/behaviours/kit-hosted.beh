@@ -305,6 +305,7 @@ behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the 
 behaviour BEH-COMMIT-5 "The project page lists the edits that have not reached dev yet, and the pull request they wait in"
   in FEAT-COMMIT
   source inferred kit#118
+  review approved
   priority 3
   actor engineer
   given change:Pending
@@ -376,6 +377,7 @@ behaviour BEH-GATE-H3 "A sign-in survives a deploy, and lasts until its seven da
   in FEAT-LOCK
   layer technical
   source inferred kit.notes.md#2026-10-19-1928
+  review approved
   actor engineer
   given session:SignedIn
   when runs command:KitServe

@@ -90,7 +90,7 @@ behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest on
   in FEAT-SYNC
   layer technical
   source inferred tracks#3
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
@@ -100,7 +100,7 @@ behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played
   in FEAT-SYNC
   layer ux
   source inferred tracks#3
-  review unreviewed
+  review approved
   priority 1
   actor runner
   when opens page:Home

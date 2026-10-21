@@ -89,3 +89,95 @@ Oo a backlog idea for when we have real users is the free form text boxes can al
 ## 2026-10-19 13:40Z · new behaviour
 
 Board item ordering currently doesnt seem to be ordered. Would be good for the ai to score the proposed items so that top is the one that it lists wants to be reviewed. Currently it seems to be ordered by project.
+
+## 2026-10-19 16:16Z · new behaviour
+
+The feature pipeline is used by the bot to group features into a rough completion stage based off the provided spec that the dev has filled in and implementation state.
+
+The human can use it to quickly identify what work is left to he done.
+
+## 2026-10-19 16:19Z · new behaviour
+
+The feature board, just like ado or any other, is just another level of granularity to view the tasks left to be done. The existing board is just a more granular view. Feature board is higher level. Technically we couod also have a project board but i don’t see much need for that right now I guess we could backlog the idea. Could have an epic board but that relates roughly to a project board - both very top level backlog for now could return later.
+
+Could be good to be able to easily switch between the two board views, this seems like a good way to integration them. We aren’t really integrating them I don’t think we should be. They are different ways of viewing it.
+
+## 2026-10-19 16:44Z · new behaviour
+
+On second thought I think we actually need to support epics.
+
+I think this is an interesting thing to support. I am almost thinking that the project views groups are kind of defined bottom up. A behaviour is defined or a ui request or a business logic spec and then it is about ok how is this grouped in the app. What component or page or more general user workflow does this fit into. Tag it. Then it forms into this project -> feature -> feature navigation.
+
+An epic however. You define the epic top level. Then it is about what features are required to fulfill this epic. But is this feature grouping the same as in the project navigation? I can’t tell right now.
+
+I guess it can be, a component might be important for an epic, a new page might be important for an epic, new logic, new ux etc also can be important for an epic. Ok that’s good progress. The difference is that it doesn’t come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because it’s parents are not specifically important to the epic.
+
+Another thing is when you create an epic, all of its children and grand children will likely be created as pending or new.
+
+I guess what we need is a new tag on features or specs for epic. So these items can be tagged with both a parent project or feature but also epic. These tags need to be distinguishable probably with colour.
+
+Then in projects maybe there is an option to navigate by epic. Or maybe instead there is a separate epic page which can be organised by  project. Or even just another abstraction level in the boards for epic. I feel like this makes the most sense. No need to complicate the projects view.
+
+## 2026-10-19 17:21Z · new behaviour
+
+When epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children nested etc based on the proposal.
+
+## 2026-10-19 17:21Z · new behaviour
+
+epic:%20Kit%20supports%20additional%20users.%20There%20are%20so%20many%20factors%20to%20this%20epic.%20Kit%20needs%20to%20support%20interacting%20with%20someone%20else%E2%80%99s%20GitHub.%20Kit%20needs%20to%20not%20leverage%20the%20kit%20repo%20for%20any%20central%20spec%20management.%20It%20needs%20to%20be%20able%20to%20infer%20projects%20from%20the%20users%20github.%20It%20needs%20to%20be%20able%20to%20onboard%20projects%20onto%20kit%20and%20or%20create%20new%20repos%20for%20new%20kit%20projects.%20In%20fact%20let%E2%80%99s%20mark%20onboarding%20existing%20projects%20as%20out%20of%20scope%20for%20now.%20We%20don%E2%80%99t%20know%20what%20language%20or%20architecture%20existing%20projects%20will%20be%20using.%20Let%E2%80%99s%20have%20support%20project%20onboarding%20as%20a%20backlog%20epic.%20%0A%0AI%20think%20the%20GitHub%20integration%20will%20have%20to%20lean%20on%20some%20sort%20of%20oauth%20but%20also%20some%20sort%20of%20GitHub%20app.%20We%20will%20need%20to%20have%20a%20smooth%20onboarding%20experience%20for%20signing%20up%20to%20kit%20and%20integrating%20with%20your%20GitHub.%0A%0AWe%20will%20need%20to%20be%20able%20to%20orchestrate%20the%20ai%20for%20their%20kit%20environment.%20This%20will%20include%20moving%20all%20of%20our%20development%20process%20and%20context%20into%20some%20shared%20location%20or%20image%20or%20something%20and%20making%20it%20generic%20for%20use%20across%20multiple%20users.%20We%20will%20also%20need%20some%20user%20specific%20location%20to%20remember%20specific%20details%20for%20the%20user,%20maybe%20db%20would%20be%20appropriate%20for%20this.%20I%20feel%20like%20creating%20a%20repo%20in%20the%20users%20github%20is%20not%20the%20best%20for%20this%20-%20but%20maybe%20it%20is.%0A%0AWhat%20else,%20various%20security%20features%20that%20we%20don%E2%80%99t%20have%20for%20production%20use%20such%20as%20secret%20management%20etc.%20%0A%0AWe%20would%20need%20to%20provision%20databases%20for%20our%20users%20our%20current%20setup%20won%E2%80%99t%20scale%20for%20this%20I%20don%E2%80%99t%20think.%20I%20think%20lovable%20lets%20users%20integrate%20with%20supabase%20or%20something.%20We%20could%20wrap%20oke%20or%20awks%20or%20something%20not%20sure%20what%20would%20be%20the%20best%20for%20this.%20We%20could%20even%20have%20a%20dev%20tier%20and%20a%20production%20tier%20and%20the%20dev%20tier%20is%20cheaper%20but%20closer%20to%20what%20we%20are%20currently%20doing.%0A%0AWe%20would%20need%20to%20manage%20usage%20and%20costs%20and%20payments.%20We%20would%20need%20to%20charge%20them%20for%20compute%20and%20ai%20tokens%20otherwise%20we%20are%20going%20to%20go%20bankrupt.%0A%0AThe%20whole%20app%20needs%20to%20be%20way%20more%20refined%20but%20that%E2%80%99s%20why%20this%20is%20an%20epic%20and%20we%20are%20working%20towards%20this%20goal.%0A%0AThis%20is%20all%20I%20can%20think%20of%20for%20now,%20feel%20free%20to%20propose%20other%20items.
+
+## 2026-10-19 17:25Z · new behaviour
+
+Epics are separate blocks to features.
+An epics parent is a project.
+Features can have multiple parents and they can be other features projects or epics
+
+## 2026-10-19 17:25Z · new behaviour
+
+Questions should probably appear on the board as well
+
+## 2026-10-19 19:28Z · new behaviour
+
+Everytime kit updates, my browser signs out. I really thought that the cookie would stick around and that I would stay signed in. Can we keep me signed in?
+
+## 2026-10-19 19:33Z · new behaviour
+
+A nudge feature. A mechanism such that a behaviour or feature or epic can be nudged to raise attention to it. Maybe nudge is not the right word since it is not being nudged itself. Maybe bell or ring. Kind of fits in with the cat theme as well. Maybe later on the bell means that kit comes and plays with it in the ui or something. Anyway getting side tracked. Nudge just brings the ais attention to this item again and the ai can choose to prioritise it higher or leave a comment on it or soemthing to explain why this is not higher priority.
+
+I guess another feature would be comments under items - epics, behaviours, specs, projects. I guess this is different from a note because it is under a specific item. Maybe the ui needs to be restructured a bit for notes. Maybe from anywhere there is a floating action button which can add a note? And a note is not a comment on an item it’s just a new thought which the ai will pick up and turn into something else.
+
+## 2026-10-20 07:12Z · new behaviour
+
+Epics page shows an epic page just like behaviours and features
+
+## 2026-10-20 12:21Z · new behaviour
+
+Maybe a chronological feed which shows recent actions so i can easily what has happened recently
+
+## 2026-10-21 00:08Z · new behaviour
+
+Ai works through backlog top priority first. Ai is able to assign a priority score to help with this. But atm we get starvation where kit just prioritises new work. I think by default new work comes in as low priority but I guess score can override. I guess maybe we order by (score, most recent). Then when the dev bells an item kit might choose to change priority of it.
+
+## 2026-10-21 06:50Z · new behaviour
+
+Bell the bell feature. Cna u make this higher priority
+
+## 2026-10-21 06:50Z · new behaviour
+
+Bell ordered board items
+
+## 2026-10-21 07:10Z · new behaviour
+
+Ability for me to reorganise the order of the backlog. Idk how this works on ado I think it changes some value for its order number. This would be expensive I. Kit having to commit to every repo. What is a good approach here
+
+## 2026-10-21 15:47Z · new behaviour
+
+Proposed column is organised by developer review priority.
+
+Current state i cannot identify the order
+
+## 2026-10-21 15:52Z · new behaviour
+
+I am seeing some behaviours which are technically behaviours but they are quite broad and I guess could become features and incorporate many features.
+
+The ai running kit should be able to identify when a behaviour should become a feature of behaviours
