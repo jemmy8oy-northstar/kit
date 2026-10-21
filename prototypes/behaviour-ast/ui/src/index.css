@@ -18,6 +18,8 @@ body {
   max-width: 72rem;
   margin: 0 auto;
   padding: var(--space-6);
+  /* Room under the last control, so the floating note button (BEH-NOTE-12) never has to cover it. */
+  padding-bottom: var(--space-16);
 }
 
 .app > header {
