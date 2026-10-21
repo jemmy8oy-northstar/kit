@@ -33,3 +33,9 @@ The teleprompter should auto progress as the user speaks
 ## 2026-10-20 23:53Z
 
 The teleprompter should highlight words that it has heard being spoken in a take. Currently the feedback is low I can tell if it’s hearing me at all.
+
+## 2026-10-21 00:01Z · new behaviour
+
+It would be good to be able to work on different projects or productions or videos videos might get confused with takes 
+
+Anyway would be good to enter and click new production or select an existing one
