@@ -489,7 +489,7 @@ describe('Board', () => {
     }
   })
 
-  it('puts the agent\'s questions above requests that only want a look, whatever their priority (BEH-BOARD-11)', async () => {
+  it('puts questions from the agent above requests that only want a look, whatever their priority (BEH-BOARD-11)', async () => {
     details.beta.push(
       beh('B-LOOK-P1', { priority: 1, review: { state: 'requested', note: 'the sort on a phone' } }),
       beh('B-ASK-P3', { priority: 3, review: { state: 'requested', note: 'Centre or top by default? ' } }),
