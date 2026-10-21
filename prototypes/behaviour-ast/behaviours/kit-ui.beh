@@ -625,7 +625,8 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
   contract "order by (score, most recent)": within one priority, the most recently added card is first; added is the first commit holding the behaviour, read from git like BEH-BOARD-4, and one no commit holds yet is the newest
   contract equal scores still take each project in turn (BEH-BOARD-10); recency orders each project's own cards
   contract my assumption: a behaviour the agent writes from a new note comes in at priority 4, and the agent raises it only for a stated reason (something he is waiting on, or something broken)
-  contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note, and may re-score a card when it picks it up
+  contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note
+  contract "when the dev bells an item kit might choose to change priority of it": ringing the bell is how he lifts an old card (BEH-BELL-1/2)
 
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
