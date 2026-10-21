@@ -613,6 +613,21 @@ behaviour BEH-BOARD-10 "The agent scores every card it wants looked at, and equa
   contract within one priority the column takes each project in turn, so a tie never reads as a block of one project
   contract inferences of code that already ships are scored 4 or 5: confirming what runs is the least urgent review
 
+behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes in low, so old work is not starved"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-21-0008
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract "atm we get starvation where kit just prioritises new work. I think by default new work comes in as low priority but I guess score can override"
+  contract "order by (score, most recent)": within one priority, the most recently added card is first; added is the first commit holding the behaviour, read from git like BEH-BOARD-4, and one no commit holds yet is the newest
+  contract equal scores still take each project in turn (BEH-BOARD-10); recency orders each project's own cards
+  contract my assumption: a behaviour the agent writes from a new note comes in at priority 4, and the agent raises it only for a stated reason (something he is waiting on, or something broken)
+  contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note
+  contract "when the dev bells an item kit might choose to change priority of it": ringing the bell is how he lifts an old card (BEH-BELL-1/2)
+
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1725

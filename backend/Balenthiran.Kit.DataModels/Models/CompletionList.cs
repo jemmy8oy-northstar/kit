@@ -22,4 +22,9 @@ public sealed class CompletionList : ICompletionList
     public required List<Completion> Completed { get; init; }
 
     IReadOnlyList<ICompletion> ICompletionList.Completed => Completed;
+
+    [JsonPropertyOrder(6)]
+    public required List<Completion> Added { get; init; }
+
+    IReadOnlyList<ICompletion> ICompletionList.Added => Added;
 }

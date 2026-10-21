@@ -120,6 +120,26 @@ public class CompletionTests
         Assert.Equal("2026-10-03T09:00:00Z", Assert.Single(done).At);
     }
 
+    // ── added (BEH-BOARD-12) ─────────────────────────────────────────────
+
+    [Fact]
+    public void Added_is_the_first_commit_holding_it_for_every_behaviour_built_or_not()
+    {
+        var added = Completions.Added(
+            Now(("BEH-B", true), ("BEH-A", false)),
+            [V(T1, ("BEH-A", true)), V(T2, ("BEH-A", false), ("BEH-B", true)), V(T3, ("BEH-A", false), ("BEH-B", true))]);
+
+        Assert.Equal([("BEH-B", (string?)"2026-10-02T09:00:00Z"), ("BEH-A", "2026-10-01T09:00:00Z")], added.Select(c => (c.Id, c.At)));
+    }
+
+    [Fact]
+    public void A_behaviour_no_commit_holds_yet_is_added_with_no_date_the_newest()
+    {
+        var added = Completions.Added(Now(("BEH-A", true), ("BEH-N", true)), [V(T1, ("BEH-A", true))]);
+
+        Assert.Equal(["2026-10-01T09:00:00Z", null], added.Select(c => c.At));
+    }
+
     // ── git ──────────────────────────────────────────────────────────────
 
     [Fact]
@@ -248,7 +268,7 @@ public class CompletionTests
             var ok = router.Route("GET", "/api/projects/demo/history");
             Assert.Equal(200, ok.Status);
             var body = JsonSerializer.Serialize(ok.Body, new JsonSerializerOptions(JsonSerializerDefaults.Web));
-            Assert.Equal("{\"app\":\"demo\",\"file\":\"demo.beh\",\"history\":\"git\",\"reason\":null,\"completed\":[{\"id\":\"BEH-A\",\"at\":\"2026-10-01T09:00:00Z\"}]}", body);
+            Assert.Equal("{\"app\":\"demo\",\"file\":\"demo.beh\",\"history\":\"git\",\"reason\":null,\"completed\":[{\"id\":\"BEH-A\",\"at\":\"2026-10-01T09:00:00Z\"}],\"added\":[{\"id\":\"BEH-A\",\"at\":\"2026-10-01T09:00:00Z\"}]}", body);
 
             Assert.Equal(404, router.Route("GET", "/api/projects/ghost/history").Status);
             Assert.Equal(400, router.Route("GET", "/api/projects/%E0%A4%A/history").Status);
