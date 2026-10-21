@@ -41,7 +41,7 @@ describe('BellButton (BEH-BELL-1)', () => {
     expect(posts).toEqual([{ kind: 'bell', behaviour: 'FEAT-BELL' }])
   })
 
-  it('cannot be rung again while its bell is unanswered, and another item\'s bell does not count', async () => {
+  it("cannot be rung again while its bell is unanswered, and another item's bell does not count", async () => {
     server([bell('FEAT-BELL')])
     const { unmount } = render(<BellButton app="demo" item="FEAT-BELL" />)
     expect(await screen.findByRole('button', { name: /Rung, waiting for Kit/ })).toBeDisabled()
