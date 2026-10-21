@@ -42,6 +42,33 @@ h1 {
   margin: 0 0 var(--space-2);
 }
 
+/*
+ * BEH-LOOK-1: one rhythm. A page is a stack of blocks, and the gap between two
+ * of them is set here, by the stack, rather than by whichever margin each block
+ * happened to carry. A block is var(--space-4) below the one before; a section
+ * heading opens a wider gap above it and keeps its content close below; what
+ * follows the page title sits closer, because it describes the title.
+ */
+.app main > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.app main > * + * {
+  margin-top: var(--space-4);
+}
+
+.app main > * + h2,
+.app main > * + .tabs {
+  margin-top: var(--space-8);
+}
+
+.app main > h1 + *,
+.app main > h2 + *,
+.app main > .crumbs + h1 {
+  margin-top: var(--space-2);
+}
+
 h2 {
   font-family: var(--font-heading);
   font-size: var(--text-xl);

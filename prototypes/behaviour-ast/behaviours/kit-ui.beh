@@ -687,6 +687,8 @@ behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, qui
   contract the shadcn look: neutral greys, thin borders, a small radius, even whitespace, and colour kept for meaning
   contract the look, not the library: Kit draws on the design-system package, and swapping that is a platform choice that stays his
   contract every gap between blocks comes from one spacing scale, so a page has no one-off margins
+  contract my assumption: the page sets the gap, not the block; each block in a page sits one step below the last, a section heading opens a wider gap, and what follows a title sits closer (index.css, `.app main > * + *`)
+  contract still to do: the teal secondary buttons (Edit, Ring the bell) are a second accent on the behaviour page
 
 behaviour BEH-LOOK-2 "Kit wears the design system's professional theme, and a title that links reads as a title"
   in FEAT-NAV
