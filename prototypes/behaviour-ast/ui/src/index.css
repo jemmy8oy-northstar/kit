@@ -432,6 +432,16 @@ pre {
   font-weight: 400;
 }
 
+/* Where each run of a ranked column starts (BEH-BOARD-14): small, so it reads as a divider, not a card. */
+.board-tier {
+  font-size: var(--text-xs, var(--text-sm));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-border, currentColor);
+  padding-bottom: var(--space-1, 0.25rem);
+}
+
 /* Compact: id and title only, so a column shows a dozen cards, not three. */
 .board-card {
   border-left: 0.35rem solid var(--project);

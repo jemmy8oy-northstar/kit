@@ -340,3 +340,75 @@ behaviour BEH-SCRIPT-4 "The script shows which lines a production's takes have c
   contract "show from a script what text has been covered by what cuts": each take records the script lines the prompter followed while it was recording
   contract the script marks each covered line with how many takes covered it, and a take's row says which lines it covers
   contract coverage is by line, not by word: a take covers the lines the prompter was on between Record and Stop, whether it got there by hearing or by a tap
+
+# ── editions (snip-it.notes.md, 2026-10-21 16:47Z to 16:52Z, and snip-it#65 "Distribute Yours, Studio?") ──
+# His answer to #65 is in the notes: one app, a configurable UI. The cut below is the agent's reading.
+
+feature FEAT-EDITIONS "One app, two editions: a general release that runs only on the phone, and Studio features he can switch on"
+  stage ui
+
+behaviour BEH-EDITION-1 "Studio features are switched on and off in Settings"
+  in FEAT-EDITIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-1647
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "for now this experience can be toggled in settings but later this can be configured by accounts or build args": one Studio switch in Settings, stored on the phone; accounts and build flags are later and not built here
+  contract "whenever it is in premium/experimental mode for me I can always optionally toggle it off": the switch works both ways, and turning it off hides Studio features without deleting anything they made
+  contract my assumption: the switch is off on a fresh install, so the general release is what a stranger gets
+  contract my assumption: every feature that talks to a server is a Studio feature (BEH-EDITION-2), and so is anything he calls experimental
+
+behaviour BEH-EDITION-2 "With Studio off, the app runs entirely on the phone"
+  in FEAT-EDITIONS
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-1649
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "base general release version: for now no api integration, fully on device": speech, recording, playback, productions and the script all work with no network
+  contract with Studio off nothing offers to send a take anywhere, and the app makes no request to snip-it or Kit
+  contract my assumption: the speech model download (BEH-TELE-1) is not an API integration, so the general release keeps it
+
+behaviour BEH-EDITION-3 "Studio: a take can be saved to Kit, and never is by default"
+  in FEAT-EDITIONS
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-1649
+  review unreviewed
+  priority 3
+  pending
+  actor creator
+  contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default": a take goes to Kit only when he chooses Save to Kit on it
+  contract "kit can then operate on the videos on server with low friction": a saved take is a file Kit's agent can read, beside the production it came from
+  contract the volume is a cluster and storage decision, so it is his: nothing here is built until he has said where takes live
+
+behaviour BEH-EDITION-4 "A take shows its transcript, made on the phone"
+  in FEAT-EDITIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-1652
+  review unreviewed
+  priority 3
+  pending
+  actor creator
+  contract "Kit shows transcript with take locally": my reading is that the take's own screen shows what was said, transcribed on the phone, in both editions
+  contract the other reading is that Kit's web view shows a saved take with its transcript; deny this one if that is what he meant, and it moves under BEH-EDITION-3
+
+# ── an idea, not yet work (snip-it#66, his conversation about a teleprompter that helps when you stumble) ──
+
+behaviour BEH-TELE-10 "When the creator stalls mid-sentence, the prompter offers a simpler line to read"
+  in FEAT-TELEPROMPTER
+  in FEAT-EDITIONS
+  layer ux
+  source defined snip-it#66
+  review unreviewed
+  priority 4
+  pending
+  actor creator
+  contract "detect a break in speech and if you aren't pausing at a line break or punctuation it shows that it is rephrasing … cancel or continue": a pause away from punctuation or a line break is a stall; a pause at one is a breath and does nothing
+  contract a rephrase appears beside the current line, marked as a suggestion; Continue reads it, Cancel keeps the script, and the script itself is only changed if he keeps the suggestion
+  contract "line break and punctuation frequency detection to identify if the user is actually using segmented text": a script with too few breaks to tell a stall from a breath turns this off and says why
+  contract my assumption: it is a Studio feature (BEH-EDITION-1), and the rewrite runs on the phone, so it does not break BEH-EDITION-2

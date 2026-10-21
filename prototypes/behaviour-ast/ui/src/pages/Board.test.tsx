@@ -620,6 +620,32 @@ describe('Board', () => {
     }
   })
 
+  it('starts each run of a ranked column with a heading that counts it, so the order can be read (BEH-BOARD-14)', async () => {
+    details.alpha.push(
+      beh('A-RUNG-P3', { pending: true, priority: 3 }),
+      beh('A-P1', { pending: true, priority: 1 }),
+      beh('A-P2-ONE', { pending: true, priority: 2 }),
+      beh('A-P2-TWO', { pending: true, priority: 2 }),
+    )
+    try {
+      mockApi({}, { alpha: ['A-RUNG-P3'] })
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('A-P1')
+
+      // Headings and cards in the order they render; a heading is not a card, so not a listitem.
+      const rows = [...column('Backlog').getByRole('list').children].map((li) =>
+        li.classList.contains('board-tier') ? `# ${li.textContent}` : li.querySelector('.id')!.textContent,
+      )
+      expect(rows.slice(0, 7)).toEqual(['# 🔔 Rung 1', 'A-RUNG-P3', '# Priority 1 1', 'A-P1', '# Priority 2 2', 'A-P2-ONE', 'A-P2-TWO'])
+      expect(column('Backlog').getAllByRole('listitem').every((li) => li.querySelector('.id'))).toBe(true)
+      // Done is ordered by date, not by priority, so it has no headings.
+      expect(column('Done').getByRole('list').querySelector('.board-tier')).toBeNull()
+    } finally {
+      details.alpha.splice(-4)
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(
