@@ -49,3 +49,7 @@ Would be good to show from a script what text has been covered by what cuts I do
 Would be good to be able to fold script sections or have an option to fold all sections
 
 Maybe we can use a simple # for names or —- for unnamed break and borrow this from markdown to split sections in the script. They should be able to teleprompt seamlessly but good for planning
+
+## 2026-10-21 00:05Z · new behaviour
+
+Would be good to have a delete all button in the script. Maybe a clear section button would be better. Maybe a section management where u can rearrange sections and then in here there is a delete all sections button. All delete buttons should have confirmation
