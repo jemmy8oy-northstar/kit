@@ -408,10 +408,11 @@ export interface Note {
   at: string
   /**
    * `note`, a free comment; `request`, a behaviour asked for in prose (BEH-NOTE-4);
-   * `resolution`, how a decision on the question sheet should go (BEH-NOTE-8).
+   * `resolution`, how a decision on the question sheet should go (BEH-NOTE-8); `bell`, an item
+   * rung for the agent to look at again (BEH-BELL-1), whose text may be empty.
    */
-  kind: 'note' | 'request' | 'resolution'
-  /** The behaviour it was left on; null for one left on the project. */
+  kind: 'note' | 'request' | 'resolution' | 'bell'
+  /** The behaviour it was left on, or the item a bell rings; null for one left on the project. */
   behaviour: string | null
   /** The question-sheet key a resolution answers; null for every other kind. */
   resolves: string | null

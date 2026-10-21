@@ -64,12 +64,20 @@ const summaries = [
 /** Each app's history (BEH-BOARD-4); one not named answers git with nothing dated. */
 let histories: Record<string, CompletionList> = {}
 
+/** Each app's unanswered bells (BEH-BELL-3): the item ids rung. One not named has none. */
+let bells: Record<string, string[]> = {}
+
 /** The read API: the project list, a project's detail, its schedule (BEH-SCHED-1) or its history. */
 function answer(path: string, projects: object[] = summaries) {
   const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
   if (rest.endsWith('/history')) {
     const app = rest.slice(0, -'/history'.length)
     return histories[app] ?? { app, file: `${app}.beh`, history: 'git', reason: null, completed: [], added: [] }
+  }
+  if (rest.endsWith('/notes')) {
+    const app = rest.slice(0, -'/notes'.length)
+    const notes = (bells[app] ?? []).map((id) => ({ at: '2026-10-21 06:50Z', kind: 'bell', behaviour: id, resolves: null, text: '', thread: [], questions: [] }))
+    return { app, file: `${app}.notes.md`, notes }
   }
   if (rest.endsWith('/schedule')) {
     const app = rest.slice(0, -'/schedule'.length)
@@ -80,8 +88,9 @@ function answer(path: string, projects: object[] = summaries) {
   return rest ? { app: rest, behaviours: details[rest] } : { projects }
 }
 
-function mockApi(h: Record<string, CompletionList> = {}) {
+function mockApi(h: Record<string, CompletionList> = {}, b: Record<string, string[]> = {}) {
   histories = h
+  bells = b
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string) => ({ ok: true, status: 200, statusText: 'OK', json: async () => answer(path) })),
@@ -125,6 +134,7 @@ describe('Board', () => {
   // A test that stubs fetch itself still answers histories through `answer`; none may inherit another's.
   beforeEach(() => {
     histories = {}
+    bells = {}
   })
 
   it('puts each behaviour in the column for where it stands', async () => {
@@ -556,6 +566,27 @@ describe('Board', () => {
       expect(order.slice(0, 4)).toEqual(['A-UNCOMMITTED', 'A-NEW', 'A-OLD', 'A-NEWEST-P2'])
     } finally {
       details.alpha.splice(-4)
+    }
+  })
+
+  it('puts a rung card above every priority, and a rung feature lifts the cards in it (BEH-BELL-3)', async () => {
+    details.alpha.push(
+      beh('A-P1', { pending: true, priority: 1 }),
+      beh('A-RUNG-P4', { pending: true, priority: 4 }),
+      beh('A-IN-RUNG-FEATURE', { pending: true, priority: 5, in: ['FEAT-LOUD'] }),
+    )
+    try {
+      mockApi({}, { alpha: ['A-RUNG-P4', 'FEAT-LOUD'] })
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('A-P1')
+
+      const items = column('Backlog').getAllByRole('listitem')
+      expect(items.slice(0, 3).map((li) => li.querySelector('.id')!.textContent)).toEqual(['A-RUNG-P4', 'A-IN-RUNG-FEATURE', 'A-P1'])
+      expect(within(items[0]).getByText(/rung/)).toBeInTheDocument()
+      expect(within(items[2]).queryByText(/rung/)).toBeNull()
+    } finally {
+      details.alpha.splice(-3)
     }
   })
 

@@ -45,7 +45,8 @@ function renderAt(url: string) {
     'fetch',
     vi.fn(async (path: string) => {
       const app = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
-      const json = app ? alpha : { projects: [{ app: 'alpha', project: 'kit' }] }
+      // The bell button reads the notes (BEH-BELL-1): none rung here.
+      const json = app.endsWith('/notes') ? { app: 'alpha', file: 'alpha.notes.md', notes: [] } : app ? alpha : { projects: [{ app: 'alpha', project: 'kit' }] }
       return { ok: true, status: 200, statusText: 'OK', json: async () => json }
     }),
   )

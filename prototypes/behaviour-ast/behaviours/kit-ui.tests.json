@@ -27,6 +27,13 @@
   "BEH-GATE-H2": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "says, at the box, that a note is published before anything is sent (BEH-GATE-H2)" }
   ],
+  "BEH-BELL-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/BellButton.test.tsx", "title": "rings an item with a bell note and no words, then says it is waiting for Kit" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/BellButton.test.tsx", "title": "cannot be rung again while its bell is unanswered, and another item's bell does not count" }
+  ],
+  "BEH-BELL-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts a rung card above every priority, and a rung feature lifts the cards in it (BEH-BELL-3)" }
+  ],
   "BEH-BOARD-12": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the most recently added first within one priority, but never above a higher one (BEH-BOARD-12)" }
   ],
