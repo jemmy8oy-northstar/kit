@@ -688,7 +688,7 @@ behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, qui
   contract the look, not the library: Kit draws on the design-system package, and swapping that is a platform choice that stays his
   contract every gap between blocks comes from one spacing scale, so a page has no one-off margins
   contract my assumption: the page sets the gap, not the block; each block in a page sits one step below the last, a section heading opens a wider gap, and what follows a title sits closer (index.css, `.app main > * + *`)
-  contract still to do: the teal secondary buttons (Edit, Ring the bell) are a second accent on the behaviour page
+  contract my assumption: a utility action (Edit, Cancel, Keep it, Show more, Ring the bell) is an outlined ghost button, so the only filled buttons on a page are its main action and a danger; teal stays only where it means selected (the board's filter chips)
 
 behaviour BEH-LOOK-2 "Kit wears the design system's professional theme, and a title that links reads as a title"
   in FEAT-NAV
