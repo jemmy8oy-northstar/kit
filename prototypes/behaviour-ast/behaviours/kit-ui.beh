@@ -1014,6 +1014,7 @@ feature FEAT-USER-ISOLATION "One user never reaches another's work"
 behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, whatever the URL"
   in FEAT-USER-ISOLATION
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
