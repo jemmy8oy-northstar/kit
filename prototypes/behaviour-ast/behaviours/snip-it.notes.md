@@ -39,3 +39,7 @@ The teleprompter should highlight words that it has heard being spoken in a take
 It would be good to be able to work on different projects or productions or videos videos might get confused with takes 
 
 Anyway would be good to enter and click new production or select an existing one
+
+## 2026-10-21 00:02Z · new behaviour
+
+Would be good to show from a script what text has been covered by what cuts I don’t know whether this is too advanced
