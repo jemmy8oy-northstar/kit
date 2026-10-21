@@ -999,6 +999,7 @@ feature FEAT-USER-BILLING "Usage, cost and payment"
 behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pays for them"
   in FEAT-USER-BILLING
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
