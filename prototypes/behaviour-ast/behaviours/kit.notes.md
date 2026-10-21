@@ -175,3 +175,9 @@ Ability for me to reorganise the order of the backlog. Idk how this works on ado
 Proposed column is organised by developer review priority.
 
 Current state i cannot identify the order
+
+## 2026-10-21 15:52Z · new behaviour
+
+I am seeing some behaviours which are technically behaviours but they are quite broad and I guess could become features and incorporate many features.
+
+The ai running kit should be able to identify when a behaviour should become a feature of behaviours
