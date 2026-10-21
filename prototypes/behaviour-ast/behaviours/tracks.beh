@@ -100,7 +100,7 @@ behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played
   in FEAT-SYNC
   layer ux
   source inferred tracks#3
-  review unreviewed
+  review approved
   priority 1
   actor runner
   when opens page:Home
