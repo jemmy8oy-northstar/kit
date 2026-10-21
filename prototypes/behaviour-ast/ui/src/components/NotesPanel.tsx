@@ -7,6 +7,7 @@ import type { Note } from '../api/types'
 import { CAP } from '../board'
 import { foldedBy, type Citation } from '../notes'
 import Count from './Count'
+import PublishedHint from './PublishedHint'
 import ResourceView from './Resource'
 import { useWrite } from './useWrite'
 import WriteResultNote from './WriteResultNote'
@@ -102,9 +103,11 @@ export default function NotesPanel({
             id="note-text"
             className="note-text"
             placeholder="Anything — it doesn't have to be a behaviour yet."
+            aria-describedby="note-text-published"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+          <PublishedHint id="note-text-published" />
           <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
             {write.state === 'saving' ? 'Saving…' : 'Leave note'}
           </Button>

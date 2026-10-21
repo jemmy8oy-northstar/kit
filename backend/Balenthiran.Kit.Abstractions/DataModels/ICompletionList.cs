@@ -21,4 +21,10 @@ public interface ICompletionList
 
     /// <summary>Every behaviour the corpus says is built, in corpus order. Empty when <see cref="History"/> is <c>none</c>.</summary>
     IReadOnlyList<ICompletion> Completed { get; }
+
+    /// <summary>
+    /// BEH-BOARD-12: every behaviour in the corpus, in corpus order, with when it was added (the first
+    /// commit holding it; null when none does yet). Empty when <see cref="History"/> is <c>none</c>.
+    /// </summary>
+    IReadOnlyList<ICompletion> Added { get; }
 }

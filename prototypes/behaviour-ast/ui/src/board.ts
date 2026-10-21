@@ -78,9 +78,11 @@ export function byPriority(a?: number, b?: number): number {
 /**
  * BEH-BOARD-10 (his 2026-10-19 13:40Z note: "Currently it seems to be ordered by project"): a ranked
  * column by priority, and within one priority taking each project in turn, so equal scores never
- * read as a block of one project. A project's own cards keep their corpus order.
+ * read as a block of one project. BEH-BOARD-12 ("order by (score, most recent)"): a project's own
+ * cards within one priority are most recently added first, by `at` read as {@link byCompletion}
+ * reads it; ties, and a project without history, keep corpus order.
  */
-export function byPriorityAcrossProjects<T extends { project: string; b: { priority?: number } }>(cards: T[]): T[] {
+export function byPriorityAcrossProjects<T extends { project: string; b: { priority?: number }; at?: Completed }>(cards: T[]): T[] {
   const tiers = new Map<number, T[]>()
   for (const c of cards) {
     const p = c.b.priority ?? 6
@@ -90,7 +92,8 @@ export function byPriorityAcrossProjects<T extends { project: string; b: { prior
     .sort((a, b) => a - b)
     .flatMap((p) => {
       const queues = new Map<string, T[]>()
-      for (const c of tiers.get(p)!) queues.set(c.project, [...(queues.get(c.project) ?? []), c])
+      const tier = [...tiers.get(p)!].sort((x, y) => byCompletion(x.at, y.at))
+      for (const c of tier) queues.set(c.project, [...(queues.get(c.project) ?? []), c])
       const out: T[] = []
       for (let i = 0; out.length < tiers.get(p)!.length; i++) {
         for (const q of queues.values()) if (i < q.length) out.push(q[i])

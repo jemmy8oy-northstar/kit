@@ -101,6 +101,25 @@ public static partial class Completions
         return result;
     }
 
+    /// <summary>
+    /// BEH-BOARD-12: when every behaviour in <paramref name="current"/> was added, in its order —
+    /// the first commit that holds it. Null when no commit does yet, which makes it the newest.
+    /// </summary>
+    /// <param name="current">The corpus as served now — which may be ahead of the history.</param>
+    /// <param name="versions">The file's commits, oldest first, each as <see cref="Scan"/> read it.</param>
+    public static List<Completion> Added(IReadOnlyList<KeyValuePair<string, bool>> current, IReadOnlyList<ICorpusVersion> versions)
+    {
+        var added = new Dictionary<string, DateTimeOffset>(StringComparer.Ordinal);
+        foreach (var v in versions)
+        {
+            foreach (var (id, _) in v.Pending) added.TryAdd(id, v.At);
+        }
+
+        return current
+            .Select(p => new Completion { Id = p.Key, At = added.TryGetValue(p.Key, out var at) ? Iso(at) : null })
+            .ToList();
+    }
+
     private static string Iso(DateTimeOffset at) =>
         at.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
 

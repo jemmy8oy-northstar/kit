@@ -69,7 +69,7 @@ function answer(path: string, projects: object[] = summaries) {
   const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
   if (rest.endsWith('/history')) {
     const app = rest.slice(0, -'/history'.length)
-    return histories[app] ?? { app, file: `${app}.beh`, history: 'git', reason: null, completed: [] }
+    return histories[app] ?? { app, file: `${app}.beh`, history: 'git', reason: null, completed: [], added: [] }
   }
   if (rest.endsWith('/schedule')) {
     const app = rest.slice(0, -'/schedule'.length)
@@ -89,7 +89,7 @@ function mockApi(h: Record<string, CompletionList> = {}) {
 }
 
 function done(app: string, completed: [string, string | null][]): CompletionList {
-  return { app, file: `${app}.beh`, history: 'git', reason: null, completed: completed.map(([id, at]) => ({ id, at })) }
+  return { app, file: `${app}.beh`, history: 'git', reason: null, completed: completed.map(([id, at]) => ({ id, at })), added: [] }
 }
 
 /** The ids on Done's cards, top to bottom. */
@@ -526,6 +526,39 @@ describe('Board', () => {
     }
   })
 
+  it('puts the most recently added first within one priority, but never above a higher one (BEH-BOARD-12)', async () => {
+    // Corpus order is old, new, uncommitted, newest-but-P2: only the history sorts it right.
+    details.alpha.push(
+      beh('A-OLD', { pending: true, priority: 1 }),
+      beh('A-NEW', { pending: true, priority: 1 }),
+      beh('A-UNCOMMITTED', { pending: true, priority: 1 }),
+      beh('A-NEWEST-P2', { pending: true, priority: 2 }),
+    )
+    try {
+      mockApi({
+        alpha: {
+          ...done('alpha', []),
+          added: [
+            { id: 'A-OLD', at: '2026-10-01T09:00:00Z' },
+            { id: 'A-NEW', at: '2026-10-02T09:00:00Z' },
+            { id: 'A-UNCOMMITTED', at: null },
+            { id: 'A-NEWEST-P2', at: '2026-10-03T09:00:00Z' },
+          ],
+        },
+      })
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('A-OLD')
+
+      const order = column('Backlog')
+        .getAllByRole('listitem')
+        .map((li) => li.querySelector('.id')!.textContent)
+      expect(order.slice(0, 4)).toEqual(['A-UNCOMMITTED', 'A-NEW', 'A-OLD', 'A-NEWEST-P2'])
+    } finally {
+      details.alpha.splice(-4)
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(
@@ -546,7 +579,7 @@ describe('Board', () => {
   })
 
   it('says why a project has no history when the server could not read one', async () => {
-    mockApi({ alpha: { app: 'alpha', file: 'alpha.beh', history: 'none', reason: 'the corpus is not in a git work tree', completed: [] } })
+    mockApi({ alpha: { app: 'alpha', file: 'alpha.beh', history: 'none', reason: 'the corpus is not in a git work tree', completed: [], added: [] } })
     renderBoard()
     await loaded()
     await column('Done').findByText('A-DONE')

@@ -6,6 +6,7 @@ import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import BoardViews from '../components/BoardViews'
 import LayerChips from '../components/LayerChips'
+import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
@@ -22,6 +23,8 @@ interface Entry {
   scheduleError: string | null
   /** When each built behaviour was completed (BEH-BOARD-4): an ISO time, or null when built ahead of git. */
   completed: Map<string, string | null>
+  /** When each behaviour was added (BEH-BOARD-12): an ISO time, or null when no commit holds it yet. */
+  added: Map<string, string | null>
   /** Why there is no history: Done shows this project's cards after the dated ones, in corpus order. */
   historyMissing: string | null
 }
@@ -44,6 +47,7 @@ async function loadBoard(): Promise<Entry[]> {
         places: new Map<string, Place>(),
         scheduleError: null,
         completed: new Map<string, string | null>(),
+        added: new Map<string, string | null>(),
         historyMissing: null,
       }
       if (summary.error) return { ...empty, error: summary.error }
@@ -58,12 +62,14 @@ async function loadBoard(): Promise<Entry[]> {
         schedule.value.scheduled.forEach((s, order) => places.set(s.id, { order, next: s.next }))
       }
       const completed = new Map<string, string | null>()
+      const added = new Map<string, string | null>()
       let historyMissing: string | null
       if (history.status === 'rejected') historyMissing = messageOf(history.reason)
       else if (history.value.history !== 'git') historyMissing = history.value.reason ?? 'no history'
       else {
         historyMissing = null
         history.value.completed.forEach((c) => completed.set(c.id, c.at))
+        history.value.added.forEach((c) => added.set(c.id, c.at))
       }
       return {
         summary,
@@ -72,6 +78,7 @@ async function loadBoard(): Promise<Entry[]> {
         error: null,
         scheduleError: schedule.status === 'rejected' ? messageOf(schedule.reason) : null,
         completed,
+        added,
         historyMissing,
       }
     }),
@@ -197,7 +204,8 @@ export default function Board() {
                 {COLUMNS.map((col) => {
                   // Scheduled reads in schedule order within each file; Done most recently completed
                   // first, across files (BEH-BOARD-4); Review requested, Proposed and Backlog by priority,
-                  // across files (BEH-BOARD-5/6); in progress in corpus order.
+                  // across files (BEH-BOARD-5/6), newest first within a priority (BEH-BOARD-12); in
+                  // progress in corpus order.
                   let cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
@@ -206,7 +214,7 @@ export default function Board() {
                         app: e.summary.app,
                         project: projectOf(e.summary),
                         b,
-                        at: e.historyMissing === null ? e.completed.get(b.id) : undefined,
+                        at: e.historyMissing === null ? (col.id === 'done' ? e.completed : e.added).get(b.id) : undefined,
                       })),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
@@ -337,9 +345,11 @@ function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) 
         id={`${id}-text`}
         className="note-text"
         placeholder="e.g. the board remembers the filter I last used"
+        aria-describedby={`${id}-published`}
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
+      <PublishedHint id={`${id}-published`} />
       <label htmlFor={`${id}-project`}>Project</label>
       <select
         id={`${id}-project`}

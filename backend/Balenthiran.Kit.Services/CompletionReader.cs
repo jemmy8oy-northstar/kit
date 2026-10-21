@@ -25,20 +25,22 @@ public sealed class CompletionReader(ICorpusDirectory corpora, ICorpusHistory hi
         var log = history.Log(file);
         if (log.Reason is { } reason)
         {
-            return new CompletionList { App = app, File = corpora.RelativePath(app), History = "none", Reason = reason, Completed = [] };
+            return new CompletionList { App = app, File = corpora.RelativePath(app), History = "none", Reason = reason, Completed = [], Added = [] };
         }
 
         var versions = log.Commits
             .Select(c => (ICorpusVersion)new CorpusVersion { At = c.At, Pending = Version(file, c.Commit) })
             .ToList();
 
+        var current = Completions.Scan(corpora.ReadText(app));
         return new CompletionList
         {
             App = app,
             File = corpora.RelativePath(app),
             History = "git",
             Reason = null,
-            Completed = Completions.Of(Completions.Scan(corpora.ReadText(app)), versions),
+            Completed = Completions.Of(current, versions),
+            Added = Completions.Added(current, versions),
         };
     }
 
