@@ -44,6 +44,9 @@
   "BEH-BOARD-12": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the most recently added first within one priority, but never above a higher one (BEH-BOARD-12)" }
   ],
+  "BEH-BOARD-14": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "starts each run of a ranked column with a heading that counts it, so the order can be read (BEH-BOARD-14)" }
+  ],
   "BEH-BOARD-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }

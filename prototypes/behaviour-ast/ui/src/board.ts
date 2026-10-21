@@ -126,6 +126,24 @@ export function questionsFirst<T extends { b: { review: { state: string; note?: 
 }
 
 /**
+ * BEH-BOARD-14 (his 2026-10-21 15:47Z note: "Current state i cannot identify the order"): the run a
+ * ranked card sits in, in the order {@link rungFirst} and {@link questionsFirst} put them, so a
+ * heading can start each run.
+ */
+export function tierOf(c: { rung: boolean; b: { priority?: number; review: { state: string; note?: string | null } } }): string {
+  if (c.rung) return '🔔 Rung'
+  if (isQuestion(c.b)) return '❓ Questions'
+  return c.b.priority === undefined ? 'Unscored' : `Priority ${c.b.priority}`
+}
+
+/** How many cards each run holds, keyed by {@link tierOf}: a heading counts its whole run, shown or not. */
+export function tierCounts<T extends Parameters<typeof tierOf>[0]>(cards: T[]): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const c of cards) out.set(tierOf(c), (out.get(tierOf(c)) ?? 0) + 1)
+  return out
+}
+
+/**
  * Whether a behaviour is rung (BEH-BELL-1): its own bell, or the bell of a feature it is in, so ringing
  * a feature lifts the cards that build it. `bells` holds the item ids of a file's unanswered bells.
  */

@@ -10,7 +10,7 @@ import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, projectOf, questionsFirst, RANKED, rungFirst, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -235,6 +235,8 @@ export default function Board() {
                   // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
                   const limit = limits[col.id] ?? CAP
                   const hidden = Math.max(0, cards.length - limit)
+                  // A heading starts each run of a ranked column (BEH-BOARD-14), so the order can be read.
+                  const tiers = RANKED.includes(col.id) ? tierCounts(cards) : null
                   return (
                     <section key={col.id} aria-labelledby={`board-${col.id}`}>
                       <h2>
@@ -247,7 +249,14 @@ export default function Board() {
                         </p>
                       )}
                       <ul className="cards">
-                        {cards.slice(0, limit).map(({ app, project, b, rung }) => (
+                        {cards.slice(0, limit).flatMap(({ app, project, b, rung }, i) => [
+                          ...(tiers && (i === 0 || tierOf(cards[i - 1]) !== tierOf(cards[i]))
+                            ? [
+                                <li key={`tier/${tierOf(cards[i])}`} className="board-tier" role="none">
+                                  {tierOf(cards[i])} <span className="board-count">{tiers.get(tierOf(cards[i]))}</span>
+                                </li>,
+                              ]
+                            : []),
                           <li key={`${app}/${b.id}`}>
                             <Card className={`board-card hue-${hueOf(project)}`}>
                               <h3>
@@ -272,8 +281,8 @@ export default function Board() {
                               </div>
                               <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
                             </Card>
-                          </li>
-                        ))}
+                          </li>,
+                        ])}
                       </ul>
                       {hidden > 0 && (
                         <Button
