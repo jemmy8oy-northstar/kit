@@ -70,6 +70,13 @@ describe('NotesPanel (kit#118)', () => {
     expect(screen.getByText((_, el) => el?.textContent === 'line one\nline two' && el.tagName === 'P')).toBeInTheDocument()
   })
 
+  it('says, at the box, that a note is published before anything is sent (BEH-GATE-H2)', async () => {
+    server()
+    render(<NotesPanel app="demo" />)
+    const box = await screen.findByLabelText('Leave a note')
+    expect(box).toHaveAccessibleDescription(/^Public: .*anyone can read/)
+  })
+
   it('will not send an empty note', async () => {
     const posts = server()
     render(<NotesPanel app="demo" />)
