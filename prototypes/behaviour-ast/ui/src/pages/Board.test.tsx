@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import Board from './Board'
 import App from '../App'
-import { byCompletion, byPriority, columnOf, hueOf, HUES } from '../board'
+import { byCompletion, byPriority, columnOf, hueOf, HUES, isQuestion } from '../board'
 import type { Behaviour, CompletionList } from '../api/types'
 
 // Hand-built, not the generated fixtures: the board's rules are about the shape
@@ -487,6 +487,36 @@ describe('Board', () => {
     } finally {
       details.beta.splice(-2)
     }
+  })
+
+  it('puts questions from the agent above requests that only want a look, whatever their priority (BEH-BOARD-11)', async () => {
+    details.beta.push(
+      beh('B-LOOK-P1', { priority: 1, review: { state: 'requested', note: 'the sort on a phone' } }),
+      beh('B-ASK-P3', { priority: 3, review: { state: 'requested', note: 'Centre or top by default? ' } }),
+      // A question mark mid-note is not a question to him.
+      beh('B-LOOK-MARK', { priority: 2, review: { state: 'requested', note: 'the "why?" tooltip' } }),
+    )
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Review requested').findByText('B-ASK-P3')
+
+      const items = column('Review requested').getAllByRole('listitem')
+      expect(items.map((li) => li.querySelector('.id')!.textContent)).toEqual(['B-ASK-P3', 'B-LOOK-P1', 'B-LOOK-MARK'])
+      expect(within(items[0]).getByText(/question/)).toBeInTheDocument()
+      expect(within(items[0]).getByText('Centre or top by default?')).toBeInTheDocument()
+      expect(within(items[1]).queryByText(/question/)).toBeNull()
+      expect(within(items[2]).queryByText(/question/)).toBeNull()
+    } finally {
+      details.beta.splice(-3)
+    }
+  })
+
+  it('CONTROL: a question mark on a card that is not a review request makes it no question (BEH-BOARD-11)', () => {
+    expect(isQuestion(beh('X', { pending: true, review: { state: 'unreviewed', note: 'is this right?' } }))).toBe(false)
+    expect(isQuestion(beh('X', { review: { state: 'denied', note: 'why?' } }))).toBe(false)
+    expect(isQuestion(beh('X', { review: { state: 'requested', note: 'which one?' } }))).toBe(true)
   })
 
   it('orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)', async () => {

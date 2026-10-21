@@ -10,7 +10,7 @@ import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isRung, isTrial, LAYERS, projectOf, RANKED, rungFirst, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, projectOf, questionsFirst, RANKED, rungFirst, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -228,8 +228,9 @@ export default function Board() {
                       })),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
-                  // Rung cards above every priority (BEH-BELL-3), until the agent answers the bell.
-                  if (RANKED.includes(col.id)) cards = rungFirst(byPriorityAcrossProjects(cards))
+                  // Rung cards above every priority (BEH-BELL-3), until the agent answers the bell; then the
+                  // agent's questions above requests that only want a look (BEH-BOARD-11).
+                  if (RANKED.includes(col.id)) cards = rungFirst(questionsFirst(byPriorityAcrossProjects(cards)))
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
                   // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
                   const limit = limits[col.id] ?? CAP
@@ -263,6 +264,7 @@ export default function Board() {
                               )}
                               <div className="badges">
                                 {rung && <Badge tone="warning">🔔 rung</Badge>}
+                                {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
                                 {b.priority !== undefined && (
                                   <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
                                 )}
