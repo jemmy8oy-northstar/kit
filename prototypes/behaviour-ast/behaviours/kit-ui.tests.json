@@ -99,6 +99,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "hides archived notes again, and counts them on the button (BEH-NOTE-11)" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" }
   ],
+  "BEH-NOTE-12": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "leaves a note on the project of the page it was opened from, and tells the page's notes to re-read" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "tags the note with the behaviour on a behaviour's page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "asks which project on a page that has none, and sends nothing until one is chosen" }
+  ],
   "BEH-NOTE-9": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows ten, and a button that says how many more it shows and how many are hidden" }

@@ -7,6 +7,7 @@ import type { Note } from '../api/types'
 import { CAP } from '../board'
 import { foldedBy, type Citation } from '../notes'
 import Count from './Count'
+import { NOTE_WRITTEN } from './NoteFab'
 import PublishedHint from './PublishedHint'
 import ResourceView from './Resource'
 import { useWrite } from './useWrite'
@@ -52,6 +53,11 @@ export default function NotesPanel({
   const { resource, reload } = useReloadableResource(() => fetchNotes(app), [app, version])
   const [text, setText] = useState('')
   const { write, run } = useWrite(reload)
+  // A note left from the floating button (BEH-NOTE-12) shows here without a reload.
+  useEffect(() => {
+    window.addEventListener(NOTE_WRITTEN, reload)
+    return () => window.removeEventListener(NOTE_WRITTEN, reload)
+  }, [reload])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
