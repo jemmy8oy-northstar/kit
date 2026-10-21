@@ -979,6 +979,7 @@ feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
 behaviour BEH-USERS-1 "A new user signs up with their GitHub account and installs Kit's GitHub App in one flow"
   in FEAT-USER-SIGNUP
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
@@ -993,6 +994,7 @@ feature FEAT-USER-REPOS "A user's projects live in their own repos"
 behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
@@ -1017,6 +1019,7 @@ feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
 behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and remembers per user"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
@@ -1057,6 +1060,7 @@ feature FEAT-USER-BILLING "Usage, cost and payment"
 behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pays for them"
   in FEAT-USER-BILLING
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
@@ -1071,6 +1075,7 @@ feature FEAT-USER-ISOLATION "One user never reaches another's work"
 behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, whatever the URL"
   in FEAT-USER-ISOLATION
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
@@ -1138,12 +1143,12 @@ behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
   source inferred kit.notes.md#2026-10-19-1933
   review approved
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract "Maybe from anywhere there is a floating action button which can add a note"
   contract my assumption: the note lands on the project of the page it was added from, or asks which project when there is none
+  contract my assumption: the button sits bottom right on every page and opens a small box above it; on a behaviour's page the note is tagged with that behaviour, as the page's own note box does
 
 # His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
 # easily [see] what has happened recently".

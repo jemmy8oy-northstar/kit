@@ -10,6 +10,7 @@ import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import SignIn from './components/SignIn'
+import NoteFab from './components/NoteFab'
 import { BoardNavLink } from './components/BoardViews'
 import { IDEAS } from './board'
 
@@ -83,6 +84,8 @@ export default function App() {
               <Route path="/projects/:app/epics/:id" element={<EpicPage />} />
             </Routes>
           </main>
+          {/* BEH-NOTE-12: a note from any page. Inside the router, because it reads the URL for its project. */}
+          <NoteFab />
         </div>
       </Router>
     </SignIn>
