@@ -346,6 +346,22 @@ public class ContainerTests
 
     private sealed record Ran(int Status, string Stdout, string Stderr, Dictionary<string, string> Out);
 
+    // The race behind two CI flakes, held open on purpose: a writer another process still has
+    // on the stub. Without the probe, Executable returns at once and the stub cannot be exec'd.
+    [Fact]
+    public void A_stub_is_only_handed_over_once_the_kernel_will_run_it()
+    {
+        var path = Path.Combine(Directory.CreateTempSubdirectory("kit-stub-").FullName, "stub");
+        File.WriteAllText(path, "");
+        var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+        var released = Task.Delay(300).ContinueWith(_ => writer.Dispose());
+        var clock = Stopwatch.StartNew();
+        Executable(path, "#!/bin/sh", "echo STUB");
+        Assert.True(clock.ElapsedMilliseconds >= 250, $"handed over after {clock.ElapsedMilliseconds} ms, while a writer held it");
+        released.Wait();
+        Assert.Equal("STUB", Run(path, [], new()).Stdout.Trim());
+    }
+
     private static Ran StartKit(Dictionary<string, string> env, string prependPath = "")
     {
         var bin = Directory.CreateTempSubdirectory("kit-bin-").FullName;
@@ -389,10 +405,33 @@ public class ContainerTests
         return new Ran(p.ExitCode, stdout, stderr.Result, outMap);
     }
 
+    // A stub written here can be exec'd before the kernel will run it. xUnit runs classes in
+    // parallel, so another test can fork while this file is open for writing; the child holds
+    // the write handle until it execs, and an exec in that window fails with ETXTBSY. dash does
+    // not report that: it tries the NEXT directory on PATH, so the real dotnet (or git) runs in
+    // the stub's place, and a test fails on output it never asked for ("Invalid url: 'x'",
+    // kit CI 2026-10-16 and 2026-10-21). So the stub is exec'd directly, by path, until the
+    // kernel accepts it: a direct exec has no PATH to fall through to, and throws instead.
     private static void Executable(string path, params string[] lines)
     {
-        File.WriteAllText(path, string.Join('\n', lines));
+        if (!lines[0].StartsWith("#!")) throw new ArgumentException("a stub starts with its shebang", nameof(lines));
+        string[] probed = [lines[0], "[ \"${1-}\" = --exec-probe ] && exit 0", .. lines[1..]];
+        File.WriteAllText(path, string.Join('\n', probed));
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var p = Process.Start(new ProcessStartInfo(path, "--exec-probe") { RedirectStandardOutput = true, RedirectStandardError = true })!;
+                p.WaitForExit();
+                if (p.ExitCode != 0) throw new InvalidOperationException($"stub {path} failed its probe: exit {p.ExitCode}");
+                return;
+            }
+            catch (System.ComponentModel.Win32Exception) when (attempt < 100)
+            {
+                Thread.Sleep(10);
+            }
+        }
     }
 
     private static GitStore.Call Git(params string[] args) => GitStore.Git(args, RepoLayout.Root);
