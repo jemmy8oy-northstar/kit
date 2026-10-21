@@ -958,6 +958,7 @@ feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
 behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and remembers per user"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
