@@ -222,7 +222,7 @@ behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take
   contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
   contract on a phone without that camera the choice is hidden, not shown disabled
   contract the script stays at the top of the upright screen, nearest the lens, in both shapes
-  contract blocked on snip-it#55: its API is iOS 26 only, and the PR compile check ran Xcode 16.4 until that workflow change, which is James's to merge
+  contract its API is iOS 26 only; the PR compile check runs Xcode 26 since snip-it#55, so it is buildable now
 
 behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
   in FEAT-TELEPROMPTER
@@ -230,10 +230,10 @@ behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from eve
   source defined snip-it.notes.md#2026-10-20-2243
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "maybe we need a ios release branch": Codemagic builds pushes to ios-release that change ios/; dev keeps the unsigned compile check only
   contract a Codemagic change is a platform change (claude-code-bot#83), so it goes up as its own pull request for James to merge
+  contract built in snip-it#53; the agent releases, fast-forwarding ios-release when a complete iOS feature is on dev (James on snip-it#53, 2026-10-20)
 
 # ── the teleprompter, second round (snip-it.notes.md, 2026-10-20 23:52Z to 10-21 00:01Z) ──
 
@@ -268,7 +268,6 @@ behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New 
   source defined snip-it.notes.md#2026-10-21-0001
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "enter and click new production or select an existing one": the first screen lists productions, newest first, and New production asks for a name
   contract "production", not "video", because "videos might get confused with takes": a production is one script plus every take recorded against it
@@ -285,7 +284,6 @@ behaviour BEH-SCRIPT-1 "A script is split into sections by markdown-style marker
   source defined snip-it.notes.md#2026-10-21-0003
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "use a simple # for names or —- for unnamed break": a line starting # begins a named section, and a line of --- (or an em dash and a hyphen) begins an unnamed one
   contract "they should be able to teleprompt seamlessly": marker lines are never shown or listened for in the prompter, so a take runs across sections without a pause
@@ -298,7 +296,6 @@ behaviour BEH-SCRIPT-2 "Script sections fold one at a time, or all at once"
   source defined snip-it.notes.md#2026-10-21-0003
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "fold script sections or have an option to fold all sections": each section has a disclosure arrow, and the toolbar has Fold all and Unfold all
   contract a folded section shows its name, or "Untitled section", and its line count
@@ -309,7 +306,6 @@ behaviour BEH-SCRIPT-3 "Sections can be rearranged, cleared and deleted, and eve
   source defined snip-it.notes.md#2026-10-21-0005
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "section management where u can rearrange sections": a Manage sections screen lists them and reorders by dragging
   contract "a clear section button": clearing empties a section's lines and keeps its name; deleting removes the section and its marker
@@ -322,7 +318,6 @@ behaviour BEH-SCRIPT-4 "The script shows which lines a production's takes have c
   source defined snip-it.notes.md#2026-10-21-0002
   review unreviewed
   priority 3
-  pending
   actor creator
   contract "show from a script what text has been covered by what cuts": each take records the script lines the prompter followed while it was recording
   contract the script marks each covered line with how many takes covered it, and a take's row says which lines it covers
