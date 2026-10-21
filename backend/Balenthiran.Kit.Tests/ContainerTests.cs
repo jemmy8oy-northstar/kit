@@ -354,11 +354,18 @@ public class ContainerTests
         var path = Path.Combine(Directory.CreateTempSubdirectory("kit-stub-").FullName, "stub");
         File.WriteAllText(path, "");
         var writer = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
-        var released = Task.Delay(300).ContinueWith(_ => writer.Dispose());
+        // Its own thread, not a pool continuation: the parallel suite blocks pool threads in
+        // WaitForExit, and a starved pool released this writer after the probe gave up (kit#370 CI).
+        var released = new Thread(() =>
+        {
+            Thread.Sleep(300);
+            writer.Dispose();
+        });
+        released.Start();
         var clock = Stopwatch.StartNew();
         Executable(path, "#!/bin/sh", "echo STUB");
         Assert.True(clock.ElapsedMilliseconds >= 250, $"handed over after {clock.ElapsedMilliseconds} ms, while a writer held it");
-        released.Wait();
+        released.Join();
         Assert.Equal("STUB", Run(path, [], new()).Stdout.Trim());
     }
 
@@ -418,7 +425,10 @@ public class ContainerTests
         string[] probed = [lines[0], "[ \"${1-}\" = --exec-probe ] && exit 0", .. lines[1..]];
         File.WriteAllText(path, string.Join('\n', probed));
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        for (var attempt = 1; ; attempt++)
+        // A time budget, not a count of attempts: on a loaded runner each failed spawn is slow, and
+        // 100 of them ran out in about a second (kit#370 CI). Ten seconds is far past any real window.
+        var budget = Stopwatch.StartNew();
+        while (true)
         {
             try
             {
@@ -427,7 +437,7 @@ public class ContainerTests
                 if (p.ExitCode != 0) throw new InvalidOperationException($"stub {path} failed its probe: exit {p.ExitCode}");
                 return;
             }
-            catch (System.ComponentModel.Win32Exception) when (attempt < 100)
+            catch (System.ComponentModel.Win32Exception) when (budget.Elapsed < TimeSpan.FromSeconds(10))
             {
                 Thread.Sleep(10);
             }
