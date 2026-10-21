@@ -157,3 +157,7 @@ Maybe a chronological feed which shows recent actions so i can easily what has h
 ## 2026-10-21 00:08Z · new behaviour
 
 Ai works through backlog top priority first. Ai is able to assign a priority score to help with this. But atm we get starvation where kit just prioritises new work. I think by default new work comes in as low priority but I guess score can override. I guess maybe we order by (score, most recent). Then when the dev bells an item kit might choose to change priority of it.
+
+## 2026-10-21 06:50Z · new behaviour
+
+Bell the bell feature. Cna u make this higher priority
