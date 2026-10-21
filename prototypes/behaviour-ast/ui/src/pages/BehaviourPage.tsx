@@ -190,7 +190,7 @@ function StepsEditor({
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="ghost"
                     onClick={() => {
                       setEditing(null)
                       reset()
@@ -204,7 +204,7 @@ function StepsEditor({
             ) : (
               <>
                 <StepLine step={s} />{' '}
-                <Button type="button" variant="secondary" onClick={() => open(i)} aria-label={`Edit step ${i + 1}`}>
+                <Button type="button" variant="ghost" onClick={() => open(i)} aria-label={`Edit step ${i + 1}`}>
                   Edit
                 </Button>
               </>
@@ -254,7 +254,7 @@ function TitleEditor({
       {draft === null ? (
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           onClick={() => {
             setDraft(behaviour.title)
             reset()
@@ -277,7 +277,7 @@ function TitleEditor({
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="ghost"
               onClick={() => {
                 setDraft(null)
                 reset()
@@ -343,7 +343,7 @@ function RemoveForm({
           <Button type="button" variant="danger" onClick={remove} disabled={saving}>
             {saving ? 'Removing…' : `Remove ${id} for good`}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={saving}>
+          <Button type="button" variant="ghost" onClick={() => setConfirming(false)} disabled={saving}>
             Keep it
           </Button>
         </div>

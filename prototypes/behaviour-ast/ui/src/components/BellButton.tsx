@@ -21,7 +21,7 @@ export default function BellButton({ app, item }: { app: string; item: string })
     <div className="write bell">
       <Button
         type="button"
-        variant="secondary"
+        variant="ghost"
         size="sm"
         disabled={resource.state !== 'ready' || rung || saving}
         onClick={() => run(() => ringBell(app, item))}
