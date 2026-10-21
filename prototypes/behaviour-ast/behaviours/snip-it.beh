@@ -275,3 +275,55 @@ behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New 
   contract opening a production shows its script and its takes, and only that production's takes
   contract the script and takes already on the phone become one production, named "My first production", so nothing is lost
   contract a production can be renamed, and deleted with its takes after a confirmation
+
+feature FEAT-SCRIPT "The script as a plan: sections that fold, move and clear, and a record of which takes covered which lines"
+
+behaviour BEH-SCRIPT-1 "A script is split into sections by markdown-style markers, and the prompter reads straight through them"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "use a simple # for names or —- for unnamed break": a line starting # begins a named section, and a line of --- (or an em dash and a hyphen) begins an unnamed one
+  contract "they should be able to teleprompt seamlessly": marker lines are never shown or listened for in the prompter, so a take runs across sections without a pause
+  contract text before the first marker is a section of its own, unnamed
+  contract the script is still stored as plain text, so pasting a whole script in keeps working
+
+behaviour BEH-SCRIPT-2 "Script sections fold one at a time, or all at once"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "fold script sections or have an option to fold all sections": each section has a disclosure arrow, and the toolbar has Fold all and Unfold all
+  contract a folded section shows its name, or "Untitled section", and its line count
+
+behaviour BEH-SCRIPT-3 "Sections can be rearranged, cleared and deleted, and every delete asks first"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0005
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "section management where u can rearrange sections": a Manage sections screen lists them and reorders by dragging
+  contract "a clear section button": clearing empties a section's lines and keeps its name; deleting removes the section and its marker
+  contract "a delete all sections button" sits in Manage sections, and "all delete buttons should have confirmation": clear, delete and delete all each confirm first
+
+behaviour BEH-SCRIPT-4 "The script shows which lines a production's takes have covered"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0002
+  review unreviewed
+  priority 3
+  pending
+  actor creator
+  contract "show from a script what text has been covered by what cuts": each take records the script lines the prompter followed while it was recording
+  contract the script marks each covered line with how many takes covered it, and a take's row says which lines it covers
+  contract coverage is by line, not by word: a take covers the lines the prompter was on between Record and Stop, whether it got there by hearing or by a tap
