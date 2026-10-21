@@ -8,12 +8,19 @@
 # `contract` steps are the honest part: they are assertions the tree CANNOT
 # express, kept in so the coverage number is not flattered by omitting them.
 
+# ── features (snip-it.notes.md#2026-10-20-2242: "snip it needs feature organisation") ──
+# The grouping is the agent's reading of that note: deny it if it is the wrong cut.
+feature FEAT-EDITOR "The web editor: upload a take, transcribe it, cut words and pauses, export"
+feature FEAT-TELEPROMPTER "The iPhone teleprompter app: read the script, record the take, send it to snip-it"
+
 behaviour BEH-HOME-1 "The landing page renders"
+  in FEAT-EDITOR
   actor visitor
   when opens page:Home
   then sees region:Main
 
 behaviour BEH-EDIT-1 "The editor loads a transcript and offers its toolbar"
+  in FEAT-EDITOR
   actor visitor
   given transcription:Completed
   when opens page:TranscriptEditor
@@ -23,6 +30,7 @@ behaviour BEH-EDIT-1 "The editor loads a transcript and offers its toolbar"
   then shows region:WordTrack "transcribe"
 
 behaviour BEH-EDIT-2 "The editor can be switched to dark mode"
+  in FEAT-EDITOR
   actor visitor
   given transcription:Completed
   when opens page:TranscriptEditor
@@ -30,6 +38,7 @@ behaviour BEH-EDIT-2 "The editor can be switched to dark mode"
   when activates button:ToggleTheme
 
 behaviour BEH-CUT-1 "Sending for export submits a cut and surfaces the finished job"
+  in FEAT-EDITOR
   actor visitor
   given transcription:Completed
   when opens page:TranscriptEditor
@@ -43,6 +52,7 @@ behaviour BEH-CUT-1 "Sending for export submits a cut and surfaces the finished 
   contract at least one word is marked not kept
 
 behaviour BEH-UP-1 "Uploading a file transcribes it and opens the editor"
+  in FEAT-EDITOR
   actor visitor
   when opens page:Upload
   then sees heading:TranscribeAVideo
@@ -54,6 +64,7 @@ behaviour BEH-UP-1 "Uploading a file transcribes it and opens the editor"
   contract the request path is /snipit/api/transcriptions
 
 behaviour BEH-FILL-1 "Removing filler words leaves the editor interactive"
+  in FEAT-EDITOR
   actor visitor
   given transcription:Completed
   when opens page:TranscriptEditor
@@ -68,6 +79,7 @@ behaviour BEH-FILL-1 "Removing filler words leaves the editor interactive"
 # field name below is the real one from editor.spec.ts (`getByLabel(...)`).
 
 behaviour BEH-UP-2 "The upload form takes a single video or audio file"
+  in FEAT-EDITOR
   actor visitor
   when opens page:Upload
   when attaches file:talk_mp4 to field:VideoOrAudioFile
@@ -77,6 +89,7 @@ behaviour BEH-UP-2 "The upload form takes a single video or audio file"
 # to emit `./editor/` rather than quietly produce a test that navigates nowhere.
 # Supplying it is the same mechanism as any other unknown — one symbol table.
 behaviour BEH-EDIT-0 "The editor addresses one transcription by id"
+  in FEAT-EDITOR
   actor visitor
   provides page:TranscriptEditor.transcriptionId = 11111111-1111-1111-1111-111111111111
 
@@ -121,6 +134,7 @@ behaviour BEH-PIPE-3 "A creator writes a video's script on its card, and the car
 
 behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words are written once"
   in FEAT-PIPELINE
+  in FEAT-TELEPROMPTER
   layer technical
   source inferred claude-code-bot#114
   review unreviewed
@@ -149,3 +163,161 @@ behaviour BEH-PIPE-6 "A creator marks a video Published with its link, so the bo
   priority 3
   actor creator
   contract publishing stays manual (a pasted YouTube link); posting to YouTube for him is out of scope
+
+# ── the teleprompter app (snip-it.notes.md, 2026-10-20 22:43–22:45Z) ──
+# James, on the first TestFlight build: "it looks incredible as a tele prompter but
+# currently the speach models arent loading". Every behaviour below is from those
+# notes; the contracts are the agent's reading of them, unreviewed.
+
+behaviour BEH-TELE-1 "Speech models are managed in Settings: listed, downloaded with progress, and deleted"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 1
+  actor creator
+  contract "model management in settings rather than it just trying to download when you hit prompt": the prompter never starts a download
+  contract each model shows its state: not downloaded, downloading with a percentage, preparing, ready, or failed with the reason
+  contract the list is the English models (tiny, base, small) that WhisperKit says this iPhone can run
+  contract a ready model can be deleted to free space, and the chosen model is the one the prompter uses
+
+behaviour BEH-TELE-2 "When the speech model cannot load, the prompter says why and still works by hand"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 1
+  actor creator
+  contract "some errors messages when this happens": the message names the step that failed (download, preparing, listening) and carries the engine's own reason
+  contract with no model downloaded, the prompter points to Settings instead of downloading
+  contract recording and tapping a line to move on keep working without speech
+
+behaviour BEH-TELE-3 "A take can be watched in the app"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2245
+  review unreviewed
+  priority 2
+  actor creator
+  contract "in app video viewing": tapping a take plays it full screen with the system player, original or cut
+
+behaviour BEH-TELE-4 "The prompter has camera controls: zoom, tap to focus and expose, front or back camera"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2244
+  review unreviewed
+  priority 2
+  actor creator
+  contract "I would like some camera controls": which controls is the agent's guess; he can add or drop any
+  contract built in snip-it#56: a switch-camera button (not while recording), pinch to zoom up to 5x, tap the preview to focus and expose
+
+behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take while the phone is held upright"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2244
+  review unreviewed
+  priority 2
+  actor creator
+  contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
+  contract on a phone without that camera the choice is hidden, not shown disabled
+  contract the script stays at the top of the upright screen, nearest the lens, in both shapes
+  contract built in snip-it#62: a shape button above switch-camera; it measures the buffer after setting the ratio and says on screen if neither ratio gives landscape. Unverified on a real iPhone 17
+
+behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
+  in FEAT-TELEPROMPTER
+  layer technical
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 2
+  actor creator
+  contract "maybe we need a ios release branch": Codemagic builds pushes to ios-release that change ios/; dev keeps the unsigned compile check only
+  contract a Codemagic change is a platform change (claude-code-bot#83), so it goes up as its own pull request for James to merge
+  contract built in snip-it#53; the agent releases, fast-forwarding ios-release when a complete iOS feature is on dev (James on snip-it#53, 2026-10-20)
+
+# ── the teleprompter, second round (snip-it.notes.md, 2026-10-20 23:52Z to 10-21 00:01Z) ──
+
+behaviour BEH-TELE-7 "The script moves on by itself as the creator reads it aloud"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2352
+  review unreviewed
+  priority 1
+  actor creator
+  contract "the teleprompter should auto progress as the user speaks": the line in focus follows the words heard, with no tap
+  contract it only moves forward by itself, waits through pauses and ad-libs, and a tap on a line is the way back (ScriptFollower, snip-it#34)
+  contract built since snip-it#34; the 10-20 builds could not show it, because the speech model never loaded until snip-it#51
+
+behaviour BEH-TELE-8 "The prompter shows what it hears: words light up as they are spoken, and a meter shows the microphone"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2353
+  review unreviewed
+  priority 1
+  actor creator
+  contract "highlight words that it has heard being spoken in a take": on the current line, each word turns yellow once the follower has passed it
+  contract "I can['t] tell if it's hearing me at all": a level meter shows the microphone's loudness against the mark below which the speech engine ignores sound, with the last few words heard beneath it
+  contract the meter's colours and placement (above the record button) are the agent's guess
+
+feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
+
+behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New production at the top"
+  in FEAT-PRODUCTIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0001
+  review unreviewed
+  priority 2
+  actor creator
+  contract "enter and click new production or select an existing one": the first screen lists productions, newest first, and New production asks for a name
+  contract "production", not "video", because "videos might get confused with takes": a production is one script plus every take recorded against it
+  contract opening a production shows its script and its takes, and only that production's takes
+  contract the script and takes already on the phone become one production, named "My first production", so nothing is lost
+  contract a production can be renamed, and deleted with its takes after a confirmation
+
+feature FEAT-SCRIPT "The script as a plan: sections that fold, move and clear, and a record of which takes covered which lines"
+
+behaviour BEH-SCRIPT-1 "A script is split into sections by markdown-style markers, and the prompter reads straight through them"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  actor creator
+  contract "use a simple # for names or —- for unnamed break": a line starting # begins a named section, and a line of --- (or an em dash and a hyphen) begins an unnamed one
+  contract "they should be able to teleprompt seamlessly": marker lines are never shown or listened for in the prompter, so a take runs across sections without a pause
+  contract text before the first marker is a section of its own, unnamed
+  contract the script is still stored as plain text, so pasting a whole script in keeps working
+
+behaviour BEH-SCRIPT-2 "Script sections fold one at a time, or all at once"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  actor creator
+  contract "fold script sections or have an option to fold all sections": each section has a disclosure arrow, and the toolbar has Fold all and Unfold all
+  contract a folded section shows its name, or "Untitled section", and its line count
+
+behaviour BEH-SCRIPT-3 "Sections can be rearranged, cleared and deleted, and every delete asks first"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0005
+  review unreviewed
+  priority 2
+  actor creator
+  contract "section management where u can rearrange sections": a Manage sections screen lists them and reorders by dragging
+  contract "a clear section button": clearing empties a section's lines and keeps its name; deleting removes the section and its marker
+  contract "a delete all sections button" sits in Manage sections, and "all delete buttons should have confirmation": clear, delete and delete all each confirm first
+
+behaviour BEH-SCRIPT-4 "The script shows which lines a production's takes have covered"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0002
+  review unreviewed
+  priority 3
+  actor creator
+  contract "show from a script what text has been covered by what cuts": each take records the script lines the prompter followed while it was recording
+  contract the script marks each covered line with how many takes covered it, and a take's row says which lines it covers
+  contract coverage is by line, not by word: a take covers the lines the prompter was on between Record and Stop, whether it got there by hearing or by a tap
