@@ -43,3 +43,9 @@ Anyway would be good to enter and click new production or select an existing one
 ## 2026-10-21 00:02Z · new behaviour
 
 Would be good to show from a script what text has been covered by what cuts I don’t know whether this is too advanced
+
+## 2026-10-21 00:03Z · new behaviour
+
+Would be good to be able to fold script sections or have an option to fold all sections
+
+Maybe we can use a simple # for names or —- for unnamed break and borrow this from markdown to split sections in the script. They should be able to teleprompt seamlessly but good for planning
