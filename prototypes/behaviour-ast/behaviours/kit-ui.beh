@@ -190,6 +190,18 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 # nothing generates from it. It is an inbox the engineer empties into the spec.
 # Built in the same stack as this spec; the shape is his to change (kit#118, default 10-11).
 
+behaviour BEH-GATE-H2 "Every box that writes a note says it will be public, before it is sent"
+  in FEAT-NOTES
+  source inferred claude-code-bot#35
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitOpenNotes
+  contract reads are served to anyone by decision (BEH-GATE-H1), and a note is committed to a public repository, so the lock does not make a note private
+  contract one line under the note box, the ask-for-behaviour box on the project page, and the board's box; replies are not covered yet
+  contract my assumption: worded "Public: this is saved to Kit's GitHub repository, which anyone can read." He can deny the line or change the wording
+
 behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
   in FEAT-NOTES
   source defined kit#118
