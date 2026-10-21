@@ -77,3 +77,9 @@ For now this experience can be toggled in settings but later this can be configu
 Anyway for now it is configurable
 
 I guess whenever it is in premium/experimental mode for me I can always optionally toggle it off
+
+## 2026-10-21 16:49Z · new behaviour
+
+Base general release version: for now no api integration, fully on device
+
+App premium feature: integrates with kit, kit has a volume on which it takes can be saved to - not saved by default - kit can then operate on the videos on server with low friction.
