@@ -13,6 +13,7 @@ import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
 import PrinciplesList from '../components/PrinciplesList'
+import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
@@ -403,9 +404,11 @@ function AskForBehaviour({ app, onAsked }: { app: string; onAsked: () => void })
         id="ask-behaviour"
         className="note-text"
         placeholder="e.g. dragging a habit reorders the list, and it stays that way"
+        aria-describedby="ask-behaviour-published"
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
+      <PublishedHint id="ask-behaviour-published" />
       <Button type="submit" disabled={write.state === 'saving' || text.trim() === ''}>
         {write.state === 'saving' ? 'Sending…' : 'Ask for behaviour'}
       </Button>

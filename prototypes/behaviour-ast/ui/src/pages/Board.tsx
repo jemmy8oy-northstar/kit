@@ -6,6 +6,7 @@ import { useResource } from '../hooks/useResource'
 import type { Behaviour, ProjectSummary } from '../api/types'
 import BoardViews from '../components/BoardViews'
 import LayerChips from '../components/LayerChips'
+import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
@@ -344,9 +345,11 @@ function BoardAsk({ targets }: { targets: { project: string; app: string }[] }) 
         id={`${id}-text`}
         className="note-text"
         placeholder="e.g. the board remembers the filter I last used"
+        aria-describedby={`${id}-published`}
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
+      <PublishedHint id={`${id}-published`} />
       <label htmlFor={`${id}-project`}>Project</label>
       <select
         id={`${id}-project`}
