@@ -23,11 +23,17 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-ACCOUNT "Accounts (new for the web)"
+  stage ui
 feature FEAT-LOG "Logging activities and vices"
+  stage ui
 feature FEAT-BALANCE "The weekly balance"
+  stage ui
 feature FEAT-LEAGUE "Leagues and weekly settlement"
+  stage ui
 feature FEAT-ONBOARD "Onboarding"
+  stage ui
 feature FEAT-SETTINGS "Settings"
+  stage ui
 
 
 # ═══ DEFINED — earnyourbeers#1 ═══

@@ -71,17 +71,25 @@
 # SHOWN; it is not a dependency (that is `serves`).
 
 feature FEAT-NAV "Navbar"
+  stage development
 feature FEAT-PROJECTS "Project list"
+  stage ui
 feature FEAT-PROJECT "Project page"
+  stage development
 feature FEAT-BEHAVIOUR "Behaviour page"
+  stage ui
 feature FEAT-BOARD "Board"
+  stage development
 feature FEAT-FEATURE "Feature page"
+  stage ui
 
 feature FEAT-NOTES "Notes"
+  stage development
   in FEAT-PROJECT
   in FEAT-BEHAVIOUR
 
 feature FEAT-SCHEDULE "Schedule"
+  stage ui
   in FEAT-PROJECT
   in FEAT-BOARD
 
@@ -684,8 +692,9 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
 #
 # A feature's stage lives in the corpus as `stage <problem|ux|logic|development|ui>`
 # under its `feature` line: a corpus LANGUAGE change (claude-code-bot#58), which he
-# approved on BEH-STAGE-1 at 2026-10-19 13:39Z. Built: BEH-STAGE-1, -3 and -8. Still
-# pending: the agent's halves (BEH-STAGE-2's reading, -5, -6).
+# approved on BEH-STAGE-1 at 2026-10-19 13:39Z. Built: BEH-STAGE-1, -2, -3 and -8
+# (-2 on 2026-10-21: every feature in the real corpora got a stage line). Still
+# pending: the agent's other halves (-5, -6).
 
 feature FEAT-STAGES "Feature stages"
   stage development
@@ -708,8 +717,8 @@ behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from h
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   source defined kit.notes.md#2026-10-19-1616
+  review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
@@ -717,6 +726,9 @@ behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from h
   contract "the human can use it to quickly identify what work is left to be done": the board is for reading, and he never has to move a card
   contract every feature goes through the stages; a simple one just needs less written at each, and a one-line answer is enough
   contract the agent writes the stage line and moves it on when it rereads the feature; "rough" means a stage can lag the spec by a wake
+  contract my assumption: a feature with every behaviour built is at ui, since UI is the stage that stays open after development (BEH-STAGE-4); one with some built is at development
+  contract my assumption: a feature with nothing built is placed by reading it: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
+  contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -793,7 +805,7 @@ behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one
 # (BEH-EPIC-2): an epic is its own block, and features take it as a parent.
 
 feature FEAT-EPICS "Epics"
-  stage problem
+  stage development
 
 behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever features and behaviours it needs, at any depth"
   in FEAT-EPICS
@@ -1054,7 +1066,7 @@ behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
 # His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
 # easily [see] what has happened recently".
 feature FEAT-ACTIVITY "Recent activity"
-  stage development
+  stage ui
 
 behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest first"
   in FEAT-ACTIVITY
