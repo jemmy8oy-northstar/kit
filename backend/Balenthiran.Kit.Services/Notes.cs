@@ -17,9 +17,10 @@ namespace Balenthiran.Kit.Services;
 /// ## 2026-10-12 16:33Z · BEH-1               a note on a behaviour
 /// ## 2026-10-12 16:33Z · new behaviour       a behaviour asked for in prose (BEH-NOTE-4)
 /// ## 2026-10-12 16:33Z · resolve page:X.app  how a decision should go (BEH-NOTE-8)
+/// ## 2026-10-21 07:40Z · bell BEH-1          look at this item again (BEH-BELL-1); the text is optional
 /// </code>
 /// <para>
-/// The two kind words contain a space, which no behaviour id can, so neither can be mistaken for one.
+/// Every kind word holds a space, which no behaviour id can, so none can be mistaken for one.
 /// Under a note, whoever folds it may write <c>### Questions</c> and the engineer replies under
 /// <c>### Answer</c> (BEH-NOTE-5/6). Typed text has every <c>##</c> line escaped, <c>###</c>
 /// included, so prose can never forge a question or another note.
@@ -36,9 +37,11 @@ public static partial class Notes
     public const string NoteKind = "note";
     public const string RequestKind = "request";
     public const string ResolutionKind = "resolution";
+    public const string BellKind = "bell";
 
     private const string RequestTag = "new behaviour";
     private const string ResolveTag = "resolve ";
+    private const string BellTag = "bell ";
 
     /// <summary>The file's opening lines, written once, when the first note is left.</summary>
     public static string Header(string app) =>
@@ -59,6 +62,18 @@ public static partial class Notes
     /// <summary>How a decision on the question sheet should go (BEH-NOTE-8), tagged with its key.</summary>
     public static string AppendResolution(string? existing, string app, string text, string key, DateTimeOffset at) =>
         Tagged(existing, app, text, " · " + ResolveTag + key, at);
+
+    /// <summary>
+    /// A rung bell (BEH-BELL-1): <paramref name="item"/> wants the agent's attention again. It stays in
+    /// the file, and keeps the item at the top of its board column (BEH-BELL-3), until the agent
+    /// answers it, by changing the item's priority or saying why not (BEH-BELL-2), and deletes it.
+    /// </summary>
+    public static string AppendBell(string? existing, string app, string item, string text, DateTimeOffset at) =>
+        Tagged(existing, app, text, " · " + BellTag + item, at);
+
+    /// <summary>Whether <paramref name="item"/> already has a bell waiting: ringing it again adds nothing.</summary>
+    public static bool IsRung(string? existing, string item) =>
+        Parse(existing).Any(n => n.Kind == BellKind && n.Behaviour == item);
 
     private static string Tagged(string? existing, string app, string text, string? tag, DateTimeOffset at)
     {
@@ -147,7 +162,7 @@ public static partial class Notes
     private static Note Read(string[] lines, (int Start, int End) span)
     {
         var h = Heading().Match(lines[span.Start]);
-        var kind = h.Groups[2].Success ? RequestKind : h.Groups[3].Success ? ResolutionKind : NoteKind;
+        var kind = h.Groups[2].Success ? RequestKind : h.Groups[3].Success ? ResolutionKind : h.Groups[4].Success ? BellKind : NoteKind;
 
         var body = new List<string>();
         var thread = new List<NoteEntry>();
@@ -172,7 +187,8 @@ public static partial class Notes
         {
             At = h.Groups[1].Value,
             Kind = kind,
-            Behaviour = h.Groups[4].Success ? h.Groups[4].Value : null,
+            // A bell names its item in the same field a note on a behaviour does.
+            Behaviour = h.Groups[5].Success ? h.Groups[5].Value : h.Groups[4].Success ? h.Groups[4].Value : null,
             Resolves = h.Groups[3].Success ? h.Groups[3].Value : null,
             Text = opening,
             Thread = thread,
@@ -263,7 +279,7 @@ public static partial class Notes
 
     private static string[] Lines(string text) => text.TrimStart('﻿').Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
 
-    [GeneratedRegex(@"^## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z)(?: · (?:(new behaviour)|resolve (\S{1,200})|([A-Za-z0-9._-]+)))?$")]
+    [GeneratedRegex(@"^## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z)(?: · (?:(new behaviour)|resolve (\S{1,200})|bell ([A-Za-z0-9._-]{1,100})|([A-Za-z0-9._-]+)))?$")]
     private static partial Regex Heading();
 
     [GeneratedRegex(@"^### (Questions|Answer)(?: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z))?$")]

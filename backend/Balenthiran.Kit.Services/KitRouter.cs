@@ -537,29 +537,36 @@ public sealed class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
         }
 
-        var text = Str(body, "text")!;
-        if (TextError(text) is { } badText)
+        var kind = Str(body, "kind") ?? Notes.NoteKind;
+        var behaviour = Str(body, "behaviour");
+        var resolves = Str(body, "resolves");
+        if (kind is not (Notes.NoteKind or Notes.RequestKind or Notes.ResolutionKind or Notes.BellKind))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "kind must be note, request, resolution or bell" });
+        }
+
+        // A bell needs no words (BEH-BELL-1): ringing it is the whole message. Every other kind does.
+        var text = Str(body, "text") ?? "";
+        var bell = kind == Notes.BellKind;
+        if ((!bell || text.Length > 0) && TextError(text) is { } badText)
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = badText });
         }
 
-        var kind = Str(body, "kind") ?? Notes.NoteKind;
-        var behaviour = Str(body, "behaviour");
-        var resolves = Str(body, "resolves");
-        if (kind is not (Notes.NoteKind or Notes.RequestKind or Notes.ResolutionKind))
-        {
-            return Json(400, new ApiError { Error = "bad-request", Reason = "kind must be note, request or resolution" });
-        }
-
-        if (behaviour is not null && (kind != Notes.NoteKind || !Notes.IsBehaviourId(behaviour)))
+        if (behaviour is not null && (kind is not (Notes.NoteKind or Notes.BellKind) || !Notes.IsBehaviourId(behaviour)))
         {
             return Json(400, new ApiError
             {
                 Error = "bad-request",
-                Reason = kind != Notes.NoteKind
-                    ? "only a plain note can name a behaviour"
+                Reason = kind is not (Notes.NoteKind or Notes.BellKind)
+                    ? "only a plain note or a bell can name a behaviour"
                     : "behaviour must be an id such as BEH-1: letters, digits, '.', '_' and '-' only",
             });
+        }
+
+        if (bell && behaviour is null)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "a bell names the item it rings: behaviour must be its id" });
         }
 
         if ((kind == Notes.ResolutionKind) != (resolves is not null) || (resolves is not null && !Notes.IsQuestionKey(resolves)))
@@ -574,9 +581,16 @@ public sealed class KitRouter(
         }
 
         var existing = corpora.ReadNotesText(app);
+        if (bell && Notes.IsRung(existing, behaviour!))
+        {
+            // Ringing again before the agent answers adds nothing (BEH-BELL-1), so nothing is written.
+            return Json(409, new ApiError { Error = "already-rung", Reason = $"{behaviour}'s bell is already rung; the agent has not answered it yet" });
+        }
+
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var (written, summary) = kind switch
         {
+            Notes.BellKind => (Notes.AppendBell(existing, app, behaviour!, text, now), $"ring {behaviour}'s bell"),
             Notes.RequestKind => (Notes.AppendRequest(existing, app, text, now), "ask for a behaviour"),
             Notes.ResolutionKind => (Notes.AppendResolution(existing, app, text, resolves!, now), $"resolve {resolves}"),
             _ => (Notes.Append(existing, app, text, behaviour, now), behaviour is null ? "leave a note" : $"leave a note on {behaviour}"),
@@ -800,7 +814,7 @@ public sealed class KitRouter(
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
     private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
-    private static readonly (string Field, string Type)[] NoteFields = [("text", "string"), ("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
+    private static readonly (string Field, string Type)[] NoteFields = [("text", "string?"),("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
     private static readonly (string Field, string Type)[] ReplyFields = [("index", "int"), ("at", "string"), ("text", "string")];
     private static readonly (string Field, string Type)[] DismissFields = [("index", "int"), ("at", "string")];
     private static readonly (string Field, string Type)[] ScheduleFields = [("action", "string"), ("id", "string")];
