@@ -455,6 +455,11 @@ pre {
   margin: var(--space-3) 0;
 }
 
+/* The bell's explanation reads as a caption beside its button, not as the button's next word. */
+.bell .muted {
+  margin-left: var(--space-2);
+}
+
 .dot {
   display: inline-block;
   width: 0.7em;

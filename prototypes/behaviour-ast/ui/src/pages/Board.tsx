@@ -278,7 +278,7 @@ export default function Board() {
                       {hidden > 0 && (
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="ghost"
                           onClick={() => setLimits({ ...limits, [col.id]: limit + CAP })}
                         >
                           Show {Math.min(CAP, hidden)} more ({hidden} hidden)
