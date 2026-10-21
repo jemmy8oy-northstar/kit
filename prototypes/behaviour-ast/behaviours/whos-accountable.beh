@@ -22,10 +22,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-LEADERBOARD "Leaderboards of the worst offenders and the top do-gooders"
+  stage development
 feature FEAT-SCORING "The credibility score: a published formula over open data"
+  stage ui
 feature FEAT-DATA "Datasets and sourcing"
+  stage development
 feature FEAT-COMPANY "Company pages"
+  stage logic
 feature FEAT-BACKLOG "Later: other countries, individuals, sentiment"
+  stage problem
 
 
 # ═══ DEFINED — whos-accountable#1 ═══

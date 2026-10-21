@@ -11,7 +11,9 @@
 # ── features (snip-it.notes.md#2026-10-20-2242: "snip it needs feature organisation") ──
 # The grouping is the agent's reading of that note: deny it if it is the wrong cut.
 feature FEAT-EDITOR "The web editor: upload a take, transcribe it, cut words and pauses, export"
+  stage ui
 feature FEAT-TELEPROMPTER "The iPhone teleprompter app: read the script, record the take, send it to snip-it"
+  stage development
 
 behaviour BEH-HOME-1 "The landing page renders"
   in FEAT-EDITOR
@@ -100,6 +102,7 @@ behaviour BEH-EDIT-0 "The editor addresses one transcription by id"
 # unreviewed: a proposal for him to approve or deny in Kit, not a decision.
 
 feature FEAT-PIPELINE "The video pipeline: every video from idea to published, on one board"
+  stage development
 
 behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages: Idea, Scripted, Recorded, Cut, Published"
   in FEAT-PIPELINE
@@ -259,6 +262,7 @@ behaviour BEH-TELE-8 "The prompter shows what it hears: words light up as they a
   contract the meter's colours and placement (above the record button) are the agent's guess
 
 feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
+  stage ui
 
 behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New production at the top"
   in FEAT-PRODUCTIONS
@@ -275,6 +279,7 @@ behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New 
   contract a production can be renamed, and deleted with its takes after a confirmation
 
 feature FEAT-SCRIPT "The script as a plan: sections that fold, move and clear, and a record of which takes covered which lines"
+  stage ui
 
 behaviour BEH-SCRIPT-1 "A script is split into sections by markdown-style markers, and the prompter reads straight through them"
   in FEAT-SCRIPT

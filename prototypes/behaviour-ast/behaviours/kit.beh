@@ -68,12 +68,19 @@
 # where a behaviour is SHOWN; it is not a dependency (that is `serves`).
 
 feature FEAT-GATE "Gate"
+  stage ui
 feature FEAT-READER "Reader"
+  stage ui
 feature FEAT-PARSER "Parser"
+  stage ui
 feature FEAT-GENERATOR "Generator"
+  stage ui
 feature FEAT-RESOLVER "Resolver"
+  stage ui
 feature FEAT-SERVER "Local server"
+  stage ui
 feature FEAT-WRITER "Writer"
+  stage ui
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   in FEAT-GATE

@@ -104,9 +104,13 @@
 # The same reason as kit.beh's: on Kit's one page these read as features, not a file.
 
 feature FEAT-PULL "Reading from GitHub"
+  stage ui
 feature FEAT-EDIT "Editing from a phone"
+  stage ui
 feature FEAT-COMMIT "Commit"
+  stage ui
 feature FEAT-LOCK "Sign-in lock"
+  stage ui
 
 behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's working tree"
   in FEAT-PULL
