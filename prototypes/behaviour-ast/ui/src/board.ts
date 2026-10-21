@@ -112,6 +112,20 @@ export function rungFirst<T extends { rung: boolean }>(cards: T[]): T[] {
 }
 
 /**
+ * BEH-BOARD-11 (his 2026-10-19 17:25Z note: "questions should probably appear on the board as well"):
+ * a review request whose note ends in a question mark is the agent asking him something, not only
+ * asking for a look. The rule is the agent's assumption, unreviewed in the spec.
+ */
+export function isQuestion(b: { review: { state: string; note?: string | null } }): boolean {
+  return b.review.state === 'requested' && (b.review.note ?? '').trim().endsWith('?')
+}
+
+/** Questions above requests that only want a look (BEH-BOARD-11), each half keeping its order. */
+export function questionsFirst<T extends { b: { review: { state: string; note?: string | null } } }>(cards: T[]): T[] {
+  return [...cards.filter((c) => isQuestion(c.b)), ...cards.filter((c) => !isQuestion(c.b))]
+}
+
+/**
  * Whether a behaviour is rung (BEH-BELL-1): its own bell, or the bell of a feature it is in, so ringing
  * a feature lifts the cards that build it. `bells` holds the item ids of a file's unanswered bells.
  */

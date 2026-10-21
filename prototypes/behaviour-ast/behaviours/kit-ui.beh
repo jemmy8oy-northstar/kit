@@ -667,12 +667,12 @@ behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1725
   priority 3
-  pending
   actor engineer
   when opens page:KitBoard
-  then sees region:KitBoardProposed
+  then sees region:KitBoardReview
   contract "questions should probably appear on the board as well"
   contract my assumption: a question is a `review requested` line that asks him something, and it sits at the top of the review column, worded as the question, so it is not missed among cards that only want a look
+  contract my assumption: "asks him something" means the request's note ends in a question mark; the card carries a question badge, and only a rung card sits above it
 
 behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
   in FEAT-NAV

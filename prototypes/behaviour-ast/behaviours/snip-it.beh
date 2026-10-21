@@ -223,7 +223,7 @@ behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take
   actor creator
   contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
   contract on a phone without that camera the choice is hidden, not shown disabled
-  contract the script stays at the top of the upright screen, nearest the lens, in both shapes
+  contract the script stays at the top of the upright screen, nearest the lens, in both shapes (the default until BEH-TELE-9 moved it to the centre on the front camera)
   contract built in snip-it#62: a shape button above switch-camera; it measures the buffer after setting the ratio and says on screen if neither ratio gives landscape. Unverified on a real iPhone 17
 
 behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
@@ -267,13 +267,13 @@ behaviour BEH-TELE-9 "Settings choose where the script sits on screen, how big i
   source defined snip-it.notes.md#2026-10-21-0708
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "Settings to change teleprompting location and size … the screen width that it uses … on which point of the screen it shows"
   contract "When close up you can see my eyes flickering as I read": a narrower column keeps the eyes still, so width is its own setting, not a side effect of size
   contract "when recording in a selfie camera it can look more natural to be looking at yourself. So maybe we move the focus down to the centre": position is top, centre or bottom, and my assumption is centre by default on the front camera and top on the back
   contract this replaces BEH-TELE-5's "the script stays at the top of the upright screen" as the default; top stays one tap away
   contract changes show live behind the settings sheet, so he can set them while looking at himself
+  contract built in snip-it#63: a size button above close opens a short sheet (Auto, Top, Centre, Bottom; size 20 to 48 pt; width 40 to 100%), and Settings has the same controls. Unverified on a phone
 
 feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
   stage ui
