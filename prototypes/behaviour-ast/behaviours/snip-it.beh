@@ -354,12 +354,12 @@ behaviour BEH-EDITION-1 "Studio features are switched on and off in Settings"
   source defined snip-it.notes.md#2026-10-21-1647
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "for now this experience can be toggled in settings but later this can be configured by accounts or build args": one Studio switch in Settings, stored on the phone; accounts and build flags are later and not built here
   contract "whenever it is in premium/experimental mode for me I can always optionally toggle it off": the switch works both ways, and turning it off hides Studio features without deleting anything they made
   contract my assumption: the switch is off on a fresh install, so the general release is what a stranger gets
   contract my assumption: every feature that talks to a server is a Studio feature (BEH-EDITION-2), and so is anything he calls experimental
+  contract built in snip-it#67: the switch tops Settings; a phone already signed in to snip-it starts with it on, so the update took nothing away. Unverified on a phone
 
 behaviour BEH-EDITION-2 "With Studio off, the app runs entirely on the phone"
   in FEAT-EDITIONS
@@ -367,11 +367,11 @@ behaviour BEH-EDITION-2 "With Studio off, the app runs entirely on the phone"
   source defined snip-it.notes.md#2026-10-21-1649
   review unreviewed
   priority 2
-  pending
   actor creator
   contract "base general release version: for now no api integration, fully on device": speech, recording, playback, productions and the script all work with no network
   contract with Studio off nothing offers to send a take anywhere, and the app makes no request to snip-it or Kit
   contract my assumption: the speech model download (BEH-TELE-1) is not an API integration, so the general release keeps it
+  contract built in snip-it#67: Studio off hides the snip-it settings and Cut pauses, the only server call the app makes
 
 behaviour BEH-EDITION-3 "Studio: a take can be saved to Kit, and never is by default"
   in FEAT-EDITIONS
