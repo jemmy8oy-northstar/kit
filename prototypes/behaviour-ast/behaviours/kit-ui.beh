@@ -663,6 +663,22 @@ behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   contract my proposal: drags made within a few seconds of each other land as one commit, so rearranging ten cards is not ten commits
   contract my proposal: a drag across a priority boundary does not rewrite the priority line; the list is his order, the score stays the agent's, and a bell still lifts a card above both (BEH-BELL-3)
 
+behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
+  in FEAT-BOARD
+  layer ux
+  source defined kit.notes.md#2026-10-21-1547
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  contract "Proposed column is organised by developer review priority. Current state i cannot identify the order"
+  contract in Review requested, Proposed and Backlog a small heading starts each run of cards: Rung, then P1 to P5, then Unscored, with how many cards are under it
+  contract the measured cause on 2026-10-21: 13 of 67 proposals were P1, and 7 of those were whos-accountable, a repo untouched since August, so the top of the column was a project nobody is building
+  contract "review priority" is how soon the agent's next work waits on his answer, which is not how much the feature matters: a proposal on a project with no work this fortnight scores 4 or 5, and the agent re-scores an approved card when it moves to Backlog
+  contract my assumption: the headings are the only change to the order; the order itself stays BEH-BOARD-10/12 and BEH-BELL-3
+
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1725
@@ -920,6 +936,21 @@ behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   contract his list: production security such as secret management; per-user databases (a cheaper dev tier, and a production tier); usage, cost and payment, charging for compute and AI tokens
   contract "let's mark onboarding existing projects as out of scope for now": onboarding existing projects is a separate backlog epic
   contract "feel free to propose other items": the agent's proposals go in as inferred children once the epic block exists
+
+behaviour BEH-EPIC-9 "Kit spots a behaviour that is really a feature, and proposes the split"
+  in FEAT-EPICS
+  layer technical
+  source defined kit.notes.md#2026-10-21-1552
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "some behaviours which are technically behaviours but they are quite broad … The ai running kit should be able to identify when a behaviour should become a feature of behaviours"
+  contract the agent proposes; it never splits on its own: the proposal is a review request on the broad behaviour naming the feature and the child behaviours it would become
+  contract approving it makes the feature, moves the contracts into inferred children (Proposed, as BEH-EPIC-6 drafts them), and keeps the old id as the feature's source so links still resolve
+  contract my assumption on "broad": more than one actor or page, or contracts that could each ship alone, or more than six contracts
 
 behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   in FEAT-EPICS

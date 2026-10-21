@@ -81,7 +81,7 @@ behaviour BEH-SCORE-1 "A company's composite is a 0-100 score from published pil
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:21
   review unreviewed
-  priority 1
+  priority 4
   actor visitor
   provides pillar:Emissions.weight = 0.40
   provides pillar:Violations.weight = 0.60
@@ -93,7 +93,7 @@ behaviour BEH-SCORE-2 "The emissions sub-score falls as emissions intensity rise
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:35
   review unreviewed
-  priority 1
+  priority 4
   actor visitor
   contract score = 100 * e^(-intensity / 200), intensity in tCO2e per million pounds of revenue
   contract the v1 values are chosen for a sensible spread, not calibrated against the full cohort
@@ -103,7 +103,7 @@ behaviour BEH-SCORE-3 "The violations sub-score falls with fines, incidents and 
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:40
   review unreviewed
-  priority 1
+  priority 4
   actor visitor
   contract harm = 1.0 per million pounds of fines + 0.5 per incident + 1.0 per 1,000 hours of sewage or storm-overflow discharge
   contract score = 100 * e^(-harm / 5); a company with no recorded enforcement scores 100
@@ -113,7 +113,7 @@ behaviour BEH-SCORE-4 "Missing data is unknown, never a neutral 50"
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Services/Scoring/ScoreEngine.cs:91
   review unreviewed
-  priority 1
+  priority 4
   actor visitor
   contract a pillar with no data is excluded and the composite is renormalised over the pillars that have a value
   contract a company with no data at all stays unknown: it is not crowned a do-gooder by its own absence
@@ -124,7 +124,7 @@ behaviour BEH-SCORE-5 "A methodology page explains the formula, the weights and 
   layer ux
   source inferred docs/DESIGN.md:1
   review unreviewed
-  priority 2
+  priority 4
   actor visitor
   when opens page:Methodology
   then sees region:Formula
@@ -135,7 +135,7 @@ behaviour BEH-SCORE-6 "A golden-file test pins the whole leaderboard over a synt
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Tests/GoldenLeaderboardTests.cs:1
   review unreviewed
-  priority 2
+  priority 4
   actor maintainer
   contract any change to the formula shows up as a visible diff in the leaderboard
   contract the cohort is synthetic, so there is no risk of a wrong real figure
@@ -145,7 +145,7 @@ behaviour BEH-DATA-1 "Only open-government data feeds the composite: UK ETS emis
   layer technical
   source inferred whos-accountable#9
   review unreviewed
-  priority 1
+  priority 4
   actor maintainer
   contract CDP, SBTi and InfluenceMap cannot be folded into the score without written permission (licence audit, whos-accountable#9)
   contract the permission emails are tracked in whos-accountable#11
@@ -155,7 +155,7 @@ behaviour BEH-DATA-2 "Every record carries its source link and retrieval date"
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.DomainModels/Models/SourceRef.cs:1
   review unreviewed
-  priority 1
+  priority 4
   actor maintainer
   contract "every number links to its source" (bot's proposal on whos-accountable#1)
 
@@ -164,7 +164,7 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   layer technical
   source inferred whos-accountable#13
   review unreviewed
-  priority 2
+  priority 4
   actor maintainer
   pending
   contract data is versioned in the repo as data-as-code
@@ -175,7 +175,7 @@ behaviour BEH-COMPANY-1 "A company page shows its score, its pillar sub-scores a
   layer ux
   source inferred whos-accountable#15
   review unreviewed
-  priority 2
+  priority 4
   actor visitor
   pending
   when opens page:Company
@@ -186,7 +186,7 @@ behaviour BEH-COMPANY-2 "Restricted sources appear on a company page as attribut
   layer ux
   source inferred whos-accountable#9
   review unreviewed
-  priority 3
+  priority 5
   actor visitor
   pending
   contract each signal credits its source and links to it; CDP is link-only until licensed
@@ -197,7 +197,7 @@ behaviour BEH-API-1 "A read-only web API serves the leaderboards and company pag
   layer technical
   source inferred whos-accountable#14
   review unreviewed
-  priority 2
+  priority 4
   actor visitor
   pending
   contract a WebApi with an EF read model; there is no API in the repo yet
