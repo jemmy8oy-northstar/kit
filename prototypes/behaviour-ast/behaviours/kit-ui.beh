@@ -933,6 +933,7 @@ feature FEAT-USER-REPOS "A user's projects live in their own repos"
 behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
