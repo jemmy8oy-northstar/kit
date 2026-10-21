@@ -67,3 +67,13 @@ Settings to also change on which point of the screen it shows
 I feel that when recording in a selfie camera it can look more natural to be looking at yourself
 
 So maybe we move the focus down to the centre of the screen
+
+## 2026-10-21 16:47Z · new behaviour
+
+Yours studio has a configurable ui with some premium or experimentation features
+
+For now this experience can be toggled in settings but later this can be configured by accounts or build args - maybe I can just use a test version but certain features get switched off for rc builds
+
+Anyway for now it is configurable
+
+I guess whenever it is in premium/experimental mode for me I can always optionally toggle it off
