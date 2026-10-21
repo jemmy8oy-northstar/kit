@@ -234,3 +234,44 @@ behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from eve
   actor creator
   contract "maybe we need a ios release branch": Codemagic builds pushes to ios-release that change ios/; dev keeps the unsigned compile check only
   contract a Codemagic change is a platform change (claude-code-bot#83), so it goes up as its own pull request for James to merge
+
+# ── the teleprompter, second round (snip-it.notes.md, 2026-10-20 23:52Z to 10-21 00:01Z) ──
+
+behaviour BEH-TELE-7 "The script moves on by itself as the creator reads it aloud"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2352
+  review unreviewed
+  priority 1
+  actor creator
+  contract "the teleprompter should auto progress as the user speaks": the line in focus follows the words heard, with no tap
+  contract it only moves forward by itself, waits through pauses and ad-libs, and a tap on a line is the way back (ScriptFollower, snip-it#34)
+  contract built since snip-it#34; the 10-20 builds could not show it, because the speech model never loaded until snip-it#51
+
+behaviour BEH-TELE-8 "The prompter shows what it hears: words light up as they are spoken, and a meter shows the microphone"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2353
+  review unreviewed
+  priority 1
+  actor creator
+  contract "highlight words that it has heard being spoken in a take": on the current line, each word turns yellow once the follower has passed it
+  contract "I can['t] tell if it's hearing me at all": a level meter shows the microphone's loudness against the mark below which the speech engine ignores sound, with the last few words heard beneath it
+  contract the meter's colours and placement (above the record button) are the agent's guess
+
+feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
+
+behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New production at the top"
+  in FEAT-PRODUCTIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0001
+  review unreviewed
+  priority 2
+  pending
+  actor creator
+  contract "enter and click new production or select an existing one": the first screen lists productions, newest first, and New production asks for a name
+  contract "production", not "video", because "videos might get confused with takes": a production is one script plus every take recorded against it
+  contract opening a production shows its script and its takes, and only that production's takes
+  contract the script and takes already on the phone become one production, named "My first production", so nothing is lost
+  contract a production can be renamed, and deleted with its takes after a confirmation
