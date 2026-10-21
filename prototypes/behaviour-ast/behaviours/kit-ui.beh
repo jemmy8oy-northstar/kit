@@ -918,6 +918,7 @@ feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
 behaviour BEH-USERS-1 "A new user signs up with their GitHub account and installs Kit's GitHub App in one flow"
   in FEAT-USER-SIGNUP
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   pending
   actor engineer
   when opens page:KitProjects
