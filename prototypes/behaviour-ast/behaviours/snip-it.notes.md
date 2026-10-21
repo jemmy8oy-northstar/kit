@@ -53,3 +53,17 @@ Maybe we can use a simple # for names or —- for unnamed break and borrow this 
 ## 2026-10-21 00:05Z · new behaviour
 
 Would be good to have a delete all button in the script. Maybe a clear section button would be better. Maybe a section management where u can rearrange sections and then in here there is a delete all sections button. All delete buttons should have confirmation
+
+## 2026-10-21 07:08Z · new behaviour
+
+Settings to change teleprompting location and size
+
+When close up you can see my eyes flickering as I read
+
+Settings to change the screen width that it uses
+
+Settings to also change on which point of the screen it shows
+
+I feel that when recording in a selfie camera it can look more natural to be looking at yourself
+
+So maybe we move the focus down to the centre of the screen
