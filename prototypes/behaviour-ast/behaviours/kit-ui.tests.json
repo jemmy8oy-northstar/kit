@@ -34,6 +34,9 @@
   "BEH-BELL-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts a rung card above every priority, and a rung feature lifts the cards in it (BEH-BELL-3)" }
   ],
+  "BEH-LOOK-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/look.test.ts", "title": "wears the design system professional theme (BEH-LOOK-2)" }
+  ],
   "BEH-BOARD-11": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts questions from the agent above requests that only want a look, whatever their priority (BEH-BOARD-11)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a question mark on a card that is not a review request makes it no question (BEH-BOARD-11)" }

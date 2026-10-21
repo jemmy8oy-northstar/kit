@@ -688,6 +688,20 @@ behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, qui
   contract the look, not the library: Kit draws on the design-system package, and swapping that is a platform choice that stays his
   contract every gap between blocks comes from one spacing scale, so a page has no one-off margins
 
+behaviour BEH-LOOK-2 "Kit wears the design system's professional theme, and a title that links reads as a title"
+  in FEAT-NAV
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-16-0725
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitNav
+  contract "thinking I want this ui to look more professional. Could we move towards a shadcn style ui?"
+  contract my assumption: the design system already ships a `professional` theme (neutral greys, one blue accent), so Kit switches to it rather than restyling by hand; the coral/teal `casual` theme he picked on 2026-08-16 is one attribute away if he wants it back
+  contract my assumption: colour is kept for meaning, so the nav and every heading that links read in the text colour; the accent stays on the brand, the selected tab and links in running prose
+  contract not mine: the cards' large radius and the teal filter chip come from the design-system package, and changing those is his (BEH-LOOK-1)
+
 behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback on Kit itself"
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0730
