@@ -126,6 +126,10 @@
   "BEH-SHEET-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "shows the question sheet Kit built for a project, with its review queue and the way to ask for more" }
   ],
+  "BEH-SHEET-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "leads the Questions tab with what Kit is asking him, above the problems, and counts it (BEH-SHEET-2)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "puts the questions before the problems in the spec (BEH-SHEET-2)" }
+  ],
   "BEH-SCHED-1": [
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" },
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "shows a built or vanished entry as such rather than dropping it, and neither is next" }

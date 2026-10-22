@@ -6,6 +6,7 @@ import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
 import { behavioursUnder, featureHref, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
 import { citationsOf } from '../notes'
+import { asksOf, type Ask } from '../asks'
 import CoverageBadge from '../components/CoverageBadge'
 import LayerChips from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
@@ -90,7 +91,7 @@ function Detail({ project }: { project: ProjectDetail }) {
       <ProjectTabs
         tab={tab}
         select={select}
-        waiting={project.conflicts.length + project.questions.length}
+        waiting={asksOf([project]).length + project.conflicts.length + project.questions.length}
         open={open}
         notes={
           <>
@@ -129,6 +130,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         questions={
           <>
+            <KitAsks asks={asksOf([project])} />
             <Conflicts conflicts={project.conflicts} />
             <QuestionSheet sheets={[project]} notesApp={project.app} onResolved={bump} />
           </>
@@ -266,6 +268,34 @@ function Conflicts({ conflicts }: { conflicts: Conflict[] }) {
   )
 }
 
+/**
+ * BEH-SHEET-2 (his 2026-10-22 22:48Z note: "kit starts to raise the questions which helps guide the
+ * user… Right now I'm not sure what ux ui or logic to define to unblock kit"): first on the tab, what
+ * the agent is asking him, each question above the card it is about, so he can answer without
+ * opening anything. The conflicts and the sheet below it are problems Kit found, not questions.
+ */
+function KitAsks({ asks }: { asks: Ask[] }) {
+  if (!asks.length) return null
+  return (
+    <section>
+      <h2>Kit is asking you</h2>
+      <p className="muted">Answer in a note, or on the card. Each question says what Kit does if you never answer.</p>
+      <ul className="cards">
+        {asks.map(({ app, b, text }) => (
+          <li key={`${app}/${b.id}`}>
+            <Card interactive>
+              <p className="ask">{text}</p>
+              <p className="muted">
+                <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.id}</Link> {b.title}
+              </p>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /** BEH-KIND-2: a filter that leaves nothing says so, or it reads as a page that failed to load. */
 function NoneOfLayers({ layers, empty }: { layers: string[]; empty: boolean }) {
   if (!layers.length || !empty) return null
@@ -322,7 +352,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
       <ProjectTabs
         tab={tab}
         select={select}
-        waiting={conflicts.length + sum((f) => f.questions.length)}
+        waiting={asksOf(files).length + conflicts.length + sum((f) => f.questions.length)}
         open={open}
         notes={
           <>
@@ -364,6 +394,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         }
         questions={
           <>
+            <KitAsks asks={asksOf(files)} />
             <Conflicts conflicts={conflicts} />
             <QuestionSheet sheets={files} notesApp={home.app} onResolved={bump} />
           </>
@@ -459,7 +490,8 @@ function QuestionSheet({
 
   return (
     <section>
-      <h2>Question sheet</h2>
+      {/* BEH-SHEET-2: what Kit found wrong with the spec, which he called "problems", not questions. */}
+      <h2>Problems in the spec</h2>
       <div className="badges">
         <Count n={decisions.length} one="decision" tone="warning" />
         <Count n={reviews.length} one="review" />

@@ -120,7 +120,7 @@ describe('the project tabs', () => {
     expect(questions).toHaveAttribute('aria-selected', 'false')
     // Hidden, not merely below: role queries skip a hidden panel, so this fails
     // if the sheet is still on screen under the features.
-    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Problems in the spec' })).not.toBeInTheDocument()
     expect(screen.getByRole('tabpanel', { name: 'Features' })).toBeVisible()
   })
 
@@ -128,19 +128,19 @@ describe('the project tabs', () => {
     renderApp(habits, 'james-habits-app')
 
     fireEvent.click(await screen.findByRole('tab', { name: `Questions ${waiting}` }))
-    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Problems in the spec' })).toBeInTheDocument()
     expect(screen.getByRole('tabpanel', { name: `Questions ${waiting}` })).toBeVisible()
     expect(screen.queryByRole('tabpanel', { name: 'Features' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: 'Features' }))
-    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Problems in the spec' })).not.toBeInTheDocument()
   })
 
   it('opens on Questions from a link carrying ?tab=questions', async () => {
     renderApp(habits, 'james-habits-app', '?tab=questions')
 
     expect(await screen.findByRole('tab', { name: `Questions ${waiting}` })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Problems in the spec' })).toBeInTheDocument()
   })
 
   it('CONTROL: with nothing waiting the tab carries no count and says so when opened', async () => {
@@ -149,6 +149,40 @@ describe('the project tabs', () => {
 
     expect(await screen.findByRole('tab', { name: 'Questions' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByText('Nothing is waiting on you.')).toBeVisible()
+  })
+
+  it('leads the Questions tab with what Kit is asking him, above the problems, and counts it (BEH-SHEET-2)', async () => {
+    const pending = snipIt.behaviours[0]
+    const body = {
+      ...snipIt,
+      behaviours: [
+        { ...pending, id: 'BEH-ASK-1', title: 'needs him', pending: true, needsContext: 'Invite-only? I would start invite-only.' },
+        { ...pending, id: 'BEH-ASK-2', title: 'asks him', review: { state: 'requested', note: 'Which colour?' } },
+        // Not asks: a look that is no question, a paused card, a built one, a denied one.
+        { ...pending, id: 'BEH-LOOK', title: 'a look', review: { state: 'requested', note: 'the copy' } },
+        { ...pending, id: 'BEH-HELD', title: 'held', pending: true, paused: true, needsContext: 'x?' },
+        { ...pending, id: 'BEH-BUILT', title: 'built', pending: false, needsContext: 'y?' },
+        { ...pending, id: 'BEH-DENIED', title: 'denied', pending: true, needsContext: 'z?', review: { state: 'denied', note: 'no' } },
+      ],
+    }
+    renderApp(body, 'snip-it', '?tab=questions')
+
+    // snip-it has no conflicts and no sheet, so the count is the two asks alone.
+    expect(await screen.findByRole('tab', { name: 'Questions 2' })).toHaveAttribute('aria-selected', 'true')
+    const section = screen.getByRole('heading', { name: 'Kit is asking you' }).closest('section')!
+    const items = within(section).getAllByRole('listitem')
+    expect(items.map((li) => li.querySelector('.ask')!.textContent)).toEqual(['Invite-only? I would start invite-only.', 'Which colour?'])
+    expect(within(items[0]).getByRole('link', { name: 'BEH-ASK-1' })).toHaveAttribute('href', '/projects/snip-it/behaviours/BEH-ASK-1')
+    expect(screen.queryByText('Nothing is waiting on you.')).not.toBeInTheDocument()
+  })
+
+  it('puts the questions before the problems in the spec (BEH-SHEET-2)', async () => {
+    const body = { ...habits, behaviours: [...habits.behaviours, { ...habits.behaviours[0], id: 'BEH-ASK-1', pending: true, needsContext: 'Which?' }] }
+    renderApp(body, 'james-habits-app', '?tab=questions')
+
+    const asks = await screen.findByRole('heading', { name: 'Kit is asking you' })
+    const problems = screen.getByRole('heading', { name: 'Problems in the spec' })
+    expect(asks.compareDocumentPosition(problems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   // BEH-FEAT-7 (his note 2026-10-16 07:13Z): "Let's leverage the tab view more".
@@ -258,7 +292,7 @@ describe('the question sheet', () => {
     // is behind the Questions tab since BEH-FEAT-6, so the test opens on it.
     renderApp(habits, 'james-habits-app', '?tab=questions')
 
-    expect(await screen.findByRole('heading', { name: 'Question sheet' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Problems in the spec' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Never adjudicated' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ask for behaviour' })).toBeInTheDocument()
   })
@@ -325,6 +359,6 @@ describe('the question sheet', () => {
     renderApp(snipIt, 'snip-it')
 
     await screen.findByRole('heading', { name: 'snip-it', level: 1 })
-    expect(screen.queryByRole('heading', { name: 'Question sheet' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Problems in the spec' })).not.toBeInTheDocument()
   })
 })
