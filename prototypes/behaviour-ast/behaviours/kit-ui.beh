@@ -651,7 +651,7 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review unreviewed
+  review requested your call before I build: the order needs one new file outside every project, with its own write route, and that storage shape is yours (claude-code-bot#58). Approve and I build it as proposed; deny and it is dropped
   priority 3
   pending
   actor engineer
@@ -695,7 +695,6 @@ behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, qui
   in FEAT-PROJECT
   source defined kit.notes.md#2026-10-16-0725
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitNav
@@ -704,6 +703,7 @@ behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, qui
   contract every gap between blocks comes from one spacing scale, so a page has no one-off margins
   contract my assumption: the page sets the gap, not the block; each block in a page sits one step below the last, a section heading opens a wider gap, and what follows a title sits closer (index.css, `.app main > * + *`)
   contract my assumption: a utility action (Edit, Cancel, Keep it, Show more, Ring the bell) is an outlined ghost button, so the only filled buttons on a page are its main action and a danger; teal stays only where it means selected (the board's filter chips)
+  contract built in kit#376, kit#377 and kit#379; a test now holds the spacing scale, so it leaves the Backlog (kit#388)
 
 behaviour BEH-LOOK-2 "Kit wears the design system's professional theme, and a title that links reads as a title"
   in FEAT-NAV
@@ -789,11 +789,11 @@ behaviour BEH-STAGE-4 "UI requirements come last but are never locked: they can 
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "well defined ui requirements can be restrictive and often change": writing UI early never moves a feature past development
+  contract built by construction: a feature's stage is only its written `stage` line, and nothing computes it from content, so UI written early moves nothing (kit#388)
 
 behaviour BEH-STAGE-5 "The agent turns a note that describes a complex feature into a feature at the problem stage"
   in FEAT-STAGES
@@ -857,12 +857,12 @@ behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever fe
   in FEAT-EPICS
   source defined kit.notes.md#2026-10-19-1644
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
   contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
+  contract built with BEH-EPIC-2: a feature at any depth takes `in EPIC-…`, its parents stay as they were, and a behaviour reaches the epic through its feature (kit#388)
 
 behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project, and a feature names it as one of its parents"
   in FEAT-EPICS

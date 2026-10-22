@@ -44,6 +44,39 @@ public class EpicTests
         Assert.Single(c.Behaviours);
     }
 
+    [Fact]
+    public void An_epic_reaches_a_feature_at_any_depth_and_its_parents_stay_as_they_were()
+    {
+        // "An epic might get tagged onto a ux spec which is multiple layers deep because its
+        // parents are not specifically important to the epic": only the deepest feature is tagged.
+        const string deep =
+            "epic EPIC-USERS \"Kit supports other users\"\n" +
+            "\n" +
+            "feature FEAT-TOP \"top\"\n" +
+            "\n" +
+            "feature FEAT-MID \"mid\"\n" +
+            "  in FEAT-TOP\n" +
+            "\n" +
+            "feature FEAT-DEEP \"deep\"\n" +
+            "  in FEAT-MID\n" +
+            "  in EPIC-USERS\n" +
+            "\n" +
+            "behaviour BEH-A \"a\"\n" +
+            "  in FEAT-DEEP\n" +
+            "  when opens page:Home\n";
+        var c = _parser.ParseCorpus(deep, "t.beh");
+
+        var top = c.Features.Single(f => f.Id == "FEAT-TOP");
+        var mid = c.Features.Single(f => f.Id == "FEAT-MID");
+        var leaf = c.Features.Single(f => f.Id == "FEAT-DEEP");
+        Assert.Equal(["EPIC-USERS"], leaf.Epics.Select(t => t.Id));
+        Assert.Equal(["FEAT-MID"], leaf.In.Select(t => t.Id));
+        Assert.Empty(mid.Epics);
+        Assert.Empty(top.Epics);
+        Assert.Equal(["FEAT-TOP"], mid.In.Select(t => t.Id));
+        Assert.Equal(["FEAT-DEEP"], c.Behaviours.Single().In.Select(t => t.Id));
+    }
+
     [Theory]
     [InlineData("epic EPIC-A \"a\"\nepic EPIC-A \"again\"\n", "t.beh:2: epic EPIC-A is already declared at t.beh:1")]
     [InlineData("epic FEAT-A \"a\"\n", "t.beh:1: epic wants EPIC-<ID> \"<title>\", got: epic FEAT-A \"a\"")]
