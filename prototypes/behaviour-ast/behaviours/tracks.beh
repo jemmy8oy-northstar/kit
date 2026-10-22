@@ -197,7 +197,7 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   in FEAT-MAP
   layer technical
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
