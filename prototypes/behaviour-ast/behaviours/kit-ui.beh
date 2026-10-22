@@ -1133,12 +1133,12 @@ behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry the
   in FEAT-COMMENTS
   source inferred kit.notes.md#2026-10-19-1933
   review approved
-  pending
   actor engineer
   when opens page:KitBehaviour
   then sees region:KitMain
   contract "this is different from a note because it is under a specific item"; a note is a new thought the AI turns into spec, a comment stays attached to its item
-  contract open question for him: a note left on a behaviour (BEH-NOTE-2) already names its item, so a comment may replace that half of notes rather than sit beside it
+  contract my assumption, on the question this card left open: a note left on an item IS its comment, so comments replace that half of notes rather than sit beside it; one box per page, not two that look alike
+  contract built: features and epics get the panel behaviours already had (BEH-NOTE-2), listing only their own; a project's comments are its untagged notes, on its page
 
 behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
