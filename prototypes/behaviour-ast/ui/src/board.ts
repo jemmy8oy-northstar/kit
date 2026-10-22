@@ -1,10 +1,11 @@
 import type { Behaviour, ProjectSummary } from './api/types'
 
 /**
- * The five columns kit#237 asked for, left to right, after kit#284's review requests; scheduled
- * and in progress read the schedule (BEH-BOARD-3).
+ * The columns, left to right: kit#237's after kit#284's review requests, re-cut by BEH-BOARD-18 (his
+ * 2026-10-22 22:37Z note: "Lets ditch scheduled… Maybe we can have a queue column for ready to be
+ * executed tasks"). In progress still reads the schedule (BEH-BOARD-3).
  */
-export type Column = 'review' | 'proposed' | 'backlog' | 'scheduled' | 'in-progress' | 'done'
+export type Column = 'review' | 'proposed' | 'backlog' | 'queue' | 'blocked' | 'in-progress' | 'done'
 
 /** Where a pending behaviour sits on its file's schedule (BEH-SCHED-1/3), if it is on it at all. */
 export interface Place {
@@ -21,9 +22,9 @@ export interface Place {
  * something, so it waits in Review requested whatever else is true of it until he
  * approves or denies it. Proposed is checked before anything pending, so an unreviewed inference
  * is proposed even when scheduled — someone has to adjudicate it before it is work.
- * A pending behaviour is in progress when it is its schedule's next (BEH-BOARD-3),
- * scheduled when it is anywhere else on it, and backlog otherwise. A built one is
- * done, whatever the schedule still says.
+ * A built one is done, whatever the schedule still says. Of the pending (BEH-BOARD-18): paused is
+ * Backlog, no plan to build it now; a needs-context line is Blocked, waiting on him; the schedule's
+ * next is in progress (BEH-BOARD-3); the rest, on a schedule or not, is the Queue, ready to build.
  */
 export function columnOf(b: Behaviour, place?: Place): Column | null {
   if (b.review.state === 'denied') return null
@@ -32,9 +33,10 @@ export function columnOf(b: Behaviour, place?: Place): Column | null {
   if (!b.pending) return 'done'
   // BEH-BOARD-16: held, so it is backlog even when a schedule lists it; the agent does not pick it up.
   if (b.paused) return 'backlog'
+  // BEH-BOARD-18: the agent cannot start it until he adds what the line asks for.
+  if (b.needsContext) return 'blocked'
   if (place?.next) return 'in-progress'
-  if (place) return 'scheduled'
-  return 'backlog'
+  return 'queue'
 }
 
 /**
@@ -66,7 +68,7 @@ export const CAP = 10
 export const LAYERS = ['ui', 'ux', 'technical']
 
 /** The columns ordered by priority (BEH-BOARD-5/6): what is waiting on a decision or a pick. */
-export const RANKED: readonly Column[] = ['review', 'proposed', 'backlog']
+export const RANKED: readonly Column[] = ['review', 'proposed', 'backlog', 'queue', 'blocked']
 
 /**
  * Priority order for Array.sort (BEH-BOARD-5, kit#284): 1 first, 5 last, and a card with no
@@ -127,8 +129,8 @@ export function pausedLast<T extends { b: { paused?: boolean } }>(cards: T[]): T
  * card on the board can say so. A finished card is nobody's, and neither is a denied one (no column).
  * A rung bell is the agent's to answer, even on a paused card. Otherwise it is his when it is a review
  * request or an unreviewed proposal (it waits on his verdict), when it is paused (only his Resume moves
- * it), or when the agent has marked it `needs-context`. The rest of Backlog, Scheduled and In progress
- * is the agent's to build.
+ * it), or when the agent has marked it `needs-context`. The rest, the Queue and In progress, is the
+ * agent's to build.
  */
 export function ownerOf(b: Behaviour, column: Column | null, rung: boolean): 'james' | 'agent' | null {
   if (column === null || column === 'done') return null
