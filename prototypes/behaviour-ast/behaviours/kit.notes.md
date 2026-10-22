@@ -181,3 +181,13 @@ Current state i cannot identify the order
 I am seeing some behaviours which are technically behaviours but they are quite broad and I guess could become features and incorporate many features.
 
 The ai running kit should be able to identify when a behaviour should become a feature of behaviours
+
+## 2026-10-22 11:30Z · new behaviour
+
+When clicking into a card to approve or deny. When i navigate back to the board it is no longer focused on the same column.
+
+This also makes me wodner whether this is performing a full redirect rather than just a reroute
+
+## 2026-10-22 16:39Z
+
+The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context

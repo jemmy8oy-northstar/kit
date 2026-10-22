@@ -87,3 +87,7 @@ App premium feature: integrates with kit, kit has a volume on which it takes can
 ## 2026-10-21 16:52Z · new behaviour
 
 Kit shows transcript with take locally
+
+## 2026-10-22 07:27Z · BEH-EDITION-3
+
+Oh I didn’t mean the volume is on kit I meant the volume is on snip it
