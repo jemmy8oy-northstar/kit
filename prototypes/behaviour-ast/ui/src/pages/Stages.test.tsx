@@ -41,6 +41,7 @@ const details: Record<string, { features: Feature[]; behaviours: Behaviour[] }> 
       beh('A-1', { in: ['FEAT-BUILDING'] }),
       beh('A-2', { in: ['FEAT-PART'], pending: true }),
       beh('A-3', { in: ['FEAT-PART'] }),
+      beh('A-UI', { in: ['FEAT-PROBLEM'], layer: 'ui', pending: true }),
     ],
   },
   'kit-ui': { features: [feat('FEAT-UX', { stage: 'ux' })], behaviours: [] },
@@ -123,6 +124,14 @@ describe('Stages', () => {
     renderStages()
     expect((await stage('Development')).getByText('2 of 3 behaviours built')).toBeInTheDocument()
     expect((await stage('Problem statement')).queryByText(/behaviours built/)).not.toBeInTheDocument()
+  })
+
+  it('leaves a feature at its written stage when UI requirements are written early (BEH-STAGE-4)', async () => {
+    renderStages()
+    // FEAT-PROBLEM already has a ui-layer behaviour: the stage line alone places it.
+    expect((await stage('Problem statement')).getByText('FEAT-PROBLEM')).toBeInTheDocument()
+    expect((await stage('UI requirements')).queryByText('FEAT-PROBLEM')).not.toBeInTheDocument()
+    expect((await stage('Development')).queryByText('FEAT-PROBLEM')).not.toBeInTheDocument()
   })
 })
 

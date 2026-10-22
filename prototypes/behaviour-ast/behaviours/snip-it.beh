@@ -373,17 +373,19 @@ behaviour BEH-EDITION-2 "With Studio off, the app runs entirely on the phone"
   contract my assumption: the speech model download (BEH-TELE-1) is not an API integration, so the general release keeps it
   contract built in snip-it#67: Studio off hides the snip-it settings and Cut pauses, the only server call the app makes
 
-behaviour BEH-EDITION-3 "Studio: a take can be saved to Kit, and never is by default"
+behaviour BEH-EDITION-3 "Studio: a take can be saved to snip-it's server, and never is by default"
   in FEAT-EDITIONS
   layer technical
-  source defined snip-it.notes.md#2026-10-21-1649
+  source defined snip-it.notes.md#2026-10-22-0727
   review unreviewed
   priority 3
   pending
   actor creator
-  contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default": a take goes to Kit only when he chooses Save to Kit on it
-  contract "kit can then operate on the videos on server with low friction": a saved take is a file Kit's agent can read, beside the production it came from
-  contract the volume is a cluster and storage decision, so it is his: nothing here is built until he has said where takes live
+  contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default" (snip-it.notes.md, 2026-10-21 16:49Z): a take leaves the phone only when he chooses Save on it
+  contract "I didn't mean the volume is on kit I meant the volume is on snip it": a saved take is stored on a volume belonging to snip-it's server, not Kit's
+  contract "kit can then operate on the videos on server with low friction": Kit's agent reads a saved take from snip-it, beside the production it came from
+  contract my assumption: Kit reaches a take through snip-it's API, not by mounting snip-it's volume, so the two apps share no disk
+  contract adding the volume reverses snip-it#22, which removed it on purpose, and it is a cluster and storage change, so it is his: nothing here is built until he approves this behaviour
 
 behaviour BEH-EDITION-4 "A take shows its transcript, made on the phone"
   in FEAT-EDITIONS
@@ -392,10 +394,12 @@ behaviour BEH-EDITION-4 "A take shows its transcript, made on the phone"
   source defined snip-it.notes.md#2026-10-21-1652
   review unreviewed
   priority 3
-  pending
   actor creator
   contract "Kit shows transcript with take locally": my reading is that the take's own screen shows what was said, transcribed on the phone, in both editions
   contract the other reading is that Kit's web view shows a saved take with its transcript; deny this one if that is what he meant, and it moves under BEH-EDITION-3
+  contract my assumption: the words come from the speech engine that already moves the script, kept from Record to Stop, so there is no second transcription pass and no wait
+  contract a take recorded while the speech model was not listening says so, rather than showing an empty transcript as if nothing was said
+  contract built in snip-it#68: the transcript sits under the video in the take's player, saved beside the take and shared with its cut. Unverified on a phone
 
 # ── an idea, not yet work (snip-it#66, his conversation about a teleprompter that helps when you stumble) ──
 

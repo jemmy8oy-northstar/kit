@@ -2,6 +2,15 @@
   "_": "behaviour -> the test(s) that name it. Same shape as kit-hosted.tests.json: the corpus carries the mapping, keyed on file + title (a vitest title is the exact it() string, without its describe() prefix).",
   "_authored": "2026-10-13, by reading kit-ui.beh against the UI's vitest suite (claude-code-bot#105). Only behaviours whose then-steps or main contract a test ASSERTS are mapped; pending ones stay unmapped, so `kit check kit-ui` keeps naming them. BEH-SHEET-1 had no asserting test and got one in the same change.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. kit check proves the test exists, not what it asserts. Several entries cover the contract rather than every then-step (PAIR-1 and STEP-1 do not assert their headings; NAV-1 does not click through).",
+  "BEH-LOOK-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/look.test.ts", "title": "takes every margin, padding and gap from one spacing scale (BEH-LOOK-1)" }
+  ],
+  "BEH-STAGE-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "leaves a feature at its written stage when UI requirements are written early (BEH-STAGE-4)" }
+  ],
+  "BEH-EPIC-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/EpicTests.cs", "title": "An_epic_reaches_a_feature_at_any_depth_and_its_parents_stay_as_they_were" }
+  ],
   "BEH-STAGE-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "shows a column per stage, in order, and a card per staged feature in its column (BEH-STAGE-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "keeps an idea and an unreadable file off the columns, and names the unreadable one (BEH-STAGE-1)" },
