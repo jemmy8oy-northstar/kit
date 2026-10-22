@@ -42,7 +42,11 @@
   },
   "heading:KitQuestionSheet": {
     "role": "heading",
-    "name": "Question sheet"
+    "name": "Problems in the spec"
+  },
+  "heading:KitAsking": {
+    "role": "heading",
+    "name": "Kit is asking you"
   },
   "heading:KitNeverAdjudicated": {
     "role": "heading",
@@ -155,9 +159,13 @@
     "role": "region",
     "name": "Backlog"
   },
-  "region:KitBoardScheduled": {
+  "region:KitBoardQueue": {
     "role": "region",
-    "name": "Scheduled"
+    "name": "Queue"
+  },
+  "region:KitBoardBlocked": {
+    "role": "region",
+    "name": "Blocked"
   },
   "region:KitBoardInProgress": {
     "role": "region",

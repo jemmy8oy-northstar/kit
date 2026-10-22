@@ -83,7 +83,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "starts each run of a ranked column with a heading that counts it, so the order can be read (BEH-BOARD-14)" }
   ],
   "BEH-BOARD-16": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "holds a paused card at the foot of Backlog under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "holds a paused card in Backlog, not the Queue, under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16, BEH-BOARD-18)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps a paused behaviour in Backlog even when a schedule lists it (BEH-BOARD-16)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "offers Pause on a pending behaviour and writes paused true, then re-reads (BEH-BOARD-16)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "offers Resume on a paused behaviour and writes paused false (BEH-BOARD-16)" },
@@ -99,6 +99,13 @@
     { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "A_needs_context_line_parses_and_marks_only_its_own_behaviour" },
     { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "A_second_needs_context_line_is_refused_like_a_second_paused" },
     { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "Pausing_and_resuming_keep_the_needs_context_line" }
+  ],
+  "BEH-BOARD-18": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lays the columns out Backlog, Queue, Blocked, In progress, then Done (BEH-BOARD-18)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "pending work is Backlog when paused, Blocked when it needs his context, else Queue or In progress (BEH-BOARD-18)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in the Queue, with no Scheduled column (BEH-BOARD-3, BEH-BOARD-18)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "holds a paused card in Backlog, not the Queue, under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16, BEH-BOARD-18)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "says on every card not yet done whose move it is, and shows on the card what he must add (BEH-BOARD-17)" }
   ],
   "BEH-BOARD-15": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
@@ -118,6 +125,10 @@
   ],
   "BEH-SHEET-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "shows the question sheet Kit built for a project, with its review queue and the way to ask for more" }
+  ],
+  "BEH-SHEET-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "leads the Questions tab with what Kit is asking him, above the problems, and counts it (BEH-SHEET-2)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "puts the questions before the problems in the spec (BEH-SHEET-2)" }
   ],
   "BEH-SCHED-1": [
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" },
@@ -170,7 +181,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "counts only refs to THIS notes file, so another project citing the same minute folds nothing here" }
   ],
   "BEH-BOARD-3": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts the top of a schedule in progress and the rest of it in the Queue, with no Scheduled column (BEH-BOARD-3, BEH-BOARD-18)" }
   ],
   "BEH-BOARD-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Done most recently completed first, across projects (BEH-BOARD-4)" },
@@ -194,7 +205,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a review request waits in Review requested whatever else is true of it (BEH-BOARD-6)" }
   ],
   "BEH-BOARD-5": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "orders Proposed and the Queue by priority, 1 first, across projects, unranked last (BEH-BOARD-5)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "priority sorts 1 first, unranked last, keeping ties in place" }
   ],
   "BEH-PAIR-1": [

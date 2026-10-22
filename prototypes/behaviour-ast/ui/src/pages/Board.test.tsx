@@ -44,7 +44,7 @@ const details: Record<string, Behaviour[]> = {
 }
 
 // alpha's schedule: a built entry first (it stays Done), then next, then two in an order
-// that is NOT corpus order — so the Scheduled column can only get it right by reading this.
+// that is NOT corpus order. Only next reaches the board now (BEH-BOARD-18): the rest is the Queue.
 const schedules: Record<string, { id: string; next: boolean }[]> = {
   alpha: [
     { id: 'A-DONE', next: false },
@@ -143,12 +143,12 @@ describe('Board', () => {
     await loaded()
 
     expect(await column('Proposed').findByText('A-PROPOSED')).toBeInTheDocument()
-    expect(column('Backlog').getByText('A-BACKLOG')).toBeInTheDocument()
+    expect(column('Queue').getByText('A-BACKLOG')).toBeInTheDocument()
     expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
     expect(column('Done').getByText('B-DONE')).toBeInTheDocument()
     // Each is in exactly one column.
     expect(column('Done').queryByText('A-BACKLOG')).not.toBeInTheDocument()
-    expect(column('Backlog').queryByText('A-DONE')).not.toBeInTheDocument()
+    expect(column('Queue').queryByText('A-DONE')).not.toBeInTheDocument()
   })
 
   it('puts a denied inference on no column', async () => {
@@ -165,10 +165,10 @@ describe('Board', () => {
     renderBoard()
     await loaded()
 
-    const link = await column('Backlog').findByRole('link', { name: 'title of A-BACKLOG' })
+    const link = await column('Queue').findByRole('link', { name: 'title of A-BACKLOG' })
     expect(link).toHaveAttribute('href', '/projects/alpha/behaviours/A-BACKLOG')
-    expect(column('Backlog').getByText('A-BACKLOG')).toHaveClass('muted')
-    expect(column('Backlog').getByText('alpha')).toBeInTheDocument()
+    expect(column('Queue').getByText('A-BACKLOG')).toHaveClass('muted')
+    expect(within(link.closest('li')!).getByText('alpha')).toBeInTheDocument()
   })
 
   it('colours and filters by project, so files naming one # kit:project share a button and a colour', async () => {
@@ -260,7 +260,7 @@ describe('Board', () => {
     expect(screen.getByRole('button', { name: 'Filter to the ui layer' })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('puts the top of a schedule in progress and the rest of it in Scheduled, in schedule order (BEH-BOARD-3)', async () => {
+  it('puts the top of a schedule in progress and the rest of it in the Queue, with no Scheduled column (BEH-BOARD-3, BEH-BOARD-18)', async () => {
     mockApi()
     renderBoard()
     await loaded()
@@ -268,17 +268,24 @@ describe('Board', () => {
     const inProgress = screen.getByRole('region', { name: 'In progress' })
     expect(await within(inProgress).findByText('A-NEXT')).toBeInTheDocument()
     expect(within(inProgress).getAllByRole('listitem')).toHaveLength(1)
-    const scheduled = within(screen.getByRole('region', { name: 'Scheduled' }))
-      .getAllByRole('link')
-      .map((a) => a.textContent)
-    expect(scheduled).toEqual(['title of A-THIRD', 'title of A-SECOND'])
-    // Built since it was scheduled: Done, not Scheduled. Unscheduled and pending: Backlog.
+    expect(screen.queryByRole('region', { name: 'Scheduled' })).not.toBeInTheDocument()
+    // The rest of the schedule waits in the Queue beside what no schedule names.
+    for (const id of ['A-SECOND', 'A-THIRD', 'A-BACKLOG']) expect(column('Queue').getByText(id)).toBeInTheDocument()
+    // Built since it was scheduled: Done, not the Queue.
     expect(column('Done').getByText('A-DONE')).toBeInTheDocument()
-    expect(column('Backlog').getByText('A-BACKLOG')).toBeInTheDocument()
-    expect(column('Backlog').queryByText('A-NEXT')).not.toBeInTheDocument()
+    expect(column('Queue').queryByText('A-NEXT')).not.toBeInTheDocument()
+    expect(column('Queue').queryByText('A-DONE')).not.toBeInTheDocument()
   })
 
-  it('a schedule that cannot be read says so, and its pending behaviours stay on the board as backlog', async () => {
+  it('lays the columns out Backlog, Queue, Blocked, In progress, then Done (BEH-BOARD-18)', async () => {
+    mockApi()
+    renderBoard()
+    await loaded()
+    const titles = screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))
+    expect(titles).toEqual(['board-review', 'board-proposed', 'board-backlog', 'board-queue', 'board-blocked', 'board-in-progress', 'board-done'])
+  })
+
+  it('a schedule that cannot be read says so, and its pending behaviours stay on the board in the queue', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (path: string) =>
@@ -292,7 +299,7 @@ describe('Board', () => {
 
     expect(await screen.findByText(/schedule could not be read/)).toBeInTheDocument()
     expect(screen.getAllByRole('alert').some((a) => a.textContent?.includes('alpha.schedule is unreadable'))).toBe(true)
-    expect(column('Backlog').getByText('A-NEXT')).toBeInTheDocument()
+    expect(column('Queue').getByText('A-NEXT')).toBeInTheDocument()
     expect(column('In progress').queryByText('A-NEXT')).not.toBeInTheDocument()
   })
 
@@ -329,7 +336,7 @@ describe('Board', () => {
       )
       renderBoard('/board?trials=1')
       await loaded()
-      await column('Backlog').findByText('A-BACKLOG')
+      await column('Queue').findByText('A-BACKLOG')
 
       expect(screen.queryByText('IDEA-1')).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'ideas' })).not.toBeInTheDocument()
@@ -432,7 +439,7 @@ describe('Board', () => {
   })
 
   it('caps each column at ten, keeps the top of the order, and shows more on request (BEH-BOARD-7)', async () => {
-    // 22 more backlog cards beside alpha's one: 23, ranked so the top ten are the P1s.
+    // 22 more queue cards beside alpha's three: 25, ranked so the top ten are the P1s.
     const extra = Array.from({ length: 22 }, (_, i) =>
       beh(`B-${String(i).padStart(2, '0')}`, { pending: true, priority: i < 10 ? 1 : 4 }),
     )
@@ -441,21 +448,21 @@ describe('Board', () => {
       mockApi()
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('B-00')
+      await column('Queue').findByText('B-00')
 
       const ids = () =>
-        column('Backlog')
+        column('Queue')
           .getAllByRole('listitem')
           .map((li) => li.querySelector('.id')!.textContent)
       // The header still counts every card; only ten are drawn, and they are the top ten.
-      expect(column('Backlog').getByText('23')).toBeInTheDocument()
+      expect(column('Queue').getByText('25')).toBeInTheDocument()
       expect(ids()).toEqual(extra.slice(0, 10).map((b) => b.id))
 
-      fireEvent.click(column('Backlog').getByRole('button', { name: 'Show 10 more (13 hidden)' }))
+      fireEvent.click(column('Queue').getByRole('button', { name: 'Show 10 more (15 hidden)' }))
       expect(ids()).toHaveLength(20)
-      fireEvent.click(column('Backlog').getByRole('button', { name: 'Show 3 more (3 hidden)' }))
-      expect(ids()).toHaveLength(23)
-      expect(column('Backlog').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
+      fireEvent.click(column('Queue').getByRole('button', { name: 'Show 5 more (5 hidden)' }))
+      expect(ids()).toHaveLength(25)
+      expect(column('Queue').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
       // A column under the cap has no button at all.
       expect(column('Done').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
     } finally {
@@ -511,11 +518,11 @@ describe('Board', () => {
     const extra = Array.from({ length: 24 }, (_, i) => beh(`B-${String(i).padStart(2, '0')}`, { pending: true, priority: 1 }))
     details.beta.push(...extra)
     try {
-      renderBoard('/board?col=backlog&card=beta/B-12')
+      renderBoard('/board?col=queue&card=beta/B-12')
       await loaded()
-      const link = await column('Backlog').findByRole('link', { name: 'title of B-12' })
+      const link = await column('Queue').findByRole('link', { name: 'title of B-12' })
       await vi.waitFor(() => expect(document.activeElement).toBe(link))
-      expect(column('Backlog').getByRole('button', { name: 'Show 5 more (5 hidden)' })).toBeInTheDocument()
+      expect(column('Queue').getByRole('button', { name: 'Show 7 more (7 hidden)' })).toBeInTheDocument()
     } finally {
       details.beta.splice(-24)
     }
@@ -577,7 +584,7 @@ describe('Board', () => {
     expect(isQuestion(beh('X', { review: { state: 'requested', note: 'which one?' } }))).toBe(true)
   })
 
-  it('orders Proposed and Backlog by priority, 1 first, across projects, unranked last (BEH-BOARD-5)', async () => {
+  it('orders Proposed and the Queue by priority, 1 first, across projects, unranked last (BEH-BOARD-5)', async () => {
     // Priorities that disagree with corpus AND project order, so only reading them sorts right.
     details.beta.push(
       beh('B-LATER', { pending: true, priority: 3 }),
@@ -588,16 +595,17 @@ describe('Board', () => {
       mockApi()
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('B-FIRST')
+      await column('Queue').findByText('B-FIRST')
 
       const order = (name: string) =>
         column(name)
           .getAllByRole('listitem')
           .map((li) => li.querySelector('.id')!.textContent)
-      expect(order('Backlog')).toEqual(['B-FIRST', 'B-LATER', 'A-BACKLOG'])
+      // A-SECOND and A-THIRD are on alpha's schedule: the Queue ranks them like any card (BEH-BOARD-18).
+      expect(order('Queue')).toEqual(['B-FIRST', 'B-LATER', 'A-BACKLOG', 'A-SECOND', 'A-THIRD'])
       expect(order('Proposed')).toEqual(['B-SUGGESTED', 'A-PROPOSED'])
       // The score is on the card, so the order can be read without opening anything.
-      expect(column('Backlog').getByText('P1')).toBeInTheDocument()
+      expect(column('Queue').getByText('P1')).toBeInTheDocument()
       expect(column('Proposed').getByText('P2')).toBeInTheDocument()
     } finally {
       details.beta.splice(-3)
@@ -612,9 +620,9 @@ describe('Board', () => {
       mockApi()
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('B-P1-ONE')
+      await column('Queue').findByText('B-P1-ONE')
 
-      const order = column('Backlog')
+      const order = column('Queue')
         .getAllByRole('listitem')
         .map((li) => li.querySelector('.id')!.textContent)
       expect(order.slice(0, 4)).toEqual(['A-P1-ONE', 'B-P1-ONE', 'A-P1-TWO', 'B-P1-TWO'])
@@ -646,9 +654,9 @@ describe('Board', () => {
       })
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('A-OLD')
+      await column('Queue').findByText('A-OLD')
 
-      const order = column('Backlog')
+      const order = column('Queue')
         .getAllByRole('listitem')
         .map((li) => li.querySelector('.id')!.textContent)
       expect(order.slice(0, 4)).toEqual(['A-UNCOMMITTED', 'A-NEW', 'A-OLD', 'A-NEWEST-P2'])
@@ -667,9 +675,9 @@ describe('Board', () => {
       mockApi({}, { alpha: ['A-RUNG-P4', 'FEAT-LOUD'] })
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('A-P1')
+      await column('Queue').findByText('A-P1')
 
-      const items = column('Backlog').getAllByRole('listitem')
+      const items = column('Queue').getAllByRole('listitem')
       expect(items.slice(0, 3).map((li) => li.querySelector('.id')!.textContent)).toEqual(['A-RUNG-P4', 'A-IN-RUNG-FEATURE', 'A-P1'])
       expect(within(items[0]).getByText(/rung/)).toBeInTheDocument()
       expect(within(items[2]).queryByText(/rung/)).toBeNull()
@@ -689,14 +697,14 @@ describe('Board', () => {
       mockApi({}, { alpha: ['A-RUNG-P3'] })
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('A-P1')
+      await column('Queue').findByText('A-P1')
 
       // Headings and cards in the order they render; a heading is not a card, so not a listitem.
-      const rows = [...column('Backlog').getByRole('list').children].map((li) =>
+      const rows = [...column('Queue').getByRole('list').children].map((li) =>
         li.classList.contains('board-tier') ? `# ${li.textContent}` : li.querySelector('.id')!.textContent,
       )
       expect(rows.slice(0, 7)).toEqual(['# 🔔 Rung 1', 'A-RUNG-P3', '# Priority 1 1', 'A-P1', '# Priority 2 2', 'A-P2-ONE', 'A-P2-TWO'])
-      expect(column('Backlog').getAllByRole('listitem').every((li) => li.querySelector('.id'))).toBe(true)
+      expect(column('Queue').getAllByRole('listitem').every((li) => li.querySelector('.id'))).toBe(true)
       // Done is ordered by date, not by priority, so it has no headings.
       expect(column('Done').getByRole('list').querySelector('.board-tier')).toBeNull()
     } finally {
@@ -704,7 +712,7 @@ describe('Board', () => {
     }
   })
 
-  it('holds a paused card at the foot of Backlog under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16)', async () => {
+  it('holds a paused card in Backlog, not the Queue, under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16, BEH-BOARD-18)', async () => {
     details.alpha.push(
       beh('A-PAUSED-P1', { pending: true, priority: 1, paused: true }),
       beh('A-PAUSED-RUNG', { pending: true, priority: 5, paused: true }),
@@ -714,19 +722,19 @@ describe('Board', () => {
       mockApi({}, { alpha: ['A-PAUSED-RUNG'] })
       renderBoard()
       await loaded()
-      await column('Backlog').findByText('A-LIVE-P4')
+      await column('Backlog').findByText('A-PAUSED-P1')
 
       const rows = [...column('Backlog').getByRole('list').children].map((li) =>
         li.classList.contains('board-tier') ? `# ${li.textContent}` : li.querySelector('.id')!.textContent,
       )
-      // The rung one is lifted (and still badged paused); the other paused card is after every live one.
-      expect(rows[0]).toBe('# 🔔 Rung 1')
-      expect(rows[1]).toBe('A-PAUSED-RUNG')
-      expect(rows.slice(-2)).toEqual(['# ⏸ Paused 1', 'A-PAUSED-P1'])
+      // The rung one is lifted (and still badged paused); the live card is not on Backlog at all.
+      expect(rows).toEqual(['# 🔔 Rung 1', 'A-PAUSED-RUNG', '# ⏸ Paused 1', 'A-PAUSED-P1'])
       const cards = column('Backlog').getAllByRole('listitem')
       expect(within(cards[cards.length - 1]).getByText(/paused/)).toBeInTheDocument()
       expect(within(cards[0]).getByText(/paused/)).toBeInTheDocument()
-      expect(within(cards.find((li) => li.querySelector('.id')!.textContent === 'A-LIVE-P4')!).queryByText(/paused/)).toBeNull()
+      const live = column('Queue').getAllByRole('listitem').find((li) => li.querySelector('.id')!.textContent === 'A-LIVE-P4')!
+      expect(within(live).queryByText(/paused/)).toBeNull()
+      expect(column('Queue').queryByText('A-PAUSED-P1')).not.toBeInTheDocument()
     } finally {
       details.alpha.splice(-3)
     }
@@ -749,12 +757,12 @@ describe('Board', () => {
       const card = (col: string, id: string) =>
         within(column(col).getAllByRole('listitem').find((li) => li.querySelector('.id')?.textContent === id)!)
 
-      const needs = card('Backlog', 'A-NEEDS')
+      const needs = card('Blocked', 'A-NEEDS')
       expect(needs.getByText(/yours/)).toBeInTheDocument()
       expect(needs.getByTestId('needs-context')).toHaveTextContent('which colour?')
       expect(needs.queryByText(/agent's/)).toBeNull()
-      expect(card('Backlog', 'A-BACKLOG').getByText(/agent's/)).toBeInTheDocument()
-      expect(card('Backlog', 'A-BACKLOG').queryByText(/yours/)).toBeNull()
+      expect(card('Queue', 'A-BACKLOG').getByText(/agent's/)).toBeInTheDocument()
+      expect(card('Queue', 'A-BACKLOG').queryByText(/yours/)).toBeNull()
       expect(card('Proposed', 'A-PROPOSED').getByText(/yours/)).toBeInTheDocument()
       // A finished card is nobody's move.
       const finished = card('Done', 'A-DONE')
@@ -826,14 +834,28 @@ describe('board rules', () => {
 
   it('the schedule moves only pending, adjudicated work (BEH-BOARD-3)', () => {
     const pending = beh('X', { pending: true })
-    expect(columnOf(pending)).toBe('backlog')
-    expect(columnOf(pending, { order: 1, next: false })).toBe('scheduled')
+    expect(columnOf(pending)).toBe('queue')
+    expect(columnOf(pending, { order: 1, next: false })).toBe('queue')
     expect(columnOf(pending, { order: 0, next: true })).toBe('in-progress')
     // A built behaviour is done whatever the schedule still says; an unadjudicated one is proposed.
     expect(columnOf(beh('X'), { order: 0, next: true })).toBe('done')
     expect(
       columnOf(beh('X', { pending: true, source: inferred, review: { state: 'unreviewed', note: null } }), { order: 0, next: true }),
     ).toBe('proposed')
+  })
+
+  it('pending work is Backlog when paused, Blocked when it needs his context, else Queue or In progress (BEH-BOARD-18)', () => {
+    const needs = { pending: true, needsContext: 'which colour?' }
+    expect(columnOf(beh('X', needs))).toBe('blocked')
+    // Blocked outranks the schedule: the agent cannot start what waits on him.
+    expect(columnOf(beh('X', needs), { order: 0, next: true })).toBe('blocked')
+    // Paused outranks blocked: he has said not to build it, so it is not waiting on anything.
+    expect(columnOf(beh('X', { ...needs, paused: true }))).toBe('backlog')
+    // An empty line asks for nothing.
+    expect(columnOf(beh('X', { pending: true, needsContext: '' }))).toBe('queue')
+    // Built is done, and a review request or a proposal waits on his verdict first.
+    expect(columnOf(beh('X', { needsContext: 'x' }))).toBe('done')
+    expect(columnOf(beh('X', { ...needs, review: { state: 'requested', note: 'look' } }))).toBe('review')
   })
 
   it('every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)', () => {
@@ -850,12 +872,12 @@ describe('board rules', () => {
     expect(ownerOf(beh('X', { review: asked }), 'review', false)).toBe('james')
     expect(ownerOf(beh('X', { source: inferred, review: unreviewed }), 'proposed', false)).toBe('james')
     expect(ownerOf(beh('X', { pending: true, paused: true }), 'backlog', false)).toBe('james')
-    expect(ownerOf(beh('X', { pending: true, needsContext: 'which colour?' }), 'backlog', false)).toBe('james')
+    expect(ownerOf(beh('X', { pending: true, needsContext: 'which colour?' }), 'blocked', false)).toBe('james')
     expect(ownerOf(beh('X', { pending: true, needsContext: 'which colour?' }), 'in-progress', false)).toBe('james')
     // An empty line says nothing needed, so it does not hand the card over.
-    expect(ownerOf(beh('X', { pending: true, needsContext: '' }), 'backlog', false)).toBe('agent')
+    expect(ownerOf(beh('X', { pending: true, needsContext: '' }), 'queue', false)).toBe('agent')
     // The agent's: the rest of what is still to build.
-    for (const column of ['backlog', 'scheduled', 'in-progress'] as const) {
+    for (const column of ['queue', 'in-progress'] as const) {
       expect(ownerOf(beh('X', { pending: true }), column, false)).toBe('agent')
     }
   })
