@@ -115,6 +115,8 @@ export interface Behaviour {
   in: string[]
   /** 1 (first) to 5, from a `priority` line (kit#284); absent when there is none. */
   priority?: number
+  /** A `paused` line (BEH-BOARD-16): held on the Backlog, not built. Absent when not paused. */
+  paused?: boolean
 }
 
 /** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */

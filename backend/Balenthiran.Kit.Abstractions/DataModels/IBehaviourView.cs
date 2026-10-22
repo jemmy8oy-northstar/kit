@@ -25,6 +25,9 @@ public interface IBehaviourView
 
     bool Pending { get; }
 
+    /// <summary>A <c>paused</c> line (BEH-BOARD-16).</summary>
+    bool Paused { get; }
+
     string Layer { get; }
 
     /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>

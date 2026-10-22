@@ -76,7 +76,7 @@ public sealed class KitRouter(
     private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
-    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
@@ -371,6 +371,7 @@ public sealed class KitRouter(
         var review = kind == "review";
         var remove = kind == "remove";
         var title = kind == "title";
+        var paused = kind == "paused";
 
         // `steps/{n}` replaces step n (BEH-ACT-2); bare `steps` appends one. Nothing else takes an index.
         var update = m.Groups[4].Success;
@@ -410,7 +411,13 @@ public sealed class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = "removing a behaviour takes an empty body: the id is in the path" });
         }
 
-        if (!remove && TypeError(body, review ? ReviewFields : title ? TitleFields : step || update ? StepFields : CreateFields) is { } wrongType)
+        // BEH-BOARD-16: the one boolean body. It is named, not toggled, so a double press is a no-op.
+        if (paused && Field(body, "paused") is not { ValueKind: JsonValueKind.True or JsonValueKind.False })
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "paused must be true or false" });
+        }
+
+        if (!remove && !paused && TypeError(body, review ? ReviewFields : title ? TitleFields : step || update ? StepFields : CreateFields) is { } wrongType)
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
         }
@@ -420,6 +427,8 @@ public sealed class KitRouter(
             ? writer.RemoveBehaviour(text, id!)
             : update
             ? writer.UpdateStep(text, id!, index, Str(body, "step")!)
+            : paused
+            ? writer.SetPaused(text, id!, Field(body, "paused")!.Value.GetBoolean())
             : title
             ? writer.Retitle(text, id!, Str(body, "title")!)
             : review
@@ -435,7 +444,7 @@ public sealed class KitRouter(
         }
 
         corpora.WriteText(app, result.Text!);
-        var what = remove ? $"remove {id}" : update ? $"update step {index} of {id}" : title ? $"retitle {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        var what = remove ? $"remove {id}" : update ? $"update step {index} of {id}" : title ? $"retitle {id}" : paused ? $"{(Field(body, "paused")!.Value.GetBoolean() ? "pause" : "resume")} {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
         return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 

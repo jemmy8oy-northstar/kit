@@ -121,6 +121,12 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Priority { get; set; }
 
+    // BEH-BOARD-16: a `paused` line. Absent, not false, without one — the rule `priority` follows,
+    // so no committed golden is rewritten to say nothing.
+    [JsonPropertyOrder(23)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Paused { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.

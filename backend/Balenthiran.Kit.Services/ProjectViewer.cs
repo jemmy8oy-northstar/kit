@@ -120,6 +120,7 @@ public sealed class ProjectViewer(
                 Layer = b.Layer,
                 In = (b.In ?? []).Select(t => t.Id).ToList(),
                 Priority = b.Priority,
+                Paused = b.Paused,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,

@@ -718,3 +718,58 @@ describe('adjudicating an inference', () => {
     expect(screen.queryByTestId('broad')).toBeNull()
   })
 })
+
+// ── BEH-BOARD-16: held on the Backlog, not built ────────────────────────────
+
+function withBehaviour(over: Record<string, unknown>) {
+  const p = structuredClone(snipIt)
+  Object.assign(p.behaviours.find((b) => b.id === 'BEH-HOME-1')!, over)
+  return p
+}
+
+describe('pausing a behaviour', () => {
+  it('offers Pause on a pending behaviour and writes paused true, then re-reads (BEH-BOARD-16)', async () => {
+    const calls = renderScripted(
+      [
+        { ok: true, status: 200, body: withBehaviour({ pending: true }) },
+        wrote,
+        { ok: true, status: 200, body: withBehaviour({ pending: true, paused: true }) },
+      ],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Pause' }))
+
+    await waitFor(() => expect(calls).toHaveLength(3))
+    expect(calls[1].url).toBe('/api/projects/snip-it/behaviours/BEH-HOME-1/paused')
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({ paused: true })
+    expect(await screen.findByRole('button', { name: 'Resume' })).toBeInTheDocument()
+  })
+
+  it('offers Resume on a paused behaviour and writes paused false (BEH-BOARD-16)', async () => {
+    const calls = renderScripted(
+      [
+        { ok: true, status: 200, body: withBehaviour({ pending: true, paused: true }) },
+        wrote,
+        { ok: true, status: 200, body: withBehaviour({ pending: true }) },
+      ],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Resume' }))
+
+    await waitFor(() => expect(calls).toHaveLength(3))
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeInTheDocument()
+    expect(JSON.parse(String(calls[1].init?.body))).toEqual({ paused: false })
+  })
+
+  it('offers no Pause on a built behaviour, which is not waiting to be built (BEH-BOARD-16)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({ pending: false }) }], 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByRole('button', { name: 'Approve' })
+    expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Resume' })).toBeNull()
+  })
+})
