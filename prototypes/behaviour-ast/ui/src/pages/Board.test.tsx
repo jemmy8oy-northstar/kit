@@ -835,7 +835,7 @@ describe('board rules', () => {
     ).toBe('proposed')
   })
 
-  it('every card not done is one side\'s move, and a finished or denied one is nobody\'s (BEH-BOARD-17)', () => {
+  it('every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)', () => {
     const asked = { state: 'requested', note: 'the copy' }
     const unreviewed = { state: 'unreviewed', note: null }
     // Done and denied (no column): nobody's, even with a bell or a pause or a needs-context line on it.

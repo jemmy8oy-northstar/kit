@@ -92,6 +92,14 @@
     { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "Pausing_adds_one_line_under_the_head_of_that_behaviour_only" },
     { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "Resuming_removes_the_line_and_restores_the_text_exactly" }
   ],
+  "BEH-BOARD-17": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "says on every card not yet done whose move it is, and shows what he must add on the badge (BEH-BOARD-17)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "shows what he must add, in full, on the behaviour (BEH-BOARD-17)" },
+    { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "A_needs_context_line_parses_and_marks_only_its_own_behaviour" },
+    { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "A_second_needs_context_line_is_refused_like_a_second_paused" },
+    { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "Pausing_and_resuming_keep_the_needs_context_line" }
+  ],
   "BEH-BOARD-15": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)" }
