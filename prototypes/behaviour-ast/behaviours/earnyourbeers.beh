@@ -130,7 +130,7 @@ behaviour BEH-BALANCE-1 "The dashboard shows this week's balance to 2dp, as cred
   in FEAT-BALANCE
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:290
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   when opens page:Dashboard
