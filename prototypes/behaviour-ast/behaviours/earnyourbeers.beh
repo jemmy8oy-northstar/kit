@@ -107,7 +107,7 @@ behaviour BEH-SCORE-1 "Activities earn points: run 0.5 a km, cycle 1/6 a km, swi
   in FEAT-BALANCE
   layer technical
   source inferred lib/core/logic/pint_calculator.dart:13
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   provides activity:Run.pointsPerKm = 0.5
