@@ -10,7 +10,7 @@ import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, pausedLast, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, ownerOf, pausedLast, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -249,13 +249,17 @@ export default function Board() {
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
                       .sort((a, b) => (col.id === 'scheduled' ? e.places.get(a.id)!.order - e.places.get(b.id)!.order : 0))
-                      .map((b) => ({
-                        app: e.summary.app,
-                        project: projectOf(e.summary),
-                        b,
-                        at: e.historyMissing === null ? (col.id === 'done' ? e.completed : e.added).get(b.id) : undefined,
-                        rung: isRung(b, e.bells),
-                      })),
+                      .map((b) => {
+                        const rung = isRung(b, e.bells)
+                        return {
+                          app: e.summary.app,
+                          project: projectOf(e.summary),
+                          b,
+                          at: e.historyMissing === null ? (col.id === 'done' ? e.completed : e.added).get(b.id) : undefined,
+                          rung,
+                          owner: ownerOf(b, col.id, rung),
+                        }
+                      }),
                   )
                   if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
                   // Rung cards above every priority (BEH-BELL-3), until the agent answers the bell; then the
@@ -281,7 +285,7 @@ export default function Board() {
                         </p>
                       )}
                       <ul className="cards">
-                        {cards.slice(0, limit).flatMap(({ app, project, b, rung }, i) => [
+                        {cards.slice(0, limit).flatMap(({ app, project, b, rung, owner }, i) => [
                           ...(tiers && (i === 0 || tierOf(cards[i - 1]) !== tierOf(cards[i]))
                             ? [
                                 <li key={`tier/${tierOf(cards[i])}`} className="board-tier" role="none">
@@ -304,10 +308,17 @@ export default function Board() {
                                 // What the agent wants looked at, so the card can be triaged unopened.
                                 <p>{b.review.note}</p>
                               )}
+                              {b.needsContext && (
+                                // BEH-BOARD-17: what he must add, shown not hovered: he reads the board on a phone.
+                                <p data-testid="needs-context">👤 {b.needsContext}</p>
+                              )}
                               <div className="badges">
                                 {rung && <Badge tone="warning">🔔 rung</Badge>}
                                 {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
                                 {b.paused && <Badge tone="neutral">⏸ paused</Badge>}
+                                {/* BEH-BOARD-17: whose move it is. */}
+                                {owner === 'james' && <Badge tone="primary">👤 yours</Badge>}
+                                {owner === 'agent' && <Badge tone="neutral">🤖 agent's</Badge>}
                                 {b.priority !== undefined && (
                                   <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>
                                 )}

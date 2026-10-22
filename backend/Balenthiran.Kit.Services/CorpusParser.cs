@@ -246,6 +246,19 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
+            // ── James, kit#401 (2026-10-22, BEH-BOARD-17) ───────────────────
+            // "I think we need visibility over what you have marked as yours to act on
+            // and mine to add context." The agent says what he must add, in quotes; empty
+            // says nothing, and a second line is refused like a second `paused`.
+            if (kw == "needs-context")
+            {
+                var n = Quoted.Match(rest);
+                if (!n.Success || n.Groups[1].Value.Trim().Length == 0) throw new CorpusParseException($"{at}: needs-context wants a quoted, non-empty line saying what is needed, got: {rest}");
+                if (cur.NeedsContext is not null) throw new CorpusParseException($"{at}: needs-context is already set on {cur.Id}");
+                cur.NeedsContext = n.Groups[1].Value;
+                continue;
+            }
+
             // ── James, kit#284 (2026-10-15) ─────────────────────────────────
             // "You give it a priority score and this is used to rank it on the
             // board. Top priority at the top." 1 is first, 5 is last — the scale

@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Board from './Board'
 import App from '../App'
-import { byCompletion, byPriority, columnOf, hueOf, HUES, isQuestion } from '../board'
+import { byCompletion, byPriority, columnOf, hueOf, HUES, isQuestion, ownerOf } from '../board'
 import type { Behaviour, CompletionList } from '../api/types'
 
 // Hand-built, not the generated fixtures: the board's rules are about the shape
@@ -740,6 +740,31 @@ describe('Board', () => {
     expect(columnOf(beh('X', { pending: true, paused: true, review: { state: 'denied', note: 'no' } }))).toBeNull()
   })
 
+  it('says on every card not yet done whose move it is, and shows on the card what he must add (BEH-BOARD-17)', async () => {
+    details.alpha.push(beh('A-NEEDS', { pending: true, needsContext: 'which colour?' }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      const card = (col: string, id: string) =>
+        within(column(col).getAllByRole('listitem').find((li) => li.querySelector('.id')?.textContent === id)!)
+
+      const needs = card('Backlog', 'A-NEEDS')
+      expect(needs.getByText(/yours/)).toBeInTheDocument()
+      expect(needs.getByTestId('needs-context')).toHaveTextContent('which colour?')
+      expect(needs.queryByText(/agent's/)).toBeNull()
+      expect(card('Backlog', 'A-BACKLOG').getByText(/agent's/)).toBeInTheDocument()
+      expect(card('Backlog', 'A-BACKLOG').queryByText(/yours/)).toBeNull()
+      expect(card('Proposed', 'A-PROPOSED').getByText(/yours/)).toBeInTheDocument()
+      // A finished card is nobody's move.
+      const finished = card('Done', 'A-DONE')
+      expect(finished.queryByText(/yours/)).toBeNull()
+      expect(finished.queryByText(/agent's/)).toBeNull()
+    } finally {
+      details.alpha.pop()
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(
@@ -809,6 +834,30 @@ describe('board rules', () => {
     expect(
       columnOf(beh('X', { pending: true, source: inferred, review: { state: 'unreviewed', note: null } }), { order: 0, next: true }),
     ).toBe('proposed')
+  })
+
+  it('every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)', () => {
+    const asked = { state: 'requested', note: 'the copy' }
+    const unreviewed = { state: 'unreviewed', note: null }
+    // Done and denied (no column): nobody's, even with a bell or a pause or a needs-context line on it.
+    expect(ownerOf(beh('X'), 'done', false)).toBeNull()
+    expect(ownerOf(beh('X', { paused: true, needsContext: 'x' }), 'done', true)).toBeNull()
+    expect(ownerOf(beh('X'), null, false)).toBeNull()
+    // A rung bell is the agent's, even on a paused card, a proposal or a review request.
+    expect(ownerOf(beh('X', { pending: true, paused: true }), 'backlog', true)).toBe('agent')
+    expect(ownerOf(beh('X', { review: asked }), 'review', true)).toBe('agent')
+    // His: a request, a proposal, a paused card, a card with a needs-context line.
+    expect(ownerOf(beh('X', { review: asked }), 'review', false)).toBe('james')
+    expect(ownerOf(beh('X', { source: inferred, review: unreviewed }), 'proposed', false)).toBe('james')
+    expect(ownerOf(beh('X', { pending: true, paused: true }), 'backlog', false)).toBe('james')
+    expect(ownerOf(beh('X', { pending: true, needsContext: 'which colour?' }), 'backlog', false)).toBe('james')
+    expect(ownerOf(beh('X', { pending: true, needsContext: 'which colour?' }), 'in-progress', false)).toBe('james')
+    // An empty line says nothing needed, so it does not hand the card over.
+    expect(ownerOf(beh('X', { pending: true, needsContext: '' }), 'backlog', false)).toBe('agent')
+    // The agent's: the rest of what is still to build.
+    for (const column of ['backlog', 'scheduled', 'in-progress'] as const) {
+      expect(ownerOf(beh('X', { pending: true }), column, false)).toBe('agent')
+    }
   })
 
   it('Done sorts ahead-of-history first, then newest, then undated, keeping ties in place', () => {
