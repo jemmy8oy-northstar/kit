@@ -651,7 +651,7 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review requested your call before I build: the order needs one new file outside every project, with its own write route, and that storage shape is yours (claude-code-bot#58). Approve and I build it as proposed; deny and it is dropped
+  review denied Tbh I think let’s just pause this for now. Do we have an option for backlog but don’t action. Paused seems appropriate. I think we pause because we have bell now. Let’s see how that goes first.
   priority 3
   pending
   actor engineer
