@@ -191,3 +191,17 @@ This also makes me wodner whether this is performing a full redirect rather than
 ## 2026-10-22 16:39Z
 
 The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context
+
+## 2026-10-22 22:37Z · new behaviour
+
+Backlog items that are the humans to act should go in a blocked column maybe this can be after scheduled before in progress
+
+I feel like we aren’t using scheduled does scheduled have a place atm i feel like we are just using backlog but that might be ok
+
+Lets ditch scheduled since backlog is essentially backlog
+
+I feel like what is on the backlog currently should really be the queue
+
+Backlog can more be like this is on the backlog no plan to implement right now either because the ai needs to put more thought into it or the human has actively paused it
+
+Maybe we can have a queue column for ready to be executed tasks
