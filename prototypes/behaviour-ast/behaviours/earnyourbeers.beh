@@ -120,7 +120,7 @@ behaviour BEH-SCORE-2 "Activity points are scaled by the league's difficulty; a 
   in FEAT-BALANCE
   layer technical
   source inferred lib/core/logic/pint_calculator.dart:48
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   contract balance = (sum of activity points × difficulty) − (sum of vice units)
