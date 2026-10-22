@@ -107,7 +107,7 @@ behaviour BEH-SCORE-1 "Activities earn points: run 0.5 a km, cycle 1/6 a km, swi
   in FEAT-BALANCE
   layer technical
   source inferred lib/core/logic/pint_calculator.dart:13
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   provides activity:Run.pointsPerKm = 0.5
@@ -120,7 +120,7 @@ behaviour BEH-SCORE-2 "Activity points are scaled by the league's difficulty; a 
   in FEAT-BALANCE
   layer technical
   source inferred lib/core/logic/pint_calculator.dart:48
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   contract balance = (sum of activity points × difficulty) − (sum of vice units)
@@ -130,7 +130,7 @@ behaviour BEH-BALANCE-1 "The dashboard shows this week's balance to 2dp, as cred
   in FEAT-BALANCE
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:290
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   when opens page:Dashboard
@@ -144,7 +144,7 @@ behaviour BEH-LOG-1 "One tap logs one unit: a vice, a km run, a km cycled, or a 
   in FEAT-LOG
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:844
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   when opens page:Dashboard

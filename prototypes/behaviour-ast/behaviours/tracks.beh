@@ -94,7 +94,7 @@ behaviour BEH-SYNC-3 "Each finished run is kept with its songs, so the latest on
   priority 1
   actor runner
   contract GET /api/runs lists the runs Tracks has noticed, newest first, each with the songs from BEH-SYNC-2
-  contract runs are kept in the database per runner (BEH-CONNECT-3), so a restart forgets nothing
+  contract runs are kept in the database per runner (BEH-ACCOUNT-5), so a restart forgets nothing
 
 behaviour BEH-SYNC-4 "The home page lists each noticed run with the songs played during it"
   in FEAT-SYNC
@@ -117,14 +117,14 @@ behaviour BEH-CONNECT-1 "A runner signs in to Tracks with their Strava account"
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   when opens page:Home
   when activates button:SignInWithStrava
   then sees region:Runs
   contract signed out, the home page shows the hero and one action, Sign in with Strava, with a note that Tracks only reads Strava and Spotify
-  contract the button goes to Strava and returns to the home page signed in. Signing in is how Strava gets connected (BEH-CONNECT-3), so there is no separate Connect page
+  contract the button goes to Strava and returns to the home page signed in. Signing in is how Strava gets connected (BEH-ACCOUNT-1), so there is no separate Connect page
   contract read-only: Tracks never writes to Strava unless BEH-SHARE-2 is approved
   contract unreviewed because the single-page flow is my choice; it replaced the Connect page this spec first named
 
@@ -132,7 +132,7 @@ behaviour BEH-CONNECT-2 "A signed-in runner connects Spotify so their runs get s
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   given runner:SignedInWithoutSpotify
@@ -162,22 +162,61 @@ behaviour BEH-SYNC-5 "After a run, the runner opens Tracks and finds it there wi
 
 # ═══ DEFINED — tracks#6 (multi-user) ═══
 
-behaviour BEH-CONNECT-3 "Anyone can sign in and connect their own accounts; each runner sees only their own runs"
+# Was BEH-CONNECT-3, "Anyone can sign in and connect their own accounts; each runner
+# sees only their own runs" (tracks#6: "We should have multi user sign in I want this
+# to be used by other people"). Split into this feature when he approved the split on
+# 2026-10-22 11:23Z (BEH-EPIC-9). Its contracts moved into the five children, unchanged.
+feature FEAT-ACCOUNTS "Each runner has their own account"
   in FEAT-CONNECT
+  stage ui
+
+behaviour BEH-ACCOUNT-1 "Signing in with Strava is the account, held in an HttpOnly session cookie"
+  in FEAT-ACCOUNTS
   layer technical
-  source defined tracks#6
-  review requested a split (BEH-EPIC-9): nine contracts that each ship alone. I would make this a feature, FEAT-ACCOUNTS "Each runner has their own account", with five children: signing in with Strava is the account; the OAuth round-trip is refused without its state; each runner's tokens live in the database; a webhook event reaches only its owner, and revoking deletes the runner; a runner sees only their own runs. Approve and I split it: all five inferred, and built, since the behaviour is; deny and it stays one behaviour
+  source inferred tracks#6
+  review unreviewed
   priority 1
   actor runner
-  contract "We should have multi user sign in I want this to be used by other people"
   contract signing in with Strava is the account: the Strava athlete is the user, so there is no password. Unreviewed: my choice
   contract the session is an HttpOnly cookie, the same mechanism as earnyourbeers. Unreviewed: my choice
+  contract Spotify allows 5 users and Strava 10 before a provider review, so this is a friends-and-family ceiling until he asks for more
+
+behaviour BEH-ACCOUNT-2 "An OAuth round-trip that does not bring its state back is refused"
+  in FEAT-ACCOUNTS
+  layer technical
+  source inferred tracks#6
+  review unreviewed
+  priority 1
+  actor runner
   contract each OAuth round-trip carries a random state that must come back unchanged, or the sign-in is refused
+
+behaviour BEH-ACCOUNT-3 "Each runner's tokens live in the database, not in config"
+  in FEAT-ACCOUNTS
+  layer technical
+  source inferred tracks#6
+  review unreviewed
+  priority 1
+  actor runner
   contract each runner's Strava and Spotify refresh tokens live in the database, not in config; config holds only the app's client id and secret per provider and the webhook verify token
+
+behaviour BEH-ACCOUNT-4 "A Strava event reaches only its owner, and a runner who revokes Tracks is deleted"
+  in FEAT-ACCOUNTS
+  layer technical
+  source inferred tracks#6
+  review unreviewed
+  priority 1
+  actor runner
   contract a Strava webhook event is routed by its owner_id to that runner; an athlete who never signed in is acknowledged and ignored
   contract a runner who revokes Tracks on Strava is deleted with their runs. Unreviewed: delete rather than keep is my choice
+
+behaviour BEH-ACCOUNT-5 "A runner sees only their own runs"
+  in FEAT-ACCOUNTS
+  layer technical
+  source inferred tracks#6
+  review unreviewed
+  priority 1
+  actor runner
   contract GET /api/runs needs a signed-in runner and returns only their runs
-  contract Spotify allows 5 users and Strava 10 before a provider review, so this is a friends-and-family ceiling until he asks for more
 
 behaviour BEH-CONNECT-4 "When Strava is full, a new runner is told Tracks is full, not shown Strava's error"
   in FEAT-CONNECT
@@ -193,7 +232,7 @@ behaviour BEH-CONNECT-4 "When Strava is full, a new runner is told Tracks is ful
   contract my answer: Strava limits it. It counts connected athletes per app: 1 for a new app, up to 10 once raised in his API settings, and more only after Strava reviews the app. The next athlete's sign-in is refused with 403 "Limit of connected athletes exceeded"
   contract my proposal: no cap in Tracks. A second count that agrees with Strava's is a number to keep in step, and it can only refuse people Strava would let in
   contract my proposal: when Strava refuses, Tracks returns to the home page with "Tracks is full for now", not a raw error. An existing runner signing in again is unaffected, because they are already connected
-  contract Spotify is the tighter gate, at 5 users before its own review (BEH-CONNECT-3), and nothing in Tracks words that refusal yet either
+  contract Spotify is the tighter gate, at 5 users before its own review (BEH-ACCOUNT-1), and nothing in Tracks words that refusal yet either
 
 behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along its route"
   in FEAT-MAP
@@ -213,7 +252,7 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   in FEAT-MAP
   layer technical
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end

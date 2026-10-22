@@ -651,7 +651,7 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review requested your call before I build: the order needs one new file outside every project, with its own write route, and that storage shape is yours (claude-code-bot#58). Approve and I build it as proposed; deny and it is dropped
+  review denied Tbh I think let’s just pause this for now. Do we have an option for backlog but don’t action. Paused seems appropriate. I think we pause because we have bell now. Let’s see how that goes first.
   priority 3
   pending
   actor engineer
@@ -662,6 +662,24 @@ behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   contract my proposal: the order he sets is one list of ids in one file beside the corpora; a card not on it falls back to (score, most recent) below the ones that are, so a new card never needs a write
   contract my proposal: drags made within a few seconds of each other land as one commit, so rearranging ten cards is not ten commits
   contract my proposal: a drag across a priority boundary does not rewrite the priority line; the list is his order, the score stays the agent's, and a bell still lifts a card above both (BEH-BELL-3)
+
+# His denial of BEH-BOARD-13 (2026-10-22 11:19Z) asked for this state, and BOARD-13
+# is to be its first card once it is built.
+behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the agent does not build it"
+  in FEAT-BOARD
+  source defined kit-ui.beh#BEH-BOARD-13
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract "Do we have an option for backlog but don't action. Paused seems appropriate. I think we pause because we have bell now. Let's see how that goes first."
+  contract my assumption: paused is a line on the behaviour, as pending is, so the corpus says it and a pause survives every wake; denying still means dropped
+  contract a paused card sits at the foot of the Backlog column under a Paused heading, with a "paused" badge, and its page offers Pause and Resume beside Approve and Deny
+  contract the agent's wake sweep never lists a paused card as work, so it can sleep over one
+  contract ringing a paused card's bell asks the agent whether it should resume, and the agent answers as for any bell (BEH-BELL-2)
+  contract my assumption: the paused line is a corpus language change (claude-code-bot#58), which his request for it approves
 
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
@@ -754,8 +772,9 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
 # A feature's stage lives in the corpus as `stage <problem|ux|logic|development|ui>`
 # under its `feature` line: a corpus LANGUAGE change (claude-code-bot#58), which he
 # approved on BEH-STAGE-1 at 2026-10-19 13:39Z. Built: BEH-STAGE-1, -2, -3 and -8
-# (-2 on 2026-10-21: every feature in the real corpora got a stage line). Still
-# pending: the agent's other halves (-5, -6).
+# (-2 on 2026-10-21: every feature in the real corpora got a stage line; split into
+# FEAT-STAGE-READING on 2026-10-22). The agent's other halves (-5, -6) were closed
+# on 2026-10-22 (kit#401) with the evidence written on each.
 
 feature FEAT-STAGES "Feature stages"
   stage development
@@ -772,13 +791,20 @@ behaviour BEH-STAGE-1 "A separate board takes every feature through five stages:
   contract separate from the behaviour board (FEAT-BOARD) for now; unifying the two is a later call, before a public release
   contract a column per stage, a card per feature, coloured by project as the behaviour board's are
 
-# Rewritten from his 16:16Z note, which answered what "written" means here: the
-# stage is the agent's rough reading of the spec and the code, not a gate he fills.
-behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from how much of its spec is written and how much is built"
+# Was BEH-STAGE-2, "The agent puts each feature at a rough stage, read from how much
+# of its spec is written and how much is built". Rewritten from his 16:16Z note (the
+# stage is the agent's rough reading of the spec and the code, not a gate he fills),
+# then split into this feature when he approved the split on 2026-10-22 11:20Z
+# (BEH-EPIC-9). Its contracts moved into the three children below, unchanged.
+feature FEAT-STAGE-READING "The agent reads each feature's stage"
   in FEAT-STAGES
-  source defined kit.notes.md#2026-10-19-0823
-  source defined kit.notes.md#2026-10-19-1616
-  review requested a split (BEH-EPIC-9): seven contracts. I would make this a feature, FEAT-STAGE-READING "The agent reads each feature's stage", with three children: the board is for reading and he never moves a card; a feature with built behaviours sits at development or ui; a feature with none built is placed by reading it. Approve and I split it: all three inferred, and built, since the behaviour is; deny and it stays one behaviour
+  stage ui
+
+behaviour BEH-STAGE-9 "The stage board is for reading: the agent writes every stage line, and he never moves a card"
+  in FEAT-STAGE-READING
+  source inferred kit.notes.md#2026-10-19-0823
+  source inferred kit.notes.md#2026-10-19-1616
+  review unreviewed
   priority 2
   actor engineer
   when opens page:KitStages
@@ -787,9 +813,29 @@ behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from h
   contract "the human can use it to quickly identify what work is left to be done": the board is for reading, and he never has to move a card
   contract every feature goes through the stages; a simple one just needs less written at each, and a one-line answer is enough
   contract the agent writes the stage line and moves it on when it rereads the feature; "rough" means a stage can lag the spec by a wake
+
+behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
+  in FEAT-STAGE-READING
+  source inferred kit.notes.md#2026-10-19-1616
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
   contract my assumption: a feature with every behaviour built is at ui, since UI is the stage that stays open after development (BEH-STAGE-4); one with some built is at development
-  contract my assumption: a feature with nothing built is placed by reading it: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
   contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
+  contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
+
+behaviour BEH-STAGE-11 "A feature with nothing built is placed by reading it"
+  in FEAT-STAGE-READING
+  source inferred kit.notes.md#2026-10-19-1616
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract my assumption: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
+  contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -815,22 +861,23 @@ behaviour BEH-STAGE-5 "The agent turns a note that describes a complex feature i
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-19-0823
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract the note's words become the problem statement's draft, and the note is deleted in the same change, as every folded note is
+  contract the note's words become the problem statement's draft, and the note archives itself once folded (BEH-NOTE-11)
   contract the agent decides a note is a feature; he can move it back to a note by denying it
+  contract built by the agent: his 2026-10-19 19:33Z note became FEAT-BELL and FEAT-COMMENTS, each written at the problem stage with its children inferred
+  contract the agent's own process, so no test can name it; BEH-STAGE-10's test holds the other end, that a feature leaves problem once anything in it is built
 
 behaviour BEH-STAGE-6 "Overlap between features is the agent's concern, not his"
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   priority 4
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract the agent finds shared upstream dependencies between features and keeps them DRY during development; the board never asks him to
+  contract built by construction: no page in Kit asks him about overlap, and a feature's card shows only its own behaviours; where two features share one, the behaviour carries both `in` lines (BEH-STAGE-5 and FEAT-NOTES)
 
 # Was "only a feature with a stage line is on the board", my inference. His answer
 # on it (kit-ui.notes.md 2026-10-20 07:13Z) replaced it with a column.
@@ -919,32 +966,33 @@ behaviour BEH-EPIC-5 "A new epic's children start pending"
   in FEAT-EPICS
   source defined kit.notes.md#2026-10-19-1644
   priority 4
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when you create an epic, all of its children and grand children will likely be created as pending or new"
+  contract built by the agent: EPIC-KIT-USERS's seven features came in at the problem stage, and all eight of its behaviours were written pending
 
 behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and proposes them"
   in FEAT-EPICS
   source defined kit.notes.md#2026-10-19-1721
+  source defined kit.notes.md#2026-10-22-1639
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
+  contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
+  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's does
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   in FEAT-EPICS
   source defined kit.notes.md#2026-10-19-1721
   priority 4
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract written as EPIC-KIT-USERS below; his description is kept here until its children are drafted (BEH-EPIC-6)
+  contract written as EPIC-KIT-USERS below, and its children drafted there: seven features, all at the problem stage; his description is kept here as their source
   contract his list: works with the user's own GitHub (OAuth and a GitHub App, with a smooth sign-up); no central spec in the kit repo; projects inferred from their GitHub; new kit projects get new repos
   contract his list: the dev process and context move to a shared, generic place for every user, with per-user memory (perhaps a database)
   contract his list: production security such as secret management; per-user databases (a cheaper dev tier, and a production tier); usage, cost and payment, charging for compute and AI tokens
@@ -1101,7 +1149,7 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
 # His note of 2026-10-19 19:33Z: a "nudge", maybe a bell ("fits in with the cat theme"),
 # comments under items, and a floating button for notes. Captured, not scheduled.
 feature FEAT-BELL "Ring an item's bell"
-  stage development
+  stage ui
 
 behaviour BEH-BELL-1 "Ringing an item's bell asks the AI to look at it again"
   in FEAT-BELL
@@ -1121,13 +1169,13 @@ behaviour BEH-BELL-2 "A rung item is either reprioritised or answered with why n
   in FEAT-BELL
   source inferred kit.notes.md#2026-10-19-1933
   review approved
-  pending
   actor engineer
   when opens page:KitBehaviour
   then sees region:KitMain
   contract "the ai can choose to prioritise it higher or leave a comment on it … to explain why this is not higher priority"
   contract my assumption: the answer is a comment on the item (FEAT-COMMENTS), so a bell is never silently dropped
-  contract my assumption, until FEAT-COMMENTS is built: the agent answers in the pull request that deletes the bell, which either changes the item's priority or adds a contract saying why not
+  contract my assumption: a comment is a note, and notes live on the branch Kit writes, which a fold into dev cannot touch (BEH-NOTE-3); so the agent answers in the pull request that folds the bell, which either changes the item's priority or adds a contract on it saying why not, and the answer shows on the item from there
+  contract built: the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists every unanswered bell first, above the Backlog, and the agent may not sleep while one is listed (kit#401)
 
 behaviour BEH-BELL-3 "A rung card sits at the top of its board column until its bell is answered"
   in FEAT-BELL
@@ -1142,7 +1190,7 @@ behaviour BEH-BELL-3 "A rung card sits at the top of its board column until its 
   contract a rung card carries a "rung" badge; Scheduled, In progress and Done keep their own order
 
 feature FEAT-COMMENTS "Comments under an item"
-  stage problem
+  stage ui
 
 behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry their own comments"
   in FEAT-COMMENTS
