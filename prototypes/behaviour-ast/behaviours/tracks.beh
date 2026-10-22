@@ -117,7 +117,7 @@ behaviour BEH-CONNECT-1 "A runner signs in to Tracks with their Strava account"
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   when opens page:Home
