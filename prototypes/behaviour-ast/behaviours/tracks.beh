@@ -222,7 +222,7 @@ behaviour BEH-CONNECT-4 "When Strava is full, a new runner is told Tracks is ful
   in FEAT-CONNECT
   layer ux
   source defined tracks.notes.md#2026-10-22-1124
-  review requested sign-in is yours. Strava caps sign-ups itself, so I would add no cap of our own and only word the refusal. Approve and I build it; deny and Strava's own error stays. Also check your Strava API settings: a new app allows 1 athlete until you raise it to 10 there
+  review approved
   priority 3
   pending
   actor runner
