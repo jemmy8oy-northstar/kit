@@ -5,6 +5,7 @@ import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
 import BellButton from '../components/BellButton'
+import NotesPanel from '../components/NotesPanel'
 import LayerChips from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
 import ResourceView from '../components/Resource'
@@ -105,6 +106,9 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
           </p>
         )}
       </section>
+
+      {/* BEH-COMMENT-1: a feature carries its own comments, which are the notes left on it. */}
+      <NotesPanel app={app} behaviour={feature.id} />
     </>
   )
 }

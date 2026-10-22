@@ -243,6 +243,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what the epic board card title opens (BEH-EPIC-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "is what a feature page epic tag opens (BEH-EPIC-8)" }
   ],
+  "BEH-COMMENT-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows EPIC-SHIP only its own comments, and a comment left there names it (BEH-COMMENT-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/EpicPage.test.tsx", "title": "shows FEAT-TOP only its own comments, and a comment left there names it (BEH-COMMENT-1)" }
+  ],
   "BEH-EPIC-9": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "says a behaviour with more than six contracts could be a feature, and only that one (BEH-EPIC-9)" }
   ],
