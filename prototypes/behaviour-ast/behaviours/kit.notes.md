@@ -213,3 +213,7 @@ The questions tab doesn’t really show questions at the moment it kind of just 
 ## 2026-10-22 22:48Z
 
 Where kit currently has behs and features which need decisions to be made. I think kit it is important that kit starts to raise the questions which helps guide the user in the right direction. Right now I’m not sure what ux ui or logic to define to unblock kit
+
+## 2026-10-22 23:47Z · new behaviour
+
+Kit is asking you needs a way to reply
