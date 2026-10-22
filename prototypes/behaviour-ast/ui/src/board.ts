@@ -30,6 +30,8 @@ export function columnOf(b: Behaviour, place?: Place): Column | null {
   if (b.review.state === 'requested') return 'review'
   if (b.source.origin === 'inferred' && b.review.state === 'unreviewed') return 'proposed'
   if (!b.pending) return 'done'
+  // BEH-BOARD-16: held, so it is backlog even when a schedule lists it; the agent does not pick it up.
+  if (b.paused) return 'backlog'
   if (place?.next) return 'in-progress'
   if (place) return 'scheduled'
   return 'backlog'
@@ -112,6 +114,15 @@ export function rungFirst<T extends { rung: boolean }>(cards: T[]): T[] {
 }
 
 /**
+ * BEH-BOARD-16: a paused card goes to the foot of its column, under every priority, keeping the order
+ * it came in. Applied before {@link rungFirst}, so a rung bell still lifts a paused card (BEH-BELL-3):
+ * ringing it is how he asks whether to resume.
+ */
+export function pausedLast<T extends { b: { paused?: boolean } }>(cards: T[]): T[] {
+  return [...cards.filter((c) => !c.b.paused), ...cards.filter((c) => c.b.paused)]
+}
+
+/**
  * BEH-BOARD-11 (his 2026-10-19 17:25Z note: "questions should probably appear on the board as well"):
  * a review request whose note ends in a question mark is the agent asking him something, not only
  * asking for a look. The rule is the agent's assumption, unreviewed in the spec.
@@ -130,9 +141,10 @@ export function questionsFirst<T extends { b: { review: { state: string; note?: 
  * ranked card sits in, in the order {@link rungFirst} and {@link questionsFirst} put them, so a
  * heading can start each run.
  */
-export function tierOf(c: { rung: boolean; b: { priority?: number; review: { state: string; note?: string | null } } }): string {
+export function tierOf(c: { rung: boolean; b: { priority?: number; paused?: boolean; review: { state: string; note?: string | null } } }): string {
   if (c.rung) return '🔔 Rung'
   if (isQuestion(c.b)) return '❓ Questions'
+  if (c.b.paused) return '⏸ Paused'
   return c.b.priority === undefined ? 'Unscored' : `Priority ${c.b.priority}`
 }
 

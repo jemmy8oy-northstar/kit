@@ -200,6 +200,17 @@ export function setReview(
 }
 
 /**
+ * Pause a behaviour, or resume it (BEH-BOARD-16): the state is named, not toggled, so a double press
+ * writes nothing new. It adds or removes the corpus's `paused` line.
+ */
+export function setPaused(app: string, id: string, paused: boolean): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/paused`,
+    { paused },
+  )
+}
+
+/**
  * Remove a behaviour (BEH-ACT-3). The id is in the path and the body is an empty
  * object: the server refuses any field at all, so there is nothing here that
  * could be mistaken for a way to say more than "remove this".

@@ -704,6 +704,42 @@ describe('Board', () => {
     }
   })
 
+  it('holds a paused card at the foot of Backlog under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16)', async () => {
+    details.alpha.push(
+      beh('A-PAUSED-P1', { pending: true, priority: 1, paused: true }),
+      beh('A-PAUSED-RUNG', { pending: true, priority: 5, paused: true }),
+      beh('A-LIVE-P4', { pending: true, priority: 4 }),
+    )
+    try {
+      mockApi({}, { alpha: ['A-PAUSED-RUNG'] })
+      renderBoard()
+      await loaded()
+      await column('Backlog').findByText('A-LIVE-P4')
+
+      const rows = [...column('Backlog').getByRole('list').children].map((li) =>
+        li.classList.contains('board-tier') ? `# ${li.textContent}` : li.querySelector('.id')!.textContent,
+      )
+      // The rung one is lifted (and still badged paused); the other paused card is after every live one.
+      expect(rows[0]).toBe('# 🔔 Rung 1')
+      expect(rows[1]).toBe('A-PAUSED-RUNG')
+      expect(rows.slice(-2)).toEqual(['# ⏸ Paused 1', 'A-PAUSED-P1'])
+      const cards = column('Backlog').getAllByRole('listitem')
+      expect(within(cards[cards.length - 1]).getByText(/paused/)).toBeInTheDocument()
+      expect(within(cards[0]).getByText(/paused/)).toBeInTheDocument()
+      expect(within(cards.find((li) => li.querySelector('.id')!.textContent === 'A-LIVE-P4')!).queryByText(/paused/)).toBeNull()
+    } finally {
+      details.alpha.splice(-3)
+    }
+  })
+
+  it('keeps a paused behaviour in Backlog even when a schedule lists it (BEH-BOARD-16)', () => {
+    expect(columnOf(beh('X', { pending: true, paused: true }), { order: 0, next: true })).toBe('backlog')
+    expect(columnOf(beh('X', { pending: true }), { order: 0, next: true })).toBe('in-progress')
+    // A built behaviour is done, paused line or not; a denied one is still on no column.
+    expect(columnOf(beh('X', { paused: true }))).toBe('done')
+    expect(columnOf(beh('X', { pending: true, paused: true, review: { state: 'denied', note: 'no' } }))).toBeNull()
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(

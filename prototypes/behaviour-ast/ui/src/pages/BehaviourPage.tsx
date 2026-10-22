@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import {
-  addBinding, addStep, fetchProject, removeBehaviour, retitle, setReview, updateStep,
+  addBinding, addStep, fetchProject, removeBehaviour, retitle, setPaused, setReview, updateStep,
 } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
 import type {
@@ -502,6 +502,17 @@ function AdjudicateForm({
         >
           {saving ? 'Writing…' : 'Deny'}
         </Button>
+        {/* BEH-BOARD-16: held on the Backlog, not built, and still the same behaviour: denying means dropped. */}
+        {(behaviour.pending || behaviour.paused) && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => run(() => setPaused(app, behaviour.id, !behaviour.paused))}
+            disabled={saving}
+          >
+            {saving ? 'Writing…' : behaviour.paused ? 'Resume' : 'Pause'}
+          </Button>
+        )}
       </div>
       <WriteFeedback write={write} />
     </section>
