@@ -394,10 +394,12 @@ behaviour BEH-EDITION-4 "A take shows its transcript, made on the phone"
   source defined snip-it.notes.md#2026-10-21-1652
   review unreviewed
   priority 3
-  pending
   actor creator
   contract "Kit shows transcript with take locally": my reading is that the take's own screen shows what was said, transcribed on the phone, in both editions
   contract the other reading is that Kit's web view shows a saved take with its transcript; deny this one if that is what he meant, and it moves under BEH-EDITION-3
+  contract my assumption: the words come from the speech engine that already moves the script, kept from Record to Stop, so there is no second transcription pass and no wait
+  contract a take recorded while the speech model was not listening says so, rather than showing an empty transcript as if nothing was said
+  contract built in snip-it#68: the transcript sits under the video in the take's player, saved beside the take and shared with its cut. Unverified on a phone
 
 # ── an idea, not yet work (snip-it#66, his conversation about a teleprompter that helps when you stumble) ──
 
