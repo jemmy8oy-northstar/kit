@@ -42,7 +42,11 @@
   },
   "heading:KitQuestionSheet": {
     "role": "heading",
-    "name": "Question sheet"
+    "name": "Problems in the spec"
+  },
+  "heading:KitAsking": {
+    "role": "heading",
+    "name": "Kit is asking you"
   },
   "heading:KitNeverAdjudicated": {
     "role": "heading",
