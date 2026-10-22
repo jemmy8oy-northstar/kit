@@ -150,6 +150,25 @@ behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   then sees heading:KitNeverAdjudicated
   then sees button:KitAskForBehaviour
 
+behaviour BEH-SHEET-2 "The Questions tab leads with what Kit is asking him, and calls the rest problems"
+  in FEAT-PROJECT
+  layer ux
+  source defined kit.notes.md#2026-10-22-2248
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  when activates tab:KitProjectQuestionsTab
+  then sees heading:KitAsking
+  then sees heading:KitQuestionSheet
+  contract "The questions tab doesn't really show questions at the moment it kind of just shows probelms" (kit.notes.md, 2026-10-22 22:46Z)
+  contract "I think kit it is important that kit starts to raise the questions which helps guide the user in the right direction. Right now I'm not sure what ux ui or logic to define to unblock kit"
+  contract first on the tab, under "Kit is asking you": every needs-context line on a card still to build and not paused (BEH-BOARD-17), and every review request whose note is a question (BEH-BOARD-11); the question is in bold, with the card it is about beneath it as a link
+  contract the old Question sheet heading reads "Problems in the spec": conflicts and never-adjudicated inferences are problems Kit found, not questions
+  contract the tab's count includes the questions, so a project with only questions still shows a count
+  contract each needs-context line is one answerable question that ends with what the agent does if he never answers, so silence is a decision rather than a block (the agent's practice since kit#413)
+  contract my assumption: he answers in a note or on the card, as for any review; no answer box sits on the question yet
+
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
   actor engineer

@@ -490,6 +490,12 @@ pre {
   margin: var(--space-3) 0;
 }
 
+/* BEH-SHEET-2: the question is what he reads; the card it is about is its caption. */
+.ask {
+  font-weight: 600;
+  margin: 0 0 var(--space-1);
+}
+
 /* The bell's explanation reads as a caption beside its button, not as the button's next word. */
 .bell .muted {
   margin-left: var(--space-2);
