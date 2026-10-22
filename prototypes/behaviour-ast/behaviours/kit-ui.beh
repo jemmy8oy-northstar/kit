@@ -801,7 +801,7 @@ behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback o
   source defined kit.notes.md#2026-10-16-0730
   priority 5
   pending
-  needs-context "Waits until Kit has users other than you; say when it does"
+  needs-context "Does Kit have a user other than you yet? Until you say yes, I leave this."
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -1090,7 +1090,7 @@ behaviour BEH-USERS-1 "A new user signs up with their GitHub account and install
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Who can sign up first: only people you invite, or anyone with a GitHub account? I would start invite-only."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1106,7 +1106,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Is a project simply any repo where Kit's GitHub App is installed and a spec exists, with no list kept in Kit? I would say yes."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1118,7 +1118,7 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Should Kit create a new project's repo in the user's own GitHub, which means the App asks for permission to create repos? I would say yes."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1133,7 +1133,7 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Where does a user's memory live: a folder in their own repo, or a database Kit runs? I would use their own repo, so nothing of theirs is stored by Kit."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1175,7 +1175,7 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Who pays for the AI: each user brings their own Anthropic key, or you pay and charge them? I would start with their own key, so no billing is needed yet."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1191,7 +1191,7 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Your call (#58): multi-user Kit needs auth, billing and platform decisions before I build any of it"
+  needs-context "Should every page check that the project is yours now, or only once a second user exists? I would add the check with the first sign-up, not before."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
