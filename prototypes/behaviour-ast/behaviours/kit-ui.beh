@@ -763,7 +763,7 @@ behaviour BEH-STAGE-2 "The agent puts each feature at a rough stage, read from h
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-19-0823
   source defined kit.notes.md#2026-10-19-1616
-  review unreviewed
+  review requested a split (BEH-EPIC-9): seven contracts. I would make this a feature, FEAT-STAGE-READING "The agent reads each feature's stage", with three children: the board is for reading and he never moves a card; a feature with built behaviours sits at development or ui; a feature with none built is placed by reading it. Approve and I split it: all three inferred, and built, since the behaviour is; deny and it stays one behaviour
   priority 2
   actor engineer
   when opens page:KitStages

@@ -166,7 +166,7 @@ behaviour BEH-CONNECT-3 "Anyone can sign in and connect their own accounts; each
   in FEAT-CONNECT
   layer technical
   source defined tracks#6
-  review unreviewed
+  review requested a split (BEH-EPIC-9): nine contracts that each ship alone. I would make this a feature, FEAT-ACCOUNTS "Each runner has their own account", with five children: signing in with Strava is the account; the OAuth round-trip is refused without its state; each runner's tokens live in the database; a webhook event reaches only its owner, and revoking deletes the runner; a runner sees only their own runs. Approve and I split it: all five inferred, and built, since the behaviour is; deny and it stays one behaviour
   priority 1
   actor runner
   contract "We should have multi user sign in I want this to be used by other people"
