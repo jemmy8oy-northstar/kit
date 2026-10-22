@@ -80,7 +80,7 @@ behaviour BEH-SCORE-1 "A company's composite is a 0-100 score from published pil
   in FEAT-SCORING
   layer technical
   source inferred backend/Balenthiran.WhosAccountable.Abstractions/Constants/ScoringConstants.cs:21
-  review unreviewed
+  review approved
   priority 4
   actor visitor
   provides pillar:Emissions.weight = 0.40
