@@ -98,7 +98,9 @@ const COLUMNS: { id: Column; title: string }[] = [
   { id: 'review', title: 'Review requested' },
   { id: 'proposed', title: 'Proposed' },
   { id: 'backlog', title: 'Backlog' },
-  { id: 'scheduled', title: 'Scheduled' },
+  // BEH-BOARD-18: ready to build, then waiting on him, then started.
+  { id: 'queue', title: 'Queue' },
+  { id: 'blocked', title: 'Blocked' },
   { id: 'in-progress', title: 'In progress' },
   { id: 'done', title: 'Done' },
 ]
@@ -172,8 +174,9 @@ export default function Board() {
       <BoardViews />
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a
-        pending one is backlog until it is scheduled, and in progress at the top of its schedule;
-        the rest is done, the most recently completed first. A card whose bell is rung sits at the
+        pending one is in the queue, ready to build, unless it is paused (backlog) or waiting on
+        your context (blocked), and in progress at the top of its schedule; the rest is done, the
+        most recently completed first. A card whose bell is rung sits at the
         top of its column until Kit answers it.
       </p>
 
@@ -234,21 +237,19 @@ export default function Board() {
                 .map((e) => (
                   <Card key={`${e.summary.app}/schedule`} elevation="flat">
                     <h2>{e.summary.app}</h2>
-                    <Badge tone="warning">schedule could not be read — its pending behaviours show as backlog</Badge>
+                    <Badge tone="warning">schedule could not be read — its pending behaviours show in the queue</Badge>
                     <p role="alert">{e.scheduleError}</p>
                   </Card>
                 ))}
 
               <div className="board" ref={board}>
                 {COLUMNS.map((col) => {
-                  // Scheduled reads in schedule order within each file; Done most recently completed
-                  // first, across files (BEH-BOARD-4); Review requested, Proposed and Backlog by priority,
-                  // across files (BEH-BOARD-5/6), newest first within a priority (BEH-BOARD-12); in
-                  // progress in corpus order.
+                  // Done most recently completed first, across files (BEH-BOARD-4); every column before
+                  // In progress by priority, across files (BEH-BOARD-5/6/18), newest first within a
+                  // priority (BEH-BOARD-12); in progress in corpus order.
                   let cards = shown.flatMap((e) =>
                     e.behaviours
                       .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
-                      .sort((a, b) => (col.id === 'scheduled' ? e.places.get(a.id)!.order - e.places.get(b.id)!.order : 0))
                       .map((b) => {
                         const rung = isRung(b, e.bells)
                         return {

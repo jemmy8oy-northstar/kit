@@ -349,7 +349,7 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
   then sees region:KitBoardProposed
   then sees region:KitBoardBacklog
   then sees region:KitBoardDone
-  contract proposed is source inferred and review unreviewed; backlog is pending; done is everything else
+  contract proposed is source inferred and review unreviewed; pending is Backlog, Queue, Blocked or In progress (BEH-BOARD-18); done is everything else
   contract a denied inference is on no column — it is not work, it is a correction waiting to be written
   contract each card is the behaviour's id and title, links to its behaviour page, and names its project
   contract a corpus that will not parse is named on the board as an error, never silently left out
@@ -364,16 +364,16 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
   contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
   contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
 
-behaviour BEH-BOARD-3 "Scheduled and in-progress columns sit between backlog and done"
+behaviour BEH-BOARD-3 "An in-progress column sits before done"
   in FEAT-BOARD
   in FEAT-SCHEDULE
   source defined kit#237
   actor engineer
   when opens page:KitBoard
-  then sees region:KitBoardScheduled
   then sees region:KitBoardInProgress
-  contract scheduled is the project's schedule in order (BEH-SCHED-1); in progress is its top, the one marked next (BEH-SCHED-3)
-  contract both wait on BEH-SCHED; until it is built they are not drawn, rather than drawn empty
+  contract in progress is the top of the project's schedule, the one marked next (BEH-SCHED-3)
+  contract it waits on BEH-SCHED; until it is built it is not drawn, rather than drawn empty
+  contract the Scheduled column this once named went with BEH-BOARD-18 (his 2026-10-22 22:37Z note: "Lets ditch scheduled"); the rest of a schedule waits in the Queue
 
 behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
   in FEAT-BOARD
@@ -702,6 +702,28 @@ behaviour BEH-BOARD-17 "Every card on the board says whose move it is: his, or t
   contract my assumption: no button sets or clears it yet; he says so in a note or denies this card, and the agent edits the line
   contract ordering: no corpus carries a `needs-context` line until the parser that reads it is live in production, or production refuses the whole file
   contract first used on 2026-10-22, once kit#409 was serving: the 18 Backlog cards waiting on him (USERS-1/2/3/4/7/8, the six ideas, whos-accountable BACKLOG-1/2/3, TELE-10, FEEDBACK-1, and EDITION-3, whose PR snip-it#69 awaits his review) each carry one, in place of pausing them; the agent's wake sweep counts them as his, not as work
+
+behaviour BEH-BOARD-18 "The board's pending columns are Backlog, Queue, Blocked and In progress, with no Scheduled"
+  in FEAT-BOARD
+  layer ux
+  source defined kit.notes.md#2026-10-22-2237
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  then sees region:KitBoardQueue
+  then sees region:KitBoardBlocked
+  then sees region:KitBoardInProgress
+  contract "Backlog items that are the humans to act should go in a blocked column… Lets ditch scheduled since backlog is essentially backlog… Backlog can more be like this is on the backlog no plan to implement right now either because the ai needs to put more thought into it or the human has actively paused it. Maybe we can have a queue column for ready to be executed tasks"
+  contract the columns, left to right: Review requested, Proposed, Backlog, Queue, Blocked, In progress, Done
+  contract Queue is what the old Backlog held: approved, pending, and the agent's to build now, ranked as Backlog was (BEH-BOARD-5/10/12/14); the agent builds from its top
+  contract Blocked is a pending card with a needs-context line (BEH-BOARD-17): his to act on; it outranks the schedule, because the agent cannot start what waits on him
+  contract Backlog is a paused card (BEH-BOARD-16): no plan to build it now
+  contract my assumption: the "ai needs to put more thought into it" half of Backlog has no line yet; until one exists the agent writes that as a review request or a needs-context line, and Backlog holds only what he paused
+  contract my assumption: paused outranks needs-context, so a paused card is Backlog even with a needs-context line, because he has said not to build it
+  contract my assumption: a card on a schedule but not its next waits in the Queue, ranked like any other, not in schedule order; In progress still reads the schedule's next (BEH-BOARD-3), and nothing is scheduled today
+  contract built on the agent's side (claude-code-bot tools/kit-backlog.js): the wake sweep reads the Queue as its work list and counts Blocked as his
 
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
