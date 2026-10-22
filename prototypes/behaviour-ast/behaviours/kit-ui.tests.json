@@ -93,7 +93,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "Resuming_removes_the_line_and_restores_the_text_exactly" }
   ],
   "BEH-BOARD-17": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "says on every card not yet done whose move it is, and shows what he must add on the badge (BEH-BOARD-17)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "says on every card not yet done whose move it is, and shows on the card what he must add (BEH-BOARD-17)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "shows what he must add, in full, on the behaviour (BEH-BOARD-17)" },
     { "file": "backend/Balenthiran.Kit.Tests/NeedsContextTests.cs", "title": "A_needs_context_line_parses_and_marks_only_its_own_behaviour" },

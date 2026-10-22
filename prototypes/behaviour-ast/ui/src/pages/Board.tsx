@@ -308,12 +308,16 @@ export default function Board() {
                                 // What the agent wants looked at, so the card can be triaged unopened.
                                 <p>{b.review.note}</p>
                               )}
+                              {b.needsContext && (
+                                // BEH-BOARD-17: what he must add, shown not hovered: he reads the board on a phone.
+                                <p data-testid="needs-context">👤 {b.needsContext}</p>
+                              )}
                               <div className="badges">
                                 {rung && <Badge tone="warning">🔔 rung</Badge>}
                                 {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
                                 {b.paused && <Badge tone="neutral">⏸ paused</Badge>}
-                                {/* BEH-BOARD-17: whose move it is; the agent's own words say what he must add. */}
-                                {owner === 'james' && <Badge tone="primary" title={b.needsContext}>👤 yours</Badge>}
+                                {/* BEH-BOARD-17: whose move it is. */}
+                                {owner === 'james' && <Badge tone="primary">👤 yours</Badge>}
                                 {owner === 'agent' && <Badge tone="neutral">🤖 agent's</Badge>}
                                 {b.priority !== undefined && (
                                   <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>

@@ -698,7 +698,7 @@ behaviour BEH-BOARD-17 "Every card on the board says whose move it is: his, or t
   contract "I think we need visibility over what you have marked as yours to act on and mine to add context. Maybe we could have a badge. And everything is either mine or yours."
   contract my assumption: every card not yet done carries one badge, "yours" or "agent's"; a done card carries neither, because it is nobody's move
   contract my assumption: yours = a review request, an unreviewed proposal, a paused card, or a card with a needs-context line; agent's = everything else still to build, and a rung bell, even on a paused card
-  contract my assumption: the agent marks a card his with a `needs-context "<what he must add>"` line, a corpus language change his request approves (claude-code-bot#58); the board shows the text on the badge and the behaviour page shows it in full
+  contract my assumption: the agent marks a card his with a `needs-context "<what he must add>"` line, a corpus language change his request approves (claude-code-bot#58); the card shows the text under its title, not in a hover he cannot reach on a phone, and the behaviour page shows it too
   contract my assumption: no button sets or clears it yet; he says so in a note or denies this card, and the agent edits the line
   contract ordering: no corpus carries a `needs-context` line until the parser that reads it is live in production, or production refuses the whole file
 

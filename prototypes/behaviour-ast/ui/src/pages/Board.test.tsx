@@ -740,7 +740,7 @@ describe('Board', () => {
     expect(columnOf(beh('X', { pending: true, paused: true, review: { state: 'denied', note: 'no' } }))).toBeNull()
   })
 
-  it('says on every card not yet done whose move it is, and shows what he must add on the badge (BEH-BOARD-17)', async () => {
+  it('says on every card not yet done whose move it is, and shows on the card what he must add (BEH-BOARD-17)', async () => {
     details.alpha.push(beh('A-NEEDS', { pending: true, needsContext: 'which colour?' }))
     try {
       mockApi()
@@ -750,7 +750,8 @@ describe('Board', () => {
         within(column(col).getAllByRole('listitem').find((li) => li.querySelector('.id')?.textContent === id)!)
 
       const needs = card('Backlog', 'A-NEEDS')
-      expect(needs.getByText(/yours/)).toHaveAttribute('title', 'which colour?')
+      expect(needs.getByText(/yours/)).toBeInTheDocument()
+      expect(needs.getByTestId('needs-context')).toHaveTextContent('which colour?')
       expect(needs.queryByText(/agent's/)).toBeNull()
       expect(card('Backlog', 'A-BACKLOG').getByText(/agent's/)).toBeInTheDocument()
       expect(card('Backlog', 'A-BACKLOG').queryByText(/yours/)).toBeNull()
