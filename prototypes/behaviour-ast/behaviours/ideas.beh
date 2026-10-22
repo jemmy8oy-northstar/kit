@@ -20,6 +20,7 @@ behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, th
   in FEAT-IDEA-MAHJONG
   source defined claude-code-bot#110
   pending
+  needs-context "Your call: this idea needs a new repo, and only you can create one"
   actor player
   contract the bridge to language-vocab: its mahjong vocab pack (BEH-PACK-1) teaches the same tile names
 
@@ -27,6 +28,7 @@ behaviour BEH-IDEA-MAHJONG-2 "A game of mahjong can be played in the browser or 
   in FEAT-IDEA-MAHJONG
   source defined claude-code-bot#110
   pending
+  needs-context "Your call: this idea needs a new repo, and only you can create one"
   actor player
   contract "just turn these amazing games into fun playable web apps and or mobile apps"
 
@@ -34,6 +36,7 @@ behaviour BEH-IDEA-SHENGJI-1 "A game of sheng ji can be played in the browser or
   in FEAT-IDEA-SHENGJI
   source defined claude-code-bot#110
   pending
+  needs-context "Your call: this idea needs a new repo, and only you can create one"
   actor player
   contract "just turn these amazing games into fun playable web apps and or mobile apps"
 
@@ -41,6 +44,7 @@ behaviour BEH-IDEA-PHLOG-1 "A post's photos can be arranged and resized in a til
   in FEAT-IDEA-PHLOG
   source defined ideas.notes.md#2026-10-18-1517
   pending
+  needs-context "Your call: this idea needs a new repo, and only you can create one"
   actor writer
   contract "On Substack it only allows you to upload photos one per row… She would love to be able to arrange and resize the photos in a tile format"
   contract the arrangement is made inside the post editor, so no separate app (Canva today) is needed
@@ -65,6 +69,7 @@ behaviour BEH-IDEA-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full sui
   in FEAT-IDEA-APPS
   source defined kit.notes.md#2026-10-16-2252
   pending
+  needs-context "Your call: balenthiran.co.uk is public, and what /apps shows is product and launch"
   actor visitor
   contract "I think we need some kind of /apps on balenthiran.co.uk to show the full suite of apps"
 
@@ -72,6 +77,7 @@ behaviour BEH-IDEA-APPS-2 "balenthiran.co.uk is managed by Kit like the other ap
   in FEAT-IDEA-APPS
   source defined kit.notes.md#2026-10-16-2252
   pending
+  needs-context "Your call (#58): putting balenthiran.co.uk under Kit is a platform choice"
   actor engineer
   contract "Maybe balenthiran.co.uk can be managed by kit as well"
   contract giving it a Kit corpus brings it under the Kit-driven model, so whether it joins is his call
