@@ -205,3 +205,7 @@ I feel like what is on the backlog currently should really be the queue
 Backlog can more be like this is on the backlog no plan to implement right now either because the ai needs to put more thought into it or the human has actively paused it
 
 Maybe we can have a queue column for ready to be executed tasks
+
+## 2026-10-22 22:46Z
+
+The questions tab doesn’t really show questions at the moment it kind of just shows probelms
