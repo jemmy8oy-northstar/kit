@@ -209,3 +209,7 @@ Maybe we can have a queue column for ready to be executed tasks
 ## 2026-10-22 22:46Z
 
 The questions tab doesn’t really show questions at the moment it kind of just shows probelms
+
+## 2026-10-22 22:48Z
+
+Where kit currently has behs and features which need decisions to be made. I think kit it is important that kit starts to raise the questions which helps guide the user in the right direction. Right now I’m not sure what ux ui or logic to define to unblock kit
