@@ -680,6 +680,11 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   contract the agent's wake sweep never lists a paused card as work, so it can sleep over one
   contract ringing a paused card's bell asks the agent whether it should resume, and the agent answers as for any bell (BEH-BELL-2)
   contract my assumption: the paused line is a corpus language change (claude-code-bot#58), which his request for it approves
+  contract built: the `paused` line (bare, one per behaviour, a second is refused like a second `priority`), served as `paused` on the behaviour, the board's Paused heading and badge, and Pause and Resume on the behaviour page, which add or remove the line and commit it like any edit (POST /api/projects/<app>/behaviours/<id>/paused with { paused: true|false })
+  contract not yet built: the agent's wake sweep leaving a paused card out of its work list, which is the agent's own tooling and not Kit's, and the bell's resume question; this behaviour stays pending until they are, and its tests are bound to it (kit-ui.tests.json) in the change that removes the pending line, since the gate refuses a test naming a pending behaviour
+  contract my assumption: a paused card stays in Backlog even if a schedule lists it, because paused is how he says "do not action", and Pause is offered only on a card still to be built
+  contract my assumption: a rung bell lifts a paused card above every priority, under the Rung heading and still badged paused, because ringing it is how he asks whether to resume (BEH-BELL-3); the bell never un-pauses it, only Resume does
+  contract ordering: no corpus carries a `paused` line until the parser that reads it is live in production, or production refuses the whole file; the first one (BEH-BOARD-13) waits for that
 
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD

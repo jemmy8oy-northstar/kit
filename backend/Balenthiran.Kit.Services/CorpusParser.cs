@@ -234,6 +234,18 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
+            // ── James, 2026-10-22 (BEH-BOARD-16) ────────────────────────────
+            // "Do we have an option for backlog but don't action. Paused seems
+            // appropriate." Bare, like `pending`; a second line is refused, like a
+            // second `priority`, rather than silently agreeing with the first.
+            if (kw == "paused")
+            {
+                if (rest.Length > 0) throw new CorpusParseException($"{at}: paused takes nothing after it, got: {rest}");
+                if (cur.Paused) throw new CorpusParseException($"{at}: paused is already set on {cur.Id}");
+                cur.Paused = true;
+                continue;
+            }
+
             // ── James, kit#284 (2026-10-15) ─────────────────────────────────
             // "You give it a priority score and this is used to rank it on the
             // board. Top priority at the top." 1 is first, 5 is last — the scale
