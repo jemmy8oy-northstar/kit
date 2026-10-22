@@ -127,6 +127,11 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Paused { get; set; }
 
+    // BEH-BOARD-17: a `needs-context "..."` line, what he must add. Absent without one, so no golden changes.
+    [JsonPropertyOrder(24)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? NeedsContext { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.

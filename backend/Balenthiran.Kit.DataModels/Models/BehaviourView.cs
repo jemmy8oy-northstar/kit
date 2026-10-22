@@ -59,6 +59,11 @@ public sealed class BehaviourView : IBehaviourView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Paused { get; init; }
 
+    // BEH-BOARD-17: what he must add, from a `needs-context` line. Absent when there is none.
+    [JsonPropertyOrder(16)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? NeedsContext { get; init; }
+
     IReadOnlyList<string> IBehaviourView.In => In;
 
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;
