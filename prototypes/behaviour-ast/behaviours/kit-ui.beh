@@ -678,6 +678,21 @@ behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its
   contract "review priority" is how soon the agent's next work waits on his answer, which is not how much the feature matters: a proposal on a project with no work this fortnight scores 4 or 5, and the agent re-scores an approved card when it moves to Backlog
   contract my assumption: the headings are the only change to the order; the order itself stays BEH-BOARD-10/12 and BEH-BELL-3
 
+behaviour BEH-BOARD-15 "Coming back from a card lands on that card's column, not the first one"
+  in FEAT-BOARD
+  layer ux
+  source defined kit.notes.md#2026-10-22-1130
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardProposed
+  contract "When clicking into a card to approve or deny. When i navigate back to the board it is no longer focused on the same column"
+  contract "whether this is performing a full redirect rather than just a reroute": it is a reroute, but the board is rebuilt and re-read on return, and on a phone the swipe between columns started again at the first
+  contract opening a card writes its column and its id into the board's url, replacing the entry, so Back returns to them and the filter beside them survives
+  contract my assumption: if the card has left that column (he approved it out of Proposed), he lands on the column, not on the card's new place, because he was working through that column
+  contract a card past the "Show more" cap is drawn when he comes back to it, so he never has to page down to find his place
+
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-19-1725

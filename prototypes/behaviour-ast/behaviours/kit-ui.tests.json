@@ -56,6 +56,10 @@
   "BEH-BOARD-14": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "starts each run of a ranked column with a heading that counts it, so the order can be read (BEH-BOARD-14)" }
   ],
+  "BEH-BOARD-15": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)" }
+  ],
   "BEH-BOARD-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }
