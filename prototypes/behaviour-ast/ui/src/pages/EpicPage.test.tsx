@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import EpicPage from './EpicPage'
 import Epics from './Epics'
@@ -94,5 +94,53 @@ describe('EpicPage (BEH-EPIC-8)', () => {
   it('is what a feature page epic tag opens (BEH-EPIC-8)', async () => {
     renderAt('/projects/alpha/features/FEAT-TOP')
     expect(await screen.findByRole('link', { name: 'title of EPIC-SHIP' })).toHaveAttribute('href', '/projects/alpha/epics/EPIC-SHIP')
+  })
+})
+
+describe('comments on epics and features (BEH-COMMENT-1)', () => {
+  const note = (at: string, text: string, behaviour: string | null) => ({ at, kind: 'note', behaviour, resolves: null, text, thread: [], questions: [] })
+  const notes = [note('2026-10-22 10:00Z', 'on the epic', 'EPIC-SHIP'), note('2026-10-22 10:01Z', 'on the feature', 'FEAT-TOP'), note('2026-10-22 10:02Z', 'on the project', null)]
+
+  function renderWithNotes(url: string) {
+    const posts: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (init?.method === 'POST') posts.push(JSON.parse(String(init.body)))
+        const json = path.endsWith('/notes') ? { app: 'alpha', file: 'alpha.notes.md', notes } : alpha
+        return { ok: true, status: 200, statusText: 'OK', json: async () => json }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={[url]}>
+        <Routes>
+          <Route path="/projects/:app/epics/:id" element={<EpicPage />} />
+          <Route path="/projects/:app/features/:id" element={<FeaturePage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    return posts
+  }
+
+  async function expectOwnComments(url: string, id: string, mine: string) {
+    const posts = renderWithNotes(url)
+
+    const region = within(await screen.findByRole('region', { name: 'Notes' }))
+    expect(await region.findByText(mine)).toBeInTheDocument()
+    for (const other of ['on the epic', 'on the feature', 'on the project'].filter((t) => t !== mine)) {
+      expect(region.queryByText(other)).toBeNull()
+    }
+
+    fireEvent.change(screen.getByLabelText(`Leave a note on ${id}`), { target: { value: 'a comment' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+    await waitFor(() => expect(posts).toContainEqual(expect.objectContaining({ text: 'a comment', behaviour: id })))
+  }
+
+  it('shows EPIC-SHIP only its own comments, and a comment left there names it (BEH-COMMENT-1)', async () => {
+    await expectOwnComments('/projects/alpha/epics/EPIC-SHIP', 'EPIC-SHIP', 'on the epic')
+  })
+
+  it('shows FEAT-TOP only its own comments, and a comment left there names it (BEH-COMMENT-1)', async () => {
+    await expectOwnComments('/projects/alpha/features/FEAT-TOP', 'FEAT-TOP', 'on the feature')
   })
 })
