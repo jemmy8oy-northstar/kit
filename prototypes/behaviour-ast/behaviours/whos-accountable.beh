@@ -210,6 +210,7 @@ behaviour BEH-BACKLOG-1 "Coverage expands from the UK to the US, then the EU, th
   layer technical
   source defined whos-accountable#1
   priority 3
+  needs-context "You parked whos-accountable; say when to restart it"
   actor visitor
   pending
   contract "create an issue to expand to uk + us and then maybe eu and global later" (issue whos-accountable#4)
@@ -219,6 +220,7 @@ behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entr
   layer technical
   source defined whos-accountable#1
   priority 3
+  needs-context "You parked whos-accountable; say when to restart it"
   actor visitor
   pending
   contract "Fine to park maybe also backlog": parked pending a defamation review (whos-accountable#5)
@@ -228,6 +230,7 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   layer ux
   source defined whos-accountable#1
   priority 3
+  needs-context "You parked whos-accountable; say when to restart it"
   actor visitor
   pending
   contract "sentiment as a backlog" (whos-accountable#6)
