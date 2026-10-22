@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Board from './Board'
 import App from '../App'
 import { byCompletion, byPriority, columnOf, hueOf, HUES, isQuestion } from '../board'
@@ -460,6 +460,64 @@ describe('Board', () => {
       expect(column('Done').queryByRole('button', { name: /Show .* more/ })).not.toBeInTheDocument()
     } finally {
       details.beta.splice(-22)
+    }
+  })
+
+  it('comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)', async () => {
+    const scrolled: Element[] = []
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this)
+    })
+    function Opened() {
+      const navigate = useNavigate()
+      return <button onClick={() => navigate(-1)}>Back</button>
+    }
+    try {
+      mockApi()
+      render(
+        <MemoryRouter initialEntries={['/board?project=alpha']}>
+          <Routes>
+            <Route path="/board" element={<><Board /><Search /></>} />
+            <Route path="/projects/:app/behaviours/:id" element={<Opened />} />
+          </Routes>
+        </MemoryRouter>,
+      )
+      await loaded()
+      fireEvent.click(column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Back' }))
+      await loaded()
+
+      // The filter he had survives beside it, and the board lands on the card he opened.
+      expect(new URLSearchParams(screen.getByTestId('search').textContent!)).toEqual(
+        new URLSearchParams('project=alpha&col=proposed&card=alpha/A-PROPOSED'),
+      )
+      const link = column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' })
+      await vi.waitFor(() => expect(document.activeElement).toBe(link))
+      expect(scrolled).toEqual([link.closest('li')])
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  it('lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)', async () => {
+    // Approved out of Proposed: he is triaging Proposed, so he goes back to Proposed, not after the card.
+    mockApi()
+    const first = renderBoard('/board?col=proposed&card=alpha/A-BACKLOG')
+    await loaded()
+    await vi.waitFor(() => expect(document.activeElement).toBe(column('Proposed').getByRole('heading', { level: 2 })))
+    first.unmount()
+
+    // A card past the cap is drawn, so coming back to it never needs "Show more" first.
+    const extra = Array.from({ length: 24 }, (_, i) => beh(`B-${String(i).padStart(2, '0')}`, { pending: true, priority: 1 }))
+    details.beta.push(...extra)
+    try {
+      renderBoard('/board?col=backlog&card=beta/B-12')
+      await loaded()
+      const link = await column('Backlog').findByRole('link', { name: 'title of B-12' })
+      await vi.waitFor(() => expect(document.activeElement).toBe(link))
+      expect(column('Backlog').getByRole('button', { name: 'Show 5 more (5 hidden)' })).toBeInTheDocument()
+    } finally {
+      details.beta.splice(-24)
     }
   })
 

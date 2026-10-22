@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { ApiError, askForBehaviour, fetchHistory, fetchNotes, fetchProject, fetchProjects, fetchSchedule } from '../api/client'
@@ -116,6 +116,36 @@ export default function Board() {
   // BEH-KIND-1 (his 2026-10-16 note): "filter the different types ui, ux and logic". The type is
   // the corpus's existing `layer` line, so the filter reads it rather than inventing a tag.
   const layers = (params.get('layer') ?? '').split(',').filter((l) => LAYERS.includes(l))
+  // BEH-BOARD-15 (his 2026-10-22 11:30Z note): the card he last opened, and the column it was in.
+  // The board is rebuilt when he comes back, and on a phone that put him on the first column.
+  const back = { col: params.get('col'), card: params.get('card') }
+  const board = useRef<HTMLDivElement>(null)
+  const restored = useRef(false)
+
+  // Once, when the cards are drawn: the card if it is still in that column, else the column, so a
+  // card he approved out of Proposed leaves him in Proposed, not following it to Backlog.
+  useEffect(() => {
+    if (restored.current || entries.state !== 'ready' || !back.col) return
+    restored.current = true
+    const section = board.current?.querySelector<HTMLElement>(`section[data-col="${back.col}"]`)
+    const card = [...(section?.querySelectorAll<HTMLElement>('[data-card]') ?? [])].find((el) => el.dataset.card === back.card)
+    const target = card ?? section
+    // jsdom has no scrollIntoView, and nor do some old browsers; the focus still lands.
+    target?.scrollIntoView?.({ block: card ? 'center' : 'nearest', inline: 'start' })
+    target?.querySelector<HTMLElement>('a, h2')?.focus({ preventScroll: true })
+  }, [entries.state, back.col, back.card])
+
+  /** Kept in the url the card's Back button returns to, replacing it so Back is not doubled. */
+  function remember(col: Column, card: string) {
+    setParams(
+      (p) => {
+        p.set('col', col)
+        p.set('card', card)
+        return p
+      },
+      { replace: true },
+    )
+  }
 
   function update(next: { project?: string[]; trials?: boolean; layer?: string[] }) {
     const project = next.project ?? selected
@@ -209,7 +239,7 @@ export default function Board() {
                   </Card>
                 ))}
 
-              <div className="board">
+              <div className="board" ref={board}>
                 {COLUMNS.map((col) => {
                   // Scheduled reads in schedule order within each file; Done most recently completed
                   // first, across files (BEH-BOARD-4); Review requested, Proposed and Backlog by priority,
@@ -233,13 +263,15 @@ export default function Board() {
                   if (RANKED.includes(col.id)) cards = rungFirst(questionsFirst(byPriorityAcrossProjects(cards)))
                   const unordered = col.id === 'done' ? shown.filter((e) => !e.error && e.historyMissing !== null) : []
                   // Capped after sorting, so what is cut is always the bottom of the order (BEH-BOARD-7).
-                  const limit = limits[col.id] ?? CAP
+                  // Never cut the card he is coming back to (BEH-BOARD-15): show as many pages as reach it.
+                  const at = back.col === col.id ? cards.findIndex((c) => `${c.app}/${c.b.id}` === back.card) : -1
+                  const limit = Math.max(limits[col.id] ?? CAP, (Math.floor(at / CAP) + 1) * CAP)
                   const hidden = Math.max(0, cards.length - limit)
                   // A heading starts each run of a ranked column (BEH-BOARD-14), so the order can be read.
                   const tiers = RANKED.includes(col.id) ? tierCounts(cards) : null
                   return (
-                    <section key={col.id} aria-labelledby={`board-${col.id}`}>
-                      <h2>
+                    <section key={col.id} aria-labelledby={`board-${col.id}`} data-col={col.id}>
+                      <h2 tabIndex={-1}>
                         <span id={`board-${col.id}`}>{col.title}</span> <span className="board-count">{cards.length}</span>
                       </h2>
                       {unordered.length > 0 && (
@@ -257,11 +289,12 @@ export default function Board() {
                                 </li>,
                               ]
                             : []),
-                          <li key={`${app}/${b.id}`}>
+                          <li key={`${app}/${b.id}`} data-card={`${app}/${b.id}`}>
                             <Card className={`board-card hue-${hueOf(project)}`}>
                               <h3>
                                 <Link
                                   to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}
+                                  onClick={() => remember(col.id, `${app}/${b.id}`)}
                                 >
                                   {b.title}
                                 </Link>{' '}
