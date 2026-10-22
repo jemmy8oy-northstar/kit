@@ -224,10 +224,10 @@ behaviour BEH-CONNECT-4 "When Strava is full, a new runner is told Tracks is ful
   source defined tracks.notes.md#2026-10-22-1124
   review approved
   priority 3
-  pending
   actor runner
   when opens page:Home
   then sees region:Runs
+  contract built in tracks#19 (merged to tracks dev 2026-10-22): a 403 naming the cap redirects to /?error=full, and Home shows "Tracks is full for now. Please try again later."; any other 403 is still a 502
   contract "We should probably limit sign ups because of the strava api limits or will strava limit this"
   contract my answer: Strava limits it. It counts connected athletes per app: 1 for a new app, up to 10 once raised in his API settings, and more only after Strava reviews the app. The next athlete's sign-in is refused with 403 "Limit of connected athletes exceeded"
   contract my proposal: no cap in Tracks. A second count that agrees with Strava's is a number to keep in step, and it can only refuse people Strava would let in
