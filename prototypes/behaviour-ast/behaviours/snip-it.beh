@@ -377,7 +377,7 @@ behaviour BEH-EDITION-3 "Studio: a take can be saved to snip-it's server, and ne
   in FEAT-EDITIONS
   layer technical
   source defined snip-it.notes.md#2026-10-22-0727
-  review unreviewed
+  review approved
   priority 3
   pending
   actor creator
