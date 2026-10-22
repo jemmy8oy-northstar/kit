@@ -144,7 +144,7 @@ behaviour BEH-LOG-1 "One tap logs one unit: a vice, a km run, a km cycled, or a 
   in FEAT-LOG
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:844
-  review unreviewed
+  review approved
   priority 1
   actor athlete
   when opens page:Dashboard
