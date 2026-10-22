@@ -651,9 +651,10 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review denied Tbh I think let’s just pause this for now. Do we have an option for backlog but don’t action. Paused seems appropriate. I think we pause because we have bell now. Let’s see how that goes first.
+  review unreviewed
   priority 3
   pending
+  paused
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -662,6 +663,7 @@ behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   contract my proposal: the order he sets is one list of ids in one file beside the corpora; a card not on it falls back to (score, most recent) below the ones that are, so a new card never needs a write
   contract my proposal: drags made within a few seconds of each other land as one commit, so rearranging ten cards is not ten commits
   contract my proposal: a drag across a priority boundary does not rewrite the priority line; the list is his order, the score stays the agent's, and a bell still lifts a card above both (BEH-BELL-3)
+  contract paused, by his word when he denied it on 2026-10-22 11:19Z: "Tbh I think let's just pause this for now. Do we have an option for backlog but don't action. Paused seems appropriate. I think we pause because we have bell now. Let's see how that goes first." The denial stood in for a pause until BEH-BOARD-16 existed; Resume brings it back, Deny drops it
 
 # His denial of BEH-BOARD-13 (2026-10-22 11:19Z) asked for this state, and BOARD-13
 # is to be its first card once it is built.
@@ -670,7 +672,6 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   source defined kit-ui.beh#BEH-BOARD-13
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -681,10 +682,10 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   contract ringing a paused card's bell asks the agent whether it should resume, and the agent answers as for any bell (BEH-BELL-2)
   contract my assumption: the paused line is a corpus language change (claude-code-bot#58), which his request for it approves
   contract built: the `paused` line (bare, one per behaviour, a second is refused like a second `priority`), served as `paused` on the behaviour, the board's Paused heading and badge, and Pause and Resume on the behaviour page, which add or remove the line and commit it like any edit (POST /api/projects/<app>/behaviours/<id>/paused with { paused: true|false })
-  contract not yet built: the agent's wake sweep leaving a paused card out of its work list, which is the agent's own tooling and not Kit's, and the bell's resume question; this behaviour stays pending until they are, and its tests are bound to it (kit-ui.tests.json) in the change that removes the pending line, since the gate refuses a test naming a pending behaviour
+  contract built on the agent's side (claude-code-bot tools/kit-backlog.js, 2026-10-22): the wake sweep leaves a paused card out of its work list, counts his Pause and Resume as verdicts it must act on, and lists a rung bell first whether or not its card is paused, so the resume question is answered as any bell is (BEH-BELL-2)
   contract my assumption: a paused card stays in Backlog even if a schedule lists it, because paused is how he says "do not action", and Pause is offered only on a card still to be built
   contract my assumption: a rung bell lifts a paused card above every priority, under the Rung heading and still badged paused, because ringing it is how he asks whether to resume (BEH-BELL-3); the bell never un-pauses it, only Resume does
-  contract ordering: no corpus carries a `paused` line until the parser that reads it is live in production, or production refuses the whole file; the first one (BEH-BOARD-13) waits for that
+  contract ordering: no corpus carries a `paused` line until the parser that reads it is live in production, or production refuses the whole file; the first one, BEH-BOARD-13, was paused after kit#405 put it there
 
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
