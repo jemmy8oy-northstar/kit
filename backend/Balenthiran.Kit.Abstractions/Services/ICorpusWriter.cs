@@ -20,6 +20,9 @@ public interface ICorpusWriter
     /// <summary>Set a behaviour's review state, replacing its review line or inserting one.</summary>
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
+    /// <summary>Add or remove a behaviour's bare <c>paused</c> line (BEH-BOARD-16); asking for the state it is already in writes nothing new.</summary>
+    IWriteResult SetPaused(string text, string id, bool paused);
+
     /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.

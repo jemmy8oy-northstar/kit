@@ -174,6 +174,55 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-BOARD-16: adds or removes the bare <c>paused</c> line. The line goes under the last
+    /// header-adjacent line, like the review line, so a pause reads as part of the card's head.
+    /// Asking for the state it is already in rewrites nothing, so a double press is not a commit.
+    /// </summary>
+    public IWriteResult SetPaused(string text, string id, bool paused)
+    {
+        if (Block(text, id) is not { } b)
+        {
+            return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
+        }
+
+        var lines = text.Split('\n').ToList();
+        var at = -1;
+        for (var i = b.Start + 1; i <= b.End; i++)
+        {
+            if (FirstToken(lines[i]) == "paused")
+            {
+                at = i;
+                break;
+            }
+        }
+
+        if (paused && at == -1)
+        {
+            // Under `priority` or `review` when present, else under the header, before any body line.
+            var anchor = b.Start;
+            for (var i = b.Start + 1; i <= b.End; i++)
+            {
+                if (FirstToken(lines[i]) is "review" or "priority" or "source" or "layer" or "in" or "pending")
+                {
+                    anchor = i;
+                }
+            }
+
+            lines.Insert(anchor + 1, Indent + "paused");
+        }
+        else if (!paused && at != -1)
+        {
+            lines.RemoveAt(at);
+        }
+        else
+        {
+            return new WriteResult { Ok = true, Text = text };
+        }
+
+        return Validate(text, string.Join('\n', lines), id);
+    }
+
+    /// <summary>
     /// Removes lines <c>Start..End</c> of the block and nothing else: comments and blanks that
     /// precede or trail it belong to neighbours and survive. Exactly ONE separator blank goes
     /// with it — the one after it when a block follows, else the one before it — so
@@ -544,6 +593,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         pending = b.Pending,
         layer = b.Layer,
         priority = b.Priority,
+        paused = b.Paused,
         asks = b.Asks,
         options = b.Options.Select(o => $"{o.Label}|{o.Consequence}").ToList(),
         recommend = b.Recommend is { } r ? $"{r.Label}|{r.Why}" : null,

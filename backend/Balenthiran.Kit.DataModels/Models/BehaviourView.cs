@@ -54,6 +54,11 @@ public sealed class BehaviourView : IBehaviourView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Priority { get; init; }
 
+    // BEH-BOARD-16: the board holds a paused card at the foot of Backlog. Absent when false.
+    [JsonPropertyOrder(15)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Paused { get; init; }
+
     IReadOnlyList<string> IBehaviourView.In => In;
 
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;
