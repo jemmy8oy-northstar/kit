@@ -132,7 +132,7 @@ behaviour BEH-CONNECT-2 "A signed-in runner connects Spotify so their runs get s
   in FEAT-CONNECT
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 1
   actor runner
   given runner:SignedInWithoutSpotify
