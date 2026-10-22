@@ -14,6 +14,7 @@ import WriteResultNote from '../components/WriteResultNote'
 import { useWrite } from '../components/useWrite'
 import NotesPanel from '../components/NotesPanel'
 import BellButton from '../components/BellButton'
+import { broadness } from '../broad'
 
 /**
  * Steps 2 and 3 of his loop, on one page, which is the point: "iterating on the
@@ -85,6 +86,7 @@ function Detail({
   }
 
   const generated = project.generated.find((g) => g.id === id)
+  const broad = broadness(behaviour)
 
   return (
     <>
@@ -99,6 +101,11 @@ function Detail({
       </div>
       <p className="muted">{behaviour.at}</p>
       <BellButton app={project.app} item={behaviour.id} />
+      {broad && (
+        <p className="muted" data-testid="broad">
+          Could be a feature ({broad}). The agent will propose the split for you to review.
+        </p>
+      )}
 
       <AdjudicateForm app={project.app} behaviour={behaviour} onWrote={onWrote} />
 

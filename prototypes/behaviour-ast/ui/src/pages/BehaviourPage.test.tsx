@@ -680,4 +680,41 @@ describe('adjudicating an inference', () => {
     expect(await screen.findByText(/A human wrote this/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled()
   })
+
+  it('says a behaviour with more than six contracts could be a feature, and only that one (BEH-EPIC-9)', async () => {
+    // Six is the boundary, so both sides are pinned: a page that flagged every
+    // long behaviour would teach him to ignore the line.
+    const withContracts = (n: number, review = 'unreviewed', text = (i: number) => [`Rule ${i}.`]) => {
+      const body = structuredClone(snipIt) as typeof snipIt
+      const b = body.behaviours.find((x) => x.id === 'BEH-HOME-1')!
+      b.review = { ...b.review, state: review }
+      b.steps = [
+        ...b.steps.filter((s) => s.kind !== 'contract'),
+        ...Array.from({ length: n }, (_, i) => text(i))
+          .flat()
+          .map((t) => ({ kind: 'contract', verb: 'contract', text: t, refs: [], holes: [] })),
+      ]
+      return body
+    }
+
+    const broad = renderAt(withContracts(7), 'snip-it', 'BEH-HOME-1')
+    expect(await screen.findByTestId('broad')).toHaveTextContent('Could be a feature (7 contracts, more than 6)')
+    broad.unmount()
+
+    const six = renderAt(withContracts(6), 'snip-it', 'BEH-HOME-1')
+    expect(await screen.findByText('The landing page renders')).toBeInTheDocument()
+    expect(screen.queryByTestId('broad')).toBeNull()
+    six.unmount()
+
+    // kit-hosted.beh wraps a sentence over several lines: six sentences on twelve lines is six.
+    const wrapped = renderAt(withContracts(6, 'unreviewed', (i) => [`rule ${i} begins here and`, 'carries on.']), 'snip-it', 'BEH-HOME-1')
+    expect(await screen.findByText('The landing page renders')).toBeInTheDocument()
+    expect(screen.queryByTestId('broad')).toBeNull()
+    wrapped.unmount()
+
+    // Once the split is proposed (or he has said no), the page stops asking.
+    renderAt(withContracts(7, 'requested'), 'snip-it', 'BEH-HOME-1')
+    expect(await screen.findByText('The landing page renders')).toBeInTheDocument()
+    expect(screen.queryByTestId('broad')).toBeNull()
+  })
 })

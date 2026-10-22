@@ -942,14 +942,15 @@ behaviour BEH-EPIC-9 "Kit spots a behaviour that is really a feature, and propos
   source defined kit.notes.md#2026-10-21-1552
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "some behaviours which are technically behaviours but they are quite broad … The ai running kit should be able to identify when a behaviour should become a feature of behaviours"
   contract the agent proposes; it never splits on its own: the proposal is a review request on the broad behaviour naming the feature and the child behaviours it would become
   contract approving it makes the feature, moves the contracts into inferred children (Proposed, as BEH-EPIC-6 drafts them), and keeps the old id as the feature's source so links still resolve
-  contract my assumption on "broad": more than one actor or page, or contracts that could each ship alone, or more than six contracts
+  contract my assumption on "broad": more than six contracts, or contracts that could each ship alone (the agent's judgement); a behaviour has one actor, and "more than one page" flagged only sign-in-then-dashboard flows when measured on 10-22, so neither is a rule
+  contract my assumption: contracts are counted as sentences, since kit-hosted.beh wraps one over several lines; counted as lines, 5 behaviours were broad and 3 of them were only wrapped
+  contract built: a broad behaviour's page says "Could be a feature" with its count, until the split is requested or denied; the agent's wake sweep lists the same set (kit-backlog.js) and raises each proposal
 
 behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   in FEAT-EPICS
