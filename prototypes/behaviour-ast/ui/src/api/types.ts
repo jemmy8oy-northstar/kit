@@ -117,6 +117,8 @@ export interface Behaviour {
   priority?: number
   /** A `paused` line (BEH-BOARD-16): held on the Backlog, not built. Absent when not paused. */
   paused?: boolean
+  /** A `needs-context` line (BEH-BOARD-17): what he must add before the agent can go on. Absent when there is none. */
+  needsContext?: string
 }
 
 /** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */

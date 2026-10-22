@@ -123,6 +123,23 @@ export function pausedLast<T extends { b: { paused?: boolean } }>(cards: T[]): T
 }
 
 /**
+ * BEH-BOARD-17 (his kit#401: "everything is either mine or yours"): whose move a card is, so every
+ * card on the board can say so. A finished card is nobody's, and neither is a denied one (no column).
+ * A rung bell is the agent's to answer, even on a paused card. Otherwise it is his when it is a review
+ * request or an unreviewed proposal (it waits on his verdict), when it is paused (only his Resume moves
+ * it), or when the agent has marked it `needs-context`. The rest of Backlog, Scheduled and In progress
+ * is the agent's to build.
+ */
+export function ownerOf(b: Behaviour, column: Column | null, rung: boolean): 'james' | 'agent' | null {
+  if (column === null || column === 'done') return null
+  if (rung) return 'agent'
+  if (column === 'review' || column === 'proposed') return 'james'
+  if (b.paused) return 'james'
+  if (b.needsContext) return 'james'
+  return 'agent'
+}
+
+/**
  * BEH-BOARD-11 (his 2026-10-19 17:25Z note: "questions should probably appear on the board as well"):
  * a review request whose note ends in a question mark is the agent asking him something, not only
  * asking for a look. The rule is the agent's assumption, unreviewed in the spec.
