@@ -773,3 +773,24 @@ describe('pausing a behaviour', () => {
     expect(screen.queryByRole('button', { name: 'Resume' })).toBeNull()
   })
 })
+
+// ── BEH-BOARD-17: whose move it is ──────────────────────────────────────────
+
+describe('a needs-context line', () => {
+  it('shows what he must add, in full, on the behaviour (BEH-BOARD-17)', async () => {
+    renderScripted(
+      [{ ok: true, status: 200, body: withBehaviour({ pending: true, needsContext: 'Which of the two logos do you want?' }) }],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    expect(await screen.findByTestId('needs-context')).toHaveTextContent('👤 Yours: Which of the two logos do you want?')
+  })
+
+  it('shows nothing when the behaviour has none (BEH-BOARD-17)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({ pending: true }) }], 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByRole('button', { name: 'Approve' })
+    expect(screen.queryByTestId('needs-context')).toBeNull()
+  })
+})

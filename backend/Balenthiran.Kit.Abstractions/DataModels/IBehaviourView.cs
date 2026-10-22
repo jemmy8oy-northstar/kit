@@ -28,6 +28,9 @@ public interface IBehaviourView
     /// <summary>A <c>paused</c> line (BEH-BOARD-16).</summary>
     bool Paused { get; }
 
+    /// <summary>A <c>needs-context</c> line (BEH-BOARD-17).</summary>
+    string? NeedsContext { get; }
+
     string Layer { get; }
 
     /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>

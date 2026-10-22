@@ -100,6 +100,12 @@ function Detail({
         <Badge tone="neutral">{behaviour.source.origin}</Badge>
       </div>
       <p className="muted">{behaviour.at}</p>
+      {/* BEH-BOARD-17: the agent has marked this his to answer; the board badge shows the same words. */}
+      {behaviour.needsContext && (
+        <p data-testid="needs-context">
+          👤 Yours: {behaviour.needsContext}
+        </p>
+      )}
       <BellButton app={project.app} item={behaviour.id} />
       {broad && (
         <p className="muted" data-testid="broad">
