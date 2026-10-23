@@ -227,3 +227,7 @@ Idk how this would work, could we whitelist GitHub accounts? Maybe also a code w
 ## 2026-10-23 06:35Z · BEH-USERS-1
 
 Actually the code word is maybe not necessary?
+
+## 2026-10-23 06:38Z · BEH-USERS-1
+
+Back tracking again let’s have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it’s just a GitHub sign in. Username and password means I can just straight up make the accounts. They can change the password after.
