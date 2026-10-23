@@ -247,3 +247,7 @@ Yes
 ## 2026-10-23 06:39Z · BEH-USERS-4
 
 Repo specify memories stored in repo but I think we have some user memories stored in a db? Because otherwise I don’t know where to store these
+
+## 2026-10-23 06:41Z · BEH-USERS-7
+
+I like the idea of starting with their own key but I think test users will not be keen to use it if it will cost them. I think for testing you will still handle it. Then in later stages of testing we introduce tracking and billing even if we don’t start charging
