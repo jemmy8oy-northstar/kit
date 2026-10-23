@@ -314,5 +314,20 @@
   ],
   "BEH-ACTIVITY-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Activity.test.tsx", "title": "lists commits newest first and says which projects have no history here (BEH-ACTIVITY-1)" }
+  ],
+  "BEH-USERS-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "He_creates_an_account_and_its_user_signs_in_with_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "Only_the_operator_creates_accounts" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_changes_the_password_he_gave_them" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "The_operator_signs_in_with_or_without_his_name" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "A_user_connects_the_installation_on_their_own_account" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "A_state_made_for_another_user_or_gone_stale_is_refused_before_GitHub_is_asked" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "One_installation_belongs_to_one_user" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_connector_takes_only_the_authorising_accounts_installation_and_revokes_the_token" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "An_organisations_or_the_operators_installation_is_never_returned" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "posts the add-user body and says who was added" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "posts the change-password body and says so" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "offers a user the install link, and the operator nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "hands the code and state to the server, then reloads without them" }
   ]
 }
