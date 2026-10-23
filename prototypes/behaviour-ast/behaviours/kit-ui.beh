@@ -1120,7 +1120,7 @@ epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for
 
 feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-USERS-1 "An early-access user signs in with a username and password James made, then connects their GitHub"
   in FEAT-USER-SIGNUP
