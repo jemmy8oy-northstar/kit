@@ -1,9 +1,9 @@
 import { useCallback, useId, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
-import { askForBehaviour, fetchProject, fetchProjects, resolveDecision } from '../api/client'
+import { askForBehaviour, fetchNotes, fetchProject, fetchProjects, leaveNote, resolveDecision } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Behaviour, Conflict, Feature, ProjectDetail, Question } from '../api/types'
+import type { Behaviour, Conflict, Feature, Note, ProjectDetail, Question } from '../api/types'
 import { behavioursUnder, featureHref, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
 import { citationsOf } from '../notes'
 import { asksOf, type Ask } from '../asks'
@@ -130,7 +130,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         questions={
           <>
-            <KitAsks asks={asksOf([project])} />
+            <KitAsks asks={asksOf([project])} notesApp={project.app} version={notes} onAnswered={bump} />
             <Conflicts conflicts={project.conflicts} />
             <QuestionSheet sheets={[project]} notesApp={project.app} onResolved={bump} />
           </>
@@ -274,25 +274,90 @@ function Conflicts({ conflicts }: { conflicts: Conflict[] }) {
  * the agent is asking him, each question above the card it is about, so he can answer without
  * opening anything. The conflicts and the sheet below it are problems Kit found, not questions.
  */
-function KitAsks({ asks }: { asks: Ask[] }) {
+function KitAsks({
+  asks,
+  notesApp,
+  version,
+  onAnswered,
+}: {
+  asks: Ask[]
+  notesApp: string
+  version: number
+  onAnswered: () => void
+}) {
+  // BEH-SHEET-3: an open note on the card is his reply, still waiting for the agent to fold it.
+  const { resource } = useReloadableResource(() => fetchNotes(notesApp), [notesApp, version])
   if (!asks.length) return null
+  const notes = resource.state === 'ready' ? resource.value.notes : []
   return (
     <section>
       <h2>Kit is asking you</h2>
-      <p className="muted">Answer in a note, or on the card. Each question says what Kit does if you never answer.</p>
+      <p className="muted">Reply under a question. Each one says what Kit does if you never answer.</p>
       <ul className="cards">
-        {asks.map(({ app, b, text }) => (
-          <li key={`${app}/${b.id}`}>
-            <Card interactive>
-              <p className="ask">{text}</p>
-              <p className="muted">
-                <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.id}</Link> {b.title}
-              </p>
-            </Card>
+        {asks.map((ask) => (
+          <li key={`${ask.app}/${ask.b.id}`}>
+            <AskCard
+              ask={ask}
+              notesApp={notesApp}
+              replies={notes.filter((n) => n.kind === 'note' && n.behaviour === ask.b.id)}
+              onAnswered={onAnswered}
+            />
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+/**
+ * BEH-SHEET-3 (his 2026-10-22 23:47Z note: "Kit is asking you needs a way to reply"): the answer box
+ * sits under the question. A reply is a plain note on the card, in the notes the page shows, so the
+ * agent folds it like any other note; until then the card shows what he wrote, and he can add more.
+ */
+function AskCard({
+  ask: { app, b, text },
+  notesApp,
+  replies,
+  onAnswered,
+}: {
+  ask: Ask
+  notesApp: string
+  replies: Note[]
+  onAnswered: () => void
+}) {
+  const [reply, setReply] = useState('')
+  const { write, run } = useWrite(onAnswered)
+  const fieldId = useId()
+
+  async function send(e: React.FormEvent) {
+    e.preventDefault()
+    await run(async () => {
+      const result = await leaveNote(notesApp, reply, b.id)
+      setReply('')
+      return result
+    })
+  }
+
+  return (
+    <Card elevation="flat">
+      <p className="ask">{text}</p>
+      <p className="muted">
+        <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.id}</Link> {b.title}
+      </p>
+      {replies.map((n) => (
+        <p key={n.at} className="reply">
+          <Badge tone="neutral">You replied</Badge> {n.text} <span className="muted">({n.at}, waiting for Kit)</span>
+        </p>
+      ))}
+      <form onSubmit={send} className="write">
+        <label htmlFor={fieldId}>{replies.length ? 'Add to your answer' : 'Your answer'}</label>
+        <textarea id={fieldId} className="note-text" value={reply} onChange={(e) => setReply(e.target.value)} />
+        <Button type="submit" disabled={write.state === 'saving' || reply.trim() === ''}>
+          {write.state === 'saving' ? 'Sending…' : 'Reply'}
+        </Button>
+        <WriteFeedback write={write} />
+      </form>
+    </Card>
   )
 }
 
@@ -394,7 +459,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         }
         questions={
           <>
-            <KitAsks asks={asksOf(files)} />
+            <KitAsks asks={asksOf(files)} notesApp={home.app} version={notes} onAnswered={bump} />
             <Conflicts conflicts={conflicts} />
             <QuestionSheet sheets={files} notesApp={home.app} onResolved={bump} />
           </>

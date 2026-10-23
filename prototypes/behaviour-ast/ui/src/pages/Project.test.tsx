@@ -185,6 +185,56 @@ describe('the project tabs', () => {
     expect(asks.compareDocumentPosition(problems) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('replies under a question as a note on its card, and shows a reply still waiting for Kit (BEH-SHEET-3)', async () => {
+    const pending = snipIt.behaviours[0]
+    const body = {
+      ...snipIt,
+      behaviours: [
+        { ...pending, id: 'BEH-ASK-1', title: 'needs him', pending: true, needsContext: 'Invite-only?' },
+        { ...pending, id: 'BEH-ASK-2', title: 'asks him', pending: true, needsContext: 'Which colour?' },
+      ],
+    }
+    const open = { at: '2026-10-23 00:10Z', kind: 'note', behaviour: 'BEH-ASK-1', resolves: null, text: 'yes, invite-only', thread: [], questions: [] }
+    // A note on another card, and a bell on this one, are not replies.
+    const other = { ...open, behaviour: 'BEH-OTHER', text: 'elsewhere' }
+    const bell = { ...open, kind: 'bell', behaviour: 'BEH-ASK-2', text: '' }
+    const posts: { url: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const ok = (json: unknown) => ({ ok: true, status: 200, statusText: 'OK', json: async () => json })
+        if (init?.method === 'POST') {
+          posts.push({ url, body: JSON.parse(String(init.body)) })
+          return ok({ app: 'snip-it', behaviour: 'BEH-ASK-2', file: 'snip-it.notes.md', note: 'x' })
+        }
+        if (url.endsWith('/notes')) return ok({ app: 'snip-it', file: 'snip-it.notes.md', notes: [open, other, bell] })
+        return noNotes(url, init) ?? ok(body)
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/snip-it?tab=questions']}>
+        <Routes>
+          <Route path="/projects/:app" element={<Project />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const section = (await screen.findByRole('heading', { name: 'Kit is asking you' })).closest('section')!
+    const [first, second] = within(section).getAllByRole('listitem')
+    expect(await within(first).findByText('yes, invite-only')).toBeInTheDocument()
+    expect(within(first).getByLabelText('Add to your answer')).toBeInTheDocument()
+    expect(within(second).queryByText('You replied')).not.toBeInTheDocument()
+    expect(within(section).queryByText('elsewhere')).not.toBeInTheDocument()
+
+    const reply = within(second).getByRole('button', { name: 'Reply' })
+    expect(reply).toBeDisabled()
+    fireEvent.change(within(second).getByLabelText('Your answer'), { target: { value: 'teal' } })
+    fireEvent.click(reply)
+    await waitFor(() =>
+      expect(posts).toEqual([{ url: '/api/projects/snip-it/notes', body: { text: 'teal', behaviour: 'BEH-ASK-2' } }]),
+    )
+  })
+
   // BEH-FEAT-7 (his note 2026-10-16 07:13Z): "Let's leverage the tab view more".
   it('keeps only the describe box above the tabs; notes and the schedule are tabs of their own', async () => {
     renderApp(snipIt, 'snip-it')
