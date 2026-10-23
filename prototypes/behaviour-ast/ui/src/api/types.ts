@@ -523,6 +523,12 @@ export interface NoteResult extends GitOutcome {
 export interface SessionState {
   required: boolean
   signedIn: boolean
+  /** BEH-USERS-1: present (true) only when the server has user accounts on. Absent means exactly the old Kit. */
+  accounts?: true
+  /** The signed-in user's name; only with `accounts`. */
+  user?: string
+  /** Only with `accounts`, and only when the signed-in person is the operator. Absent, never false. */
+  operator?: true
 }
 
 /**
