@@ -167,7 +167,25 @@ behaviour BEH-SHEET-2 "The Questions tab leads with what Kit is asking him, and 
   contract the old Question sheet heading reads "Problems in the spec": conflicts and never-adjudicated inferences are problems Kit found, not questions
   contract the tab's count includes the questions, so a project with only questions still shows a count
   contract each needs-context line is one answerable question that ends with what the agent does if he never answers, so silence is a decision rather than a block (the agent's practice since kit#413)
-  contract my assumption: he answers in a note or on the card, as for any review; no answer box sits on the question yet
+  contract he answers under the question itself (BEH-SHEET-3), or on the card as for any review
+
+behaviour BEH-SHEET-3 "He can answer what Kit is asking, under the question"
+  in FEAT-PROJECT
+  layer ux
+  source defined kit.notes.md#2026-10-22-2347
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  when activates tab:KitProjectQuestionsTab
+  when fills field:KitReply with "invite-only to start"
+  when activates button:KitReply
+  then sees heading:KitAsking
+  contract "Kit is asking you needs a way to reply" (kit.notes.md, 2026-10-22 23:47Z)
+  contract every question under "Kit is asking you" has an answer box and a Reply button; nothing is sent while the box is blank
+  contract an answer is a plain note on the card the question is about, in the notes the page shows, so the agent reads and folds it like any other note
+  contract until it is folded, his answer shows under the question, marked as waiting for Kit, and the box becomes "Add to your answer"
+  contract my assumption: the question stays on the tab until the agent acts on his answer and edits or removes the card's needs-context line, so an answer is never lost between his reply and the agent's next wake
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
