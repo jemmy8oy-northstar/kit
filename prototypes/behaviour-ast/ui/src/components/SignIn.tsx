@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, fetchSession, signIn } from '../api/client'
 import type { SessionState } from '../api/types'
+import { SessionContext } from './session'
 
 /**
  * The gate in front of the whole app, for a Kit that is not on your laptop
@@ -28,6 +29,7 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<SessionState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -48,9 +50,12 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    signIn(password)
-      .then(() => {
-        setState({ required: true, signedIn: true })
+    signIn(password, state?.accounts ? username.trim() : undefined)
+      .then(async () => {
+        // With accounts on, who we are (and whether he is the operator) is only
+        // known to the server, so ask again. Off, nothing more is known.
+        const after = state?.accounts ? await fetchSession().catch(() => null) : null
+        setState(after?.signedIn ? after : { ...state, required: true, signedIn: true })
         // Dropped as soon as it has been exchanged for a cookie. Keeping it in
         // component state would leave the password in a React tree for the rest
         // of the session for no benefit at all.
@@ -60,7 +65,7 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
         setError(err instanceof ApiError ? err.message : 'Could not sign in')
       })
       .finally(() => setBusy(false))
-  }, [password])
+  }, [password, username, state])
 
   if (error && !state) {
     return <p role="alert" className="error">{error}</p>
@@ -80,6 +85,20 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
         <p className="muted">
           Reads are open to anyone; editing the corpus needs the password.
         </p>
+        {/* BEH-USERS-1: only when the server has accounts on. Optional — empty is the operator. */}
+        {state.accounts ? (
+          <>
+            <label htmlFor="kit-username">User name</label>
+            <input
+              id="kit-username"
+              type="text"
+              value={username}
+              autoComplete="username"
+              autoCapitalize="none"
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </>
+        ) : null}
         <label htmlFor="kit-password">Password</label>
         <input
           id="kit-password"
@@ -102,5 +121,5 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return <>{children}</>
+  return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>
 }

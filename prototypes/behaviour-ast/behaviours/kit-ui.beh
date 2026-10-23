@@ -1127,7 +1127,6 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
-  needs-context "Accounts need a database, and Kit has none on purpose (kit#117: Kit stores in git). May they go in the Postgres oke-fleet runs for earnyourbeers, beside the user memory of BEH-USERS-4? If you don't answer, I build it on a PR for you to merge, and adding the database secret to oke-fleet stays yours."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1141,6 +1140,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract my assumption: he signs in as before, with KIT_PASSWORD and no name or the name james; his password is changed where Kit is deployed, not in Kit
   contract my assumption: a user name is 2 to 32 lower-case letters, digits, '-' or '_'; a password has at least 12 characters and is stored only as a PBKDF2-SHA256 hash
   contract my assumption: accounts live in the database Kit runs (the one BEH-USERS-4 names); until that database exists, Kit keeps its single password and no account can be made
+  contract his answer (kit.notes.md#2026-10-23-0639, and kit#423 at 08:50Z): Kit may use a database; he approved it on BEH-USERS-4, so accounts need no separate approval
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS

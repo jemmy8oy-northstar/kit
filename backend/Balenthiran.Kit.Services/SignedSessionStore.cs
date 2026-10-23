@@ -32,15 +32,46 @@ public sealed class SignedSessionStore(byte[] key, Func<long>? now = null) : ISe
         Rfc2898DeriveBytes.Pbkdf2(password, Encoding.UTF8.GetBytes("kit-session-v1"), 210_000, HashAlgorithmName.SHA256, 32);
 
     /// <inheritdoc />
-    public string Create()
+    public string Create() => Create(ISessionStore.Operator);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The operator's token keeps the two-part body every token had before accounts, so the
+    /// tokens already on his phone stay his; a user's adds their name as a third part. A user
+    /// name never contains a dot, so the parts cannot be confused.
+    /// </remarks>
+    public string Create(string user)
     {
         var expires = now() + SessionStore.TtlMs;
         var body = $"{expires.ToString(CultureInfo.InvariantCulture)}.{Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(16))}";
+        if (user != ISessionStore.Operator)
+        {
+            body += $".{user}";
+        }
+
         return $"{body}.{Sign(body)}";
     }
 
     /// <inheritdoc />
-    public bool Valid(string? token) => Expiry(token) is { } expires && expires > now() && !IsRevoked(token!);
+    public bool Valid(string? token) => UserOf(token) is not null;
+
+    /// <inheritdoc />
+    public string? UserOf(string? token)
+    {
+        if (Expiry(token) is not { } expires || expires <= now() || IsRevoked(token!))
+        {
+            return null;
+        }
+
+        // Signed, so the name is the one Create wrote: body is expires.random[.user].
+        var parts = token![..token.LastIndexOf('.')].Split('.');
+        return parts.Length switch
+        {
+            2 => ISessionStore.Operator,
+            3 => parts[2],
+            _ => null,
+        };
+    }
 
     /// <inheritdoc />
     public bool Destroy(string? token)
