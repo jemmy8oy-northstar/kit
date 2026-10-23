@@ -63,6 +63,27 @@ public sealed record KitSettings(
     /// <summary>The key, for the token source only.</summary>
     internal string? PrivateKey() => gitHubPrivateKey;
 
+    /// <summary>
+    /// <c>KIT_DATABASE</c>, the Npgsql connection string of the database early-access accounts live
+    /// in (BEH-USERS-1). Unset means accounts are off. WRITE-ONLY for the same reason as
+    /// <see cref="GitToken"/>: it carries a password.
+    /// </summary>
+    public string? Database
+    {
+        init => database = value;
+    }
+
+    private readonly string? database;
+
+    /// <summary>The connection string, for the user store only.</summary>
+    internal string? ConnectionString() => database;
+
+    /// <summary>True when accounts are on.</summary>
+    public bool Accounts => database is not null;
+
+    /// <summary><c>KIT_OPERATOR</c>: the name the operator signs in with when accounts are on; default <c>james</c>.</summary>
+    public string Operator { get; init; } = KitRouter.DefaultOperator;
+
     /// <summary>True when the App credential is set; <see cref="FromEnvironment"/> has already refused a partial one.</summary>
     public bool GitHubApp => GitHubAppId is not null;
 
@@ -110,6 +131,13 @@ public sealed record KitSettings(
             throw new InvalidOperationException($"the GitHub App credential is half set: {string.Join(" and ", missing)} missing — set all three, or none to use KIT_GIT_TOKEN");
         }
 
+        var database = env("KIT_DATABASE") is { } db && !string.IsNullOrWhiteSpace(db) ? db : null;
+        if (database is not null && string.IsNullOrWhiteSpace(env("KIT_PASSWORD")))
+        {
+            // Accounts sit behind the lock: with no operator password there is no one to create them.
+            throw new InvalidOperationException("KIT_DATABASE is set but KIT_PASSWORD is not: accounts need the operator's password, so set both, or unset KIT_DATABASE");
+        }
+
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
         return new KitSettings(
             dir,
@@ -132,6 +160,8 @@ public sealed record KitSettings(
             GitHubPrivateKey = app["KIT_GITHUB_PRIVATE_KEY"],
             Projects = ParseProjects(env("KIT_PROJECTS")),
             ProjectsPoll = ParsePoll(env("KIT_PROJECTS_POLL")),
+            Database = database,
+            Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
         };
     }
 

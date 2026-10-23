@@ -138,8 +138,20 @@ export function fetchSession(): Promise<SessionState> {
  * cookie the browser stores and this script cannot read, which is the point.
  * All we learn is whether it worked.
  */
-export function signIn(password: string): Promise<{ ok: true; signedIn: true }> {
-  return post<{ ok: true; signedIn: true }>('/api/session', { password })
+export function signIn(password: string, username?: string): Promise<{ ok: true; signedIn: true }> {
+  // No name sends exactly `{ password }`, as before accounts existed: that is
+  // also how the operator signs in, so a Kit with accounts off never sees a new key.
+  return post<{ ok: true; signedIn: true }>('/api/session', username ? { username, password } : { password })
+}
+
+/** BEH-USERS-1: a non-operator user changes their own password. The server's `reason` is thrown on refusal. */
+export function changePassword(current: string, next: string): Promise<{ ok: true; user: string }> {
+  return post<{ ok: true; user: string }>('/api/session/password', { current, next })
+}
+
+/** BEH-USERS-1: the operator adds a user. */
+export function addUser(username: string, password: string): Promise<{ ok: true; user: string }> {
+  return post<{ ok: true; user: string }>('/api/users', { username, password })
 }
 
 export function signOut(): Promise<{ ok: true; signedIn: false }> {
