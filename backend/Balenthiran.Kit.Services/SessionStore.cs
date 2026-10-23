@@ -13,32 +13,38 @@ public sealed class SessionStore(Func<long>? now = null, Func<string>? mint = nu
 
     private readonly Func<long> now = now ?? (() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     private readonly Func<string> mint = mint ?? (() => Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32)));
-    private readonly Dictionary<string, long> live = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (long Expires, string User)> live = new(StringComparer.Ordinal);
     private readonly Lock gate = new();
 
     /// <inheritdoc />
-    public string Create()
+    public string Create() => Create(ISessionStore.Operator);
+
+    /// <inheritdoc />
+    public string Create(string user)
     {
         lock (gate)
         {
             var token = mint();
-            live[token] = now() + TtlMs;
+            live[token] = (now() + TtlMs, user);
             return token;
         }
     }
 
     /// <inheritdoc />
-    public bool Valid(string? token)
+    public bool Valid(string? token) => UserOf(token) is not null;
+
+    /// <inheritdoc />
+    public string? UserOf(string? token)
     {
         if (string.IsNullOrEmpty(token))
         {
-            return false;
+            return null;
         }
 
         lock (gate)
         {
             Sweep();
-            return live.ContainsKey(token);
+            return live.TryGetValue(token, out var session) ? session.User : null;
         }
     }
 
@@ -55,7 +61,7 @@ public sealed class SessionStore(Func<long>? now = null, Func<string>? mint = nu
     private void Sweep()
     {
         var t = now();
-        foreach (var token in live.Where(kv => kv.Value <= t).Select(kv => kv.Key).ToList())
+        foreach (var token in live.Where(kv => kv.Value.Expires <= t).Select(kv => kv.Key).ToList())
         {
             live.Remove(token);
         }

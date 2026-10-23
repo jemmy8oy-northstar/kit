@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Empty, and deliberately WITHOUT the template's EF Core / Npgsql references:
-       Kit's storage is git (kit#117), so this layer will hold the git store when
-       the write-back is built rather than a DbContext nobody uses. -->
+  <!-- Still no EF Core: the corpora are stored in git (kit#117). Npgsql alone, for the one table
+       of early-access accounts (BEH-USERS-1) in the database BEH-USERS-4 names. -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="10.0.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../Balenthiran.Kit.EntityModels/Balenthiran.Kit.EntityModels.csproj" />
     <ProjectReference Include="../Balenthiran.Kit.Abstractions/Balenthiran.Kit.Abstractions.csproj" />

@@ -10,6 +10,7 @@ import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import SignIn from './components/SignIn'
+import Account from './components/Account'
 import NoteFab from './components/NoteFab'
 import { BoardNavLink } from './components/BoardViews'
 import { IDEAS } from './board'
@@ -69,6 +70,8 @@ export default function App() {
                 Projects
               </NavLink>
             </nav>
+            {/* BEH-USERS-1: renders nothing unless the server has accounts on. */}
+            <Account />
           </header>
           <main>
             <Routes>

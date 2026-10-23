@@ -78,6 +78,17 @@ apps:
             name: kit-git
             key: token
             optional: true
+      # Early-access accounts (BEH-USERS-1; the database he approved on BEH-USERS-4,
+      # kit.notes.md#2026-10-23-0639). The `kit-database` secret is declared in
+      # oke-fleet `secrets/kit.json` and filled by secret-provisioner. OPTIONAL on
+      # purpose, like KIT_GIT_TOKEN: unset, accounts stay off and Kit keeps its one
+      # password.
+      - name: KIT_DATABASE
+        valueFrom:
+          secretKeyRef:
+            name: kit-database
+            key: connection
+            optional: true
       # The GitHub App (kit#88: "the backend can use [it] to read and write to gh"),
       # from the `kit-github` secret James created on 2026-09-27. With these set the
       # entrypoint clones with a token the server mints, and every push mints its
