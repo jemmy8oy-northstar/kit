@@ -130,6 +130,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "leads the Questions tab with what Kit is asking him, above the problems, and counts it (BEH-SHEET-2)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "puts the questions before the problems in the spec (BEH-SHEET-2)" }
   ],
+  "BEH-SHEET-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "replies under a question as a note on its card, and shows a reply still waiting for Kit (BEH-SHEET-3)" }
+  ],
   "BEH-SCHED-1": [
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "with nothing scheduled, says nothing is next and lists the backlog" },
     { "file": "prototypes/behaviour-ast/ui/src/components/SchedulePanel.test.tsx", "title": "shows a built or vanished entry as such rather than dropping it, and neither is next" }
