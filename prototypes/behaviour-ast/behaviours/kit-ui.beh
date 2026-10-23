@@ -1120,13 +1120,12 @@ epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for
 
 feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-USERS-1 "An early-access user signs in with a username and password James made, then connects their GitHub"
   in FEAT-USER-SIGNUP
   source inferred kit.notes.md#2026-10-19-1721
   review approved
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1144,7 +1143,8 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract my assumption: connecting is two steps on GitHub, installing Kit's App and then authorising it; Kit records only the installation on the personal account of the user who authorised, never the id on the install redirect (GitHub warns it can be forged) and never an organisation's (any member can reach one); the user's own token is used for that and revoked, never kept
   contract my assumption: one installation belongs to one Kit user, and the installation Kit itself runs on is never a user's
   contract my assumption: it switches on when Kit's App has an OAuth client (KIT_GITHUB_APP_SLUG, KIT_GITHUB_CLIENT_ID, KIT_GITHUB_CLIENT_SECRET) and Kit's page as its setup and callback URL; until James sets those, no user is offered it
-  needs-context "Users install a GitHub App on their own account, and Kit runs on my bot's App today. Will you create a new public App named Kit (only you can), or make the bot's App public? I build for a new App named Kit; connecting stays switched off until its client id and secret are in a kit-github-oauth secret."
+  contract his answer (kit#431, 2026-10-23 22:03Z): "I think we make a new public GitHub app"; so users install a new public App named Kit, and the bot's own App stays private and keeps running Kit
+  contract built: kit#431 (merged 2026-10-23); kit#433 has the chart read the App's slug, client id and secret from a hand-made kit-github-connect secret, and connecting stays off until James creates that App and secret
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
