@@ -30,6 +30,7 @@ public sealed partial class KitRouter
             // Absent with accounts off, so the answer is byte-for-byte what it was (the auth goldens).
             Accounts = users is null ? null : true,
             User = users is null || who is null ? null : who == ISessionStore.Operator ? operatorName : who,
+            Operator = users is not null && who == ISessionStore.Operator ? true : null,
         };
     }
 

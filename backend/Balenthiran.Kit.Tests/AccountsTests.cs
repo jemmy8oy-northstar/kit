@@ -57,7 +57,10 @@ public class AccountsTests
         Assert.DoesNotContain(AnnPassword, users.HashOf("ann")!, StringComparison.Ordinal);
 
         var ann = Cookie(SignIn(router, "ann", AnnPassword));
-        Assert.Equal("ann", Assert.IsType<SessionState>(router.Route("GET", "/api/session", ann).Body).User);
+        var hers = Assert.IsType<SessionState>(router.Route("GET", "/api/session", ann).Body);
+        Assert.Equal("ann", hers.User);
+        Assert.Null(hers.Operator);
+        Assert.True(Assert.IsType<SessionState>(router.Route("GET", "/api/session", him).Body).Operator);
     }
 
     [Fact]

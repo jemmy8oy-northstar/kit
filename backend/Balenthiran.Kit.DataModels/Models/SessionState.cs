@@ -21,4 +21,9 @@ public sealed class SessionState : ISessionState
     [JsonPropertyOrder(4)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? User { get; init; }
+
+    /// <summary>True when the one signed in is the operator, so the page offers him "add a user"; absent otherwise.</summary>
+    [JsonPropertyOrder(5)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Operator { get; init; }
 }

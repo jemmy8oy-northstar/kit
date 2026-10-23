@@ -10,4 +10,6 @@ public interface ISessionState
     bool? Accounts { get; }
 
     string? User { get; }
+
+    bool? Operator { get; }
 }
