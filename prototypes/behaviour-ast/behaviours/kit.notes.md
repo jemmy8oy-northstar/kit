@@ -251,3 +251,7 @@ Repo specify memories stored in repo but I think we have some user memories stor
 ## 2026-10-23 06:41Z · BEH-USERS-7
 
 I like the idea of starting with their own key but I think test users will not be keen to use it if it will cost them. I think for testing you will still handle it. Then in later stages of testing we introduce tracking and billing even if we don’t start charging
+
+## 2026-10-23 06:42Z · BEH-USERS-8
+
+I think we skills add it with the sign up feature. So it’s ready for first sign up?
