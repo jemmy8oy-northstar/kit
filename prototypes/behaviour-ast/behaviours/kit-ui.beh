@@ -1127,6 +1127,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   source inferred kit.notes.md#2026-10-19-1721
   review approved
   pending
+  needs-context "Accounts need a database, and Kit has none on purpose (kit#117: Kit stores in git). May they go in the Postgres oke-fleet runs for earnyourbeers, beside the user memory of BEH-USERS-4? If you don't answer, I build it on a PR for you to merge, and adding the database secret to oke-fleet stays yours."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1136,6 +1137,10 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract a user can change the password James gave them
   contract once signed in, the user connects their GitHub by installing Kit's GitHub App, which is what reads and writes their repos
   contract later, for general release, signing in with GitHub replaces the username and password; that is a separate behaviour, not this one
+  contract my assumption: he creates each account inside Kit, signed in as himself, rather than with a command run in the cluster
+  contract my assumption: he signs in as before, with KIT_PASSWORD and no name or the name james; his password is changed where Kit is deployed, not in Kit
+  contract my assumption: a user name is 2 to 32 lower-case letters, digits, '-' or '_'; a password has at least 12 characters and is stored only as a PBKDF2-SHA256 hash
+  contract my assumption: accounts live in the database Kit runs (the one BEH-USERS-4 names); until that database exists, Kit keeps its single password and no account can be made
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
@@ -1180,6 +1185,17 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
   contract his list: "the dev process and context move to a shared, generic place for every user, with per-user memory (perhaps a database)"
   contract my assumption: the process is written once and shared, so a fix reaches every user; a user's memory is theirs alone and never read into another user's session
   contract his answer (kit.notes.md#2026-10-23-0639): memory about one repo is stored in that repo; memory about the user, tied to no repo, is stored in a database Kit runs
+
+behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
+  in FEAT-USER-PROCESS
+  source inferred kit.notes.md#2026-10-23-0707
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note: "for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs"
+  contract my assumption: before the first user, the agent runs on one of James's own projects, so its cost per task is measured before anyone else relies on it
+  contract my assumption: it runs the shared process of BEH-USERS-4, and nothing it does is carried by the agent that maintains Kit
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
@@ -1237,6 +1253,8 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
   then sees region:KitMain
   contract my proposal, answering "feel free to propose other items": today every signed-in visitor is James, so nothing checks whose project a URL names; with a second user, every read and write has to
   contract his answer (kit.notes.md#2026-10-23-0642): the check ships with the sign-up feature (BEH-USERS-1), so it is in place before the first user signs in
+  contract my assumption: until a user connects their GitHub, every project Kit serves is James's; the user's project list and activity hold none of it, and every write to it is refused
+  contract my assumption: a user may still open one of his projects by its URL, as anyone may (BEH-GATE-H1), because its repo is public; a project in a private repo is served to its owner only
 
 # His note of 2026-10-19 19:33Z: a "nudge", maybe a bell ("fits in with the cat theme"),
 # comments under items, and a floating button for notes. Captured, not scheduled.
