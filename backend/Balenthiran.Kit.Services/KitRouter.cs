@@ -31,7 +31,9 @@ namespace Balenthiran.Kit.Services;
 /// <param name="head">The branch every edit is pushed to (<c>KIT_GIT_BRANCH</c>, <c>kit/hosted</c> when deployed) — Commit's pull request is FROM it.</param>
 /// <param name="baseBranch">What Commit proposes the edits INTO: <c>KIT_GIT_BASE</c>, default <c>dev</c>, the branch the entrypoint starts <paramref name="head"/> from.</param>
 /// <param name="pending">Reads what <paramref name="head"/> holds that <paramref name="baseBranch"/> lacks (BEH-COMMIT-5). None means nothing is listed.</param>
-public sealed class KitRouter(
+/// <param name="users">Early-access accounts (BEH-USERS-1). None means accounts are off: the operator's password is the only way in, as before.</param>
+/// <param name="operatorName">The user name the operator signs in with when accounts are on; his password stays <c>KIT_PASSWORD</c>.</param>
+public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
     IUiBundle bundle,
@@ -51,7 +53,9 @@ public sealed class KitRouter(
     IPendingEditsReader? pending = null,
     ICompletionReader? completions = null,
     string? offReason = null,
-    IActivityReader? activity = null) : IKitRouter
+    IActivityReader? activity = null,
+    IUserStore? users = null,
+    string operatorName = KitRouter.DefaultOperator) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -118,18 +122,20 @@ public sealed class KitRouter(
         // Readable without a session: it reveals only whether a lock exists.
         if (pathname == "/api/session")
         {
-            return Json(200, new SessionState { Required = lockRequired, SignedIn = !lockRequired || SignedIn(cookie) });
+            return Json(200, SessionOf(cookie));
         }
 
         if (pathname == "/api/projects")
         {
-            return Json(200, new ProjectList { Projects = corpora.Corpora().Select(viewer.Summary).ToList() });
+            // BEH-USERS-8: a user's list holds their own projects. Every project this Kit serves
+            // today is the operator's, so theirs is empty until they connect their GitHub.
+            return Json(200, new ProjectList { Projects = IsOtherUser(cookie) ? [] : corpora.Corpora().Select(viewer.Summary).ToList() });
         }
 
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
         if (pathname == "/api/activity")
         {
-            return Json(200, activity.Recent());
+            return Json(200, IsOtherUser(cookie) ? new ActivityFeed { Entries = [], NoHistory = [] } : activity.Recent());
         }
 
         var match = OneProject.Match(pathname);
@@ -282,13 +288,26 @@ public sealed class KitRouter(
         // is irrelevant — there is no "loopback, so allow" while a password is set.
         if (lockRequired)
         {
-            if (!SignedIn(cookie))
+            if (UserOf(cookie) is not { } who)
             {
                 return Json(401, new ApiError
                 {
                     Error = "not-signed-in",
                     Reason = "this Kit is password-protected and this request carries no valid session. POST the password to /api/session first.",
                 });
+            }
+
+            // A user's own account is theirs to change; every other write is to a project.
+            if (pathname is "/api/users" or "/api/session/password")
+            {
+                return Account(pathname, who, body);
+            }
+
+            // BEH-USERS-8: every project this Kit serves is the operator's, so only he writes.
+            // When a user's own projects arrive with their GitHub, this asks whose project it is.
+            if (who != ISessionStore.Operator)
+            {
+                return Json(403, new ApiError { Error = "not-yours", Reason = "this project belongs to another user, so this session cannot change it" });
             }
         }
         else if (!OriginPolicy.IsLoopback(host))
@@ -889,6 +908,10 @@ public sealed class KitRouter(
             ? p.GetString()!
             : string.Empty;
 
+        // BEH-USERS-1: no name, or his, is the operator signing in exactly as before accounts.
+        var name = body is { } nb ? Str(nb, "username") : null;
+        var user = string.IsNullOrEmpty(name) || name == operatorName ? ISessionStore.Operator : name;
+
         // Check, judge and count as ONE step. Separately, guesses sent at once were all checked
         // before any was counted: 200 parallel guesses had 30 judged against 5 free attempts. ui.js
         // never could, being one thread; the port made sign-in concurrent (SignInRaceTests).
@@ -901,27 +924,24 @@ public sealed class KitRouter(
                 return Json(429, new ApiError { Error = "too-many-attempts", Reason = $"too many failed sign-ins; try again in {seconds}s", RetryAfterSeconds = seconds });
             }
 
-            if (!SecretsMatch(given, password!))
+            if (!(user == ISessionStore.Operator ? SecretsMatch(given, password!) : IsUsersPassword(user, given)))
             {
                 throttle?.Fail();
 
-                // One message for missing and wrong: telling them apart helps a guesser.
+                // One message for missing and wrong, and for an unknown user: telling them apart helps a guesser.
                 return Json(401, new ApiError { Error = "bad-password", Reason = "that is not the password" });
             }
 
             throttle?.Succeed();
         }
 
-        var token = sessions!.Create();
+        var token = sessions!.Create(user);
 
         // The token goes out ONLY as an HttpOnly cookie, never in the body.
         return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
     }
 
     private readonly object signInGate = new();
-
-    /// <summary>Fails closed: no store means nobody is signed in.</summary>
-    private bool SignedIn(string? cookie) => sessions is not null && sessions.Valid(ParseCookies(cookie).GetValueOrDefault(Cookie));
 
     private string CookieFor(string token) =>
         $"{Cookie}={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age={SessionStore.TtlMs / 1000}" + (secure ? "; Secure" : string.Empty);

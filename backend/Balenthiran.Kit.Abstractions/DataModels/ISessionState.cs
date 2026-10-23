@@ -6,4 +6,8 @@ public interface ISessionState
     bool Required { get; }
 
     bool SignedIn { get; }
+
+    bool? Accounts { get; }
+
+    string? User { get; }
 }
