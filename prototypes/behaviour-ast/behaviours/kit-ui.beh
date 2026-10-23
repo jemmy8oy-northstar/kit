@@ -899,7 +899,7 @@ behaviour BEH-STAGE-9 "The stage board is for reading: the agent writes every st
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
-  review unreviewed
+  review approved
   priority 2
   actor engineer
   when opens page:KitStages
