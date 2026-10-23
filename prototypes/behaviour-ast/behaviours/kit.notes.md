@@ -217,3 +217,9 @@ Where kit currently has behs and features which need decisions to be made. I thi
 ## 2026-10-22 23:47Z · new behaviour
 
 Kit is asking you needs a way to reply
+
+## 2026-10-23 06:35Z · BEH-USERS-1
+
+Invite only to start with
+
+Idk how this would work, could we whitelist GitHub accounts? Maybe also a code word to even try sign up?
