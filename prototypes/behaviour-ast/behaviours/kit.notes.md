@@ -223,3 +223,7 @@ Kit is asking you needs a way to reply
 Invite only to start with
 
 Idk how this would work, could we whitelist GitHub accounts? Maybe also a code word to even try sign up?
+
+## 2026-10-23 06:35Z · BEH-USERS-1
+
+Actually the code word is maybe not necessary?
