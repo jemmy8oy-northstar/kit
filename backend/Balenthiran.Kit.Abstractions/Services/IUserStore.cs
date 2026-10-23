@@ -15,4 +15,13 @@ public interface IUserStore
 
     /// <summary>Replace a user's hash; false when there is no such user.</summary>
     bool SetHash(string name, string hash);
+
+    /// <summary>The GitHub installation a user connected, or null when they have connected none.</summary>
+    DataModels.IGitHubLink? GitHubOf(string name);
+
+    /// <summary>
+    /// Record the installation a user connected, replacing any before it. False, and nothing
+    /// written, when there is no such user or another user already holds that installation.
+    /// </summary>
+    bool SetGitHub(string name, DataModels.IGitHubLink link);
 }

@@ -1,3 +1,4 @@
+using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
 using Npgsql;
 
@@ -15,8 +16,13 @@ public sealed class PostgresUserStore(string connectionString) : IUserStore, IDi
             hash text NOT NULL,
             created timestamptz NOT NULL DEFAULT now(),
             changed timestamptz
-        )
+        );
+        ALTER TABLE kit_users ADD COLUMN IF NOT EXISTS github_installation bigint UNIQUE;
+        ALTER TABLE kit_users ADD COLUMN IF NOT EXISTS github_account text
         """;
+
+    // Postgres's code for a broken UNIQUE: here, an installation another user already holds.
+    private const string UniqueViolation = "23505";
 
     private readonly NpgsqlDataSource source = NpgsqlDataSource.Create(connectionString);
 
@@ -47,9 +53,31 @@ public sealed class PostgresUserStore(string connectionString) : IUserStore, IDi
     }
 
     /// <inheritdoc />
+    public IGitHubLink? GitHubOf(string name)
+    {
+        using var cmd = Command("SELECT github_installation, github_account FROM kit_users WHERE name = $1 AND github_installation IS NOT NULL", name);
+        using var row = cmd.ExecuteReader();
+        return row.Read() ? new GitHubInstallation(row.GetInt64(0), row.GetString(1)) : null;
+    }
+
+    /// <inheritdoc />
+    public bool SetGitHub(string name, IGitHubLink link)
+    {
+        using var cmd = Command("UPDATE kit_users SET github_installation = $2, github_account = $3, changed = now() WHERE name = $1", name, link.Installation, link.Account);
+        try
+        {
+            return cmd.ExecuteNonQuery() == 1;
+        }
+        catch (PostgresException e) when (e.SqlState == UniqueViolation)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
     public void Dispose() => source.Dispose();
 
-    private NpgsqlCommand Command(string sql, params string[] values)
+    private NpgsqlCommand Command(string sql, params object[] values)
     {
         EnsureSchema();
         var cmd = source.CreateCommand(sql);

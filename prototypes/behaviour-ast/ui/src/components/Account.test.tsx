@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import SignIn from './SignIn'
 import Account from './Account'
+import { githubNavigation } from './githubNavigation'
 
 /**
  * BEH-USERS-1 / BEH-USERS-8: user accounts in the browser.
@@ -163,5 +164,67 @@ describe('Account area', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'twelve-chars-ok' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add user' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('there is already a user called ana')
+  })
+})
+
+describe('Connect your GitHub (BEH-USERS-1)', () => {
+  const sam = {
+    required: true, signedIn: true, accounts: true, user: 'sam',
+    gitHubInstall: 'https://github.com/apps/kit/installations/new',
+    gitHubAuthorize: 'https://github.com/login/oauth/authorize?client_id=c&state=1.ab',
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('offers a user the install link, and the operator nothing', async () => {
+    vi.stubGlobal('fetch', server([sam]).fn)
+    const { unmount } = render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', sam.gitHubInstall)
+    unmount()
+
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'james', operator: true }]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as james')).toBeInTheDocument()
+    expect(screen.queryByText('Connect your GitHub')).not.toBeInTheDocument()
+  })
+
+  it('names the account once connected', async () => {
+    vi.stubGlobal('fetch', server([{ ...sam, gitHub: 'sam-gh' }]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('sam-gh')).toBeInTheDocument()
+    expect(screen.queryByText('Connect your GitHub')).not.toBeInTheDocument()
+  })
+
+  it('sends the install redirect straight on to authorise, posting nothing', async () => {
+    const to = vi.spyOn(githubNavigation, 'to').mockImplementation(() => {})
+    window.history.replaceState(null, '', '/?installation_id=42&setup_action=install')
+    const s = server([sam])
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Connecting your GitHub…')).toBeInTheDocument()
+    expect(to).toHaveBeenCalledWith(sam.gitHubAuthorize)
+    expect(s.posted).toEqual([])
+  })
+
+  it('hands the code and state to the server, then reloads without them', async () => {
+    const reload = vi.spyOn(githubNavigation, 'reload').mockImplementation(() => {})
+    window.history.replaceState(null, '', '/?code=c0de&state=1.ab&installation_id=42')
+    const s = server([sam], { status: 200, body: { ...sam, gitHub: 'sam-gh' } })
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    await vi.waitFor(() => expect(reload).toHaveBeenCalled())
+    // The redirect's installation_id is never sent: anyone can type one.
+    expect(s.posted).toEqual([{ path: '/api/github/connected', body: { code: 'c0de', state: '1.ab' } }])
+  })
+
+  it('shows the server reason when the connection is refused, and drops the spent code from the URL', async () => {
+    window.history.replaceState(null, '', '/?code=c0de&state=1.ab')
+    vi.stubGlobal('fetch', server([sam], { status: 403, body: { error: 'bad-state', reason: 'connect again' } }).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('alert')).toHaveTextContent('connect again')
+    expect(window.location.search).toBe('')
   })
 })

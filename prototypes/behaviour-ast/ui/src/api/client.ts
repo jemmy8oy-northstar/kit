@@ -154,6 +154,11 @@ export function addUser(username: string, password: string): Promise<{ ok: true;
   return post<{ ok: true; user: string }>('/api/users', { username, password })
 }
 
+/** BEH-USERS-1: hand back what GitHub returned after the user authorised Kit's App. */
+export function connectGitHub(code: string, state: string): Promise<SessionState> {
+  return post<SessionState>('/api/github/connected', { code, state })
+}
+
 export function signOut(): Promise<{ ok: true; signedIn: false }> {
   return post<{ ok: true; signedIn: false }>('/api/session/end', null)
 }
