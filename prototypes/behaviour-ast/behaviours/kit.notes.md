@@ -243,3 +243,7 @@ Can always change later if need be
 ## 2026-10-23 06:38Z · BEH-USERS-3
 
 Yes
+
+## 2026-10-23 06:39Z · BEH-USERS-4
+
+Repo specify memories stored in repo but I think we have some user memories stored in a db? Because otherwise I don’t know where to store these
