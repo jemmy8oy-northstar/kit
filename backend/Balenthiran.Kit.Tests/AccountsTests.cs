@@ -240,9 +240,24 @@ public class AccountsTests
             users: users);
     }
 
-    private sealed class MemoryUsers : IUserStore
+    internal sealed class MemoryUsers : IUserStore
     {
         private readonly ConcurrentDictionary<string, string> hashes = new(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, IGitHubLink> links = new(StringComparer.Ordinal);
+
+        public IGitHubLink? GitHubOf(string name) => links.GetValueOrDefault(name);
+
+        public bool SetGitHub(string name, IGitHubLink link)
+        {
+            // As the table's UNIQUE: one installation, one user.
+            if (!hashes.ContainsKey(name) || links.Any(l => l.Key != name && l.Value.Installation == link.Installation))
+            {
+                return false;
+            }
+
+            links[name] = link;
+            return true;
+        }
 
         public string? HashOf(string name) => hashes.GetValueOrDefault(name);
 

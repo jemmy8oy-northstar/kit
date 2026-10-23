@@ -26,4 +26,19 @@ public sealed class SessionState : ISessionState
     [JsonPropertyOrder(5)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? Operator { get; init; }
+
+    /// <summary>The GitHub account a signed-in user has connected; absent until they do.</summary>
+    [JsonPropertyOrder(6)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? GitHub { get; init; }
+
+    /// <summary>Where a signed-in user installs Kit's GitHub App; absent for the operator, or when this Kit cannot connect one.</summary>
+    [JsonPropertyOrder(7)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? GitHubInstall { get; init; }
+
+    /// <summary>Where they authorise it afterwards, carrying a state signed for this user alone.</summary>
+    [JsonPropertyOrder(8)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? GitHubAuthorize { get; init; }
 }

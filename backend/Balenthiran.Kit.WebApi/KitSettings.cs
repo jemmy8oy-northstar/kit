@@ -81,6 +81,33 @@ public sealed record KitSettings(
     /// <summary>True when accounts are on.</summary>
     public bool Accounts => database is not null;
 
+    /// <summary>
+    /// <c>KIT_GITHUB_APP_SLUG</c> and <c>KIT_GITHUB_CLIENT_ID</c>: with the secret below, how an
+    /// early-access user connects their GitHub (BEH-USERS-1). All three or none, and only with
+    /// accounts and a public origin, which GitHub sends the user back to.
+    /// </summary>
+    public string? GitHubAppSlug { get; init; }
+
+    /// <inheritdoc cref="GitHubAppSlug" />
+    public string? GitHubClientId { get; init; }
+
+    /// <summary><c>KIT_GITHUB_CLIENT_SECRET</c>. WRITE-ONLY for the same reason as <see cref="GitToken"/>.</summary>
+    public string? GitHubClientSecret
+    {
+        init => gitHubClientSecret = value;
+    }
+
+    private readonly string? gitHubClientSecret;
+
+    /// <summary>The client secret, for the connector only.</summary>
+    internal string? ClientSecret() => gitHubClientSecret;
+
+    /// <summary>True when users can connect their GitHub; <see cref="FromEnvironment"/> has already refused a partial set.</summary>
+    public bool GitHubConnect => GitHubClientId is not null;
+
+    /// <summary>Kit's page, which GitHub sends a user back to after they authorise the App; register it as the App's callback URL.</summary>
+    public string? GitHubRedirect => PublicOrigin is null ? null : $"{PublicOrigin.TrimEnd('/')}{BasePath}/";
+
     /// <summary><c>KIT_OPERATOR</c>: the name the operator signs in with when accounts are on; default <c>james</c>.</summary>
     public string Operator { get; init; } = KitRouter.DefaultOperator;
 
@@ -138,6 +165,20 @@ public sealed record KitSettings(
             throw new InvalidOperationException("KIT_DATABASE is set but KIT_PASSWORD is not: accounts need the operator's password, so set both, or unset KIT_DATABASE");
         }
 
+        var connect = new[] { "KIT_GITHUB_APP_SLUG", "KIT_GITHUB_CLIENT_ID", "KIT_GITHUB_CLIENT_SECRET" }
+            .ToDictionary(n => n, n => env(n) is { } v && !string.IsNullOrWhiteSpace(v) ? v.Trim() : null);
+        var unset = connect.Where(kv => kv.Value is null).Select(kv => kv.Key).ToList();
+        if (unset.Count is > 0 and < 3)
+        {
+            throw new InvalidOperationException($"connecting a user's GitHub is half set: {string.Join(" and ", unset)} missing — set all three, or none");
+        }
+
+        if (unset.Count == 0 && (database is null || string.IsNullOrWhiteSpace(env("KIT_PUBLIC_ORIGIN"))))
+        {
+            // A connection belongs to an account, and GitHub needs a public page to send the user back to.
+            throw new InvalidOperationException("KIT_GITHUB_CLIENT_ID is set but KIT_DATABASE or KIT_PUBLIC_ORIGIN is not: a user's GitHub is connected to their account, on Kit's public page, so set both, or unset the three KIT_GITHUB_APP_SLUG/CLIENT_ID/CLIENT_SECRET");
+        }
+
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
         return new KitSettings(
             dir,
@@ -161,6 +202,9 @@ public sealed record KitSettings(
             Projects = ParseProjects(env("KIT_PROJECTS")),
             ProjectsPoll = ParsePoll(env("KIT_PROJECTS_POLL")),
             Database = database,
+            GitHubAppSlug = connect["KIT_GITHUB_APP_SLUG"],
+            GitHubClientId = connect["KIT_GITHUB_CLIENT_ID"],
+            GitHubClientSecret = connect["KIT_GITHUB_CLIENT_SECRET"],
             Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
         };
     }
