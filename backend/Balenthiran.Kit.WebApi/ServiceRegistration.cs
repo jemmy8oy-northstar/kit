@@ -49,6 +49,13 @@ public static class ServiceRegistration
             ? new SignedSessionStore(SignedSessionStore.KeyFor(password))
             : new SessionStore());
         services.TryAddSingleton<ISignInThrottle>(_ => new SignInThrottle());
+
+        // BEH-USERS-1: accounts only with a database; without one, Kit has its single password.
+        if (settings.Accounts)
+        {
+            services.TryAddSingleton<IUserStore>(_ => new PostgresUserStore(settings.ConnectionString()!));
+        }
+
         services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
@@ -83,7 +90,9 @@ public static class ServiceRegistration
             clock: sp.GetRequiredService<TimeProvider>(),
             pending: sp.GetRequiredService<IPendingEditsReader>(),
             completions: sp.GetRequiredService<ICompletionReader>(),
-            activity: sp.GetRequiredService<IActivityReader>()));
+            activity: sp.GetRequiredService<IActivityReader>(),
+            users: sp.GetService<IUserStore>(),
+            operatorName: settings.Operator));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
