@@ -12,4 +12,10 @@ public interface ISessionState
     string? User { get; }
 
     bool? Operator { get; }
+
+    string? GitHub { get; }
+
+    string? GitHubInstall { get; }
+
+    string? GitHubAuthorize { get; }
 }

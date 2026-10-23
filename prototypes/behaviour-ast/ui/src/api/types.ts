@@ -529,6 +529,12 @@ export interface SessionState {
   user?: string
   /** Only with `accounts`, and only when the signed-in person is the operator. Absent, never false. */
   operator?: true
+  /** BEH-USERS-1: the GitHub account a non-operator user has connected; absent until they do. */
+  gitHub?: string
+  /** Where that user installs Kit's GitHub App; absent for the operator, or when this Kit cannot connect one. */
+  gitHubInstall?: string
+  /** Where they authorise it afterwards; carries a state signed for them alone. */
+  gitHubAuthorize?: string
 }
 
 /**

@@ -1,6 +1,12 @@
-import { useState } from 'react'
-import { addUser, changePassword, signOut } from '../api/client'
+import { useEffect, useRef, useState } from 'react'
+import { addUser, changePassword, connectGitHub, signOut } from '../api/client'
+import type { SessionState } from '../api/types'
+import { githubNavigation } from './githubNavigation'
 import { useSession } from './session'
+
+// The installation the install redirect named, kept across the hop to GitHub's
+// authorise page. Only a hint: the server checks it against GitHub's own list.
+const PendingInstallation = 'kit.github.installation'
 
 type Outcome = { ok: true; text: string } | { ok: false; text: string } | null
 
@@ -84,6 +90,61 @@ function AddUser() {
 }
 
 /**
+ * BEH-USERS-1's second half: a user connects their GitHub by installing Kit's
+ * GitHub App, then authorising it. GitHub sends them back to this page twice:
+ * after the install with `installation_id` (sent straight on to authorise),
+ * and after authorising with `code` and `state` (handed to the server).
+ * Returns whether the page is part-way through that, plus what to say.
+ */
+function useGitHubReturn(session: SessionState): { returning: boolean; outcome: Outcome } {
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('code')
+  const state = params.get('state')
+  const installation = params.get('installation_id')
+  const [outcome, setOutcome] = useState<Outcome>(null)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (started.current) return
+    if (code && state) {
+      started.current = true
+      const hint = sessionStorage.getItem(PendingInstallation) ?? undefined
+      sessionStorage.removeItem(PendingInstallation)
+      connectGitHub(code, state, hint)
+        // Reloaded without the query, so the account shows the connection and a refresh cannot resend a spent code.
+        .then(() => githubNavigation.reload())
+        .catch((err: unknown) => {
+          window.history.replaceState(null, '', window.location.pathname)
+          setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) })
+        })
+    } else if (installation && session.gitHubAuthorize) {
+      started.current = true
+      sessionStorage.setItem(PendingInstallation, installation)
+      githubNavigation.to(session.gitHubAuthorize)
+    }
+  }, [code, state, installation, session.gitHubAuthorize])
+
+  return { returning: !outcome && Boolean((code && state) || (installation && session.gitHubAuthorize)), outcome }
+}
+
+function ConnectGitHub({ session }: { session: SessionState }) {
+  const { returning, outcome } = useGitHubReturn(session)
+  if (!session.gitHubInstall) return null
+
+  return (
+    <div>
+      <h3>GitHub</h3>
+      {returning
+        ? <p role="status">Connecting your GitHub…</p>
+        : session.gitHub
+          ? <p>Connected to <strong>{session.gitHub}</strong>. <a href={session.gitHubInstall}>Change</a></p>
+          : <p><a href={session.gitHubInstall}>Connect your GitHub</a></p>}
+      <Say outcome={outcome} />
+    </div>
+  )
+}
+
+/**
  * BEH-USERS-1: who is signed in, with the two things an account can do.
  *
  * Shown only when the server has accounts on and this browser is signed in; on
@@ -103,10 +164,14 @@ export default function Account() {
     window.location.reload()
   }
 
+  // Opened while GitHub is sending them back, so "Connecting…" or a refusal is seen, not folded away.
+  const back = new URLSearchParams(window.location.search)
+  const connecting = !session.operator && (back.has('code') || back.has('installation_id'))
+
   return (
-    <details className="account">
+    <details className="account" open={connecting || undefined}>
       <summary>Signed in as {session.user}</summary>
-      {session.operator ? <AddUser /> : <ChangePassword />}
+      {session.operator ? <AddUser /> : <><ConnectGitHub session={session} /><ChangePassword /></>}
       <p><button type="button" onClick={leave}>Sign out</button></p>
     </details>
   )

@@ -22,6 +22,7 @@ public sealed partial class KitRouter
     private SessionState SessionOf(string? cookie)
     {
         var who = lockRequired ? UserOf(cookie) : null;
+        var gh = GitHubOf(who);
         return new SessionState
         {
             Required = lockRequired,
@@ -31,6 +32,9 @@ public sealed partial class KitRouter
             Accounts = users is null ? null : true,
             User = users is null || who is null ? null : who == ISessionStore.Operator ? operatorName : who,
             Operator = users is not null && who == ISessionStore.Operator ? true : null,
+            GitHub = gh.Account,
+            GitHubInstall = gh.Install,
+            GitHubAuthorize = gh.Authorize,
         };
     }
 
