@@ -1,0 +1,8 @@
+# The order to build kit-ui's pending behaviours in (kit#118). Kit writes this file.
+# One id per line; the first one still pending is next. Pending and not listed = backlog.
+BEH-USERS-1
+BEH-USERS-8
+BEH-USERS-2
+BEH-USERS-3
+BEH-USERS-4
+BEH-USERS-7
