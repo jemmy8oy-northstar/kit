@@ -9,8 +9,8 @@ namespace Balenthiran.Kit.Database;
 /// <summary>
 /// Connects an early-access user's GitHub (BEH-USERS-1) through Kit's GitHub App: exchanges the
 /// code GitHub hands back after the user authorises the App for a user access token, and asks
-/// GitHub which of the App's installations that user can reach. The token is used for that one
-/// question and dropped; nothing of it is kept or written into a reason.
+/// GitHub who that user is and whether the App is installed on their own account. The token is
+/// used for those two questions and revoked; nothing of it is kept or written into a reason.
 /// </summary>
 /// <param name="http">Sent both requests; tests hand it a fake handler.</param>
 /// <param name="slug">The App's name in its URL, <c>KIT_GITHUB_APP_SLUG</c>.</param>
@@ -41,36 +41,79 @@ public sealed class GitHubConnect(
         $"login/oauth/authorize?client_id={Uri.EscapeDataString(clientId)}&redirect_uri={Uri.EscapeDataString(redirectUri)}&state={Uri.EscapeDataString(state)}").ToString();
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<IGitHubLink>> InstallationsAsync(string code, CancellationToken cancellationToken = default)
+    public async Task<IGitHubLink?> InstallationAsync(string code, CancellationToken cancellationToken = default)
     {
         var token = await ExchangeAsync(code, cancellationToken);
+        try
+        {
+            using var user = await SendAsync(AsUser(HttpMethod.Get, "user", token), "reading who you are", cancellationToken);
+            if (user.RootElement is not { ValueKind: JsonValueKind.Object } u
+                || !u.TryGetProperty("login", out var l) || l.GetString() is not { Length: > 0 } login)
+            {
+                throw new GitHubConnectException("GitHub's answer about who you are was not in the shape Kit reads");
+            }
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(api, "user/installations?per_page=100"));
+            // Lists only this App's installations, but every one the user can REACH — an
+            // organisation's included, which any member reaches. Only their own account's is theirs.
+            using var json = await SendAsync(AsUser(HttpMethod.Get, "user/installations?per_page=100", token), "listing your installations", cancellationToken);
+            if (json.RootElement is not { ValueKind: JsonValueKind.Object } o
+                || !o.TryGetProperty("installations", out var all) || all.ValueKind != JsonValueKind.Array)
+            {
+                throw new GitHubConnectException("GitHub's list of your installations was not in the shape Kit reads");
+            }
+
+            foreach (var i in all.EnumerateArray())
+            {
+                if (i.TryGetProperty("id", out var id) && id.TryGetInt64(out var installation)
+                    && i.TryGetProperty("account", out var account) && account.ValueKind == JsonValueKind.Object
+                    && account.TryGetProperty("login", out var owner) && string.Equals(owner.GetString(), login, StringComparison.OrdinalIgnoreCase)
+                    && installation.ToString(System.Globalization.CultureInfo.InvariantCulture) != operatorInstallation?.Trim())
+                {
+                    return new GitHubInstallation(installation, login);
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            await RevokeAsync(token);
+        }
+    }
+
+    private HttpRequestMessage AsUser(HttpMethod method, string path, string token)
+    {
+        var request = new HttpRequestMessage(method, new Uri(api, path));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
-
-        using var json = await SendAsync(request, "listing your installations", cancellationToken);
-        if (json.RootElement is not { ValueKind: JsonValueKind.Object } o
-            || !o.TryGetProperty("installations", out var all) || all.ValueKind != JsonValueKind.Array)
-        {
-            throw new GitHubConnectException("GitHub's list of your installations was not in the shape Kit reads");
-        }
-
-        var links = new List<IGitHubLink>();
-        foreach (var i in all.EnumerateArray())
-        {
-            if (i.TryGetProperty("id", out var id) && id.TryGetInt64(out var installation)
-                && i.TryGetProperty("account", out var account) && account.ValueKind == JsonValueKind.Object
-                && account.TryGetProperty("login", out var login) && login.GetString() is { Length: > 0 } name
-                && installation.ToString(System.Globalization.CultureInfo.InvariantCulture) != operatorInstallation?.Trim())
-            {
-                links.Add(new GitHubInstallation(installation, name));
-            }
-        }
-
-        return links;
+        return request;
     }
+
+    /// <summary>
+    /// Ends the user token now rather than when it expires, hours later. Best effort and silent:
+    /// the connection is already decided, and a failure here leaves only a token nobody holds.
+    /// </summary>
+    private async Task RevokeAsync(string token)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(api, $"applications/{Uri.EscapeDataString(clientId)}/token"))
+        {
+            Content = JsonContent(new { access_token = token }),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}")));
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
+        try
+        {
+            using var _ = await http.SendAsync(request, CancellationToken.None);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException)
+        {
+        }
+    }
+
+    private static StringContent JsonContent(object value) =>
+        new(JsonSerializer.Serialize(value), System.Text.Encoding.UTF8, "application/json");
 
     private async Task<string> ExchangeAsync(string code, CancellationToken cancellationToken)
     {

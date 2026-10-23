@@ -176,7 +176,6 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    sessionStorage.clear()
     window.history.replaceState(null, '', '/')
   })
 
@@ -199,26 +198,26 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     expect(screen.queryByText('Connect your GitHub')).not.toBeInTheDocument()
   })
 
-  it('sends the install redirect straight on to authorise, keeping the installation as a hint', async () => {
+  it('sends the install redirect straight on to authorise, posting nothing', async () => {
     const to = vi.spyOn(githubNavigation, 'to').mockImplementation(() => {})
     window.history.replaceState(null, '', '/?installation_id=42&setup_action=install')
-    vi.stubGlobal('fetch', server([sam]).fn)
+    const s = server([sam])
+    vi.stubGlobal('fetch', s.fn)
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByText('Connecting your GitHub…')).toBeInTheDocument()
     expect(to).toHaveBeenCalledWith(sam.gitHubAuthorize)
-    expect(sessionStorage.getItem('kit.github.installation')).toBe('42')
+    expect(s.posted).toEqual([])
   })
 
-  it('hands the code, state and hint to the server, then reloads without them', async () => {
+  it('hands the code and state to the server, then reloads without them', async () => {
     const reload = vi.spyOn(githubNavigation, 'reload').mockImplementation(() => {})
-    sessionStorage.setItem('kit.github.installation', '42')
-    window.history.replaceState(null, '', '/?code=c0de&state=1.ab')
+    window.history.replaceState(null, '', '/?code=c0de&state=1.ab&installation_id=42')
     const s = server([sam], { status: 200, body: { ...sam, gitHub: 'sam-gh' } })
     vi.stubGlobal('fetch', s.fn)
     render(<SignIn>{app}</SignIn>)
     await vi.waitFor(() => expect(reload).toHaveBeenCalled())
-    expect(s.posted).toEqual([{ path: '/api/github/connected', body: { code: 'c0de', state: '1.ab', installation: '42' } }])
-    expect(sessionStorage.getItem('kit.github.installation')).toBeNull()
+    // The redirect's installation_id is never sent: anyone can type one.
+    expect(s.posted).toEqual([{ path: '/api/github/connected', body: { code: 'c0de', state: '1.ab' } }])
   })
 
   it('shows the server reason when the connection is refused, and drops the spent code from the URL', async () => {

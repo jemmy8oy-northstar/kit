@@ -4,10 +4,6 @@ import type { SessionState } from '../api/types'
 import { githubNavigation } from './githubNavigation'
 import { useSession } from './session'
 
-// The installation the install redirect named, kept across the hop to GitHub's
-// authorise page. Only a hint: the server checks it against GitHub's own list.
-const PendingInstallation = 'kit.github.installation'
-
 type Outcome = { ok: true; text: string } | { ok: false; text: string } | null
 
 /** One refusal or success line, in the server's own words. */
@@ -92,8 +88,9 @@ function AddUser() {
 /**
  * BEH-USERS-1's second half: a user connects their GitHub by installing Kit's
  * GitHub App, then authorising it. GitHub sends them back to this page twice:
- * after the install with `installation_id` (sent straight on to authorise),
- * and after authorising with `code` and `state` (handed to the server).
+ * after the install with `installation_id` (sent straight on to authorise; the
+ * id itself is never used, since anyone can type one), and after authorising
+ * with `code` and `state` (handed to the server).
  * Returns whether the page is part-way through that, plus what to say.
  */
 function useGitHubReturn(session: SessionState): { returning: boolean; outcome: Outcome } {
@@ -108,9 +105,7 @@ function useGitHubReturn(session: SessionState): { returning: boolean; outcome: 
     if (started.current) return
     if (code && state) {
       started.current = true
-      const hint = sessionStorage.getItem(PendingInstallation) ?? undefined
-      sessionStorage.removeItem(PendingInstallation)
-      connectGitHub(code, state, hint)
+      connectGitHub(code, state)
         // Reloaded without the query, so the account shows the connection and a refresh cannot resend a spent code.
         .then(() => githubNavigation.reload())
         .catch((err: unknown) => {
@@ -119,7 +114,6 @@ function useGitHubReturn(session: SessionState): { returning: boolean; outcome: 
         })
     } else if (installation && session.gitHubAuthorize) {
       started.current = true
-      sessionStorage.setItem(PendingInstallation, installation)
       githubNavigation.to(session.gitHubAuthorize)
     }
   }, [code, state, installation, session.gitHubAuthorize])

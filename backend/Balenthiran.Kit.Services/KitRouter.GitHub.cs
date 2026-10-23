@@ -11,9 +11,9 @@ namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// BEH-USERS-1's second half: once signed in, a user connects their GitHub by installing Kit's
-/// GitHub App and then authorising it. The page sends back the code GitHub returned, and the
-/// installation recorded is one GitHub lists for the user who authorised: the
-/// <c>installation_id</c> on the install redirect is a hint at most, because anyone can type one.
+/// GitHub App on their own account and then authorising it. The page sends back the code GitHub
+/// returned, and the installation recorded is the one on the account that authorised; the
+/// <c>installation_id</c> on the install redirect is never read, because anyone can type one.
 /// With no <see cref="IGitHubConnect"/> none of this is reachable.
 /// </summary>
 public sealed partial class KitRouter
@@ -60,49 +60,26 @@ public sealed partial class KitRouter
             return Json(400, new ApiError { Error = "no-code", Reason = "GitHub's authorisation code is missing" });
         }
 
-        IReadOnlyList<IGitHubLink> reachable;
+        IGitHubLink? link;
         try
         {
             // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
-            reachable = github.InstallationsAsync(code).GetAwaiter().GetResult();
+            link = github.InstallationAsync(code).GetAwaiter().GetResult();
         }
         catch (GitHubConnectException e)
         {
             return Json(502, new ApiError { Error = e.ErrorCode, Reason = e.Message });
         }
 
-        IGitHubLink? chosen;
-        if (InstallationHint(b) is { } hint)
+        if (link is null)
         {
-            chosen = reachable.FirstOrDefault(l => l.Installation == hint);
-            if (chosen is null)
-            {
-                return Json(403, new ApiError { Error = "not-your-installation", Reason = $"GitHub does not list installation {hint} among those you can reach, so Kit will not connect it" });
-            }
-        }
-        else if (reachable.Count == 1)
-        {
-            chosen = reachable[0];
-        }
-        else
-        {
-            return Json(409, reachable.Count == 0
-                ? new ApiError { Error = "no-installation", Reason = "Kit's GitHub App is not installed on any account you can reach: install it, then connect" }
-                : new ApiError { Error = "several-installations", Reason = $"Kit's GitHub App is installed on {string.Join(", ", reachable.Select(l => l.Account))}; install it from Kit's page again, so Kit knows which one is yours" });
+            return Json(409, new ApiError { Error = "no-installation", Reason = "Kit's GitHub App is not installed on your own GitHub account (an organisation's is not connected yet): install it there, then connect" });
         }
 
-        return users.SetGitHub(who, chosen)
+        return users.SetGitHub(who, link)
             ? Json(200, SessionOf(cookie))
-            : Json(409, new ApiError { Error = "github-taken", Reason = $"{chosen.Account}'s installation is already connected to another Kit user" });
+            : Json(409, new ApiError { Error = "github-taken", Reason = $"{link.Account} is already connected to another Kit user" });
     }
-
-    /// <summary>The installation GitHub's install redirect named, as the page passed it on: a number or its digits.</summary>
-    private static long? InstallationHint(JsonElement body) => Field(body, "installation") switch
-    {
-        { ValueKind: JsonValueKind.Number } n when n.TryGetInt64(out var id) => id,
-        { ValueKind: JsonValueKind.String } s when long.TryParse(s.GetString(), NumberStyles.None, CultureInfo.InvariantCulture, out var id) => id,
-        _ => null,
-    };
 
     private DateTimeOffset Now() => (clock ?? TimeProvider.System).GetUtcNow();
 
