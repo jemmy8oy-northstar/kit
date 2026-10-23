@@ -118,6 +118,28 @@ apps:
             name: kit-github
             key: private-key.pem
             optional: true
+      # A user connects their own GitHub (BEH-USERS-1) through a public App's OAuth
+      # client, from a `kit-github-oauth` secret James creates once the App exists.
+      # OPTIONAL, like the rest: absent, no user is offered it. All three or none, and
+      # Kit refuses to start on a half set, so add the three keys together.
+      - name: KIT_GITHUB_APP_SLUG
+        valueFrom:
+          secretKeyRef:
+            name: kit-github-oauth
+            key: app-slug
+            optional: true
+      - name: KIT_GITHUB_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: kit-github-oauth
+            key: client-id
+            optional: true
+      - name: KIT_GITHUB_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: kit-github-oauth
+            key: client-secret
+            optional: true
       # BEH-PULL-1 (kit#88): the project list and every read come from GitHub,
       # re-read every KIT_PROJECTS_POLL seconds (default 120), not from the pod's
       # clone. Writes still go to the clone above and are pushed to kit/hosted, so
