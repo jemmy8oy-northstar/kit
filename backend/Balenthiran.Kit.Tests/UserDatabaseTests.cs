@@ -77,6 +77,17 @@ public class UserDatabaseTests
 
         // A name is a parameter, never SQL.
         Assert.Null(store.HashOf("x' OR '1'='1"));
+
+        // BEH-USERS-1's GitHub: one installation, one user, enforced by the table.
+        var other = $"u{Guid.NewGuid():N}"[..20];
+        var installation = Random.Shared.NextInt64(1L << 40, 1L << 50);
+        Assert.True(store.Add(other, "h"));
+        Assert.Null(store.GitHubOf(name));
+        Assert.False(store.SetGitHub($"n{Guid.NewGuid():N}"[..20], new GitHubLink { Installation = installation, Account = "x" }));
+        Assert.True(store.SetGitHub(name, new GitHubLink { Installation = installation, Account = "ann-gh" }));
+        Assert.Equal((installation, "ann-gh"), (store.GitHubOf(name)!.Installation, store.GitHubOf(name)!.Account));
+        Assert.False(store.SetGitHub(other, new GitHubLink { Installation = installation, Account = "ann-gh" }));
+        Assert.Null(store.GitHubOf(other));
     }
 
     private static Func<string, string?> Env(params (string Key, string Value)[] pairs)

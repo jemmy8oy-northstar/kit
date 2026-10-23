@@ -56,6 +56,18 @@ public static class ServiceRegistration
             services.TryAddSingleton<IUserStore>(_ => new PostgresUserStore(settings.ConnectionString()!));
         }
 
+        // BEH-USERS-1's second half: a user connects their GitHub only when the App's OAuth client is set.
+        if (settings.GitHubConnect)
+        {
+            services.TryAddSingleton<IGitHubConnect>(sp => new GitHubConnect(
+                GitHubClient(sp),
+                settings.GitHubAppSlug!,
+                settings.GitHubClientId!,
+                settings.ClientSecret()!,
+                settings.GitHubRedirect!,
+                settings.GitHubInstallationId));
+        }
+
         services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
@@ -92,7 +104,8 @@ public static class ServiceRegistration
             completions: sp.GetRequiredService<ICompletionReader>(),
             activity: sp.GetRequiredService<IActivityReader>(),
             users: sp.GetService<IUserStore>(),
-            operatorName: settings.Operator));
+            operatorName: settings.Operator,
+            github: sp.GetService<IGitHubConnect>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

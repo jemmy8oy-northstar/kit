@@ -33,6 +33,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="pending">Reads what <paramref name="head"/> holds that <paramref name="baseBranch"/> lacks (BEH-COMMIT-5). None means nothing is listed.</param>
 /// <param name="users">Early-access accounts (BEH-USERS-1). None means accounts are off: the operator's password is the only way in, as before.</param>
 /// <param name="operatorName">The user name the operator signs in with when accounts are on; his password stays <c>KIT_PASSWORD</c>.</param>
+/// <param name="github">How a user connects their GitHub (BEH-USERS-1). None means they cannot yet: the session offers no install link.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -55,7 +56,8 @@ public sealed partial class KitRouter(
     string? offReason = null,
     IActivityReader? activity = null,
     IUserStore? users = null,
-    string operatorName = KitRouter.DefaultOperator) : IKitRouter
+    string operatorName = KitRouter.DefaultOperator,
+    IGitHubConnect? github = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -301,6 +303,11 @@ public sealed partial class KitRouter(
             if (pathname is "/api/users" or "/api/session/password")
             {
                 return Account(pathname, who, body);
+            }
+
+            if (pathname == "/api/github/connected")
+            {
+                return ConnectGitHub(who, cookie, body);
             }
 
             // BEH-USERS-8: every project this Kit serves is the operator's, so only he writes.
