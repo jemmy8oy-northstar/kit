@@ -39,6 +39,9 @@ feature FEAT-MAP "The music map of a workout"
   stage ui
 feature FEAT-SHARE "Sharing a workout"
   stage ui
+# His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
+feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
+  stage problem
 
 
 # ═══ DEFINED — tracks#1 ═══
@@ -293,3 +296,72 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
+
+# ═══ HIGHLIGHTS — his questions in Kit, 2026-10-24 ═══
+# Each answers "is Tracks able to…" with yes or no and how, as a proposal he can deny.
+
+behaviour BEH-HIGH-1 "Each song shows the minute of the run it started at"
+  in FEAT-HIGHLIGHTS
+  layer ux
+  source defined tracks.notes.md#2026-10-24-1401
+  review unreviewed
+  pending
+  priority 3
+  actor runner
+  given workout:WithSongs
+  when opens page:Workout
+  then sees region:SongList
+  contract "Is kit able to mark the time in the run that the user started this track"
+  contract yes: a song's start is already worked out to place it on the route (BEH-SYNC-2, BEH-MAP-2), so the minute into the run is the same number shown as text
+  contract my assumption: shown as elapsed time from the run's start, e.g. 12:40, next to each song, and on the share card
+
+behaviour BEH-HIGH-2 "A run says whether it was a playlist or an album, and names it"
+  in FEAT-HIGHLIGHTS
+  layer technical
+  source defined tracks.notes.md#2026-10-24-1401
+  review unreviewed
+  pending
+  priority 3
+  actor runner
+  contract "Is tracks able to identify whether the user was listening to a playlist or an album over the course of their run"
+  contract yes: each play in Spotify's recently-played history carries the context it was played from (a playlist, an album or an artist), or none, e.g. a queue
+  contract my assumption: when most of the run's songs share one context, the run names it ("Run to: Album name"); otherwise it says the songs were mixed
+  contract naming a private playlist needs Spotify's playlist-read-private permission, so a runner who connected before this asks again once
+
+behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
+  in FEAT-HIGHLIGHTS
+  layer technical
+  source defined tracks.notes.md#2026-10-24-1402
+  review unreviewed
+  pending
+  priority 3
+  actor runner
+  contract "Is tracks able to identify the track that the user reached their top speed"
+  contract yes, for a run with GPS: Strava's activity streams give speed second by second, so the top speed's moment falls inside one song's span
+  contract a run with no GPS has no speed stream, so it names no song (as BEH-MAP-3 draws no map)
+  contract my assumption: the speed is smoothed over a few seconds first, so one GPS jump does not pick the song
+
+behaviour BEH-HIGH-4 "The song with the fastest average pace is named"
+  in FEAT-HIGHLIGHTS
+  layer technical
+  source defined tracks.notes.md#2026-10-24-1402
+  review unreviewed
+  pending
+  priority 3
+  actor runner
+  contract "Is tracks able to identify the track with the fastest average pace during the run"
+  contract yes, for a run with GPS: the distance covered during each song's span, divided by that span, from the same Strava streams as BEH-HIGH-3
+  contract my assumption: a song that overlaps the run by under a minute is not counted, so a skipped track never wins
+
+behaviour BEH-HIGH-5 "Each song shows its BPM"
+  in FEAT-HIGHLIGHTS
+  layer technical
+  source defined tracks.notes.md#2026-10-24-1403
+  review unreviewed
+  pending
+  priority 3
+  actor runner
+  contract "Is tracks able to identify bpm of a song played during a run"
+  contract not from Spotify: its audio-features endpoint, which gave tempo, has refused apps created after 27 November 2024, which includes Tracks's
+  contract it would need a second source looked up by song and artist, such as GetSongBPM's free API, which asks for a visible link back
+  needs-context "Spotify no longer gives new apps a song's BPM. A free outside source (GetSongBPM) could, in return for a link to them on the page. Use it? If no answer by 2026-11-07, I leave BPM out and keep the other highlights."
