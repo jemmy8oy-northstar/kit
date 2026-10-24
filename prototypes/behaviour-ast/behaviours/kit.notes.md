@@ -268,3 +268,9 @@ User can save web app to Home Screen and kit can serve notifications
 
 Notification feed on kit for items such as updates wakes sleeps etc
 Ay be we refine this experience later but this seems right
+
+## 2026-10-24 14:00Z
+
+Ai wakes after 5 minutes of inactivity on kit (starting from last action)
+
+This means kit will wake quickly after changes and act on them
