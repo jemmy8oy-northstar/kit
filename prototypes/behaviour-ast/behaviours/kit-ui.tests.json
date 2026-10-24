@@ -329,5 +329,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "posts the change-password body and says so" },
     { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "offers a user the install link, and the operator nothing" },
     { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "hands the code and state to the server, then reloads without them" }
+  ],
+  "BEH-USERS-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_write_to_the_operators_projects" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
   ]
 }
