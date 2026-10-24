@@ -138,6 +138,13 @@ public sealed record KitSettings(
     /// </summary>
     public TimeSpan ProjectsPoll { get; init; } = TimeSpan.FromSeconds(120);
 
+    /// <summary>
+    /// <c>KIT_AGENT_FEED</c> (BEH-NOTIFY-1): the agent's notifications file, as
+    /// <c>owner/repo@branch:path</c> with the path naming a file. Unset means no feed, and the
+    /// notifications page says so. Read every <see cref="ProjectsPoll"/>, like the projects.
+    /// </summary>
+    public ProjectSource? AgentFeed { get; init; }
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -201,6 +208,7 @@ public sealed record KitSettings(
             GitHubPrivateKey = app["KIT_GITHUB_PRIVATE_KEY"],
             Projects = ParseProjects(env("KIT_PROJECTS")),
             ProjectsPoll = ParsePoll(env("KIT_PROJECTS_POLL")),
+            AgentFeed = ParseAgentFeed(env("KIT_AGENT_FEED")),
             Database = database,
             GitHubAppSlug = connect["KIT_GITHUB_APP_SLUG"],
             GitHubClientId = connect["KIT_GITHUB_CLIENT_ID"],
@@ -208,6 +216,11 @@ public sealed record KitSettings(
             Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
         };
     }
+
+    /// <summary><c>KIT_AGENT_FEED</c>: unset is none; one that does not parse THROWS, as a KIT_PROJECTS entry does.</summary>
+    public static ProjectSource? ParseAgentFeed(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null
+        : ProjectSource.Parse(value) ?? throw new InvalidOperationException($"KIT_AGENT_FEED \"{value}\" is not owner/repo@branch:path");
 
     /// <summary>
     /// <c>KIT_PROJECTS</c>, every entry a <see cref="ProjectSource"/>. One that does not parse

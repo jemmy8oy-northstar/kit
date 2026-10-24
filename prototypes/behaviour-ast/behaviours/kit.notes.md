@@ -209,3 +209,53 @@ Maybe we can have a queue column for ready to be executed tasks
 ## 2026-10-22 22:46Z
 
 The questions tab doesn’t really show questions at the moment it kind of just shows probelms
+
+## 2026-10-22 22:48Z
+
+Where kit currently has behs and features which need decisions to be made. I think kit it is important that kit starts to raise the questions which helps guide the user in the right direction. Right now I’m not sure what ux ui or logic to define to unblock kit
+
+## 2026-10-22 23:47Z · new behaviour
+
+Kit is asking you needs a way to reply
+
+## 2026-10-23 06:35Z · BEH-USERS-1
+
+Invite only to start with
+
+Idk how this would work, could we whitelist GitHub accounts? Maybe also a code word to even try sign up?
+
+## 2026-10-23 06:35Z · BEH-USERS-1
+
+Actually the code word is maybe not necessary?
+
+## 2026-10-23 06:38Z · BEH-USERS-1
+
+Back tracking again let’s have a username and password sign in for early access. And then you integrate your GitHub. Then maybe later for general release it’s just a GitHub sign in. Username and password means I can just straight up make the accounts. They can change the password after.
+
+## 2026-10-23 06:38Z · BEH-USERS-2
+
+Yes
+
+## 2026-10-23 06:38Z · BEH-USERS-2
+
+Can always change later if need be
+
+## 2026-10-23 06:38Z · BEH-USERS-3
+
+Yes
+
+## 2026-10-23 06:39Z · BEH-USERS-4
+
+Repo specify memories stored in repo but I think we have some user memories stored in a db? Because otherwise I don’t know where to store these
+
+## 2026-10-23 06:41Z · BEH-USERS-7
+
+I like the idea of starting with their own key but I think test users will not be keen to use it if it will cost them. I think for testing you will still handle it. Then in later stages of testing we introduce tracking and billing even if we don’t start charging
+
+## 2026-10-23 06:42Z · BEH-USERS-8
+
+I think we skills add it with the sign up feature. So it’s ready for first sign up?
+
+## 2026-10-23 07:07Z · new behaviour
+
+I think for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs

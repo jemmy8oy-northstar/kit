@@ -95,7 +95,17 @@ public class AccountsTests
         var ann = Cookie(SignIn(router, "ann", AnnPassword));
         var him = Cookie(SignIn(router, null, Operator));
 
-        foreach (var path in new[] { "/api/commit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/behaviours/BEH-1/title" })
+        // One of every write route, so a route added above the gate shows here (BEH-USERS-8: "whatever the URL").
+        var paths = new[]
+        {
+            "/api/commit", "/api/projects/kit/notes", "/api/projects/kit/notes/reply", "/api/projects/kit/notes/dismiss",
+            "/api/projects/kit/schedule", "/api/projects/kit/bindings", "/api/projects/kit/behaviours",
+            "/api/projects/kit/behaviours/BEH-1/title", "/api/projects/kit/behaviours/BEH-1/review",
+            "/api/projects/kit/behaviours/BEH-1/paused", "/api/projects/kit/behaviours/BEH-1/remove",
+            "/api/projects/kit/behaviours/BEH-1/steps/0",
+        };
+
+        foreach (var path in paths)
         {
             var refused = router.Route("POST", path, ann, body: Json(new { }));
             Assert.Equal(403, refused.Status);
@@ -122,6 +132,43 @@ public class AccountsTests
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body).Projects);
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects").Body).Projects);
         Assert.NotEmpty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", him).Body).Entries);
+    }
+
+    [Fact]
+    public void A_users_notifications_hold_none_of_the_agents_messages()
+    {
+        // BEH-NOTIFY-1: the agent works for him, so its messages are his like the rest (BEH-USERS-8).
+        var router = Router(Seeded());
+        var ann = Cookie(SignIn(router, "ann", AnnPassword));
+        var him = Cookie(SignIn(router, null, Operator));
+
+        var hers = Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", ann).Body);
+        Assert.Empty(hers.Entries);
+        Assert.Null(hers.Reason);
+        Assert.NotEmpty(Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", him).Body).Entries);
+
+        // Unlike the projects (BEH-GATE-H1), the feed comes from a private repo: no session, no feed.
+        var anonymous = router.Route("GET", "/api/notifications");
+        Assert.Equal(401, anonymous.Status);
+        Assert.Equal("not-signed-in", Assert.IsType<ApiError>(anonymous.Body).Error);
+    }
+
+    [Fact]
+    public void A_user_may_still_read_one_of_his_projects_by_its_url()
+    {
+        // His projects live in a public repo, so a URL serves them to a user as to anyone (BEH-GATE-H1).
+        var router = Router(Seeded());
+        var ann = Cookie(SignIn(router, "ann", AnnPassword));
+
+        foreach (var path in new[] { "/api/projects/kit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/pending" })
+        {
+            var hers = router.Route("GET", path, ann);
+            var anyone = router.Route("GET", path);
+            Assert.Equal(anyone.Status, hers.Status);
+            Assert.Equal(JsonSerializer.Serialize(anyone.Body), JsonSerializer.Serialize(hers.Body));
+        }
+
+        Assert.Equal(200, router.Route("GET", "/api/projects/kit", ann).Status);
     }
 
     [Fact]
@@ -237,7 +284,8 @@ public class AccountsTests
             new SessionStore(),
             new SignInThrottle(),
             activity: new OneCommit(),
-            users: users);
+            users: users,
+            notifications: new OneNotification());
     }
 
     internal sealed class MemoryUsers : IUserStore
@@ -278,5 +326,10 @@ public class AccountsTests
     private sealed class OneCommit : IActivityReader
     {
         public IActivityFeed Recent() => new ActivityFeed { Entries = [new ActivityEntry { App = "kit", Commit = "abc", Summary = "x", At = "2026-10-23T00:00:00Z" }], NoHistory = [] };
+    }
+
+    private sealed class OneNotification : INotificationReader
+    {
+        public INotificationFeed Recent() => new NotificationFeed { Entries = [new Notification { At = "2026-10-24T14:00:00Z", Kind = "wake", Text = "x" }] };
     }
 }

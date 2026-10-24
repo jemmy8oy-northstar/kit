@@ -20,7 +20,7 @@ namespace Balenthiran.Kit.Database;
 /// public repository allows (BEH-PULL-2). Asked per read, so an expired token is replaced.
 /// </param>
 /// <param name="api">Default <c>https://api.github.com/</c>.</param>
-public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader
+public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader
 {
     private static readonly Uri DefaultApi = new("https://api.github.com/");
 
@@ -78,6 +78,33 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         }
 
         return new CorpusSnapshot { Source = source, ETag = answer.Headers.ETag?.ToString(), Files = files };
+    }
+
+    /// <inheritdoc />
+    public async Task<(string Text, string? ETag)?> ReadFileAsync(IProjectSource file, string? etag = null, CancellationToken cancellationToken = default)
+    {
+        // The same mint rule as ReadAsync: a failed mint reads without a token and keeps the reason.
+        string? token;
+        string? mintFailed = null;
+        try
+        {
+            token = await tokens.TokenAsync(cancellationToken);
+        }
+        catch (GitHubTokenException e)
+        {
+            token = null;
+            mintFailed = e.Message;
+        }
+
+        var uri = new Uri(api ?? DefaultApi, $"repos/{file.Owner}/{file.Repository}/contents/{Escape(file.Path)}?ref={Uri.EscapeDataString(file.Branch)}");
+        using var answer = await SendAsync(uri, token, etag, "application/vnd.github.raw+json", file, mintFailed, cancellationToken);
+        if (answer.StatusCode == HttpStatusCode.NotModified)
+        {
+            return null;
+        }
+
+        var bytes = await answer.Content.ReadAsByteArrayAsync(cancellationToken);
+        return (Utf8.GetString(bytes), answer.Headers.ETag?.ToString());
     }
 
     /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c>, <c>.notes.md</c> and <c>.schedule</c> files directly in it, nothing nested.</summary>

@@ -34,6 +34,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="users">Early-access accounts (BEH-USERS-1). None means accounts are off: the operator's password is the only way in, as before.</param>
 /// <param name="operatorName">The user name the operator signs in with when accounts are on; his password stays <c>KIT_PASSWORD</c>.</param>
 /// <param name="github">How a user connects their GitHub (BEH-USERS-1). None means they cannot yet: the session offers no install link.</param>
+/// <param name="notifications">The agent's feed (BEH-NOTIFY-1). None means none is configured, and the page says so.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -57,7 +58,8 @@ public sealed partial class KitRouter(
     IActivityReader? activity = null,
     IUserStore? users = null,
     string operatorName = KitRouter.DefaultOperator,
-    IGitHubConnect? github = null) : IKitRouter
+    IGitHubConnect? github = null,
+    INotificationReader? notifications = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -73,6 +75,8 @@ public sealed partial class KitRouter(
     private readonly ICompletionReader completions = completions ?? new CompletionReader(corpora, new GitCorpusHistory());
 
     private readonly IActivityReader activity = activity ?? new ActivityReader(corpora, new GitCorpusHistory());
+
+    private readonly INotificationReader notifications = notifications ?? new NotificationReader(null, null);
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
@@ -138,6 +142,23 @@ public sealed partial class KitRouter(
         if (pathname == "/api/activity")
         {
             return Json(200, IsOtherUser(cookie) ? new ActivityFeed { Entries = [], NoHistory = [] } : activity.Recent());
+        }
+
+        // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
+        // covers projects, which live in a public repo; the feed comes from a private one). Gated as
+        // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
+        if (pathname == "/api/notifications")
+        {
+            if (lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host))
+            {
+                return Json(401, new ApiError
+                {
+                    Error = "not-signed-in",
+                    Reason = "the agent's notifications are served only to a signed-in session (or to loopback on a Kit with no password), because they come from a private repository",
+                });
+            }
+
+            return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
         }
 
         var match = OneProject.Match(pathname);
