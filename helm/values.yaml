@@ -131,6 +131,11 @@ apps:
       # it, the Notifications page says so rather than showing an empty feed.
       - name: KIT_AGENT_FEED
         value: "jemmy8oy-northstar/claude-code-bot@agent/notifications:notifications.jsonl"
+      # BEH-NOTIFY-5: when the agent next wakes, from the pause file its scheduler reads
+      # (state/suspend.json on claude-code-bot's dev, the branch the agent commits to).
+      # Same repo and App access as the feed above. Unset, the page says it cannot tell.
+      - name: KIT_AGENT_SCHEDULE
+        value: "jemmy8oy-northstar/claude-code-bot@dev:state/suspend.json"
     resources: {}
     nodeSelector: {}
     tolerations: []
