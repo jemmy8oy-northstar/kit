@@ -33,6 +33,11 @@ public static class KitServer
         var poller = app.Services.GetService<ProjectPoller>();
         var api = settings.BasePath + "/api/";
 
+        // BEH-NOTIFY-1: the agent's feed is read the same way, when its page asks and the last read expired.
+        var feed = app.Services.GetRequiredService<NotificationReader>();
+        var feedRefresh = new ExpiringRefresh(() => feed.RefreshAsync(), settings.ProjectsPoll, app.Services.GetRequiredService<TimeProvider>());
+        var feedRoute = api + "notifications";
+
         app.Run(async ctx =>
         {
             // The RAW target, still percent-encoded and with its dot segments: Request.Path
@@ -47,6 +52,11 @@ public static class KitServer
             if (poller is not null && target.StartsWith(api, StringComparison.Ordinal))
             {
                 await poller.EnsureFreshAsync(ctx.RequestAborted);
+            }
+
+            if (settings.AgentFeed is not null && target.Split('?')[0] == feedRoute)
+            {
+                await feedRefresh.EnsureFreshAsync(ProjectPoller.Wait, ctx.RequestAborted);
             }
 
             var a = host.Answer(ctx.Request.Method, target, origin, cookie);

@@ -1353,13 +1353,12 @@ behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest f
 # favour of kit. It is only used for notifications anyway" (claude-code-bot#118): the agent's
 # messages, wakes and sleeps move from Telegram into Kit, and Kit wakes the agent when he acts.
 feature FEAT-NOTIFICATIONS "Kit tells him what the agent is doing, and wakes it when he acts"
-  stage problem
+  stage ui
 
 behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest first"
   in FEAT-NOTIFICATIONS
   in FEAT-NAV
   source defined kit.notes.md#2026-10-24-1400
-  pending
   actor engineer
   when opens page:KitNotifications
   then sees heading:KitNotificationsTitle
@@ -1370,6 +1369,8 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
   contract my assumption: Kit reads that file with its own GitHub App, so it needs no new secret, account or write route; the agent never writes to Kit
   contract my assumption: each entry shows when, a kind (wake, sleep, pr, blocker, done or note) and the message, the newest 50, and the page is reached from the navbar as Notifications
   contract a feed Kit cannot read is shown as unreadable with GitHub's reason, never as an empty feed
+  contract my assumption: unlike his projects (BEH-GATE-H1), the feed is served only to a signed-in session, because it comes from a private repo; another user's feed is empty (BEH-USERS-8)
+  contract my assumption: KIT_AGENT_FEED names the file as owner/repo@branch:path, and Kit reads it again when the page asks and the last read is older than KIT_PROJECTS_POLL
   needs-context "Kit's GitHub App needs read access to the private claude-code-bot repo (GitHub, Settings, Applications, the Kit App, Configure, Repository access). If it already has all repositories, nothing to do. If not by 2026-10-31, I build it anyway and the page says it cannot read the feed until access is added."
 
 behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"

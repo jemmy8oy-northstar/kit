@@ -477,6 +477,24 @@ export interface ActivityFeed {
   noHistory: ActivityGap[]
 }
 
+/** One message from the agent (BEH-NOTIFY-1). */
+export interface AgentNotification {
+  /** ISO 8601 UTC, as the agent wrote it. */
+  at: string
+  kind: 'wake' | 'sleep' | 'pr' | 'blocker' | 'done' | 'note'
+  /** Plain text: never rendered as HTML. */
+  text: string
+}
+
+/** `GET /api/notifications` (BEH-NOTIFY-1): the agent's messages, newest first, or why they could not be read. */
+export interface NotificationFeed {
+  entries: AgentNotification[]
+  /** Lines of the feed that were not a notification. */
+  skipped: number
+  /** Null when the feed was read, even if it is empty. */
+  reason: string | null
+}
+
 export interface NoteList {
   app: string
   /** Where the notes live, whether or not the file exists yet. */
