@@ -263,3 +263,8 @@ I think for the first user we have an independent agent acting. Because we need 
 ## 2026-10-24 13:59Z
 
 User can save web app to Home Screen and kit can serve notifications
+
+## 2026-10-24 14:00Z
+
+Notification feed on kit for items such as updates wakes sleeps etc
+Ay be we refine this experience later but this seems right
