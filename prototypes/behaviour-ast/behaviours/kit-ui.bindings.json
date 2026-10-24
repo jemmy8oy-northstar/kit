@@ -258,5 +258,10 @@
     "role": "heading",
     "name": "Notifications",
     "exact": true
+  },
+  "region:KitNextWake": {
+    "role": "region",
+    "name": "Next wake",
+    "exact": true
   }
 }

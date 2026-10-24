@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
@@ -14,7 +15,8 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 /// <param name="files">Reads the file with Kit's own GitHub credential; unused without a <paramref name="source"/>.</param>
 /// <param name="source"><c>KIT_AGENT_FEED</c>; null means no feed is configured, and the page says so.</param>
-public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource? source) : INotificationReader
+/// <param name="scheduleSource"><c>KIT_AGENT_SCHEDULE</c> (BEH-NOTIFY-5): the agent's <c>state/suspend.json</c>; null means Kit cannot say when it wakes, and the page says so.</param>
+public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource? source, IProjectSource? scheduleSource = null) : INotificationReader
 {
     /// <summary>The most entries the page shows.</summary>
     public const int Cap = 50;
@@ -25,15 +27,35 @@ public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource?
         ? new NotificationFeed { Entries = [], Reason = "no notification feed is configured on this Kit (KIT_AGENT_FEED is unset)" }
         : new NotificationFeed { Entries = [], Reason = "the notification feed has not been read yet" };
 
+    private volatile AgentSchedule schedule = scheduleSource is null
+        ? new AgentSchedule { Reason = "Kit is not told where the agent's schedule is (KIT_AGENT_SCHEDULE is unset)" }
+        : new AgentSchedule { Reason = "the agent's schedule has not been read yet" };
+
     private string? etag;
 
-    /// <inheritdoc />
-    public INotificationFeed Recent() => current;
+    private string? scheduleEtag;
 
-    /// <summary>Reads the feed again. Never throws: a failed read keeps no entries and says why.</summary>
+    /// <inheritdoc />
+    public INotificationFeed Recent()
+    {
+        var feed = current;
+        return new NotificationFeed { Entries = feed.Entries, Skipped = feed.Skipped, Reason = feed.Reason, Schedule = schedule };
+    }
+
+    /// <summary>Reads the feed and the schedule again. Never throws: a failed read keeps nothing and says why.</summary>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        if (source is null || files is null)
+        if (files is null)
+        {
+            return;
+        }
+
+        if (scheduleSource is not null)
+        {
+            await RefreshScheduleAsync(files, scheduleSource, cancellationToken);
+        }
+
+        if (source is null)
         {
             return;
         }
@@ -58,6 +80,64 @@ public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource?
                 ? " — if the repository is private, Kit's GitHub App may not have access to it"
                 : string.Empty;
             current = new NotificationFeed { Entries = [], Reason = e.Message + hint };
+        }
+    }
+
+    private async Task RefreshScheduleAsync(IGitHubFileReader reader, IProjectSource file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var read = await reader.ReadFileAsync(file, scheduleEtag, cancellationToken);
+            if (read is not { } text)
+            {
+                return;
+            }
+
+            scheduleEtag = text.ETag;
+            schedule = ParseSchedule(text.Text);
+        }
+        catch (GitHubReadException e)
+        {
+            // A schedule that cannot be read is said, never shown as an agent that is awake.
+            scheduleEtag = null;
+            schedule = new AgentSchedule { Reason = e.Message };
+        }
+    }
+
+    /// <summary>
+    /// The pause file as the agent's gate reads it (claude-code-bot <c>deploy/scripts/gate.sh</c>):
+    /// paused only when <c>suspended</c> is true, and a pause whose <c>until</c> does not parse is no
+    /// pause at all, because the gate runs a session then. Whether <c>until</c> has passed is the
+    /// page's to say, since this is read once a poll and shown for longer.
+    /// </summary>
+    public static AgentSchedule ParseSchedule(string text)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            var o = doc.RootElement;
+            if (o.ValueKind != JsonValueKind.Object)
+            {
+                return new AgentSchedule { Reason = "the agent's schedule file is not a JSON object" };
+            }
+
+            string? Str(string name) =>
+                o.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s : null;
+
+            // `jq -r` prints the boolean and the string alike, and the gate compares the printed text.
+            var suspended = o.TryGetProperty("suspended", out var p)
+                && (p.ValueKind == JsonValueKind.True || (p.ValueKind == JsonValueKind.String && p.GetString() == "true"));
+            var until = Str("until");
+            if (!suspended || (until is not null && !DateTimeOffset.TryParse(until, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out _)))
+            {
+                return new AgentSchedule { Suspended = false };
+            }
+
+            return new AgentSchedule { Suspended = true, Until = until, ByAgent = Str("set_by") == "bot", Why = Str("reason") };
+        }
+        catch (JsonException)
+        {
+            return new AgentSchedule { Reason = "the agent's schedule file is not JSON" };
         }
     }
 

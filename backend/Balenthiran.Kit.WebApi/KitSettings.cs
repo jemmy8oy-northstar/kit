@@ -145,6 +145,13 @@ public sealed record KitSettings(
     /// </summary>
     public ProjectSource? AgentFeed { get; init; }
 
+    /// <summary>
+    /// <c>KIT_AGENT_SCHEDULE</c> (BEH-NOTIFY-5): the agent's pause file, <c>state/suspend.json</c>
+    /// in its repo, as <c>owner/repo@branch:path</c>. Unset means the notifications page says it
+    /// cannot tell when the agent next wakes. Read with the feed.
+    /// </summary>
+    public ProjectSource? AgentSchedule { get; init; }
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -209,6 +216,7 @@ public sealed record KitSettings(
             Projects = ParseProjects(env("KIT_PROJECTS")),
             ProjectsPoll = ParsePoll(env("KIT_PROJECTS_POLL")),
             AgentFeed = ParseAgentFeed(env("KIT_AGENT_FEED")),
+            AgentSchedule = ParseAgentFeed(env("KIT_AGENT_SCHEDULE"), "KIT_AGENT_SCHEDULE"),
             Database = database,
             GitHubAppSlug = connect["KIT_GITHUB_APP_SLUG"],
             GitHubClientId = connect["KIT_GITHUB_CLIENT_ID"],
@@ -217,10 +225,10 @@ public sealed record KitSettings(
         };
     }
 
-    /// <summary><c>KIT_AGENT_FEED</c>: unset is none; one that does not parse THROWS, as a KIT_PROJECTS entry does.</summary>
-    public static ProjectSource? ParseAgentFeed(string? value) =>
+    /// <summary><c>KIT_AGENT_FEED</c> (or <c>KIT_AGENT_SCHEDULE</c>): unset is none; one that does not parse THROWS, as a KIT_PROJECTS entry does.</summary>
+    public static ProjectSource? ParseAgentFeed(string? value, string name = "KIT_AGENT_FEED") =>
         string.IsNullOrWhiteSpace(value) ? null
-        : ProjectSource.Parse(value) ?? throw new InvalidOperationException($"KIT_AGENT_FEED \"{value}\" is not owner/repo@branch:path");
+        : ProjectSource.Parse(value) ?? throw new InvalidOperationException($"{name} \"{value}\" is not owner/repo@branch:path");
 
     /// <summary>
     /// <c>KIT_PROJECTS</c>, every entry a <see cref="ProjectSource"/>. One that does not parse

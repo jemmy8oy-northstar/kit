@@ -2,12 +2,7 @@ import { fetchNotifications } from '../api/client'
 import type { AgentNotification } from '../api/types'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
-
-/** The message's own instant, in the reader's locale; an unparseable stamp is shown as it came. */
-function when(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-}
+import { nextWake, when } from '../nextWake'
 
 const KIND: Record<AgentNotification['kind'], string> = {
   wake: 'Woke',
@@ -32,8 +27,15 @@ export default function Notifications() {
       <p className="muted">What the agent has told you, newest first: wakes, sleeps, pull requests and blockers.</p>
 
       <ResourceView resource={resource}>
-        {({ entries, skipped, reason }) => (
+        {({ entries, skipped, reason, schedule }) => (
           <>
+            {schedule && (
+              <section aria-label="Next wake">
+                <p>{nextWake(schedule)}</p>
+                {schedule.suspended && schedule.why !== null && <p className="muted">Why: {schedule.why}</p>}
+              </section>
+            )}
+
             {reason !== null ? (
               <p role="alert">The agent&apos;s feed could not be read: {reason}</p>
             ) : entries.length === 0 ? (
