@@ -9,6 +9,7 @@ import FeaturePage from './pages/FeaturePage'
 import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
+import Notifications from './pages/Notifications'
 import SignIn from './components/SignIn'
 import Account from './components/Account'
 import NoteFab from './components/NoteFab'
@@ -66,6 +67,7 @@ export default function App() {
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <NavLink to="/principles">Principles</NavLink>
               <NavLink to="/activity">Activity</NavLink>
+              <NavLink to="/notifications">Notifications</NavLink>
               <NavLink to="/" end>
                 Projects
               </NavLink>
@@ -81,6 +83,7 @@ export default function App() {
               <Route path="/epics" element={<Epics />} />
               <Route path="/principles" element={<Principles />} />
               <Route path="/activity" element={<Activity />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
               <Route path="/projects/:app/features/:id" element={<FeaturePage />} />

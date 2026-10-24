@@ -526,3 +526,9 @@ pre {
   background: var(--project);
   margin-right: var(--space-2);
 }
+
+/* BEH-NOTIFY-1: a session summary is several lines, and a long URL must not widen the page on a phone. */
+.notification-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
