@@ -18,4 +18,10 @@ public interface INotificationFeed
     /// when it holds nothing. A feed Kit cannot read is never shown as an empty one.
     /// </summary>
     string? Reason { get; }
+
+    /// <summary>
+    /// When the agent next wakes (BEH-NOTIFY-5). Null only where there is no agent to ask about:
+    /// another user's feed (BEH-USERS-8).
+    /// </summary>
+    IAgentSchedule? Schedule { get; }
 }

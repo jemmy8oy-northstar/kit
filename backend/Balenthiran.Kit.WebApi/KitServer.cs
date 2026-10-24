@@ -54,7 +54,7 @@ public static class KitServer
                 await poller.EnsureFreshAsync(ctx.RequestAborted);
             }
 
-            if (settings.AgentFeed is not null && target.Split('?')[0] == feedRoute)
+            if ((settings.AgentFeed is not null || settings.AgentSchedule is not null) && target.Split('?')[0] == feedRoute)
             {
                 await feedRefresh.EnsureFreshAsync(ProjectPoller.Wait, ctx.RequestAborted);
             }
