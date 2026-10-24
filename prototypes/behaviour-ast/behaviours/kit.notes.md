@@ -274,3 +274,7 @@ Ay be we refine this experience later but this seems right
 Ai wakes after 5 minutes of inactivity on kit (starting from last action)
 
 This means kit will wake quickly after changes and act on them
+
+## 2026-10-24 22:50Z
+
+Some indicator of when kit will next wake
