@@ -42,10 +42,11 @@ public static class ServiceRegistration
         services.AddSingleton<ICompletionReader, CompletionReader>();
         services.AddSingleton<IActivityReader, ActivityReader>();
 
-        // BEH-NOTIFY-1: the agent's feed, read with Kit's own credential; KitServer refreshes it on expiry.
+        // BEH-NOTIFY-1/5: the agent's feed and schedule, read with Kit's own credential; KitServer refreshes them on expiry.
         services.AddSingleton(sp => new NotificationReader(
-            settings.AgentFeed is null ? null : new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>()),
-            settings.AgentFeed));
+            settings.AgentFeed is null && settings.AgentSchedule is null ? null : new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>()),
+            settings.AgentFeed,
+            settings.AgentSchedule));
         services.AddSingleton<INotificationReader>(sp => sp.GetRequiredService<NotificationReader>());
         services.AddSingleton<IUiBundle>(new UiBundle(settings.Dist));
         services.AddSingleton<IUrlParser, UrlParser>();

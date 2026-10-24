@@ -493,6 +493,21 @@ export interface NotificationFeed {
   skipped: number
   /** Null when the feed was read, even if it is empty. */
   reason: string | null
+  /** When the agent next wakes (BEH-NOTIFY-5); null only on another user's feed, where there is no agent. */
+  schedule?: AgentSchedule | null
+}
+
+/** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
+export interface AgentSchedule {
+  suspended: boolean
+  /** ISO 8601 UTC the pause ends; null for a pause with no end. */
+  until: string | null
+  /** The agent paused itself, so his next action in Kit also wakes it (BEH-NOTIFY-4). */
+  byAgent: boolean
+  /** The agent's own reason for the pause. */
+  why: string | null
+  /** Why Kit cannot say; null when the file was read. */
+  reason: string | null
 }
 
 export interface NoteList {

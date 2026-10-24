@@ -15,5 +15,10 @@ public sealed class NotificationFeed : INotificationFeed
     [JsonPropertyOrder(3)]
     public string? Reason { get; init; }
 
+    [JsonPropertyOrder(4)]
+    public AgentSchedule? Schedule { get; init; }
+
     IReadOnlyList<INotification> INotificationFeed.Entries => Entries;
+
+    IAgentSchedule? INotificationFeed.Schedule => Schedule;
 }

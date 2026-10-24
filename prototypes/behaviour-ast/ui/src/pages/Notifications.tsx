@@ -1,5 +1,5 @@
 import { fetchNotifications } from '../api/client'
-import type { AgentNotification } from '../api/types'
+import type { AgentNotification, AgentSchedule } from '../api/types'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 
@@ -19,6 +19,21 @@ const KIND: Record<AgentNotification['kind'], string> = {
 }
 
 /**
+ * When the agent next wakes (BEH-NOTIFY-5), from the pause file its gate reads before every
+ * session. Whether a pause has ended is decided here, against the reader's clock, because the file
+ * is read once a poll and the page is looked at for longer.
+ */
+export function nextWake(s: AgentSchedule, now: Date = new Date()): string {
+  if (s.reason !== null) return `Kit cannot tell when the agent next wakes: ${s.reason}`
+  if (!s.suspended) return 'The agent is not asleep: it starts a session within 5 minutes of its last one ending.'
+  if (s.until === null) return 'The agent is paused with no end time: it wakes only when the pause is lifted.'
+  if (new Date(s.until).getTime() <= now.getTime()) return `The agent's sleep ended ${when(s.until)}: it wakes within 5 minutes.`
+  return s.byAgent
+    ? `Next wake: ${when(s.until)}, or about 5 minutes after your next action in Kit.`
+    : `Paused by you until ${when(s.until)}. Actions in Kit do not wake it.`
+}
+
+/**
  * What the agent has told him (BEH-NOTIFY-1), newest first: the messages that used to arrive on
  * Telegram (claude-code-bot#118). A feed the server could not read shows the reason, never an
  * empty list, because "nothing to say" and "could not look" must not look alike.
@@ -32,8 +47,15 @@ export default function Notifications() {
       <p className="muted">What the agent has told you, newest first: wakes, sleeps, pull requests and blockers.</p>
 
       <ResourceView resource={resource}>
-        {({ entries, skipped, reason }) => (
+        {({ entries, skipped, reason, schedule }) => (
           <>
+            {schedule && (
+              <section aria-label="Next wake">
+                <p>{nextWake(schedule)}</p>
+                {schedule.suspended && schedule.why !== null && <p className="muted">Why: {schedule.why}</p>}
+              </section>
+            )}
+
             {reason !== null ? (
               <p role="alert">The agent&apos;s feed could not be read: {reason}</p>
             ) : entries.length === 0 ? (

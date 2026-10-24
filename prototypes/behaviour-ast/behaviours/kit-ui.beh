@@ -1371,7 +1371,7 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
   contract a feed Kit cannot read is shown as unreadable with GitHub's reason, never as an empty feed
   contract my assumption: unlike his projects (BEH-GATE-H1), the feed is served only to a signed-in session, because it comes from a private repo; another user's feed is empty (BEH-USERS-8)
   contract my assumption: KIT_AGENT_FEED names the file as owner/repo@branch:path, and Kit reads it again when the page asks and the last read is older than KIT_PROJECTS_POLL
-  needs-context "Kit's GitHub App needs read access to the private claude-code-bot repo (GitHub, Settings, Applications, the Kit App, Configure, Repository access). If it already has all repositories, nothing to do. If not by 2026-10-31, I build it anyway and the page says it cannot read the feed until access is added."
+  contract his confirmation on claude-code-bot#120, 2026-10-24 22:49Z: "Notification page is functional", so the App can read the feed
 
 behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"
   in FEAT-NOTIFICATIONS
@@ -1399,7 +1399,6 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1400
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1408,3 +1407,18 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract my assumption: his action is a commit Kit makes on kit/hosted, since every edit, approval and note already lands as one, so Kit stores nothing new and gets no access to the agent
   contract my assumption: the agent's scheduler looks every 5 minutes and wakes it, even from sleep, when the newest such commit is at least 5 minutes old and newer than its last wake; the code lives in claude-code-bot, whose deploy changes are his to merge
   contract my assumption: a branch sync (kit/hosted taking dev) is the agent's own work arriving, not his action, so it wakes nothing
+  contract first seen live 2026-10-24: his note at 22:50Z woke the sleeping agent at 22:56Z (claude-code-bot#118)
+
+# His note of 2026-10-24 22:50Z, minutes after the feed went live.
+behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-24-2250
+  actor engineer
+  when opens page:KitNotifications
+  then sees region:KitNextWake
+  contract "Some indicator of when kit will next wake"
+  contract my assumption: the answer comes from the pause file the agent's scheduler reads before every session, state/suspend.json in claude-code-bot, read with the feed through Kit's own GitHub App; KIT_AGENT_SCHEDULE names it as owner/repo@branch:path
+  contract my assumption: it sits at the top of the notifications page as one line, in his own time zone: when the agent wakes at the latest, and, when the agent put itself to sleep, that his next action in Kit wakes it about 5 minutes later (BEH-NOTIFY-4)
+  contract a pause he set himself says so, and that Kit actions do not cut it short, because the scheduler never overrides his own pause
+  contract my assumption: the agent's own reason for sleeping is shown under it, as plain text
+  contract a schedule Kit cannot read says why, and is never shown as an agent that is awake
