@@ -250,5 +250,13 @@
     "role": "heading",
     "name": "Activity",
     "exact": true
+  },
+  "page:KitNotifications": {
+    "route": "/notifications"
+  },
+  "heading:KitNotificationsTitle": {
+    "role": "heading",
+    "name": "Notifications",
+    "exact": true
   }
 }
