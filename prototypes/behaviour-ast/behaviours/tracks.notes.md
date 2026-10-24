@@ -21,3 +21,7 @@ Is tracks able to identify the track that the user reached their top speed
 ## 2026-10-24 14:02Z
 
 Is tracks able to identify the track with the fastest average pace during the run
+
+## 2026-10-24 14:03Z
+
+Is tracks able to identify bpm of a song played during a run
