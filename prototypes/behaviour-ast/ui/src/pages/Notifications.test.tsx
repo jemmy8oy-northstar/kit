@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
-import Notifications, { nextWake } from './Notifications'
+import Notifications from './Notifications'
+import { nextWake } from '../nextWake'
 
 function mockApi(feed: unknown) {
   const fetch = vi.fn(async (path: string) => ({
