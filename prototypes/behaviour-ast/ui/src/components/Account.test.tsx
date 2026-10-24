@@ -205,7 +205,9 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     vi.stubGlobal('fetch', s.fn)
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByText('Connecting your GitHub…')).toBeInTheDocument()
-    expect(to).toHaveBeenCalledWith(sam.gitHubAuthorize)
+    // The text renders a commit before the effect that navigates: wait for it, or a
+    // slow runner asserts first and the late effect calls the restored, real `to`.
+    await vi.waitFor(() => expect(to).toHaveBeenCalledWith(sam.gitHubAuthorize))
     expect(s.posted).toEqual([])
   })
 
