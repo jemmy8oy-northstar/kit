@@ -1399,6 +1399,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1400
+  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1407,7 +1408,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract my assumption: his action is a commit Kit makes on kit/hosted, since every edit, approval and note already lands as one, so Kit stores nothing new and gets no access to the agent
   contract my assumption: the agent's scheduler looks every 5 minutes and wakes it, even from sleep, when the newest such commit is at least 5 minutes old and newer than its last wake; the code lives in claude-code-bot, whose deploy changes are his to merge
   contract my assumption: a branch sync (kit/hosted taking dev) is the agent's own work arriving, not his action, so it wakes nothing
-  contract first seen live 2026-10-24: his note at 22:50Z woke the sleeping agent at 22:56Z (claude-code-bot#118)
+  contract first seen live 2026-10-24: his note at 22:50Z woke the sleeping agent at 22:56Z (claude-code-bot#118); it stays pending here only because its code, and so its test, live in claude-code-bot, where no Kit test can name it
 
 # His note of 2026-10-24 22:50Z, minutes after the feed went live.
 behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
