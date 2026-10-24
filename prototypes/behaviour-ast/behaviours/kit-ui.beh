@@ -1376,13 +1376,13 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
 behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1359
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract "User can save web app to Home Screen"
   contract my assumption: Kit serves a web app manifest and a home-screen icon under its own path, so Safari's Add to Home Screen opens Kit full screen with its name and icon
-  contract my assumption: the icon is Kit's existing mark on its background colour; no new visual identity
+  contract my assumption: Kit had no icon, so it is a white K on the professional theme's primary blue, the same blue as the Kit wordmark in the header; deny it for a designed one
+  contract the installed app's scope is Kit's own path, never the shared host's root, which is another app
 
 behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
   in FEAT-NOTIFICATIONS
