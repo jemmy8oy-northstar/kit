@@ -12,6 +12,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kit</title>
+    <!--
+      BEH-NOTIFY-2: Add to Home Screen opens Kit full screen with its own name and icon.
+      Absolute here, and Vite prefixes KIT_BASE_PATH at build; the manifest's own URLs are
+      RELATIVE to it, so the installed app's scope stays /kit/ and never claims the shared
+      host's root, which belongs to another app.
+    -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#4f6bed" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Kit" />
   </head>
   <body>
     <div id="root"></div>
