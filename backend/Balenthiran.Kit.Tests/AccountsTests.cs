@@ -135,6 +135,25 @@ public class AccountsTests
     }
 
     [Fact]
+    public void A_users_notifications_hold_none_of_the_agents_messages()
+    {
+        // BEH-NOTIFY-1: the agent works for him, so its messages are his like the rest (BEH-USERS-8).
+        var router = Router(Seeded());
+        var ann = Cookie(SignIn(router, "ann", AnnPassword));
+        var him = Cookie(SignIn(router, null, Operator));
+
+        var hers = Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", ann).Body);
+        Assert.Empty(hers.Entries);
+        Assert.Null(hers.Reason);
+        Assert.NotEmpty(Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", him).Body).Entries);
+
+        // Unlike the projects (BEH-GATE-H1), the feed comes from a private repo: no session, no feed.
+        var anonymous = router.Route("GET", "/api/notifications");
+        Assert.Equal(401, anonymous.Status);
+        Assert.Equal("not-signed-in", Assert.IsType<ApiError>(anonymous.Body).Error);
+    }
+
+    [Fact]
     public void A_user_may_still_read_one_of_his_projects_by_its_url()
     {
         // His projects live in a public repo, so a URL serves them to a user as to anyone (BEH-GATE-H1).
@@ -265,7 +284,8 @@ public class AccountsTests
             new SessionStore(),
             new SignInThrottle(),
             activity: new OneCommit(),
-            users: users);
+            users: users,
+            notifications: new OneNotification());
     }
 
     internal sealed class MemoryUsers : IUserStore
@@ -306,5 +326,10 @@ public class AccountsTests
     private sealed class OneCommit : IActivityReader
     {
         public IActivityFeed Recent() => new ActivityFeed { Entries = [new ActivityEntry { App = "kit", Commit = "abc", Summary = "x", At = "2026-10-23T00:00:00Z" }], NoHistory = [] };
+    }
+
+    private sealed class OneNotification : INotificationReader
+    {
+        public INotificationFeed Recent() => new NotificationFeed { Entries = [new Notification { At = "2026-10-24T14:00:00Z", Kind = "wake", Text = "x" }] };
     }
 }
