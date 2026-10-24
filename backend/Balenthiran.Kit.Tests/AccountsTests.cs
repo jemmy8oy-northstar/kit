@@ -95,7 +95,17 @@ public class AccountsTests
         var ann = Cookie(SignIn(router, "ann", AnnPassword));
         var him = Cookie(SignIn(router, null, Operator));
 
-        foreach (var path in new[] { "/api/commit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/behaviours/BEH-1/title" })
+        // One of every write route, so a route added above the gate shows here (BEH-USERS-8: "whatever the URL").
+        var paths = new[]
+        {
+            "/api/commit", "/api/projects/kit/notes", "/api/projects/kit/notes/reply", "/api/projects/kit/notes/dismiss",
+            "/api/projects/kit/schedule", "/api/projects/kit/bindings", "/api/projects/kit/behaviours",
+            "/api/projects/kit/behaviours/BEH-1/title", "/api/projects/kit/behaviours/BEH-1/review",
+            "/api/projects/kit/behaviours/BEH-1/paused", "/api/projects/kit/behaviours/BEH-1/remove",
+            "/api/projects/kit/behaviours/BEH-1/steps/0",
+        };
+
+        foreach (var path in paths)
         {
             var refused = router.Route("POST", path, ann, body: Json(new { }));
             Assert.Equal(403, refused.Status);
@@ -122,6 +132,24 @@ public class AccountsTests
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body).Projects);
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects").Body).Projects);
         Assert.NotEmpty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", him).Body).Entries);
+    }
+
+    [Fact]
+    public void A_user_may_still_read_one_of_his_projects_by_its_url()
+    {
+        // His projects live in a public repo, so a URL serves them to a user as to anyone (BEH-GATE-H1).
+        var router = Router(Seeded());
+        var ann = Cookie(SignIn(router, "ann", AnnPassword));
+
+        foreach (var path in new[] { "/api/projects/kit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/pending" })
+        {
+            var hers = router.Route("GET", path, ann);
+            var anyone = router.Route("GET", path);
+            Assert.Equal(anyone.Status, hers.Status);
+            Assert.Equal(JsonSerializer.Serialize(anyone.Body), JsonSerializer.Serialize(hers.Body));
+        }
+
+        Assert.Equal(200, router.Route("GET", "/api/projects/kit", ann).Status);
     }
 
     [Fact]

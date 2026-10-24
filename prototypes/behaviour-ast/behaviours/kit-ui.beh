@@ -1245,13 +1245,12 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
 
 feature FEAT-USER-ISOLATION "One user never reaches another's work"
   in EPIC-KIT-USERS
-  stage problem
+  stage ui
 
 behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, whatever the URL"
   in FEAT-USER-ISOLATION
   source inferred kit.notes.md#2026-10-19-1721
   review approved
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1259,6 +1258,7 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
   contract his answer (kit.notes.md#2026-10-23-0642): the check ships with the sign-up feature (BEH-USERS-1), so it is in place before the first user signs in
   contract my assumption: until a user connects their GitHub, every project Kit serves is James's; the user's project list and activity hold none of it, and every write to it is refused
   contract my assumption: a user may still open one of his projects by its URL, as anyone may (BEH-GATE-H1), because its repo is public; a project in a private repo is served to its owner only
+  contract built: kit#431 put every write behind one check of whose session it is and emptied a user's project list and activity; this change pins every write route and the read by URL in tests. Every corpus Kit serves today lives in the public kit repo, so no project is private yet; the owner-only read arrives with a user's own repos (FEAT-USER-REPOS)
 
 # His note of 2026-10-19 19:33Z: a "nudge", maybe a bell ("fits in with the cat theme"),
 # comments under items, and a floating button for notes. Captured, not scheduled.
