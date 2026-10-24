@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from '../App'
 import Notifications from './Notifications'
+import { nextWake } from '../nextWake'
 
 function mockApi(feed: unknown) {
   const fetch = vi.fn(async (path: string) => ({
@@ -70,6 +71,43 @@ describe('Notifications', () => {
 
     expect(await screen.findByText('The agent has not said anything yet.')).toBeInTheDocument()
     expect(screen.getByText(/2 lines of the feed could not be read/)).toBeInTheDocument()
+  })
+
+  it('says when the agent next wakes, and that his next action wakes it sooner (BEH-NOTIFY-5)', async () => {
+    const until = '2099-01-01T07:00:00Z'
+    mockApi({
+      entries: [],
+      skipped: 0,
+      reason: null,
+      schedule: { suspended: true, until, byAgent: true, why: 'idle overnight', reason: null },
+    })
+    page()
+
+    const wake = await screen.findByRole('region', { name: 'Next wake' })
+    expect(wake).toHaveTextContent(`Next wake: ${new Date(until).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`)
+    expect(wake).toHaveTextContent('about 5 minutes after your next action in Kit')
+    expect(wake).toHaveTextContent('Why: idle overnight')
+  })
+
+  it("says what each pause means for when the agent wakes, and never reads an unknown one as awake", () => {
+    const now = new Date('2026-10-24T23:00:00Z')
+    const s = { suspended: true, until: '2026-10-25T07:00:00Z', byAgent: false, why: null, reason: null }
+
+    expect(nextWake(s, now)).toMatch(/^Paused by you until .*Actions in Kit do not wake it\.$/)
+    expect(nextWake({ ...s, until: '2026-10-24T22:00:00Z' }, now)).toMatch(/sleep ended .*: it wakes within 5 minutes/)
+    expect(nextWake({ ...s, until: null }, now)).toContain('paused with no end time')
+    expect(nextWake({ ...s, suspended: false, until: null }, now)).toContain('is not asleep')
+    expect(nextWake({ ...s, suspended: false, reason: 'GitHub answered 404: Not Found' }, now)).toBe(
+      'Kit cannot tell when the agent next wakes: GitHub answered 404: Not Found',
+    )
+  })
+
+  it('shows no wake time on a feed that has no agent behind it', async () => {
+    mockApi({ entries: [], skipped: 0, reason: null, schedule: null })
+    page()
+
+    expect(await screen.findByText('The agent has not said anything yet.')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Next wake' })).not.toBeInTheDocument()
   })
 
   it('links Notifications from every page', async () => {

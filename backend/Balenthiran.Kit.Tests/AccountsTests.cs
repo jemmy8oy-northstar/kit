@@ -145,6 +145,7 @@ public class AccountsTests
         var hers = Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", ann).Body);
         Assert.Empty(hers.Entries);
         Assert.Null(hers.Reason);
+        Assert.Null(hers.Schedule); // BEH-NOTIFY-5: nor when it next wakes
         Assert.NotEmpty(Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", him).Body).Entries);
 
         // Unlike the projects (BEH-GATE-H1), the feed comes from a private repo: no session, no feed.

@@ -328,6 +328,16 @@
     { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "A_feed_kit_cannot_read_says_why_and_is_never_shown_as_empty" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_notifications_hold_none_of_the_agents_messages" }
   ],
+  "BEH-NOTIFY-5": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says when the agent next wakes, and that his next action wakes it sooner (BEH-NOTIFY-5)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says what each pause means for when the agent wakes, and never reads an unknown one as awake" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "shows no wake time on a feed that has no agent behind it" },
+    { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "The_agents_own_sleep_says_until_when_and_that_his_action_wakes_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "A_pause_he_set_is_not_cut_short_by_kit_and_may_have_no_end" },
+    { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "It_reads_as_not_paused_exactly_when_the_gate_would_run_a_session" },
+    { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "It_reads_the_schedule_with_the_feed_and_an_unreadable_one_says_why" },
+    { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "With_no_schedule_configured_the_page_says_so" }
+  ],
   "BEH-USERS-1": [
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "He_creates_an_account_and_its_user_signs_in_with_it" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "Only_the_operator_creates_accounts" },
