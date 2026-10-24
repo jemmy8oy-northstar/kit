@@ -315,6 +315,10 @@
   "BEH-ACTIVITY-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Activity.test.tsx", "title": "lists commits newest first and says which projects have no history here (BEH-ACTIVITY-1)" }
   ],
+  "BEH-NOTIFY-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/homeScreen.test.ts", "title": "links a manifest and a home-screen icon that open Kit full screen" },
+    { "file": "prototypes/behaviour-ast/ui/src/test/homeScreen.test.ts", "title": "keeps the installed app inside Kit's own path on the shared host" }
+  ],
   "BEH-NOTIFY-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "lists the agent's messages newest first, each with when and what kind (BEH-NOTIFY-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says why when the feed could not be read, rather than showing it empty" },
