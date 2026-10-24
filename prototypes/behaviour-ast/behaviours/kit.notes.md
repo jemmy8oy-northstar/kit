@@ -259,3 +259,7 @@ I think we skills add it with the sign up feature. So it’s ready for first sig
 ## 2026-10-23 07:07Z · new behaviour
 
 I think for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs
+
+## 2026-10-24 13:59Z
+
+User can save web app to Home Screen and kit can serve notifications
