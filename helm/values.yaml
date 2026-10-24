@@ -123,6 +123,12 @@ apps:
       # edits never reach. Remove the entry to read the clone, as before.
       - name: KIT_PROJECTS
         value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours"
+      # BEH-NOTIFY-1 (claude-code-bot#118): the agent's notifications, which replaced
+      # Telegram. A FILE in the agent's PRIVATE repo, read with the same App token as
+      # KIT_PROJECTS, so the App needs read access to claude-code-bot; until it has
+      # it, the Notifications page says so rather than showing an empty feed.
+      - name: KIT_AGENT_FEED
+        value: "jemmy8oy-northstar/claude-code-bot@agent/notifications:notifications.jsonl"
     resources: {}
     nodeSelector: {}
     tolerations: []
