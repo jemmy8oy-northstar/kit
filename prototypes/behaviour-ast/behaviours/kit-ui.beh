@@ -1348,3 +1348,62 @@ behaviour BEH-ACTIVITY-1 "An activity page lists what changed recently, newest f
   contract my assumption: each entry shows when, which project, and the commit's own summary, and the page is reached from the navbar as Activity
   contract my assumption: a pull request's merge reads as its title, and a branch sync (kit/hosted taking dev) reads as the pull requests it brought in, not as one "up to date with dev" line
   contract a project this server reads from GitHub without a local clone has no history here, and the page says so rather than showing it as quiet
+
+# His notes of 2026-10-24 13:59-14:00Z, the same afternoon he chose to "ditch telegram in
+# favour of kit. It is only used for notifications anyway" (claude-code-bot#118): the agent's
+# messages, wakes and sleeps move from Telegram into Kit, and Kit wakes the agent when he acts.
+feature FEAT-NOTIFICATIONS "Kit tells him what the agent is doing, and wakes it when he acts"
+  stage problem
+
+behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest first"
+  in FEAT-NOTIFICATIONS
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-24-1400
+  pending
+  actor engineer
+  when opens page:KitNotifications
+  then sees heading:KitNotificationsTitle
+  then sees region:KitMain
+  contract "Notification feed on kit for items such as updates wakes sleeps etc"
+  contract his call on claude-code-bot#118: Telegram goes, so this feed carries everything Telegram carried: wakes, sleeps, pull requests raised, blockers and session summaries
+  contract my assumption: the agent appends each message as one line of notifications.jsonl on the agent/notifications branch of its own repo, claude-code-bot, which is private, so the feed is not published the way a branch of this public repo would be
+  contract my assumption: Kit reads that file with its own GitHub App, so it needs no new secret, account or write route; the agent never writes to Kit
+  contract my assumption: each entry shows when, a kind (wake, sleep, pr, blocker, done or note) and the message, the newest 50, and the page is reached from the navbar as Notifications
+  contract a feed Kit cannot read is shown as unreadable with GitHub's reason, never as an empty feed
+  needs-context "Kit's GitHub App needs read access to the private claude-code-bot repo (GitHub, Settings, Applications, the Kit App, Configure, Repository access). If it already has all repositories, nothing to do. If not by 2026-10-31, I build it anyway and the page says it cannot read the feed until access is added."
+
+behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-24-1359
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "User can save web app to Home Screen"
+  contract my assumption: Kit serves a web app manifest and a home-screen icon under its own path, so Safari's Add to Home Screen opens Kit full screen with its name and icon
+  contract my assumption: the icon is Kit's existing mark on its background colour; no new visual identity
+
+behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-24-1359
+  pending
+  actor engineer
+  when opens page:KitNotifications
+  then sees region:KitMain
+  contract "kit can serve notifications"
+  contract my assumption: web push from the home-screen app (BEH-NOTIFY-2), which iOS allows only once Kit is saved to the home screen; he turns it on from the notifications page
+  contract my assumption: Kit pushes each new feed entry once, within a poll of the feed, and keeps the phone's push subscription in its database
+  needs-context "Web push needs a VAPID key pair in a new kit-push secret (keys public-key and private-key; I'll give the one-line command). Will you create it? If not by 2026-11-07, I build it against a stand-in so it switches on when the secret appears."
+
+behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-24-1400
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Ai wakes after 5 minutes of inactivity on kit (starting from last action)"
+  contract "This means kit will wake quickly after changes and act on them"
+  contract my assumption: his action is a commit Kit makes on kit/hosted, since every edit, approval and note already lands as one, so Kit stores nothing new and gets no access to the agent
+  contract my assumption: the agent's scheduler looks every 5 minutes and wakes it, even from sleep, when the newest such commit is at least 5 minutes old and newer than its last wake; the code lives in claude-code-bot, whose deploy changes are his to merge
+  contract my assumption: a branch sync (kit/hosted taking dev) is the agent's own work arriving, not his action, so it wakes nothing
