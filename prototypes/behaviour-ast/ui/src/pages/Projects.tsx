@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
 import { fetchProjects } from '../api/client'
@@ -6,6 +7,7 @@ import type { GitHubProject, ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
+import { useSession } from '../components/session'
 import { byProject } from '../features'
 import { isIdea } from '../board'
 
@@ -60,9 +62,12 @@ function GitHubProjects({ projects, error }: { projects?: GitHubProject[]; error
   if (!projects) return null
   if (projects.length === 0) {
     return (
-      <p className="muted">
-        Kit is connected to your GitHub, but none of the repos it can see carries a <code>.beh</code> file yet.
-      </p>
+      <>
+        <p className="muted">
+          Kit is connected to your GitHub, but none of the repos it can see carries a <code>.beh</code> file yet.
+        </p>
+        <NewProject />
+      </>
     )
   }
   return (
@@ -82,6 +87,60 @@ function GitHubProjects({ projects, error }: { projects?: GitHubProject[]; error
           </li>
         ))}
       </ul>
+      <NewProject />
+    </>
+  )
+}
+
+/** A repo name GitHub accepts: whitespace runs become `-`, anything outside [A-Za-z0-9._-] is dropped. */
+function repoName(raw: string): string {
+  return raw.trim().replace(/\s+/g, '-').replace(/[^A-Za-z0-9._-]/g, '')
+}
+
+/** The first `.beh` file of a new project (BEH-USERS-3). */
+function starterCorpus(name: string): string {
+  return (
+    `# ${name}, described in Kit.\n#\n` +
+    `# Kit lists this repo once this file is on its default branch. Replace the behaviour below with your own.\n\n` +
+    `behaviour BEH-START-1 "Someone opens ${name}"\n  pending\n  actor user\n  when opens page:Home\n  then sees region:Main\n`
+  )
+}
+
+/**
+ * BEH-USERS-3: a new project is a new repo in the user's own GitHub. Kit holds an installation,
+ * never a user token, and an installation cannot create a repo in a personal account, so Kit
+ * hands over two github.com links with the name filled in and the install picks the repo up.
+ */
+function NewProject() {
+  const account = useSession()?.gitHub
+  const [raw, setRaw] = useState('')
+  const name = repoName(raw)
+  // One pending behaviour, not comments alone: Kit reads a corpus of zero behaviours as one it cannot look at.
+  const starter = starterCorpus(name)
+  const create = `https://github.com/new?name=${encodeURIComponent(name)}&description=${encodeURIComponent('A Kit project')}`
+  const addFile =
+    `https://github.com/${encodeURIComponent(account ?? '')}/${encodeURIComponent(name)}/new/main` +
+    `?filename=${encodeURIComponent(`behaviours/${name}.beh`)}&value=${encodeURIComponent(starter)}`
+  // An anchor with no href is how a link is disabled: it is not focusable and does not navigate.
+  const link = (href: string, text: string) => (
+    <a href={name ? href : undefined} aria-disabled={!name} target="_blank" rel="noreferrer">
+      {text}
+    </a>
+  )
+  return (
+    <>
+      <h2>Start a new project</h2>
+      <label>
+        Project name <input value={raw} onChange={(e) => setRaw(e.target.value)} />
+      </label>
+      <ol>
+        <li>{link(create, 'Create the repo on GitHub')}</li>
+        {account && <li>{link(addFile, 'Add its first behaviour file')}</li>}
+      </ol>
+      <p className="muted">
+        If your install of Kit&apos;s App only reaches selected repositories, add the new repo to it. The repo
+        appears here once that file is on its default branch.
+      </p>
     </>
   )
 }
