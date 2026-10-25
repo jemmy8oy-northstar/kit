@@ -383,6 +383,12 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-2: lists the repos in a user’s own GitHub, each linking to the repo" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-2: says so when GitHub could not be read, and does not show an empty list" }
   ],
+  "BEH-USERS-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: the links carry the normalised name and the account, and are shown for an empty list" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: the links are absent while the name is empty" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: without a connected account only the first step shows" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: the form shows beside a non-empty list, and not for the operator or a GitHub that could not be read" }
+  ],
   "BEH-USERS-8": [
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_write_to_the_operators_projects" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
