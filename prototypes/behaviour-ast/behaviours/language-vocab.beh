@@ -28,6 +28,7 @@
 
 behaviour BEH-DRILL-ZHEN "Shown a Chinese word, the learner types the English meaning"
   source defined docs/DESIGN.md#product-shape
+  priority 5
   actor learner
   when opens page:Drill
   then sees region:HanziLarge
@@ -37,6 +38,7 @@ behaviour BEH-DRILL-ZHEN "Shown a Chinese word, the learner types the English me
 
 behaviour BEH-DRILL-ENZH "Shown an English word, the learner types the pinyin"
   source defined docs/DESIGN.md#product-shape
+  priority 5
   actor learner
   when opens page:Drill
   then sees region:EnglishPrompt
@@ -48,6 +50,7 @@ behaviour BEH-DRILL-ENZH "Shown an English word, the learner types the pinyin"
 # answer box does not want it.
 behaviour BEH-CHAR-1 "Chinese characters are always displayed and never required as input"
   source defined docs/DESIGN.md#product-shape
+  priority 5
   actor learner
   when opens page:Drill
   then sees region:HanziLarge
@@ -55,6 +58,7 @@ behaviour BEH-CHAR-1 "Chinese characters are always displayed and never required
 
 behaviour BEH-TONE-1 "Pinyin is displayed with tone marks and accepted three ways"
   source defined docs/DESIGN.md#A1
+  priority 5
   actor learner
   when opens page:Drill
   then sees region:PinyinUnderIt
@@ -63,6 +67,7 @@ behaviour BEH-TONE-1 "Pinyin is displayed with tone marks and accepted three way
 
 behaviour BEH-TONE-2 "Tones are graded softly — right syllables with wrong tones is 'almost'"
   source defined docs/DESIGN.md#A2
+  priority 5
   actor learner
   when opens page:Drill
   when fills field:Answer with ?toneless
@@ -72,6 +77,7 @@ behaviour BEH-TONE-2 "Tones are graded softly — right syllables with wrong ton
 
 behaviour BEH-NORMALISE-1 "Grading forgives everything that is not the point"
   source defined docs/DESIGN.md#A7
+  priority 5
   actor learner
   contract answers are trimmed and case-folded
   contract an English answer matches ANY accepted gloss
@@ -79,6 +85,7 @@ behaviour BEH-NORMALISE-1 "Grading forgives everything that is not the point"
 
 behaviour BEH-AUDIO-1 "Every card can be heard in Mandarin"
   source defined docs/DESIGN.md#A5
+  priority 5
   actor learner
   when opens page:Drill
   when activates button:PlayAudio
@@ -86,6 +93,7 @@ behaviour BEH-AUDIO-1 "Every card can be heard in Mandarin"
 
 behaviour BEH-POOL-MVP "The active pool starts at ten words and grows as they are mastered"
   source defined docs/DESIGN.md#mvp-3
+  priority 5
   actor learner
   provides pool:Active.bootstrap = first 10 by rank
   provides pool:Active.unlockAt = 3.5
@@ -94,12 +102,14 @@ behaviour BEH-POOL-MVP "The active pool starts at ten words and grows as they ar
 
 behaviour BEH-STRENGTH-MVP "A word's strength moves with the answer"
   source defined docs/DESIGN.md#A4
+  priority 5
   actor learner
   provides word:Any.strength = 0..5
   contract full credit +1, a miss -1, an 'almost' leaves it unchanged
 
 behaviour BEH-STATS-1 "The stats page shows pool size, per-word strength and accuracy over time"
   source defined docs/DESIGN.md#mvp-4
+  priority 5
   actor learner
   when opens page:Stats
   then sees region:PoolSize
@@ -108,6 +118,7 @@ behaviour BEH-STATS-1 "The stats page shows pool size, per-word strength and acc
 
 behaviour BEH-CARD-1 "The card gives instant feedback and moves on with Enter"
   source defined docs/DESIGN.md#mvp-5
+  priority 5
   actor learner
   when opens page:Drill
   when fills field:Answer with ?answer
@@ -117,6 +128,7 @@ behaviour BEH-CARD-1 "The card gives instant feedback and moves on with Enter"
 
 behaviour BEH-SEEDDATA-1 "HSK1 is seeded from versioned data in the repo"
   source defined docs/DESIGN.md#mvp-1
+  priority 5
   actor learner
   contract the seed is versioned JSON in-repo (hanzi, pinyin, accepted glosses, level, frequency rank)
   contract loading it twice changes nothing
@@ -228,6 +240,7 @@ behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
 
 behaviour BEH-LANG-1 "The app drills one language, fixed in code, and every word still records its language"
   source defined language-vocab.notes.md#2026-10-12-2300
+  priority 5
   review unreviewed
   contract PoolService.Language ("zh") is the one drilled language; no route or service method takes a language argument
   contract the Language column stays on every vocab row and every seed file, so a second language is a signature change, not a data migration

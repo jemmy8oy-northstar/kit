@@ -30,6 +30,7 @@
 
 behaviour BEH-CAPTURE-1 "An idea is captured from anywhere in one field"
   source defined docs/trials/longlist-brief.md#capture
+  priority 5
   actor owner
   when opens page:Longlist
   then sees field:NewIdea
@@ -37,6 +38,7 @@ behaviour BEH-CAPTURE-1 "An idea is captured from anywhere in one field"
 
 behaviour BEH-CAPTURE-2 "A captured idea joins the list without leaving the page"
   source defined docs/trials/longlist-brief.md#capture
+  priority 5
   actor owner
   when opens page:Longlist
   when fills form:NewIdea with ?fields
@@ -45,12 +47,14 @@ behaviour BEH-CAPTURE-2 "A captured idea joins the list without leaving the page
 
 behaviour BEH-CAPTURE-3 "Capture asks for the idea and why it came up, and nothing else"
   source defined docs/trials/longlist-brief.md#capture
+  priority 5
   actor owner
   when opens page:Longlist
   provides form:NewIdea.fields = Idea, WhyNow
 
 behaviour BEH-CAPTURE-4 "An empty longlist says so rather than showing a blank page"
   source defined docs/trials/longlist-brief.md#capture
+  priority 5
   actor owner
   given longlist:Empty
   when opens page:Longlist
@@ -61,6 +65,7 @@ behaviour BEH-CAPTURE-4 "An empty longlist says so rather than showing a blank p
 
 behaviour BEH-DECIDE-1 "An idea can be opened to decide on it"
   source defined docs/trials/longlist-brief.md#decide
+  priority 5
   actor owner
   given idea:Captured
   when opens page:Longlist
@@ -70,6 +75,7 @@ behaviour BEH-DECIDE-1 "An idea can be opened to decide on it"
 
 behaviour BEH-DECIDE-2 "Deciding to build an idea records the decision against it"
   source defined docs/trials/longlist-brief.md#decide
+  priority 5
   actor owner
   given idea:Captured
   when opens page:Idea
@@ -78,6 +84,7 @@ behaviour BEH-DECIDE-2 "Deciding to build an idea records the decision against i
 
 behaviour BEH-DECIDE-3 "Declining an idea requires a reason, so the longlist teaches"
   source defined docs/trials/longlist-brief.md#decide
+  priority 5
   actor owner
   given idea:Captured
   when opens page:Idea
@@ -90,6 +97,7 @@ behaviour BEH-DECIDE-3 "Declining an idea requires a reason, so the longlist tea
 
 behaviour BEH-AGE-1 "An idea nobody has decided on for a long time is visibly stale"
   source defined docs/trials/longlist-brief.md#rot
+  priority 5
   actor owner
   given idea:Stale
   when opens page:Longlist

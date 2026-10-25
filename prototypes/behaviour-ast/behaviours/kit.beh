@@ -84,6 +84,7 @@ feature FEAT-WRITER "Writer"
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   in FEAT-GATE
+  priority 5
   actor engineer
   given corpus:SnipIt
   when runs command:KitCheck
@@ -92,6 +93,7 @@ behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
 
 behaviour BEH-GATE-2 "Could-not-look is never reported as green"
   in FEAT-GATE
+  priority 5
   actor engineer
   given repo:WithNoTests
   when runs command:KitCheck
@@ -101,6 +103,7 @@ behaviour BEH-GATE-2 "Could-not-look is never reported as green"
 
 behaviour BEH-GATE-3 "A mapping naming a test that no longer exists is a hard failure"
   in FEAT-GATE
+  priority 5
   actor engineer
   given mapping:Stale
   when runs command:KitCheck
@@ -109,6 +112,7 @@ behaviour BEH-GATE-3 "A mapping naming a test that no longer exists is a hard fa
 
 behaviour BEH-READ-1 "The reader refuses when its two counts disagree"
   in FEAT-READER
+  priority 5
   actor engineer
   given file:CountsDisagree
   when runs command:KitCheck
@@ -118,6 +122,7 @@ behaviour BEH-READ-1 "The reader refuses when its two counts disagree"
 
 behaviour BEH-GEN-1 "An unbound noun is refused, and the missing noun is named"
   in FEAT-GENERATOR
+  priority 5
   actor engineer
   given corpus:UnboundNoun
   when runs command:KitGenerate
@@ -126,6 +131,7 @@ behaviour BEH-GEN-1 "An unbound noun is refused, and the missing noun is named"
 
 behaviour BEH-GEN-2 "An unsupplied route param is refused rather than truncated"
   in FEAT-GENERATOR
+  priority 5
   actor engineer
   given corpus:RouteParam
   when runs command:KitGenerate
@@ -134,6 +140,7 @@ behaviour BEH-GEN-2 "An unsupplied route param is refused rather than truncated"
 
 behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped"
   in FEAT-PARSER
+  priority 5
   actor engineer
   given corpus:BadKeyword
   when runs command:KitParse
@@ -144,6 +151,7 @@ behaviour BEH-PARSE-1 "An unrecognised keyword is an error, not silently dropped
 behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error naming its line"
   in FEAT-PARSER
   source defined kit#237
+  priority 5
   actor engineer
   given corpus:BadFeatureTags
   when runs command:KitParse
@@ -156,6 +164,7 @@ behaviour BEH-PARSE-2 "A parent tag that points nowhere, or loops, is an error n
 behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error naming its line"
   in FEAT-PARSER
   source defined kit#284
+  priority 5
   actor engineer
   given corpus:BadPriority
   when runs command:KitParse
@@ -166,6 +175,7 @@ behaviour BEH-PARSE-3 "A priority is 1 to 5, set once; anything else is an error
 behaviour BEH-PARSE-4 "A review request must say what to look at"
   in FEAT-PARSER
   source defined kit#284
+  priority 5
   actor engineer
   given corpus:BareReviewRequest
   when runs command:KitParse
@@ -176,6 +186,7 @@ behaviour BEH-PARSE-4 "A review request must say what to look at"
 behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project list and view"
   in FEAT-SERVER
   source defined kit#284
+  priority 5
   actor engineer
   given corpus:IdeasFile
   when runs command:KitUi
@@ -186,6 +197,7 @@ behaviour BEH-IDEA-API-1 "A `# kit:idea` file is flagged as ideas in the project
 behaviour BEH-PRIN-API-1 "A `# kit:principle [global] <Name>: <what it means>` line is a principle in the project view"
   in FEAT-SERVER
   source defined kit#284
+  priority 5
   actor engineer
   given corpus:PrincipleLines
   when runs command:KitUi
@@ -197,6 +209,7 @@ behaviour BEH-PRIN-API-1 "A `# kit:principle [global] <Name>: <what it means>` l
 
 behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behaviour"
   in FEAT-RESOLVER
+  priority 5
   actor engineer
   given corpus:CrossBehaviourHole
   when runs command:KitResolve
@@ -205,6 +218,7 @@ behaviour BEH-RESOLVE-1 "A hole in one behaviour is filled by a different behavi
 
 behaviour BEH-RESOLVE-2 "Two behaviours disagreeing is a conflict, with both sides named"
   in FEAT-RESOLVER
+  priority 5
   actor engineer
   given corpus:Disagreement
   when runs command:KitResolve
@@ -212,6 +226,7 @@ behaviour BEH-RESOLVE-2 "Two behaviours disagreeing is a conflict, with both sid
 
 behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
   in FEAT-RESOLVER
+  priority 5
   actor engineer
   given corpus:Inference
   when runs command:KitResolve
@@ -226,6 +241,7 @@ behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
 
 behaviour BEH-UI-1 "A verb the server has no meaning for reaches no handler"
   in FEAT-SERVER
+  priority 5
   actor engineer
   given request:Unsupported
   when runs command:KitUi
@@ -237,6 +253,7 @@ behaviour BEH-UI-1 "A verb the server has no meaning for reaches no handler"
 
 behaviour BEH-UI-2 "The server binds the loopback interface, not every interface"
   in FEAT-SERVER
+  priority 5
   actor engineer
   given option:Default
   when runs command:KitUi
@@ -246,6 +263,7 @@ behaviour BEH-UI-2 "The server binds the loopback interface, not every interface
 
 behaviour BEH-UI-3 "A traversal in an app name is refused rather than resolved to a path"
   in FEAT-SERVER
+  priority 5
   actor engineer
   given request:Traversal
   when runs command:KitUi
@@ -255,6 +273,7 @@ behaviour BEH-UI-3 "A traversal in an app name is refused rather than resolved t
 
 behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never zero"
   in FEAT-SERVER
+  priority 5
   actor engineer
   given repo:Absent
   when runs command:KitUi
@@ -272,6 +291,7 @@ behaviour BEH-WRITE-1 "An edit splices one block, so every comment in the corpus
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given corpus:WithComments
   when runs command:KitWrite
   then reports comment:Preserved
@@ -282,6 +302,7 @@ behaviour BEH-WRITE-2 "An edit that would not parse never reaches the disk"
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given step:Malformed
   when runs command:KitWrite
   then raises error:WouldNotParse
@@ -292,6 +313,7 @@ behaviour BEH-WRITE-3 "An edit that would change a neighbouring behaviour is ref
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given splice:OffByOne
   when runs command:KitWrite
   then raises error:CollateralChange
@@ -302,6 +324,7 @@ behaviour BEH-WRITE-4 "The writer never touches git, and the file proves it rath
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given decision:LapsedDefault
   when runs command:KitWrite
   then reports commit:None
@@ -312,6 +335,7 @@ behaviour BEH-WRITE-5 "A write route is unreachable unless the server is bound t
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given host:Routable
   when runs command:KitUi
   then reports status:Forbidden
@@ -323,6 +347,7 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   in FEAT-WRITER
   actor engineer
   source defined
+  priority 5
   given origin:Hostile
   when runs command:KitUi
   then reports header:Absent

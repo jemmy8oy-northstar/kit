@@ -49,18 +49,21 @@
 
 behaviour BEH-TODAY-1 "Opening the app shows today's habits to track"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   then sees region:HabitList
 
 behaviour BEH-TODAY-2 "Each habit in today's list is shown as something to tick off"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   then sees checkbox:HabitItem
 
 behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   given habit:NotDone
   when opens page:Today
@@ -83,6 +86,7 @@ behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
 
 behaviour BEH-MEALS-1 "Veg with lunch and veg with dinner are two separate habits, not one"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   then sees checkbox:VegLunch
@@ -90,12 +94,14 @@ behaviour BEH-MEALS-1 "Veg with lunch and veg with dinner are two separate habit
 
 behaviour BEH-BREAKFAST-1 "Eating breakfast is tracked as a plain checkbox"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   then sees checkbox:AteBreakfast
 
 behaviour BEH-RUN-1 "Logging a run also ticks off the exercised habit"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   given habit:NotDone
   when opens page:Today
@@ -108,6 +114,7 @@ behaviour BEH-RUN-1 "Logging a run also ticks off the exercised habit"
 
 behaviour BEH-SLEEP-1 "Sleep is a logged quantity shown like an activity ring, not a checkbox"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   then sees region:SleepRing
@@ -115,6 +122,7 @@ behaviour BEH-SLEEP-1 "Sleep is a logged quantity shown like an activity ring, n
 
 behaviour BEH-SLEEP-2 "Sleep hours are entered for the day"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   when fills form:SleepHours with ?fields
@@ -122,12 +130,14 @@ behaviour BEH-SLEEP-2 "Sleep hours are entered for the day"
 
 behaviour BEH-SLEEP-3 "The sleep form takes a single hours value"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   provides form:SleepHours.fields = Hours
 
 behaviour BEH-DRINKS-1 "Drinks are entered as a count for the day, not a single tick"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   when fills form:DrinksCount with ?fields
@@ -135,6 +145,7 @@ behaviour BEH-DRINKS-1 "Drinks are entered as a count for the day, not a single 
 
 behaviour BEH-DRINKS-2 "The drinks form takes a single count value"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   provides form:DrinksCount.fields = Count
@@ -152,6 +163,7 @@ behaviour BEH-DRINKS-2 "The drinks form takes a single count value"
 
 behaviour BEH-HISTORY-1 "Past days are reachable from today and listed"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:Today
   when activates button:ViewHistory
@@ -160,6 +172,7 @@ behaviour BEH-HISTORY-1 "Past days are reachable from today and listed"
 
 behaviour BEH-HISTORY-2 "Opening a past day shows which habits were done that day"
   source defined docs/trials/habits-brief.md#opening-post
+  priority 5
   actor owner
   when opens page:History
   when activates row:PastDay
