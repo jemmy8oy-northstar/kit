@@ -260,7 +260,7 @@
   ],
   "BEH-BOARD-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts each behaviour in the column for where it stands" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts a denied inference on no column" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "puts a denied inference on no work column" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "names a corpus that will not parse, not drops it" }
   ],
   "BEH-BOARD-2": [
@@ -379,6 +379,13 @@
   ],
   "BEH-NAV-2": [
     { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "puts the links on their own scrolling line on a phone, and hides the tagline (BEH-NAV-2)" }
+  ],
+  "BEH-ACTIVITY-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Activity.test.tsx", "title": "links an id the project has to its page and leaves an unknown id as text (BEH-ACTIVITY-2)" }
+  ],
+  "BEH-BOARD-21": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps a denied card under Denied with his reason, and counts it nowhere else (BEH-BOARD-21)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "has no Denied card to show when nothing is denied, and the filter narrows it (BEH-BOARD-21)" }
   ],
   "BEH-BOARD-19": [
     { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "gives the board the whole window, and no column under 15rem on a wide screen (BEH-BOARD-19)" }
