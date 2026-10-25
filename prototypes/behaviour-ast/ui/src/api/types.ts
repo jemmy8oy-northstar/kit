@@ -497,6 +497,13 @@ export interface NotificationFeed {
   schedule?: AgentSchedule | null
 }
 
+/** `GET /api/push` (BEH-NOTIFY-3): can this Kit push to a phone, and the key a browser subscribes with. */
+export interface PushStatus {
+  configured: boolean
+  /** VAPID public key, base64url; null when push is not configured. */
+  publicKey: string | null
+}
+
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
 export interface AgentSchedule {
   suspended: boolean

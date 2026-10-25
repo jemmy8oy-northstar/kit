@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectSummary,
-  PendingView, ProposeResult, ReviewState, ScheduleList, SessionState, WriteResult,
+  PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -124,6 +124,21 @@ export function fetchActivity(): Promise<ActivityFeed> {
 /** The agent's messages, newest first, from the feed it appends to in its own repo (BEH-NOTIFY-1). */
 export function fetchNotifications(): Promise<NotificationFeed> {
   return get<NotificationFeed>('/api/notifications')
+}
+
+/** Can this Kit push to a phone, and with which key (BEH-NOTIFY-3). */
+export function fetchPush(): Promise<PushStatus> {
+  return get<PushStatus>('/api/push')
+}
+
+/** Hand the server this device's push subscription (BEH-NOTIFY-3); sending the same endpoint again is harmless. */
+export function subscribePush(subscription: PushSubscriptionJSON): Promise<PushStatus> {
+  return post<PushStatus>('/api/push/subscriptions', subscription)
+}
+
+/** Ask the server to stop pushing to this device (BEH-NOTIFY-3). A POST: Kit serves GET and POST only. */
+export function unsubscribePush(endpoint: string): Promise<PushStatus> {
+  return post<PushStatus>('/api/push/subscriptions/remove', { endpoint })
 }
 
 /**
