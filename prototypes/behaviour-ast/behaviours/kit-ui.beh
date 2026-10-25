@@ -1479,25 +1479,25 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   in FEAT-NAV
   source defined kit.notes.md#2026-10-25-1232
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitNav
   contract "can you take a look at the kit header on mobile it is really cluttered"
   contract my assumption: on a narrow screen the brand and the account sit on one line, the links sit on a single line under them that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
+  contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-25-1233
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
   contract "I think columns could be a bit wider on the board on desktop, they are quite cramped atm"
   contract my assumption: the board page alone drops the 72rem page width, so its columns share the whole window; every other page keeps it
-  contract my assumption: a column is never narrower than about 18rem; when the window cannot fit them all, the board scrolls sideways as it already does on a phone
+  contract my assumption: a column is never narrower than 15rem; when the window cannot fit them all, the board scrolls sideways as it already does on a phone
+  contract built 2026-10-25: at 1440px wide the seven columns went from 144px to 240px each
 
 behaviour BEH-BOARD-20 "Every card carries a score, and the agent scores each new one on its next wake"
   in FEAT-BOARD
