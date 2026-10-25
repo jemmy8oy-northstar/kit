@@ -290,3 +290,7 @@ not getting notifications on kit as a iphone web app
 ## 2026-10-25 12:33Z · new behaviour
 
 I think columns could be a bit wider on the board on desktop, they are quite cramped atm
+
+## 2026-10-25 12:34Z · new behaviour
+
+kit should also priority score new items, i think every item should be scored currently there are lots of unscored items
