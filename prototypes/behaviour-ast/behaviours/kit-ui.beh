@@ -1229,6 +1229,7 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
 behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-23-0707
+  review approved
   priority 4
   pending
   actor engineer
