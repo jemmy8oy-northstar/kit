@@ -1186,7 +1186,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
   priority 2
-  review approved
+  review unreviewed
   pending
   actor engineer
   when opens page:KitProjects
@@ -1194,7 +1194,9 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   contract his list: "no central spec in the kit repo; projects inferred from their GitHub"
   contract a project is a repo the App is installed on that carries a corpus, so Kit keeps no list of its own
   contract his answer (kit.notes.md#2026-10-23-0638): "Yes", and "can always change later if need be"
-  needs-context "Listing a user's repos needs the new public Kit App to exist, with Contents read-only, and its App ID and a private key added to the kit-github-connect secret as app-id and private-key (kit#433 adds the rest). Will you create it? If not by 2026-10-31, I build this against a stand-in GitHub so it switches on the day those keys arrive."
+  contract his denial, 2026-10-25 13:05Z: "I thought we were going to use the existing one and just make it public, I will make it public now". So there is no new App: Kit's existing App, now public, is the one users install, and Kit already holds its App ID and key, so this card needs no new keys and is mine to build
+  contract his question (kit.notes.md#2026-10-25-1309), "How far are we from other people being able to install the app?": anyone can install it now, but Kit can't use their install yet. Two steps of his: merge kit#433 and create the kit-github-connect secret from this same App's slug, client ID and a client secret, with the App's callback URL set to Kit's. Then a user he has made an account for can sign in and connect their GitHub (BEH-USERS-1, built). This card then shows them their repos. No agent works on their projects until BEH-USERS-9
+  contract my assumption: re-proposed with his correction folded in, so it shows as unreviewed rather than staying denied
 
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   in FEAT-USER-REPOS
@@ -1229,6 +1231,7 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
 behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-23-0707
+  review approved
   priority 4
   pending
   actor engineer
@@ -1259,6 +1262,7 @@ feature FEAT-USER-DATABASES "A database per user, in two tiers"
 behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev tier and a production tier"
   in FEAT-USER-DATABASES
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   priority 3
   pending
   actor engineer
@@ -1432,6 +1436,7 @@ behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an ap
 behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1359
+  review approved
   priority 2
   actor engineer
   when opens page:KitNotifications
@@ -1512,3 +1517,29 @@ behaviour BEH-BOARD-20 "Every card carries a score, and the agent scores each ne
   contract on 2026-10-25, 178 of 347 behaviours had no priority line; each now has one. A built card scores 5, because confirming what runs is the least urgent review (BEH-BOARD-10), and each unbuilt one was scored on its own
   contract my assumption: a card he writes comes in at 4, like a card the agent writes from a note (BEH-BOARD-12), and the agent re-scores it when it reads it
   contract my assumption: the agent counts unscored cards at every wake and scores them before picking work, so a card is unscored only until the agent's next wake; that check lives in claude-code-bot, so this card stays pending like BEH-NOTIFY-4
+
+# His notes of 2026-10-25 13:12-13:15Z. His 13:09Z question is answered on BEH-USERS-2.
+behaviour BEH-ACTIVITY-2 "An activity entry links to the item it is about"
+  in FEAT-ACTIVITY
+  source defined kit.notes.md#2026-10-25-1312
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitActivity
+  then sees heading:KitActivityTitle
+  contract "In activity i think you should be able to navigate to the referred to item"
+  contract my assumption: an entry that names a behaviour, feature or epic id (an approval, a note on a card, a pull request title carrying the id) links each id to that item's page in the entry's project; an entry naming none stays plain text
+  contract my assumption: an id that is not in the project any more is left as plain text rather than linking to a missing page
+
+behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Denied"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-25-1315
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardDone
+  contract "Do denied items get deleted i denied an item cus i thought it needed refuning and jow i cant find it"
+  contract nothing is deleted. A denial stays in the file as its review line with his reason, but the board has had no column for it, so the card vanished. The one he meant is BEH-USERS-2, now re-proposed with his correction
+  contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
+  contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
