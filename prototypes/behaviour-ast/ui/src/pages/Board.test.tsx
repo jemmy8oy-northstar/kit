@@ -151,13 +151,39 @@ describe('Board', () => {
     expect(column('Queue').queryByText('A-DONE')).not.toBeInTheDocument()
   })
 
-  it('puts a denied inference on no column', async () => {
+  it('puts a denied inference on no work column', async () => {
     mockApi()
     renderBoard()
     await loaded()
 
     await column('Done').findByText('A-DONE')
-    expect(screen.queryByText('A-DENIED')).not.toBeInTheDocument()
+    for (const name of ['Review requested', 'Proposed', 'Backlog', 'Queue', 'Blocked', 'In progress', 'Done']) {
+      expect(column(name).queryByText('A-DENIED')).not.toBeInTheDocument()
+    }
+  })
+
+  it('keeps a denied card under Denied with his reason, and counts it nowhere else (BEH-BOARD-21)', async () => {
+    mockApi()
+    renderBoard()
+    await loaded()
+
+    const denied = column('Denied')
+    expect(await denied.findByText('A-DENIED')).toBeInTheDocument()
+    expect(denied.getByTestId('denied-reason')).toHaveTextContent('no')
+    expect(denied.getByRole('link', { name: 'title of A-DENIED' })).toHaveAttribute('href', '/projects/alpha/behaviours/A-DENIED')
+    expect(within(screen.getByRole('region', { name: 'Denied' })).getByRole('heading', { level: 2 })).toHaveTextContent('Denied 1')
+    // Not work: the other columns' counts are what they were without it.
+    expect(within(screen.getByRole('region', { name: 'Done' })).getByRole('heading', { level: 2 })).toHaveTextContent('Done 2')
+    expect(within(screen.getByRole('region', { name: 'Proposed' })).getByRole('heading', { level: 2 })).toHaveTextContent('Proposed 1')
+  })
+
+  it('has no Denied card to show when nothing is denied, and the filter narrows it (BEH-BOARD-21)', async () => {
+    mockApi()
+    renderBoard('/board?project=beta')
+    await loaded()
+
+    await column('Done').findByText('B-DONE')
+    expect(column('Denied').queryByText('A-DENIED')).not.toBeInTheDocument()
   })
 
   it('links a card to its behaviour page and names its project', async () => {
@@ -282,7 +308,7 @@ describe('Board', () => {
     renderBoard()
     await loaded()
     const titles = screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))
-    expect(titles).toEqual(['board-review', 'board-proposed', 'board-backlog', 'board-queue', 'board-blocked', 'board-in-progress', 'board-done'])
+    expect(titles).toEqual(['board-review', 'board-proposed', 'board-backlog', 'board-queue', 'board-blocked', 'board-in-progress', 'board-done', 'board-denied'])
   })
 
   it('a schedule that cannot be read says so, and its pending behaviours stay on the board in the queue', async () => {

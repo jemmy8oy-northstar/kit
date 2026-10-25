@@ -1523,7 +1523,6 @@ behaviour BEH-ACTIVITY-2 "An activity entry links to the item it is about"
   in FEAT-ACTIVITY
   source defined kit.notes.md#2026-10-25-1312
   priority 3
-  pending
   actor engineer
   when opens page:KitActivity
   then sees heading:KitActivityTitle
@@ -1535,10 +1534,9 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-25-1315
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
-  then sees region:KitBoardDone
+  then sees region:KitBoardDenied
   contract "Do denied items get deleted i denied an item cus i thought it needed refuning and jow i cant find it"
   contract nothing is deleted. A denial stays in the file as its review line with his reason, but the board has had no column for it, so the card vanished. The one he meant is BEH-USERS-2, now re-proposed with his correction
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does

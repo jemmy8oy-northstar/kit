@@ -175,6 +175,10 @@
     "role": "region",
     "name": "Done"
   },
+  "region:KitBoardDenied": {
+    "role": "region",
+    "name": "Denied"
+  },
   "heading:KitBoardTitle": {
     "role": "heading",
     "name": "Board",

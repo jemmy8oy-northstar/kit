@@ -5,7 +5,15 @@ import type { Behaviour, ProjectSummary } from './api/types'
  * 2026-10-22 22:37Z note: "Lets ditch scheduled… Maybe we can have a queue column for ready to be
  * executed tasks"). In progress still reads the schedule (BEH-BOARD-3).
  */
-export type Column = 'review' | 'proposed' | 'backlog' | 'queue' | 'blocked' | 'in-progress' | 'done'
+export type Column = 'review' | 'proposed' | 'backlog' | 'queue' | 'blocked' | 'in-progress' | 'done' | 'denied'
+
+/**
+ * BEH-BOARD-21: a denied card is kept findable under Denied. It is deliberately not a result of
+ * {@link columnOf}, which stays null for it: Denied is a place to find a card, never work.
+ */
+export function isDenied(b: Behaviour): boolean {
+  return b.review.state === 'denied'
+}
 
 /** Where a pending behaviour sits on its file's schedule (BEH-SCHED-1/3), if it is on it at all. */
 export interface Place {
@@ -133,7 +141,7 @@ export function pausedLast<T extends { b: { paused?: boolean } }>(cards: T[]): T
  * agent's to build.
  */
 export function ownerOf(b: Behaviour, column: Column | null, rung: boolean): 'james' | 'agent' | null {
-  if (column === null || column === 'done') return null
+  if (column === null || column === 'done' || column === 'denied') return null
   if (rung) return 'agent'
   if (column === 'review' || column === 'proposed') return 'james'
   if (b.paused) return 'james'
