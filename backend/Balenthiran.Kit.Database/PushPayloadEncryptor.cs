@@ -6,9 +6,9 @@ namespace Balenthiran.Kit.Database;
 
 /// <summary>
 /// RFC 8291 payload encryption (<c>Content-Encoding: aes128gcm</c>) for one Web Push message, with
-/// the platform's own ECDH, HKDF and AES-GCM. The <c>WebPush</c> package (1.0.13) can only produce the
-/// older <c>aesgcm</c> draft, which Apple's push service for home-screen web apps does not take, so
-/// the package signs the VAPID token and this encrypts the body.
+/// the platform's own ECDH, HKDF and AES-GCM. Written here rather than taken from a package because
+/// the one considered (WebPush 1.0.13) can only produce the older <c>aesgcm</c> draft, which Apple's
+/// push service for home-screen web apps does not take. Pinned to RFC 8291 Appendix A in the tests.
 /// </summary>
 public sealed class PushPayloadEncryptor
 {
@@ -23,6 +23,17 @@ public sealed class PushPayloadEncryptor
     /// </summary>
     public byte[] Encrypt(string p256dh, string auth, byte[] plaintext)
     {
+        using var server = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+        return Encrypt(p256dh, auth, plaintext, server, RandomNumberGenerator.GetBytes(16));
+    }
+
+    /// <summary>
+    /// As above with the application server's key pair and the salt given, which RFC 8291 Appendix A
+    /// fixes so its example can be reproduced byte for byte. Production never calls this: reusing a
+    /// key or salt weakens the encryption.
+    /// </summary>
+    public byte[] Encrypt(string p256dh, string auth, byte[] plaintext, ECDiffieHellman server, byte[] salt)
+    {
         var uaPublic = FromBase64Url(p256dh);
         var authSecret = FromBase64Url(auth);
         if (uaPublic.Length != KeyIdLength || uaPublic[0] != 0x04)
@@ -35,7 +46,6 @@ public sealed class PushPayloadEncryptor
             Curve = ECCurve.NamedCurves.nistP256,
             Q = new ECPoint { X = uaPublic[1..33], Y = uaPublic[33..65] },
         });
-        using var server = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
         var q = server.ExportParameters(false).Q;
         var asPublic = new byte[] { 0x04 }.Concat(q.X!).Concat(q.Y!).ToArray();
 
@@ -43,7 +53,6 @@ public sealed class PushPayloadEncryptor
         var keyInfo = Concat(Encoding.ASCII.GetBytes("WebPush: info\0"), uaPublic, asPublic);
         var ikm = HKDF.DeriveKey(HashAlgorithmName.SHA256, shared, 32, authSecret, keyInfo);
 
-        var salt = RandomNumberGenerator.GetBytes(16);
         var cek = HKDF.DeriveKey(HashAlgorithmName.SHA256, ikm, 16, salt, Encoding.ASCII.GetBytes("Content-Encoding: aes128gcm\0"));
         var nonce = HKDF.DeriveKey(HashAlgorithmName.SHA256, ikm, 12, salt, Encoding.ASCII.GetBytes("Content-Encoding: nonce\0"));
 

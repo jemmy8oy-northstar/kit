@@ -8,16 +8,15 @@ using Balenthiran.Kit.Abstractions.Services;
 namespace Balenthiran.Kit.Database;
 
 /// <summary>
-/// <see cref="IPushSender"/> for the Web Push protocol (RFC 8030, VAPID RFC 8292). The <c>WebPush</c>
-/// package (web-push-csharp, pinned) signs the VAPID token; <see cref="PushPayloadEncryptor"/>
-/// encrypts the body as <c>aes128gcm</c> (RFC 8291), which the package cannot, and which Apple's push
-/// service for home-screen web apps requires. Apple's, Google's and Mozilla's services all answer alike.
+/// <see cref="IPushSender"/> for the Web Push protocol (RFC 8030). <see cref="VapidSigner"/> signs the
+/// VAPID token (RFC 8292) and <see cref="PushPayloadEncryptor"/> encrypts the body as <c>aes128gcm</c>
+/// (RFC 8291), which Apple's push service for home-screen web apps requires. No package is involved.
 /// </summary>
 public sealed class WebPushSender(HttpClient http, string subject, string publicKey, string privateKey) : IPushSender
 {
-    private static readonly TimeSpan TokenLife = TimeSpan.FromHours(12);
-
     private readonly PushPayloadEncryptor encryptor = new();
+
+    private readonly VapidSigner signer = new(subject, publicKey, privateKey);
 
     /// <summary>How long a push service keeps a message for a phone that is off, in seconds: a day, then it is stale news.</summary>
     public const int TimeToLive = 86400;
@@ -53,11 +52,7 @@ public sealed class WebPushSender(HttpClient http, string subject, string public
     private HttpRequestMessage Request(IPushSubscription subscription, string payload)
     {
         var uri = new Uri(subscription.Endpoint);
-        var expiry = DateTimeOffset.UtcNow.Add(TokenLife).ToUnixTimeSeconds();
-
-        // The package's header is `WebPush <jwt>`, the draft's scheme; RFC 8292 spells it `vapid t=<jwt>, k=<key>`.
-        var jwt = WebPush.VapidHelper.GetVapidHeaders($"{uri.Scheme}://{uri.Authority}", subject, publicKey, privateKey, expiry)["Authorization"];
-        jwt = jwt[(jwt.IndexOf(' ', StringComparison.Ordinal) + 1)..];
+        var jwt = signer.Token($"{uri.Scheme}://{uri.Authority}", DateTimeOffset.UtcNow);
 
         var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {

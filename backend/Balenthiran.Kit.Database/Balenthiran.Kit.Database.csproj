@@ -4,7 +4,6 @@
        of early-access accounts (BEH-USERS-1) in the database BEH-USERS-4 names. -->
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="10.0.0" />
-    <PackageReference Include="WebPush" Version="1.0.13" />
   </ItemGroup>
 
   <ItemGroup>

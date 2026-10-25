@@ -332,7 +332,7 @@ public class PushTests
     [InlineData(HttpStatusCode.InternalServerError, PushOutcome.Failed)]
     public async Task The_sender_signs_with_VAPID_encrypts_the_payload_and_reads_the_push_services_answer(HttpStatusCode answer, PushOutcome expected)
     {
-        var keys = WebPush.VapidHelper.GenerateVapidKeys();
+        var keys = NewVapidKeys();
         var handler = new Scripted(answer);
         var sender = new WebPushSender(new HttpClient(handler), KitSettings.DefaultPushSubject, keys.PublicKey, keys.PrivateKey);
         using var device = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
@@ -365,6 +365,58 @@ public class PushTests
         Assert.Equal("""{"body":"héllo 😀"}""", Decrypt(device, subscription.Auth, one));
         Assert.Equal(4096u, System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(one.AsSpan(16, 4)));
         Assert.Equal(65, one[20]);
+    }
+
+    /// <summary>RFC 8291 section 5 and Appendix A, fetched from the RFC: the published inputs must give the published body.</summary>
+    [Fact]
+    public void The_encryptor_reproduces_RFC_8291_Appendix_A_byte_for_byte()
+    {
+        var asPublic = FromBase64Url("BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8");
+        using var server = ECDiffieHellman.Create(new ECParameters
+        {
+            Curve = ECCurve.NamedCurves.nistP256,
+            D = FromBase64Url("yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw"),
+            Q = new ECPoint { X = asPublic[1..33], Y = asPublic[33..65] },
+        });
+
+        var body = new PushPayloadEncryptor().Encrypt(
+            "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+            "BTBZMqHH6r4Tts7J_aSIgg",
+            System.Text.Encoding.ASCII.GetBytes("When I grow up, I want to be a watermelon"),
+            server,
+            FromBase64Url("DGv6ra1nlYgDCS1FRnbzlw"));
+
+        Assert.Equal(
+            "DGv6ra1nlYgDCS1FRnbzlwAAEABBBP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27ml"
+            + "mlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A_yl95bQpu6cVPT"
+            + "pK4Mqgkf1CXztLVBSt2Ks3oZwbuwXPXLWyouBWLVWGNWQexSgSxsj_Qulcy4a-fN",
+            Base64Url(body));
+    }
+
+    [Fact]
+    public void The_VAPID_token_is_an_ES256_JWT_with_audience_expiry_and_subject_signed_by_the_key_pair()
+    {
+        var keys = NewVapidKeys();
+        var now = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+
+        var token = new VapidSigner("mailto:kit@balenthiran.co.uk", keys.PublicKey, keys.PrivateKey).Token("https://push.example", now);
+
+        var parts = token.Split('.');
+        Assert.Equal(3, parts.Length);
+        Assert.Equal("""{"typ":"JWT","alg":"ES256"}""", System.Text.Encoding.UTF8.GetString(FromBase64Url(parts[0])));
+        var claims = JsonDocument.Parse(FromBase64Url(parts[1])).RootElement;
+        Assert.Equal("https://push.example", claims.GetProperty("aud").GetString());
+        Assert.Equal(now.AddHours(12).ToUnixTimeSeconds(), claims.GetProperty("exp").GetInt64());
+        Assert.Equal("mailto:kit@balenthiran.co.uk", claims.GetProperty("sub").GetString());
+
+        // Verified with the public key alone, as the push service does; r||s, 64 bytes, not DER.
+        var point = FromBase64Url(keys.PublicKey);
+        using var verifier = ECDsa.Create(new ECParameters { Curve = ECCurve.NamedCurves.nistP256, Q = new ECPoint { X = point[1..33], Y = point[33..65] } });
+        var signature = FromBase64Url(parts[2]);
+        Assert.Equal(64, signature.Length);
+        var signed = System.Text.Encoding.ASCII.GetBytes(parts[0] + "." + parts[1]);
+        Assert.True(verifier.VerifyData(signed, signature, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+        Assert.False(verifier.VerifyData(System.Text.Encoding.ASCII.GetBytes(parts[0] + "." + parts[1] + "x"), signature, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
     }
 
     [Fact]
@@ -401,6 +453,15 @@ public class PushTests
     }
 
     private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    /// <summary>A fresh VAPID pair in the form the secret holds: the private scalar and the uncompressed public point, base64url.</summary>
+    private static (string PublicKey, string PrivateKey) NewVapidKeys()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var p = key.ExportParameters(true);
+        var point = new byte[] { 0x04 }.Concat(p.Q.X!).Concat(p.Q.Y!).ToArray();
+        return (Base64Url(point), Base64Url(p.D!));
+    }
 
     private static byte[] FromBase64Url(string value)
     {

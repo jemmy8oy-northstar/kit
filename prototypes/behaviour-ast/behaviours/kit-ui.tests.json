@@ -342,7 +342,9 @@
     { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Settings_never_print_the_private_key_and_refuse_half_a_pair" },
     { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_first_tick_pushes_nothing_and_a_new_entry_is_pushed_exactly_once_across_ticks" },
     { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "A_subscription_the_push_service_calls_gone_is_deleted_and_other_failures_stop_nobody" },
-    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Push_routes_are_for_a_signed_in_session_only" }
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Push_routes_are_for_a_signed_in_session_only" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_encryptor_reproduces_RFC_8291_Appendix_A_byte_for_byte" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_VAPID_token_is_an_ES256_JWT_with_audience_expiry_and_subject_signed_by_the_key_pair" }
   ],
   "BEH-NOTIFY-5": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says when the agent next wakes, and that his next action wakes it sooner (BEH-NOTIFY-5)" },
