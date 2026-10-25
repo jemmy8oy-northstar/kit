@@ -26,6 +26,7 @@
 
 behaviour BEH-TODAY-1 "The day's habits are listed in order so the whole day can be logged from one screen"
   source defined docs/DESIGN.md#mvp-3
+  priority 5
   actor owner
   when opens page:Today
   then sees region:HabitList
@@ -33,6 +34,7 @@ behaviour BEH-TODAY-1 "The day's habits are listed in order so the whole day can
 
 behaviour BEH-TODAY-2 "A checkbox habit is ticked inline"
   source defined docs/DESIGN.md#mvp-3
+  priority 5
   actor owner
   given habit:BooleanSeeded
   when opens page:Today
@@ -41,6 +43,7 @@ behaviour BEH-TODAY-2 "A checkbox habit is ticked inline"
 
 behaviour BEH-TODAY-3 "A numeric habit takes a value in a number field"
   source defined docs/DESIGN.md#mvp-3
+  priority 5
   actor owner
   given habit:NumericSeeded
   when opens page:Today
@@ -49,6 +52,7 @@ behaviour BEH-TODAY-3 "A numeric habit takes a value in a number field"
 
 behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and back-filled"
   source defined docs/DESIGN.md#A2
+  priority 5
   actor owner
   when opens page:Today
   when activates control:DateStepperBack
@@ -56,6 +60,7 @@ behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and ba
 
 behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
   source defined docs/DESIGN.md#mvp-4
+  priority 5
   actor owner
   when opens page:Manage
   then sees button:AddHabit
@@ -63,6 +68,7 @@ behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
 
 behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current and longest streak"
   source defined docs/DESIGN.md#mvp-5
+  priority 5
   actor owner
   when opens page:History
   then sees region:CompletionGrid
@@ -75,6 +81,7 @@ behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current 
 # missed. Something else must own this — today, nothing does.
 behaviour BEH-LOOP-1 "The full day is loggable from one screen in under ~20 seconds"
   source defined docs/DESIGN.md#product-shape
+  priority 5
   actor owner
   contract the whole day is loggable from one screen in under ~20 seconds
 
@@ -82,6 +89,7 @@ behaviour BEH-LOOP-1 "The full day is loggable from one screen in under ~20 seco
 # in the repo names it. Recorded so that absence is visible rather than implied.
 behaviour BEH-DATE-1 "The client's local calendar day is stored verbatim as YYYY-MM-DD"
   source defined docs/DESIGN.md#A7
+  priority 5
   actor owner
   contract the server stores the client-supplied YYYY-MM-DD date without timezone conversion
 
@@ -105,6 +113,7 @@ behaviour BEH-SEED-1 "First run is not empty — a starter set of habits is seed
 
 behaviour BEH-ORDER-1 "A newly created habit is appended to the end of the display order"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:Create_appends_to_the_end_of_the_order
+  priority 5
   review approved
   serves BEH-TODAY-1
   actor owner
@@ -183,6 +192,7 @@ behaviour BEH-ENTRY-1 "Logging the same habit twice on one day overwrites rather
 # catches that: the backend test calls the handler, not the query string.
 behaviour BEH-HISTORY-2 "The history window length is requested by the caller, defaulting to 30"
   source defined docs/DESIGN.md#architecture-api
+  priority 5
   actor owner
   contract GET /api/habits/{id}/history takes a window-length parameter defaulting to 30
 
@@ -233,6 +243,7 @@ behaviour BEH-ERROR-1 "An unknown habit is a 404 carrying a machine-readable err
 
 behaviour BEH-COMPLETE-1 "Completion is defined per habit type"
   source defined docs/DESIGN.md#A3
+  priority 5
   actor owner
   provides field:HabitValue.value = 1
   contract boolean habits complete when ticked
@@ -261,11 +272,13 @@ behaviour BEH-COMPLETE-1 "Completion is defined per habit type"
 
 behaviour BEH-WINDOW-MVP "The history window is 30 days"
   source defined docs/DESIGN.md#mvp-5
+  priority 5
   actor owner
   provides region:CompletionGrid.days = 30
 
 behaviour BEH-WINDOW-API "The history window is whatever the caller asks for"
   source defined docs/DESIGN.md#architecture-api
+  priority 5
   actor owner
   provides region:CompletionGrid.days = caller-supplied
   cites BEH-HISTORY-3

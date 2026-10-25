@@ -35,6 +35,7 @@
 
 behaviour BEH-MM-LOAD-1 "The homepage renders its three sections"
   source defined docs/user-stories-frontend.md#story-1
+  priority 5
   actor visitor
   when opens page:MacroHome
   then sees heading:PresetRatios
@@ -47,6 +48,7 @@ behaviour BEH-MM-LOAD-1 "The homepage renders its three sections"
 # it, so the refusal reports the divergence instead of the corpus absorbing it.
 behaviour BEH-MM-NAV-1 "The sticky mini-nav offers the three section anchors"
   source defined docs/user-stories-frontend.md#story-1
+  priority 5
   actor visitor
   when opens page:MacroHome
   then sees link:Presets
@@ -57,12 +59,14 @@ behaviour BEH-MM-NAV-1 "The sticky mini-nav offers the three section anchors"
 
 behaviour BEH-MM-PICK-0 "With nothing chosen, the compare section says what to do"
   source defined docs/user-stories-frontend.md#story-4
+  priority 5
   actor visitor
   when opens page:MacroHome
   then shows region:Compare "Select two metrics above to see a custom comparison"
 
 behaviour BEH-MM-PICK-1 "Choosing only a numerator asks for the denominator"
   source defined docs/user-stories-frontend.md#story-4
+  priority 5
   actor visitor
   when opens page:MacroHome
   when activates combobox:Numerator
@@ -71,6 +75,7 @@ behaviour BEH-MM-PICK-1 "Choosing only a numerator asks for the denominator"
 
 behaviour BEH-MM-PICK-2 "Choosing both metrics renders the comparison chart"
   source defined docs/user-stories-frontend.md#story-4
+  priority 5
   actor visitor
   when opens page:MacroHome
   when activates combobox:Numerator
@@ -82,6 +87,7 @@ behaviour BEH-MM-PICK-2 "Choosing both metrics renders the comparison chart"
 
 behaviour BEH-MM-SWAP-1 "The swap control is offered next to the two pickers"
   source defined docs/user-stories-frontend.md#story-4
+  priority 5
   actor visitor
   when opens page:MacroHome
   then sees combobox:Numerator
@@ -94,6 +100,7 @@ behaviour BEH-MM-SWAP-1 "The swap control is offered next to the two pickers"
 # checking, and the gap is the finding, so it is written rather than left implicit.
 behaviour BEH-MM-METRICS-1 "Eleven metrics are comparable"
   source defined docs/user-stories-frontend.md#story-4
+  priority 5
   actor visitor
   provides combobox:Numerator.options = UK House Prices, US House Prices, UK Wages, US Wages, UK CPI, US CPI, Gold, Oil, FTSE 100, S&P 500, Bitcoin
 
@@ -101,6 +108,7 @@ behaviour BEH-MM-METRICS-1 "Eleven metrics are comparable"
 
 behaviour BEH-MM-ERR-1 "A failed comparison fetch says so and offers a retry"
   source defined docs/user-stories-frontend.md#story-5
+  priority 5
   actor visitor
   given ratio:Errored
   when opens page:MacroHome
@@ -112,6 +120,7 @@ behaviour BEH-MM-ERR-1 "A failed comparison fetch says so and offers a retry"
 
 behaviour BEH-MM-IND-ERR-1 "A failed indicator card says it is unavailable"
   source defined docs/user-stories-frontend.md#story-6
+  priority 5
   actor visitor
   given ratio:Errored
   when opens page:MacroHome
@@ -122,6 +131,7 @@ behaviour BEH-MM-IND-ERR-1 "A failed indicator card says it is unavailable"
 # The instance is written; the universal is recorded in the ledger as inexpressible.
 behaviour BEH-MM-ISOLATION-1 "One card's error leaves the others readable"
   source defined docs/user-stories-frontend.md#story-7
+  priority 5
   actor visitor
   given ratio:OneErrored
   when opens page:MacroHome
