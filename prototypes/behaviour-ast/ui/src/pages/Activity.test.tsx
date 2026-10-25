@@ -45,6 +45,40 @@ describe('Activity', () => {
     expect(within(gaps).getByText(/has no history here/)).toBeInTheDocument()
   })
 
+  it('links an id the project has to its page and leaves an unknown id as text (BEH-ACTIVITY-2)', async () => {
+    const fetch = vi.fn(async (path: string) => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () =>
+        path.endsWith('/api/projects/kit')
+          ? { app: 'kit', behaviours: [{ id: 'BEH-USERS-2' }], features: [{ id: 'FEAT-BOARD' }], epics: [] }
+          : {
+              entries: [
+                { commit: 'aaaaaaa', at: '2026-10-03T09:00:00Z', app: 'kit', summary: 'approve BEH-USERS-2 under FEAT-BOARD, not BEH-GONE-9' },
+                { commit: 'bbbbbbb', at: '2026-10-02T09:00:00Z', app: 'kit', summary: 'edit BEH-USERS-2 again' },
+              ],
+              noHistory: [],
+            },
+    }))
+    vi.stubGlobal('fetch', fetch)
+    render(
+      <MemoryRouter>
+        <Activity />
+      </MemoryRouter>,
+    )
+
+    const items = within(await screen.findByRole('list', { name: 'Recent activity' })).getAllByRole('listitem')
+    const first = await within(items[0]).findByRole('link', { name: 'BEH-USERS-2' })
+    expect(first).toHaveAttribute('href', '/projects/kit/behaviours/BEH-USERS-2')
+    expect(within(items[0]).getByRole('link', { name: 'FEAT-BOARD' })).toHaveAttribute('href', '/projects/kit/features/FEAT-BOARD')
+    expect(within(items[0]).queryByRole('link', { name: 'BEH-GONE-9' })).not.toBeInTheDocument()
+    expect(items[0]).toHaveTextContent('not BEH-GONE-9')
+    expect(await within(items[1]).findByRole('link', { name: 'BEH-USERS-2' })).toBeInTheDocument()
+    // One project fetch for the project, however many entries name it.
+    expect(fetch.mock.calls.filter(([p]) => String(p).endsWith('/api/projects/kit'))).toHaveLength(1)
+  })
+
   it('says so when nothing has changed', async () => {
     mockApi({ entries: [], noHistory: [] })
     render(

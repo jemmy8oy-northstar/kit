@@ -10,7 +10,7 @@ import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isIdea, isQuestion, isRung, isTrial, LAYERS, ownerOf, pausedLast, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column, type Place } from '../board'
+import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isDenied, isIdea, isQuestion, isRung, isTrial, LAYERS, ownerOf, pausedLast, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column, type Place } from '../board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
 interface Entry {
@@ -103,6 +103,8 @@ const COLUMNS: { id: Column; title: string }[] = [
   { id: 'blocked', title: 'Blocked' },
   { id: 'in-progress', title: 'In progress' },
   { id: 'done', title: 'Done' },
+  // BEH-BOARD-21: nothing is deleted by a denial, so the card stays findable here.
+  { id: 'denied', title: 'Denied' },
 ]
 
 /** The board (kit#237): what the corpora say about where every behaviour stands. */
@@ -249,7 +251,11 @@ export default function Board() {
                   // priority (BEH-BOARD-12); in progress in corpus order.
                   let cards = shown.flatMap((e) =>
                     e.behaviours
-                      .filter((b) => columnOf(b, e.places.get(b.id)) === col.id && (layers.length === 0 || layers.includes(b.layer)))
+                      .filter(
+                        (b) =>
+                          (col.id === 'denied' ? isDenied(b) : columnOf(b, e.places.get(b.id)) === col.id) &&
+                          (layers.length === 0 || layers.includes(b.layer)),
+                      )
                       .map((b) => {
                         const rung = isRung(b, e.bells)
                         return {
@@ -262,7 +268,9 @@ export default function Board() {
                         }
                       }),
                   )
-                  if (col.id === 'done') cards.sort((x, y) => byCompletion(x.at, y.at))
+                  // Denied: the API gives no denial time, so it takes the order of `added` (when the card was
+                  // added, newest first, as Done reads completion); a denied card has no better date.
+                  if (col.id === 'done' || col.id === 'denied') cards.sort((x, y) => byCompletion(x.at, y.at))
                   // Rung cards above every priority (BEH-BELL-3), until the agent answers the bell; then the
                   // agent's questions above requests that only want a look (BEH-BOARD-11).
                   if (RANKED.includes(col.id)) cards = rungFirst(questionsFirst(pausedLast(byPriorityAcrossProjects(cards))))
@@ -308,6 +316,10 @@ export default function Board() {
                               {b.review.state === 'requested' && (
                                 // What the agent wants looked at, so the card can be triaged unopened.
                                 <p>{b.review.note}</p>
+                              )}
+                              {col.id === 'denied' && (
+                                // BEH-BOARD-21: his reason, shown on the card so it can be found and revised.
+                                <p data-testid="denied-reason">{b.review.note}</p>
                               )}
                               {b.needsContext && (
                                 // BEH-BOARD-17: what he must add, shown not hovered: he reads the board on a phone.
