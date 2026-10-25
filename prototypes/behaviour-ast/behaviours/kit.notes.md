@@ -259,3 +259,38 @@ I think we skills add it with the sign up feature. So it’s ready for first sig
 ## 2026-10-23 07:07Z · new behaviour
 
 I think for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs
+
+## 2026-10-24 13:59Z
+
+User can save web app to Home Screen and kit can serve notifications
+
+## 2026-10-24 14:00Z
+
+Notification feed on kit for items such as updates wakes sleeps etc
+Ay be we refine this experience later but this seems right
+
+## 2026-10-24 14:00Z
+
+Ai wakes after 5 minutes of inactivity on kit (starting from last action)
+
+This means kit will wake quickly after changes and act on them
+
+## 2026-10-24 22:50Z
+
+Some indicator of when kit will next wake
+
+## 2026-10-25 12:32Z · new behaviour
+
+can you take a look at the kit header on mobile it is really cluttered
+
+## 2026-10-25 12:32Z · new behaviour
+
+not getting notifications on kit as a iphone web app
+
+## 2026-10-25 12:33Z · new behaviour
+
+I think columns could be a bit wider on the board on desktop, they are quite cramped atm
+
+## 2026-10-25 12:34Z · new behaviour
+
+kit should also priority score new items, i think every item should be scored currently there are lots of unscored items

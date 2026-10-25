@@ -48,6 +48,7 @@
 
 behaviour BEH-SETUP-1 "James opens habit setup to add something new to track"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:ManageHabits
   when activates button:AddHabit
@@ -56,6 +57,7 @@ behaviour BEH-SETUP-1 "James opens habit setup to add something new to track"
 
 behaviour BEH-SETUP-2 "Saving a new habit adds it to today's list"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:NewHabit
   when fills form:NewHabit with ?fields
@@ -65,6 +67,7 @@ behaviour BEH-SETUP-2 "Saving a new habit adds it to today's list"
 
 behaviour BEH-SETUP-3 "A new habit needs nothing more than a name to be saved"
   source defined docs/trials/habits-brief.md#issue-1-comment-jemmy8oy-2026-07-05t120531z
+  priority 5
   actor owner
   when opens page:NewHabit
   provides form:NewHabit.fields = HabitName
@@ -74,12 +77,14 @@ behaviour BEH-SETUP-3 "A new habit needs nothing more than a name to be saved"
 
 behaviour BEH-TODAY-1 "Today's page lists everything currently being tracked"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:Today
   then sees region:HabitList
 
 behaviour BEH-TODAY-2 "Before any habit is added, today's page says there is nothing to track yet"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   given habits:None
   when opens page:Today
@@ -87,6 +92,7 @@ behaviour BEH-TODAY-2 "Before any habit is added, today's page says there is not
 
 behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   given habit:Pending
   when opens page:Today
@@ -96,6 +102,7 @@ behaviour BEH-TODAY-3 "Ticking a habit marks it done for today"
 
 behaviour BEH-TODAY-4 "A habit ticked off earlier today still shows as done when the page is reopened"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   given habit:LoggedToday
   when opens page:Today
@@ -103,6 +110,7 @@ behaviour BEH-TODAY-4 "A habit ticked off earlier today still shows as done when
 
 behaviour BEH-TODAY-5 "Habits like sleeping hours or drinks drunk are logged as a number, not a tick"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:Today
   when fills form:LogValue with ?fields
@@ -111,6 +119,7 @@ behaviour BEH-TODAY-5 "Habits like sleeping hours or drinks drunk are logged as 
 
 behaviour BEH-TODAY-6 "Each row in today's list shows the habit's own name"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:Today
   then sees field:HabitName
@@ -120,6 +129,7 @@ behaviour BEH-TODAY-6 "Each row in today's list shows the habit's own name"
 
 behaviour BEH-DERIVE-1 "Logging a run also marks Exercised as done, without ticking it directly"
   source defined docs/trials/habits-brief.md#issue-1-app-idea-opening-post-jemmy8oy-2026-07-05
+  priority 5
   actor owner
   when opens page:Today
   when activates checkbox:Ran

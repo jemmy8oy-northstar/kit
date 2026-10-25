@@ -95,6 +95,7 @@ feature FEAT-SCHEDULE "Schedule"
 
 behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
   in FEAT-PROJECTS
+  priority 5
   actor engineer
   when opens page:KitProjects
   then sees heading:KitProjectsTitle
@@ -112,6 +113,7 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
 behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart from its backlog"
   in FEAT-SCHEDULE
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees region:KitSchedule
@@ -123,6 +125,7 @@ behaviour BEH-SCHED-1 "A project lists its scheduled behaviours in order, apart 
 behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule reordered"
   in FEAT-SCHEDULE
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when activates button:KitScheduleBehaviour
@@ -134,6 +137,7 @@ behaviour BEH-SCHED-2 "A backlog behaviour can be scheduled, and the schedule re
 behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
   in FEAT-SCHEDULE
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees region:KitSchedule
@@ -142,6 +146,7 @@ behaviour BEH-SCHED-3 "The next behaviour to build is the top of the schedule"
 
 behaviour BEH-SHEET-1 "A project shows the question sheet Kit built for it"
   in FEAT-PROJECT
+  priority 5
   actor engineer
   provides page:KitProject.app = james-habits-app
   when opens page:KitProject
@@ -189,6 +194,7 @@ behaviour BEH-SHEET-3 "He can answer what Kit is asking, under the question"
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
+  priority 5
   actor engineer
   provides page:KitBehaviour.app = james-habits-app
   provides page:KitBehaviour.id = BEH-SEED-1
@@ -200,6 +206,7 @@ behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one 
 
 behaviour BEH-ADJ-1 "An inference can be adjudicated from the browser"
   in FEAT-BEHAVIOUR
+  priority 5
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAdjudication
@@ -211,6 +218,7 @@ behaviour BEH-ADJ-1 "An inference can be adjudicated from the browser"
 
 behaviour BEH-ADJ-2 "Denying an inference asks for the correction it must carry"
   in FEAT-BEHAVIOUR
+  priority 5
   actor engineer
   when opens page:KitBehaviour
   then sees button:KitDeny
@@ -221,6 +229,7 @@ behaviour BEH-ADJ-2 "Denying an inference asks for the correction it must carry"
 
 behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
   in FEAT-BEHAVIOUR
+  priority 5
   actor engineer
   when opens page:KitBehaviour
   then sees heading:KitAddAStep
@@ -250,6 +259,7 @@ behaviour BEH-GATE-H2 "Every box that writes a note says it will be public, befo
 behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when fills field:KitNote with "the habit list should remember the order I dragged it into"
@@ -262,6 +272,7 @@ behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviou
 behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitBehaviour
   when fills field:KitNote with "this should also cover the empty list"
@@ -272,6 +283,7 @@ behaviour BEH-NOTE-2 "A note left on a behaviour names that behaviour"
 behaviour BEH-NOTE-3 "A note is removed in the change that folds it into the spec"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
@@ -294,6 +306,7 @@ behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
   in FEAT-NOTES
   in FEAT-PROJECT
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when fills field:KitDescribeBehaviour with "dragging a habit reorders the list and it stays that way"
@@ -306,6 +319,7 @@ behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
 behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with questions"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees region:KitNeedsAnswer
@@ -318,6 +332,7 @@ behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with 
 behaviour BEH-NOTE-6 "A note's questions are answered in free text"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when fills field:KitReply with "only on the today view, the history keeps date order"
@@ -329,6 +344,7 @@ behaviour BEH-NOTE-6 "A note's questions are answered in free text"
 behaviour BEH-NOTE-7 "A note can be dismissed"
   in FEAT-NOTES
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when activates button:KitDismiss
@@ -341,6 +357,7 @@ behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
   in FEAT-NOTES
   in FEAT-PROJECT
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   when fills field:KitResolution with "BEH-CUT-2 wins; a cut is always downloadable"
@@ -354,6 +371,7 @@ behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
   in FEAT-BEHAVIOUR
   in FEAT-BOARD
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   contract every card leads with the title; the id follows in muted type, still there to search and link by
@@ -371,6 +389,7 @@ behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
 behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects"
   in FEAT-NAV
   source defined kit#237
+  priority 5
   actor engineer
   when opens page:KitProjects
   then sees region:KitNav
@@ -381,6 +400,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
   in FEAT-BOARD
   source defined kit#237
+  priority 5
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardProposed
@@ -394,6 +414,7 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
 behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filtered to projects"
   in FEAT-BOARD
   source defined kit#237
+  priority 5
   actor engineer
   when opens page:KitBoard
   when activates button:KitBoardShowTrials
@@ -405,6 +426,7 @@ behaviour BEH-BOARD-3 "An in-progress column sits before done"
   in FEAT-BOARD
   in FEAT-SCHEDULE
   source defined kit#237
+  priority 5
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardInProgress
@@ -415,6 +437,7 @@ behaviour BEH-BOARD-3 "An in-progress column sits before done"
 behaviour BEH-BOARD-4 "Done is ordered most recently completed first"
   in FEAT-BOARD
   source defined kit#237
+  priority 5
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardDone
@@ -437,6 +460,7 @@ behaviour BEH-BOARD-5 "Proposed and backlog put the top priority at the top"
 behaviour BEH-BOARD-6 "Review requested comes first: built work the agent wants looked at, top priority at the top"
   in FEAT-BOARD
   source defined kit#284
+  priority 5
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardReview
@@ -473,6 +497,7 @@ behaviour BEH-PRIN-1 "Principles have their own page in the navbar: global ones 
 behaviour BEH-BOARD-7 "A long column shows its top ten, and more on request"
   in FEAT-BOARD
   source defined kit#284
+  priority 5
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -491,6 +516,7 @@ behaviour BEH-BOARD-7 "A long column shows its top ten, and more on request"
 behaviour BEH-FEAT-1 "A project shows its top-level features, then its untagged behaviours"
   in FEAT-PROJECT
   source defined kit#237
+  priority 5
   actor engineer
   provides page:KitProject.app = kit-ui
   when opens page:KitProject
@@ -502,6 +528,7 @@ behaviour BEH-FEAT-1 "A project shows its top-level features, then its untagged 
 behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and every parent as a tag"
   in FEAT-FEATURE
   source defined kit#237
+  priority 5
   actor engineer
   provides page:KitFeature.app = kit-ui
   provides page:KitFeature.id = FEAT-NOTES
@@ -514,6 +541,7 @@ behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and ev
 behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
   in FEAT-FEATURE
   source defined kit#237
+  priority 5
   actor engineer
   provides page:KitFeature.app = kit-ui
   provides page:KitFeature.id = FEAT-NOTES
@@ -525,6 +553,7 @@ behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
 behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
   in FEAT-PROJECTS
   source defined kit#246
+  priority 5
   actor engineer
   when opens page:KitProjects
   then sees region:KitProjectList
@@ -534,6 +563,7 @@ behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
 behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
   in FEAT-PROJECT
   source defined kit#246
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees region:KitProjectFeatures
@@ -545,6 +575,7 @@ behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn
 behaviour BEH-FEAT-6 "A project's features and questions are two tabs, features first"
   in FEAT-PROJECT
   source defined kit#118
+  priority 5
   actor engineer
   when opens page:KitProject
   then sees tab:KitProjectFeaturesTab
@@ -1125,6 +1156,7 @@ feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
 behaviour BEH-USERS-1 "An early-access user signs in with a username and password James made, then connects their GitHub"
   in FEAT-USER-SIGNUP
   source inferred kit.notes.md#2026-10-19-1721
+  priority 5
   review approved
   actor engineer
   when opens page:KitProjects
@@ -1153,6 +1185,7 @@ feature FEAT-USER-REPOS "A user's projects live in their own repos"
 behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
+  priority 2
   review approved
   pending
   actor engineer
@@ -1166,6 +1199,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
+  priority 3
   review approved
   pending
   actor engineer
@@ -1182,6 +1216,7 @@ feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
 behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and remembers per user"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-19-1721
+  priority 3
   review approved
   pending
   actor engineer
@@ -1194,6 +1229,7 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
 behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-23-0707
+  priority 4
   pending
   actor engineer
   when opens page:KitProjects
@@ -1209,6 +1245,7 @@ feature FEAT-USER-SECRETS "Production secrets per user"
 behaviour BEH-USERS-5 "A user's production secrets are stored for them, and never shown back in a page or a log"
   in FEAT-USER-SECRETS
   source inferred kit.notes.md#2026-10-19-1721
+  priority 3
   pending
   actor engineer
   when opens page:KitProjects
@@ -1222,6 +1259,7 @@ feature FEAT-USER-DATABASES "A database per user, in two tiers"
 behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev tier and a production tier"
   in FEAT-USER-DATABASES
   source inferred kit.notes.md#2026-10-19-1721
+  priority 3
   pending
   actor engineer
   when opens page:KitProjects
@@ -1235,6 +1273,7 @@ feature FEAT-USER-BILLING "Usage, cost and payment"
 behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pays for them"
   in FEAT-USER-BILLING
   source inferred kit.notes.md#2026-10-19-1721
+  priority 4
   review approved
   pending
   actor engineer
@@ -1251,6 +1290,7 @@ feature FEAT-USER-ISOLATION "One user never reaches another's work"
 behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, whatever the URL"
   in FEAT-USER-ISOLATION
   source inferred kit.notes.md#2026-10-19-1721
+  priority 5
   review approved
   actor engineer
   when opens page:KitProjects
@@ -1283,6 +1323,7 @@ behaviour BEH-BELL-1 "Ringing an item's bell asks the AI to look at it again"
 behaviour BEH-BELL-2 "A rung item is either reprioritised or answered with why not"
   in FEAT-BELL
   source inferred kit.notes.md#2026-10-19-1933
+  priority 5
   review approved
   actor engineer
   when opens page:KitBehaviour
@@ -1310,6 +1351,7 @@ feature FEAT-COMMENTS "Comments under an item"
 behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry their own comments"
   in FEAT-COMMENTS
   source inferred kit.notes.md#2026-10-19-1933
+  priority 5
   review approved
   actor engineer
   when opens page:KitBehaviour
@@ -1321,6 +1363,7 @@ behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry the
 behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
   source inferred kit.notes.md#2026-10-19-1933
+  priority 5
   review approved
   actor engineer
   when opens page:KitProjects
@@ -1359,6 +1402,7 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
   in FEAT-NOTIFICATIONS
   in FEAT-NAV
   source defined kit.notes.md#2026-10-24-1400
+  priority 5
   actor engineer
   when opens page:KitNotifications
   then sees heading:KitNotificationsTitle
@@ -1376,6 +1420,7 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
 behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1359
+  priority 5
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1387,6 +1432,7 @@ behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an ap
 behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1359
+  priority 2
   pending
   actor engineer
   when opens page:KitNotifications
@@ -1394,11 +1440,13 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract "kit can serve notifications"
   contract my assumption: web push from the home-screen app (BEH-NOTIFY-2), which iOS allows only once Kit is saved to the home screen; he turns it on from the notifications page
   contract my assumption: Kit pushes each new feed entry once, within a poll of the feed, and keeps the phone's push subscription in its database
+  contract "not getting notifications on kit as a iphone web app" (kit.notes.md#2026-10-25-1232): right, because nothing pushes yet. This card is the missing piece, so it moves to priority 2 and I build it now, against a stand-in key, instead of on 2026-11-07
   needs-context "Web push needs a VAPID key pair in a new kit-push secret (keys public-key and private-key; I'll give the one-line command). Will you create it? If not by 2026-11-07, I build it against a stand-in so it switches on when the secret appears."
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1400
+  priority 4
   pending
   actor engineer
   when opens page:KitProjects
@@ -1414,6 +1462,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
 behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-2250
+  priority 5
   actor engineer
   when opens page:KitNotifications
   then sees region:KitNextWake
@@ -1423,3 +1472,42 @@ behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
   contract a pause he set himself says so, and that Kit actions do not cut it short, because the scheduler never overrides his own pause
   contract my assumption: the agent's own reason for sleeping is shown under it, as plain text
   contract a schedule Kit cannot read says why, and is never shown as an agent that is awake
+
+# His notes of 2026-10-25 12:32-12:34Z, left from his phone while using the board.
+# The iPhone push note is answered on BEH-NOTIFY-3; the other three are below.
+behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a row that scrolls"
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-25-1232
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  contract "can you take a look at the kit header on mobile it is really cluttered"
+  contract my assumption: on a narrow screen the brand and the account sit on one line, the links sit on a single line under them that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
+  contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
+  contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
+
+behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-25-1233
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract "I think columns could be a bit wider on the board on desktop, they are quite cramped atm"
+  contract my assumption: the board page alone drops the 72rem page width, so its columns share the whole window; every other page keeps it
+  contract my assumption: a column is never narrower than 15rem; when the window cannot fit them all, the board scrolls sideways as it already does on a phone
+  contract built 2026-10-25: at 1440px wide the seven columns went from 144px to 240px each
+
+behaviour BEH-BOARD-20 "Every card carries a score, and the agent scores each new one on its next wake"
+  in FEAT-BOARD
+  source defined kit.notes.md#2026-10-25-1234
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBacklog
+  contract "kit should also priority score new items, i think every item should be scored currently there are lots of unscored items"
+  contract on 2026-10-25, 178 of 347 behaviours had no priority line; each now has one. A built card scores 5, because confirming what runs is the least urgent review (BEH-BOARD-10), and each unbuilt one was scored on its own
+  contract my assumption: a card he writes comes in at 4, like a card the agent writes from a note (BEH-BOARD-12), and the agent re-scores it when it reads it
+  contract my assumption: the agent counts unscored cards at every wake and scores them before picking work, so a card is unscored only until the agent's next wake; that check lives in claude-code-bot, so this card stays pending like BEH-NOTIFY-4

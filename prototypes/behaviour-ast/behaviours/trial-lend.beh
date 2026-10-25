@@ -32,6 +32,7 @@
 
 behaviour BEH-SHELF-1 "The shelf lists everything currently lent out and who has it"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   when opens page:Shelf
   then sees region:LoanList
@@ -39,6 +40,7 @@ behaviour BEH-SHELF-1 "The shelf lists everything currently lent out and who has
 
 behaviour BEH-SHELF-2 "An empty shelf says so rather than showing a blank page"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   given shelf:Empty
   when opens page:Shelf
@@ -46,6 +48,7 @@ behaviour BEH-SHELF-2 "An empty shelf says so rather than showing a blank page"
 
 behaviour BEH-SHELF-3 "Overdue loans are visibly marked"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   given loan:Overdue
   when opens page:Shelf
@@ -56,6 +59,7 @@ behaviour BEH-SHELF-3 "Overdue loans are visibly marked"
 
 behaviour BEH-LEND-1 "A new loan is recorded from the shelf"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   when opens page:Shelf
   when activates button:LendSomething
@@ -65,6 +69,7 @@ behaviour BEH-LEND-1 "A new loan is recorded from the shelf"
 
 behaviour BEH-LEND-2 "Recording a loan puts it on the shelf"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   when opens page:NewLoan
   when fills form:NewLoan with ?fields
@@ -74,6 +79,7 @@ behaviour BEH-LEND-2 "Recording a loan puts it on the shelf"
 
 behaviour BEH-LEND-3 "The loan form takes an item, a borrower and a due date"
   source defined docs/trials/lend-brief.md#holes
+  priority 5
   actor owner
   when opens page:NewLoan
   provides form:NewLoan.fields = ItemName, Borrower, DueDate
@@ -83,6 +89,7 @@ behaviour BEH-LEND-3 "The loan form takes an item, a borrower and a due date"
 
 behaviour BEH-RETURN-1 "A loan is marked returned from the shelf"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   given loan:Outstanding
   when opens page:Shelf
@@ -95,6 +102,7 @@ behaviour BEH-RETURN-1 "A loan is marked returned from the shelf"
 # the grammar permits, which asserts something WEAKER than the brief:
 behaviour BEH-RETURN-2 "A returned loan is no longer on the shelf"
   source defined docs/trials/lend-brief.md#brief
+  priority 5
   actor owner
   given loan:JustReturned
   when opens page:Shelf

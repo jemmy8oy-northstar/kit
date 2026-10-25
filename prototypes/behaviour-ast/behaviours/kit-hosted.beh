@@ -116,6 +116,7 @@ behaviour BEH-PULL-1 "The project list comes from GitHub, not from the pod's wor
   in FEAT-PULL
   layer technical
   source defined kit#88
+  priority 5
   actor engineer
   given repo:Remote
   when runs command:KitServe
@@ -128,6 +129,7 @@ behaviour BEH-PULL-2 "A public project's behaviours are served without a token, 
   in FEAT-PULL
   layer technical
   source defined kit#88
+  priority 5
   actor engineer
   given project:Public
   when runs command:KitServe
@@ -141,6 +143,7 @@ behaviour BEH-PULL-3 "A private project is served only against a live installati
   in FEAT-PULL
   layer technical
   source defined kit#88
+  priority 5
   actor engineer
   given project:Private
   when runs command:KitServe
@@ -155,6 +158,7 @@ behaviour BEH-PULL-4 "The backend parses, resolves and generates; the frontend r
   in FEAT-PULL
   layer technical
   source defined kit#88
+  priority 5
   actor engineer
   given request:Project
   when runs command:KitServe
@@ -190,6 +194,7 @@ behaviour BEH-PULL-5 "GitHub is read when a request finds the cached read expire
 behaviour BEH-ACT-1 "A behaviour is added to a project from a phone"
   in FEAT-EDIT
   source defined kit#88
+  priority 5
   actor engineer
   when opens page:KitHostedProject
   then sees button:KitHostedAddBehaviour
@@ -200,6 +205,7 @@ behaviour BEH-ACT-1 "A behaviour is added to a project from a phone"
 behaviour BEH-ACT-2 "An existing behaviour is updated without rewriting the file around it"
   in FEAT-EDIT
   source defined kit#88
+  priority 5
   actor engineer
   when opens page:KitHostedBehaviour
   then sees button:KitHostedSave
@@ -210,6 +216,7 @@ behaviour BEH-ACT-2 "An existing behaviour is updated without rewriting the file
 behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anything still references it"
   in FEAT-EDIT
   source defined kit#88
+  priority 5
   actor engineer
   when opens page:KitHostedBehaviour
   then sees button:KitHostedRemove
@@ -227,6 +234,7 @@ behaviour BEH-ACT-3 "A behaviour is removed, and the removal is refused if anyth
 behaviour BEH-ACT-4 "Each edit is pushed to the edits branch as it is made, and reaches dev only through Commit"
   in FEAT-EDIT
   source inferred kit#88
+  priority 5
   review approved by James in Kit, 2026-10-12 20:47Z: "the ai (kit) has to acknowledge the edit and actively merge it rather than edits passively being merged"
   actor engineer
   when opens page:KitHostedProject
@@ -246,6 +254,7 @@ behaviour BEH-COMMIT-1 "Commit creates a branch off dev, and never a commit on d
   in FEAT-COMMIT
   layer technical
   source defined kit#88
+  priority 5
   actor engineer
   given change:Pending
   when runs command:KitCommit
@@ -261,6 +270,7 @@ behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who p
   in FEAT-COMMIT
   layer technical
   source defined docs/design/process.md#3
+  priority 5
   actor engineer
   given change:Pending
   when runs command:KitCommit
@@ -275,6 +285,7 @@ behaviour BEH-COMMIT-2 "The commit is attributed to Kit, not to the person who p
 behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is where the work is picked up"
   in FEAT-COMMIT
   source defined kit#88
+  priority 5
   actor engineer
   given branch:Pushed
   when runs command:KitCommit
@@ -345,6 +356,7 @@ behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every 
   in FEAT-LOCK
   layer technical
   source defined docs/design/process.md
+  priority 5
   actor engineer
   given request:Anonymous
   when runs command:KitServe
@@ -358,6 +370,7 @@ behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the 
   in FEAT-LOCK
   layer technical
   source defined docs/design/process.md
+  priority 5
   actor engineer
   given request:Unauthenticated
   when runs command:KitCommit
@@ -377,6 +390,7 @@ behaviour BEH-GATE-H3 "A sign-in survives a deploy, and lasts until its seven da
   in FEAT-LOCK
   layer technical
   source inferred kit.notes.md#2026-10-19-1928
+  priority 5
   review approved
   actor engineer
   given session:SignedIn

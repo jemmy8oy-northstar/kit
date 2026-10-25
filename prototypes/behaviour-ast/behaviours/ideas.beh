@@ -19,6 +19,7 @@ feature FEAT-IDEA-APPS "balenthiran.co.uk/apps: one page showing the full suite 
 behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, the player's choice"
   in FEAT-IDEA-MAHJONG
   source defined claude-code-bot#110
+  priority 5
   pending
   needs-context "Should mahjong become a project? If yes, create a repo and tell me its name; I cannot create one. Until then it stays an idea."
   actor player
@@ -27,6 +28,7 @@ behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, th
 behaviour BEH-IDEA-MAHJONG-2 "A game of mahjong can be played in the browser or on a phone"
   in FEAT-IDEA-MAHJONG
   source defined claude-code-bot#110
+  priority 5
   pending
   needs-context "Should mahjong become a project? If yes, create a repo and tell me its name; I cannot create one. Until then it stays an idea."
   actor player
@@ -35,6 +37,7 @@ behaviour BEH-IDEA-MAHJONG-2 "A game of mahjong can be played in the browser or 
 behaviour BEH-IDEA-SHENGJI-1 "A game of sheng ji can be played in the browser or on a phone"
   in FEAT-IDEA-SHENGJI
   source defined claude-code-bot#110
+  priority 5
   pending
   needs-context "Should sheng ji become a project? If yes, create a repo and tell me its name; I cannot create one. Until then it stays an idea."
   actor player
@@ -43,6 +46,7 @@ behaviour BEH-IDEA-SHENGJI-1 "A game of sheng ji can be played in the browser or
 behaviour BEH-IDEA-PHLOG-1 "A post's photos can be arranged and resized in a tiled layout, several to a row"
   in FEAT-IDEA-PHLOG
   source defined ideas.notes.md#2026-10-18-1517
+  priority 5
   pending
   needs-context "Should the photo blog become a project? If yes, create a repo and tell me its name; I cannot create one. Until then it stays an idea."
   actor writer
@@ -52,6 +56,7 @@ behaviour BEH-IDEA-PHLOG-1 "A post's photos can be arranged and resized in a til
 behaviour BEH-IDEA-PHLOG-2 "A post reads as words first, with the photo tiles placed between its paragraphs"
   in FEAT-IDEA-PHLOG
   source inferred ideas.notes.md#2026-10-18-1517
+  priority 5
   review unreviewed
   pending
   actor reader
@@ -60,6 +65,7 @@ behaviour BEH-IDEA-PHLOG-2 "A post reads as words first, with the photo tiles pl
 behaviour BEH-IDEA-PHLOG-3 "Readers can subscribe to a phlog and receive each new post"
   in FEAT-IDEA-PHLOG
   source inferred ideas.notes.md#2026-10-18-1517
+  priority 5
   review unreviewed
   pending
   actor reader
@@ -68,6 +74,7 @@ behaviour BEH-IDEA-PHLOG-3 "Readers can subscribe to a phlog and receive each ne
 behaviour BEH-IDEA-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full suite of apps"
   in FEAT-IDEA-APPS
   source defined kit.notes.md#2026-10-16-2252
+  priority 5
   pending
   needs-context "Which apps should balenthiran.co.uk/apps list publicly: only live ones, or everything with a preview? I would list only live ones."
   actor visitor
@@ -76,6 +83,7 @@ behaviour BEH-IDEA-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full sui
 behaviour BEH-IDEA-APPS-2 "balenthiran.co.uk is managed by Kit like the other apps"
   in FEAT-IDEA-APPS
   source defined kit.notes.md#2026-10-16-2252
+  priority 5
   pending
   needs-context "Should balenthiran.co.uk get a Kit spec like the other apps? I would leave it out until snip-it ships."
   actor engineer
