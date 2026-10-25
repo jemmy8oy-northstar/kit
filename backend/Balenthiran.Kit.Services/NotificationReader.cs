@@ -31,6 +31,8 @@ public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource?
         ? new AgentSchedule { Reason = "Kit is not told where the agent's schedule is (KIT_AGENT_SCHEDULE is unset)" }
         : new AgentSchedule { Reason = "the agent's schedule has not been read yet" };
 
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
+
     private string? etag;
 
     private string? scheduleEtag;
@@ -42,8 +44,24 @@ public sealed class NotificationReader(IGitHubFileReader? files, IProjectSource?
         return new NotificationFeed { Entries = feed.Entries, Skipped = feed.Skipped, Reason = feed.Reason, Schedule = schedule };
     }
 
-    /// <summary>Reads the feed and the schedule again. Never throws: a failed read keeps nothing and says why.</summary>
+    /// <inheritdoc cref="INotificationReader.RefreshAsync" />
+    /// <remarks>A failed read keeps nothing and says why.</remarks>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    {
+        // One read at a time: the page's expiry and the push poller both call this, and an etag
+        // from one read paired with the text of another would hide a new entry behind a 304.
+        await refreshGate.WaitAsync(cancellationToken);
+        try
+        {
+            await ReadAsync(cancellationToken);
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
+    }
+
+    private async Task ReadAsync(CancellationToken cancellationToken)
     {
         if (files is null)
         {

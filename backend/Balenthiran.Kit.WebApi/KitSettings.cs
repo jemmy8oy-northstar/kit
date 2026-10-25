@@ -152,6 +152,32 @@ public sealed record KitSettings(
     /// </summary>
     public ProjectSource? AgentSchedule { get; init; }
 
+    /// <summary>
+    /// <c>KIT_PUSH_PUBLIC_KEY</c> (BEH-NOTIFY-3): the VAPID public key from the optional <c>kit-push</c>
+    /// secret, base64url. Public by design: the browser subscribes with it. Unset means push is off.
+    /// </summary>
+    public string? PushPublicKey { get; init; }
+
+    /// <summary><c>KIT_PUSH_PRIVATE_KEY</c>, base64url. WRITE-ONLY for the same reason as <see cref="GitToken"/>.</summary>
+    public string? PushPrivateKey
+    {
+        init => pushPrivateKey = value;
+    }
+
+    private readonly string? pushPrivateKey;
+
+    /// <summary>The key, for the push sender only.</summary>
+    internal string? PushKey() => pushPrivateKey;
+
+    /// <summary><c>KIT_PUSH_SUBJECT</c>: the contact a push service may reach, a <c>mailto:</c> or https URL (VAPID's <c>sub</c>).</summary>
+    public string PushSubject { get; init; } = DefaultPushSubject;
+
+    /// <summary>What <see cref="PushSubject"/> is when <c>KIT_PUSH_SUBJECT</c> is unset.</summary>
+    public const string DefaultPushSubject = "mailto:kit@balenthiran.co.uk";
+
+    /// <summary>True when both VAPID keys are set; <see cref="FromEnvironment"/> has already refused a half-set pair.</summary>
+    public bool Push => PushPublicKey is not null;
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -193,6 +219,13 @@ public sealed record KitSettings(
             throw new InvalidOperationException("KIT_GITHUB_CLIENT_ID is set but KIT_DATABASE or KIT_PUBLIC_ORIGIN is not: a user's GitHub is connected to their account, on Kit's public page, so set both, or unset the three KIT_GITHUB_APP_SLUG/CLIENT_ID/CLIENT_SECRET");
         }
 
+        var push = new[] { "KIT_PUSH_PUBLIC_KEY", "KIT_PUSH_PRIVATE_KEY" }
+            .ToDictionary(n => n, n => env(n) is { } v && !string.IsNullOrWhiteSpace(v) ? v.Trim() : null);
+        if (push.Values.Count(v => v is null) == 1)
+        {
+            throw new InvalidOperationException($"web push is half set: {push.First(kv => kv.Value is null).Key} missing — set both, or none for no push");
+        }
+
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
         return new KitSettings(
             dir,
@@ -218,6 +251,9 @@ public sealed record KitSettings(
             AgentFeed = ParseAgentFeed(env("KIT_AGENT_FEED")),
             AgentSchedule = ParseAgentFeed(env("KIT_AGENT_SCHEDULE"), "KIT_AGENT_SCHEDULE"),
             Database = database,
+            PushPublicKey = push["KIT_PUSH_PUBLIC_KEY"],
+            PushPrivateKey = push["KIT_PUSH_PRIVATE_KEY"],
+            PushSubject = env("KIT_PUSH_SUBJECT") is { Length: > 0 } subject ? subject : DefaultPushSubject,
             GitHubAppSlug = connect["KIT_GITHUB_APP_SLUG"],
             GitHubClientId = connect["KIT_GITHUB_CLIENT_ID"],
             GitHubClientSecret = connect["KIT_GITHUB_CLIENT_SECRET"],

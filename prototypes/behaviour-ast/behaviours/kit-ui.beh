@@ -1436,7 +1436,6 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   source defined kit.notes.md#2026-10-24-1359
   review approved
   priority 2
-  pending
   actor engineer
   when opens page:KitNotifications
   then sees region:KitMain
@@ -1444,6 +1443,8 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract my assumption: web push from the home-screen app (BEH-NOTIFY-2), which iOS allows only once Kit is saved to the home screen; he turns it on from the notifications page
   contract my assumption: Kit pushes each new feed entry once, within a poll of the feed, and keeps the phone's push subscription in its database
   contract "not getting notifications on kit as a iphone web app" (kit.notes.md#2026-10-25-1232): right, because nothing pushes yet. This card is the missing piece, so it moves to priority 2 and I build it now, against a stand-in key, instead of on 2026-11-07
+  contract my assumption: built 2026-10-25 against a stand-in: with no kit-push secret the page says push is not switched on and nothing polls; Kit reads the feed every 60 seconds, pushes each entry newer than the last pushed once, and on a restart starts from the newest entry without pushing it
+  contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
   needs-context "Web push needs a VAPID key pair in a new kit-push secret (keys public-key and private-key; I'll give the one-line command). Will you create it? If not by 2026-11-07, I build it against a stand-in so it switches on when the secret appears."
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"

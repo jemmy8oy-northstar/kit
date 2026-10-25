@@ -63,6 +63,21 @@ public static class ServiceRegistration
             services.TryAddSingleton<IUserStore>(_ => new PostgresUserStore(settings.ConnectionString()!));
         }
 
+        // BEH-NOTIFY-3: web push only with the VAPID key pair (the optional kit-push secret). Without
+        // it nothing here exists: no store, no sender, no poller, and the routes answer "not switched on".
+        // The store is the accounts' database when there is one; without, subscriptions die with the pod.
+        if (settings.Push)
+        {
+            services.TryAddSingleton<IPushStore>(_ => settings.Accounts ? new PostgresPushStore(settings.ConnectionString()!) : new MemoryPushStore());
+            services.TryAddSingleton<IPushSender>(sp => new WebPushSender(GitHubClient(sp), settings.PushSubject, settings.PushPublicKey!, settings.PushKey()!));
+            services.AddSingleton(sp => new PushNotifier(
+                sp.GetRequiredService<INotificationReader>(),
+                sp.GetRequiredService<IPushStore>(),
+                sp.GetRequiredService<IPushSender>(),
+                settings.BasePath));
+            services.AddHostedService(sp => new PushPoller(sp.GetRequiredService<PushNotifier>()));
+        }
+
         // BEH-USERS-1's second half: a user connects their GitHub only when the App's OAuth client is set.
         if (settings.GitHubConnect)
         {
@@ -113,7 +128,9 @@ public static class ServiceRegistration
             users: sp.GetService<IUserStore>(),
             operatorName: settings.Operator,
             github: sp.GetService<IGitHubConnect>(),
-            notifications: sp.GetRequiredService<INotificationReader>()));
+            notifications: sp.GetRequiredService<INotificationReader>(),
+            pushStore: sp.GetService<IPushStore>(),
+            pushPublicKey: settings.PushPublicKey));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
