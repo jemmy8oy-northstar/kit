@@ -282,3 +282,7 @@ Some indicator of when kit will next wake
 ## 2026-10-25 12:32Z · new behaviour
 
 can you take a look at the kit header on mobile it is really cluttered
+
+## 2026-10-25 12:32Z · new behaviour
+
+not getting notifications on kit as a iphone web app
