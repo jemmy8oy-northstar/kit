@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectSummary,
+  ActivityFeed, Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
@@ -112,8 +112,8 @@ async function post<T>(requested: string, body: unknown): Promise<T> {
   return (await res.json()) as T
 }
 
-export function fetchProjects(): Promise<{ projects: ProjectSummary[] }> {
-  return get<{ projects: ProjectSummary[] }>('/api/projects')
+export function fetchProjects(): Promise<ProjectListBody> {
+  return get<ProjectListBody>('/api/projects')
 }
 
 /** What changed recently across every project, newest first, from git (BEH-ACTIVITY-1). */

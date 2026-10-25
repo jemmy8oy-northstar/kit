@@ -90,6 +90,18 @@ public static class ServiceRegistration
                 settings.GitHubInstallationId));
         }
 
+        // BEH-USERS-2: reading a user's repos needs the App's own credential (id + key), which mints
+        // a token per user installation; with only a static token there is nothing to mint from.
+        if (settings.GitHubApp)
+        {
+            services.TryAddSingleton<IUserProjects>(sp =>
+            {
+                var http = GitHubClient(sp);
+                var clock = sp.GetRequiredService<TimeProvider>();
+                return new UserProjects(http, installation => new GitHubAppTokenSource(http, settings.GitHubAppId!, installation.ToString(System.Globalization.CultureInfo.InvariantCulture), settings.PrivateKey()!, clock));
+            });
+        }
+
         services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
@@ -130,7 +142,8 @@ public static class ServiceRegistration
             github: sp.GetService<IGitHubConnect>(),
             notifications: sp.GetRequiredService<INotificationReader>(),
             pushStore: sp.GetService<IPushStore>(),
-            pushPublicKey: settings.PushPublicKey));
+            pushPublicKey: settings.PushPublicKey,
+            userProjects: sp.GetService<IUserProjects>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

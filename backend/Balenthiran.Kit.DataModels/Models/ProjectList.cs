@@ -10,5 +10,16 @@ public sealed class ProjectList : IProjectList
     [JsonPropertyOrder(1)]
     public required List<object> Projects { get; init; }
 
+    /// <summary>Absent from the body unless set, so the operator's list is byte for byte what it was.</summary>
+    [JsonPropertyOrder(2)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<UserProject>? GitHub { get; init; }
+
+    [JsonPropertyOrder(3)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? GitHubError { get; init; }
+
     IReadOnlyList<object> IProjectList.Projects => Projects;
+
+    IReadOnlyList<IUserProject>? IProjectList.GitHub => GitHub;
 }

@@ -81,6 +81,34 @@ public sealed partial class KitRouter
             : Json(409, new ApiError { Error = "github-taken", Reason = $"{link.Account} is already connected to another Kit user" });
     }
 
+    /// <summary>
+    /// BEH-USERS-2: the repos of the user's connected GitHub that carry a corpus. No link, or a
+    /// Kit that cannot read one, answers an empty list as before; a GitHub that cannot be read
+    /// says so in <c>githubError</c>, because an empty list would read as "you have no projects".
+    /// </summary>
+    private KitResponse UsersProjects(string who)
+    {
+        if (userProjects is null || users?.GitHubOf(who) is not { } link)
+        {
+            return Json(200, new ProjectList { Projects = [] });
+        }
+
+        try
+        {
+            // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
+            var found = userProjects.ProjectsAsync(link.Installation).GetAwaiter().GetResult();
+            return Json(200, new ProjectList
+            {
+                Projects = [],
+                GitHub = found.Select(p => new UserProject { Name = p.Name, FullName = p.FullName, Url = p.Url, Corpus = p.Corpus.ToList() }).ToList(),
+            });
+        }
+        catch (GitHubReadException e)
+        {
+            return Json(200, new ProjectList { Projects = [], GitHubError = e.Message });
+        }
+    }
+
     private DateTimeOffset Now() => (clock ?? TimeProvider.System).GetUtcNow();
 
     /// <summary><c>expires.signature</c>: names no one, but only verifies for the user it was made for.</summary>

@@ -1180,14 +1180,13 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
   priority 2
   review unreviewed
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1197,11 +1196,13 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   contract his denial, 2026-10-25 13:05Z: "I thought we were going to use the existing one and just make it public, I will make it public now". So there is no new App: Kit's existing App, now public, is the one users install, and Kit already holds its App ID and key, so this card needs no new keys and is mine to build
   contract his question (kit-ui.notes.md#2026-10-25-1309), "How far are we from other people being able to install the app?": anyone can install it now, but Kit can't use their install yet. Two steps of his: merge kit#433 and create the kit-github-connect secret from this same App's slug, client ID and a client secret, with the App's callback URL set to Kit's. Then a user he has made an account for can sign in and connect their GitHub (BEH-USERS-1, built). This card then shows them their repos. No agent works on their projects until BEH-USERS-9
   contract my assumption: re-proposed with his correction folded in, so it shows as unreviewed rather than staying denied
+  contract built: GET /api/projects for a signed-in user with a connected GitHub lists the repos their installation reaches whose default branch holds a .beh file, read from GitHub on every request with a token minted for their own installation, and kept nowhere. The body gains gitHub (name, fullName, url, corpus paths); the Projects page lists them under "From your GitHub", each linking to the repo, with no page of its own yet. A GitHub that cannot be read answers 200 with gitHubError and no gitHub list, so a failure is never shown as "no projects". A user with no link, a Kit without the App's id and key, and the operator all get the list they had before
+  contract my assumption: one level short of the spec, a repo whose tree GitHub truncates (about 100,000 entries) lists only the .beh files in the part it returned; and an organisation's installation is not read, as BEH-USERS-1 never records one
 
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
-  priority 3
+  priority 2
   review approved
   pending
   actor engineer
@@ -1210,6 +1211,8 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   contract his list: "new kit projects get new repos"
   contract Kit creates a new project's repo in the user's own GitHub, so the App asks for permission to create repos
   contract his answer (kit.notes.md#2026-10-23-0638): "Yes"
+  contract his bell, 2026-10-25 15:38Z, answered by raising it from 3 to 2: it is scheduled straight after BEH-USERS-2, which is being built now and is the list a new repo has to appear in
+  contract my assumption: Kit keeps only a user's installation, never their GitHub token, and an installation cannot create a repo in a personal account (only a user token can). So the first build hands the user a github.com/new link with the name filled in, and their install picks the repo up. That stores no token and changes no App permission. Kit creating the repo itself needs a stored, refreshable user token and Administration write on the App, which are auth and App settings and so his call
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
@@ -1447,7 +1450,8 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract "not getting notifications on kit as a iphone web app" (kit.notes.md#2026-10-25-1232): right, because nothing pushes yet. This card is the missing piece, so it moves to priority 2 and I build it now, against a stand-in key, instead of on 2026-11-07
   contract my assumption: built 2026-10-25 against a stand-in: with no kit-push secret the page says push is not switched on and nothing polls; Kit reads the feed every 60 seconds, pushes each entry newer than the last pushed once, and on a restart starts from the newest entry without pushing it
   contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
-  needs-context "Web push needs a VAPID key pair in a new kit-push secret (keys public-key and private-key; I'll give the one-line command). Will you create it? If not by 2026-11-07, I build it against a stand-in so it switches on when the secret appears."
+  contract his question (kit.notes.md#2026-10-25-1601), "Still not getting phone notifications how do I enable": the code is live, but it needs a key pair only he can create. Open Notifications in Kit. If it says "Push is not switched on yet on the server", the kit-push secret is missing (the steps are on this card). If it says "Add Kit to your Home Screen", open Kit from the Home Screen icon, not Safari. Otherwise tap Turn on notifications and allow
+  needs-context "Create the kit-push secret, from a machine with kubectl: run `npx web-push generate-vapid-keys --json`, then `kubectl -n <kit's namespace> create secret generic kit-push --from-literal=public-key=<publicKey> --from-literal=private-key=<privateKey>`, then restart Kit (`kubectl -n <ns> rollout restart deploy/<kit>`). Then, from the Home Screen app: Notifications, Turn on notifications. Until then nothing pushes; I keep building other cards."
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
