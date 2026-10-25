@@ -286,3 +286,7 @@ can you take a look at the kit header on mobile it is really cluttered
 ## 2026-10-25 12:32Z · new behaviour
 
 not getting notifications on kit as a iphone web app
+
+## 2026-10-25 12:33Z · new behaviour
+
+I think columns could be a bit wider on the board on desktop, they are quite cramped atm
