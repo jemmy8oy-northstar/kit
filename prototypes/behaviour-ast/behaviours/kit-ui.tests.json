@@ -328,6 +328,24 @@
     { "file": "backend/Balenthiran.Kit.Tests/NotificationTests.cs", "title": "A_feed_kit_cannot_read_says_why_and_is_never_shown_as_empty" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_notifications_hold_none_of_the_agents_messages" }
   ],
+  "BEH-NOTIFY-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "says push is not switched on yet when the server has no keys" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "tells an iPhone browser tab to add Kit to the Home Screen and open it from there" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "offers Turn on notifications, asks permission in the tap, subscribes with the server key and tells the server" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "shows the device as on when it already holds a subscription, and Turn off removes it here and on the server" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "says how to allow notifications in Settings when permission is denied, in the tap or beforehand" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PushControl.test.tsx", "title": "ships a worker that shows the push and opens Kit's notifications page on a tap, with no fetch handler" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Subscribing_twice_to_one_endpoint_keeps_one_subscription_with_the_newest_keys" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Unsubscribing_forgets_the_endpoint_and_is_idempotent" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Without_the_key_pair_the_subscription_routes_answer_503_with_the_reason_and_store_nothing" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Without_the_key_pair_there_is_no_poller_and_no_store" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Settings_never_print_the_private_key_and_refuse_half_a_pair" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_first_tick_pushes_nothing_and_a_new_entry_is_pushed_exactly_once_across_ticks" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "A_subscription_the_push_service_calls_gone_is_deleted_and_other_failures_stop_nobody" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "Push_routes_are_for_a_signed_in_session_only" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_encryptor_reproduces_RFC_8291_Appendix_A_byte_for_byte" },
+    { "file": "backend/Balenthiran.Kit.Tests/PushTests.cs", "title": "The_VAPID_token_is_an_ES256_JWT_with_audience_expiry_and_subject_signed_by_the_key_pair" }
+  ],
   "BEH-NOTIFY-5": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says when the agent next wakes, and that his next action wakes it sooner (BEH-NOTIFY-5)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Notifications.test.tsx", "title": "says what each pause means for when the agent wakes, and never reads an unknown one as awake" },

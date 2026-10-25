@@ -35,6 +35,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="operatorName">The user name the operator signs in with when accounts are on; his password stays <c>KIT_PASSWORD</c>.</param>
 /// <param name="github">How a user connects their GitHub (BEH-USERS-1). None means they cannot yet: the session offers no install link.</param>
 /// <param name="notifications">The agent's feed (BEH-NOTIFY-1). None means none is configured, and the page says so.</param>
+/// <param name="pushStore">Where phones' push subscriptions are kept (BEH-NOTIFY-3). None, or no <paramref name="pushPublicKey"/>, means push is not switched on.</param>
+/// <param name="pushPublicKey">The VAPID public key from the optional <c>kit-push</c> secret, which the browser subscribes with.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -59,7 +61,9 @@ public sealed partial class KitRouter(
     IUserStore? users = null,
     string operatorName = KitRouter.DefaultOperator,
     IGitHubConnect? github = null,
-    INotificationReader? notifications = null) : IKitRouter
+    INotificationReader? notifications = null,
+    IPushStore? pushStore = null,
+    string? pushPublicKey = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -147,7 +151,7 @@ public sealed partial class KitRouter(
         // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
         // covers projects, which live in a public repo; the feed comes from a private one). Gated as
         // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
-        if (pathname == "/api/notifications")
+        if (pathname is "/api/notifications" or "/api/push")
         {
             if (lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host))
             {
@@ -156,6 +160,12 @@ public sealed partial class KitRouter(
                     Error = "not-signed-in",
                     Reason = "the agent's notifications are served only to a signed-in session (or to loopback on a Kit with no password), because they come from a private repository",
                 });
+            }
+
+            // BEH-NOTIFY-3: whether this Kit can push to his phone, behind the same gate as the feed it announces.
+            if (pathname == "/api/push")
+            {
+                return PushState(cookie);
             }
 
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
@@ -353,6 +363,11 @@ public sealed partial class KitRouter(
         if (pathname == "/api/commit")
         {
             return Commit();
+        }
+
+        if (pathname.StartsWith("/api/push/", StringComparison.Ordinal))
+        {
+            return PushWrite(pathname, body);
         }
 
         var bm = Bindings.Match(pathname);

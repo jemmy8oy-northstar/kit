@@ -1,6 +1,7 @@
 import { fetchNotifications } from '../api/client'
 import type { AgentNotification } from '../api/types'
 import { useResource } from '../hooks/useResource'
+import PushControl from '../components/PushControl'
 import ResourceView from '../components/Resource'
 import { nextWake, when } from '../nextWake'
 
@@ -25,6 +26,8 @@ export default function Notifications() {
     <>
       <h1>Notifications</h1>
       <p className="muted">What the agent has told you, newest first: wakes, sleeps, pull requests and blockers.</p>
+
+      <PushControl />
 
       <ResourceView resource={resource}>
         {({ entries, skipped, reason, schedule }) => (
