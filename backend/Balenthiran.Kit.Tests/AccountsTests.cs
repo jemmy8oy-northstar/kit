@@ -332,5 +332,7 @@ public class AccountsTests
     private sealed class OneNotification : INotificationReader
     {
         public INotificationFeed Recent() => new NotificationFeed { Entries = [new Notification { At = "2026-10-24T14:00:00Z", Kind = "wake", Text = "x" }] };
+
+        public Task RefreshAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

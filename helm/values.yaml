@@ -134,6 +134,22 @@ apps:
       # Same repo and App access as the feed above. Unset, the page says it cannot tell.
       - name: KIT_AGENT_SCHEDULE
         value: "jemmy8oy-northstar/claude-code-bot@dev:state/suspend.json"
+      # BEH-NOTIFY-3: web push to his home-screen app. A VAPID key pair in the `kit-push`
+      # secret (keys public-key and private-key), created by hand like the others.
+      # OPTIONAL on purpose, like KIT_DATABASE: until it exists Kit runs exactly as
+      # before, the Notifications page says push is not switched on, and nothing polls.
+      - name: KIT_PUSH_PUBLIC_KEY
+        valueFrom:
+          secretKeyRef:
+            name: kit-push
+            key: public-key
+            optional: true
+      - name: KIT_PUSH_PRIVATE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: kit-push
+            key: private-key
+            optional: true
     resources: {}
     nodeSelector: {}
     tolerations: []
