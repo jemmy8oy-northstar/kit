@@ -1186,7 +1186,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
   priority 2
-  review approved
+  review denied I thought we were going to use the existing one and just make it public, I will make it public now
   pending
   actor engineer
   when opens page:KitProjects
