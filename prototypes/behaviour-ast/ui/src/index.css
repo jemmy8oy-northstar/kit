@@ -371,6 +371,33 @@ pre {
   text-decoration: none;
 }
 
+/*
+ * BEH-NAV-2: on a phone the wrapped links took three lines beside a two-line
+ * tagline ("really cluttered", his note of 2026-10-25). Brand and account share
+ * the first line; the links get their own single line, which scrolls sideways
+ * instead of wrapping, so every link is still one tap away and none is hidden.
+ */
+@media (max-width: 40rem) {
+  .app > header {
+    flex-wrap: wrap;
+    row-gap: var(--space-3);
+  }
+
+  .app > header > .muted {
+    display: none;
+  }
+
+  .app > header > .nav {
+    order: 1;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-left: 0;
+    scrollbar-width: none;
+  }
+}
+
 .nav a:hover,
 .nav a[aria-current='page'] {
   color: var(--color-text);
@@ -458,9 +485,19 @@ pre {
   scroll-snap-align: start;
 }
 
+/*
+ * BEH-BOARD-19: seven columns inside the 72rem page were 144px each on a
+ * 1440px screen ("quite cramped", his note of 2026-10-25). The board page alone
+ * takes the whole window, and a column never drops below 15rem: a window too
+ * narrow for all of them scrolls sideways, as the board already does on a phone.
+ */
+.app:has(.board) {
+  max-width: none;
+}
+
 @media (min-width: 60rem) {
   .board {
-    grid-auto-columns: 1fr;
+    grid-auto-columns: minmax(15rem, 1fr);
   }
 
   .board > section > .cards {

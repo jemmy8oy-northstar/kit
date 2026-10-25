@@ -358,5 +358,11 @@
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
+  ],
+  "BEH-NAV-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "puts the links on their own scrolling line on a phone, and hides the tagline (BEH-NAV-2)" }
+  ],
+  "BEH-BOARD-19": [
+    { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "gives the board the whole window, and no column under 15rem on a wide screen (BEH-BOARD-19)" }
   ]
 }
