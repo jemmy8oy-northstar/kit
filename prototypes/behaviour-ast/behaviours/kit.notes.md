@@ -302,7 +302,3 @@ In activity i think you should be able to navigate to the referred to item
 ## 2026-10-25 13:15Z · new behaviour
 
 Do denied items get deleted i denied an item cus i thought it needed refuning and jow i cant find it
-
-## 2026-10-25 16:01Z
-
-Still not getting phone notifications how do I enable
