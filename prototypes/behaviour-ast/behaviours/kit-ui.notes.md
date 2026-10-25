@@ -17,3 +17,7 @@ I think we need some unstated column rather than leaving it off the board so tha
 ## 2026-10-25 13:09Z · BEH-USERS-2
 
 Ok the app is public now. How far are we from other people being able to install the app?
+
+## 2026-10-25 15:38Z · bell BEH-USERS-3
+
+
