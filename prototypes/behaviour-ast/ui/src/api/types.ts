@@ -43,6 +43,27 @@ export type DetailCoverage = CoverageIdsAvailable | CoverageUnavailable
 
 export type Coverage = SummaryCoverage | DetailCoverage
 
+/**
+ * A repo in the signed-in user's own GitHub that carries a corpus (BEH-USERS-2). Kit keeps no
+ * record of it; it has no page of its own yet, so the row links to the repo on GitHub.
+ */
+export interface GitHubProject {
+  name: string
+  fullName: string
+  url: string
+  /** The `.beh` files on its default branch: why it counts as a project. */
+  corpus: string[]
+}
+
+/** The body of `/api/projects`. */
+export interface ProjectListBody {
+  projects: ProjectSummary[]
+  /** Present only for a user whose GitHub is connected and readable. */
+  gitHub?: GitHubProject[]
+  /** Present instead of `gitHub` when GitHub could not be read: an empty list would read as "no projects". */
+  gitHubError?: string
+}
+
 /** One row of `/api/projects`. */
 export interface ProjectSummary {
   app: string

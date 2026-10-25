@@ -1180,14 +1180,13 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
   in FEAT-USER-REPOS
   source inferred kit.notes.md#2026-10-19-1721
   priority 2
   review unreviewed
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1197,6 +1196,8 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   contract his denial, 2026-10-25 13:05Z: "I thought we were going to use the existing one and just make it public, I will make it public now". So there is no new App: Kit's existing App, now public, is the one users install, and Kit already holds its App ID and key, so this card needs no new keys and is mine to build
   contract his question (kit-ui.notes.md#2026-10-25-1309), "How far are we from other people being able to install the app?": anyone can install it now, but Kit can't use their install yet. Two steps of his: merge kit#433 and create the kit-github-connect secret from this same App's slug, client ID and a client secret, with the App's callback URL set to Kit's. Then a user he has made an account for can sign in and connect their GitHub (BEH-USERS-1, built). This card then shows them their repos. No agent works on their projects until BEH-USERS-9
   contract my assumption: re-proposed with his correction folded in, so it shows as unreviewed rather than staying denied
+  contract built: GET /api/projects for a signed-in user with a connected GitHub lists the repos their installation reaches whose default branch holds a .beh file, read from GitHub on every request with a token minted for their own installation, and kept nowhere. The body gains gitHub (name, fullName, url, corpus paths); the Projects page lists them under "From your GitHub", each linking to the repo, with no page of its own yet. A GitHub that cannot be read answers 200 with gitHubError and no gitHub list, so a failure is never shown as "no projects". A user with no link, a Kit without the App's id and key, and the operator all get the list they had before
+  contract my assumption: one level short of the spec, a repo whose tree GitHub truncates (about 100,000 entries) lists only the .beh files in the part it returned; and an organisation's installation is not read, as BEH-USERS-1 never records one
 
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   in FEAT-USER-REPOS

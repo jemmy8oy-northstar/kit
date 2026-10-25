@@ -149,6 +149,39 @@ describe('Projects', () => {
     expect(screen.queryByRole('link', { name: 'broken' })).not.toBeInTheDocument()
   })
 
+  it('BEH-USERS-2: lists the repos in a user’s own GitHub, each linking to the repo', async () => {
+    mockFetch({
+      projects: [],
+      gitHub: [{ name: 'snip-it', fullName: 'ann-gh/snip-it', url: 'https://github.com/ann-gh/snip-it', corpus: ['behaviours/snip-it.beh'] }],
+    })
+    renderProjects()
+
+    const link = await screen.findByRole('link', { name: 'ann-gh/snip-it' })
+    expect(link).toHaveAttribute('href', 'https://github.com/ann-gh/snip-it')
+    expect(screen.getByText('behaviours/snip-it.beh')).toBeInTheDocument()
+  })
+
+  it('BEH-USERS-2: says so when GitHub could not be read, and does not show an empty list', async () => {
+    mockFetch({ projects: [], gitHubError: 'GitHub answered 503 when listing your repositories' })
+    renderProjects()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('GitHub answered 503 when listing your repositories')
+    expect(screen.queryByText(/none of the repos/)).not.toBeInTheDocument()
+  })
+
+  it('BEH-USERS-2: a connected GitHub with no corpus says so, and a list without the field shows no section', async () => {
+    mockFetch({ projects: [], gitHub: [] })
+    const { unmount } = renderProjects()
+    expect(await screen.findByText(/none of the repos it can see carries a/)).toBeInTheDocument()
+    unmount()
+
+    mockFetch(projectsFixture)
+    renderProjects()
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByText('From your GitHub')).not.toBeInTheDocument()
+    expect(screen.queryByText(/none of the repos/)).not.toBeInTheDocument()
+  })
+
   it('shows a reachable-server message when the read API is not running', async () => {
     // The commonest failure for a local tool, and the one an empty list would
     // disguise as "Kit knows about no projects".

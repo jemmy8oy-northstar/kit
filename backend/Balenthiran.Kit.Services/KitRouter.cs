@@ -37,6 +37,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="notifications">The agent's feed (BEH-NOTIFY-1). None means none is configured, and the page says so.</param>
 /// <param name="pushStore">Where phones' push subscriptions are kept (BEH-NOTIFY-3). None, or no <paramref name="pushPublicKey"/>, means push is not switched on.</param>
 /// <param name="pushPublicKey">The VAPID public key from the optional <c>kit-push</c> secret, which the browser subscribes with.</param>
+/// <param name="userProjects">Reads a user's projects from their own GitHub (BEH-USERS-2). None means a user's list stays empty.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -63,7 +64,8 @@ public sealed partial class KitRouter(
     IGitHubConnect? github = null,
     INotificationReader? notifications = null,
     IPushStore? pushStore = null,
-    string? pushPublicKey = null) : IKitRouter
+    string? pushPublicKey = null,
+    IUserProjects? userProjects = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -137,9 +139,11 @@ public sealed partial class KitRouter(
 
         if (pathname == "/api/projects")
         {
-            // BEH-USERS-8: a user's list holds their own projects. Every project this Kit serves
-            // today is the operator's, so theirs is empty until they connect their GitHub.
-            return Json(200, new ProjectList { Projects = IsOtherUser(cookie) ? [] : corpora.Corpora().Select(viewer.Summary).ToList() });
+            // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
+            // serves is the operator's, so theirs is empty (BEH-USERS-2 adds what their GitHub holds).
+            return IsOtherUser(cookie)
+                ? UsersProjects(UserOf(cookie)!)
+                : Json(200, new ProjectList { Projects = corpora.Corpora().Select(viewer.Summary).ToList() });
         }
 
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
