@@ -1259,6 +1259,7 @@ feature FEAT-USER-DATABASES "A database per user, in two tiers"
 behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev tier and a production tier"
   in FEAT-USER-DATABASES
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   priority 3
   pending
   actor engineer
