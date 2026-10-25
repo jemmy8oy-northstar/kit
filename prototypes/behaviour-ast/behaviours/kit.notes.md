@@ -278,3 +278,7 @@ This means kit will wake quickly after changes and act on them
 ## 2026-10-24 22:50Z
 
 Some indicator of when kit will next wake
+
+## 2026-10-25 12:32Z · new behaviour
+
+can you take a look at the kit header on mobile it is really cluttered
