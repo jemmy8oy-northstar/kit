@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
 import { fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
-import type { ProjectSummary } from '../api/types'
+import type { GitHubProject, ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
@@ -23,24 +23,65 @@ export default function Projects() {
       </p>
 
       <ResourceView resource={projects}>
-        {({ projects: rows }) => (
-          <ul className="cards" aria-label="Project list">
-            {/* Ideas have their own page in the nav, and are not projects yet (kit#284 slice 4). */}
-            {byProject(rows.filter((r) => !isIdea(r))).map((g) =>
-              // BEH-FEAT-4: one file that is its own project reads as it always did.
-              g.files.length === 1 && g.files[0].app === g.project ? (
-                <li key={g.project}>
-                  <ProjectRow project={g.files[0]} />
-                </li>
-              ) : (
-                <li key={g.project}>
-                  <ProjectGroup project={g.project} files={g.files} />
-                </li>
-              ),
-            )}
-          </ul>
+        {({ projects: rows, gitHub, gitHubError }) => (
+          <>
+            <ul className="cards" aria-label="Project list">
+              {/* Ideas have their own page in the nav, and are not projects yet (kit#284 slice 4). */}
+              {byProject(rows.filter((r) => !isIdea(r))).map((g) =>
+                // BEH-FEAT-4: one file that is its own project reads as it always did.
+                g.files.length === 1 && g.files[0].app === g.project ? (
+                  <li key={g.project}>
+                    <ProjectRow project={g.files[0]} />
+                  </li>
+                ) : (
+                  <li key={g.project}>
+                    <ProjectGroup project={g.project} files={g.files} />
+                  </li>
+                ),
+              )}
+            </ul>
+            <GitHubProjects projects={gitHub} error={gitHubError} />
+          </>
         )}
       </ResourceView>
+    </>
+  )
+}
+
+/**
+ * BEH-USERS-2: the repos in the signed-in user's own GitHub that carry a corpus. They have no
+ * page here yet, so each links to its repo on GitHub. A GitHub that could not be read is said,
+ * never shown as an empty list.
+ */
+function GitHubProjects({ projects, error }: { projects?: GitHubProject[]; error?: string }) {
+  if (error) {
+    return <p role="alert">Your GitHub projects could not be read: {error}</p>
+  }
+  if (!projects) return null
+  if (projects.length === 0) {
+    return (
+      <p className="muted">
+        Kit is connected to your GitHub, but none of the repos it can see carries a <code>.beh</code> file yet.
+      </p>
+    )
+  }
+  return (
+    <>
+      <h2>From your GitHub</h2>
+      <ul className="cards" aria-label="GitHub project list">
+        {projects.map((p) => (
+          <li key={p.fullName}>
+            <Card>
+              <h3>
+                <a href={p.url} target="_blank" rel="noreferrer">
+                  {p.fullName}
+                </a>
+              </h3>
+              <p className="muted">{p.corpus.join(', ')}</p>
+            </Card>
+          </li>
+        ))}
+      </ul>
     </>
   )
 }
