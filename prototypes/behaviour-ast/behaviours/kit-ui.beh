@@ -1432,6 +1432,7 @@ behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an ap
 behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-24-1359
+  review approved
   priority 2
   pending
   actor engineer
