@@ -13,7 +13,3 @@ Going to approve, do you think we could auto archive them or soemthing and then 
 ## 2026-10-20 07:13Z · BEH-STAGE-7
 
 I think we need some unstated column rather than leaving it off the board so that they can be found and staged
-
-## 2026-10-25 18:37Z · BEH-NOTIFY-4
-
-Is this complete now?
