@@ -13,3 +13,7 @@ Going to approve, do you think we could auto archive them or soemthing and then 
 ## 2026-10-20 07:13Z · BEH-STAGE-7
 
 I think we need some unstated column rather than leaving it off the board so that they can be found and staged
+
+## 2026-10-25 13:09Z · BEH-USERS-2
+
+Ok the app is public now. How far are we from other people being able to install the app?
