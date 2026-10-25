@@ -27,7 +27,9 @@ public sealed class ExpiringRefreshTests
         clock.Now += TimeSpan.FromHours(5);
         Assert.Equal(0, reads);
 
-        Assert.True(await r.EnsureFreshAsync(TimeSpan.FromSeconds(3)));
+        // Generous on purpose: the refresh starts on Task.Run, and a pool starved by the suite's
+        // blocking tests failed a 3s wait on main (kit#459). What is asserted is the count, not the speed.
+        Assert.True(await r.EnsureFreshAsync(TimeSpan.FromSeconds(60)));
         Assert.Equal(1, reads);
     }
 
