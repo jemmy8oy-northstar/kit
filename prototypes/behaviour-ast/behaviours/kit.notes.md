@@ -294,3 +294,7 @@ I think columns could be a bit wider on the board on desktop, they are quite cra
 ## 2026-10-25 12:34Z · new behaviour
 
 kit should also priority score new items, i think every item should be scored currently there are lots of unscored items
+
+## 2026-10-25 13:12Z · new behaviour
+
+In activity i think you should be able to navigate to the referred to item
