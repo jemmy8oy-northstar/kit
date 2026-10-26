@@ -38,6 +38,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="pushStore">Where phones' push subscriptions are kept (BEH-NOTIFY-3). None, or no <paramref name="pushPublicKey"/>, means push is not switched on.</param>
 /// <param name="pushPublicKey">The VAPID public key from the optional <c>kit-push</c> secret, which the browser subscribes with.</param>
 /// <param name="userProjects">Reads a user's projects from their own GitHub (BEH-USERS-2). None means a user's list stays empty.</param>
+/// <param name="userMemory">What Kit remembers about each user (BEH-USERS-4). None means it is kept in memory only.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -65,7 +66,8 @@ public sealed partial class KitRouter(
     INotificationReader? notifications = null,
     IPushStore? pushStore = null,
     string? pushPublicKey = null,
-    IUserProjects? userProjects = null) : IKitRouter
+    IUserProjects? userProjects = null,
+    IUserMemoryStore? userMemory = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -83,6 +85,8 @@ public sealed partial class KitRouter(
     private readonly IActivityReader activity = activity ?? new ActivityReader(corpora, new GitCorpusHistory());
 
     private readonly INotificationReader notifications = notifications ?? new NotificationReader(null, null);
+
+    private readonly IUserMemoryStore userMemory = userMemory ?? new MemoryUserMemoryStore();
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
@@ -135,6 +139,18 @@ public sealed partial class KitRouter(
         if (pathname == "/api/session")
         {
             return Json(200, SessionOf(cookie));
+        }
+
+        // BEH-USERS-4: one process for every user, so it needs no session: the repo it comes from is public.
+        if (pathname == "/api/process")
+        {
+            return Process();
+        }
+
+        // BEH-USERS-4: the signed-in user's own memory; the id comes from the session, never the request.
+        if (pathname == "/api/me/memory")
+        {
+            return MemoryRead(cookie);
         }
 
         if (pathname == "/api/projects")
@@ -345,6 +361,12 @@ public sealed partial class KitRouter(
                 return ConnectGitHub(who, cookie, body);
             }
 
+            // BEH-USERS-4: a user's memory is theirs to write, whoever they are.
+            if (pathname == "/api/me/memory")
+            {
+                return MemoryWrite(who, body);
+            }
+
             // BEH-USERS-8: every project this Kit serves is the operator's, so only he writes.
             // When a user's own projects arrive with their GitHub, this asks whose project it is.
             if (who != ISessionStore.Operator)
@@ -361,6 +383,12 @@ public sealed partial class KitRouter(
                     + "docs/design/ui.md decision 1: Kit's UI is a local developer tool, and an "
                     + "unauthenticated write API on a routable interface is not that.",
             });
+        }
+
+        // No password: only loopback got this far, and the one person there is the operator.
+        if (pathname == "/api/me/memory")
+        {
+            return MemoryWrite(ISessionStore.Operator, body);
         }
 
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.

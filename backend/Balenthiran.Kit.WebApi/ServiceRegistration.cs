@@ -63,6 +63,9 @@ public static class ServiceRegistration
             services.TryAddSingleton<IUserStore>(_ => new PostgresUserStore(settings.ConnectionString()!));
         }
 
+        // BEH-USERS-4: a user's memory is the accounts' database when there is one; without, it dies with the pod.
+        services.TryAddSingleton<IUserMemoryStore>(_ => settings.Accounts ? new PostgresUserMemoryStore(settings.ConnectionString()!) : new MemoryUserMemoryStore());
+
         // BEH-NOTIFY-3: web push only with the VAPID key pair (the optional kit-push secret). Without
         // it nothing here exists: no store, no sender, no poller, and the routes answer "not switched on".
         // The store is the accounts' database when there is one; without, subscriptions die with the pod.
@@ -143,7 +146,8 @@ public static class ServiceRegistration
             notifications: sp.GetRequiredService<INotificationReader>(),
             pushStore: sp.GetService<IPushStore>(),
             pushPublicKey: settings.PushPublicKey,
-            userProjects: sp.GetService<IUserProjects>()));
+            userProjects: sp.GetService<IUserProjects>(),
+            userMemory: sp.GetRequiredService<IUserMemoryStore>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
