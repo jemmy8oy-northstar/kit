@@ -389,6 +389,14 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: without a connected account only the first step shows" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "BEH-USERS-3: the form shows beside a non-empty list, and not for the operator or a GitHub that could not be read" }
   ],
+  "BEH-USERS-4": [
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "The_shared_process_is_served_as_markdown_to_everyone_alike" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "A_users_memory_round_trips_and_is_empty_before_it_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "One_user_never_reads_or_overwrites_anothers_memory" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "Memory_is_refused_without_a_session" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "An_oversized_or_malformed_body_is_refused_and_stores_nothing" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "The_postgres_store_keeps_one_body_per_user" }
+  ],
   "BEH-USERS-8": [
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_write_to_the_operators_projects" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },

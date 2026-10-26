@@ -1218,20 +1218,24 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and remembers per user"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-19-1721
   priority 3
   review approved
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract his list: "the dev process and context move to a shared, generic place for every user, with per-user memory (perhaps a database)"
   contract my assumption: the process is written once and shared, so a fix reaches every user; a user's memory is theirs alone and never read into another user's session
   contract his answer (kit.notes.md#2026-10-23-0639): memory about one repo is stored in that repo; memory about the user, tied to no repo, is stored in a database Kit runs
+  contract built: GET /api/process serves one markdown file, the generic dev process every user's agent follows, with the same text for every caller; GET /api/me/memory and POST /api/me/memory read and replace the signed-in user's own memory, keyed by their session and never by anything the request carries, so another user's memory cannot be asked for. No user agent exists yet (BEH-USERS-9); this gives it its two inputs
+  contract my assumption: the process lives in the Kit repo at backend/Balenthiran.Kit.Services/Process/agent.md and is embedded in the build, so the image that serves it needs no extra COPY; a fix is one edit to that file
+  contract my assumption: the process tells an agent to keep memory about a repo at .kit/memory.md in that repo, which Kit does not read or write itself
+  contract my assumption: a user's memory is one text body per user in a user_memory table, replaced whole by each write, and held at most 64 KB (a larger write is refused with 413); a Kit with no KIT_DATABASE keeps it in memory only
+  contract my assumption: it is a POST, not a PUT, because Kit serves GET and POST only; with no password only loopback reaches it, as the operator's own
 
 behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
   in FEAT-USER-PROCESS
@@ -1469,6 +1473,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract my assumption: the agent's scheduler looks every 5 minutes and wakes it, even from sleep, when the newest such commit is at least 5 minutes old and newer than its last wake; the code lives in claude-code-bot, whose deploy changes are his to merge
   contract my assumption: a branch sync (kit/hosted taking dev) is the agent's own work arriving, not his action, so it wakes nothing
   contract first seen live 2026-10-24: his note at 22:50Z woke the sleeping agent at 22:56Z (claude-code-bot#118); it stays pending here only because its code, and so its test, live in claude-code-bot, where no Kit test can name it
+  contract his 2026-10-25 question (kit-ui.notes.md#2026-10-25-1837), "Is this complete now?": not quite. That very note woke nothing for 4h, because my own commit synced in on top of it and the scheduler judged only the newest commit; claude-code-bot#124 looks past mine, and it is live once he merges it and promotes claude-code-bot
 
 # His note of 2026-10-24 22:50Z, minutes after the feed went live.
 behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"

@@ -6,6 +6,11 @@
     <ProjectReference Include="../Balenthiran.Kit.Database/Balenthiran.Kit.Database.csproj" />
   </ItemGroup>
 
+  <!-- BEH-USERS-4: the shared dev process ships inside the assembly, so the image that serves it needs no extra COPY. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Process/agent.md" LogicalName="process/agent.md" />
+  </ItemGroup>
+
   <PropertyGroup>
     <EnableDefaultResourceItems>false</EnableDefaultResourceItems>
     <TargetFramework>net10.0</TargetFramework>
