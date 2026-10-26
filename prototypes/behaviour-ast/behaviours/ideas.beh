@@ -15,6 +15,7 @@ feature FEAT-IDEA-MAHJONG "Mahjong: a polished app that prompts the tile names i
 feature FEAT-IDEA-SHENGJI "Sheng ji: a polished, playable app"
 feature FEAT-IDEA-PHLOG "Phlog: a photo blog, where the words lead and the photos sit in tiles"
 feature FEAT-IDEA-APPS "balenthiran.co.uk/apps: one page showing the full suite of apps"
+feature FEAT-IDEA-COACH "A personal training monitor: records activities and gives feedback on training"
 
 behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, the player's choice"
   in FEAT-IDEA-MAHJONG
@@ -89,3 +90,33 @@ behaviour BEH-IDEA-APPS-2 "balenthiran.co.uk is managed by Kit like the other ap
   actor engineer
   contract "Maybe balenthiran.co.uk can be managed by kit as well"
   contract giving it a Kit corpus brings it under the Kit-driven model, so whether it joins is his call
+
+# Garmin's Connect Developer Program (Activity API) has been paused since ~2026-09 and
+# rejects personal-use applicants (measured 2026-10-26). So "from Garmin" has no
+# official route today. A FIT-file import or Strava as the source are the reachable ones.
+behaviour BEH-IDEA-COACH-1 "A finished activity is recorded automatically, from a hook rather than by hand"
+  in FEAT-IDEA-COACH
+  source defined ideas.notes.md#2026-10-26-2303
+  priority 5
+  pending
+  needs-context "Garmin's developer API is paused and refuses personal use, so it can't be the source today. Should this become a project, built on tracks' Strava sync instead? I'd keep it an idea until tracks' Strava-or-Garmin question is settled."
+  actor athlete
+  contract "Records activities from Garmin, triggered from hook"
+
+behaviour BEH-IDEA-COACH-2 "The athlete gets feedback on their training"
+  in FEAT-IDEA-COACH
+  source defined ideas.notes.md#2026-10-26-2303
+  priority 5
+  review unreviewed
+  pending
+  actor athlete
+  contract "able to give feedback on training"
+
+behaviour BEH-IDEA-COACH-3 "The athlete can chat with the AI about their training"
+  in FEAT-IDEA-COACH
+  source defined ideas.notes.md#2026-10-26-2303
+  priority 5
+  review unreviewed
+  pending
+  actor athlete
+  contract "A chat feature where the human can chat with the ai about training"

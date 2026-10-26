@@ -58,9 +58,14 @@ behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and ba
   when activates control:DateStepperBack
   then sees region:HabitList
 
+# MANAGE-1 and HISTORY-1 read as built until 2026-10-26 (they predate `pending`), but the app has
+# no Manage or History page. Paused by the agent, since the app is not in the current focus
+# (claude-code-bot#49). Resume either one to queue it.
 behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
   source defined docs/DESIGN.md#mvp-4
   priority 5
+  pending
+  paused
   actor owner
   when opens page:Manage
   then sees button:AddHabit
@@ -69,6 +74,8 @@ behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
 behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current and longest streak"
   source defined docs/DESIGN.md#mvp-5
   priority 5
+  pending
+  paused
   actor owner
   when opens page:History
   then sees region:CompletionGrid

@@ -35,13 +35,17 @@ feature FEAT-SYNC "Noticing a finished run and the songs played during it"
   stage ui
 feature FEAT-CONNECT "Connecting Strava and Spotify"
   stage ui
+# FEAT-MAP and FEAT-SHARE read as built until 2026-10-26: their cards predate `pending`. The map's
+# UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet. MAP-1/2/3 are
+# paused on his tracks#3 comment (2026-10-17): "Let's not worry about the track visuals for now".
+# Resume to queue them.
 feature FEAT-MAP "The music map of a workout"
-  stage ui
+  stage ux
 feature FEAT-SHARE "Sharing a workout"
-  stage ui
+  stage problem
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
 feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
-  stage problem
+  stage development
 
 
 # ═══ DEFINED — tracks#1 ═══
@@ -242,6 +246,8 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
+  paused
   priority 3
   actor runner
   given workout:WithSongs
@@ -256,6 +262,8 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   layer technical
   source inferred tracks#1
   review approved
+  pending
+  paused
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
@@ -267,6 +275,8 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
+  paused
   priority 2
   actor runner
   given workout:Indoor
@@ -279,6 +289,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
   priority 3
   actor runner
   given workout:WithSongs
@@ -293,6 +304,7 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   layer technical
   source inferred tracks#1
   review unreviewed
+  pending
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
@@ -305,7 +317,6 @@ behaviour BEH-HIGH-1 "Each song shows the minute of the run it started at"
   layer ux
   source defined tracks.notes.md#2026-10-24-1401
   review unreviewed
-  pending
   priority 3
   actor runner
   given workout:WithSongs
@@ -314,44 +325,50 @@ behaviour BEH-HIGH-1 "Each song shows the minute of the run it started at"
   contract "Is kit able to mark the time in the run that the user started this track"
   contract yes: a song's start is already worked out to place it on the route (BEH-SYNC-2, BEH-MAP-2), so the minute into the run is the same number shown as text
   contract my assumption: shown as elapsed time from the run's start, e.g. 12:40, next to each song, and on the share card
+  contract my assumption: a song already playing when the run started reads 0:00
+  contract built in tracks#21 (merged to tracks dev 2026-10-26): each song in the runs list leads with its minute into the run; there is no share card yet, so that half waits for one
 
 behaviour BEH-HIGH-2 "A run says whether it was a playlist or an album, and names it"
   in FEAT-HIGHLIGHTS
   layer technical
   source defined tracks.notes.md#2026-10-24-1401
-  review unreviewed
-  pending
+  review approved
   priority 3
   actor runner
   contract "Is tracks able to identify whether the user was listening to a playlist or an album over the course of their run"
   contract yes: each play in Spotify's recently-played history carries the context it was played from (a playlist, an album or an artist), or none, e.g. a queue
-  contract my assumption: when most of the run's songs share one context, the run names it ("Run to: Album name"); otherwise it says the songs were mixed
-  contract naming a private playlist needs Spotify's playlist-read-private permission, so a runner who connected before this asks again once
+  contract my assumption: when more than half of the run's songs share one context, the run names it ("Run to: Album name"); if no song had a context it says nothing, and otherwise "Run to: a mix of songs"
+  contract my assumption: with no new Spotify permission, a playlist Spotify will not name (private or editorial) reads "Run to: a playlist", and the run is still stored
+  contract built in tracks#23 (into tracks dev 2026-10-26): worked out once at sync, like the highlights; runs synced before it show nothing
+  needs-context "Naming private playlists needs Spotify's playlist-read-private permission, and every runner who already connected would have to connect again. Add it? If no answer by 2026-11-09, I leave it out and private playlists read 'a playlist'."
 
 behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
   in FEAT-HIGHLIGHTS
   layer technical
   source defined tracks.notes.md#2026-10-24-1402
   review unreviewed
-  pending
   priority 3
   actor runner
   contract "Is tracks able to identify the track that the user reached their top speed"
   contract yes, for a run with GPS: Strava's activity streams give speed second by second, so the top speed's moment falls inside one song's span
-  contract a run with no GPS has no speed stream, so it names no song (as BEH-MAP-3 draws no map)
+  contract a run whose streams Strava does not give (no GPS and no watch speed, a rate limit, Strava down) names no song, and the run is still stored
+  contract my assumption: a treadmill run recorded on a watch still has a speed stream, so it is named like an outdoor one
   contract my assumption: the speed is smoothed over a few seconds first, so one GPS jump does not pick the song
+  contract my assumption: highlights are worked out once, when the run syncs; runs synced before tracks#22 show none
+  contract built in tracks#22 (merged to tracks dev 2026-10-26): a 5-sample centred average over velocity_smooth; the song's label reads "⚡ top speed"
+  contract his question (tracks.notes.md#2026-10-26-2044), "I didn't see this on tracks today why is it marked as done?": it was done on tracks dev, not live. Live Tracks deploys main, which is still 0.1.9 from 10-18, and Tracks' promotion is his. I merged it and HIGH-1/2/4 to dev and raised no promotion; tracks#24 is that promotion. Once it deploys, only runs that sync after it show highlights. Kit's Done not saying "only on dev" is BEH-BOARD-22
 
 behaviour BEH-HIGH-4 "The song with the fastest average pace is named"
   in FEAT-HIGHLIGHTS
   layer technical
   source defined tracks.notes.md#2026-10-24-1402
   review unreviewed
-  pending
   priority 3
   actor runner
   contract "Is tracks able to identify the track with the fastest average pace during the run"
   contract yes, for a run with GPS: the distance covered during each song's span, divided by that span, from the same Strava streams as BEH-HIGH-3
-  contract my assumption: a song that overlaps the run by under a minute is not counted, so a skipped track never wins
+  contract my assumption: a song that overlaps the run by under 30 seconds is not counted, so a skipped track never wins
+  contract built in tracks#22 (merged to tracks dev 2026-10-26): distance interpolated at each end of the song's span, clipped to the run; the song's label reads "fastest pace"
 
 behaviour BEH-HIGH-5 "Each song shows its BPM"
   in FEAT-HIGHLIGHTS
@@ -365,3 +382,20 @@ behaviour BEH-HIGH-5 "Each song shows its BPM"
   contract not from Spotify: its audio-features endpoint, which gave tempo, has refused apps created after 27 November 2024, which includes Tracks's
   contract it would need a second source looked up by song and artist, such as GetSongBPM's free API, which asks for a visible link back
   needs-context "Spotify no longer gives new apps a song's BPM. A free outside source (GetSongBPM) could, in return for a link to them on the page. Use it? If no answer by 2026-11-07, I leave BPM out and keep the other highlights."
+
+# ═══ COST — his note in Kit, 2026-10-26 23:05Z ═══
+# Measured the same night: since 2026-06 Strava's API needs a Strava subscription even
+# for a one-athlete personal app, so cancelling it stops the webhook and the sync.
+# Garmin's Connect Developer Program is paused and refuses personal-use applicants, so
+# there is no official Garmin route to move to. A FIT-file upload works with neither.
+behaviour BEH-COST-1 "Tracks keeps working for James without paying for more than he uses"
+  in FEAT-CONNECT
+  source defined tracks.notes.md#2026-10-26-2305
+  priority 3
+  pending
+  needs-context "Strava's API now needs your subscription even for just you, and Garmin's API is closed to personal use. Keep Strava, or cancel it and let Tracks take uploaded FIT files from Garmin instead? If you say nothing, I change nothing and Tracks stays on Strava."
+  actor runner
+  contract "thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users"
+  contract cancelling Strava stops the sync (BEH-SYNC-1): Strava requires a subscription for API apps since 2026-06, even in single-player mode
+  contract Garmin's Activity API cannot be the replacement today: the program is paused and personal-use applications are rejected. Unreviewed: measured from Garmin's forums and integration guides, not from an application of ours
+  contract a reachable Garmin path is an upload of the run's FIT file, with songs matched by its start and end time as now

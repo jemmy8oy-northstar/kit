@@ -25,3 +25,11 @@ Is tracks able to identify the track with the fastest average pace during the ru
 ## 2026-10-24 14:03Z
 
 Is tracks able to identify bpm of a song played during a run
+
+## 2026-10-26 20:44Z · BEH-HIGH-3
+
+I didn’t see this on tracks today why is it marked as done?
+
+## 2026-10-26 23:05Z · new behaviour
+
+Not seeing how we r going to make money from tracks in the next month thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users. Is it free to use Garmin. Also is it free to use strava api for only my account? No April for more than one user on my app.

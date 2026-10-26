@@ -33,6 +33,27 @@ public class CommittedArtefactTests
     }
 
     /// <summary>
+    /// Kit serves every committed corpus, but CI's gates only check kit and kit-ui, so a typo in any
+    /// other app's corpus shipped green and took that project's page down on hosted (whos-accountable,
+    /// 2026-10-26: <c>BEH-LEADER-1"The core…</c>, a missing space).
+    /// </summary>
+    [Fact]
+    public void Every_committed_corpus_parses()
+    {
+        var files = Directory.GetFiles(RepoLayout.Behaviours, "*.beh");
+        Assert.True(files.Length >= 5, $"could not look: only {files.Length} corpus file(s)");
+
+        var failures = new List<string>();
+        foreach (var file in files)
+        {
+            try { new CorpusParser().ParseCorpus(File.ReadAllText(file), Path.GetFileName(file)); }
+            catch (Exception e) { failures.Add($"{Path.GetFileName(file)}: {e.Message}"); }
+        }
+
+        Assert.True(failures.Count == 0, string.Join("\n", failures));
+    }
+
+    /// <summary>
     /// A bindings file with no <c>.beh</c> beside it is an ORPHAN — bindings for a corpus that no
     /// longer exists, which nothing else in Kit would ever mention. And the map is keyed by noun,
     /// or the generator's lookups miss without a word.

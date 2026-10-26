@@ -35,11 +35,17 @@ feature FEAT-BACKLOG "Later: other countries, individuals, sentiment"
 
 # ═══ DEFINED — whos-accountable#1 ═══
 
+# kit.notes.md#2026-10-26-2252, "Getting who's accountable can't be read error": a missing space
+# after BEH-LEADER-1 below stopped this file parsing on hosted. Fixed in kit#478.
+# LEADER-1/2 and SCORE-5 read as built until 2026-10-26 (they predate `pending`); the repo has no
+# frontend. The leaderboards are paused by the agent while the project is parked (BEH-BACKLOG-1).
 behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offenders"
   in FEAT-LEADERBOARD
   layer ux
   source defined whos-accountable#1
   priority 1
+  pending
+  paused
   actor visitor
   when opens page:WorstOffenders
   then sees region:Leaderboard
@@ -51,6 +57,8 @@ behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   layer ux
   source defined whos-accountable#1
   priority 1
+  pending
+  paused
   actor visitor
   when opens page:TopDoGooders
   then sees region:Leaderboard
@@ -125,6 +133,7 @@ behaviour BEH-SCORE-5 "A methodology page explains the formula, the weights and 
   source inferred docs/DESIGN.md:1
   review unreviewed
   priority 4
+  pending
   actor visitor
   when opens page:Methodology
   then sees region:Formula
