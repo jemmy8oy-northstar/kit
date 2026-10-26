@@ -797,7 +797,7 @@ behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not y
   in FEAT-BOARD
   layer ux
   source defined tracks.notes.md#2026-10-26-2044
-  review unreviewed
+  review approved
   pending
   priority 2
   actor engineer
