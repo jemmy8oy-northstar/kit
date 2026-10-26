@@ -333,13 +333,14 @@ behaviour BEH-HIGH-2 "A run says whether it was a playlist or an album, and name
   layer technical
   source defined tracks.notes.md#2026-10-24-1401
   review unreviewed
-  pending
   priority 3
   actor runner
   contract "Is tracks able to identify whether the user was listening to a playlist or an album over the course of their run"
   contract yes: each play in Spotify's recently-played history carries the context it was played from (a playlist, an album or an artist), or none, e.g. a queue
-  contract my assumption: when most of the run's songs share one context, the run names it ("Run to: Album name"); otherwise it says the songs were mixed
-  contract naming a private playlist needs Spotify's playlist-read-private permission, so a runner who connected before this asks again once
+  contract my assumption: when more than half of the run's songs share one context, the run names it ("Run to: Album name"); if no song had a context it says nothing, and otherwise "Run to: a mix of songs"
+  contract my assumption: with no new Spotify permission, a playlist Spotify will not name (private or editorial) reads "Run to: a playlist", and the run is still stored
+  contract built in tracks#23 (into tracks dev 2026-10-26): worked out once at sync, like the highlights; runs synced before it show nothing
+  needs-context "Naming private playlists needs Spotify's playlist-read-private permission, and every runner who already connected would have to connect again. Add it? If no answer by 2026-11-09, I leave it out and private playlists read 'a playlist'."
 
 behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
   in FEAT-HIGHLIGHTS
