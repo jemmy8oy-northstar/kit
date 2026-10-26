@@ -38,7 +38,9 @@ export function columnOf(b: Behaviour, place?: Place): Column | null {
   if (b.review.state === 'denied') return null
   if (b.review.state === 'requested') return 'review'
   if (b.source.origin === 'inferred' && b.review.state === 'unreviewed') return 'proposed'
-  if (!b.pending) return 'done'
+  // BEH-BOARD-23 (his 2026-10-26 22:50Z note): built but still waiting on him, for a secret or a
+  // step, "needs to go into blocked not done".
+  if (!b.pending) return b.needsContext ? 'blocked' : 'done'
   // BEH-BOARD-16: held, so it is backlog even when a schedule lists it; the agent does not pick it up.
   if (b.paused) return 'backlog'
   // BEH-BOARD-18: the agent cannot start it until he adds what the line asks for.

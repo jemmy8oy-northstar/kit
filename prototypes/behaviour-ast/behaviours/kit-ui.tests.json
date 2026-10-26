@@ -111,13 +111,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)" }
   ],
-  "BEH-BOARD-8": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "asks which project when none is picked, and writes nothing until one is (BEH-BOARD-8)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "sends a grouped project to the file named like it, and offers no idea, trial or unreadable file (BEH-BOARD-8)" }
+  "BEH-BOARD-23": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a built card still waiting on him is Blocked, not Done, and is Done once the line goes (BEH-BOARD-23)" }
   ],
-  "BEH-BOARD-9": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "suggests a project the text names, and one tap picks it (BEH-BOARD-9)" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "CONTROL: a name nobody lists is never suggested (BEH-BOARD-9)" }
+  "BEH-BOARD-24": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "has no note box of its own: a note is added from the floating button (BEH-BOARD-24)" }
   ],
   "BEH-LIST-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "lists every corpus the read API returned" },
@@ -174,6 +172,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "leaves a note on the project of the page it was opened from, and tells the page's notes to re-read" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "tags the note with the behaviour on a behaviour's page" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "asks which project on a page that has none, and sends nothing until one is chosen" }
+  ],
+  "BEH-NOTE-13": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "offers a project the note names, and one tap picks it (BEH-NOTE-13)" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "CONTROL: a name nobody lists, or one that does not parse, is never offered (BEH-NOTE-13)" }
   ],
   "BEH-NOTE-9": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "lists the newest note first" },
