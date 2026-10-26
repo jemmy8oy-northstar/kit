@@ -793,6 +793,21 @@ behaviour BEH-BOARD-18 "The board's pending columns are Backlog, Queue, Blocked 
   contract my assumption: a card on a schedule but not its next waits in the Queue, ranked like any other, not in schedule order; In progress still reads the schedule's next (BEH-BOARD-3), and nothing is scheduled today
   contract built on the agent's side (claude-code-bot tools/kit-backlog.js): the wake sweep reads the Queue as its work list and counts Blocked as his
 
+behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not yet live says so"
+  in FEAT-BOARD
+  layer ux
+  source defined tracks.notes.md#2026-10-26-2044
+  review unreviewed
+  pending
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardDone
+  contract "I didn't see this on tracks today why is it marked as done?": tracks BEH-HIGH-3 was merged to tracks dev, and live Tracks deploys main, so Done claimed more than he could see
+  contract my assumption: a Done card carries "on dev" until the project's main contains the change, then nothing; a card for a project with no dev branch is never marked
+  contract my assumption: the agent, not Kit, decides it at first: a card it merged to dev only carries a `built in` contract naming dev, and the promotion PR it raises names the cards it ships
+  contract my assumption: for a project whose promotion is his, the agent raises the dev→main PR in the same wake it merges a card's last slice, so "on dev" always points at a PR he can merge
+
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
   layer ux
