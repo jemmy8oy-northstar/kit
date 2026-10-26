@@ -324,3 +324,7 @@ Getting who’s accountable can’t be read error rn
 ## 2026-10-26 23:09Z
 
 Kit hasn’t seemed to wake after my chanegs
+
+## 2026-10-26 23:12Z · new behaviour
+
+Kit shows when it is working - backlog if too high of a cost now
