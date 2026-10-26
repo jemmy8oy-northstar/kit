@@ -302,3 +302,9 @@ In activity i think you should be able to navigate to the referred to item
 ## 2026-10-25 13:15Z · new behaviour
 
 Do denied items get deleted i denied an item cus i thought it needed refuning and jow i cant find it
+
+## 2026-10-26 18:21Z
+
+Secrets can be added or updated from a ui
+
+Secrets cannot be read once written

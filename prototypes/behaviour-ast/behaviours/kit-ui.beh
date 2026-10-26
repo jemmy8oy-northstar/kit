@@ -1257,12 +1257,18 @@ feature FEAT-USER-SECRETS "Production secrets per user"
 behaviour BEH-USERS-5 "A user's production secrets are stored for them, and never shown back in a page or a log"
   in FEAT-USER-SECRETS
   source inferred kit.notes.md#2026-10-19-1721
-  priority 3
+  priority 2
   pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract his list: "production security such as secret management"
+  contract his note (kit.notes.md#2026-10-26-1821): "Secrets can be added or updated from a ui", and "Secrets cannot be read once written"
+  contract my assumption: the first user is James, for Kit's own secrets (kit-github-connect, kit-push), so he can do the kubectl steps on BEH-USERS-2 and BEH-NOTIFY-3 from his phone. Other users' secrets come with BEH-USERS-9
+  contract my assumption: the page lists each secret by name with its key names and when each was last written, never a value; each key has a write-only box, and a saved value is not echoed in the page, the API response or a log
+  contract my assumption: Kit's service account gets a Role in its own namespace that can create, update and patch Secrets but cannot get, list or watch them, so even Kit cannot read a value back through this route
+  contract my assumption: priority 3 to 2, because it removes his only remaining kubectl steps
+  needs-context "Letting Kit's pod write Kubernetes Secrets is a secrets and auth change. My default if you're silent by 2026-11-02: I build it as above, with the write-only Role in Kit's chart, and raise it as a PR for you to merge. I won't self-merge it."
 
 feature FEAT-USER-DATABASES "A database per user, in two tiers"
   in EPIC-KIT-USERS
