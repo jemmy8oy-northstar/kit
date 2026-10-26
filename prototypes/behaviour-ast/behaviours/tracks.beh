@@ -41,7 +41,7 @@ feature FEAT-SHARE "Sharing a workout"
   stage ui
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
 feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
-  stage problem
+  stage development
 
 
 # ═══ DEFINED — tracks#1 ═══
@@ -305,7 +305,6 @@ behaviour BEH-HIGH-1 "Each song shows the minute of the run it started at"
   layer ux
   source defined tracks.notes.md#2026-10-24-1401
   review unreviewed
-  pending
   priority 3
   actor runner
   given workout:WithSongs
@@ -314,6 +313,8 @@ behaviour BEH-HIGH-1 "Each song shows the minute of the run it started at"
   contract "Is kit able to mark the time in the run that the user started this track"
   contract yes: a song's start is already worked out to place it on the route (BEH-SYNC-2, BEH-MAP-2), so the minute into the run is the same number shown as text
   contract my assumption: shown as elapsed time from the run's start, e.g. 12:40, next to each song, and on the share card
+  contract my assumption: a song already playing when the run started reads 0:00
+  contract built in tracks#21 (merged to tracks dev 2026-10-26): each song in the runs list leads with its minute into the run; there is no share card yet, so that half waits for one
 
 behaviour BEH-HIGH-2 "A run says whether it was a playlist or an album, and names it"
   in FEAT-HIGHLIGHTS
