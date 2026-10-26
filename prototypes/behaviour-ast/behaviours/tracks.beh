@@ -35,10 +35,12 @@ feature FEAT-SYNC "Noticing a finished run and the songs played during it"
   stage ui
 feature FEAT-CONNECT "Connecting Strava and Spotify"
   stage ui
+# FEAT-MAP and FEAT-SHARE read as built until 2026-10-26: their cards predate `pending`. The map's
+# UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet.
 feature FEAT-MAP "The music map of a workout"
-  stage ui
+  stage ux
 feature FEAT-SHARE "Sharing a workout"
-  stage ui
+  stage problem
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
 feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
   stage development
@@ -242,6 +244,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
   priority 3
   actor runner
   given workout:WithSongs
@@ -256,6 +259,7 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   layer technical
   source inferred tracks#1
   review approved
+  pending
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
@@ -267,6 +271,7 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
   priority 2
   actor runner
   given workout:Indoor
@@ -279,6 +284,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   layer ux
   source inferred tracks#1
   review unreviewed
+  pending
   priority 3
   actor runner
   given workout:WithSongs
@@ -293,6 +299,7 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   layer technical
   source inferred tracks#1
   review unreviewed
+  pending
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
