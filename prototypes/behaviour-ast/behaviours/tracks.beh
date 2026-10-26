@@ -382,3 +382,20 @@ behaviour BEH-HIGH-5 "Each song shows its BPM"
   contract not from Spotify: its audio-features endpoint, which gave tempo, has refused apps created after 27 November 2024, which includes Tracks's
   contract it would need a second source looked up by song and artist, such as GetSongBPM's free API, which asks for a visible link back
   needs-context "Spotify no longer gives new apps a song's BPM. A free outside source (GetSongBPM) could, in return for a link to them on the page. Use it? If no answer by 2026-11-07, I leave BPM out and keep the other highlights."
+
+# ═══ COST — his note in Kit, 2026-10-26 23:05Z ═══
+# Measured the same night: since 2026-06 Strava's API needs a Strava subscription even
+# for a one-athlete personal app, so cancelling it stops the webhook and the sync.
+# Garmin's Connect Developer Program is paused and refuses personal-use applicants, so
+# there is no official Garmin route to move to. A FIT-file upload works with neither.
+behaviour BEH-COST-1 "Tracks keeps working for James without paying for more than he uses"
+  in FEAT-CONNECT
+  source defined tracks.notes.md#2026-10-26-2305
+  priority 3
+  pending
+  needs-context "Strava's API now needs your subscription even for just you, and Garmin's API is closed to personal use. Keep Strava, or cancel it and let Tracks take uploaded FIT files from Garmin instead? If you say nothing, I change nothing and Tracks stays on Strava."
+  actor runner
+  contract "thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users"
+  contract cancelling Strava stops the sync (BEH-SYNC-1): Strava requires a subscription for API apps since 2026-06, even in single-player mode
+  contract Garmin's Activity API cannot be the replacement today: the program is paused and personal-use applications are rejected. Unreviewed: measured from Garmin's forums and integration guides, not from an application of ours
+  contract a reachable Garmin path is an upload of the run's FIT file, with songs matched by its start and end time as now

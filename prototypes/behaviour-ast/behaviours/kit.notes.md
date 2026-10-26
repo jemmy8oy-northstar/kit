@@ -308,3 +308,27 @@ Do denied items get deleted i denied an item cus i thought it needed refuning an
 Secrets can be added or updated from a ui
 
 Secrets cannot be read once written
+
+## 2026-10-26 22:51Z
+
+Remove notes from the boards page, we have the floating action button note now.
+
+This will declutter the board page.
+
+Also add the feature of when you mention an app it suggests it to the fab note addition. This is a good feature
+
+## 2026-10-26 22:52Z
+
+Getting who’s accountable can’t be read error rn
+
+## 2026-10-26 23:09Z
+
+Kit hasn’t seemed to wake after my chanegs
+
+## 2026-10-26 23:12Z · new behaviour
+
+Kit shows when it is working - backlog if too high of a cost now
+
+## 2026-10-26 23:13Z · new behaviour
+
+Currently it seems like suspend supersedes an action walking it should be the other way round
