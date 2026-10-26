@@ -17,3 +17,7 @@ I think we need some unstated column rather than leaving it off the board so tha
 ## 2026-10-26 22:50Z · BEH-USERS-3
 
 I added client id and client secret idk whether this was for this ticket feel free to move it if it wasn’t. Also when you finish work but you are waiting for secrets or soemthing this needs to go into blocked not done
+
+## 2026-10-26 23:00Z · BEH-USERS-6
+
+Just thinking about this idk whether this is the best way to do it. Dbs are a lot of admin to manage right. Maybe better to outsource this at the start. Just as lovable does
