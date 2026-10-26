@@ -332,7 +332,7 @@ behaviour BEH-HIGH-2 "A run says whether it was a playlist or an album, and name
   in FEAT-HIGHLIGHTS
   layer technical
   source defined tracks.notes.md#2026-10-24-1401
-  review unreviewed
+  review approved
   priority 3
   actor runner
   contract "Is tracks able to identify whether the user was listening to a playlist or an album over the course of their run"
