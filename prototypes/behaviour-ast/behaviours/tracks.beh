@@ -356,6 +356,7 @@ behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
   contract my assumption: the speed is smoothed over a few seconds first, so one GPS jump does not pick the song
   contract my assumption: highlights are worked out once, when the run syncs; runs synced before tracks#22 show none
   contract built in tracks#22 (merged to tracks dev 2026-10-26): a 5-sample centred average over velocity_smooth; the song's label reads "⚡ top speed"
+  contract his question (tracks.notes.md#2026-10-26-2044), "I didn't see this on tracks today why is it marked as done?": it was done on tracks dev, not live. Live Tracks deploys main, which is still 0.1.9 from 10-18, and Tracks' promotion is his. I merged it and HIGH-1/2/4 to dev and raised no promotion; tracks#24 is that promotion. Once it deploys, only runs that sync after it show highlights. Kit's Done not saying "only on dev" is BEH-BOARD-22
 
 behaviour BEH-HIGH-4 "The song with the fastest average pace is named"
   in FEAT-HIGHLIGHTS
