@@ -25,3 +25,7 @@ Is tracks able to identify the track with the fastest average pace during the ru
 ## 2026-10-24 14:03Z
 
 Is tracks able to identify bpm of a song played during a run
+
+## 2026-10-26 20:44Z · BEH-HIGH-3
+
+I didn’t see this on tracks today why is it marked as done?
