@@ -795,9 +795,15 @@ describe('board rules', () => {
     expect(columnOf(beh('X', { ...needs, paused: true }))).toBe('backlog')
     // An empty line asks for nothing.
     expect(columnOf(beh('X', { pending: true, needsContext: '' }))).toBe('queue')
-    // Built is done, and a review request or a proposal waits on his verdict first.
-    expect(columnOf(beh('X', { needsContext: 'x' }))).toBe('done')
+    // A review request or a proposal waits on his verdict first.
     expect(columnOf(beh('X', { ...needs, review: { state: 'requested', note: 'look' } }))).toBe('review')
+  })
+
+  it('a built card still waiting on him is Blocked, not Done, and is Done once the line goes (BEH-BOARD-23)', () => {
+    expect(columnOf(beh('X', { needsContext: 'add the kit-push secret' }))).toBe('blocked')
+    expect(ownerOf(beh('X', { needsContext: 'add the kit-push secret' }), 'blocked', false)).toBe('james')
+    expect(columnOf(beh('X', { needsContext: '' }))).toBe('done')
+    expect(columnOf(beh('X'))).toBe('done')
   })
 
   it('every card not done belongs to him or to the agent, and a finished or denied one to nobody (BEH-BOARD-17)', () => {

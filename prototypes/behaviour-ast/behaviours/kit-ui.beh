@@ -796,13 +796,12 @@ behaviour BEH-BOARD-23 "A card whose code is built but still waits on him, for a
   layer ux
   source defined kit-ui.notes.md#2026-10-26-2250
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBlocked
   contract "when you finish work but you are waiting for secrets or soemthing this needs to go into blocked not done"
-  contract the agent keeps such a card `pending` with a needs-context line naming the step (BEH-BOARD-17), so it reads as Blocked (BEH-BOARD-18) until he has done it and the agent has seen it work
-  contract my assumption: built on the agent's side, as a rule it follows; no Kit code changes, so it stays pending here until a corpus test can name it
+  contract a built card with a needs-context line naming his step (BEH-BOARD-17) is Blocked, not Done; the agent deletes the line once his step is done and it has seen the card work, and the card moves to Done
+  contract built: on 2026-10-26 this moved tracks BEH-HIGH-2 (built, waiting on his private-playlist answer) and kit-ui BEH-NOTIFY-3 (built, waiting on a push reaching his phone) from Done to Blocked
 
 behaviour BEH-BOARD-24 "The board has no note box of its own; the floating button is how a note is added"
   in FEAT-BOARD
@@ -1493,6 +1492,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   source defined kit.notes.md#2026-10-24-1359
   review approved
   priority 2
+  needs-context "The secret is in. Open Kit from the Home Screen icon, then Notifications, then Turn on notifications, and tell me whether a push arrives. If you say nothing by 2026-11-02, I'll count it as working."
   actor engineer
   when opens page:KitNotifications
   then sees region:KitMain
@@ -1503,7 +1503,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract my assumption: built 2026-10-25 against a stand-in: with no kit-push secret the page says push is not switched on and nothing polls; Kit reads the feed every 60 seconds, pushes each entry newer than the last pushed once, and on a restart starts from the newest entry without pushing it
   contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
   contract his question (kit.notes.md#2026-10-25-1601), "Still not getting phone notifications how do I enable": the code is live, but it needs a key pair only he can create. Open Notifications in Kit. If it says "Push is not switched on yet on the server", the kit-push secret is missing (the steps are on this card). If it says "Add Kit to your Home Screen", open Kit from the Home Screen icon, not Safari. Otherwise tap Turn on notifications and allow
-  contract he created the kit-push secret on 2026-10-26 (kit#454: "Added secret, btw kit is in balenthiran namespace"), so nothing on this card waits on him; to switch it on: open Kit from the Home Screen icon, Notifications, Turn on notifications
+  contract he created the kit-push secret on 2026-10-26 (kit#454: "Added secret, btw kit is in balenthiran namespace"). It stays Blocked, not Done, until a push has reached his phone (BEH-BOARD-23)
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS

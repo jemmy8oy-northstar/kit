@@ -111,6 +111,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)" }
   ],
+  "BEH-BOARD-23": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a built card still waiting on him is Blocked, not Done, and is Done once the line goes (BEH-BOARD-23)" }
+  ],
   "BEH-BOARD-24": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "has no note box of its own: a note is added from the floating button (BEH-BOARD-24)" }
   ],
