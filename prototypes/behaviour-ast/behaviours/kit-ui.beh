@@ -667,27 +667,10 @@ behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   contract an archived note can still be dismissed, which deletes it from the notes file as before
   contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
 
-behaviour BEH-BOARD-8 "The board takes free text, and asks which project it is for"
-  in FEAT-BOARD
-  source defined kit.notes.md#2026-10-16-0730
-  priority 2
-  actor engineer
-  when opens page:KitBoard
-  then sees region:KitBoardBacklog
-  contract it writes the same request note the project page's describe box writes, on the project picked
-  contract a project can be picked before sending; sending with none asks which project, and nothing is written until one is picked
-  contract suggesting a project as its name is typed is BEH-BOARD-9, not needed for the box to work
-
-behaviour BEH-BOARD-9 "Typing a project's name in the board's box suggests it"
-  in FEAT-BOARD
-  source defined kit.notes.md#2026-10-16-0730
-  priority 4
-  review approved
-  actor engineer
-  when opens page:KitBoard
-  then sees region:KitBoardBacklog
-  contract a suggestion is picked with one tap and fills the project; no free-typed name is ever written as a project
-  contract a project the text names as a whole word, in any case, is offered while no project is picked
+# Was BEH-BOARD-8, "The board takes free text, and asks which project it is for", and
+# BEH-BOARD-9, "Typing a project's name in the board's box suggests it" (kit.notes.md#2026-10-16-0730).
+# Removed at his word (kit.notes.md#2026-10-26-2251): the floating note button replaced the
+# board's box (BEH-BOARD-24), and the suggestion moved to it (BEH-NOTE-13).
 
 behaviour BEH-BOARD-10 "The agent scores every card it wants looked at, and equal scores take each project in turn"
   in FEAT-BOARD
@@ -826,12 +809,12 @@ behaviour BEH-BOARD-24 "The board has no note box of its own; the floating butto
   layer ux
   source defined kit.notes.md#2026-10-26-2251
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
   contract "Remove notes from the boards page, we have the floating action button note now. This will declutter the board page."
   contract the board's describe box (BEH-BOARD-8) goes; its mention suggestion moves to the floating button (BEH-NOTE-13)
+  contract built: the board has no text box. Its box wrote a request note; the floating button writes a plain note, which the agent folds the same way
 
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
@@ -1441,12 +1424,12 @@ behaviour BEH-NOTE-13 "A note from the floating button that names a project offe
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-26-2251
   priority 2
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
   contract "when you mention an app it suggests it to the fab note addition. This is a good feature"
   contract it is the board's suggestion (BEH-BOARD-9) moved: a project named as a whole word, in any case, is offered as "For <project>?", and only a listed project can be offered
+  contract built: offered while no project is chosen, on a page with no project of its own (the board, activity); a project that does not parse is not listed, so never offered
 
 # His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
 # easily [see] what has happened recently".

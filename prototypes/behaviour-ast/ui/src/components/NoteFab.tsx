@@ -65,7 +65,7 @@ export default function NoteFab() {
                 {here.behaviour ? `Note on ${here.behaviour}` : `Note on ${here.app}`}
               </label>
             ) : (
-              <ProjectPicker id={`${id}-project`} value={chosen} onChange={setChosen} />
+              <ProjectPicker id={`${id}-project`} value={chosen} onChange={setChosen} text={text} />
             )}
             <textarea
               id={`${id}-text`}
@@ -101,22 +101,36 @@ export default function NoteFab() {
   )
 }
 
-function ProjectPicker({ id, value, onChange }: { id: string; value: string; onChange: (app: string) => void }) {
+/**
+ * BEH-NOTE-13 (his 2026-10-26 22:51Z note): "when you mention an app it suggests it". The projects
+ * the text names as whole words, in any case, offered one tap each. Only a listed project can be
+ * offered, so a free-typed name is never written as one. Moved here from the board's box.
+ */
+function mentioned(text: string, apps: string[]): string[] {
+  const words = new Set(text.toLowerCase().split(/[^a-z0-9-]+/).filter(Boolean))
+  return apps.filter((app) => words.has(app.toLowerCase()))
+}
+
+function ProjectPicker({ id, value, onChange, text }: { id: string; value: string; onChange: (app: string) => void; text: string }) {
   const projects = useResource(() => fetchProjects(), [])
+  const apps = projects.state === 'ready' ? projects.value.projects.filter((p) => !p.error).map((p) => p.app) : []
   return (
     <>
       <label htmlFor={id}>Which project is this about?</label>
       <select id={id} className="note-select" value={value} onChange={(e) => onChange(e.target.value)} disabled={projects.state !== 'ready'}>
         <option value="">{projects.state === 'error' ? `Could not list projects: ${projects.message}` : 'Choose a project'}</option>
-        {projects.state === 'ready' &&
-          projects.value.projects
-            .filter((p) => !p.error)
-            .map((p) => (
-              <option key={p.app} value={p.app}>
-                {p.app}
-              </option>
-            ))}
+        {apps.map((app) => (
+          <option key={app} value={app}>
+            {app}
+          </option>
+        ))}
       </select>
+      {!value &&
+        mentioned(text, apps).map((app) => (
+          <Button key={app} type="button" size="sm" variant="ghost" onClick={() => onChange(app)}>
+            For {app}?
+          </Button>
+        ))}
     </>
   )
 }

@@ -83,6 +83,35 @@ describe('NoteFab (BEH-NOTE-12)', () => {
     expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'an idea' } }])
   })
 
+  it('offers a project the note names, and one tap picks it (BEH-NOTE-13)', async () => {
+    const posts = server()
+    at('/board')
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    await screen.findByRole('option', { name: 'other' })
+
+    // A whole word only: "another" is not other.
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'another thought' } })
+    expect(screen.queryByRole('button', { name: /^For / })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'In Other, the header is too tall' } })
+    fireEvent.click(screen.getByRole('button', { name: 'For other?' }))
+    expect(screen.getByLabelText('Which project is this about?')).toHaveValue('other')
+    expect(screen.queryByRole('button', { name: 'For other?' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+    expect(await screen.findByText(/Committed|committed/)).toBeInTheDocument()
+    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'In Other, the header is too tall' } }])
+  })
+
+  it('CONTROL: a name nobody lists, or one that does not parse, is never offered (BEH-NOTE-13)', async () => {
+    server()
+    at('/board')
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    await screen.findByRole('option', { name: 'other' })
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'gamma and broken please' } })
+    expect(screen.queryByRole('button', { name: /^For / })).not.toBeInTheDocument()
+  })
+
   it('says, at the box, that a note is published before anything is sent (BEH-GATE-H2)', () => {
     server()
     at('/projects/demo')
