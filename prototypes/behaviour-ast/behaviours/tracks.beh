@@ -36,7 +36,9 @@ feature FEAT-SYNC "Noticing a finished run and the songs played during it"
 feature FEAT-CONNECT "Connecting Strava and Spotify"
   stage ui
 # FEAT-MAP and FEAT-SHARE read as built until 2026-10-26: their cards predate `pending`. The map's
-# UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet.
+# UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet. MAP-1/2/3 are
+# paused on his tracks#3 comment (2026-10-17): "Let's not worry about the track visuals for now".
+# Resume to queue them.
 feature FEAT-MAP "The music map of a workout"
   stage ux
 feature FEAT-SHARE "Sharing a workout"
@@ -245,6 +247,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   source inferred tracks#1
   review unreviewed
   pending
+  paused
   priority 3
   actor runner
   given workout:WithSongs
@@ -260,6 +263,7 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   source inferred tracks#1
   review approved
   pending
+  paused
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
@@ -272,6 +276,7 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
   source inferred tracks#1
   review unreviewed
   pending
+  paused
   priority 2
   actor runner
   given workout:Indoor
