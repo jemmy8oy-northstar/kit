@@ -341,25 +341,27 @@ behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
   layer technical
   source defined tracks.notes.md#2026-10-24-1402
   review unreviewed
-  pending
   priority 3
   actor runner
   contract "Is tracks able to identify the track that the user reached their top speed"
   contract yes, for a run with GPS: Strava's activity streams give speed second by second, so the top speed's moment falls inside one song's span
-  contract a run with no GPS has no speed stream, so it names no song (as BEH-MAP-3 draws no map)
+  contract a run whose streams Strava does not give (no GPS and no watch speed, a rate limit, Strava down) names no song, and the run is still stored
+  contract my assumption: a treadmill run recorded on a watch still has a speed stream, so it is named like an outdoor one
   contract my assumption: the speed is smoothed over a few seconds first, so one GPS jump does not pick the song
+  contract my assumption: highlights are worked out once, when the run syncs; runs synced before tracks#22 show none
+  contract built in tracks#22 (merged to tracks dev 2026-10-26): a 5-sample centred average over velocity_smooth; the song's label reads "⚡ top speed"
 
 behaviour BEH-HIGH-4 "The song with the fastest average pace is named"
   in FEAT-HIGHLIGHTS
   layer technical
   source defined tracks.notes.md#2026-10-24-1402
   review unreviewed
-  pending
   priority 3
   actor runner
   contract "Is tracks able to identify the track with the fastest average pace during the run"
   contract yes, for a run with GPS: the distance covered during each song's span, divided by that span, from the same Strava streams as BEH-HIGH-3
-  contract my assumption: a song that overlaps the run by under a minute is not counted, so a skipped track never wins
+  contract my assumption: a song that overlaps the run by under 30 seconds is not counted, so a skipped track never wins
+  contract built in tracks#22 (merged to tracks dev 2026-10-26): distance interpolated at each end of the song's span, clipped to the run; the song's label reads "fastest pace"
 
 behaviour BEH-HIGH-5 "Each song shows its BPM"
   in FEAT-HIGHLIGHTS
