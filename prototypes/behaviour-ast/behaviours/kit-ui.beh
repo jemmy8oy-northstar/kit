@@ -808,6 +808,31 @@ behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not y
   contract my assumption: the agent, not Kit, decides it at first: a card it merged to dev only carries a `built in` contract naming dev, and the promotion PR it raises names the cards it ships
   contract my assumption: for a project whose promotion is his, the agent raises the dev→main PR in the same wake it merges a card's last slice, so "on dev" always points at a PR he can merge
 
+behaviour BEH-BOARD-23 "A card whose code is built but still waits on him, for a secret or a step, is Blocked, not Done"
+  in FEAT-BOARD
+  layer ux
+  source defined kit-ui.notes.md#2026-10-26-2250
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardBlocked
+  contract "when you finish work but you are waiting for secrets or soemthing this needs to go into blocked not done"
+  contract the agent keeps such a card `pending` with a needs-context line naming the step (BEH-BOARD-17), so it reads as Blocked (BEH-BOARD-18) until he has done it and the agent has seen it work
+  contract my assumption: built on the agent's side, as a rule it follows; no Kit code changes, so it stays pending here until a corpus test can name it
+
+behaviour BEH-BOARD-24 "The board has no note box of its own; the floating button is how a note is added"
+  in FEAT-BOARD
+  layer ux
+  source defined kit.notes.md#2026-10-26-2251
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "Remove notes from the boards page, we have the floating action button note now. This will declutter the board page."
+  contract the board's describe box (BEH-BOARD-8) goes; its mention suggestion moves to the floating button (BEH-NOTE-13)
+
 behaviour BEH-BOARD-14 "A ranked column shows where each priority starts, so its order can be read"
   in FEAT-BOARD
   layer ux
@@ -1229,6 +1254,8 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   contract my assumption: Kit keeps only a user's installation, never their GitHub token, and an installation cannot create a repo in a personal account (only a user token can). So the first build hands the user a github.com/new link with the name filled in, and their install picks the repo up. That stores no token and changes no App permission. Kit creating the repo itself needs a stored, refreshable user token and Administration write on the App, which are auth and App settings and so his call
   contract built: Under "From your GitHub" (also when that list is empty) the Projects page shows a "Start a new project" form: a project name, normalised to a repo name, and two github.com links, one to create the repo and one to add its first behaviour file in the connected account, with a line on adding the repo to a selected-repositories install. Kit stores no token and the App's permissions are unchanged
   contract my assumption: the first behaviour file is behaviours/<name>.beh on the branch main, holding one pending behaviour, BEH-START-1, because Kit cannot look at a corpus of comments alone (checked with kit check: zero behaviours is "cannot look")
+  contract his note (kit-ui.notes.md#2026-10-26-2250): "I added client id and client secret idk whether this was for this ticket feel free to move it if it wasn't"
+  contract my assumption: a client id and secret are what a user token needs, so they serve the half above that is his call (Kit creating the repo itself). Reading them is auth, so they stay unused until he approves that half; the link-based first build stands
   contract my assumption: a name is normalised by turning whitespace runs into - and dropping anything outside letters, digits, . _ -, and the links are withheld while the result is empty
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
@@ -1299,6 +1326,9 @@ behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev t
   when opens page:KitProjects
   then sees region:KitMain
   contract his list: "per-user databases (a cheaper dev tier, and a production tier)"
+  contract his second thought (kit-ui.notes.md#2026-10-26-2300): "Dbs are a lot of admin to manage right. Maybe better to outsource this at the start. Just as lovable does"
+  contract my assumption: a hosted Postgres provider, as Lovable uses Supabase, with one project per user app and a free or branch tier for dev; Kit stores only each database's connection secret, write-only (BEH-USERS-5)
+  needs-context "Outsourcing means a provider account, which is yours and may cost money. Supabase (Lovable's choice), Neon, or another? If you say nothing, I leave this card unbuilt: USERS-1 to USERS-4 come before it and none of them needs a database per user."
 
 feature FEAT-USER-BILLING "Usage, cost and payment"
   in EPIC-KIT-USERS
@@ -1407,6 +1437,17 @@ behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   contract my assumption: the note lands on the project of the page it was added from, or asks which project when there is none
   contract my assumption: the button sits bottom right on every page and opens a small box above it; on a behaviour's page the note is tagged with that behaviour, as the page's own note box does
 
+behaviour BEH-NOTE-13 "A note from the floating button that names a project offers that project, one tap each"
+  in FEAT-NOTES
+  source defined kit.notes.md#2026-10-26-2251
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "when you mention an app it suggests it to the fab note addition. This is a good feature"
+  contract it is the board's suggestion (BEH-BOARD-9) moved: a project named as a whole word, in any case, is offered as "For <project>?", and only a listed project can be offered
+
 # His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
 # easily [see] what has happened recently".
 feature FEAT-ACTIVITY "Recent activity"
@@ -1479,7 +1520,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract my assumption: built 2026-10-25 against a stand-in: with no kit-push secret the page says push is not switched on and nothing polls; Kit reads the feed every 60 seconds, pushes each entry newer than the last pushed once, and on a restart starts from the newest entry without pushing it
   contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
   contract his question (kit.notes.md#2026-10-25-1601), "Still not getting phone notifications how do I enable": the code is live, but it needs a key pair only he can create. Open Notifications in Kit. If it says "Push is not switched on yet on the server", the kit-push secret is missing (the steps are on this card). If it says "Add Kit to your Home Screen", open Kit from the Home Screen icon, not Safari. Otherwise tap Turn on notifications and allow
-  needs-context "Create the kit-push secret, from a machine with kubectl: run `npx web-push generate-vapid-keys --json`, then `kubectl -n <kit's namespace> create secret generic kit-push --from-literal=public-key=<publicKey> --from-literal=private-key=<privateKey>`, then restart Kit (`kubectl -n <ns> rollout restart deploy/<kit>`). Then, from the Home Screen app: Notifications, Turn on notifications. Until then nothing pushes; I keep building other cards."
+  contract he created the kit-push secret on 2026-10-26 (kit#454: "Added secret, btw kit is in balenthiran namespace"), so nothing on this card waits on him; to switch it on: open Kit from the Home Screen icon, Notifications, Turn on notifications
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
@@ -1496,6 +1537,20 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract my assumption: a branch sync (kit/hosted taking dev) is the agent's own work arriving, not his action, so it wakes nothing
   contract first seen live 2026-10-24: his note at 22:50Z woke the sleeping agent at 22:56Z (claude-code-bot#118); it stays pending here only because its code, and so its test, live in claude-code-bot, where no Kit test can name it
   contract his 2026-10-25 question (kit-ui.notes.md#2026-10-25-1837), "Is this complete now?": not quite. That very note woke nothing for 4h, because my own commit synced in on top of it and the scheduler judged only the newest commit; claude-code-bot#124 looks past mine, and it is live once he merges it and promotes claude-code-bot
+  contract his 2026-10-26 notes (kit.notes.md#2026-10-26-2309, "Kit hasn't seemed to wake after my chanegs", and kit.notes.md#2026-10-26-2313, "suspend supersedes an action walking it should be the other way round"): the suspend was not the cause, since an action already overrides my own suspend. He acted every few minutes from 22:50Z to 23:13Z, so no 5-minute look ever saw five quiet minutes
+  contract my assumption: an action that has waited 10 minutes wakes the agent even while he is still acting (claude-code-bot#125, his to merge and promote); five minutes after his last action stays the rule when he stops
+
+behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-26-2312
+  priority 4
+  pending
+  paused
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "Kit shows when it is working - backlog if too high of a cost now"
+  contract on the Backlog because he said so: no plan to build it until he unpauses it
 
 # His note of 2026-10-24 22:50Z, minutes after the feed went live.
 behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
