@@ -1289,6 +1289,7 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
   priority 4
   review approved
   pending
+  needs-context "Nothing spends AI tokens for a user until a user's agent runs (BEH-USERS-9), so there is no usage to count yet. Should I build USERS-9 first? It spends money and is a platform choice, so it's yours to start. Until you say, I leave USERS-7 and build other cards."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
