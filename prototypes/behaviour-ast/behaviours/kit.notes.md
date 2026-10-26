@@ -320,3 +320,7 @@ Also add the feature of when you mention an app it suggests it to the fab note a
 ## 2026-10-26 22:52Z
 
 Getting who’s accountable can’t be read error rn
+
+## 2026-10-26 23:09Z
+
+Kit hasn’t seemed to wake after my chanegs
