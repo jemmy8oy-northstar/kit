@@ -328,3 +328,7 @@ Kit hasn’t seemed to wake after my chanegs
 ## 2026-10-26 23:12Z · new behaviour
 
 Kit shows when it is working - backlog if too high of a cost now
+
+## 2026-10-26 23:13Z · new behaviour
+
+Currently it seems like suspend supersedes an action walking it should be the other way round
