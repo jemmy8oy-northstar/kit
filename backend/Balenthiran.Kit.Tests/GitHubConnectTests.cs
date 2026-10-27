@@ -131,6 +131,80 @@ public class GitHubConnectTests
     }
 
     [Fact]
+    public void Once_connected_a_user_signs_in_with_GitHub_and_their_password_is_gone()
+    {
+        var users = Seeded();
+        var router = Router(users, new Own(new GitHubLink { Installation = 42, Account = "ann-gh" }));
+        var ann = SignIn(router, "ann");
+        Assert.Null(Session(router, ann).GitHubSignIn);
+        Assert.Equal(200, Connect(router, ann, new { code = "a", state = StateOf(Session(router, ann)) }).Status);
+
+        // The right password, said back to someone who knew it, and only then.
+        Assert.Equal("github-sign-in", Error(router.Route("POST", "/api/session", body: Json(new { username = "ann", password = "ann-first-password" }))));
+        Assert.Equal("bad-password", Error(router.Route("POST", "/api/session", body: Json(new { username = "ann", password = "not-her-password" }))));
+        Assert.Equal("github-sign-in", Error(router.Route("POST", "/api/session/password", ann, body: Json(new { current = "ann-first-password", next = "a-good-long-password" }))));
+
+        var signedOut = Assert.IsType<SessionState>(router.Route("GET", "/api/session").Body);
+        var state = HttpUtility.ParseQueryString(new Uri(signedOut.GitHubSignIn!).Query)["state"]!;
+        Assert.StartsWith("in.", state, StringComparison.Ordinal);
+
+        var r = GitHubSignIn(router, new { code = "b", state });
+        Assert.Equal(200, r.Status);
+        var cookie = r.SetCookie!.Split(';')[0];
+        Assert.Equal("ann", Session(router, cookie).User);
+        Assert.Null(Session(router, cookie).Operator);
+
+        // His own sign-in is KIT_PASSWORD still.
+        Assert.True(Session(router, SignIn(router, null, Operator)).Operator);
+    }
+
+    [Fact]
+    public void A_GitHub_no_user_has_connected_signs_no_one_in()
+    {
+        foreach (var link in new IGitHubLink?[] { new GitHubLink { Installation = 43, Account = "stranger" }, null })
+        {
+            var router = Router(Seeded(), new Own(link));
+            var r = GitHubSignIn(router, new { code = "c", state = SignInStateOf(router) });
+            Assert.Equal(401, r.Status);
+            Assert.Equal("github-not-connected", Error(r));
+            Assert.Null(r.SetCookie);
+        }
+    }
+
+    [Fact]
+    public void A_connect_state_never_signs_in_and_a_sign_in_state_never_connects()
+    {
+        var users = Seeded();
+        var clock = new Clock(DateTimeOffset.Parse("2026-10-27T15:00:00Z"));
+        var github = new Own(new GitHubLink { Installation = 42, Account = "ann-gh" });
+        var router = Router(users, github, clock);
+        var ann = SignIn(router, "ann");
+
+        var connect = StateOf(Session(router, ann));
+        var signIn = SignInStateOf(router);
+        Assert.Equal("bad-state", Error(GitHubSignIn(router, new { code = "c", state = connect })));
+        Assert.Equal("bad-state", Error(GitHubSignIn(router, new { code = "c", state = "in." + connect })));
+        Assert.Equal("bad-state", Error(Connect(router, ann, new { code = "c", state = signIn })));
+        Assert.Equal("bad-state", Error(GitHubSignIn(router, new { code = "c" })));
+
+        clock.Advance(TimeSpan.FromMinutes(31));
+        Assert.Equal("bad-state", Error(GitHubSignIn(router, new { code = "c", state = signIn })));
+        Assert.Equal(0, github.Asked);
+    }
+
+    [Fact]
+    public void Without_a_connector_there_is_no_GitHub_sign_in_and_the_password_still_works()
+    {
+        var users = Seeded();
+        users.SetGitHub("ann", new GitHubLink { Installation = 42, Account = "ann-gh" });
+        var router = Router(users, github: null);
+
+        Assert.Null(Assert.IsType<SessionState>(router.Route("GET", "/api/session").Body).GitHubSignIn);
+        Assert.Equal(404, GitHubSignIn(router, new { code = "c", state = "in.1.ab" }).Status);
+        Assert.Equal("ann", Session(router, SignIn(router, "ann")).User);
+    }
+
+    [Fact]
     public async Task The_connector_takes_only_the_authorising_accounts_installation_and_revokes_the_token()
     {
         // GitHub lists every installation ann can REACH: an organisation she is a member of comes first.
@@ -252,6 +326,11 @@ public class GitHubConnectTests
     private static string StateOf(SessionState s) => HttpUtility.ParseQueryString(new Uri(s.GitHubAuthorize!).Query)["state"]!;
 
     private static IKitResponse Connect(KitRouter router, string cookie, object body) => router.Route("POST", "/api/github/connected", cookie, body: Json(body));
+
+    private static IKitResponse GitHubSignIn(KitRouter router, object body) => router.Route("POST", "/api/session/github", body: Json(body));
+
+    private static string SignInStateOf(KitRouter router) =>
+        HttpUtility.ParseQueryString(new Uri(Assert.IsType<SessionState>(router.Route("GET", "/api/session").Body).GitHubSignIn!).Query)["state"]!;
 
     private static string? Error(IKitResponse r) => (r.Body as ApiError)?.Error;
 

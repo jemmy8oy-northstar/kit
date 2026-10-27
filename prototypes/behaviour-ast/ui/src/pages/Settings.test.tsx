@@ -239,6 +239,8 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByText('sam-gh')).toBeInTheDocument()
     expect(screen.queryByText('Connect your GitHub')).not.toBeInTheDocument()
+    // BEH-USERS-10: their GitHub is how they sign in now, so there is no password to change.
+    expect(screen.queryByLabelText('Current password')).not.toBeInTheDocument()
   })
 
   it('sends the install redirect straight on to authorise, posting nothing', async () => {

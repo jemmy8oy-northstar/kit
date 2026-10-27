@@ -75,6 +75,13 @@ public sealed class PostgresUserStore(string connectionString) : IUserStore, IDi
     }
 
     /// <inheritdoc />
+    public string? UserOfInstallation(long installation)
+    {
+        using var cmd = Command("SELECT name FROM kit_users WHERE github_installation = $1", installation);
+        return cmd.ExecuteScalar() as string;
+    }
+
+    /// <inheritdoc />
     public void Dispose() => source.Dispose();
 
     private NpgsqlCommand Command(string sql, params object[] values)

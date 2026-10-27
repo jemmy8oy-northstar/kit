@@ -308,6 +308,8 @@ public class AccountsTests
             return true;
         }
 
+        public string? UserOfInstallation(long installation) => links.FirstOrDefault(l => l.Value.Installation == installation).Key;
+
         public string? HashOf(string name) => hashes.GetValueOrDefault(name);
 
         public bool Add(string name, string hash) => hashes.TryAdd(name, hash);

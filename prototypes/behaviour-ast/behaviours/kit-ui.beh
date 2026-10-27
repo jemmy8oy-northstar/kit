@@ -1216,7 +1216,12 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: GitHub's answer names the GitHub account, and Kit signs in the one user whose connected installation belongs to that account; a GitHub account no user has connected is refused, so there is still no open sign-up
   contract my assumption: the same public Kit App and its OAuth client do it, so it needs no new secret, and like connecting it is off until kit#433 merges
   contract my assumption: his own sign-in stays KIT_PASSWORD
-  needs-context "Should a test user's password still work once their GitHub is connected? If you say nothing by 2026-10-30, I build GitHub sign-in with the password kept as a fallback."
+  contract his answer (kit-ui.notes.md#2026-10-27-1430) to "should a test user's password still work once their GitHub is connected?": "No, password gone after sign in for test users"
+  contract built: signed out, GET /api/session carries gitHubSignIn, GitHub's authorise link with a state of its own ("in." and an expiry, signed apart from a connect's), and the sign-in page shows "Sign in with GitHub" above the password. GitHub returns to Kit's root; the page posts the code and state to POST /api/session/github, which signs in the one user whose connected installation is on the authorising account, and reloads without them. A GitHub no user has connected answers 401 github-not-connected
+  contract built: once a user's GitHub is connected their password signs them in no more (401 github-sign-in, said only after the right password, so it tells a guesser nothing) and cannot be changed; Settings stops offering the change
+  contract my assumption: on a Kit deployed without the App's OAuth client the password still works, as otherwise a connected user could not sign in at all
+  contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
+  needs-context "Built and merged, but off until you merge kit#433: it gives Kit the App's client ID and secret you added today. Until then no one is offered GitHub sign-in and passwords keep working."
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
@@ -1529,7 +1534,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
-  needs-context "Merge claude-code-bot#124 and #125, the wake-timing fixes, then promote claude-code-bot. Until you do, a note made while you are busy can wait hours."
+  needs-context "Thanks for merging claude-code-bot#124 and #125. One step left: merge claude-code-bot#126, the promotion, because the scheduler runs from the built image. Until you do, a note made while you are busy can wait hours."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain

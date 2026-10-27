@@ -337,6 +337,12 @@ public sealed partial class KitRouter(
             return Session(pathname, cookie, body);
         }
 
+        // BEH-USERS-10: the other key, under the same Origin check and above the same lock.
+        if (pathname == "/api/session/github")
+        {
+            return SignInWithGitHub(body);
+        }
+
         // Exclusive on purpose: with a password the session decides and the bind address
         // is irrelevant — there is no "loopback, so allow" while a password is set.
         if (lockRequired)
@@ -1008,6 +1014,13 @@ public sealed partial class KitRouter(
             }
 
             throttle?.Succeed();
+        }
+
+        // BEH-USERS-10: once their GitHub is connected, a user's password signs them in no more.
+        // Said only to someone who knew it, so it tells a guesser nothing about who has connected.
+        if (user != ISessionStore.Operator && SignsInWithGitHub(user))
+        {
+            return Json(401, new ApiError { Error = "github-sign-in", Reason = "this account signs in with GitHub now: use Sign in with GitHub" });
         }
 
         var token = sessions!.Create(user);

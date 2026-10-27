@@ -33,15 +33,3 @@ I didn’t see this on tracks today why is it marked as done?
 ## 2026-10-26 23:05Z · new behaviour
 
 Not seeing how we r going to make money from tracks in the next month thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users. Is it free to use Garmin. Also is it free to use strava api for only my account? No April for more than one user on my app.
-
-## 2026-10-27 12:56Z · BEH-MAP-2
-
-Let’s do it, draft some visuals. Are you able to pull the coordinates after a Strava run?
-
-## 2026-10-27 12:56Z · BEH-MAP-2
-
-What about a Garmin run?
-
-## 2026-10-27 12:57Z · BEH-HIGH-3
-
-I don’t see this
