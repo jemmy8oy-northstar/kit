@@ -179,6 +179,11 @@ export function connectGitHub(code: string, state: string): Promise<SessionState
   return post<SessionState>('/api/github/connected', { code, state })
 }
 
+/** BEH-USERS-10: someone signed out hands back what GitHub returned, and gets the session cookie. */
+export function signInWithGitHub(code: string, state: string): Promise<{ ok: true; signedIn: true }> {
+  return post<{ ok: true; signedIn: true }>('/api/session/github', { code, state })
+}
+
 export function signOut(): Promise<{ ok: true; signedIn: false }> {
   return post<{ ok: true; signedIn: false }>('/api/session/end', null)
 }

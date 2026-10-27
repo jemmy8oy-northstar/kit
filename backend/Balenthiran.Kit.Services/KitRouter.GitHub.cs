@@ -82,6 +82,64 @@ public sealed partial class KitRouter
     }
 
     /// <summary>
+    /// BEH-USERS-10: the GitHub sign-in link for someone signed out, or null when this Kit has
+    /// no accounts or cannot connect a GitHub. Its state is signed for signing in, so a state
+    /// made to connect one user's GitHub never signs anyone in, nor the reverse.
+    /// </summary>
+    private string? GitHubSignInUrl() =>
+        users is null || github is null ? null : github.AuthorizeUrl(SignInState(Now() + ConnectLife));
+
+    /// <summary>
+    /// A user who has connected a GitHub signs in with it, and only with it. Only while this Kit
+    /// can connect one: a Kit deployed without its OAuth client still takes the password, or
+    /// they could not sign in at all.
+    /// </summary>
+    private bool SignsInWithGitHub(string who) => github is not null && users?.GitHubOf(who) is not null;
+
+    /// <summary>
+    /// <c>/api/session/github</c>: the page hands back what GitHub returned to someone signed
+    /// out. The account that authorised is matched to the one user whose connected installation
+    /// is on it; a GitHub no user has connected is refused, so there is still no open sign-up.
+    /// </summary>
+    private KitResponse SignInWithGitHub(JsonElement? body)
+    {
+        if (!lockRequired || users is null || github is null)
+        {
+            return Json(404, new ApiError { Error = "no-such-route", Reason = "this Kit cannot sign anyone in with GitHub: it needs accounts and its App's OAuth client" });
+        }
+
+        var b = body ?? default;
+        if (!ValidSignInState(Str(b, "state")))
+        {
+            return Json(403, new ApiError { Error = "bad-state", Reason = "this GitHub sign-in was not started from Kit in the last 30 minutes: sign in again" });
+        }
+
+        if (Str(b, "code") is not { Length: > 0 } code)
+        {
+            return Json(400, new ApiError { Error = "no-code", Reason = "GitHub's authorisation code is missing" });
+        }
+
+        IGitHubLink? link;
+        try
+        {
+            // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
+            link = github.InstallationAsync(code).GetAwaiter().GetResult();
+        }
+        catch (GitHubConnectException e)
+        {
+            return Json(502, new ApiError { Error = e.ErrorCode, Reason = e.Message });
+        }
+
+        if (link is null || users.UserOfInstallation(link.Installation) is not { } who)
+        {
+            return Json(401, new ApiError { Error = "github-not-connected", Reason = "no Kit user has connected this GitHub: sign in with the user name and password you were given, then connect it in Settings" });
+        }
+
+        var token = sessions!.Create(who);
+        return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
+    }
+
+    /// <summary>
     /// BEH-USERS-2: the repos of the user's connected GitHub that carry a corpus. No link, or a
     /// Kit that cannot read one, answers an empty list as before; a GitHub that cannot be read
     /// says so in <c>githubError</c>, because an empty list would read as "you have no projects".
@@ -136,4 +194,29 @@ public sealed partial class KitRouter
     private string ConnectSignature(string who, string at) => Convert.ToHexStringLower(HMACSHA256.HashData(
         SHA256.HashData(Encoding.UTF8.GetBytes($"kit github connect\n{password}")),
         Encoding.UTF8.GetBytes($"{who}\n{at}")));
+
+    /// <summary><c>in.expires.signature</c>: the prefix tells the page it is a sign-in coming back, not a connect.</summary>
+    private string SignInState(DateTimeOffset expires)
+    {
+        var at = expires.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        return $"in.{at}.{SignInSignature(at)}";
+    }
+
+    private bool ValidSignInState(string? state)
+    {
+        var parts = state?.Split('.');
+        if (parts is not ["in", var at, var signature]
+            || !long.TryParse(at, NumberStyles.None, CultureInfo.InvariantCulture, out var expires)
+            || Now().ToUnixTimeSeconds() > expires)
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(signature), Encoding.ASCII.GetBytes(SignInSignature(at)));
+    }
+
+    // Its own label, so no connect state (made for a user) verifies as a sign-in, nor the reverse.
+    private string SignInSignature(string at) => Convert.ToHexStringLower(HMACSHA256.HashData(
+        SHA256.HashData(Encoding.UTF8.GetBytes($"kit github sign-in\n{password}")),
+        Encoding.UTF8.GetBytes(at)));
 }

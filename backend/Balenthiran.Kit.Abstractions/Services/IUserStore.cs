@@ -24,4 +24,7 @@ public interface IUserStore
     /// written, when there is no such user or another user already holds that installation.
     /// </summary>
     bool SetGitHub(string name, DataModels.IGitHubLink link);
+
+    /// <summary>The user who connected <paramref name="installation"/>, or null when none has (BEH-USERS-10).</summary>
+    string? UserOfInstallation(long installation);
 }

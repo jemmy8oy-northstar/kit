@@ -598,6 +598,8 @@ export interface SessionState {
   gitHubInstall?: string
   /** Where they authorise it afterwards; carries a state signed for them alone. */
   gitHubAuthorize?: string
+  /** BEH-USERS-10: where someone signed out signs in with GitHub; absent once signed in, or when this Kit cannot. */
+  gitHubSignIn?: string
 }
 
 /**

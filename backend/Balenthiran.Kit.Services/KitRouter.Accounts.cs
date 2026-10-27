@@ -35,6 +35,7 @@ public sealed partial class KitRouter
             GitHub = gh.Account,
             GitHubInstall = gh.Install,
             GitHubAuthorize = gh.Authorize,
+            GitHubSignIn = lockRequired && who is null ? GitHubSignInUrl() : null,
         };
     }
 
@@ -96,6 +97,12 @@ public sealed partial class KitRouter
         if (who == ISessionStore.Operator)
         {
             return Json(409, new ApiError { Error = "operator-password", Reason = "the operator's password is KIT_PASSWORD, set where Kit is deployed, so it is changed there" });
+        }
+
+        // BEH-USERS-10: a password that no longer signs anyone in is not worth changing.
+        if (SignsInWithGitHub(who))
+        {
+            return Json(409, new ApiError { Error = "github-sign-in", Reason = "this account signs in with GitHub now, so it has no password to change" });
         }
 
         var next = Str(body, "next");
