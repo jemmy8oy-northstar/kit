@@ -332,3 +332,7 @@ Kit shows when it is working - backlog if too high of a cost now
 ## 2026-10-26 23:13Z · new behaviour
 
 Currently it seems like suspend supersedes an action walking it should be the other way round
+
+## 2026-10-27 08:54Z
+
+A settings page to show your GitHub integration and any other config in the future
