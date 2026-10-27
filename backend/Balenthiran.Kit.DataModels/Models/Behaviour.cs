@@ -132,6 +132,11 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NeedsContext { get; set; }
 
+    // BEH-BOARD-22: an `on-dev "..."` line, what will ship it live. Absent without one, so no golden changes.
+    [JsonPropertyOrder(25)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OnDev { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.

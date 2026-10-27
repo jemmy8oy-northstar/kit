@@ -64,6 +64,11 @@ public sealed class BehaviourView : IBehaviourView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NeedsContext { get; init; }
 
+    // BEH-BOARD-22: built on dev, not yet live, from an `on-dev` line. Absent when there is none.
+    [JsonPropertyOrder(17)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OnDev { get; init; }
+
     IReadOnlyList<string> IBehaviourView.In => In;
 
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;

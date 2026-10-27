@@ -31,6 +31,9 @@ public interface IBehaviourView
     /// <summary>A <c>needs-context</c> line (BEH-BOARD-17).</summary>
     string? NeedsContext { get; }
 
+    /// <summary>An <c>on-dev</c> line (BEH-BOARD-22).</summary>
+    string? OnDev { get; }
+
     string Layer { get; }
 
     /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>

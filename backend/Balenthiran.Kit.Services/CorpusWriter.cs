@@ -202,7 +202,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             var anchor = b.Start;
             for (var i = b.Start + 1; i <= b.End; i++)
             {
-                if (FirstToken(lines[i]) is "review" or "priority" or "source" or "layer" or "in" or "pending" or "needs-context")
+                if (FirstToken(lines[i]) is "review" or "priority" or "source" or "layer" or "in" or "pending" or "needs-context" or "on-dev")
                 {
                     anchor = i;
                 }
@@ -595,6 +595,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         priority = b.Priority,
         paused = b.Paused,
         needsContext = b.NeedsContext,
+        onDev = b.OnDev,
         asks = b.Asks,
         options = b.Options.Select(o => $"{o.Label}|{o.Consequence}").ToList(),
         recommend = b.Recommend is { } r ? $"{r.Label}|{r.Why}" : null,

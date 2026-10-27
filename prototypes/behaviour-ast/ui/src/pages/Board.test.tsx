@@ -715,6 +715,25 @@ describe('Board', () => {
     }
   })
 
+  it('says on a Done card that its code is on dev, not live, and what ships it (BEH-BOARD-22)', async () => {
+    details.alpha.push(beh('A-ON-DEV', { onDev: 'tracks#24' }), beh('A-ON-DEV-PENDING', { pending: true, onDev: 'tracks#24' }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      const card = (col: string, id: string) =>
+        within(column(col).getAllByRole('listitem').find((li) => li.querySelector('.id')?.textContent === id)!)
+
+      expect(card('Done', 'A-ON-DEV').getByTestId('on-dev')).toHaveTextContent('On dev, not live yet: ships with tracks#24')
+      // Promoted: the line is gone, and so is the marker.
+      expect(card('Done', 'A-DONE').queryByTestId('on-dev')).toBeNull()
+      // Only Done claims anything is finished, so only Done says where it is.
+      expect(card('Queue', 'A-ON-DEV-PENDING').queryByTestId('on-dev')).toBeNull()
+    } finally {
+      details.alpha.splice(-2)
+    }
+  })
+
   it('keeps every card when a history cannot be read, says so, and puts them after the dated ones', async () => {
     histories = { beta: done('beta', [['B-DONE', '2026-10-05T09:00:00Z']]) }
     vi.stubGlobal(
