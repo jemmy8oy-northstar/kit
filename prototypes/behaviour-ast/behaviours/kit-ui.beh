@@ -788,6 +788,7 @@ behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not y
   contract "I didn't see this on tracks today why is it marked as done?": tracks BEH-HIGH-3 was merged to tracks dev, and live Tracks deploys main, so Done claimed more than he could see
   contract my assumption: a Done card carries "on dev" until the project's main contains the change, then nothing; a card for a project with no dev branch is never marked
   contract my assumption: the agent, not Kit, decides it at first: a card it merged to dev only carries an `on-dev "<promotion PR>"` line, and deletes it once that PR is merged to main
+  contract my assumption: waiting only on a promotion keeps a card in Done with an on-dev line, not in Blocked (BEH-BOARD-23 is for a secret or a command of his), because "why is it marked as done?" asked for the card to say where it is, not to move
   contract built: an `on-dev "..."` line parses like needs-context (quoted, one per card); a Done card shows "🧪 On dev, not live yet: ships with <the line>"; other columns show nothing, since only Done claims anything is finished
   contract my assumption: for a project whose promotion is his, the agent raises the dev→main PR in the same wake it merges a card's last slice, so "on dev" always points at a PR he can merge
 
