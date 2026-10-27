@@ -263,6 +263,14 @@
     "name": "Notifications",
     "exact": true
   },
+  "page:KitSettings": {
+    "route": "/settings"
+  },
+  "heading:KitSettingsTitle": {
+    "role": "heading",
+    "name": "Settings",
+    "exact": true
+  },
   "region:KitNextWake": {
     "role": "region",
     "name": "Next wake",
