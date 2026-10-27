@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Card } from '@jemmy8oy-northstar/design-system'
 import type { Resource } from '../hooks/useResource'
+import Loading from './Loading'
 
 /**
  * Renders the three states of a resource so no page has to spell them out, and
@@ -15,7 +16,7 @@ export default function ResourceView<T>({
   children: (value: T) => ReactNode
 }) {
   if (resource.state === 'loading') {
-    return <p className="muted">Loading…</p>
+    return <Loading label="Loading…" />
   }
 
   if (resource.state === 'error') {
