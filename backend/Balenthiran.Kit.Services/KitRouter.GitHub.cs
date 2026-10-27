@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -35,10 +36,32 @@ public sealed partial class KitRouter
             return (null, null, null);
         }
 
-        var account = users.GitHubOf(who)?.Account;
+        var account = LinkOf(who)?.Account;
         return github is null
             ? (account, null, null)
             : (account, github.InstallUrl, github.AuthorizeUrl(ConnectState(who, Now() + ConnectLife)));
+    }
+
+    /// <summary>
+    /// The GitHub an account connected. The operator's Kit never needed the database before
+    /// BEH-SETTINGS-3, so for him a database that cannot be read means "no link", not a page
+    /// that fails: a down database still costs only what it did, a user's sign-in.
+    /// </summary>
+    private IGitHubLink? LinkOf(string who)
+    {
+        if (who != ISessionStore.Operator)
+        {
+            return users!.GitHubOf(who);
+        }
+
+        try
+        {
+            return users!.GitHubOf(who);
+        }
+        catch (DbException)
+        {
+            return null;
+        }
     }
 
     /// <summary><c>/api/github/connected</c>: the page hands back what GitHub returned.</summary>
@@ -158,7 +181,7 @@ public sealed partial class KitRouter
     /// </summary>
     private KitResponse UsersProjects(string? who, List<object> projects)
     {
-        if (userProjects is null || who is null || users?.GitHubOf(who) is not { } link)
+        if (userProjects is null || who is null || users is null || LinkOf(who) is not { } link)
         {
             return Json(200, new ProjectList { Projects = projects });
         }

@@ -1707,6 +1707,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   contract built: Settings offers him "Connect your personal GitHub" under a line saying the board's projects run on Kit's own App. Connecting works as a user's does, and stores his link on an account row named "@operator", which no user name can take
   contract built: his projects list keeps every board project and adds his personal repos that carry a corpus under "From your GitHub"; a GitHub already connected by a user stays theirs
   contract my assumption: connecting is never a way for him to sign in. "Sign in with GitHub" refuses his account (401 operator-password) and his password stays KIT_PASSWORD; the row's stored hash matches no password
+  contract found in review: his Kit never read the database before this card, so if the database cannot be read his session and board load as before, with no GitHub shown
 
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS

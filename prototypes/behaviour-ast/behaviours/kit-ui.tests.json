@@ -433,6 +433,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_operators_GitHub_is_not_a_way_in_and_his_password_still_is" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_operator_can_never_take_a_users_GitHub" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "The_operator_with_a_connected_GitHub_keeps_the_boards_projects_and_gains_his_repos" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_database_that_cannot_be_read_leaves_the_operators_session_and_board_as_they_were" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "offers the operator his personal GitHub, and names it once connected" }
   ],
   "BEH-SETTINGS-2": [
