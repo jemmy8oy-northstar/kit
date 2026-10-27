@@ -116,6 +116,37 @@ apps:
             name: kit-github
             key: private-key.pem
             optional: true
+      # BEH-USERS-1 (kit#431): how an early-access user connects their GitHub, by
+      # installing the App above on their own account (James made it public). Same
+      # App, so the same `kit-github` secret (kit#433: "can't we use the existing
+      # one?"). ⚠️ ADDED BY HAND, three keys patched onto it:
+      #
+      #   kubectl patch secret kit-github -n balenthiran --type merge -p \
+      #     '{"stringData":{"slug":"<app-url-name>","client-id":"<client-id>","client-secret":"<client-secret>"}}'
+      #
+      # The App's callback URL is https://balenthiran.co.uk/kit/ with nothing after
+      # the slash: GitHub appends ?code=...&state=... and Kit's page reads them. All
+      # three or none: unset, connecting stays off and nothing else changes. Set, it
+      # also needs `kit-database` above (a connection belongs to an account), or the
+      # pod refuses to start rather than offer a connect with nowhere to keep it.
+      - name: KIT_GITHUB_APP_SLUG
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: slug
+            optional: true
+      - name: KIT_GITHUB_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: client-id
+            optional: true
+      - name: KIT_GITHUB_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: kit-github
+            key: client-secret
+            optional: true
       # BEH-PULL-1 (kit#88): the project list and every read come from GitHub,
       # re-read every KIT_PROJECTS_POLL seconds (default 120), not from the pod's
       # clone. Writes still go to the clone above and are pushed to kit/hosted, so

@@ -40,7 +40,7 @@ feature FEAT-CONNECT "Connecting Strava and Spotify"
 # paused on his tracks#3 comment (2026-10-17): "Let's not worry about the track visuals for now".
 # Resumed on his note of 2026-10-27 12:56Z on BEH-MAP-2: "Let's do it, draft some visuals".
 feature FEAT-MAP "The music map of a workout"
-  stage ux
+  stage development
 feature FEAT-SHARE "Sharing a workout"
   stage problem
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
@@ -171,13 +171,13 @@ behaviour BEH-SYNC-6 "A run kept before a feature existed is given it later"
   layer technical
   source defined tracks.notes.md#2026-10-27-1257
   review unreviewed
-  pending
   priority 1
   actor runner
   contract "I don't see this", on the top-speed highlight: a run is given highlights only when it syncs, so every run kept before 0.1.11 shows none, and would show no map either
   contract unlike its songs (BEH-SYNC-5), a run's highlights and route come from Strava's streams, which Strava keeps, so they can be worked out later
   contract my assumption: a kept run missing its highlights or its route is worked out again from Strava's streams, a few at a time in the background, well under Strava's 100 requests per 15 minutes
   contract my assumption: a run Strava no longer has, or that has no GPS, is tried once and left as it is
+  contract built in tracks#25 (5 runs a pass, 20s apart); live since his promotion tracks#26 on 2026-10-27 14:27Z
 
 
 # ═══ DEFINED — tracks#6 (multi-user) ═══
@@ -259,7 +259,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   layer ux
   source inferred tracks#1
   review unreviewed
-  pending
+  on-dev "tracks#28, his promotion"
   priority 3
   actor runner
   given workout:WithSongs
@@ -268,13 +268,13 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   then sees region:SongList
   contract each song sits on the map at the point where it started, shown by its cover art
   contract the list below the map shows the same songs in order, with the distance each one covered
+  contract the map is built in tracks#25 and live since tracks#26 (2026-10-27): an SVG route with numbered cover pins. The distance each song covered is built in tracks#27 (merged to tracks dev 2026-10-27), worked out from the stored route: "640 m" under a kilometre, else "1.2 km"
 
 behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to where the runner was"
   in FEAT-MAP
   layer technical
   source inferred tracks#1
   review approved
-  pending
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
@@ -284,19 +284,20 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   contract yes: Strava's activity streams include latlng, a coordinate per sample beside its time, from the same request that already gives Tracks the speed for BEH-HIGH-3
   contract his question (tracks.notes.md#2026-10-27-1256), "What about a Garmin run?": a Garmin watch linked to Strava uploads each run there with its GPS, so Tracks sees it like any Strava run. Garmin's own API is closed to personal use (BEH-COST-1). An uploaded FIT file carries coordinates too, so the map would also work from one
   contract my assumption: the route is kept with the run when it syncs, so opening a run never calls Strava
+  contract built in tracks#25 (route thinned to 300 points, kept on the run); live since tracks#26 on 2026-10-27
 
 behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no map"
   in FEAT-MAP
   layer ux
   source inferred tracks#1
   review unreviewed
-  pending
   priority 2
   actor runner
   given workout:Indoor
   when opens page:Workout
   then sees region:SongList
   contract treadmill and indoor workouts have time but no route, so songs are listed by elapsed time
+  contract built in tracks#25; live since tracks#26 on 2026-10-27
 
 behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with the song covers on it"
   in FEAT-SHARE
