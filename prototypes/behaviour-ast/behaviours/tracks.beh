@@ -259,7 +259,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   layer ux
   source inferred tracks#1
   review unreviewed
-  pending
+  on-dev "tracks#28, his promotion"
   priority 3
   actor runner
   given workout:WithSongs
@@ -268,7 +268,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   then sees region:SongList
   contract each song sits on the map at the point where it started, shown by its cover art
   contract the list below the map shows the same songs in order, with the distance each one covered
-  contract the map is built in tracks#25 and live since tracks#26 (2026-10-27): an SVG route with numbered cover pins. Still to build: the distance each song covered, which the list does not show yet
+  contract the map is built in tracks#25 and live since tracks#26 (2026-10-27): an SVG route with numbered cover pins. The distance each song covered is built in tracks#27 (merged to tracks dev 2026-10-27), worked out from the stored route: "640 m" under a kilometre, else "1.2 km"
 
 behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to where the runner was"
   in FEAT-MAP
