@@ -340,3 +340,29 @@ A settings page to show your GitHub integration and any other config in the futu
 ## 2026-10-27 09:18Z
 
 A better loading experience, currently just shows checking… in the top left
+
+## 2026-10-27 21:11Z
+
+Button in settings to choose default permission to merge to main for kit. Maybe a selection to choose projects which do or don’t have permission for finer xonrol
+
+## 2026-10-27 21:30Z
+
+Kit iPhone installed app can I pull down to reload currently I have to swap to a different page and back
+
+## 2026-10-27 21:31Z
+
+A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority
+
+I am almost imagining a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing
+
+Maybe even an option to deprioritise
+
+## 2026-10-27 21:33Z
+
+I feel like currently kit doesn’t have any reason to work on the test generation health can we work on a kit health feature which shows percentage of features or behaviours with test coverage this kind of thing
+
+Kit should also probably try to schedule in improving the test health when it isn’t busy with new requests or priority work
+
+I guess this is kind of like tech debt
+
+But the whole point of kit is spec driven where the spec drives tests and the tests drive the code

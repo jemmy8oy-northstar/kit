@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -22,18 +23,45 @@ public sealed partial class KitRouter
     // state copied out of a page is soon worth nothing.
     private static readonly TimeSpan ConnectLife = TimeSpan.FromMinutes(30);
 
-    /// <summary>The session's GitHub fields: only for a signed-in user who is not the operator.</summary>
+    // BEH-SETTINGS-3: the operator's personal GitHub is kept as a row under this name, which no
+    // user can take (a user name is lower-case letters, digits, '-' and '_'), with a hash that
+    // verifies nothing: he signs in with KIT_PASSWORD, never through the row.
+    private const string NoPassword = "!operator";
+
+    /// <summary>The session's GitHub fields: for any signed-in account, the operator's personal one included (BEH-SETTINGS-3).</summary>
     private (string? Account, string? Install, string? Authorize) GitHubOf(string? who)
     {
-        if (users is null || who is null || who == ISessionStore.Operator)
+        if (users is null || who is null)
         {
             return (null, null, null);
         }
 
-        var account = users.GitHubOf(who)?.Account;
+        var account = LinkOf(who)?.Account;
         return github is null
             ? (account, null, null)
             : (account, github.InstallUrl, github.AuthorizeUrl(ConnectState(who, Now() + ConnectLife)));
+    }
+
+    /// <summary>
+    /// The GitHub an account connected. The operator's Kit never needed the database before
+    /// BEH-SETTINGS-3, so for him a database that cannot be read means "no link", not a page
+    /// that fails: a down database still costs only what it did, a user's sign-in.
+    /// </summary>
+    private IGitHubLink? LinkOf(string who)
+    {
+        if (who != ISessionStore.Operator)
+        {
+            return users!.GitHubOf(who);
+        }
+
+        try
+        {
+            return users!.GitHubOf(who);
+        }
+        catch (DbException)
+        {
+            return null;
+        }
     }
 
     /// <summary><c>/api/github/connected</c>: the page hands back what GitHub returned.</summary>
@@ -42,11 +70,6 @@ public sealed partial class KitRouter
         if (users is null || github is null)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = "this Kit cannot connect a GitHub: its App has no OAuth client configured" });
-        }
-
-        if (who == ISessionStore.Operator)
-        {
-            return Json(409, new ApiError { Error = "operator-github", Reason = "the operator's GitHub is the App installation Kit is deployed with, so it is changed there" });
         }
 
         var b = body ?? default;
@@ -74,6 +97,12 @@ public sealed partial class KitRouter
         if (link is null)
         {
             return Json(409, new ApiError { Error = "no-installation", Reason = "Kit's GitHub App is not installed on your own GitHub account (an organisation's is not connected yet): install it there, then connect" });
+        }
+
+        // The operator has no account row until his first connect; Add is a no-op once he has.
+        if (who == ISessionStore.Operator)
+        {
+            users.Add(who, NoPassword);
         }
 
         return users.SetGitHub(who, link)
@@ -135,6 +164,12 @@ public sealed partial class KitRouter
             return Json(401, new ApiError { Error = "github-not-connected", Reason = "no Kit user has connected this GitHub: sign in with the user name and password you were given, then connect it in Settings" });
         }
 
+        // BEH-SETTINGS-3: connecting his GitHub is not a way in. His sign-in stays KIT_PASSWORD.
+        if (who == ISessionStore.Operator)
+        {
+            return Json(401, new ApiError { Error = "operator-password", Reason = "this GitHub is the operator's, and the operator signs in with his password" });
+        }
+
         var token = sessions!.Create(who);
         return new KitResponse { Status = 200, ContentType = "application/json", Body = new SignInState { Ok = true, SignedIn = true }, SetCookie = CookieFor(token) };
     }
@@ -144,11 +179,11 @@ public sealed partial class KitRouter
     /// Kit that cannot read one, answers an empty list as before; a GitHub that cannot be read
     /// says so in <c>githubError</c>, because an empty list would read as "you have no projects".
     /// </summary>
-    private KitResponse UsersProjects(string who)
+    private KitResponse UsersProjects(string? who, List<object> projects)
     {
-        if (userProjects is null || users?.GitHubOf(who) is not { } link)
+        if (userProjects is null || who is null || users is null || LinkOf(who) is not { } link)
         {
-            return Json(200, new ProjectList { Projects = [] });
+            return Json(200, new ProjectList { Projects = projects });
         }
 
         try
@@ -157,13 +192,13 @@ public sealed partial class KitRouter
             var found = userProjects.ProjectsAsync(link.Installation).GetAwaiter().GetResult();
             return Json(200, new ProjectList
             {
-                Projects = [],
+                Projects = projects,
                 GitHub = found.Select(p => new UserProject { Name = p.Name, FullName = p.FullName, Url = p.Url, Corpus = p.Corpus.ToList() }).ToList(),
             });
         }
         catch (GitHubReadException e)
         {
-            return Json(200, new ProjectList { Projects = [], GitHubError = e.Message });
+            return Json(200, new ProjectList { Projects = projects, GitHubError = e.Message });
         }
     }
 

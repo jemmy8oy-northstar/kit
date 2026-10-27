@@ -140,13 +140,24 @@ function ConnectGitHub({ session }: { session: SessionState }) {
   )
 }
 
-/** The operator's GitHub is Kit's own App, set where Kit is deployed; connecting is for the users he adds. */
-function OperatorGitHub() {
+/**
+ * The operator's projects run on Kit's own App, set where Kit is deployed. BEH-SETTINGS-3:
+ * he can also connect his personal GitHub, as a user does, and its repos are listed beside
+ * the board's. Connecting it never becomes a way to sign in: his password stays.
+ */
+function OperatorGitHub({ session }: { session: SessionState }) {
+  const { returning, outcome } = useGitHubReturn(session)
+
   return (
     <div>
       <h3>GitHub</h3>
-      <p>Kit reads and writes your repos through its own GitHub App, set where Kit is deployed.
-        The users you add connect their own GitHub here.</p>
+      <p>Kit reads and writes the board's projects through its own GitHub App, set where Kit is deployed.</p>
+      {!session.gitHubInstall ? null : returning
+        ? <p role="status">Connecting your GitHub…</p>
+        : session.gitHub
+          ? <p>Your personal GitHub: <strong>{session.gitHub}</strong>. <a href={session.gitHubInstall}>Change</a></p>
+          : <p><a href={session.gitHubInstall}>Connect your personal GitHub</a></p>}
+      <Say outcome={outcome} />
     </div>
   )
 }
@@ -193,7 +204,7 @@ export default function Settings() {
           <p>Signed in as {session.user}</p>
           <p><button type="button" onClick={leave}>Sign out</button></p>
           {/* BEH-USERS-10: once their GitHub is connected it is how they sign in, so there is no password to change. */}
-          {session.operator ? <><OperatorGitHub /><AddUser /></> : <><ConnectGitHub session={session} />{session.gitHub ? null : <ChangePassword />}</>}
+          {session.operator ? <><OperatorGitHub session={session} /><AddUser /></> : <><ConnectGitHub session={session} />{session.gitHub ? null : <ChangePassword />}</>}
         </div>
       )}
       <OpeningPageSetting />
