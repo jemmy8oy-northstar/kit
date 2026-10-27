@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { addUser, changePassword, connectGitHub, signOut } from '../api/client'
 import type { SessionState } from '../api/types'
 import { githubNavigation } from '../components/githubNavigation'
+import { OpeningPageSetting } from '../components/OpeningPage'
 import { useSession } from '../components/session'
 
 type Outcome = { ok: true; text: string } | { ok: false; text: string } | null
@@ -194,6 +195,7 @@ export default function Settings() {
           {session.operator ? <><OperatorGitHub /><AddUser /></> : <><ConnectGitHub session={session} /><ChangePassword /></>}
         </div>
       )}
+      <OpeningPageSetting />
     </>
   )
 }
