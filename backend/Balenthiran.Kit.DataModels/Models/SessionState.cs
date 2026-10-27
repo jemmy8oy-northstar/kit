@@ -41,4 +41,12 @@ public sealed class SessionState : ISessionState
     [JsonPropertyOrder(8)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? GitHubAuthorize { get; init; }
+
+    /// <summary>
+    /// BEH-USERS-10: where someone signed out signs in with GitHub, carrying a state signed for
+    /// signing in. Absent once signed in, or when this Kit has no accounts or cannot connect a GitHub.
+    /// </summary>
+    [JsonPropertyOrder(9)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? GitHubSignIn { get; init; }
 }

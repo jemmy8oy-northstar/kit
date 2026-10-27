@@ -192,7 +192,8 @@ export default function Settings() {
         <div className="account">
           <p>Signed in as {session.user}</p>
           <p><button type="button" onClick={leave}>Sign out</button></p>
-          {session.operator ? <><OperatorGitHub /><AddUser /></> : <><ConnectGitHub session={session} /><ChangePassword /></>}
+          {/* BEH-USERS-10: once their GitHub is connected it is how they sign in, so there is no password to change. */}
+          {session.operator ? <><OperatorGitHub /><AddUser /></> : <><ConnectGitHub session={session} />{session.gitHub ? null : <ChangePassword />}</>}
         </div>
       )}
       <OpeningPageSetting />

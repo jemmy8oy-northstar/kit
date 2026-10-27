@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // dependency of this package, and adding one is a packaging change — his call
 // under claude-code-bot#83, not something to smuggle in beside a feature.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { githubNavigation } from './githubNavigation'
 import SignIn from './SignIn'
 
 /**
@@ -105,5 +106,66 @@ describe('SignIn', () => {
     render(<SignIn>{app}</SignIn>)
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
     expect(screen.queryByText('the corpus')).not.toBeInTheDocument()
+  })
+
+  // BEH-USERS-10: a test user who has connected their GitHub signs in with it.
+  describe('Sign in with GitHub', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+      window.history.replaceState(null, '', '/')
+    })
+
+    const withGitHub = (signInStatus: number) =>
+      vi.fn((path: string, init?: RequestInit) => {
+        if (path === '/api/session/github' && init?.method === 'POST') {
+          return Promise.resolve({
+            ok: signInStatus === 200,
+            status: signInStatus,
+            json: () => Promise.resolve(
+              signInStatus === 200
+                ? { ok: true, signedIn: true }
+                : { error: 'github-not-connected', reason: 'no Kit user has connected this GitHub' },
+            ),
+          } as Response)
+        }
+        return fetchMock({ required: true, signedIn: false, accounts: true, gitHubSignIn: 'https://github.example/authorize?state=in.1.ab' })(path, init)
+      })
+
+    it('offers it beside the password when the server does', async () => {
+      vi.stubGlobal('fetch', withGitHub(200))
+      render(<SignIn>{app}</SignIn>)
+      expect(await screen.findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute('href', 'https://github.example/authorize?state=in.1.ab')
+      expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    })
+
+    it('hands GitHub’s code to the server on the way back, then reloads without it', async () => {
+      const reload = vi.spyOn(githubNavigation, 'reload').mockImplementation(() => {})
+      const fetch = withGitHub(200)
+      vi.stubGlobal('fetch', fetch)
+      window.history.replaceState(null, '', '/?code=c0de&state=in.1.ab')
+      render(<SignIn>{app}</SignIn>)
+      expect(screen.getByRole('status')).toHaveTextContent('Signing in with GitHub')
+      await waitFor(() => expect(reload).toHaveBeenCalled())
+      const sent = fetch.mock.calls.find(([path]) => path === '/api/session/github')!
+      expect(JSON.parse(sent[1]!.body as string)).toEqual({ code: 'c0de', state: 'in.1.ab' })
+    })
+
+    it('shows the server’s sentence when GitHub signs no one in, and drops the spent code', async () => {
+      vi.stubGlobal('fetch', withGitHub(401))
+      window.history.replaceState(null, '', '/?code=c0de&state=in.1.ab')
+      render(<SignIn>{app}</SignIn>)
+      expect(await screen.findByRole('alert')).toHaveTextContent('no Kit user has connected this GitHub')
+      expect(window.location.search).toBe('')
+      expect(screen.getByLabelText('Password')).toBeInTheDocument()
+    })
+
+    it('leaves a connect coming back to Settings, whose state has no "in."', async () => {
+      const fetch = withGitHub(200)
+      vi.stubGlobal('fetch', fetch)
+      window.history.replaceState(null, '', '/?code=c0de&state=1.ab')
+      render(<SignIn>{app}</SignIn>)
+      await screen.findByLabelText('Password')
+      expect(fetch.mock.calls.some(([path]) => path === '/api/session/github')).toBe(false)
+    })
   })
 })

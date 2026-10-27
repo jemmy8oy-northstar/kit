@@ -315,7 +315,16 @@ pre {
   color: var(--color-text);
 }
 
-.signin button {
+/* BEH-USERS-10: "Sign in with GitHub" is a link to GitHub, drawn as the button beside it. */
+.signin .github-sign-in {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.signin button,
+.signin .github-sign-in {
   padding: var(--space-3);
   font-size: var(--text-base);
   font-family: var(--font-text);

@@ -18,4 +18,6 @@ public interface ISessionState
     string? GitHubInstall { get; }
 
     string? GitHubAuthorize { get; }
+
+    string? GitHubSignIn { get; }
 }
