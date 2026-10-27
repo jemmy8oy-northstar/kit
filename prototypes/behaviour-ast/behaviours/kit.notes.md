@@ -336,3 +336,7 @@ Currently it seems like suspend supersedes an action walking it should be the ot
 ## 2026-10-27 08:54Z
 
 A settings page to show your GitHub integration and any other config in the future
+
+## 2026-10-27 09:18Z
+
+A better loading experience, currently just shows checking… in the top left
