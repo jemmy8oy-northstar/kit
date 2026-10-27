@@ -1654,6 +1654,62 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
 
+# His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
+# time, and a health view of how much of each spec has tests.
+feature FEAT-INBOX "His items, one at a time"
+  stage problem
+
+behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unseen first, and he answers each in place"
+  in FEAT-INBOX
+  source defined kit.notes.md#2026-10-27-2131
+  review unreviewed
+  pending
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority"
+  contract "a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing. Maybe even an option to deprioritise"
+  contract my assumption: "mine" is every card the board badges 👤 yours (BEH-BOARD-17): review requests, unreviewed proposals, needs-context lines, and paused cards
+  contract my assumption: one card fills the screen, with its title, its question or needs-context line, and buttons for approve, deny, pause, answer, comment, and lower priority. Answering moves to the next card
+  contract my assumption: order is cards he has not opened yet first, highest priority first, then the rest by priority; "seen" is kept in this browser, like the opening page (BEH-SETTINGS-2)
+  contract my assumption: lower priority adds 1 to its priority (5 at most), written as an edit like any other
+  contract my assumption: swiping is a later step; buttons first, as they also work on a laptop
+  contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
+
+feature FEAT-HEALTH "Kit health: how much of each spec has tests"
+  stage problem
+
+behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share of behaviours a test names"
+  in FEAT-HEALTH
+  source defined kit.notes.md#2026-10-27-2133
+  review unreviewed
+  pending
+  priority 3
+  actor engineer
+  when opens page:KitHealth
+  then sees region:KitMain
+  contract "can we work on a kit health feature which shows percentage of features or behaviours with test coverage this kind of thing"
+  contract what exists: each project already carries a "N/M covered" badge, but on live Kit all 15 read "not measured" (checked 2026-10-27 21:55Z), because the deployed Kit reads no app's test files
+  contract my assumption: so the first step is reading coverage where it lives, each app's own repo, through the same GitHub reads Kit already makes; this page then shows a percentage per project and in total, and the behaviours no test names
+  contract my assumption: "covered" means a test names the behaviour, as kit check counts it today; it does not mean the test passes
+  contract my assumption: pending (not built) behaviours are left out of the percentage, as kit check leaves them out
+
+behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the project with the worst test health"
+  in FEAT-HEALTH
+  source defined kit.notes.md#2026-10-27-2133
+  review unreviewed
+  pending
+  priority 3
+  actor engineer
+  when opens page:KitHealth
+  then sees region:KitMain
+  contract "Kit should also probably try to schedule in improving the test health when it isn't busy with new requests or priority work. I guess this is kind of like tech debt"
+  contract "the whole point of kit is spec driven where the spec drives tests and the tests drive the code"
+  contract my assumption: on a wake with nothing on the Queue and nothing of his to act on, the agent writes or maps tests for the lowest-scoring project's uncovered behaviours, one project per PR, instead of sleeping
+  contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
+  contract my assumption: the health page shows the last such PR, so the work is visible
+
 feature FEAT-SETTINGS "Settings"
   stage ui
 
@@ -1734,3 +1790,17 @@ behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spin
   contract my assumption: a page still loading its data shows the same spinner beside "Loading…"
   contract my assumption: after 5 seconds either wait adds "Still waiting for Kit's server…", so a slow server never looks like a stopped page
   contract my assumption: with reduced motion on, the spinner stands still
+
+behaviour BEH-LOADING-2 "On the installed iPhone app, pulling the page down reloads it"
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-27-2130
+  review unreviewed
+  pending
+  priority 3
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "Kit iPhone installed app can I pull down to reload currently I have to swap to a different page and back"
+  contract the installed app has no browser bar, so iOS gives it no pull-to-refresh of its own; Kit has to draw one
+  contract my assumption: pulling down from the top of any page shows a spinner and, once released past a short distance, re-reads that page's data from the server without reloading the whole app
+  contract my assumption: it only starts when the page is already scrolled to the top, so normal scrolling never triggers it
