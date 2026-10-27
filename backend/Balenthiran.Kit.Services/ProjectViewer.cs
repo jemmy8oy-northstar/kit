@@ -122,6 +122,7 @@ public sealed class ProjectViewer(
                 Priority = b.Priority,
                 Paused = b.Paused,
                 NeedsContext = b.NeedsContext,
+                OnDev = b.OnDev,
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,

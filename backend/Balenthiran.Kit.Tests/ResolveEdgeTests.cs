@@ -76,6 +76,8 @@ public class ResolveEdgeTests
 
         public string? NeedsContext => null;
 
+        public string? OnDev => null;
+
         public string? Asks => null;
 
         public IReadOnlyList<IOption> Options => [];
