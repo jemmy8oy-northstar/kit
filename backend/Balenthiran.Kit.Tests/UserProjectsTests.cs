@@ -120,6 +120,23 @@ public class UserProjectsTests
         Assert.Null(his.GitHubError);
     }
 
+    // kit-ui.beh BEH-SETTINGS-3: his personal GitHub's repos sit beside the board's, never instead of them.
+    [Fact]
+    public void The_operator_with_a_connected_GitHub_keeps_the_boards_projects_and_gains_his_repos()
+    {
+        var users = Seeded();
+        users.Add(ISessionStore.Operator, "!operator");
+        Assert.True(users.SetGitHub(ISessionStore.Operator, new GitHubLink { Installation = 42, Account = "james-gh" }));
+        var canned = new Canned([Project("tracks", "tracks.beh")]);
+        var router = Router(users, canned);
+
+        var him = SignIn(router, null, Operator);
+        var his = Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body);
+        Assert.NotEmpty(his.Projects);
+        Assert.Equal(["ann-gh/tracks"], his.GitHub!.Select(p => p.FullName));
+        Assert.Equal(1, canned.Asked);
+    }
+
     [Fact]
     public void No_link_or_no_service_leaves_the_list_empty_as_before()
     {

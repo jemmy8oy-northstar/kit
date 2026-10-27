@@ -234,6 +234,21 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     expect(screen.queryByText('Connect your GitHub')).not.toBeInTheDocument()
   })
 
+  // BEH-SETTINGS-3: once the server offers him the install link, he connects his personal GitHub.
+  it('offers the operator his personal GitHub, and names it once connected', async () => {
+    const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true, gitHubInstall: sam.gitHubInstall, gitHubAuthorize: sam.gitHubAuthorize }
+    vi.stubGlobal('fetch', server([james]).fn)
+    const { unmount } = render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('link', { name: 'Connect your personal GitHub' })).toHaveAttribute('href', sam.gitHubInstall)
+    expect(screen.getByLabelText('User name')).toBeInTheDocument()
+    unmount()
+
+    vi.stubGlobal('fetch', server([{ ...james, gitHub: 'james-gh' }]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('james-gh')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Connect your personal GitHub' })).not.toBeInTheDocument()
+  })
+
   it('names the account once connected', async () => {
     vi.stubGlobal('fetch', server([{ ...sam, gitHub: 'sam-gh' }]).fn)
     render(<SignIn>{app}</SignIn>)

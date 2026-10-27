@@ -157,9 +157,10 @@ public sealed partial class KitRouter(
         {
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
             // serves is the operator's, so theirs is empty (BEH-USERS-2 adds what their GitHub holds).
+            // BEH-SETTINGS-3: the operator keeps the board's projects and gains his personal GitHub's.
             return IsOtherUser(cookie)
-                ? UsersProjects(UserOf(cookie)!)
-                : Json(200, new ProjectList { Projects = corpora.Corpora().Select(viewer.Summary).ToList() });
+                ? UsersProjects(UserOf(cookie)!, [])
+                : UsersProjects(UserOf(cookie), corpora.Corpora().Select(viewer.Summary).ToList());
         }
 
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).

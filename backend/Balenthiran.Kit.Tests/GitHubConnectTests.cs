@@ -96,16 +96,58 @@ public class GitHubConnectTests
         Assert.Null(users.GitHubOf("bob"));
     }
 
+    // kit-ui.beh BEH-SETTINGS-3: he connects his personal GitHub the way a user does.
     [Fact]
-    public void The_operator_is_offered_nothing_and_cannot_connect()
+    public void The_operator_connects_his_own_GitHub_as_a_user_does()
     {
-        var router = Router(Seeded(), new Own(null));
+        var users = Seeded();
+        var router = Router(users, new Own(new GitHubLink { Installation = 77, Account = "james-gh" }));
         var him = SignIn(router, null, Operator);
 
-        var state = Session(router, him);
-        Assert.Null(state.GitHubInstall);
-        Assert.Null(state.GitHubAuthorize);
-        Assert.Equal("operator-github", Error(Connect(router, him, new { code = "c", state = "x" })));
+        var before = Session(router, him);
+        Assert.Null(before.GitHub);
+        Assert.Equal("https://github.example/apps/kit/installations/new", before.GitHubInstall);
+
+        var r = Connect(router, him, new { code = "c0de", state = StateOf(before) });
+        Assert.Equal(200, r.Status);
+        Assert.Equal("james-gh", Session(router, him).GitHub);
+        Assert.Equal(77, users.GitHubOf(ISessionStore.Operator)!.Installation);
+
+        // Connecting again replaces it, and he is still the operator.
+        Assert.Equal(200, Connect(router, him, new { code = "c0de", state = StateOf(Session(router, him)) }).Status);
+        Assert.True(Session(router, him).Operator);
+    }
+
+    [Fact]
+    public void The_operators_GitHub_is_not_a_way_in_and_his_password_still_is()
+    {
+        var users = Seeded();
+        var router = Router(users, new Own(new GitHubLink { Installation = 77, Account = "james-gh" }));
+        var him = SignIn(router, null, Operator);
+        Assert.Equal(200, Connect(router, him, new { code = "c0de", state = StateOf(Session(router, him)) }).Status);
+
+        var r = GitHubSignIn(router, new { code = "c", state = SignInStateOf(router) });
+        Assert.Equal(401, r.Status);
+        Assert.Equal("operator-password", Error(r));
+        Assert.Null(r.SetCookie);
+
+        // His row holds a link, never a password: KIT_PASSWORD signs him in, and nothing else does.
+        Assert.True(Session(router, SignIn(router, null, Operator)).Operator);
+        Assert.Equal(401, router.Route("POST", "/api/session", body: Json(new { username = "@operator", password = "!operator" })).Status);
+        Assert.False(PasswordHash.Verify("!operator", users.HashOf(ISessionStore.Operator)!));
+    }
+
+    [Fact]
+    public void The_operator_can_never_take_a_users_GitHub()
+    {
+        var users = Seeded();
+        var router = Router(users, new Own(new GitHubLink { Installation = 42, Account = "ann-gh" }));
+        var ann = SignIn(router, "ann");
+        Assert.Equal(200, Connect(router, ann, new { code = "a", state = StateOf(Session(router, ann)) }).Status);
+
+        var him = SignIn(router, null, Operator);
+        Assert.Equal("github-taken", Error(Connect(router, him, new { code = "b", state = StateOf(Session(router, him)) })));
+        Assert.Null(users.GitHubOf(ISessionStore.Operator));
     }
 
     [Fact]
