@@ -1201,6 +1201,23 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract his answer (kit#431, 2026-10-23 22:03Z): "I think we make a new public GitHub app"; so users install a new public App named Kit, and the bot's own App stays private and keeps running Kit
   contract built: kit#431 (merged 2026-10-23); kit#433 has the chart read the App's slug, client id and secret from a hand-made kit-github-connect secret, and connecting stays off until James creates that App and secret
 
+behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
+  in FEAT-USER-SIGNUP
+  source defined kit.notes.md#2026-10-27-1259
+  review unreviewed
+  pending
+  priority 4
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "For the test users can they sign in with a username and password and then the onboarding is you connect your GitHub and then after that you just sign on with your GitHub?"
+  contract yes: the first sign-in is the username and password he made (BEH-USERS-1), connecting their GitHub is the onboarding step, and every sign-in after that is a "Sign in with GitHub" button
+  contract this brings forward, for early access, the GitHub sign-in BEH-USERS-1 left for general release
+  contract my assumption: GitHub's answer names the GitHub account, and Kit signs in the one user whose connected installation belongs to that account; a GitHub account no user has connected is refused, so there is still no open sign-up
+  contract my assumption: the same public Kit App and its OAuth client do it, so it needs no new secret, and like connecting it is off until kit#433 merges
+  contract my assumption: his own sign-in stays KIT_PASSWORD
+  needs-context "Should a test user's password still work once their GitHub is connected? If you say nothing by 2026-10-30, I build GitHub sign-in with the password kept as a fallback."
+
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
   stage development
@@ -1634,6 +1651,21 @@ behaviour BEH-SETTINGS-1 "A Settings page shows your GitHub integration and your
   contract my assumption: GitHub still sends a connecting user back to Kit's root, the App's callback URL, and Kit sends that return on to Settings with its query intact, so no App setting of his has to change
   contract my assumption: a Kit without user accounts shows the page saying it has one password, rather than an empty page
   contract BEH-USERS-5's secrets form, when it is built, belongs on this page
+
+behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from Settings, as a user does"
+  in FEAT-SETTINGS
+  source defined kit.notes.md#2026-10-27-1258
+  review unreviewed
+  pending
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Can settings allow me to integrate my GitHub with kit?"
+  contract the org's GitHub is integrated already: that is Kit's own App installation, which reads and writes every project on the board, so it is set where Kit is deployed and Settings only says so
+  contract what he can't do yet is connect his personal GitHub account: Kit refuses the operator ("operator-github"), because when it was built the operator had no account record to hang a link on
+  contract my assumption: he connects the same way a user does (BEH-USERS-1), and repos on his personal account that carry a corpus appear under "From your GitHub" beside the board's projects (BEH-USERS-2); the org installation Kit runs on still can never be claimed as his link
+  contract connecting at all, for him or any user, waits on kit#433: it passes the App's slug, client id and client secret to Kit, so until it merges no one is offered it
 
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV
