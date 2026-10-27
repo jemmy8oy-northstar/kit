@@ -428,6 +428,13 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
+  "BEH-SETTINGS-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_operator_connects_his_own_GitHub_as_a_user_does" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_operators_GitHub_is_not_a_way_in_and_his_password_still_is" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_operator_can_never_take_a_users_GitHub" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "The_operator_with_a_connected_GitHub_keeps_the_boards_projects_and_gains_his_repos" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "offers the operator his personal GitHub, and names it once connected" }
+  ],
   "BEH-SETTINGS-2": [
     { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "opens on the page chosen in Settings, and remembers it in this browser" },
     { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "opens on Projects when nothing is chosen, or the choice is no longer a page" },
