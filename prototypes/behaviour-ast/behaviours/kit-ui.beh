@@ -1494,7 +1494,6 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   source defined kit.notes.md#2026-10-24-1359
   review approved
   priority 2
-  needs-context "The secret is in. Open Kit from the Home Screen icon, then Notifications, then Turn on notifications, and tell me whether a push arrives. If you say nothing by 2026-11-02, I'll count it as working."
   actor engineer
   when opens page:KitNotifications
   then sees region:KitMain
@@ -1506,6 +1505,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
   contract his question (kit.notes.md#2026-10-25-1601), "Still not getting phone notifications how do I enable": the code is live, but it needs a key pair only he can create. Open Notifications in Kit. If it says "Push is not switched on yet on the server", the kit-push secret is missing (the steps are on this card). If it says "Add Kit to your Home Screen", open Kit from the Home Screen icon, not Safari. Otherwise tap Turn on notifications and allow
   contract he created the kit-push secret on 2026-10-26 (kit#454: "Added secret, btw kit is in balenthiran namespace"). It stays Blocked, not Done, until a push has reached his phone (BEH-BOARD-23)
+  contract his note (kit-ui.notes.md#2026-10-27-1128): "This is working". A push reached his phone, so the needs-context line is gone and the card is Done (BEH-BOARD-23)
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
