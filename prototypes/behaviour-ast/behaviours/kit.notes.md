@@ -344,3 +344,7 @@ A better loading experience, currently just shows checking… in the top left
 ## 2026-10-27 21:11Z
 
 Button in settings to choose default permission to merge to main for kit. Maybe a selection to choose projects which do or don’t have permission for finer xonrol
+
+## 2026-10-27 21:30Z
+
+Kit iPhone installed app can I pull down to reload currently I have to swap to a different page and back
