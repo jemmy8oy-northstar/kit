@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ApiError, fetchSession, signIn } from '../api/client'
 import type { SessionState } from '../api/types'
+import Loading from './Loading'
 import { SessionContext } from './session'
 
 /**
@@ -75,7 +76,7 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
   // form on a local Kit, or of the app on a locked one, would each be a lie for
   // one frame — and the second would fire read requests as a side effect.
   if (!state) {
-    return <p role="status">Checking…</p>
+    return <Loading splash label="Opening Kit…" />
   }
 
   if (state.required && !state.signedIn) {

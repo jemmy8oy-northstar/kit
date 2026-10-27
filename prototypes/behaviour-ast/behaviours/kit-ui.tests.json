@@ -412,6 +412,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
   ],
+  "BEH-LOADING-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "opens on Kit's name and a spinner while it asks the server who you are" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "says it is still waiting once the server is slow, and not before" }
+  ],
   "BEH-SETTINGS-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "says this Kit has no accounts when they are off, even when signed in" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "tells the operator Kit runs on its own GitHub App" },
