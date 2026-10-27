@@ -936,7 +936,7 @@ feature FEAT-STAGE-READING "The agent reads each feature's stage"
   in FEAT-STAGES
   stage ui
 
-behaviour BEH-STAGE-9 "The stage board is for reading: the agent writes every stage line, and he never moves a card"
+behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only reads the stage board, and never drags a card"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
@@ -949,6 +949,7 @@ behaviour BEH-STAGE-9 "The stage board is for reading: the agent writes every st
   contract "the human can use it to quickly identify what work is left to be done": the board is for reading, and he never has to move a card
   contract every feature goes through the stages; a simple one just needs less written at each, and a one-line answer is enough
   contract the agent writes the stage line and moves it on when it rereads the feature; "rough" means a stage can lag the spec by a wake
+  contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": each feature's column on the Stages page (problem, ux, logic, development, ui) is my judgement of how far along it is, written into the spec as its `stage` line. You never set or drag it; you read the board to see what is left. If a column looks wrong, leave a note on the feature and I move it
 
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
   in FEAT-STAGE-READING
@@ -962,7 +963,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
-behaviour BEH-STAGE-11 "A feature with nothing built is placed by reading it"
+behaviour BEH-STAGE-11 "A feature with nothing built yet is placed by how much of it is written"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review unreviewed
@@ -972,6 +973,7 @@ behaviour BEH-STAGE-11 "A feature with nothing built is placed by reading it"
   then sees region:KitStagesBoard
   contract my assumption: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
   contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
+  contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet, where I go by the writing: a one-line idea sits at problem, one that says who does what step by step sits at ux, and one whose rules are written down sits at logic
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -1200,12 +1202,12 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
   contract my assumption: it switches on when Kit's App has an OAuth client (KIT_GITHUB_APP_SLUG, KIT_GITHUB_CLIENT_ID, KIT_GITHUB_CLIENT_SECRET) and Kit's page as its setup and callback URL; until James sets those, no user is offered it
   contract his answer (kit#431, 2026-10-23 22:03Z): "I think we make a new public GitHub app"; so users install a new public App named Kit, and the bot's own App stays private and keeps running Kit
   contract built: kit#431 (merged 2026-10-23); kit#433 has the chart read the App's slug, client id and secret from a hand-made kit-github-connect secret, and connecting stays off until James creates that App and secret
+  contract live since kit#503 (2026-10-27 21:39Z): he merged kit#433 reading the keys from the existing kit-github secret, and signed-out Kit now offers GitHub. Untested end to end: only a real user connecting proves the client secret and callback URL
 
 behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
   in FEAT-USER-SIGNUP
   source defined kit.notes.md#2026-10-27-1259
-  review unreviewed
-  pending
+  review requested it is live: please try it once as a test user (sign in with the password, connect GitHub, sign out, then Sign in with GitHub). That is the only test of the client secret and callback URL. Approve if it works; leave a note if it fails
   priority 4
   actor engineer
   when opens page:KitProjects
@@ -1222,8 +1224,7 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract my assumption: on a Kit deployed without the App's OAuth client the password still works, as otherwise a connected user could not sign in at all
   contract my assumption, found in review: a user who uninstalls and reinstalls the App gets a new installation, so GitHub no longer signs them in and their password is gone; nothing in Kit recovers that yet, so BEH-USERS-11 proposes he can reset a user's sign-in
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
-  needs-context "Built and merged, but off until you merge kit#433: it gives Kit the App's client ID and secret you added today. Until then no one is offered GitHub sign-in and passwords keep working."
-
+  contract live since kit#503 (2026-10-27 21:39Z): signed out, Kit's sign-in page now offers "Sign in with GitHub"
 behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
   in FEAT-USER-SIGNUP
   source inferred kit-ui.beh#BEH-USERS-10
@@ -1254,6 +1255,7 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   contract his denial, 2026-10-25 13:05Z: "I thought we were going to use the existing one and just make it public, I will make it public now". So there is no new App: Kit's existing App, now public, is the one users install, and Kit already holds its App ID and key, so this card needs no new keys and is mine to build
   contract his question (kit-ui.notes.md#2026-10-25-1309), "How far are we from other people being able to install the app?": anyone can install it now, but Kit can't use their install yet. Two steps of his: merge kit#433 and create the kit-github-connect secret from this same App's slug, client ID and a client secret, with the App's callback URL set to Kit's. Then a user he has made an account for can sign in and connect their GitHub (BEH-USERS-1, built). This card then shows them their repos. No agent works on their projects until BEH-USERS-9
   contract my assumption: re-proposed with his correction folded in, so it shows as unreviewed rather than staying denied
+  contract both of his steps are done: he added the App's keys to kit-github and merged kit#433, live since kit#503 (2026-10-27 21:39Z). He approved this card at 21:16Z
   contract built: GET /api/projects for a signed-in user with a connected GitHub lists the repos their installation reaches whose default branch holds a .beh file, read from GitHub on every request with a token minted for their own installation, and kept nowhere. The body gains gitHub (name, fullName, url, corpus paths); the Projects page lists them under "From your GitHub", each linking to the repo, with no page of its own yet. A GitHub that cannot be read answers 200 with gitHubError and no gitHub list, so a failure is never shown as "no projects". A user with no link, a Kit without the App's id and key, and the operator all get the list they had before
   contract my assumption: one level short of the spec, a repo whose tree GitHub truncates (about 100,000 entries) lists only the .beh files in the part it returned; and an organisation's installation is not read, as BEH-USERS-1 never records one
 
@@ -1702,6 +1704,23 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   contract what he can't do yet is connect his personal GitHub account: Kit refuses the operator ("operator-github"), because when it was built the operator had no account record to hang a link on
   contract my assumption: he connects the same way a user does (BEH-USERS-1), and repos on his personal account that carry a corpus appear under "From your GitHub" beside the board's projects (BEH-USERS-2); the org installation Kit runs on still can never be claimed as his link
   contract connecting at all, for him or any user, waits on kit#433: it passes the App's slug, client id and client secret to Kit, so until it merges no one is offered it
+  contract kit#433 is live since kit#503 (2026-10-27 21:39Z), so a user can connect now; the operator still cannot, which is what this card builds
+
+behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
+  in FEAT-SETTINGS
+  source defined kit.notes.md#2026-10-27-2111
+  review unreviewed
+  pending
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Button in settings to choose default permission to merge to main for kit. Maybe a selection to choose projects which do or don't have permission for finer control"
+  contract today that permission lives in the agent's own rules, granted by him per project in a thread: Kit (kit#286), language-vocab, earnyourbeers and, from tonight, Tracks (tracks#28)
+  contract my assumption: Settings lists every project on the board with an on/off switch, plus a default for new projects (off), and the agent reads the switch at each wake instead of its written list
+  contract my assumption: only he can change it; a test user's projects have no switch until BEH-USERS-4 gives them an agent
+  contract my assumption: turning a project off stops future promotions only; anything already on main stays
+  contract my assumption: until this is built, his grants in threads stay the record
 
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV
