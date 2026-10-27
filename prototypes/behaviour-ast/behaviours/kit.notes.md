@@ -348,3 +348,11 @@ Button in settings to choose default permission to merge to main for kit. Maybe 
 ## 2026-10-27 21:30Z
 
 Kit iPhone installed app can I pull down to reload currently I have to swap to a different page and back
+
+## 2026-10-27 21:31Z
+
+A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority
+
+I am almost imagining a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing
+
+Maybe even an option to deprioritise
