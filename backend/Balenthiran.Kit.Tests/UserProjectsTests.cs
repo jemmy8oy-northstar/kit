@@ -120,6 +120,41 @@ public class UserProjectsTests
         Assert.Null(his.GitHubError);
     }
 
+    // kit-ui.beh BEH-SETTINGS-3: his personal GitHub's repos sit beside the board's, never instead of them.
+    [Fact]
+    public void The_operator_with_a_connected_GitHub_keeps_the_boards_projects_and_gains_his_repos()
+    {
+        var users = Seeded();
+        users.Add(ISessionStore.Operator, "!operator");
+        Assert.True(users.SetGitHub(ISessionStore.Operator, new GitHubLink { Installation = 42, Account = "james-gh" }));
+        var canned = new Canned([Project("tracks", "tracks.beh")]);
+        var router = Router(users, canned);
+
+        var him = SignIn(router, null, Operator);
+        var his = Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body);
+        Assert.NotEmpty(his.Projects);
+        Assert.Equal(["ann-gh/tracks"], his.GitHub!.Select(p => p.FullName));
+        Assert.Equal(1, canned.Asked);
+    }
+
+    // Found in review: before BEH-SETTINGS-3 his Kit never read the database, so a down one must not take it now.
+    [Fact]
+    public void A_database_that_cannot_be_read_leaves_the_operators_session_and_board_as_they_were()
+    {
+        var canned = new Canned([Project("tracks", "tracks.beh")]);
+        var router = Router(new Unreadable(), canned);
+        var him = SignIn(router, null, Operator);
+
+        var session = router.Route("GET", "/api/session", him);
+        Assert.Equal(200, session.Status);
+        Assert.Null(Assert.IsType<SessionState>(session.Body).GitHub);
+
+        var his = router.Route("GET", "/api/projects", him);
+        Assert.Equal(200, his.Status);
+        Assert.NotEmpty(Assert.IsType<ProjectList>(his.Body).Projects);
+        Assert.Equal(0, canned.Asked);
+    }
+
     [Fact]
     public void No_link_or_no_service_leaves_the_list_empty_as_before()
     {
@@ -232,6 +267,24 @@ public class UserProjectsTests
     }
 
     /// <summary>What the service would return, or the reason it would throw.</summary>
+    /// <summary>A user store whose database is down: every read throws, as Npgsql's do.</summary>
+    private sealed class Unreadable : IUserStore
+    {
+        public string? HashOf(string name) => throw new Down();
+
+        public bool Add(string name, string hash) => throw new Down();
+
+        public bool SetHash(string name, string hash) => throw new Down();
+
+        public IGitHubLink? GitHubOf(string name) => throw new Down();
+
+        public bool SetGitHub(string name, IGitHubLink link) => throw new Down();
+
+        public string? UserOfInstallation(long installation) => throw new Down();
+
+        private sealed class Down() : System.Data.Common.DbException("the database is unreachable");
+    }
+
     private sealed class Canned(IReadOnlyList<UserProject> projects) : IUserProjects
     {
         public int Asked { get; private set; }

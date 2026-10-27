@@ -1750,7 +1750,6 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-1258
   review approved
-  pending
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1761,6 +1760,10 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   contract my assumption: he connects the same way a user does (BEH-USERS-1), and repos on his personal account that carry a corpus appear under "From your GitHub" beside the board's projects (BEH-USERS-2); the org installation Kit runs on still can never be claimed as his link
   contract connecting at all, for him or any user, waits on kit#433: it passes the App's slug, client id and client secret to Kit, so until it merges no one is offered it
   contract kit#433 is live since kit#503 (2026-10-27 21:39Z), so a user can connect now; the operator still cannot, which is what this card builds
+  contract built: Settings offers him "Connect your personal GitHub" under a line saying the board's projects run on Kit's own App. Connecting works as a user's does, and stores his link on an account row named "@operator", which no user name can take
+  contract built: his projects list keeps every board project and adds his personal repos that carry a corpus under "From your GitHub"; a GitHub already connected by a user stays theirs
+  contract my assumption: connecting is never a way for him to sign in. "Sign in with GitHub" refuses his account (401 operator-password) and his password stays KIT_PASSWORD; the row's stored hash matches no password
+  contract found in review: his Kit never read the database before this card, so if the database cannot be read his session and board load as before, with no GitHub shown
 
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
