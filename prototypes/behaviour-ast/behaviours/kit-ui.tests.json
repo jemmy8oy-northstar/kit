@@ -111,6 +111,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "comes back from a card to that card in its column, not to the first column (BEH-BOARD-15)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "lands on the column when the card has left it, and shows enough of the column to reach it (BEH-BOARD-15)" }
   ],
+  "BEH-BOARD-20": [
+    { "file": "backend/Balenthiran.Kit.Tests/NewCardScoreTests.cs", "title": "A_new_card_comes_in_scored_at_four" },
+    { "file": "backend/Balenthiran.Kit.Tests/NewCardScoreTests.cs", "title": "A_priority_the_caller_gives_wins_over_the_default" }
+  ],
   "BEH-BOARD-22": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "says on a Done card that its code is on dev, not live, and what ships it (BEH-BOARD-22)" }
   ],
