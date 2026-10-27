@@ -1634,3 +1634,16 @@ behaviour BEH-SETTINGS-1 "A Settings page shows your GitHub integration and your
   contract my assumption: GitHub still sends a connecting user back to Kit's root, the App's callback URL, and Kit sends that return on to Settings with its query intact, so no App setting of his has to change
   contract my assumption: a Kit without user accounts shows the page saying it has one password, rather than an empty page
   contract BEH-USERS-5's secrets form, when it is built, belongs on this page
+
+behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-27-0918
+  priority 4
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "A better loading experience, currently just shows checking… in the top left"
+  contract my assumption: before Kit knows whether you are signed in, it shows its name in the middle of the screen with a spinner and "Opening Kit…", in place of "Checking…" in the corner
+  contract my assumption: a page still loading its data shows the same spinner beside "Loading…"
+  contract my assumption: after 5 seconds either wait adds "Still waiting for Kit's server…", so a slow server never looks like a stopped page
+  contract my assumption: with reduced motion on, the spinner stands still
