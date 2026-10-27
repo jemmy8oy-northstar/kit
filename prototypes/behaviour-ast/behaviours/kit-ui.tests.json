@@ -375,10 +375,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "One_installation_belongs_to_one_user" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "The_connector_takes_only_the_authorising_accounts_installation_and_revokes_the_token" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "An_organisations_or_the_operators_installation_is_never_returned" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "posts the add-user body and says who was added" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "posts the change-password body and says so" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "offers a user the install link, and the operator nothing" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/Account.test.tsx", "title": "hands the code and state to the server, then reloads without them" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the add-user body and says who was added" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the change-password body and says so" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "offers a user the install link, and the operator nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "hands the code and state to the server, then reloads without them" }
   ],
   "BEH-USERS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_project_is_a_repo_with_a_beh_file_on_its_default_branch" },
@@ -411,6 +411,12 @@
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
+  ],
+  "BEH-SETTINGS-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "says this Kit has no accounts when they are off, even when signed in" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "tells the operator Kit runs on its own GitHub App" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
   "BEH-NAV-2": [
     { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "puts the links on their own scrolling line on a phone, and hides the tagline (BEH-NAV-2)" }
