@@ -380,6 +380,12 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "offers a user the install link, and the operator nothing" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "hands the code and state to the server, then reloads without them" }
   ],
+  "BEH-USERS-10": [
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "Once_connected_a_user_signs_in_with_GitHub_and_their_password_is_gone" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "A_GitHub_no_user_has_connected_signs_no_one_in" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "A_connect_state_never_signs_in_and_a_sign_in_state_never_connects" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubConnectTests.cs", "title": "Without_a_connector_there_is_no_GitHub_sign_in_and_the_password_still_works" }
+  ],
   "BEH-USERS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_project_is_a_repo_with_a_beh_file_on_its_default_branch" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Every_page_of_the_installation_is_read" },
