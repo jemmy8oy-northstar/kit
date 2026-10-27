@@ -38,7 +38,7 @@ feature FEAT-CONNECT "Connecting Strava and Spotify"
 # FEAT-MAP and FEAT-SHARE read as built until 2026-10-26: their cards predate `pending`. The map's
 # UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet. MAP-1/2/3 are
 # paused on his tracks#3 comment (2026-10-17): "Let's not worry about the track visuals for now".
-# Resume to queue them.
+# Resumed on his note of 2026-10-27 12:56Z on BEH-MAP-2: "Let's do it, draft some visuals".
 feature FEAT-MAP "The music map of a workout"
   stage ux
 feature FEAT-SHARE "Sharing a workout"
@@ -166,6 +166,19 @@ behaviour BEH-SYNC-5 "After a run, the runner opens Tracks and finds it there wi
   contract only runs that finish after both accounts are connected appear; older runs are not backfilled
   contract unreviewed because "no backfill" follows from Spotify keeping only the last 50 plays, not from anything he said
 
+behaviour BEH-SYNC-6 "A run kept before a feature existed is given it later"
+  in FEAT-SYNC
+  layer technical
+  source defined tracks.notes.md#2026-10-27-1257
+  review unreviewed
+  pending
+  priority 1
+  actor runner
+  contract "I don't see this", on the top-speed highlight: a run is given highlights only when it syncs, so every run kept before 0.1.11 shows none, and would show no map either
+  contract unlike its songs (BEH-SYNC-5), a run's highlights and route come from Strava's streams, which Strava keeps, so they can be worked out later
+  contract my assumption: a kept run missing its highlights or its route is worked out again from Strava's streams, a few at a time in the background, well under Strava's 100 requests per 15 minutes
+  contract my assumption: a run Strava no longer has, or that has no GPS, is tried once and left as it is
+
 
 # ═══ DEFINED — tracks#6 (multi-user) ═══
 
@@ -247,7 +260,6 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   source inferred tracks#1
   review unreviewed
   pending
-  paused
   priority 3
   actor runner
   given workout:WithSongs
@@ -263,12 +275,15 @@ behaviour BEH-MAP-2 "A song is placed on the route by matching when it played to
   source inferred tracks#1
   review approved
   pending
-  paused
   priority 1
   actor runner
   contract a song belongs to a workout when it started between the workout's start and end
   contract its pin is the route point whose timestamp is nearest the song's start
   contract a workout with no songs in its window still shows its route, with no pins
+  contract his note (tracks.notes.md#2026-10-27-1256): "Let's do it, draft some visuals. Are you able to pull the coordinates after a Strava run?" So MAP-1/2/3 are no longer paused
+  contract yes: Strava's activity streams include latlng, a coordinate per sample beside its time, from the same request that already gives Tracks the speed for BEH-HIGH-3
+  contract his question (tracks.notes.md#2026-10-27-1256), "What about a Garmin run?": a Garmin watch linked to Strava uploads each run there with its GPS, so Tracks sees it like any Strava run. Garmin's own API is closed to personal use (BEH-COST-1). An uploaded FIT file carries coordinates too, so the map would also work from one
+  contract my assumption: the route is kept with the run when it syncs, so opening a run never calls Strava
 
 behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no map"
   in FEAT-MAP
@@ -276,7 +291,6 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
   source inferred tracks#1
   review unreviewed
   pending
-  paused
   priority 2
   actor runner
   given workout:Indoor
@@ -357,6 +371,7 @@ behaviour BEH-HIGH-3 "The song playing at the run's top speed is named"
   contract my assumption: highlights are worked out once, when the run syncs; runs synced before tracks#22 show none
   contract built in tracks#22 (merged to tracks dev 2026-10-26): a 5-sample centred average over velocity_smooth; the song's label reads "⚡ top speed"
   contract his question (tracks.notes.md#2026-10-26-2044), "I didn't see this on tracks today why is it marked as done?": it was done on tracks dev, not live. Live Tracks deploys main, which is still 0.1.9 from 10-18, and Tracks' promotion is his. I merged it and HIGH-1/2/4 to dev and raised no promotion; tracks#24 is that promotion. Once it deploys, only runs that sync after it show highlights. Kit's Done not saying "only on dev" is BEH-BOARD-22
+  contract his note (tracks.notes.md#2026-10-27-1257), "I don't see this": live Tracks has carried it since tracks#24 deployed (0.1.11, 2026-10-26 21:02Z, and the live bundle has the "top speed" label). A run is given highlights only when it syncs, so every run kept before then shows none. BEH-SYNC-6 fills those in
 
 behaviour BEH-HIGH-4 "The song with the fastest average pace is named"
   in FEAT-HIGHLIGHTS
