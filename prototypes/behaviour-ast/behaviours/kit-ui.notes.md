@@ -21,3 +21,7 @@ I added client id and client secret idk whether this was for this ticket feel fr
 ## 2026-10-26 23:00Z · BEH-USERS-6
 
 Just thinking about this idk whether this is the best way to do it. Dbs are a lot of admin to manage right. Maybe better to outsource this at the start. Just as lovable does
+
+## 2026-10-27 11:28Z · BEH-NOTIFY-3
+
+This is working
