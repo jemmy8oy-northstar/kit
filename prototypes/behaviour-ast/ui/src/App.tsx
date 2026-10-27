@@ -14,6 +14,7 @@ import Settings, { GitHubReturn } from './pages/Settings'
 import SignIn from './components/SignIn'
 import NoteFab from './components/NoteFab'
 import { BoardNavLink } from './components/BoardViews'
+import { OpeningPage } from './components/OpeningPage'
 import { IDEAS } from './board'
 
 export default function App() {
@@ -76,6 +77,8 @@ export default function App() {
             </nav>
             {/* A GitHub connect return lands on Kit's root; this sends it on to Settings. */}
             <GitHubReturn />
+            {/* BEH-SETTINGS-2: Kit opened at its root goes on to the page chosen in Settings. */}
+            <OpeningPage />
           </header>
           <main>
             <Routes>

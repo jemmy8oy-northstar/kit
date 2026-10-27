@@ -422,6 +422,13 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
+  "BEH-SETTINGS-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "opens on the page chosen in Settings, and remembers it in this browser" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "opens on Projects when nothing is chosen, or the choice is no longer a page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "never redirects a link to any other page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "lets the Projects link reach Projects once Kit is open" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/OpeningPage.test.tsx", "title": "lets a GitHub connect return to the root go on to Settings" }
+  ],
   "BEH-NAV-2": [
     { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "puts the links on their own scrolling line on a phone, and hides the tagline (BEH-NAV-2)" }
   ],

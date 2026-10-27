@@ -1652,6 +1652,23 @@ behaviour BEH-SETTINGS-1 "A Settings page shows your GitHub integration and your
   contract my assumption: a Kit without user accounts shows the page saying it has one password, rather than an empty page
   contract BEH-USERS-5's secrets form, when it is built, belongs on this page
 
+behaviour BEH-SETTINGS-2 "Settings chooses the page Kit opens on"
+  in FEAT-SETTINGS
+  source defined kit.notes.md#2026-10-27-1258
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees heading:KitSettingsTitle
+  then sees region:KitMain
+  contract "Can settings define the default opening page"
+  contract my assumption: the choice is one of the navbar's top-level pages, Projects, Board, Ideas, Activity or Notifications, and Projects stays the default
+  contract my assumption: it is remembered in this browser (localStorage), not on the server, so it needs no account, and a phone and a laptop can differ
+  contract my assumption: only Kit opened at its root, /, goes on to the chosen page, and only once; a link to any other page opens that page, and the Projects link still reaches Projects
+  contract a GitHub connect return to the root still goes on to Settings (BEH-SETTINGS-1), whatever page is chosen
+  contract my assumption: a stored page that no longer exists falls back to Projects
+  contract built: an "Opening page" section on Settings, shown with or without accounts
+
 behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from Settings, as a user does"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-1258
