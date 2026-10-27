@@ -1220,8 +1220,21 @@ behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign i
   contract built: signed out, GET /api/session carries gitHubSignIn, GitHub's authorise link with a state of its own ("in." and an expiry, signed apart from a connect's), and the sign-in page shows "Sign in with GitHub" above the password. GitHub returns to Kit's root; the page posts the code and state to POST /api/session/github, which signs in the one user whose connected installation is on the authorising account, and reloads without them. A GitHub no user has connected answers 401 github-not-connected
   contract built: once a user's GitHub is connected their password signs them in no more (401 github-sign-in, said only after the right password, so it tells a guesser nothing) and cannot be changed; Settings stops offering the change
   contract my assumption: on a Kit deployed without the App's OAuth client the password still works, as otherwise a connected user could not sign in at all
+  contract my assumption, found in review: a user who uninstalls and reinstalls the App gets a new installation, so GitHub no longer signs them in and their password is gone; nothing in Kit recovers that yet, so BEH-USERS-11 proposes he can reset a user's sign-in
   contract my assumption: the sign-in state is not tied to the browser, so someone with their own connected account could send a link that signs another person into it; with only the test users he makes, I left it, and a short-lived cookie binding is the fix if he wants it
   needs-context "Built and merged, but off until you merge kit#433: it gives Kit the App's client ID and secret you added today. Until then no one is offered GitHub sign-in and passwords keep working."
+
+behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their GitHub stops working"
+  in FEAT-USER-SIGNUP
+  source inferred kit-ui.beh#BEH-USERS-10
+  review unreviewed
+  pending
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract my proposal: once a test user signs in only with GitHub (BEH-USERS-10), reinstalling the App, or losing that GitHub account, leaves them no way in
+  contract my assumption: in Settings, beside "Add a user", he names a user and gives them a new password; their GitHub link is cleared, so they sign in with that password and connect again
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"
   in EPIC-KIT-USERS
