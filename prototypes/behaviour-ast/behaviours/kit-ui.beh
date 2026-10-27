@@ -1615,3 +1615,22 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract nothing is deleted. A denial stays in the file as its review line with his reason, but the board has had no column for it, so the card vanished. The one he meant is BEH-USERS-2, now re-proposed with his correction
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
+
+feature FEAT-SETTINGS "Settings"
+  stage ui
+
+behaviour BEH-SETTINGS-1 "A Settings page shows your GitHub integration and your account, with room for more config later"
+  in FEAT-SETTINGS
+  in FEAT-NAV
+  source defined kit.notes.md#2026-10-27-0854
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees heading:KitSettingsTitle
+  then sees region:KitMain
+  contract "A settings page to show your GitHub integration and any other config in the future"
+  contract my assumption: Settings is a navbar link to /settings, and the account area that was a "Signed in as" dropdown in the header moves onto it whole (who is signed in, sign out, change password, add a user), so the header gets lighter and there is one place for config
+  contract my assumption: a user sees their connected GitHub account or a Connect your GitHub link; the operator is told Kit runs on its own GitHub App, set where Kit is deployed, because his GitHub is not connected through Kit
+  contract my assumption: GitHub still sends a connecting user back to Kit's root, the App's callback URL, and Kit sends that return on to Settings with its query intact, so no App setting of his has to change
+  contract my assumption: a Kit without user accounts shows the page saying it has one password, rather than an empty page
+  contract BEH-USERS-5's secrets form, when it is built, belongs on this page

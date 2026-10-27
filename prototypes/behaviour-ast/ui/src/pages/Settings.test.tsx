@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import SignIn from './SignIn'
-import Account from './Account'
-import { githubNavigation } from './githubNavigation'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import SignIn from '../components/SignIn'
+import Settings, { GitHubReturn } from './Settings'
+import { githubNavigation } from '../components/githubNavigation'
 
 /**
  * BEH-USERS-1 / BEH-USERS-8: user accounts in the browser.
@@ -39,7 +40,7 @@ afterEach(() => { vi.unstubAllGlobals() })
 
 const app = (
   <>
-    <Account />
+    <MemoryRouter><Settings /></MemoryRouter>
     <p>the corpus</p>
   </>
 )
@@ -88,13 +89,55 @@ describe('sign-in with accounts', () => {
   })
 })
 
-describe('Account area', () => {
-  it('is absent when accounts are off, even when signed in', async () => {
+describe('Settings page (BEH-SETTINGS-1)', () => {
+  it('says this Kit has no accounts when they are off, even when signed in', async () => {
     vi.stubGlobal('fetch', server([{ required: false, signedIn: true }]).fn)
     render(<SignIn>{app}</SignIn>)
-    expect(await screen.findByText('the corpus')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByText(/has no user accounts/)).toBeInTheDocument()
     expect(screen.queryByText(/Signed in as/)).not.toBeInTheDocument()
   })
+
+  it('tells the operator Kit runs on its own GitHub App', async () => {
+    vi.stubGlobal('fetch', server([
+      { required: true, signedIn: true, accounts: true, user: 'james', operator: true },
+    ]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'GitHub' })).toBeInTheDocument()
+    expect(screen.getByText(/through its own GitHub App/)).toBeInTheDocument()
+  })
+
+  it('sends a GitHub return that lands elsewhere on to Settings, query intact', async () => {
+    vi.stubGlobal('fetch', server([{ required: false, signedIn: true }]).fn)
+    render(
+      <MemoryRouter initialEntries={['/?installation_id=42&setup_action=install']}>
+        <GitHubReturn />
+        <Routes>
+          <Route path="/" element={<p>the projects</p>} />
+          <Route path="/settings" element={<Probe />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('/settings?installation_id=42&setup_action=install')).toBeInTheDocument()
+  })
+
+  it('leaves every other page where it is', () => {
+    render(
+      <MemoryRouter initialEntries={['/board?app=kit']}>
+        <GitHubReturn />
+        <Routes><Route path="/board" element={<p>the board</p>} /></Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('the board')).toBeInTheDocument()
+  })
+})
+
+function Probe() {
+  const { pathname, search } = useLocation()
+  return <p>{pathname + search}</p>
+}
+
+describe('Account area', () => {
 
   it('offers only "Add a user" to the operator', async () => {
     vi.stubGlobal('fetch', server([
