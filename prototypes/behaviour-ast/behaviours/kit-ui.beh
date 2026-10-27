@@ -1268,6 +1268,7 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   review approved
   priority 4
   pending
+  needs-context "Running an agent for users is a platform and money call: which provider runs it, and what monthly cap? I leave it unbuilt until you say."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1511,6 +1512,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
+  needs-context "Merge claude-code-bot#124 and #125, the wake-timing fixes, then promote claude-code-bot. Until you do, a note made while you are busy can wait hours."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
