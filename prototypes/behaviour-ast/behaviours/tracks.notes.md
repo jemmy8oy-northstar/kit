@@ -41,3 +41,7 @@ Let’s do it, draft some visuals. Are you able to pull the coordinates after a 
 ## 2026-10-27 12:56Z · BEH-MAP-2
 
 What about a Garmin run?
+
+## 2026-10-27 12:57Z · BEH-HIGH-3
+
+I don’t see this
