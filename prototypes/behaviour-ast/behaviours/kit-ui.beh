@@ -1581,14 +1581,14 @@ behaviour BEH-BOARD-20 "Every card carries a score, and the agent scores each ne
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-25-1234
   priority 3
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
   contract "kit should also priority score new items, i think every item should be scored currently there are lots of unscored items"
   contract on 2026-10-25, 178 of 347 behaviours had no priority line; each now has one. A built card scores 5, because confirming what runs is the least urgent review (BEH-BOARD-10), and each unbuilt one was scored on its own
   contract my assumption: a card he writes comes in at 4, like a card the agent writes from a note (BEH-BOARD-12), and the agent re-scores it when it reads it
-  contract my assumption: the agent counts unscored cards at every wake and scores them before picking work, so a card is unscored only until the agent's next wake; that check lives in claude-code-bot, so this card stays pending like BEH-NOTIFY-4
+  contract my assumption: the agent counts unscored cards at every wake and scores them before picking work, so a card is unscored only until the agent's next wake; that check lives in claude-code-bot
+  contract built: a card added through Kit is written with `priority 4` under its source line, unless its steps already carry a priority; the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any card still unscored, to score before picking work. On 2026-10-27 that list was empty
 
 # His notes of 2026-10-25 13:12-13:15Z. His 13:09Z question is answered on BEH-USERS-2.
 behaviour BEH-ACTIVITY-2 "An activity entry links to the item it is about"

@@ -98,6 +98,15 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
         // `inferred` unless told otherwise: a UI is a machine, and silence means a human wrote it.
         output.Add($"{Indent}source {(string.IsNullOrEmpty(source) ? "inferred" : source)}{(string.IsNullOrEmpty(reference) ? string.Empty : " " + reference)}");
+
+        // BEH-BOARD-20, his kit.notes.md 2026-10-25 12:34Z: "every item should be scored". A new card
+        // comes in at 4, as the agent scores one it writes from a note (BEH-BOARD-12); it re-scores on reading it.
+        // A caller's own priority step wins, rather than tripping the parser's second-priority refusal.
+        if (!(steps ?? []).Any(s => FirstToken(s) == "priority"))
+        {
+            output.Add($"{Indent}priority 4");
+        }
+
         foreach (var s in steps ?? [])
         {
             output.Add(Indent + Trim(s));
