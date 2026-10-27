@@ -1318,6 +1318,7 @@ feature FEAT-USER-SECRETS "Production secrets per user"
 behaviour BEH-USERS-5 "A user's production secrets are stored for them, and never shown back in a page or a log"
   in FEAT-USER-SECRETS
   source inferred kit.notes.md#2026-10-19-1721
+  review approved
   priority 2
   pending
   actor engineer
