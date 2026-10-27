@@ -340,3 +340,7 @@ A settings page to show your GitHub integration and any other config in the futu
 ## 2026-10-27 09:18Z
 
 A better loading experience, currently just shows checking… in the top left
+
+## 2026-10-27 21:11Z
+
+Button in settings to choose default permission to merge to main for kit. Maybe a selection to choose projects which do or don’t have permission for finer xonrol
