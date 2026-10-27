@@ -42,6 +42,9 @@ public interface IBehaviour
     /// <summary>What he must add before the agent can go on (BEH-BOARD-17); a <c>needs-context</c> line, else null.</summary>
     string? NeedsContext { get; }
 
+    /// <summary>Built on the project's dev, not yet live: what will ship it (BEH-BOARD-22); an <c>on-dev</c> line, else null.</summary>
+    string? OnDev { get; }
+
     /// <summary>The layer whose tests prove it (kit#89): <c>ux</c>, <c>technical</c> or <c>ui</c>.</summary>
     string Layer { get; }
 

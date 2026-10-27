@@ -320,8 +320,12 @@ export default function Board() {
                                 // BEH-BOARD-17: what he must add, shown not hovered: he reads the board on a phone.
                                 <p data-testid="needs-context">👤 {b.needsContext}</p>
                               )}
+                              {col.id === 'done' && b.onDev && (
+                                // BEH-BOARD-22: built on the project's dev, so not yet something he can see live.
+                                <p data-testid="on-dev">🧪 On dev, not live yet: ships with {b.onDev}</p>
+                              )}
                               <div className="badges">
-                                {rung && <Badge tone="warning">🔔 rung</Badge>}
+                                {rung &&<Badge tone="warning">🔔 rung</Badge>}
                                 {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
                                 {b.paused && <Badge tone="neutral">⏸ paused</Badge>}
                                 {/* BEH-BOARD-17: whose move it is. */}

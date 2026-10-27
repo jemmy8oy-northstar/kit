@@ -140,6 +140,8 @@ export interface Behaviour {
   paused?: boolean
   /** A `needs-context` line (BEH-BOARD-17): what he must add before the agent can go on. Absent when there is none. */
   needsContext?: string
+  /** An `on-dev` line (BEH-BOARD-22): built on the project's dev, not live; what will ship it. Absent when there is none. */
+  onDev?: string
 }
 
 /** A `feature` block (kit#237): a page or part of one. Its parents are tags, so there can be several. */

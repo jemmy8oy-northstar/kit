@@ -259,6 +259,19 @@ public sealed class CorpusParser : ICorpusParser
                 continue;
             }
 
+            // ── James, tracks.notes.md 2026-10-26 20:44Z (BEH-BOARD-22) ─────
+            // "I didn't see this on tracks today why is it marked as done?" A built card
+            // whose code is on the project's dev but not live says what will ship it, in
+            // quotes; the agent deletes the line once main has it. Shaped like needs-context.
+            if (kw == "on-dev")
+            {
+                var d = Quoted.Match(rest);
+                if (!d.Success || d.Groups[1].Value.Trim().Length == 0) throw new CorpusParseException($"{at}: on-dev wants a quoted, non-empty line naming what ships it, got: {rest}");
+                if (cur.OnDev is not null) throw new CorpusParseException($"{at}: on-dev is already set on {cur.Id}");
+                cur.OnDev = d.Groups[1].Value;
+                continue;
+            }
+
             // ── James, kit#284 (2026-10-15) ─────────────────────────────────
             // "You give it a priority score and this is used to rank it on the
             // board. Top priority at the top." 1 is first, 5 is last — the scale
