@@ -37,3 +37,7 @@ Not seeing how we r going to make money from tracks in the next month thinking a
 ## 2026-10-27 12:56Z · BEH-MAP-2
 
 Let’s do it, draft some visuals. Are you able to pull the coordinates after a Strava run?
+
+## 2026-10-27 12:56Z · BEH-MAP-2
+
+What about a Garmin run?
