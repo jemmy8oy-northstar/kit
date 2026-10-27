@@ -10,8 +10,8 @@ import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Notifications from './pages/Notifications'
+import Settings, { GitHubReturn } from './pages/Settings'
 import SignIn from './components/SignIn'
-import Account from './components/Account'
 import NoteFab from './components/NoteFab'
 import { BoardNavLink } from './components/BoardViews'
 import { IDEAS } from './board'
@@ -68,12 +68,14 @@ export default function App() {
               <NavLink to="/principles">Principles</NavLink>
               <NavLink to="/activity">Activity</NavLink>
               <NavLink to="/notifications">Notifications</NavLink>
+              {/* BEH-SETTINGS-1: the account area, GitHub and config, on a page of its own. */}
+              <NavLink to="/settings">Settings</NavLink>
               <NavLink to="/" end>
                 Projects
               </NavLink>
             </nav>
-            {/* BEH-USERS-1: renders nothing unless the server has accounts on. */}
-            <Account />
+            {/* A GitHub connect return lands on Kit's root; this sends it on to Settings. */}
+            <GitHubReturn />
           </header>
           <main>
             <Routes>
@@ -84,6 +86,7 @@ export default function App() {
               <Route path="/principles" element={<Principles />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
               <Route path="/projects/:app/features/:id" element={<FeaturePage />} />

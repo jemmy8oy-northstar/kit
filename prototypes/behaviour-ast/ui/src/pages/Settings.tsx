@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { addUser, changePassword, connectGitHub, signOut } from '../api/client'
 import type { SessionState } from '../api/types'
-import { githubNavigation } from './githubNavigation'
-import { useSession } from './session'
+import { githubNavigation } from '../components/githubNavigation'
+import { useSession } from '../components/session'
 
 type Outcome = { ok: true; text: string } | { ok: false; text: string } | null
 
@@ -138,35 +139,61 @@ function ConnectGitHub({ session }: { session: SessionState }) {
   )
 }
 
+/** The operator's GitHub is Kit's own App, set where Kit is deployed; connecting is for the users he adds. */
+function OperatorGitHub() {
+  return (
+    <div>
+      <h3>GitHub</h3>
+      <p>Kit reads and writes your repos through its own GitHub App, set where Kit is deployed.
+        The users you add connect their own GitHub here.</p>
+    </div>
+  )
+}
+
 /**
- * BEH-USERS-1: who is signed in, with the two things an account can do.
+ * GitHub sends a user back to Kit's root (the App's registered callback URL), so
+ * a return lands wherever that is and is sent on here, query intact, without the
+ * callback URL having to change. Renders nothing otherwise.
+ */
+export function GitHubReturn() {
+  const { pathname, search } = useLocation()
+  const back = new URLSearchParams(search)
+  const returning = (back.has('code') && back.has('state')) || back.has('installation_id')
+  if (!returning || pathname === '/settings') return null
+  return <Navigate to={`/settings${search}`} replace />
+}
+
+/**
+ * BEH-SETTINGS-1, holding BEH-USERS-1's account area: who is signed in, their
+ * GitHub, and what an account can do. A page of its own, reached from the
+ * navbar, so there is one place for config as it grows.
  *
- * Shown only when the server has accounts on and this browser is signed in; on
- * any other Kit it renders nothing, so a local Kit looks exactly as before.
  * The operator adds users and cannot change his password here (it lives in the
  * server's config); everyone else can change their own. `operator` comes from
- * the server, so the client never guesses who may do what.
- *
- * A <details>, not a hover menu: James uses Kit on a phone.
+ * the server, so the client never guesses who may do what. A Kit without
+ * accounts says so rather than showing an empty page.
  */
-export default function Account() {
+export default function Settings() {
   const session = useSession()
-  if (!session?.accounts || !session.signedIn) return null
+  const accounts = Boolean(session?.accounts && session.signedIn)
 
   async function leave() {
     await signOut().catch(() => {})
     window.location.reload()
   }
 
-  // Opened while GitHub is sending them back, so "Connecting…" or a refusal is seen, not folded away.
-  const back = new URLSearchParams(window.location.search)
-  const connecting = !session.operator && (back.has('code') || back.has('installation_id'))
-
   return (
-    <details className="account" open={connecting || undefined}>
-      <summary>Signed in as {session.user}</summary>
-      {session.operator ? <AddUser /> : <><ConnectGitHub session={session} /><ChangePassword /></>}
-      <p><button type="button" onClick={leave}>Sign out</button></p>
-    </details>
+    <>
+      <h1>Settings</h1>
+      {!accounts || !session ? (
+        <p className="muted">This Kit has no user accounts: it has one password, set where Kit is deployed.</p>
+      ) : (
+        <div className="account">
+          <p>Signed in as {session.user}</p>
+          <p><button type="button" onClick={leave}>Sign out</button></p>
+          {session.operator ? <><OperatorGitHub /><AddUser /></> : <><ConnectGitHub session={session} /><ChangePassword /></>}
+        </div>
+      )}
+    </>
   )
 }

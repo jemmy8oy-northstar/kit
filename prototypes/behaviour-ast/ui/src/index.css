@@ -38,11 +38,7 @@ body {
   text-decoration: none;
 }
 
-/* BEH-USERS-1: the account area. A <details>, so it opens by tap — nothing here waits on hover. */
-.account {
-  margin-left: auto;
-}
-
+/* BEH-USERS-1: the account area, on the Settings page (BEH-SETTINGS-1). */
 .account form {
   display: flex;
   flex-direction: column;
@@ -373,7 +369,7 @@ pre {
 
 /*
  * BEH-NAV-2: on a phone the wrapped links took three lines beside a two-line
- * tagline ("really cluttered", his note of 2026-10-25). Brand and account share
+ * tagline ("really cluttered", his note of 2026-10-25). The brand has
  * the first line; the links get their own single line, which scrolls sideways
  * instead of wrapping, so every link is still one tap away and none is hidden.
  */
