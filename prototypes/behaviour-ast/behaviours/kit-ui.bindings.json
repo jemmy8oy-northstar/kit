@@ -258,6 +258,9 @@
   "page:KitHealth": {
     "route": "/health"
   },
+  "page:KitInbox": {
+    "route": "/inbox"
+  },
   "page:KitNotifications": {
     "route": "/notifications"
   },
