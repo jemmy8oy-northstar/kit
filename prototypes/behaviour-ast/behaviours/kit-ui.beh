@@ -1681,7 +1681,7 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
 
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
-  stage problem
+  stage development
 
 behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share of behaviours a test names"
   in FEAT-HEALTH
