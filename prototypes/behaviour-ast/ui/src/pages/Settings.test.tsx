@@ -226,6 +226,8 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     vi.stubGlobal('fetch', server([sam]).fn)
     const { unmount } = render(<SignIn>{app}</SignIn>)
     expect(await screen.findByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', sam.gitHubInstall)
+    // An account that already has the App cannot install it again, so it authorises directly.
+    expect(screen.getByRole('link', { name: 'Already installed? Connect it' })).toHaveAttribute('href', sam.gitHubAuthorize)
     unmount()
 
     vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'james', operator: true }]).fn)
@@ -240,6 +242,7 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     vi.stubGlobal('fetch', server([james]).fn)
     const { unmount } = render(<SignIn>{app}</SignIn>)
     expect(await screen.findByRole('link', { name: 'Connect your personal GitHub' })).toHaveAttribute('href', sam.gitHubInstall)
+    expect(screen.getByRole('link', { name: 'Already installed? Connect it' })).toHaveAttribute('href', sam.gitHubAuthorize)
     expect(screen.getByLabelText('User name')).toBeInTheDocument()
     unmount()
 
