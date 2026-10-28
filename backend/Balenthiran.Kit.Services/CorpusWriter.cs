@@ -232,6 +232,58 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-INBOX-1: replaces the <c>priority</c> line, or adds one under the last header-adjacent line.
+    /// Only 1 to 5 is written; the parser would refuse the file otherwise.
+    /// </summary>
+    public IWriteResult SetPriority(string text, string id, int priority)
+    {
+        if (priority is < 1 or > 5)
+        {
+            return WriteResult.Refuse("bad-priority", "priority wants 1 (first) to 5");
+        }
+
+        if (Block(text, id) is not { } b)
+        {
+            return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
+        }
+
+        var lines = text.Split('\n').ToList();
+        var line = Indent + $"priority {priority}";
+        var at = -1;
+        var anchor = b.Start;
+        for (var i = b.Start + 1; i <= b.End; i++)
+        {
+            var kw = FirstToken(lines[i]);
+            if (kw == "priority")
+            {
+                at = i;
+                break;
+            }
+
+            if (kw is "review" or "source" or "layer" or "in" or "actor")
+            {
+                anchor = i;
+            }
+        }
+
+        if (at != -1)
+        {
+            if (lines[at] == line)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            lines[at] = line;
+        }
+        else
+        {
+            lines.Insert(anchor + 1, line);
+        }
+
+        return Validate(text, string.Join('\n', lines), id);
+    }
+
+    /// <summary>
     /// Removes lines <c>Start..End</c> of the block and nothing else: comments and blanks that
     /// precede or trail it belong to neighbours and survive. Exactly ONE separator blank goes
     /// with it — the one after it when a block follows, else the one before it — so

@@ -468,5 +468,19 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says so in words when nothing is measured, with no percentage (BEH-HEALTH-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "never reads 100% until every behaviour is named (BEH-HEALTH-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "orders lowest percentage first and unmeasured last (BEH-HEALTH-1)" }
+  ],
+  "BEH-INBOX-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "queues only the cards that are his, by priority, across projects (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "shows the question, or the needs-context line, on the card (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "puts cards he has not opened before the ones he has, in this browser (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "says so plainly when nothing is waiting on him (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "says so when the last card is answered (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "approve writes the review the card page writes, then moves on (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "skip moves on without writing anything (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "deny asks for a reason first and sends it (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "pauses a pending card and resumes a paused one (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "answer and comment each leave a note on the card, and need words (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lower priority adds 1 as an ordinary edit, and stops at 5 (BEH-INBOX-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "a refused write keeps the card on screen and says why (BEH-INBOX-1)" }
   ]
 }
