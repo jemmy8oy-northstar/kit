@@ -27,6 +27,9 @@
 #
 # So FEAT-SYNC below is the priority, and the visual behaviours (BEH-MAP-1,
 # BEH-SHARE-1) drop to priority 3 until he says otherwise.
+#
+# kit:repo jemmy8oy-northstar/tracks@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-BRAND "Name and voice"
