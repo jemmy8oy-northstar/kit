@@ -17,7 +17,10 @@ public class CoverageTests
 {
     private const string Repo = "o/r@dev";
 
-    private const string Tests = "public class ThingTests\n{\n    [Fact]\n    public void It_works() { }\n}\n";
+    // Split so this file's own attribute count (kit check reads it too) sees no test in a string.
+    private const string FactLine ="[" + "Fact]";
+
+    private const string Tests = "public class ThingTests\n{\n    " + FactLine + "\n    public void It_works() { }\n}\n";
 
     private const string Corpus =
         "# kit:repo o/r@dev\nbehaviour BEH-1 \"a thing\"\n  when opens page:Home\n\nbehaviour BEH-2 \"another\"\n  when opens page:Home\n\nbehaviour BEH-3 \"later\"\n  when opens page:Home\n  pending\n";

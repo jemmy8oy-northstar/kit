@@ -14,9 +14,12 @@ public class GitHubTestReaderTests
 {
     private const string Repo = "jemmy8oy-northstar/snip-it@dev";
 
-    private const string Tests = "public class ThingTests\n{\n    [Fact]\n    public void It_works() { }\n}\n";
+    // Split so this file's own attribute count (kit check reads it too) sees no test in a string.
+    private const string FactLine ="[" + "Fact]";
 
-    private const string MoreTests = "public class ThingTests\n{\n    [Fact]\n    public void It_works() { }\n\n    [Fact]\n    public void It_also_works() { }\n}\n";
+    private const string Tests = "public class ThingTests\n{\n    " + FactLine + "\n    public void It_works() { }\n}\n";
+
+    private const string MoreTests = "public class ThingTests\n{\n    " + FactLine + "\n    public void It_works() { }\n\n    " + FactLine + "\n    public void It_also_works() { }\n}\n";
 
     private static string Tree(string thing, string spec = "s1") => $$"""
         {"sha": "t", "truncated": false, "tree": [
