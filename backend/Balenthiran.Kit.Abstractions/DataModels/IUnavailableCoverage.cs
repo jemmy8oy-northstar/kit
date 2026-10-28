@@ -1,9 +1,7 @@
 namespace Balenthiran.Kit.Abstractions.DataModels;
 
-/// <summary>Coverage that could not be read, and why. Hosted Kit reads no repository, so this is the only shape it serves.</summary>
-public interface IUnavailableCoverage
+/// <summary>Coverage that could not be read, and why — the sentence the UI shows in place of a number.</summary>
+public interface IUnavailableCoverage : ICoverage
 {
-    bool Available { get; }
-
     string Reason { get; }
 }

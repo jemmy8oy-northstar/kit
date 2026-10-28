@@ -30,6 +30,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     private const string BindingsSuffix = ".bindings.json";
     private const string NotesSuffix = ".notes.md";
     private const string ScheduleSuffix = ".schedule";
+    private const string TestsSuffix = ".tests.json";
 
     private readonly ICorpusSnapshot?[] last = new ICorpusSnapshot?[sources.Count];
     private readonly ConcurrentDictionary<string, Override> overrides = new(StringComparer.Ordinal);
@@ -74,7 +75,8 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
                     snap.Files.TryGetValue(app + BindingsSuffix, out var bindings);
                     snap.Files.TryGetValue(app + NotesSuffix, out var notes);
                     snap.Files.TryGetValue(app + ScheduleSuffix, out var schedule);
-                    apps[app] = new Entry(snap.Source, file, bindings, notes, schedule);
+                    snap.Files.TryGetValue(app + TestsSuffix, out var tests);
+                    apps[app] = new Entry(snap.Source, file, bindings, notes, schedule, tests);
                 }
             }
 
@@ -220,6 +222,11 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     }
 
     /// <inheritdoc />
+    public string? ReadTestsText(string app) => served is { } s
+        ? s.Apps.TryGetValue(app, out var e) ? e.Tests?.Text : null
+        : clone.ReadTestsText(app);
+
+    /// <inheritdoc />
     public void WriteScheduleText(string app, string text)
     {
         Writable(app);
@@ -271,7 +278,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 
     private static string Key(IProjectSource s) => $"{s.Owner}/{s.Repository}@{s.Branch}:{s.Path}";
 
-    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes, ISnapshotFile? Schedule);
+    private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes, ISnapshotFile? Schedule, ISnapshotFile? Tests);
 
     private sealed record Served(SortedDictionary<string, Entry> Apps);
 
