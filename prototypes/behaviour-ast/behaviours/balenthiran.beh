@@ -1,0 +1,97 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# balenthiran — James's portfolio site, balenthiran.co.uk. Onboarded 2026-10-28.
+#
+#   "Balenthiran should be tracked, want to get /apps on it"
+#                                     — his note in Kit, 2026-10-28 22:37Z
+#
+# That note answers both questions the idea FEAT-IDEA-APPS was waiting on in
+# ideas.beh: the site joins Kit (this file is that, so the idea graduates here), and
+# /apps is wanted now (BEH-APPS-1).
+#
+# Read at balenthiran.co.uk@dev ccdf227. The site is a React SPA on a .NET API; the
+# project cards come from a static backend/Balenthiran.WebApi/Data/projects.json.
+#
+#   DEFINED   — his words. Cites the note.
+#   INFERRED  — what the site already does, read off the code. Cites file:line.
+#               Each is `review unreviewed`, so it shows in Proposed and he can deny it.
+#
+# Promotion to main stays his: the site is public, and no grant names it.
+#
+# kit:repo jemmy8oy-northstar/balenthiran.co.uk@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
+# ─────────────────────────────────────────────────────────────────────────────
+
+feature FEAT-HOME "The home page and its projects"
+feature FEAT-APPS "balenthiran.co.uk/apps: one page showing the full suite of apps"
+feature FEAT-STATUS "What the site says about itself"
+
+
+# ═══ DEFINED — his notes ═══
+
+behaviour BEH-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full suite of apps"
+  in FEAT-APPS
+  source defined kit.notes.md#2026-10-28-2237
+  priority 2
+  pending
+  actor visitor
+  when opens page:Apps
+  then sees region:AppList
+  contract "I think we need some kind of /apps on balenthiran.co.uk to show the full suite of apps" (2026-10-16); "want to get /apps on it" (2026-10-28)
+  contract my assumption: it lists only apps that are live, each with its name, one line on what it is, and a link that opens it
+  contract my assumption: the list is a file in the site's repo, not read from Kit at run time, so the page works when Kit is down
+  contract my assumption: apps for one person (the birthday site) and the hosting plumbing are left off
+
+
+# ═══ INFERRED — what the site already does ═══
+
+behaviour BEH-HOME-1 "The home page shows a grid of projects, each a card"
+  in FEAT-HOME
+  source inferred frontend/src/components/ProjectGrid.tsx:1
+  review unreviewed
+  priority 4
+  actor visitor
+  when opens page:Home
+  then sees region:ProjectGrid
+  contract the cards come from backend/Balenthiran.WebApi/Data/projects.json, served at GET /api/projects
+  contract a project without a page renders as a card that does not open
+
+behaviour BEH-HOME-2 "A project card opens that project's own page"
+  in FEAT-HOME
+  source inferred frontend/src/App.tsx:27
+  review unreviewed
+  priority 4
+  actor visitor
+  when opens page:Project
+  then sees region:ProjectDetail
+
+behaviour BEH-HOME-3 "A visitor can leave an email to hear when a project launches"
+  in FEAT-HOME
+  source inferred backend/Balenthiran.WebApi/Routes/InterestRoutes.cs:17
+  review unreviewed
+  priority 4
+  actor visitor
+  contract an address that is not an email is refused
+
+behaviour BEH-HOME-4 "The YouTube page presents the channel"
+  in FEAT-HOME
+  source inferred frontend/src/App.tsx:34
+  review unreviewed
+  priority 4
+  actor visitor
+  when opens page:YouTube
+
+behaviour BEH-STATUS-1 "GET /api/status says which version is running and when it answered"
+  in FEAT-STATUS
+  source inferred backend/Balenthiran.WebApi/Routes/StatusRoutes.cs:13
+  review unreviewed
+  priority 4
+  actor engineer
+
+behaviour BEH-STATUS-2 "The /status page shows the site's work as lanes on a board"
+  in FEAT-STATUS
+  source inferred frontend/src/App.tsx:35
+  review unreviewed
+  priority 4
+  actor visitor
+  when opens page:Status
+  then sees region:Lanes
