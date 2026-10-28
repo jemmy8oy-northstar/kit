@@ -130,7 +130,7 @@ behaviour BEH-PIPE-2 "A creator adds a video idea as a card with a working title
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "beginning to plan videos": an idea needs only a title, so capturing one takes seconds
