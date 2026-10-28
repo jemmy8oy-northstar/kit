@@ -292,7 +292,7 @@ behaviour BEH-MAP-3 "A workout recorded without GPS lists its songs but draws no
   in FEAT-MAP
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 2
   actor runner
   given workout:Indoor
