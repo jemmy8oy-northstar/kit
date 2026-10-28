@@ -1720,7 +1720,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
   contract my assumption: the health page shows the last such PR, so the work is visible
   contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
-  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6), so the next project is one of the six corpora still unmeasured
+  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22). Next: the corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app, ideas), where first check each has a repo with tests
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
