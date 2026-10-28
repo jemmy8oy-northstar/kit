@@ -255,6 +255,9 @@
     "name": "Activity",
     "exact": true
   },
+  "page:KitHealth": {
+    "route": "/health"
+  },
   "page:KitNotifications": {
     "route": "/notifications"
   },
