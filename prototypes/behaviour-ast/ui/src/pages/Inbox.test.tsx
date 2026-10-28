@@ -147,6 +147,16 @@ describe('Inbox', () => {
     expect(writes).toEqual([['/api/projects/alpha/behaviours/A-ASK/review', { state: 'approved', note: null }]])
   })
 
+  it('skip moves on without writing anything (BEH-INBOX-1)', async () => {
+    mockApi()
+    await open()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    await waitFor(() => expect(current()).toBe('B-PROP'))
+    expect(writes).toEqual([])
+  })
+
   it('deny asks for a reason first and sends it (BEH-INBOX-1)', async () => {
     mockApi()
     await open()

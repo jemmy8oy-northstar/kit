@@ -120,6 +120,10 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
         >
           Lower priority
         </Button>
+        {/* His "dismiss": move on without writing anything; the card stays his and comes back next time. */}
+        <Button type="button" variant="ghost" onClick={onDone} disabled={saving}>
+          Skip
+        </Button>
       </div>
 
       {denying && (
