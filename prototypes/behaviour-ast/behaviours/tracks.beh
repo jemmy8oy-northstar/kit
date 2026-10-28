@@ -408,9 +408,30 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   source defined tracks.notes.md#2026-10-26-2305
   priority 3
   pending
-  needs-context "Strava's API now needs your subscription even for just you, and Garmin's API is closed to personal use. Keep Strava, or cancel it and let Tracks take uploaded FIT files from Garmin instead? If you say nothing, I change nothing and Tracks stays on Strava."
+  needs-context "Garmin runs can now come in as an uploaded FIT file (BEH-SYNC-7), but signing in to Tracks still goes through Strava, so cancelling it would lock you out. Want a sign-in that doesn't need Strava? If no answer by 2026-11-04, sign-in stays on Strava and I build nothing more here."
   actor runner
   contract "thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users"
   contract cancelling Strava stops the sync (BEH-SYNC-1): Strava requires a subscription for API apps since 2026-06, even in single-player mode
   contract Garmin's Activity API cannot be the replacement today: the program is paused and personal-use applications are rejected. Unreviewed: measured from Garmin's forums and integration guides, not from an application of ours
   contract a reachable Garmin path is an upload of the run's FIT file, with songs matched by its start and end time as now
+  contract his answer (tracks.notes.md#2026-10-28-0740), "Tracks supports garmin": the FIT upload is built as BEH-SYNC-7, next to Strava rather than instead of it
+  contract my assumption: Strava stays until he cancels it. Sign-in (BEH-ACCOUNT-1) is auth, so a Strava-free one is his call
+
+behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
+  in FEAT-SYNC
+  layer ux
+  source defined tracks.notes.md#2026-10-28-0740
+  review unreviewed
+  pending
+  priority 1
+  actor runner
+  given runner:SignedInWithSpotify
+  when opens page:Home
+  when activates button:UploadRun
+  then sees region:Runs
+  contract "Tracks supports garmin"
+  contract my assumption: the file is the one Garmin Connect gives from an activity's Export Original, a .fit or the .zip around it; both are accepted
+  contract the songs come from Spotify's recent plays, as for a Strava run, so the run must be uploaded before 50 more songs have played (BEH-SYNC-2)
+  contract the route and highlights come from the file's own GPS and speed records; a file with no GPS keeps its songs and draws no map (BEH-MAP-3)
+  contract my assumption: a run already kept with the same start time, from Strava or an earlier upload, is replaced, never duplicated
+  contract my assumption: nothing is sent to Garmin, and the file itself is not kept, only the run read from it
