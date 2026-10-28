@@ -366,3 +366,7 @@ Kit should also probably try to schedule in improving the test health when it is
 I guess this is kind of like tech debt
 
 But the whole point of kit is spec driven where the spec drives tests and the tests drive the code
+
+## 2026-10-28 00:03Z
+
+Oh it won’t let me install it because it’s already installed should I uninstall it and install it with oauth to test the feature?
