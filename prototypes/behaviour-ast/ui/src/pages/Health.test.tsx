@@ -65,6 +65,15 @@ describe('Health', () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument()
   })
 
+  it('never reads 100% until every behaviour is named (BEH-HEALTH-1)', async () => {
+    mockApi([measured('a', 299, 1)])
+    open()
+
+    const total = (await screen.findByRole('heading', { name: 'In total' })).parentElement as HTMLElement
+    expect(within(total).getByText(/99%/)).toBeInTheDocument()
+    expect(screen.queryByText(/100%/)).not.toBeInTheDocument()
+  })
+
   it('orders lowest percentage first and unmeasured last (BEH-HEALTH-1)', async () => {
     mockApi([unmeasured('zz', 'none'), measured('high', 9, 1), measured('low', 1, 9), measured('mid', 5, 5)])
     open()

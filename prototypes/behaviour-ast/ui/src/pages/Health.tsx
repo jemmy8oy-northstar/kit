@@ -14,7 +14,8 @@ interface Row {
   reason?: string
 }
 
-const pct = (covered: number, total: number) => (total === 0 ? 100 : Math.round((covered / total) * 100))
+// Floored, so 299 of 300 reads 99% and only a complete project reads 100%.
+const pct = (covered: number, total: number) => (total === 0 ? 100 : Math.floor((covered / total) * 100))
 
 function toRow(project: ProjectSummary): Row {
   const c = project.coverage
