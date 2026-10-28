@@ -374,3 +374,7 @@ Oh it won’t let me install it because it’s already installed should I uninst
 ## 2026-10-28 15:05Z
 
 Kit you decided to sleep to conserve following usage limit hit. I didn’t ask you to do that. That does make me think though maybe there should be a part of settings where we configure the agents churn rate. What do we want the agent to do. Wake as soon as some changes something? Work on tech debt when nothing is available? Suggest ideas when no tasks are available. Sit idle until instructed specifically to conserve tokens?
+
+## 2026-10-28 22:37Z
+
+Balenthiran should be tracked, want to get /apps on it
