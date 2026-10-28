@@ -943,7 +943,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
-  review unreviewed
+  review approved
   priority 2
   actor engineer
   when opens page:KitStages
