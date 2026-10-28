@@ -27,6 +27,9 @@
 #
 # So FEAT-SYNC below is the priority, and the visual behaviours (BEH-MAP-1,
 # BEH-SHARE-1) drop to priority 3 until he says otherwise.
+#
+# kit:repo jemmy8oy-northstar/tracks@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-BRAND "Name and voice"
@@ -422,7 +425,6 @@ behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   layer ux
   source defined tracks.notes.md#2026-10-28-0740
   review unreviewed
-  pending
   priority 1
   actor runner
   given runner:SignedInWithSpotify
@@ -435,3 +437,6 @@ behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   contract the route and highlights come from the file's own GPS and speed records; a file with no GPS keeps its songs and draws no map (BEH-MAP-3)
   contract my assumption: a run already kept with the same start time, from Strava or an earlier upload, is replaced, never duplicated
   contract my assumption: nothing is sent to Garmin, and the file itself is not kept, only the run read from it
+  contract my assumption: the file is read with Garmin's own FIT SDK, whose licence is not open source; a hand-written reader is the fallback if he says no (tracks#29)
+  contract my assumption: Tracks needs Spotify connected before an upload, and refuses a file whose sport is not running
+  contract built in tracks#29: an upload's run id is the negative of its start in unix seconds, so it never meets a Strava id; a Strava webhook arriving after an upload still adds a second run

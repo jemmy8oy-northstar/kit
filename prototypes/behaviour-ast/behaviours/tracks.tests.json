@@ -1,0 +1,165 @@
+{
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/tracks. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string, describe blocks are not part of it).",
+  "_authored": "2026-10-28, by reading tracks.beh against tracks@dev backend/Balenthiran.Tracks.Tests and frontend/e2e. A test is mapped only where it checks what the behaviour's contracts say; the e2e titles still carry the older BEH-AUTH-n ids, which are mapped by what they assert, not by that prefix.",
+  "_incomplete": "BEH-SHARE-1, BEH-SHARE-2, BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them.",
+
+  "BEH-BRAND-1": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-BRAND-1: home page renders the Tracks hero" }
+  ],
+
+  "BEH-SYNC-1": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "The_handshake_echoes_the_challenge_for_the_right_token" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "The_handshake_is_refused_with_403_otherwise" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "A_new_activity_from_a_signed_up_athlete_is_acknowledged_and_then_processed_in_the_background" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "A_duplicate_delivery_is_processed_once" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "Events_that_do_not_count_are_acknowledged_but_never_processed" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaSubscriptionTests.cs", "title": "With_none_it_creates_one_pointing_at_our_webhook" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaSubscriptionTests.cs", "title": "A_subscription_to_another_callback_is_reported_and_never_replaced" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_non_run_is_ignored_without_asking_Spotify" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "The_default_run_sport_types_count" }
+  ],
+
+  "BEH-SYNC-2": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "A_song_inside_the_run_is_kept_with_its_offset" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "A_song_spanning_the_start_is_kept_with_a_negative_offset" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "A_song_ending_exactly_at_the_start_is_dropped" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "Songs_come_back_in_the_order_they_played_whatever_order_they_arrive_in" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "No_plays_gives_an_empty_list_not_an_error" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/ClientTests.cs", "title": "Spotify_client_reads_plays_asking_for_the_most_recent_fifty_after_the_run_start" }
+  ],
+
+  "BEH-SYNC-3": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStoreTests.cs", "title": "Runs_come_back_newest_first_whatever_order_they_were_saved_in" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStoreTests.cs", "title": "Songs_round_trip_in_the_order_they_were_given" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "Each_user_sees_only_their_own_runs_newest_first_with_their_songs" }
+  ],
+
+  "BEH-SYNC-4": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-SYNC-4: home page lists each run with its songs, and says when a run has none" },
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-SYNC-4: home page explains an empty run list" }
+  ],
+
+  "BEH-SYNC-5": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_is_stored_for_the_athletes_user_with_the_songs_that_overlapped_it" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_user_without_Spotify_connected_is_skipped_without_calling_either_API" },
+    { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-AUTH-3: signed in with Spotify shows runs, and Sign out returns to the signed-out page" }
+  ],
+
+  "BEH-SYNC-6": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStreamsBackfillTests.cs", "title": "A_run_kept_before_highlights_existed_is_given_them_and_its_route" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStreamsBackfillTests.cs", "title": "A_run_Strava_has_no_streams_for_is_tried_once_and_left_as_it_is" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStreamsBackfillTests.cs", "title": "A_pass_reads_at_most_its_limit_newest_first_across_users" }
+  ],
+
+  "BEH-SYNC-7": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-SYNC-7: an Upload run button sends the chosen Garmin file and the run appears in Runs" },
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-SYNC-7: a file Tracks cannot read says why and adds no run" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "An_uploaded_run_is_kept_with_the_songs_that_overlapped_it_its_route_and_its_highlights" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "An_uploaded_run_cannot_collide_with_a_strava_activity_id" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "A_file_with_no_gps_keeps_its_songs_and_draws_no_map" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "A_zip_is_read_like_the_fit_inside_it" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "A_run_kept_from_strava_with_the_same_start_is_replaced_not_duplicated" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "A_file_that_is_not_a_run_is_refused_and_nothing_is_kept" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunUploadServiceTests.cs", "title": "Without_spotify_connected_the_upload_is_refused_because_songs_cannot_be_matched" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/FitFileReaderTests.cs", "title": "a_ride_is_not_a_run" }
+  ],
+
+  "BEH-CONNECT-1": [
+    { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-AUTH-1: signed out shows a Strava sign-in link and never asks for runs" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Starting_sign_in_redirects_to_Strava_asking_for_activities_and_sets_a_state_cookie" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_good_callback_creates_the_user_signs_them_in_and_goes_back_to_the_app" }
+  ],
+
+  "BEH-CONNECT-2": [
+    { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-AUTH-2: signed in without Spotify offers Connect Spotify and still lists runs" },
+    { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-AUTH-3: signed in with Spotify shows runs, and Sign out returns to the signed-out page" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Connecting_Spotify_stores_the_refresh_token_on_the_signed_in_user" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Disconnecting_Spotify_forgets_the_token" }
+  ],
+
+  "BEH-CONNECT-4": [
+    { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-CONNECT-4: arriving with ?error=full tells a signed-out runner Tracks is full, not an error" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Strava_refusing_a_new_athlete_for_its_cap_sends_them_home_as_full_and_creates_nobody_BEH_CONNECT_4" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_403_from_Strava_for_any_other_reason_is_not_reported_as_full_BEH_CONNECT_4" }
+  ],
+
+  "BEH-ACCOUNT-1": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_good_callback_creates_the_user_signs_them_in_and_goes_back_to_the_app" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Signing_in_again_reuses_the_user_and_takes_the_new_refresh_token" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Signing_out_ends_the_session" }
+  ],
+
+  "BEH-ACCOUNT-2": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_callback_whose_state_does_not_match_is_rejected_and_creates_nobody" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_callback_with_no_state_cookie_is_rejected" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_state_can_only_be_used_once" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_Spotify_callback_with_the_wrong_state_is_rejected" }
+  ],
+
+  "BEH-ACCOUNT-3": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/TokenProviderTests.cs", "title": "A_rotated_Strava_refresh_token_is_persisted_and_used_for_the_next_exchange" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/TokenProviderTests.cs", "title": "A_rotated_Spotify_refresh_token_is_persisted" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Connecting_Spotify_stores_the_refresh_token_on_the_signed_in_user" }
+  ],
+
+  "BEH-ACCOUNT-4": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "An_event_for_an_unknown_athlete_is_acknowledged_but_never_processed" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "Revoking_access_on_Strava_deletes_the_user_and_ends_their_session" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookServiceTests.cs", "title": "A_new_activity_from_a_known_athlete_is_queued_with_that_athlete" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookServiceTests.cs", "title": "Revoking_access_on_Strava_deletes_that_user_and_their_runs_but_nobody_else" }
+  ],
+
+  "BEH-ACCOUNT-5": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "Runs_need_a_session" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "Each_user_sees_only_their_own_runs_newest_first_with_their_songs" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStoreTests.cs", "title": "Two_users_can_each_have_the_same_activity_and_only_see_their_own_runs" }
+  ],
+
+  "BEH-MAP-1": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-MAP-1 / BEH-MAP-2 / BEH-MAP-3: a run draws its route with each song pinned where it started; a run without GPS draws none" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaWebhookApiTests.cs", "title": "A_run_comes_back_with_its_route_and_each_song_pinned_to_the_point_nearest_its_start" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunRouteTests.cs", "title": "A_song_covers_the_distance_along_the_route_while_it_played" }
+  ],
+
+  "BEH-MAP-2": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunRouteTests.cs", "title": "A_song_is_pinned_to_the_point_nearest_its_start" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunRouteTests.cs", "title": "An_empty_route_pins_nothing" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_is_stored_with_its_route_and_marked_as_read" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_with_no_songs_still_keeps_its_route" }
+  ],
+
+  "BEH-MAP-3": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-MAP-1 / BEH-MAP-2 / BEH-MAP-3: a run draws its route with each song pinned where it started; a run without GPS draws none" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunRouteTests.cs", "title": "No_GPS_gives_no_route" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_with_no_GPS_is_read_once_and_has_no_route" }
+  ],
+
+  "BEH-HIGH-1": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-HIGH-1: each song shows the minute of the run it started at" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSongMatcherTests.cs", "title": "A_song_inside_the_run_is_kept_with_its_offset" }
+  ],
+
+  "BEH-HIGH-2": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-HIGH-2: a run names the album or playlist it ran to, or says a type, mixed, or nothing" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunContextMajorityTests.cs", "title": "More_than_half_from_one_context_name_it" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunContextMajorityTests.cs", "title": "Exactly_half_is_mixed" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunContextMajorityTests.cs", "title": "No_song_with_a_context_says_nothing" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_context_name_that_cannot_be_read_still_stores_the_run_with_its_type" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/ClientTests.cs", "title": "Spotify_client_reads_the_context_of_each_play_and_null_for_a_queue" }
+  ],
+
+  "BEH-HIGH-3": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "Top_speed_names_the_song_playing_at_the_fastest_moment" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "One_sample_GPS_spike_is_smoothed_away" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "No_streams_name_nothing" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_whose_streams_cannot_be_read_is_still_stored_without_highlights" },
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-HIGH-3 / BEH-HIGH-4: the top-speed and fastest-pace songs are labelled, others are not" }
+  ],
+
+  "BEH-HIGH-4": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "Fastest_pace_names_the_song_that_covered_the_most_ground_per_second" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "A_song_covering_under_thirty_seconds_of_the_run_is_skipped" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "A_song_partly_outside_the_run_is_judged_only_on_the_part_inside" },
+    { "file": "frontend/e2e/home.spec.ts", "title": "BEH-HIGH-3 / BEH-HIGH-4: the top-speed and fastest-pace songs are labelled, others are not" }
+  ]
+}
