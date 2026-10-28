@@ -1,0 +1,139 @@
+{
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/language-vocab. Keyed on file + title (a C# test's title is its method name; there are no frontend tests in the repo).",
+  "_authored": "2026-10-28, by reading language-vocab.beh against language-vocab@dev (89dcecb) backend/Balenthiran.LanguageVocab.Tests. A test is mapped only where it checks what the behaviour's contracts say. Every test is a backend service/domain test; none drives the UI.",
+  "_incomplete": "BEH-AUDIO-1, BEH-CHAR-1, BEH-CARD-1, BEH-LEARN-2, BEH-LEARN-3 are absent: their contracts are UI (SpeechSynthesis, colours, Enter, hanzi on screen, and the Learn quiz and its reverse toggle in frontend/src/pages/Learn.tsx), and the repo has no frontend tests, so nothing checks them. BEH-STATS-1, BEH-LEARN-1 are mapped on their data half only.",
+
+  "BEH-DRILL-ZHEN": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "ZhToEn_card_shows_the_word_and_hides_the_meaning" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "ZhToEn_answer_matches_any_gloss" }
+  ],
+
+  "BEH-DRILL-ENZH": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "EnToZh_card_shows_the_meaning_and_hides_the_word" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "EnToZh_answer_is_graded_through_the_pinyin_grader" }
+  ],
+
+  "BEH-TONE-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_correct" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_almost" }
+  ],
+
+  "BEH-TONE-2": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_correct" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_almost" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_wrong" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Result_carries_the_canonical_form" }
+  ],
+
+  "BEH-NORMALISE-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_correct" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "ZhToEn_answer_matches_any_gloss" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "English_gloss_inner_whitespace_is_collapsed" }
+  ],
+
+  "BEH-POOL-MVP": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "Bootstrap_creates_first_ten_by_rank" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "ShouldUnlock_true_at_threshold" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "ShouldUnlock_false_just_below_threshold" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "TryUnlock_adds_next_batch_by_rank_when_mastered" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "Weight_favours_weakness_and_stays_positive" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "WeightedPick_weak_word_dominates_the_distribution" }
+  ],
+
+  "BEH-STRENGTH-MVP": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "NextStrength_moves_and_clamps" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "Answer_moves_strength_and_counts_the_attempt" }
+  ],
+
+  "BEH-STATS-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/StatsServiceTests.cs", "title": "Pool_size_and_strengths_list_the_pool_weakest_first" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/StatsServiceTests.cs", "title": "Accuracy_buckets_by_utc_day_oldest_first_and_counts_only_Correct" }
+  ],
+
+  "BEH-SEEDDATA-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_is_idempotent_second_run_changes_nothing" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_the_real_hsk1_list_inserts_150_words" }
+  ],
+
+  "BEH-GRADE-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_correct" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_almost" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Grade_wrong" }
+  ],
+
+  "BEH-GRADE-2": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Toneless_answer_reports_flags" }
+  ],
+
+  "BEH-GRADE-3": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Wrong_tone_reports_tones_provided_but_incorrect" }
+  ],
+
+  "BEH-GRADE-4": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs", "title": "Result_carries_the_canonical_form" }
+  ],
+
+  "BEH-STRENGTH-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "NextStrength_moves_and_clamps" }
+  ],
+
+  "BEH-WEIGHT-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "Weight_favours_weakness_and_stays_positive" }
+  ],
+
+  "BEH-UNLOCK-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "ShouldUnlock_true_at_threshold" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "ShouldUnlock_false_just_below_threshold" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "ShouldUnlock_clamps_out_of_band_strengths" }
+  ],
+
+  "BEH-BOOTSTRAP-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "Bootstrap_creates_first_ten_by_rank" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "Bootstrap_is_idempotent" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "Bootstrap_with_fewer_than_ten_items_takes_all" }
+  ],
+
+  "BEH-UNLOCK-2": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "TryUnlock_adds_next_batch_by_rank_when_mastered" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "TryUnlock_returns_empty_when_nothing_left_to_add" }
+  ],
+
+  "BEH-SEED-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_is_idempotent_second_run_changes_nothing" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_updates_changed_rows_in_place" }
+  ],
+
+  "BEH-SEED-2": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_the_real_hsk1_list_inserts_150_words" }
+  ],
+
+  "BEH-SEED-3": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_derives_normalised_pinyin_via_the_grader" }
+  ],
+
+  "BEH-LANG-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "Bootstrap_ignores_other_languages" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_throws_on_missing_language" }
+  ],
+
+  "BEH-ITEMTYPE-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs", "title": "Load_defaults_item_type_to_word" }
+  ],
+
+  "BEH-DETERMINISM-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs", "title": "SelectNext_is_deterministic_for_the_same_seed" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs", "title": "WeightedPick_is_deterministic_for_same_seed" }
+  ],
+
+  "BEH-LEARN-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "Learn_bootstraps_and_shows_five_words_whole_by_rank" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/DrillServiceTests.cs", "title": "Learn_puts_words_already_answered_after_unseen_ones" }
+  ],
+
+  "BEH-PACK-1": [
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PackTests.cs", "title": "The_shipped_mahjong_pack_has_the_numbers_suits_winds_and_dragons" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PackTests.cs", "title": "Learning_a_pack_teaches_only_its_words_in_the_packs_order_and_pools_them" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PackTests.cs", "title": "Every_pack_word_exists_once_both_seeds_have_loaded" },
+    { "file": "backend/Balenthiran.LanguageVocab.Tests/PackTests.cs", "title": "A_pack_entry_never_redefines_a_word_HSK1_already_has" }
+  ]
+}
