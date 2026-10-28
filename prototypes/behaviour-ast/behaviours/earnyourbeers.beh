@@ -205,7 +205,7 @@ behaviour BEH-SETTLE-1 "Each new week settles the last: its net balance moves th
   in FEAT-LEAGUE
   layer technical
   source inferred test/league_settlement_test.dart:single promotion at +25 points
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract tally ≥ 50: up two tiers and −50; tally ≥ 25: up one and −25; tally ≤ −25: down one and +25; otherwise it carries over
