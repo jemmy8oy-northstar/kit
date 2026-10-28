@@ -1802,6 +1802,22 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
   contract my assumption: turning a project off stops future promotions only; anything already on main stays
   contract my assumption: until this is built, his grants in threads stay the record
 
+behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
+  in FEAT-SETTINGS
+  source defined kit.notes.md#2026-10-28-1505
+  review unreviewed
+  pending
+  priority 4
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "maybe there should be a part of settings where we configure the agents churn rate. What do we want the agent to do. Wake as soon as some changes something? Work on tech debt when nothing is available? Suggest ideas when no tasks are available. Sit idle until instructed specifically to conserve tokens?"
+  contract today the agent wakes on a 15-minute tick, builds the Queue, and sleeps only when nothing is left; on 2026-10-28 it slept with the Queue full after a usage limit, which he did not ask for
+  contract my assumption: one choice of four, read by the agent at each wake: "wake on any change", "work on test health when idle" (BEH-HEALTH-2), "suggest ideas when idle", "idle until asked"
+  contract my assumption: whichever is chosen, work he has asked for is always built; the choice only decides what happens when the Queue is empty
+  contract my assumption: the default is "work on test health when idle", and a usage limit never changes the choice by itself
+  contract my assumption: until this is built, the agent behaves as the default and never sleeps to save tokens while the Queue has work
+
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV
   source defined kit.notes.md#2026-10-27-0918
