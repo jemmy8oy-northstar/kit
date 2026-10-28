@@ -56,6 +56,7 @@ behaviour BEH-CHAR-1 "Chinese characters are always displayed and never required
   when opens page:Drill
   then sees region:HanziLarge
   contract no drill direction ever requires typing a hanzi character
+  contract my assumption: "always" excepts an English-to-pinyin card before it is answered, where the app hides the hanzi because it would give the pinyin away; it shows once the verdict is in (pinned by language-vocab#24)
 
 behaviour BEH-TONE-1 "Pinyin is displayed with tone marks and accepted three ways"
   source defined docs/DESIGN.md#A1
