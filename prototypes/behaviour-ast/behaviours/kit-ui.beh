@@ -1719,6 +1719,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: on a wake with nothing on the Queue and nothing of his to act on, the agent writes or maps tests for the lowest-scoring project's uncovered behaviours, one project per PR, instead of sleeping
   contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
   contract my assumption: the health page shows the last such PR, so the work is visible
+  contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH

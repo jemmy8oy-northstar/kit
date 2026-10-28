@@ -90,9 +90,67 @@ public class CoverageTests
     [InlineData("frontend/node_modules/dep/dep.spec.ts", false)]
     [InlineData("backend/bin/Debug/ThingTests.cs", false)]
     [InlineData("dist/a.test.js", false)]
+    [InlineData("ios/App/Tests/AppTests/StudioTests.swift", true)]
+    [InlineData("ios/App/Sources/App/Studio.swift", false)]
+    [InlineData("ios/App/.build/checkouts/dep/Tests/DepTests.swift", false)]
     public void Which_paths_are_test_files_is_decided_in_one_place(string path, bool expected)
     {
         Assert.Equal(expected, Counter.IsTestPath(path));
+    }
+
+    // ── Swift (XCTest), so snip-it's iOS app can count (BEH-HEALTH-2) ────────────
+
+    [Fact]
+    public void BEH_HEALTH_2_An_XCTest_method_is_a_test_titled_by_its_name()
+    {
+        const string src = "import XCTest\n\nfinal class StudioTests: XCTestCase {\n"
+            + "    func testStudioIsOffByDefault() {\n        XCTAssertFalse(Studio().on)\n    }\n\n"
+            + "    @MainActor func testTheToggleIsRemembered() async throws { }\n\n"
+            + "    private func makeStudio() -> Studio { Studio() }\n}\n";
+
+        var reading = Counter.ReadTitles([("ios/StudioTests.swift", src)]);
+
+        Assert.Null(reading.Refusal);
+        Assert.Equal(["testStudioIsOffByDefault|4", "testTheToggleIsRemembered|8"], reading.Titles.Select(t => $"{t.Raw}|{t.Line}"));
+    }
+
+    [Fact]
+    public void A_swift_test_in_a_string_or_a_comment_is_not_a_test()
+    {
+        const string src = "final class T: XCTestCase {\n"
+            + "    // func testOld() {}\n"
+            + "    /* func testBlockComment() {} */\n"
+            + "    let s = \"func testInAString() {}\"\n"
+            + "    func testReal() {}\n}\n";
+
+        var reading = Counter.ReadTitles([("ATests.swift", src)]);
+
+        Assert.Null(reading.Refusal);
+        Assert.Equal(["testReal"], reading.Titles.Select(t => t.Raw));
+    }
+
+    /// <summary>
+    /// The titles are read by position from the raw source and the count from the stripped one,
+    /// so the two are not the same idea twice. Where they part, it is a refusal, not a guess.
+    /// </summary>
+    [Fact]
+    public void A_swift_test_inside_a_multiline_string_refuses_rather_than_counting()
+    {
+        const string src = "final class T: XCTestCase {\n    let block = \"\"\"\n    func testInABlock() {}\n    \"\"\"\n    func testReal() {}\n}\n";
+
+        var reading = Counter.ReadTitles([("ATests.swift", src)]);
+
+        Assert.Contains("ATests.swift: read 2 test(s) but 1 test declaration(s)", reading.Refusal, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_swift_testing_file_refuses_rather_than_reading_as_empty()
+    {
+        const string src = "import Testing\n\n@Test func studioIsOff() { }\n";
+
+        var reading = Counter.ReadTitles([("ios/StudioTests.swift", src)]);
+
+        Assert.Contains("ios/StudioTests.swift: read 0 test(s) but 1 test declaration(s)", reading.Refusal, StringComparison.Ordinal);
     }
 
     [Fact]
