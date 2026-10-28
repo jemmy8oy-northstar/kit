@@ -10,6 +10,7 @@ import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
+import Inbox from './pages/Inbox'
 import Notifications from './pages/Notifications'
 import Settings, { GitHubReturn } from './pages/Settings'
 import SignIn from './components/SignIn'
@@ -68,6 +69,7 @@ export default function App() {
               <BoardNavLink />
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
+              <NavLink to="/inbox">Inbox</NavLink>
               <NavLink to="/principles">Principles</NavLink>
               <NavLink to="/health">Health</NavLink>
               <NavLink to="/activity">Activity</NavLink>
@@ -93,6 +95,7 @@ export default function App() {
               <Route path="/epics" element={<Epics />} />
               <Route path="/principles" element={<Principles />} />
               <Route path="/health" element={<Health />} />
+              <Route path="/inbox" element={<Inbox />} />
               <Route path="/activity" element={<Activity />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<Settings />} />

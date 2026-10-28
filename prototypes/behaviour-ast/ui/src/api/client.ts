@@ -252,6 +252,14 @@ export function setPaused(app: string, id: string, paused: boolean): Promise<Wri
   )
 }
 
+/** Set a behaviour's priority, 1 (first) to 5 (BEH-INBOX-1): it rewrites the corpus's `priority` line. */
+export function setPriority(app: string, id: string, priority: number): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}/priority`,
+    { priority },
+  )
+}
+
 /**
  * Remove a behaviour (BEH-ACT-3). The id is in the path and the body is an empty
  * object: the server refuses any field at all, so there is nothing here that
