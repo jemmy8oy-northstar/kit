@@ -422,6 +422,12 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "opens on Kit's name and a spinner while it asks the server who you are" },
     { "file": "prototypes/behaviour-ast/ui/src/components/Loading.test.tsx", "title": "says it is still waiting once the server is slow, and not before" }
   ],
+  "BEH-LOADING-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/PullToRefresh.test.tsx", "title": "a pull past the threshold re-reads the page's data, keeping the page on screen while it does" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PullToRefresh.test.tsx", "title": "letting go short of the threshold reloads nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PullToRefresh.test.tsx", "title": "a drag that starts below the top of the page is a scroll, and reloads nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/PullToRefresh.test.tsx", "title": "in a browser tab, where Safari has its own, it draws nothing and listens for nothing" }
+  ],
   "BEH-SETTINGS-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "says this Kit has no accounts when they are off, even when signed in" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "tells the operator Kit runs on its own GitHub App" },

@@ -1749,6 +1749,7 @@ behaviour BEH-SETTINGS-2 "Settings chooses the page Kit opens on"
 behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from Settings, as a user does"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-1258
+  source inferred kit.notes.md#2026-10-28-0003
   review approved
   priority 4
   actor engineer
@@ -1800,7 +1801,6 @@ behaviour BEH-LOADING-2 "On the installed iPhone app, pulling the page down relo
   in FEAT-NAV
   source defined kit.notes.md#2026-10-27-2130
   review unreviewed
-  pending
   priority 3
   actor engineer
   when opens page:KitBoard
@@ -1809,3 +1809,5 @@ behaviour BEH-LOADING-2 "On the installed iPhone app, pulling the page down relo
   contract the installed app has no browser bar, so iOS gives it no pull-to-refresh of its own; Kit has to draw one
   contract my assumption: pulling down from the top of any page shows a spinner and, once released past a short distance, re-reads that page's data from the server without reloading the whole app
   contract my assumption: it only starts when the page is already scrolled to the top, so normal scrolling never triggers it
+  contract my assumption: in a Safari tab Kit draws nothing, because Safari already has its own pull-to-refresh
+  contract my assumption: the page keeps showing its data while the new read is in flight, rather than blanking to a spinner
