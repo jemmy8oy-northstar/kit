@@ -1,12 +1,38 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C in docs/design/tagging.md: the corpus carries the mapping, so snip-it is never edited. Keyed on file + title because a title alone is not unique in this repo (GetJobAsync_UnknownId_ReturnsNull, Serialize_Deserialize_RoundTrips each appear twice).",
-  "_authored": "2026-09-03, by reading snip-it.beh against frontend/e2e/editor.spec.ts at origin/dev. These six are the pairs a human established by eye — the same six measure-tagging.js uses as its control.",
-  "_incomplete": "BEH-UP-2 and BEH-EDIT-0 are DELIBERATELY absent: no test names them. `kit check snip-it` therefore exits 1 today, which is the point — the gate was observed discriminating before it was ever observed passing.",
+  "_authored": "2026-10-28, by reading snip-it.beh against snip-it@dev 4ae9746: the backend xUnit tests, the frontend vitest unit tests and the Playwright e2e specs (ios/ Swift tests not read). A test is mapped only where its body checks what the behaviour's contract lines say. The CUT-1 e2e title was renamed upstream (re-sends the video) and is updated.",
+  "_incomplete": "Built behaviours with NO test mapped yet: BEH-UP-2, BEH-EDIT-0 (exercised only as steps of other tests, never asserted), BEH-TELE-1, BEH-TELE-2, BEH-TELE-3, BEH-TELE-4, BEH-TELE-5, BEH-TELE-6, BEH-TELE-7, BEH-TELE-8, BEH-TELE-9, BEH-PROD-1, BEH-SCRIPT-1, BEH-SCRIPT-2, BEH-SCRIPT-3, BEH-SCRIPT-4, BEH-EDITION-1, BEH-EDITION-2, BEH-EDITION-4 (iOS: Swift tests exist under ios/ but were not mapped). Pending, so deliberately excluded: BEH-PIPE-4, BEH-EDITION-3, BEH-TELE-10.",
 
   "BEH-HOME-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "landing page renders" }],
   "BEH-EDIT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor loads the mock transcript" }],
   "BEH-EDIT-2": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor renders in dark mode" }],
-  "BEH-CUT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "send-for-export submits a cut and surfaces the job" }],
+  "BEH-CUT-1": [
+    { "file": "frontend/e2e/editor.spec.ts", "title": "send-for-export re-sends the video and surfaces the job" },
+    { "file": "frontend/src/features/transcript-editor/api/cutRequest.test.ts", "title": "sends every word with its kept flag" }
+  ],
   "BEH-UP-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "uploading a file transcribes it and opens the editor" }],
-  "BEH-FILL-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "remove-filler-words changes the edit stats" }]
+  "BEH-FILL-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "remove-filler-words changes the edit stats" }],
+
+  "BEH-PIPE-1": [
+    { "file": "frontend/src/features/pipeline/PipelineBoard.test.tsx", "title": "shows all five empty columns on first load" },
+    { "file": "frontend/e2e/pipeline.spec.ts", "title": "add an idea, write its script, see it in Scripted, reload, still there" }
+  ],
+  "BEH-PIPE-2": [
+    { "file": "frontend/src/features/pipeline/PipelineBoard.test.tsx", "title": "adds an idea card that lands in Idea and is saved" },
+    { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "lands a new card in Idea with trimmed title and notes" }
+  ],
+  "BEH-PIPE-3": [
+    { "file": "frontend/src/features/pipeline/PipelineBoard.test.tsx", "title": "saving a script moves the card from Idea to Scripted" },
+    { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "moves an Idea card to Scripted when a non-empty script is saved" },
+    { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "moves only by explicit choice, in any direction" }
+  ],
+  "BEH-PIPE-5": [
+    { "file": "frontend/e2e/pipeline.spec.ts", "title": "a card opens the editor, and its take moves it to Recorded then Cut (BEH-PIPE-5)" },
+    { "file": "frontend/src/features/pipeline/useCardFromQuery.test.tsx", "title": "reports a transcribed take and a finished cut back to the card" },
+    { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "never moves a card backwards" }
+  ],
+  "BEH-PIPE-6": [
+    { "file": "frontend/src/features/pipeline/PipelineBoard.test.tsx", "title": "saving a published link moves the card to Published and shows the link" },
+    { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "a valid link is saved and moves the card to Published" }
+  ]
 }
