@@ -461,5 +461,12 @@
   ],
   "BEH-BOARD-19": [
     { "file": "prototypes/behaviour-ast/ui/src/test/layout.test.ts", "title": "gives the board the whole window, and no column under 15rem on a wide screen (BEH-BOARD-19)" }
+  ],
+  "BEH-HEALTH-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "totals only the measured projects and says how many are left out (BEH-HEALTH-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "shows the reason in the page text, not only a tooltip (BEH-HEALTH-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says so in words when nothing is measured, with no percentage (BEH-HEALTH-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "never reads 100% until every behaviour is named (BEH-HEALTH-1)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "orders lowest percentage first and unmeasured last (BEH-HEALTH-1)" }
   ]
 }

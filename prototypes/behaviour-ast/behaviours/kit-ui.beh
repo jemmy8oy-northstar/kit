@@ -1681,20 +1681,21 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
 
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
-  stage problem
+  stage development
 
 behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share of behaviours a test names"
   in FEAT-HEALTH
   source defined kit.notes.md#2026-10-27-2133
   review unreviewed
-  pending
   priority 3
   actor engineer
   when opens page:KitHealth
   then sees region:KitMain
   contract "can we work on a kit health feature which shows percentage of features or behaviours with test coverage this kind of thing"
   contract what exists: each project already carries a "N/M covered" badge, but on live Kit all 15 read "not measured" (checked 2026-10-27 21:55Z), because the deployed Kit reads no app's test files
-  contract my assumption: so the first step is reading coverage where it lives, each app's own repo, through the same GitHub reads Kit already makes; this page then shows a percentage per project and in total, and the behaviours no test names
+  contract my assumption: so the first step is reading coverage where it lives, each app's own repo, through the same GitHub reads Kit already makes; this page then shows a percentage per project and in total (listing the behaviours no test names is BEH-HEALTH-3)
+  contract my assumption: a project with no reading says "not measured" and why, in the page text, and stays out of the total; the percentage is rounded down, so only a complete project reads 100%
+  contract my assumption: one row per corpus file, lowest percentage first, so kit, kit-ui and kit-hosted are three rows, not one Kit row
   contract my assumption: "covered" means a test names the behaviour, as kit check counts it today; it does not mean the test passes
   contract my assumption: pending (not built) behaviours are left out of the percentage, as kit check leaves them out
   contract my assumption: each corpus names the repo its tests live in with a `# kit:repo owner/repo@branch` line, read on that repo's dev branch; a corpus with no such line, or no `<app>.tests.json` mapping, shows "not measured" and says which is missing
@@ -1715,6 +1716,17 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: on a wake with nothing on the Queue and nothing of his to act on, the agent writes or maps tests for the lowest-scoring project's uncovered behaviours, one project per PR, instead of sleeping
   contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
   contract my assumption: the health page shows the last such PR, so the work is visible
+
+behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
+  in FEAT-HEALTH
+  source inferred kit.notes.md#2026-10-27-2133
+  review unreviewed
+  pending
+  priority 3
+  actor engineer
+  when opens page:KitHealth
+  then sees region:KitMain
+  contract my assumption: split from BEH-HEALTH-1, which shows the numbers; the list endpoint only carries counts, so this reads each project's own view for the ids, and each id links to its behaviour page
 
 feature FEAT-SETTINGS "Settings"
   stage ui
