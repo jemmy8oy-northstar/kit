@@ -248,7 +248,7 @@ behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
   in FEAT-ONBOARD
   layer technical
   source inferred lib/ui/screens/onboarding_screen.dart:471
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract weekly points at tier 0 = volume × base rate × 10; tier = round(ln(points / 25) / 0.23025), clamped 0 to 20
