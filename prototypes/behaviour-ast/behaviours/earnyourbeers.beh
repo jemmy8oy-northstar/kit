@@ -180,7 +180,7 @@ behaviour BEH-HISTORY-1 "Past weeks can be paged through, back to the first log"
   in FEAT-BALANCE
   layer ux
   source inferred test/dashboard_interaction_test.dart:Weekly History Swipe Navigation
-  review unreviewed
+  review approved
   priority 3
   actor athlete
   when opens page:Dashboard
