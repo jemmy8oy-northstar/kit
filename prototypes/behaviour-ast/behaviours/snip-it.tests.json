@@ -1,7 +1,8 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C in docs/design/tagging.md: the corpus carries the mapping, so snip-it is never edited. Keyed on file + title because a title alone is not unique in this repo (GetJobAsync_UnknownId_ReturnsNull, Serialize_Deserialize_RoundTrips each appear twice).",
   "_authored": "2026-10-28, by reading snip-it.beh against snip-it@dev 4ae9746: the backend xUnit tests, the frontend vitest unit tests and the Playwright e2e specs, plus the iOS XCTest tests (ios/ScriptFollower/Tests, 87 methods, read at snip-it@dev 4ae9746). A test is mapped only where its body checks what the behaviour's contract lines say. The CUT-1 e2e title was renamed upstream (re-sends the video) and is updated.",
-  "_incomplete": "Built behaviours with NO test mapped yet: BEH-UP-2, BEH-EDIT-0 (exercised only as steps of other tests, never asserted), BEH-TELE-1, BEH-TELE-2, BEH-TELE-3, BEH-TELE-4, BEH-TELE-5, BEH-TELE-6 (camera hardware, system player, Settings/model UI and Codemagic config have no honest unit test), BEH-SCRIPT-2, BEH-SCRIPT-3 (fold and manage-sections UI untested; only lineCount and parse/join are), BEH-EDITION-2 (no test asserts Studio-off makes no request). The iOS SnipItClient tests exercise the same wire contract as BEH-UP-1/BEH-CUT-1 but from a different client, so are not mapped to them. Pending, so deliberately excluded: BEH-PIPE-4, BEH-EDITION-3, BEH-TELE-10.",
+  "_added": "2026-10-28 later: UP-2 and EDIT-0 got their own e2e tests (snip-it#70); SCRIPT-2 and SCRIPT-3 got tests of the sections model underneath them (snip-it#71). Those two are PARTIAL: the fold buttons, drag handle and delete confirmation are SwiftUI, which the Linux package job cannot run.",
+  "_incomplete": "Built behaviours with NO test mapped yet: BEH-TELE-1, BEH-TELE-2, BEH-EDITION-2 (their logic is only in the SwiftUI app, outside the testable ScriptFollower package), BEH-TELE-3, BEH-TELE-4, BEH-TELE-5, BEH-TELE-6 (system player, camera hardware and Codemagic config have no honest unit test). The iOS SnipItClient tests exercise the same wire contract as BEH-UP-1/BEH-CUT-1 but from a different client, so are not mapped to them. Pending, so deliberately excluded: BEH-PIPE-4, BEH-EDITION-3, BEH-TELE-10.",
 
   "BEH-HOME-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "landing page renders" }],
   "BEH-EDIT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor loads the mock transcript" }],
@@ -11,6 +12,18 @@
     { "file": "frontend/src/features/transcript-editor/api/cutRequest.test.ts", "title": "sends every word with its kept flag" }
   ],
   "BEH-UP-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "uploading a file transcribes it and opens the editor" }],
+  "BEH-UP-2": [{ "file": "frontend/e2e/editor.spec.ts", "title": "the upload form takes a single video or audio file" }],
+  "BEH-EDIT-0": [{ "file": "frontend/e2e/editor.spec.ts", "title": "the editor loads the transcription its URL names" }],
+  "BEH-SCRIPT-2": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testAFoldedRowHasTheNameAndLineCountOfItsSection" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testAnEmptySectionHasNoLines" }
+  ],
+  "BEH-SCRIPT-3": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testClearingASectionKeepsItsNameAndMarker" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testDeletingASectionRemovesItsMarkerToo" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testReorderingSectionsReordersTheSavedScript" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testDeletingEverySectionLeavesAnEmptyScript" }
+  ],
   "BEH-FILL-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "remove-filler-words changes the edit stats" }],
 
   "BEH-PIPE-1": [
