@@ -1,7 +1,7 @@
 {
   "_": "behaviour -> the test(s) that name it. Option C in docs/design/tagging.md: the corpus carries the mapping, so snip-it is never edited. Keyed on file + title because a title alone is not unique in this repo (GetJobAsync_UnknownId_ReturnsNull, Serialize_Deserialize_RoundTrips each appear twice).",
-  "_authored": "2026-10-28, by reading snip-it.beh against snip-it@dev 4ae9746: the backend xUnit tests, the frontend vitest unit tests and the Playwright e2e specs (ios/ Swift tests not read). A test is mapped only where its body checks what the behaviour's contract lines say. The CUT-1 e2e title was renamed upstream (re-sends the video) and is updated.",
-  "_incomplete": "Built behaviours with NO test mapped yet: BEH-UP-2, BEH-EDIT-0 (exercised only as steps of other tests, never asserted), BEH-TELE-1, BEH-TELE-2, BEH-TELE-3, BEH-TELE-4, BEH-TELE-5, BEH-TELE-6, BEH-TELE-7, BEH-TELE-8, BEH-TELE-9, BEH-PROD-1, BEH-SCRIPT-1, BEH-SCRIPT-2, BEH-SCRIPT-3, BEH-SCRIPT-4, BEH-EDITION-1, BEH-EDITION-2, BEH-EDITION-4 (iOS: Swift tests exist under ios/ but were not mapped). Pending, so deliberately excluded: BEH-PIPE-4, BEH-EDITION-3, BEH-TELE-10.",
+  "_authored": "2026-10-28, by reading snip-it.beh against snip-it@dev 4ae9746: the backend xUnit tests, the frontend vitest unit tests and the Playwright e2e specs, plus the iOS XCTest tests (ios/ScriptFollower/Tests, 87 methods, read at snip-it@dev 4ae9746). A test is mapped only where its body checks what the behaviour's contract lines say. The CUT-1 e2e title was renamed upstream (re-sends the video) and is updated.",
+  "_incomplete": "Built behaviours with NO test mapped yet: BEH-UP-2, BEH-EDIT-0 (exercised only as steps of other tests, never asserted), BEH-TELE-1, BEH-TELE-2, BEH-TELE-3, BEH-TELE-4, BEH-TELE-5, BEH-TELE-6 (camera hardware, system player, Settings/model UI and Codemagic config have no honest unit test), BEH-SCRIPT-2, BEH-SCRIPT-3 (fold and manage-sections UI untested; only lineCount and parse/join are), BEH-EDITION-2 (no test asserts Studio-off makes no request). The iOS SnipItClient tests exercise the same wire contract as BEH-UP-1/BEH-CUT-1 but from a different client, so are not mapped to them. Pending, so deliberately excluded: BEH-PIPE-4, BEH-EDITION-3, BEH-TELE-10.",
 
   "BEH-HOME-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "landing page renders" }],
   "BEH-EDIT-1": [{ "file": "frontend/e2e/editor.spec.ts", "title": "transcript editor loads the mock transcript" }],
@@ -34,5 +34,51 @@
   "BEH-PIPE-6": [
     { "file": "frontend/src/features/pipeline/PipelineBoard.test.tsx", "title": "saving a published link moves the card to Published and shows the link" },
     { "file": "frontend/src/features/pipeline/pipeline.test.ts", "title": "a valid link is saved and moves the card to Published" }
+  ],
+
+  "BEH-TELE-7": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testReadingInOrderFollowsWordByWordAndLineByLine" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testSilenceLeavesItWhereItIs" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testAnAdLibLeavesItWhereItIs" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testItNeverMovesBackwardsOnItsOwn" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testMovingToALineIsTheWayBack" }
+  ],
+  "BEH-TELE-8": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testTheWordsHeardSoFarInALineAreHighlighted" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testEarlierLinesAreAllHeardAndLaterOnesNone" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptFollowerTests.swift", "title": "testTappingBackClearsTheHighlight" }
+  ],
+  "BEH-TELE-9": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/PrompterLayoutTests.swift", "title": "testAutomaticIsCentreOnTheFrontCameraAndTopOnTheBack" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/PrompterLayoutTests.swift", "title": "testAChosenPositionIgnoresTheCamera" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/PrompterLayoutTests.swift", "title": "testSizeAndWidthArePulledIntoRange" }
+  ],
+  "BEH-PROD-1": [
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/ProductionStoreTests.swift", "title": "testProductionsAreListedNewestFirst" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/ProductionStoreTests.swift", "title": "testEachProductionHasItsOwnTakesDirectory" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/ProductionStoreTests.swift", "title": "testRenamingKeepsTheScriptAndTakes" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/ProductionStoreTests.swift", "title": "testDeletingRemovesTheProductionAndItsTakes" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/ProductionStoreTests.swift", "title": "testTheOldScriptAndTakesBecomeTheFirstProduction" }
+  ],
+  "BEH-SCRIPT-1": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testMarkersSplitTheScriptIntoSections" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testTheDashesIOSAutocorrectsToAreABreak" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testThePrompterNeverShowsAMarker" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testATakeRunsAcrossSectionsWithoutStopping" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/ScriptSectionsTests.swift", "title": "testJoiningWritesTheMarkersBack" }
+  ],
+  "BEH-SCRIPT-4": [
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/CoverageTests.swift", "title": "testATakeCoversItsStartLineAndEveryLineItMovedTo" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/CoverageTests.swift", "title": "testALineIsCoveredOnceHoweverOftenItIsVisited" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/CoverageTests.swift", "title": "testCountingIsByTextIgnoringSurroundingSpaces" }
+  ],
+  "BEH-EDITION-1": [
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/StudioTests.swift", "title": "testAFreshInstallStartsAsTheGeneralRelease" },
+    { "file": "ios/ScriptFollower/Tests/ScriptFollowerTests/StudioTests.swift", "title": "testAPhoneAlreadySignedInToSnipItKeepsItsStudioFeatures" }
+  ],
+  "BEH-EDITION-4": [
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/TranscriptTests.swift", "title": "testATakeKeepsOnlyWhatWasHeardAfterRecord" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/TranscriptTests.swift", "title": "testTheTranscriptRoundTripsBesideTheTake" },
+    { "file": "ios/ScriptFollower/Tests/ProductionsTests/TranscriptTests.swift", "title": "testACutSharesItsOriginalsTranscript" }
   ]
 }
