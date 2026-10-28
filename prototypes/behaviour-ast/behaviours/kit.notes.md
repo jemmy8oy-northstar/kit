@@ -378,3 +378,7 @@ Kit you decided to sleep to conserve following usage limit hit. I didn’t ask y
 ## 2026-10-28 22:37Z
 
 Balenthiran should be tracked, want to get /apps on it
+
+## 2026-10-28 23:55Z
+
+This inbox card feature is incredibly successful. No need to navigate a board.
