@@ -7,6 +7,9 @@
 #
 # `contract` steps are the honest part: they are assertions the tree CANNOT
 # express, kept in so the coverage number is not flattered by omitting them.
+#
+# kit:repo jemmy8oy-northstar/snip-it@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 
 # ── features (snip-it.notes.md#2026-10-20-2242: "snip it needs feature organisation") ──
 # The grouping is the agent's reading of that note: deny it if it is the wrong cut.

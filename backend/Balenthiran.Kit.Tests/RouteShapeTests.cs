@@ -189,6 +189,8 @@ public class RouteShapeTests
 
         public string? ReadScheduleText(string app) => inner.ReadScheduleText(app);
 
+        public string? ReadTestsText(string app) => inner.ReadTestsText(app);
+
         public void WriteScheduleText(string app, string text) => inner.WriteScheduleText(app, text);
 
         public string RelativeSchedulePath(string app) => inner.RelativeSchedulePath(app);

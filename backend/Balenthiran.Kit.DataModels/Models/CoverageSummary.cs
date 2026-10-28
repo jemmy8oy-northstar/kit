@@ -15,6 +15,8 @@ public sealed class CoverageSummary : ICoverageSummary
     [JsonPropertyOrder(3)]
     public required int? Uncovered { get; init; }
 
+    // Absent once measured (BEH-HEALTH-1): an available row has no reason, and `reason: null` is not in the UI's type.
     [JsonPropertyOrder(4)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public required string? Reason { get; init; }
 }

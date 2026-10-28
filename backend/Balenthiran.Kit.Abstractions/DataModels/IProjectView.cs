@@ -23,7 +23,7 @@ public interface IProjectView
 
     IReadOnlyList<IGeneratedView> Generated { get; }
 
-    IUnavailableCoverage Coverage { get; }
+    ICoverage Coverage { get; }
 
     IAdjudicationReport Adjudication { get; }
 

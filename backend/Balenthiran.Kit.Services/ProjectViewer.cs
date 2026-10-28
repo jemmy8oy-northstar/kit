@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Exceptions;
@@ -12,17 +14,24 @@ namespace Balenthiran.Kit.Services;
 /// Recomputed on every read, never cached — the page re-reads after a write and
 /// must see the REGENERATED test.
 ///
-/// Hosted Kit reads no repository, so coverage is always the unavailable shape;
-/// <c>project.js</c>'s <c>--repo</c> half is not ported because nothing hosted can reach it.
+/// Coverage (BEH-HEALTH-1) comes from <see cref="ICoverageStore"/>, which hosted Kit fills in the
+/// background from the repo a corpus's <c># kit:repo</c> line names; local Kit has no store and
+/// reports it unavailable, as <c>project.js</c> does without <c>--repo</c>.
 /// </summary>
 public sealed class ProjectViewer(
     ICorpusDirectory corpora,
     ICorpusParser parser,
     IBehaviourResolver resolver,
     ITestGenerator generator,
-    IProjectReporter reporter) : IProjectViewer
+    IProjectReporter reporter,
+    ICoverageStore? coverage = null,
+    ICoverageCounter? counter = null) : IProjectViewer
 {
     private const string NoRepo = "no --repo given, so no test files were read";
+    private const string NoDirective = "no `# kit:repo` line names where this app's tests live";
+    private const string NotReadYet = "not read yet";
+
+    private readonly ICoverageCounter counts = counter ?? new CoverageCounter(new TestTitleReader());
 
     // `/^#\s*kit:not-a-real-app\b/m` and `/^#\s*kit:duplicate-corpus\s+(\S+)/m`, in
     // JavaScript's terms: `^` under /m starts after ANY line terminator, `\s` is the
@@ -126,7 +135,7 @@ public sealed class ProjectViewer(
             }).ToList(),
             Conflicts = resolution.Conflicts.Cast<Conflict>().ToList(),
             Generated = generated,
-            Coverage = new UnavailableCoverage { Available = false, Reason = NoRepo },
+            Coverage = Coverage(app, src, resolution.Behaviours),
             Adjudication = report.Adjudication,
             Surface = report.Surface,
             Questions = report.Questions,
@@ -149,6 +158,64 @@ public sealed class ProjectViewer(
             Principles = Principles(src, app) is { Count: > 0 } p ? p : null,
         };
     }
+
+    /// <summary>
+    /// BEH-HEALTH-1: the app's coverage from what the store last read of its tests repo. Local Kit
+    /// has no store and keeps <c>project.js</c>'s sentence. Every other way of not knowing says
+    /// which — a missing line, a repo not read yet, a failed read, a missing mapping, a refusal —
+    /// because a bare "unavailable" cannot be acted on.
+    /// </summary>
+    private object Coverage(string app, string src, IReadOnlyList<IBehaviour> behaviours)
+    {
+        if (coverage is null)
+        {
+            return Unavailable(NoRepo);
+        }
+
+        var (repo, problem) = RepoDirective.Read(src);
+        if (repo is null)
+        {
+            return Unavailable(problem ?? NoDirective);
+        }
+
+        var tests = corpora.ReadTestsText(app);
+        if (tests is null)
+        {
+            return Unavailable($"no {app}.tests.json mapping");
+        }
+
+        if (coverage.Reading(repo) is not { } reading)
+        {
+            return Unavailable(coverage.Error(repo) ?? NotReadYet);
+        }
+
+        if (reading.Refusal is not null)
+        {
+            return Unavailable(reading.Refusal);
+        }
+
+        JsonObject map;
+        try
+        {
+            map = JsonNode.Parse(tests.TrimStart('﻿')) as JsonObject ?? throw new JsonException("not an object");
+        }
+        catch (JsonException)
+        {
+            return Unavailable($"{app}.tests.json is not a JSON object");
+        }
+
+        var counted = counts.Count(behaviours, map, reading.Titles, $"{app}.tests.json");
+        return counted.Refusal is { } refusal
+            ? Unavailable(refusal)
+            : new AvailableCoverage
+            {
+                Available = true,
+                Covered = counted.Covered.Select(b => b.Id).ToList(),
+                Uncovered = counted.Uncovered.Select(b => b.Id).ToList(),
+            };
+    }
+
+    private static UnavailableCoverage Unavailable(string reason) => new() { Available = false, Reason = reason };
 
     // kit#284 slice 5: `# kit:principle [global] <Name>: <what it means>`, one per line.
     private static readonly Regex PrincipleLine = new(
@@ -213,7 +280,9 @@ public sealed class ProjectViewer(
             DuplicateOf = p.DuplicateOf,
             Behaviours = p.Behaviours.Count,
             Conflicts = p.Conflicts.Count,
-            Coverage = new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = p.Coverage.Reason },
+            Coverage = p.Coverage is AvailableCoverage a
+                ? new CoverageSummary { Available = true, Covered = a.Covered.Count, Uncovered = a.Uncovered.Count, Reason = null }
+                : new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = ((UnavailableCoverage)p.Coverage).Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
             Project = p.Project,
             Idea = p.Idea,

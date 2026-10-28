@@ -5,6 +5,10 @@
 #   as ONE page whose features are its pages and areas, never the files (kit#246),
 #   while check and report still read each file on its own.
 #
+# kit:repo jemmy8oy-northstar/kit@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count
+#   coverage; no line, no number — and the page says why.
+#
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. That study asks whether the glue binding a spec to a UI saturates as
