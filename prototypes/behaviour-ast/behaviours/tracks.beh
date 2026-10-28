@@ -236,7 +236,7 @@ behaviour BEH-ACCOUNT-5 "A runner sees only their own runs"
   in FEAT-ACCOUNTS
   layer technical
   source inferred tracks#6
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract GET /api/runs needs a signed-in runner and returns only their runs
