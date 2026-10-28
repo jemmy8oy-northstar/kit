@@ -23,6 +23,9 @@ public interface ICorpusWriter
     /// <summary>Add or remove a behaviour's bare <c>paused</c> line (BEH-BOARD-16); asking for the state it is already in writes nothing new.</summary>
     IWriteResult SetPaused(string text, string id, bool paused);
 
+    /// <summary>Sets the behaviour's <c>priority</c> line to 1 (first) to 5, adding it when absent. Setting what is already set rewrites nothing.</summary>
+    IWriteResult SetPriority(string text, string id, int priority);
+
     /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.

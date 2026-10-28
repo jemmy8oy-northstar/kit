@@ -1660,13 +1660,12 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.
 feature FEAT-INBOX "His items, one at a time"
-  stage problem
+  stage development
 
 behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unseen first, and he answers each in place"
   in FEAT-INBOX
   source defined kit.notes.md#2026-10-27-2131
   review unreviewed
-  pending
   priority 3
   actor engineer
   when opens page:KitInbox
@@ -1679,6 +1678,10 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract my assumption: lower priority adds 1 to its priority (5 at most), written as an edit like any other
   contract my assumption: swiping is a later step; buttons first, as they also work on a laptop
   contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
+  contract built 2026-10-28: Inbox in the nav at /inbox; lower priority writes through a new priority edit, made the same way as pause
+  contract my assumption: his "dismiss" is Skip, which moves on and writes nothing, so the card is still his next time
+  contract my assumption: answer and comment both leave a note on the card, which reaches the agent like any note; a card with no priority goes to 5 when lowered
+  contract my assumption: the order is fixed when the page opens, so acting on one card never reshuffles the rest
 
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
