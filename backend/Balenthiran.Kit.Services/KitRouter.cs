@@ -96,7 +96,7 @@ public sealed partial class KitRouter(
     private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
-    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
@@ -473,6 +473,7 @@ public sealed partial class KitRouter(
         var remove = kind == "remove";
         var title = kind == "title";
         var paused = kind == "paused";
+        var priority = kind == "priority";
 
         // `steps/{n}` replaces step n (BEH-ACT-2); bare `steps` appends one. Nothing else takes an index.
         var update = m.Groups[4].Success;
@@ -518,7 +519,13 @@ public sealed partial class KitRouter(
             return Json(400, new ApiError { Error = "bad-request", Reason = "paused must be true or false" });
         }
 
-        if (!remove && !paused && TypeError(body, review ? ReviewFields : title ? TitleFields : step || update ? StepFields : CreateFields) is { } wrongType)
+        // The score is a whole number 1 (first) to 5; anything else is a bad request, not a corpus refusal.
+        if (priority && !(Field(body, "priority") is { ValueKind: JsonValueKind.Number } n && n.TryGetInt32(out var score) && score is >= 1 and <= 5))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "priority must be a whole number from 1 to 5" });
+        }
+
+        if (!remove && !paused && !priority && TypeError(body, review ? ReviewFields : title ? TitleFields : step || update ? StepFields : CreateFields) is { } wrongType)
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
         }
@@ -530,6 +537,8 @@ public sealed partial class KitRouter(
             ? writer.UpdateStep(text, id!, index, Str(body, "step")!)
             : paused
             ? writer.SetPaused(text, id!, Field(body, "paused")!.Value.GetBoolean())
+            : priority
+            ? writer.SetPriority(text, id!, Field(body, "priority")!.Value.GetInt32())
             : title
             ? writer.Retitle(text, id!, Str(body, "title")!)
             : review
@@ -545,7 +554,7 @@ public sealed partial class KitRouter(
         }
 
         corpora.WriteText(app, result.Text!);
-        var what = remove ? $"remove {id}" : update ? $"update step {index} of {id}" : title ? $"retitle {id}" : paused ? $"{(Field(body, "paused")!.Value.GetBoolean() ? "pause" : "resume")} {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
+        var what = remove ? $"remove {id}" : update ? $"update step {index} of {id}" : title ? $"retitle {id}" : priority ? $"set the priority of {id} to {Field(body, "priority")!.Value.GetInt32()}" : paused ? $"{(Field(body, "paused")!.Value.GetBoolean() ? "pause" : "resume")} {id}" : review ? $"adjudicate {id}" : step ? $"add a step to {id}" : $"add {id}";
         return Json(200, GitOutcome(corpora.FullPath(app), what, app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
