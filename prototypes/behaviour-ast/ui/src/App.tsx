@@ -13,6 +13,7 @@ import Notifications from './pages/Notifications'
 import Settings, { GitHubReturn } from './pages/Settings'
 import SignIn from './components/SignIn'
 import NoteFab from './components/NoteFab'
+import PullToRefresh from './components/PullToRefresh'
 import { BoardNavLink } from './components/BoardViews'
 import { OpeningPage } from './components/OpeningPage'
 import { IDEAS } from './board'
@@ -80,6 +81,8 @@ export default function App() {
             {/* BEH-SETTINGS-2: Kit opened at its root goes on to the page chosen in Settings. */}
             <OpeningPage />
           </header>
+          {/* BEH-LOADING-2: on the installed iPhone app, pull down to reload the page's data. */}
+          <PullToRefresh />
           <main>
             <Routes>
               <Route path="/" element={<Projects />} />
