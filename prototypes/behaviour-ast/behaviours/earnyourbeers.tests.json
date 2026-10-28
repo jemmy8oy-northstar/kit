@@ -210,5 +210,25 @@
       "file": "frontend/e2e/settings.spec.ts",
       "title": "settings: appearance offers Auto, Light and Dark; Auto follows the device"
     }
+  ],
+  "BEH-WEB-1": [
+    {
+      "file": "backend/Balenthiran.EarnYourBeers.Tests/DashboardApiTests.cs",
+      "title": "A_log_lives_on_the_server_so_a_second_device_signing_in_sees_it"
+    }
+  ],
+  "BEH-UI-1": [
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "phone-first: dark by default, and the foam white #F2F2F2 in the light theme"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "phone-first: the four log buttons are a 2x2 grid with the vice card first"
+    },
+    {
+      "file": "frontend/e2e/dashboard.spec.ts",
+      "title": "log times show in the viewer local time"
+    }
   ]
 }
