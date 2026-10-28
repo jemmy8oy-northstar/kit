@@ -13,6 +13,7 @@ public sealed class CoverageCounter(ITestTitleReader reader) : ICoverageCounter
     private static readonly HashSet<string> SkipDir = new(StringComparer.Ordinal)
     {
         "node_modules", ".git", "bin", "obj", "dist", "build", ".next", "coverage", "playwright-report", "test-results",
+        ".build", "DerivedData",
     };
 
     /// <inheritdoc />

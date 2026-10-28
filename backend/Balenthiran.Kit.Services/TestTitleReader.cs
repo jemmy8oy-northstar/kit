@@ -33,7 +33,24 @@ public sealed class TestTitleReader : ITestTitleReader
     // JavaScript's \w is ASCII only.
     private const string Word = "[A-Za-z0-9_]";
 
-    private static readonly Regex TestFile = new(@"\.(spec|test)\.(ts|tsx|js|jsx)\z|Tests?\.cs\z", RegexOptions.CultureInvariant);
+    private static readonly Regex TestFile = new(@"\.(spec|test)\.(ts|tsx|js|jsx)\z|Tests?\.(cs|swift)\z", RegexOptions.CultureInvariant);
+
+    // XCTest (BEH-HEALTH-2, snip-it's iOS app): a test is a method whose name starts with `test`,
+    // and the method name is its title. Positional, like JsDecl: the declaration starts its line.
+    private static readonly Regex SwiftDecl = new(
+        "^" + Ws + @"*(?:(?:@" + Word + "+|override|public|internal|private|fileprivate|final|nonisolated)" + Ws + "+)*func" + Ws + "+(test" + Word + "*)" + Ws + @"*\(",
+        RegexOptions.CultureInvariant);
+
+    // The second count is lexical: any `func test…(` left once strings and comments are blanked.
+    // Swift Testing's `@Test` is counted too and never read, so a file using it refuses, loudly,
+    // rather than reading as a file with no tests.
+    private static readonly Regex SwiftCount = new(
+        @"(?<![A-Za-z0-9_])func" + Ws + "+test" + Word + "*" + Ws + @"*\(|@Test(?!" + Word + ")",
+        RegexOptions.CultureInvariant);
+
+    private static readonly Regex SwiftNoise = new(
+        @"""""""[\s\S]*?""""""|""(?:\\.|[^""\\\n])*""|//[^\n]*|/\*[\s\S]*?\*/",
+        RegexOptions.CultureInvariant);
 
     // A declaration begins a statement; a fixture string never does. JavaScript's multiline ^
     // also matches after \r, U+2028 and U+2029, which .NET's does not.
@@ -68,6 +85,21 @@ public sealed class TestTitleReader : ITestTitleReader
     public IReadOnlyList<ITestTitle> Titles(string file, string src)
     {
         var output = new List<ITestTitle>();
+        if (file.EndsWith(".swift", StringComparison.Ordinal))
+        {
+            var swiftLines = src.Split('\n');
+            for (var i = 0; i < swiftLines.Length; i++)
+            {
+                var m = SwiftDecl.Match(swiftLines[i]);
+                if (m.Success)
+                {
+                    output.Add(new TestTitle { File = file, Line = i + 1, Raw = m.Groups[1].Value, Style = "method" });
+                }
+            }
+
+            return output;
+        }
+
         if (!file.EndsWith(".cs", StringComparison.Ordinal))
         {
             foreach (Match m in JsDecl.Matches(src))
@@ -153,7 +185,9 @@ public sealed class TestTitleReader : ITestTitleReader
 
     /// <inheritdoc />
     public int ExpectedCount(string file, string src) =>
-        file.EndsWith(".cs", StringComparison.Ordinal) ? CsCount.Matches(src).Count : JsDeclarationCount(src);
+        file.EndsWith(".cs", StringComparison.Ordinal) ? CsCount.Matches(src).Count
+        : file.EndsWith(".swift", StringComparison.Ordinal) ? SwiftCount.Matches(SwiftNoise.Replace(src, " ")).Count
+        : JsDeclarationCount(src);
 
     private static int JsDeclarationCount(string src)
     {
