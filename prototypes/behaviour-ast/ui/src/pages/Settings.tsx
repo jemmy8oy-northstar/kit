@@ -123,6 +123,16 @@ function useGitHubReturn(session: SessionState): { returning: boolean; outcome: 
   return { returning: !outcome && Boolean((code && state) || (installation && session.gitHubAuthorize)), outcome }
 }
 
+/**
+ * GitHub's install page dead-ends for an account that already has Kit's App: it offers
+ * only "Configure", which need not send anyone back. Authorising straight away finds the
+ * existing installation the same way the install's return does.
+ */
+function AlreadyInstalled({ session }: { session: SessionState }) {
+  if (!session.gitHubAuthorize) return null
+  return <> · <a href={session.gitHubAuthorize}>Already installed? Connect it</a></>
+}
+
 function ConnectGitHub({ session }: { session: SessionState }) {
   const { returning, outcome } = useGitHubReturn(session)
   if (!session.gitHubInstall) return null
@@ -134,7 +144,7 @@ function ConnectGitHub({ session }: { session: SessionState }) {
         ? <p role="status">Connecting your GitHub…</p>
         : session.gitHub
           ? <p>Connected to <strong>{session.gitHub}</strong>. <a href={session.gitHubInstall}>Change</a></p>
-          : <p><a href={session.gitHubInstall}>Connect your GitHub</a></p>}
+          : <p><a href={session.gitHubInstall}>Connect your GitHub</a><AlreadyInstalled session={session} /></p>}
       <Say outcome={outcome} />
     </div>
   )
@@ -156,7 +166,7 @@ function OperatorGitHub({ session }: { session: SessionState }) {
         ? <p role="status">Connecting your GitHub…</p>
         : session.gitHub
           ? <p>Your personal GitHub: <strong>{session.gitHub}</strong>. <a href={session.gitHubInstall}>Change</a></p>
-          : <p><a href={session.gitHubInstall}>Connect your personal GitHub</a></p>}
+          : <p><a href={session.gitHubInstall}>Connect your personal GitHub</a><AlreadyInstalled session={session} /></p>}
       <Say outcome={outcome} />
     </div>
   )
