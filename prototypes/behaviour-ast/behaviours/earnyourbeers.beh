@@ -160,7 +160,7 @@ behaviour BEH-LOG-2 "Repeat taps within an hour add to the latest entry instead 
   in FEAT-LOG
   layer technical
   source inferred lib/core/logic/app_state.dart:486
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract only the newest entry of all is checked: same activity type, or a vice after a vice, logged under 1 hour ago
