@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../api/client'
+import { beginLoad, useRefreshEpoch } from './refresh'
 
 /**
  * Three states, and they are deliberately not two. "Loading" and "loaded but
@@ -30,10 +31,12 @@ export function useReloadableResource<T>(
   deps: unknown[],
 ): { resource: Resource<T>; reload: () => void } {
   const [nonce, setNonce] = useState(0)
+  // BEH-LOADING-2: a pull-to-reload bumps this, and every resource re-reads.
+  const epoch = useRefreshEpoch()
   // `deps` is passed twice on purpose: once as part of what triggers a re-load,
   // and once as the identity of WHICH resource is being loaded. `useLoad` needs
   // both to tell "load the next project" from "load this project again".
-  const resource = useLoad(load, [...deps, nonce], deps)
+  const resource = useLoad(load, [...deps, nonce, epoch], deps)
   return { resource, reload: () => setNonce((n) => n + 1) }
 }
 
@@ -72,7 +75,9 @@ function useLoad<T>(load: () => Promise<T>, deps: unknown[], identity?: unknown[
 
     setResource((prev) => (isReload && prev.state === 'ready' ? prev : { state: 'loading' }))
 
+    const end = beginLoad()
     load()
+      .finally(end)
       .then((value) => {
         if (live) setResource({ state: 'ready', value })
       })
@@ -87,6 +92,7 @@ function useLoad<T>(load: () => Promise<T>, deps: unknown[], identity?: unknown[
     // new app's page.
     return () => {
       live = false
+      end()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
