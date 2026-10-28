@@ -18,6 +18,16 @@ export interface CoverageCountsAvailable {
   available: true
   covered: number
   uncovered: number
+  /** BEH-HEALTH-2: the latest PR that improved this project's test health. Absent, never null, when none is named. */
+  lastImprovedBy?: LastImprovedBy
+}
+
+export interface LastImprovedBy {
+  /** Short name, e.g. `kit#538`. */
+  pr: string
+  url: string
+  /** `yyyy-MM-dd`. */
+  on: string
 }
 
 export interface CoverageIdsAvailable {
