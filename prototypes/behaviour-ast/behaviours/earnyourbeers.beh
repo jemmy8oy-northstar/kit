@@ -231,7 +231,7 @@ behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, a
   in FEAT-ONBOARD
   layer ux
   source inferred lib/ui/screens/onboarding_screen.dart:86
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Onboarding
