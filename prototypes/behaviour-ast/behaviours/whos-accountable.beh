@@ -43,6 +43,7 @@ behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offend
   in FEAT-LEADERBOARD
   layer ux
   source defined whos-accountable#1
+  review approved
   priority 1
   pending
   paused
