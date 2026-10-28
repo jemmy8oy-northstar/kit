@@ -140,7 +140,7 @@ behaviour BEH-PIPE-3 "A creator writes a video's script on its card, and the car
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "plan videos and scripts there": the script is plain text, edited in the browser and saved with the card
