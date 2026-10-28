@@ -22,7 +22,7 @@ public class GitHubCorpusReaderTests
           {"type": "file", "name": "snip-it.beh", "sha": "s1"},
           {"type": "file", "name": "snip-it.bindings.json", "sha": "b1"},
           {"type": "file", "name": "alpha.beh", "sha": "a1"},
-          {"type": "file", "name": "kit.tests.json", "sha": "t1"},
+          {"type": "file", "name": "kit.config.json", "sha": "t1"},
           {"type": "dir", "name": "nested.beh", "sha": "d1"},
           {"type": "file", "name": "README.md", "sha": "r1"}
         ]
@@ -71,6 +71,18 @@ public class GitHubCorpusReaderTests
 
         Assert.Equal(["alpha.beh", "alpha.schedule"], snap.Files.Keys);
         Assert.Equal("BEH-A\n", snap.Files["alpha.schedule"].Text);
+    }
+
+    /// <summary>BEH-HEALTH-1: the test mapping travels with its corpus, or hosted coverage would say "no mapping" for an app that has one.</summary>
+    [Fact]
+    public async Task A_tests_mapping_is_read_with_its_corpus()
+    {
+        var gh = new FakeGitHub(Listed("""[{"type": "file", "name": "alpha.beh", "sha": "a1"}, {"type": "file", "name": "alpha.tests.json", "sha": "t1"}]"""), Raw("behaviour BEH-A \"a\"\n"), Raw("{\"BEH-A\": []}\n"));
+
+        var snap = await Reader(gh, "tok").ReadAsync(Kit);
+
+        Assert.Equal(["alpha.beh", "alpha.tests.json"], snap.Files.Keys);
+        Assert.Equal("{\"BEH-A\": []}\n", snap.Files["alpha.tests.json"].Text);
     }
 
     [Fact]
@@ -258,7 +270,7 @@ public class GitHubCorpusReaderTests
     private static GitHubCorpusReader Reader(FakeGitHub gh, string? token) =>
         new(new HttpClient(gh), new StaticGitHubTokenSource(token));
 
-    private static Func<HttpRequestMessage, HttpResponseMessage> Listed(string json, string? etag = null) => _ =>
+    internal static Func<HttpRequestMessage, HttpResponseMessage> Listed(string json, string? etag = null) => _ =>
     {
         var r = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
         if (etag is not null)
@@ -269,7 +281,7 @@ public class GitHubCorpusReaderTests
         return r;
     };
 
-    private static Func<HttpRequestMessage, HttpResponseMessage> Raw(string text) => r =>
+    internal static Func<HttpRequestMessage, HttpResponseMessage> Raw(string text) => r =>
     {
         // The raw media type is what makes GitHub send the bytes rather than base64 JSON.
         Assert.Equal("application/vnd.github.raw+json", r.Headers.Accept.Single().MediaType);

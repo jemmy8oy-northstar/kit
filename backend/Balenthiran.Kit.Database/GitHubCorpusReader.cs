@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -20,8 +21,12 @@ namespace Balenthiran.Kit.Database;
 /// public repository allows (BEH-PULL-2). Asked per read, so an expired token is replaced.
 /// </param>
 /// <param name="api">Default <c>https://api.github.com/</c>.</param>
-public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader
+public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader, IGitHubTestReader
 {
+    // Per repo (BEH-HEALTH-1): the last tree's ETag and the text of each test blob, by sha. Reads are
+    // single-flight (the poller's ExpiringRefresh), so a state is never written by two reads at once.
+    private readonly ConcurrentDictionary<string, TestsRead> tests = new(StringComparer.Ordinal);
+
     private static readonly Uri DefaultApi = new("https://api.github.com/");
 
     // `readFileSync(f, 'utf8')`, as CorpusDirectory.ReadText: a BOM is kept, so a splice
@@ -38,20 +43,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             previous = null;
         }
 
-        // BEH-PULL-2: "a public read that fails because a token could not be minted is a bug". So a
-        // failed mint reads WITHOUT a token, as a public repository allows, and the mint's reason is
-        // kept for the one answer it explains — a 404, which is also how GitHub hides a private repo.
-        string? token;
-        string? mintFailed = null;
-        try
-        {
-            token = await tokens.TokenAsync(cancellationToken);
-        }
-        catch (GitHubTokenException e)
-        {
-            token = null;
-            mintFailed = e.Message;
-        }
+        var (token, mintFailed) = await MintAsync(cancellationToken);
 
         var root = api ?? DefaultApi;
         var listing = new Uri(root, $"repos/{source.Owner}/{source.Repository}/contents/{Escape(source.Path)}?ref={Uri.EscapeDataString(source.Branch)}");
@@ -83,18 +75,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
     /// <inheritdoc />
     public async Task<(string Text, string? ETag)?> ReadFileAsync(IProjectSource file, string? etag = null, CancellationToken cancellationToken = default)
     {
-        // The same mint rule as ReadAsync: a failed mint reads without a token and keeps the reason.
-        string? token;
-        string? mintFailed = null;
-        try
-        {
-            token = await tokens.TokenAsync(cancellationToken);
-        }
-        catch (GitHubTokenException e)
-        {
-            token = null;
-            mintFailed = e.Message;
-        }
+        var (token, mintFailed) = await MintAsync(cancellationToken);
 
         var uri = new Uri(api ?? DefaultApi, $"repos/{file.Owner}/{file.Repository}/contents/{Escape(file.Path)}?ref={Uri.EscapeDataString(file.Branch)}");
         using var answer = await SendAsync(uri, token, etag, "application/vnd.github.raw+json", file, mintFailed, cancellationToken);
@@ -107,7 +88,95 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         return (Utf8.GetString(bytes), answer.Headers.ETag?.ToString());
     }
 
-    /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c>, <c>.notes.md</c> and <c>.schedule</c> files directly in it, nothing nested.</summary>
+    /// <inheritdoc />
+    public async Task<ITestReading?> ReadTestsAsync(string repo, ICoverageCounter counter, CancellationToken cancellationToken = default)
+    {
+        var at = repo.IndexOf('@', StringComparison.Ordinal);
+        var slash = repo.IndexOf('/', StringComparison.Ordinal);
+        if (at < 0 || slash < 0 || slash > at)
+        {
+            throw new GitHubReadException($"{repo}: a repo to read tests from is owner/repo@branch");
+        }
+
+        var source = new ProjectSource { Owner = repo[..slash], Repository = repo[(slash + 1)..at], Branch = repo[(at + 1)..], Path = string.Empty };
+        var state = tests.GetOrAdd(repo, _ => new TestsRead());
+        var (token, mintFailed) = await MintAsync(cancellationToken);
+
+        var root = api ?? DefaultApi;
+        var tree = new Uri(root, $"repos/{source.Owner}/{source.Repository}/git/trees/{Uri.EscapeDataString(source.Branch)}?recursive=1");
+        using var answer = await SendAsync(tree, token, state.ETag, "application/vnd.github+json", source, mintFailed, cancellationToken);
+        if (answer.StatusCode == HttpStatusCode.NotModified)
+        {
+            return null;
+        }
+
+        var json = await ReadBodyAsync(answer, source, cancellationToken);
+        if (json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("tree", out var entries) || entries.ValueKind != JsonValueKind.Array)
+        {
+            throw new GitHubReadException($"{repo}: GitHub's tree was not in the shape Kit reads");
+        }
+
+        // A truncated tree lists only part of the repository: counting it would undercount tests, and
+        // a number that is quietly too low is worse than the last good one.
+        if (json.TryGetProperty("truncated", out var cut) && cut.ValueKind == JsonValueKind.True)
+        {
+            throw new GitHubReadException($"{repo}: GitHub truncated the tree, so Kit cannot count every test");
+        }
+
+        var found = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (var e in entries.EnumerateArray())
+        {
+            if (e.ValueKind == JsonValueKind.Object
+                && e.TryGetProperty("type", out var type) && type.GetString() == "blob"
+                && e.TryGetProperty("path", out var p) && p.GetString() is { } path && counter.IsTestPath(path))
+            {
+                found[path] = e.TryGetProperty("sha", out var s) && s.GetString() is { Length: > 0 } sha
+                    ? sha
+                    : throw new GitHubReadException($"{repo}: GitHub listed {path} with no sha, so Kit cannot fetch it");
+            }
+        }
+
+        foreach (var sha in found.Values.Distinct(StringComparer.Ordinal))
+        {
+            if (state.Blobs.ContainsKey(sha))
+            {
+                continue;
+            }
+
+            var blob = new Uri(root, $"repos/{source.Owner}/{source.Repository}/git/blobs/{sha}");
+            using var raw = await SendAsync(blob, token, null, "application/vnd.github.raw+json", source, mintFailed, cancellationToken);
+            state.Blobs[sha] = Utf8.GetString(await raw.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+
+        var reading = counter.ReadTitles(found.Select(f => (f.Key, state.Blobs[f.Value])));
+
+        // Only now is the tree read: an ETag kept after a half-fetched read would answer 304 for ever.
+        state.ETag = answer.Headers.ETag?.ToString();
+        var live = found.Values.ToHashSet(StringComparer.Ordinal);
+        foreach (var sha in state.Blobs.Keys.Where(k => !live.Contains(k)).ToList())
+        {
+            state.Blobs.Remove(sha);
+        }
+
+        return reading;
+    }
+
+    // BEH-PULL-2: "a public read that fails because a token could not be minted is a bug". So a
+    // failed mint reads WITHOUT a token, as a public repository allows, and the mint's reason is
+    // kept for the one answer it explains — a 404, which is also how GitHub hides a private repo.
+    private async Task<(string? Token, string? MintFailed)> MintAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return (await tokens.TokenAsync(cancellationToken), null);
+        }
+        catch (GitHubTokenException e)
+        {
+            return (null, e.Message);
+        }
+    }
+
+    /// <summary>The corpus files of a contents listing: <c>.beh</c>, <c>.bindings.json</c>, <c>.notes.md</c>, <c>.schedule</c> and <c>.tests.json</c> files directly in it, nothing nested.</summary>
     private static List<(string Name, string Sha)> Entries(JsonElement json, IProjectSource source)
     {
         // A FILE at the path answers an object, not an array: the source names something that is
@@ -123,7 +192,7 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
             if (e.ValueKind != JsonValueKind.Object
                 || !e.TryGetProperty("type", out var type) || type.GetString() != "file"
                 || !e.TryGetProperty("name", out var n) || n.GetString() is not { } name
-                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal) || name.EndsWith(".schedule", StringComparison.Ordinal)))
+                || !(name.EndsWith(".beh", StringComparison.Ordinal) || name.EndsWith(".bindings.json", StringComparison.Ordinal) || name.EndsWith(".notes.md", StringComparison.Ordinal) || name.EndsWith(".schedule", StringComparison.Ordinal) || name.EndsWith(".tests.json", StringComparison.Ordinal)))
             {
                 continue;
             }
@@ -228,4 +297,11 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
     private static string Key(IProjectSource s) => $"{s.Owner}/{s.Repository}@{s.Branch}:{s.Path}";
 
     private static string Escape(string path) => string.Join('/', path.Split('/').Select(Uri.EscapeDataString));
+
+    private sealed class TestsRead
+    {
+        public string? ETag { get; set; }
+
+        public Dictionary<string, string> Blobs { get; } = new(StringComparer.Ordinal);
+    }
 }

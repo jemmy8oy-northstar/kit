@@ -22,11 +22,18 @@ public static class ServiceRegistration
         else
         {
             // BEH-PULL-1 (kit#88): reads from GitHub, writes to the clone on disk.
-            services.AddSingleton(sp => new GitHubCorpusDirectory(
-                disk,
-                settings.Projects,
-                new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>())));
+            services.AddSingleton(sp => new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>()));
+            services.AddSingleton(sp => new GitHubCorpusDirectory(disk, settings.Projects, sp.GetRequiredService<GitHubCorpusReader>()));
             services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
+
+            // BEH-HEALTH-1: hosted Kit reads the tests repos the corpora name; local Kit has no store
+            // and keeps reporting coverage unavailable.
+            services.AddSingleton<ICoverageCounter>(_ => new CoverageCounter(new TestTitleReader()));
+            services.AddSingleton(sp => new CoverageStore(
+                sp.GetRequiredService<ICorpusDirectory>(),
+                sp.GetRequiredService<GitHubCorpusReader>(),
+                sp.GetRequiredService<ICoverageCounter>()));
+            services.AddSingleton<ICoverageStore>(sp => sp.GetRequiredService<CoverageStore>());
             services.AddSingleton<ProjectPoller>();
             services.AddHostedService(sp => sp.GetRequiredService<ProjectPoller>());
         }

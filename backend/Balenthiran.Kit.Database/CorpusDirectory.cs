@@ -76,6 +76,13 @@ public sealed class CorpusDirectory(string dir, string repoRoot) : ICorpusDirect
     public string? ReadScheduleText(string app) => File.Exists(ScheduleFile(app)) ? Utf8.GetString(File.ReadAllBytes(ScheduleFile(app))) : null;
 
     /// <inheritdoc />
+    public string? ReadTestsText(string app)
+    {
+        var file = Path.Combine(dir, app + ".tests.json");
+        return File.Exists(file) ? Utf8.GetString(File.ReadAllBytes(file)) : null;
+    }
+
+    /// <inheritdoc />
     public void WriteScheduleText(string app, string text) => Replace(ScheduleFile(app), text);
 
     /// <inheritdoc />

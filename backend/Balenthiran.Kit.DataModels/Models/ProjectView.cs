@@ -27,8 +27,10 @@ public sealed class ProjectView : IProjectView
     [JsonPropertyOrder(7)]
     public required List<GeneratedView> Generated { get; init; }
 
+    // `object`, like Questions: an <see cref="AvailableCoverage"/> or an <see cref="UnavailableCoverage"/>,
+    // and System.Text.Json writes an object-typed value by its RUNTIME type.
     [JsonPropertyOrder(8)]
-    public required UnavailableCoverage Coverage { get; init; }
+    public required object Coverage { get; init; }
 
     [JsonPropertyOrder(9)]
     public required AdjudicationReport Adjudication { get; init; }
@@ -79,7 +81,7 @@ public sealed class ProjectView : IProjectView
 
     IReadOnlyList<IGeneratedView> IProjectView.Generated => Generated;
 
-    IUnavailableCoverage IProjectView.Coverage => Coverage;
+    ICoverage IProjectView.Coverage => (ICoverage)Coverage;
 
     IAdjudicationReport IProjectView.Adjudication => Adjudication;
 
