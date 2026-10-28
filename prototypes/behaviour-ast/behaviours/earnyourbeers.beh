@@ -193,7 +193,7 @@ behaviour BEH-LEAGUE-1 "There are 20 tiers in four divisions, and the banner sho
   in FEAT-LEAGUE
   layer ux
   source inferred lib/core/logic/app_state.dart:23
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Dashboard
