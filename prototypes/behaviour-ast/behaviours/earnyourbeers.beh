@@ -169,7 +169,7 @@ behaviour BEH-LOG-3 "Only the newest entry this week can be edited or deleted"
   in FEAT-LOG
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:368
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Dashboard
