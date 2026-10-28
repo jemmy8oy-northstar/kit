@@ -119,7 +119,7 @@ behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages:
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "reviewing what the pipeline / boards look like": the board is the first screen, so the pipeline is visible before any content exists
