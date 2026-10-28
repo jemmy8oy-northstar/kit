@@ -163,6 +163,40 @@ public class WritesConformanceTests
         }
     }
 
+    /// <summary>
+    /// BEH-ACT-1: a behaviour is added through the server a phone reaches, the one built with a
+    /// public origin, not through a loopback-only Kit. The deployed rows above add a step and a
+    /// binding; this is the add itself.
+    /// </summary>
+    [Fact]
+    public async Task BEH_ACT_1_A_behaviour_is_added_through_the_deployed_server()
+    {
+        var tmp = Directory.CreateTempSubdirectory("kit-writes-").FullName;
+        try
+        {
+            foreach (var f in Directory.GetFiles(Fixtures))
+            {
+                File.Copy(f, Path.Combine(tmp, Path.GetFileName(f)));
+            }
+
+            await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], new KitSettings(tmp, RepoLayout.Root, null, Path.Combine(RepoLayout.Root, "no-bundle-here"), string.Empty, "https://balenthiran.co.uk"));
+            var host = app.Services.GetRequiredService<IKitHost>();
+            var body = """{"id":"BEH-PHONE","title":"Added from a phone","actor":"guest","steps":["when opens page:Home"],"source":"defined","ref":"x.md"}""";
+
+            var a = host.Received("/api/projects/alpha/behaviours", System.Text.Encoding.UTF8.GetBytes(body), null, null);
+
+            Assert.Equal(200, a.Status);
+            var answer = JsonNode.Parse(a.Body!)!.AsObject();
+            Assert.True(answer["ok"]!.GetValue<bool>());
+            Assert.Equal("BEH-PHONE", answer["behaviour"]!.GetValue<string>());
+            Assert.Contains("behaviour BEH-PHONE \"Added from a phone\"", File.ReadAllText(Path.Combine(tmp, "alpha.beh")), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(tmp, recursive: true);
+        }
+    }
+
     /// <summary>The golden reaches every refusal code — the C# side's own count, beside kit.test.js's.</summary>
     [Fact]
     public void The_golden_reaches_every_refusal()

@@ -129,5 +129,21 @@
       "file": "backend/Balenthiran.Kit.Tests/PullAuthTests.cs",
       "title": "A_private_project_is_read_with_the_installation_token_and_an_expired_one_is_re_minted"
     }
+  ],
+  "BEH-ACT-1": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs",
+      "title": "BEH_ACT_1_A_behaviour_is_added_through_the_deployed_server"
+    }
+  ],
+  "BEH-ACT-4": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/HostedCommitTests.cs",
+      "title": "An_edit_is_never_committed_onto_the_branch_Commit_proposes_into"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/CommitRouteTests.cs",
+      "title": "Opens_one_pull_request_from_the_edits_branch_into_the_base"
+    }
   ]
 }
