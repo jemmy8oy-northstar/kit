@@ -22,8 +22,11 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-HOME "The home page and its projects"
+  stage ui
 feature FEAT-APPS "balenthiran.co.uk/apps: one page showing the full suite of apps"
+  stage ux
 feature FEAT-STATUS "What the site says about itself"
+  stage ui
 
 
 # ═══ DEFINED — his notes ═══
