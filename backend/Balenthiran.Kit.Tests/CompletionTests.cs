@@ -364,6 +364,8 @@ public class CompletionTests
         public string RelativeNotesPath(string app) => throw new NotSupportedException();
         public string FullNotesPath(string app) => throw new NotSupportedException();
         public string? ReadScheduleText(string app) => throw new NotSupportedException();
+
+        public string? ReadTestsText(string app) => throw new NotSupportedException();
         public void WriteScheduleText(string app, string text) => throw new NotSupportedException();
         public string RelativeSchedulePath(string app) => throw new NotSupportedException();
         public string FullSchedulePath(string app) => throw new NotSupportedException();

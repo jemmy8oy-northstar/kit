@@ -5,6 +5,9 @@
 #   as ONE page whose features are its pages and areas, never the files (kit#246),
 #   while check and report still read each file on its own.
 #
+# kit:repo jemmy8oy-northstar/kit@dev
+#   BEH-HEALTH-1: where this app's tests live (see kit.beh).
+#
 # kit:self-authored
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
 #   study. None of its other three axes is true here: this describes a UI, for
@@ -1694,6 +1697,9 @@ behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share
   contract my assumption: so the first step is reading coverage where it lives, each app's own repo, through the same GitHub reads Kit already makes; this page then shows a percentage per project and in total, and the behaviours no test names
   contract my assumption: "covered" means a test names the behaviour, as kit check counts it today; it does not mean the test passes
   contract my assumption: pending (not built) behaviours are left out of the percentage, as kit check leaves them out
+  contract my assumption: each corpus names the repo its tests live in with a `# kit:repo owner/repo@branch` line, read on that repo's dev branch; a corpus with no such line, or no `<app>.tests.json` mapping, shows "not measured" and says which is missing
+  contract my assumption: Kit reads each repo's test files in the background every few minutes and keeps the result, re-reading only files whose content changed, so opening a page never waits on GitHub
+  contract my assumption: the shared counting moves out of `kit check` into one place both use, so the page and CI can never count differently
 
 behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the project with the worst test health"
   in FEAT-HEALTH

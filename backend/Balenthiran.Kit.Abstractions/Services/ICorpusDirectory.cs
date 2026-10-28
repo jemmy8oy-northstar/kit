@@ -57,6 +57,9 @@ public interface ICorpusDirectory
     /// <summary>The app's schedule, <c>&lt;app&gt;.schedule</c> (BEH-SCHED-1), or null when nothing was ever scheduled.</summary>
     string? ReadScheduleText(string app);
 
+    /// <summary>The app's test mapping, <c>&lt;app&gt;.tests.json</c> (BEH-HEALTH-1) — read-only here; the app's own repo tests write it — or null when there is none.</summary>
+    string? ReadTestsText(string app);
+
     /// <summary>Replace (or create) the schedule. Only ever called with the result of <c>Schedule.Render</c>.</summary>
     void WriteScheduleText(string app, string text);
 

@@ -20,6 +20,9 @@
 # Every behaviour describes the app the rebuild must reproduce, plus the
 # account layer the web adds. What is built is whatever earnyourbeers.tests.json
 # maps; `kit check earnyourbeers` names the rest.
+#
+# kit:repo jemmy8oy-northstar/earnyourbeers@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-ACCOUNT "Accounts (new for the web)"

@@ -33,8 +33,12 @@ public sealed class KitCheck(
     ICorpusParser parser,
     IBehaviourResolver resolver,
     ITestTitleReader reader,
-    ICheckFileSystem disk) : IKitCheck
+    ICheckFileSystem disk,
+    ICoverageCounter? counter = null) : IKitCheck
 {
+    // The counting is shared with hosted Kit (BEH-HEALTH-1); the gate decides only what to print.
+    private readonly ICoverageCounter counts = counter ?? new CoverageCounter(reader);
+
     private const string Usage = "usage: kit check <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]";
 
     // Node's default was the script's own `behaviours/`; a CLI has no script directory, so it
@@ -42,11 +46,6 @@ public sealed class KitCheck(
     private const string DefaultDir = "behaviours";
 
     private static readonly string[] Layers = ["ux", "technical", "ui"];
-
-    private static readonly HashSet<string> SkipDir = new(StringComparer.Ordinal)
-    {
-        "node_modules", ".git", "bin", "obj", "dist", "build", ".next", "coverage", "playwright-report", "test-results",
-    };
 
     private static readonly HashSet<string> ValueFlags = new(StringComparer.Ordinal) { "--repo", "--via", "--dir" };
 
@@ -246,7 +245,7 @@ public sealed class KitCheck(
             return 2;
         }
 
-        List<IBehaviour> covered, uncovered;
+        IReadOnlyList<IBehaviour> covered, notBuilt, missing;
         List<string> errors;
         Func<string, IEnumerable<string>> filesOf;
         if (via == "markers")
@@ -263,8 +262,12 @@ public sealed class KitCheck(
                 }
             }
 
+            // kit#155: a pending behaviour with no test is expected; one a test already names is the
+            // slip of a branch that built it and forgot to delete the marker.
             covered = behaviours.Where(b => named.Contains(b.Id)).ToList();
-            uncovered = behaviours.Where(b => !named.Contains(b.Id)).ToList();
+            var unnamed = behaviours.Where(b => !named.Contains(b.Id)).ToList();
+            notBuilt = unnamed.Where(b => b.Pending).ToList();
+            missing = unnamed.Where(b => !b.Pending).ToList();
 
             // An id a test names that no behaviour claims: the corpus lost one the tests still name.
             errors = named.Where(id => !behaviours.Any(b => b.Id == id))
@@ -294,23 +297,21 @@ public sealed class KitCheck(
                 return 2;
             }
 
-            var mapped = Mapping(behaviours, map, titles, mapPath);
+            var mapped = counts.Count(behaviours, map, titles, mapPath);
             if (mapped.Refusal is not null)
             {
                 Err($"cannot look: {mapped.Refusal}");
                 return 2;
             }
 
-            covered = behaviours.Where(b => mapped.Linked.ContainsKey(b.Id)).ToList();
-            uncovered = behaviours.Where(b => !mapped.Linked.ContainsKey(b.Id)).ToList();
-            errors = mapped.Errors;
-            filesOf = id => mapped.Linked.TryGetValue(id, out var linked) ? linked : [];
+            var linkedFiles = mapped.Linked;
+            covered = mapped.Covered;
+            notBuilt = mapped.Pending;
+            missing = mapped.Uncovered;
+            errors = [.. mapped.Errors];
+            filesOf = id => linkedFiles.TryGetValue(id, out var linked) ? linked : [];
         }
 
-        // kit#155: a pending behaviour with no test is expected; one a test already names is the
-        // slip of a branch that built it and forgot to delete the marker.
-        var notBuilt = uncovered.Where(b => b.Pending).ToList();
-        var missing = uncovered.Where(b => !b.Pending).ToList();
         foreach (var b in covered.Where(x => x.Pending))
         {
             errors.Add($"{b.Id}: a test names this behaviour, but it is still marked pending — delete the `pending` line");
@@ -389,30 +390,18 @@ public sealed class KitCheck(
 
     // `readTests`: every test file under the repo, its titles, and its text. A reader whose two
     // counts disagree is losing or inventing tests, so that is a refusal, never a number.
-    private (List<string> Files, List<ITestTitle> Titles, List<string> Sources, string? Fatal) ReadTests(string repo)
+    private (List<string> Files, IReadOnlyList<ITestTitle> Titles, List<string> Sources, string? Fatal) ReadTests(string repo)
     {
         var files = new List<string>();
         Walk(repo, string.Empty, files);
-        var titles = new List<ITestTitle>();
         var sources = new List<string>();
-        foreach (var f in files)
+        var read = counts.ReadTitles(files.Select(f =>
         {
             var src = disk.ReadText(Join(repo, f));
             sources.Add(src);
-            var got = reader.Titles(f, src);
-            var want = reader.ExpectedCount(f, src);
-            if (got.Count != want)
-            {
-                var evidence = f.EndsWith(".cs", StringComparison.Ordinal)
-                    ? $"{want} [Fact]/[Theory] attribute(s) exist"
-                    : $"{want} test declaration(s) survive stripping strings and comments";
-                return (files, titles, sources, $"{f}: read {got.Count} test(s) but {evidence} — the two counts disagree, so the reader is losing or inventing tests");
-            }
-
-            titles.AddRange(got);
-        }
-
-        return (files, titles, sources, null);
+            return (f, src);
+        }));
+        return (files, read.Titles, sources, read.Refusal);
     }
 
     private void Walk(string root, string rel, List<string> output)
@@ -421,89 +410,16 @@ public sealed class KitCheck(
         {
             if (isDirectory)
             {
-                if (!SkipDir.Contains(name))
+                if (!counts.SkipsDirectory(name))
                 {
                     Walk(root, Join(rel, name), output);
                 }
             }
-            else if (reader.IsTestFile(name))
+            else if (counts.IsTestPath(name))
             {
                 output.Add(Join(rel, name));
             }
         }
     }
 
-    // Option C: the corpus carries behaviour → test, keyed on file + title (a title alone cannot
-    // address a duplicate). It rots LOUDLY — every entry must name a test that exists.
-    private static MappingResult Mapping(IReadOnlyList<IBehaviour> behaviours, JsonObject map, List<ITestTitle> titles, string mapPath)
-    {
-        var index = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var t in titles)
-        {
-            var k = t.File + "\0" + t.Raw;
-            index[k] = index.GetValueOrDefault(k) + 1;
-        }
-
-        var files = titles.Select(t => t.File).ToHashSet(StringComparer.Ordinal);
-        var ids = behaviours.Select(b => b.Id).ToHashSet(StringComparer.Ordinal);
-        var result = new MappingResult();
-
-        foreach (var (id, node) in JsValue.Entries(map))
-        {
-            if (id.StartsWith('_'))
-            {
-                continue;
-            }
-
-            if (!ids.Contains(id))
-            {
-                result.Errors.Add($"{id}: mapped to a test, but no such behaviour in the corpus");
-                continue;
-            }
-
-            if (node is not JsonArray entries)
-            {
-                result.Refusal = $"{mapPath}: {id} must be an array of {{ file, title }}";
-                return result;
-            }
-
-            foreach (var entry in entries)
-            {
-                var file = Field(entry, "file");
-                var title = Field(entry, "title");
-                if (file is null || !files.Contains(file))
-                {
-                    result.Errors.Add($"{id}: names {file ?? "undefined"}, which is not a test file in this app");
-                    continue;
-                }
-
-                // Zero and two are different failures: a test that moved, and a key that
-                // cannot address what it names.
-                var n = index.GetValueOrDefault(file + "\0" + (title ?? "undefined"));
-                if (n == 0)
-                {
-                    result.Errors.Add($"{id}: {file} has no test titled \"{title ?? "undefined"}\" — renamed or deleted?");
-                    continue;
-                }
-
-                if (n > 1)
-                {
-                    result.Errors.Add($"{id}: \"{title}\" appears {n}× in {file} — file+title cannot address it uniquely");
-                    continue;
-                }
-
-                if (!result.Linked.TryGetValue(id, out var linked))
-                {
-                    result.Linked[id] = linked = [];
-                }
-
-                linked.Add(file);
-            }
-        }
-
-        return result;
-    }
-
-    private static string? Field(JsonNode? entry, string key) =>
-        entry is JsonObject o && o.TryGetPropertyValue(key, out var v) && v is JsonValue s && s.TryGetValue<string>(out var text) ? text : null;
 }
