@@ -1798,7 +1798,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-2111
-  review unreviewed
+  review requested it is live in Settings, seeded with your four grants (kit, language-vocab, earnyourbeers, tracks). The agent only obeys the switch once you merge claude-code-bot#128, which points its rules at it. Approve if the switch should be in charge, or deny and the thread grants stay the record
   priority 4
   actor engineer
   when opens page:KitSettings
