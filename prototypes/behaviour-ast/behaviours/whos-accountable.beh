@@ -242,6 +242,7 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   in FEAT-BACKLOG
   layer ux
   source defined whos-accountable#1
+  review approved
   priority 3
   needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
