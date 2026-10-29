@@ -1,5 +1,6 @@
 {
-  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/tracks. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string, describe blocks are not part of it).",
+  "lastImprovedBy": { "pr": "kit#522", "url": "https://github.com/jemmy8oy-northstar/kit/pull/522", "on": "2026-10-28" },
+  "_":"behaviour -> the test(s) that name it, in jemmy8oy-northstar/tracks. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string, describe blocks are not part of it).",
   "_authored": "2026-10-28, by reading tracks.beh against tracks@dev backend/Balenthiran.Tracks.Tests and frontend/e2e. A test is mapped only where it checks what the behaviour's contracts say; the e2e titles still carry the older BEH-AUTH-n ids, which are mapped by what they assert, not by that prefix.",
   "_incomplete": "BEH-SHARE-1, BEH-SHARE-2, BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them.",
 
