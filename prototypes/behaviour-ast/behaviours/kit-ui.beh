@@ -1729,7 +1729,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
   source inferred kit.notes.md#2026-10-27-2133
-  review unreviewed
+  review approved
   pending
   priority 3
   actor engineer
