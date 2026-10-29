@@ -16,7 +16,7 @@ import { githubNavigation } from '../components/githubNavigation'
 type Posted = { path: string; body: unknown }
 
 /** A session that answers GET with `sessions` in turn (last one repeats) and records every POST. */
-function server(sessions: unknown[], reply?: { status: number; body: unknown }) {
+function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = []) {
   const posted: Posted[] = []
   let gets = 0
   const fn = vi.fn((path: string, init?: RequestInit) => {
@@ -30,6 +30,9 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }) 
     if (path === '/api/session') {
       const s = sessions[Math.min(gets++, sessions.length - 1)]
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(s) } as Response)
+    }
+    if (path === '/api/projects') {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ projects }) } as Response)
     }
     throw new Error(`unexpected fetch to ${path}`)
   })
@@ -207,6 +210,59 @@ describe('Account area', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'twelve-chars-ok' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add user' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('there is already a user called ana')
+  })
+})
+
+describe('Promotion to main (BEH-SETTINGS-4)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const projects = [
+    { app: 'kit', project: 'kit', promote: 'self' },
+    { app: 'kit-ui', project: 'kit' },
+    { app: 'snip-it', project: 'snip-it' },
+    { app: 'ideas', project: 'ideas', idea: true },
+    { app: 'longlist', project: 'longlist', notReal: true },
+  ]
+
+  it('shows the operator one switch per project, on only where the grant is', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Promotion to main' })).toBeInTheDocument()
+    expect(await screen.findByRole('checkbox', { name: 'kit' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'snip-it' })).not.toBeChecked()
+    // A second file of a project, an idea and a trial are not projects to grant.
+    expect(screen.queryByRole('checkbox', { name: 'kit-ui' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'ideas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'longlist' })).not.toBeInTheDocument()
+    expect(screen.getByText(/nothing already on main changes/)).toBeInTheDocument()
+    expect(screen.getByText(/New projects start off/)).toBeInTheDocument()
+  })
+
+  it('posts the named state when a switch is flipped, and says so', async () => {
+    const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'snip-it' }))
+    expect(await screen.findByText('The agent may now promote snip-it to main.')).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/projects/snip-it/promote', body: { promote: true } }])
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'kit' }))
+    expect(await screen.findByText('The agent no longer promotes kit to main.')).toBeInTheDocument()
+    expect(s.posted[1]).toEqual({ path: '/api/projects/kit/promote', body: { promote: false } })
+  })
+
+  it('shows the server reason when the change is refused', async () => {
+    vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'snip-it' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
+  })
+
+  it('does not show the section to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Promotion to main' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 })
 

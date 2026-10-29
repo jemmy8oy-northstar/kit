@@ -27,4 +27,7 @@ public interface IProjectSummary
 
     /// <summary>A <c># kit:idea</c> file (kit#284): app ideas that are not projects yet, kept off the board.</summary>
     bool Idea { get; }
+
+    /// <summary><c>"self"</c> when the agent may promote this project's <c>dev</c> to <c>main</c> itself (BEH-SETTINGS-4); <c>null</c> otherwise.</summary>
+    string? Promote { get; }
 }

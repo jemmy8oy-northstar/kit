@@ -30,6 +30,7 @@
 #
 # kit:repo jemmy8oy-northstar/tracks@dev
 #   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
+# kit:promote self
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-BRAND "Name and voice"

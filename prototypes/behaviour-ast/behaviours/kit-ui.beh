@@ -1798,7 +1798,6 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-2111
   review unreviewed
-  pending
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1808,7 +1807,8 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
   contract my assumption: Settings lists every project on the board with an on/off switch, plus a default for new projects (off), and the agent reads the switch at each wake instead of its written list
   contract my assumption: only he can change it; a test user's projects have no switch until BEH-USERS-4 gives them an agent
   contract my assumption: turning a project off stops future promotions only; anything already on main stays
-  contract my assumption: until this is built, his grants in threads stay the record
+  contract my assumption: the switch is stored as a "# kit:promote self" line in the project's corpus, so every change is a commit he can see; it was seeded from his thread grants (kit#286, earnyourbeers#1, tracks#28) and the agent's own rules point at it only after he approves that change
+  contract built: a "Promotion to main" section on Settings, for the operator only, lists each project (not ideas or trials, one row per project) with a checkbox; POST /api/projects/<project>/promote with { promote: true|false } adds or removes the line in the project's own file (the one named for the project, so kit.beh for kit) behind the same operator-only gate as every write, and GET /api/projects serves promote: "self" on that row, absent otherwise
 
 behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
   in FEAT-SETTINGS

@@ -287,6 +287,8 @@ public sealed class ProjectViewer(
             Unreviewed = p.Adjudication.Unreviewed.Count,
             Project = p.Project,
             Idea = p.Idea,
+            // Only the primary file (named for its project) can grant: see PromoteDirective.
+            Promote = p.Project == app && PromoteDirective.IsGranted(corpora.Read(app)) ? "self" : null,
         };
     }
 
