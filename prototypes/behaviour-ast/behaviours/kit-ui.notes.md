@@ -37,3 +37,7 @@ Placed by how much of it is written? Do you mean spec wise? It’s placed on the
 ## 2026-10-28 23:53Z · BEH-USERS-5
 
 This is not about Kubernetes secrets. The future direction is we use some kind of vault
+
+## 2026-10-29 08:04Z · BEH-USERS-6
+
+Do you have any other suggestions here?

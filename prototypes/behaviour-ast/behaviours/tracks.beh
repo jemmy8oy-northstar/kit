@@ -262,7 +262,7 @@ behaviour BEH-MAP-1 "Each workout shows the songs played during it, pinned along
   in FEAT-MAP
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   priority 3
   actor runner
   given workout:WithSongs
@@ -306,7 +306,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   in FEAT-SHARE
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   pending
   priority 3
   actor runner
@@ -321,7 +321,7 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   in FEAT-SHARE
   layer technical
   source inferred tracks#1
-  review unreviewed
+  review approved
   pending
   priority 3
   actor runner
@@ -401,6 +401,7 @@ behaviour BEH-HIGH-5 "Each song shows its BPM"
   contract not from Spotify: its audio-features endpoint, which gave tempo, has refused apps created after 27 November 2024, which includes Tracks's
   contract it would need a second source looked up by song and artist, such as GetSongBPM's free API, which asks for a visible link back
   needs-context "Spotify no longer gives new apps a song's BPM. A free outside source (GetSongBPM) could, in return for a link to them on the page. Use it? If no answer by 2026-11-07, I leave BPM out and keep the other highlights."
+  paused
 
 # ═══ COST — his note in Kit, 2026-10-26 23:05Z ═══
 # Measured the same night: since 2026-06 Strava's API needs a Strava subscription even
@@ -412,7 +413,7 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   source defined tracks.notes.md#2026-10-26-2305
   priority 3
   pending
-  needs-context "Garmin runs can now come in as an uploaded FIT file (BEH-SYNC-7), but signing in to Tracks still goes through Strava, so cancelling it would lock you out. Want a sign-in that doesn't need Strava? If no answer by 2026-11-04, sign-in stays on Strava and I build nothing more here."
+  needs-context "Not with Garmin, sadly: its sign-in comes only with the developer program that is turning personal apps away. A Strava-free sign-in could be GitHub, as Kit does, or a passkey on your phone. Want one of those? If no answer by 2026-11-07, sign-in stays on Strava and I build nothing more here."
   actor runner
   contract "thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users"
   contract cancelling Strava stops the sync (BEH-SYNC-1): Strava requires a subscription for API apps since 2026-06, even in single-player mode
@@ -420,6 +421,7 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   contract a reachable Garmin path is an upload of the run's FIT file, with songs matched by its start and end time as now
   contract his answer (tracks.notes.md#2026-10-28-0740), "Tracks supports garmin": the FIT upload is built as BEH-SYNC-7, next to Strava rather than instead of it
   contract my assumption: Strava stays until he cancels it. Sign-in (BEH-ACCOUNT-1) is auth, so a Strava-free one is his call
+  contract his question (tracks.notes.md#2026-10-29-0807): "Is there anyway we could do a similar Garmin oauth style sign in?" My answer, unreviewed: Garmin's OAuth is issued only to Garmin Connect Developer Program members, the same program that rejects personal-use apps, so no
 
 behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   in FEAT-SYNC

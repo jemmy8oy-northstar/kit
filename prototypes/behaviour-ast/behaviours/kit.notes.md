@@ -382,3 +382,11 @@ Balenthiran should be tracked, want to get /apps on it
 ## 2026-10-28 23:55Z
 
 This inbox card feature is incredibly successful. No need to navigate a board.
+
+## 2026-10-29 08:09Z
+
+Can we onboard holiday app onto kit, I am going to add this with my first test user. This will be a shared repo so my bot can actually pick up the new items. Will have to implement a different mechanism for the testers own projects. Ai api most likely
+
+## 2026-10-29 08:10Z
+
+Inbox only show reason for denying text input if the original text input is empty. Should still show confirm to deny though at least for now

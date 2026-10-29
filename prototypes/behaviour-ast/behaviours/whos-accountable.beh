@@ -220,6 +220,7 @@ behaviour BEH-BACKLOG-1 "Coverage expands from the UK to the US, then the EU, th
   in FEAT-BACKLOG
   layer technical
   source defined whos-accountable#1
+  review approved
   priority 3
   needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
@@ -230,6 +231,7 @@ behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entr
   in FEAT-BACKLOG
   layer technical
   source defined whos-accountable#1
+  review approved
   priority 3
   needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
@@ -240,6 +242,7 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   in FEAT-BACKLOG
   layer ux
   source defined whos-accountable#1
+  review approved
   priority 3
   needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
