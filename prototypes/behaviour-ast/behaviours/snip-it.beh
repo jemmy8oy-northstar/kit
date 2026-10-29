@@ -157,6 +157,7 @@ behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words a
   actor creator
   contract the iPhone teleprompter (claude-code-bot#105) reads the script from the card instead of a pasted copy
   contract a take recorded against a card moves it to Recorded
+  contract his correction (snip-it.notes.md#2026-10-29-0805): "Only as an experimental feature should scripts come from snip it. For general access it's just written in the app". So this is a Studio feature (BEH-EDITION-1): with Studio off, the script is typed in the app and nothing is fetched (BEH-EDITION-2)
 
 behaviour BEH-PIPE-5 "A recorded take is cut in the editor from its card, and the card moves to Cut"
   in FEAT-PIPELINE

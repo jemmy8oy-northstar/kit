@@ -413,7 +413,7 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   source defined tracks.notes.md#2026-10-26-2305
   priority 3
   pending
-  needs-context "Garmin runs can now come in as an uploaded FIT file (BEH-SYNC-7), but signing in to Tracks still goes through Strava, so cancelling it would lock you out. Want a sign-in that doesn't need Strava? If no answer by 2026-11-04, sign-in stays on Strava and I build nothing more here."
+  needs-context "Not with Garmin, sadly: its sign-in comes only with the developer program that is turning personal apps away. A Strava-free sign-in could be GitHub, as Kit does, or a passkey on your phone. Want one of those? If no answer by 2026-11-07, sign-in stays on Strava and I build nothing more here."
   actor runner
   contract "thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users"
   contract cancelling Strava stops the sync (BEH-SYNC-1): Strava requires a subscription for API apps since 2026-06, even in single-player mode
@@ -421,6 +421,7 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   contract a reachable Garmin path is an upload of the run's FIT file, with songs matched by its start and end time as now
   contract his answer (tracks.notes.md#2026-10-28-0740), "Tracks supports garmin": the FIT upload is built as BEH-SYNC-7, next to Strava rather than instead of it
   contract my assumption: Strava stays until he cancels it. Sign-in (BEH-ACCOUNT-1) is auth, so a Strava-free one is his call
+  contract his question (tracks.notes.md#2026-10-29-0807): "Is there anyway we could do a similar Garmin oauth style sign in?" My answer, unreviewed: Garmin's OAuth is issued only to Garmin Connect Developer Program members, the same program that rejects personal-use apps, so no
 
 behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   in FEAT-SYNC

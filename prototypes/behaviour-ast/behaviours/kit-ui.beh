@@ -1356,7 +1356,9 @@ behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev t
   contract his list: "per-user databases (a cheaper dev tier, and a production tier)"
   contract his second thought (kit-ui.notes.md#2026-10-26-2300): "Dbs are a lot of admin to manage right. Maybe better to outsource this at the start. Just as lovable does"
   contract my assumption: a hosted Postgres provider, as Lovable uses Supabase, with one project per user app and a free or branch tier for dev; Kit stores only each database's connection secret, write-only (BEH-USERS-5)
-  needs-context "Outsourcing means a provider account, which is yours and may cost money. Supabase (Lovable's choice), Neon, or another? If you say nothing, I leave this card unbuilt: USERS-1 to USERS-4 come before it and none of them needs a database per user."
+  contract his question (kit-ui.notes.md#2026-10-29-0804): "Do you have any other suggestions here?"
+  contract my answer, unreviewed: (1) Neon, hosted Postgres where a database branch is cheap and sleeps when idle, so a dev tier per app is a branch: my pick; (2) Supabase, Postgres plus sign-in and file storage, Lovable's choice, more than our apps need since each has its own backend; (3) CloudNativePG on our own cluster, no new account or bill, but it is the admin he wants to avoid; (4) Oracle's Autonomous Database, same cloud as the cluster with a free tier, but not Postgres
+  needs-context "Four options: Neon (my pick: a dev tier is just a cheap sleeping branch), Supabase (Lovable's, heavier), our own cluster (no bill, but the admin you want to avoid), Oracle's free database (same cloud, not Postgres). Which? If you say nothing by 2026-11-12, I leave this unbuilt: USERS-1 to USERS-4 come first and none needs a database per user."
 
 feature FEAT-USER-BILLING "Usage, cost and payment"
   in EPIC-KIT-USERS

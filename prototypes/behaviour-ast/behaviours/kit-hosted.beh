@@ -299,10 +299,11 @@ behaviour BEH-COMMIT-3 "A pull request is opened for the branch, because that is
   contract the PR is the handover: a pushed branch with no PR is invisible to every
   contract instrument that looks for work
 
-behaviour BEH-COMMIT-4 "The branch a Commit produces is red, and the red is the work item"
+behaviour BEH-COMMIT-4 "A new behaviour fails Kit's check until a test names it, and that failure is the to-do list, not a fault"
   in FEAT-COMMIT
   layer technical
   source inferred kit#88
+  review requested you asked "What does this mean" (kit-hosted.notes.md#2026-10-29-0811). Plainly: when you add a behaviour in Kit, nothing tests it yet, so `kit check` on that branch fails. That failure is expected; it is the list of what I still have to build, not a bug. The title now says this. Approve if that reads right, deny if you would rather a fresh branch stayed green
   priority 4
   actor engineer
   given branch:Pushed
