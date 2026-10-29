@@ -33,6 +33,12 @@ public interface ICorpusWriter
     IWriteResult SetPromote(string text, bool on);
 
     /// <summary>
+    /// Sets the file's <c># kit:idle</c> line to one of <c>on-change</c>, <c>health</c>, <c>ideas</c>,
+    /// <c>idle</c> (BEH-SETTINGS-5), adding it when absent. Asking for what it already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetIdle(string text, string mode);
+
+    /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
     /// </summary>

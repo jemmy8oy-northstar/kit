@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchProjects, setPromote, signOut } from '../api/client'
-import type { SessionState } from '../api/types'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setIdle, setPromote, signOut } from '../api/client'
+import type { IdleMode, SessionState } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { githubNavigation } from '../components/githubNavigation'
 import { OpeningPageSetting } from '../components/OpeningPage'
@@ -231,6 +231,61 @@ function PromotionSetting() {
   )
 }
 
+const IDLE_MODES: { mode: IdleMode; label: string }[] = [
+  { mode: 'on-change', label: 'Wake on any change' },
+  { mode: 'health', label: 'Work on test health when idle' },
+  { mode: 'ideas', label: 'Suggest ideas when idle' },
+  { mode: 'idle', label: 'Idle until asked' },
+]
+
+/**
+ * BEH-SETTINGS-5: how busy the agent is when nothing is asked of it. One of four, stored as the
+ * `# kit:idle` line in Kit's own corpus, so a change is a commit he can see. Default: test health.
+ */
+function IdleSettingSection() {
+  const { resource, reload } = useReloadableResource(fetchIdle, [])
+  const [busy, setBusy] = useState(false)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function change(mode: IdleMode, label: string) {
+    setBusy(true)
+    setOutcome(null)
+    setIdle(mode)
+      .then(() => {
+        setOutcome({ ok: true, text: `When nothing is asked of it, the agent will now: ${label.toLowerCase()}.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(false))
+  }
+
+  return (
+    <section aria-labelledby="agent-idle">
+      <h2 id="agent-idle">When nothing is asked of the agent</h2>
+      <p>
+        Work you have asked for is always built. This choice only decides what the agent does when the Queue is empty.
+      </p>
+      <ResourceView resource={resource}>
+        {(current) => (
+          <fieldset disabled={busy}>
+            <legend>Idle behaviour</legend>
+            {IDLE_MODES.map(({ mode, label }) => (
+              <div key={mode}>
+                <label>
+                  <input type="radio" name="agent-idle" value={mode} checked={current.idle === mode}
+                    onChange={() => change(mode, label)} />
+                  {' '}{label}
+                </label>
+              </div>
+            ))}
+          </fieldset>
+        )}
+      </ResourceView>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
 /**
  * GitHub sends a user back to Kit's root (the App's registered callback URL), so
  * a return lands wherever that is and is sent on here, query intact, without the
@@ -277,6 +332,7 @@ export default function Settings() {
         </div>
       )}
       {session?.operator && accounts ? <PromotionSetting /> : null}
+      {session?.operator && accounts ? <IdleSettingSection /> : null}
       <OpeningPageSetting />
     </>
   )
