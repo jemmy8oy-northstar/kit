@@ -1,6 +1,6 @@
 {
   "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/balenthiran.co.uk. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string).",
-  "_authored": "2026-10-28, at onboarding: the tests the site already had. 2026-10-29: APPS-1 from balenthiran.co.uk#30.",
+  "_authored": "2026-10-28, at onboarding: the tests the site already had. 2026-10-29: APPS-1 from balenthiran.co.uk#30, HOME-4 from balenthiran.co.uk#31.",
   "BEH-APPS-1": [
     { "file": "frontend/e2e/apps.spec.ts", "title": "apps page lists every live app" },
     { "file": "frontend/e2e/apps.spec.ts", "title": "apps page is reachable from the navbar" }
@@ -10,6 +10,9 @@
   ],
   "BEH-HOME-2": [
     { "file": "frontend/e2e/home.spec.ts", "title": "project detail page renders" }
+  ],
+  "BEH-HOME-4": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "youtube page presents the channel" }
   ],
   "BEH-HOME-3": [
     { "file": "backend/Balenthiran.Tests/InterestServiceTests.cs", "title": "Registers_a_new_subscriber_against_a_project" },
