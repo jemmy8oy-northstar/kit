@@ -705,7 +705,7 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review unreviewed
+  review denied Deny backlog cards a placed based on the state they are in
   priority 3
   pending
   paused
@@ -1211,7 +1211,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
   in FEAT-USER-SIGNUP
   source defined kit.notes.md#2026-10-27-1259
-  review requested it is live: please try it once as a test user (sign in with the password, connect GitHub, sign out, then Sign in with GitHub). That is the only test of the client secret and callback URL. Approve if it works; leave a note if it fails
+  review approved
   priority 4
   actor engineer
   when opens page:KitProjects
@@ -1235,6 +1235,7 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   review unreviewed
   pending
   priority 4
+  paused
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1314,6 +1315,7 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   when opens page:KitProjects
   then sees region:KitMain
   contract his note: "for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs"
+  contract his note (kit.notes.md#2026-10-29-0809): his first test user starts on a repo shared with him (holiday-planning), which his own agent works; "Will have to implement a different mechanism for the testers own projects. Ai api most likely". So this agent is for the tester's own repos, and is most likely driven through an AI API
   contract my assumption: before the first user, the agent runs on one of James's own projects, so its cost per task is measured before anyone else relies on it
   contract my assumption: it runs the shared process of BEH-USERS-4, and nothing it does is carried by the agent that maintains Kit
 
@@ -1355,7 +1357,9 @@ behaviour BEH-USERS-6 "Each user's apps get their own databases: a cheaper dev t
   contract his list: "per-user databases (a cheaper dev tier, and a production tier)"
   contract his second thought (kit-ui.notes.md#2026-10-26-2300): "Dbs are a lot of admin to manage right. Maybe better to outsource this at the start. Just as lovable does"
   contract my assumption: a hosted Postgres provider, as Lovable uses Supabase, with one project per user app and a free or branch tier for dev; Kit stores only each database's connection secret, write-only (BEH-USERS-5)
-  needs-context "Outsourcing means a provider account, which is yours and may cost money. Supabase (Lovable's choice), Neon, or another? If you say nothing, I leave this card unbuilt: USERS-1 to USERS-4 come before it and none of them needs a database per user."
+  contract his question (kit-ui.notes.md#2026-10-29-0804): "Do you have any other suggestions here?"
+  contract my answer, unreviewed: (1) Neon, hosted Postgres where a database branch is cheap and sleeps when idle, so a dev tier per app is a branch: my pick; (2) Supabase, Postgres plus sign-in and file storage, Lovable's choice, more than our apps need since each has its own backend; (3) CloudNativePG on our own cluster, no new account or bill, but it is the admin he wants to avoid; (4) Oracle's Autonomous Database, same cloud as the cluster with a free tier, but not Postgres
+  needs-context "Four options: Neon (my pick: a dev tier is just a cheap sleeping branch), Supabase (Lovable's, heavier), our own cluster (no bill, but the admin you want to avoid), Oracle's free database (same cloud, not Postgres). Which? If you say nothing by 2026-11-12, I leave this unbuilt: USERS-1 to USERS-4 come first and none needs a database per user."
 
 feature FEAT-USER-BILLING "Usage, cost and payment"
   in EPIC-KIT-USERS
@@ -1686,6 +1690,18 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract my assumption: answer and comment both leave a note on the card, which reaches the agent like any note; a card with no priority goes to 5 when lowered
   contract my assumption: the order is fixed when the page opens, so acting on one card never reshuffles the rest
 
+behaviour BEH-INBOX-2 "Denying in the Inbox asks for a reason only when he has not already typed one"
+  in FEAT-INBOX
+  layer ux
+  source defined kit.notes.md#2026-10-29-0810
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "Inbox only show reason for denying text input if the original text input is empty. Should still show confirm to deny though at least for now"
+  contract built 2026-10-29: with words in "Your words", Deny shows a line saying they are the reason, and Confirm deny sends them
+
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
 
@@ -1729,13 +1745,13 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
   source inferred kit.notes.md#2026-10-27-2133
-  review unreviewed
-  pending
+  review approved
   priority 3
   actor engineer
   when opens page:KitHealth
   then sees region:KitMain
   contract my assumption: split from BEH-HEALTH-1, which shows the numbers; the list endpoint only carries counts, so this reads each project's own view for the ids, and each id links to its behaviour page
+  contract built 2026-10-29: under each measured project with unnamed behaviours the Health page reads that project's own /api/projects/<app> view and lists each uncovered id (linked to its behaviour page) with its title; a project with none says nothing extra, and a failed read says why in words
 
 feature FEAT-SETTINGS "Settings"
   stage ui
@@ -1814,7 +1830,7 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
 behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-28-1505
-  review unreviewed
+  review requested it is live in Settings, set to "work on test health" (the default). The agent only obeys it once you merge claude-code-bot#129, which points its rules at it; until then it does the default anyway. Approve if the four choices are right, or deny and say what you want instead
   priority 4
   actor engineer
   when opens page:KitSettings

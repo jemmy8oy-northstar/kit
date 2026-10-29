@@ -16,17 +16,31 @@ const unmeasured = (app: string, reason: string) => ({
   coverage: { available: false, covered: null, uncovered: null, reason },
 })
 
-function mockApi(projects: unknown[]) {
+/** `details` maps an app to its `/api/projects/<app>` body; an app not in it answers with the list body. */
+function mockApi(projects: unknown[], details: Record<string, unknown> = {}) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (path: string) => ({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => (path.endsWith('/api/session') ? { required: false, signedIn: true } : { projects }),
-    })),
+    vi.fn(async (path: string) => {
+      const app = /\/api\/projects\/([^/]+)$/.exec(path)?.[1]
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () =>
+          path.endsWith('/api/session')
+            ? { required: false, signedIn: true }
+            : app && details[decodeURIComponent(app)]
+              ? details[decodeURIComponent(app)]
+              : { projects },
+      }
+    }),
   )
 }
+
+const detail = (uncovered: string[], titles: Record<string, string>) => ({
+  coverage: { available: true, covered: [], uncovered },
+  behaviours: Object.entries(titles).map(([id, title]) => ({ id, title })),
+})
 
 function open() {
   render(
@@ -91,6 +105,41 @@ describe('Health', () => {
     expect(link).toHaveAttribute('href', 'https://github.com/o/r/pull/538')
     expect(link.parentElement).toHaveTextContent('Last improved by kit#538 on 2026-10-28')
     expect(screen.getAllByText(/Last improved by/)).toHaveLength(1)
+  })
+
+  it('lists under a project the behaviours no test names, each linking to its page (BEH-HEALTH-3)', async () => {
+    mockApi([measured('a', 1, 2)], { a: detail(['BEH-A-2', 'BEH-A-3'], { 'BEH-A-1': 'One', 'BEH-A-2': 'Two', 'BEH-A-3': 'Three' }) })
+    open()
+
+    const list = await screen.findByRole('list', { name: 'Untested in a' })
+    const links = within(list).getAllByRole('link')
+    expect(links.map((l) => l.textContent)).toEqual(['BEH-A-2', 'BEH-A-3'])
+    expect(links[0]).toHaveAttribute('href', '/projects/a/behaviours/BEH-A-2')
+    expect(list).toHaveTextContent('BEH-A-2 Two')
+    expect(list).not.toHaveTextContent('One')
+  })
+
+  it('says nothing extra for a project where every behaviour is named or none is measured (BEH-HEALTH-3)', async () => {
+    mockApi([measured('a', 2, 0), unmeasured('c', 'no repo')])
+    open()
+
+    await screen.findByText(/Not measured: no repo/)
+    expect(screen.queryByRole('list', { name: /Untested in/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/No test names these/)).not.toBeInTheDocument()
+  })
+
+  it('says why in words when the ids could not be read (BEH-HEALTH-3)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        /\/api\/projects\/a$/.test(path)
+          ? { ok: false, status: 500, statusText: 'Boom', json: async () => ({ reason: 'corpus unreadable' }) }
+          : { ok: true, status: 200, statusText: 'OK', json: async () => ({ projects: [measured('a', 1, 1)] }) },
+      ),
+    )
+    open()
+
+    expect(await screen.findByText(/Could not list the untested behaviours: .*corpus unreadable/)).toBeInTheDocument()
   })
 
   it('orders lowest percentage first and unmeasured last (BEH-HEALTH-1)', async () => {

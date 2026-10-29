@@ -66,6 +66,7 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
   const { write, run } = useWrite(onDone)
   const saving = write.state === 'saving'
   const next = lowered(b.priority)
+  const denial = words.trim() || reason.trim()
 
   return (
     <Card className={`board-card hue-${hueOf(project)}`}>
@@ -127,16 +128,23 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
       </div>
 
       {denying && (
-        // The server refuses a denial with no correction, so the reason is asked for here, not guessed.
+        // The server refuses a denial with no correction. BEH-INBOX-2: words he has already typed are that
+        // correction, so the reason box only appears when "Your words" is empty; the confirm step stays either way.
         <div className="write">
-          <label htmlFor="inbox-reason">Reason for denying (what is actually true instead)</label>
-          <Input id="inbox-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+          {words.trim() === '' ? (
+            <>
+              <label htmlFor="inbox-reason">Reason for denying (what is actually true instead)</label>
+              <Input id="inbox-reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+            </>
+          ) : (
+            <p data-testid="inbox-deny-words">Your words above are the reason for denying.</p>
+          )}
           <div className="badges">
             <Button
               type="button"
               variant="danger"
-              onClick={() => run(() => setReview(app, b.id, 'denied', reason.trim()))}
-              disabled={saving || reason.trim() === ''}
+              onClick={() => run(() => setReview(app, b.id, 'denied', denial))}
+              disabled={saving || denial === ''}
             >
               Confirm deny
             </Button>

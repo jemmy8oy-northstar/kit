@@ -171,6 +171,20 @@ describe('Inbox', () => {
     expect(writes).toEqual([['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'it is blue' }]])
   })
 
+  it('deny uses his words as the reason when he has typed some, and still asks to confirm (BEH-INBOX-2)', async () => {
+    mockApi()
+    await open()
+
+    fireEvent.change(screen.getByLabelText('Your words'), { target: { value: 'it is green' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Deny' }))
+    expect(screen.queryByLabelText(/Reason for denying/)).toBeNull()
+    expect(writes).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm deny' }))
+
+    await waitFor(() => expect(current()).toBe('B-PROP'))
+    expect(writes).toEqual([['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'it is green' }]])
+  })
+
   it('pauses a pending card and resumes a paused one (BEH-INBOX-1)', async () => {
     mockApi({ alpha: [beh('A-NEEDS', { pending: true, needsContext: 'x', priority: 1 }), beh('A-PAUSED', { pending: true, paused: true, priority: 2 })] })
     await open()

@@ -37,3 +37,7 @@ Not seeing how we r going to make money from tracks in the next month thinking a
 ## 2026-10-28 07:40Z
 
 Tracks supports garmin
+
+## 2026-10-29 08:07Z · BEH-COST-1
+
+Is there anyway we could do a similar Garmin oauth style sign in?

@@ -276,7 +276,7 @@ behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   in FEAT-SETTINGS
   layer ux
   source inferred test/rebrand_flow_test.dart:updates theme mode
-  review unreviewed
+  review approved
   priority 4
   actor athlete
   when opens page:Settings
@@ -303,7 +303,7 @@ behaviour BEH-RESET-1 "A person can wipe their data and start onboarding again"
   in FEAT-SETTINGS
   layer ux
   source inferred lib/core/logic/app_state.dart:468
-  review unreviewed
+  review approved
   priority 4
   actor athlete
   when opens page:Settings

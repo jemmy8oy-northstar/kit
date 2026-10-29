@@ -503,6 +503,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "never reads 100% until every behaviour is named (BEH-HEALTH-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "orders lowest percentage first and unmeasured last (BEH-HEALTH-1)" }
   ],
+  "BEH-HEALTH-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "lists under a project the behaviours no test names, each linking to its page (BEH-HEALTH-3)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says nothing extra for a project where every behaviour is named or none is measured (BEH-HEALTH-3)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says why in words when the ids could not be read (BEH-HEALTH-3)" }
+  ],
   "BEH-INBOX-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "queues only the cards that are his, by priority, across projects (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "shows the question, or the needs-context line, on the card (BEH-INBOX-1)" },
@@ -516,5 +521,8 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "answer and comment each leave a note on the card, and need words (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lower priority adds 1 as an ordinary edit, and stops at 5 (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "a refused write keeps the card on screen and says why (BEH-INBOX-1)" }
+  ],
+  "BEH-INBOX-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "deny uses his words as the reason when he has typed some, and still asks to confirm (BEH-INBOX-2)" }
   ]
 }
