@@ -161,7 +161,7 @@ behaviour BEH-GRADE-2 "A toneless answer is reported as toneless, not merely wro
 behaviour BEH-GRADE-3 "A wrong tone is reported as tones-provided-but-incorrect"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Wrong_tone_reports_tones_provided_but_incorrect
   priority 4
-  review unreviewed
+  review approved
   serves BEH-TONE-2
 
 behaviour BEH-GRADE-4 "The grade carries the canonical form of the answer"
