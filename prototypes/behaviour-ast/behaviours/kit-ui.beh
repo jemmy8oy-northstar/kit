@@ -1235,6 +1235,7 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   review unreviewed
   pending
   priority 4
+  paused
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
