@@ -449,7 +449,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator four choices, the default ticked, and says asked-for work is always built" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the mode the server says is chosen" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named mode when one is picked, says so, and shows it ticked" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the change is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the idle choice is refused" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the choice to anyone but the operator" }
   ],
   "BEH-SETTINGS-4": [

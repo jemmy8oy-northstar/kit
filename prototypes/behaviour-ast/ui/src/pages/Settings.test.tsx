@@ -302,7 +302,7 @@ describe('Idle behaviour (BEH-SETTINGS-5)', () => {
     expect(await screen.findByRole('radio', { name: 'Idle until asked' })).toBeChecked()
   })
 
-  it('shows the server reason when the change is refused', async () => {
+  it('shows the server reason when the idle choice is refused', async () => {
     vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }).fn)
     render(<SignIn>{app}</SignIn>)
     fireEvent.click(await screen.findByRole('radio', { name: 'Wake on any change' }))
