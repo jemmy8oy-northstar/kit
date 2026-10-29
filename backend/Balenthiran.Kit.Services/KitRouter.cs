@@ -96,6 +96,7 @@ public sealed partial class KitRouter(
     private static readonly Regex HistoryRoute = new(@"^/api/projects/([^/]+)/history\z", RegexOptions.Compiled);
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
+    private static readonly Regex PromoteRoute = new(@"^/api/projects/([^/]+)/promote\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -413,7 +414,8 @@ public sealed partial class KitRouter(
         var nm = NotesRoute.Match(pathname);
         var na = NoteAction.Match(pathname);
         var sm = ScheduleRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : Behaviours.Match(pathname);
+        var pm = PromoteRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -448,6 +450,7 @@ public sealed partial class KitRouter(
                 : nm.Success ? LeaveNote(app, b)
                 : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
                 : sm.Success ? Reschedule(app, b)
+                : pm.Success ? SetPromote(app, b)
                 : Edit(app, m, b);
         }
     }
@@ -801,6 +804,45 @@ public sealed partial class KitRouter(
             .ToList();
 
         return new ScheduleList { App = app, File = corpora.RelativeSchedulePath(app), Scheduled = scheduled, Backlog = backlog };
+    }
+
+    /// <summary>
+    /// BEH-SETTINGS-4: turn the agent's grant to promote this project's <c>dev</c> to <c>main</c> on or
+    /// off — the <c># kit:promote self</c> line in the project's primary file, committed like any edit.
+    /// Operator-only, by the gate every write sits behind. Named, not toggled, so a double press is a no-op.
+    /// Only the primary file (named for its project) takes it; a secondary file is refused, saying where.
+    /// </summary>
+    private KitResponse SetPromote(string app, JsonElement body)
+    {
+        if (Field(body, "promote") is not { ValueKind: JsonValueKind.True or JsonValueKind.False } flag)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "promote must be true or false" });
+        }
+
+        string project;
+        try
+        {
+            project = viewer.View(app).Project;
+        }
+        catch (ProjectionFailedException e)
+        {
+            return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+        }
+
+        if (project != app)
+        {
+            return Json(409, new ApiError { Error = "not-primary", Reason = $"{app} is part of project {project}; the grant lives in {project}'s own file, so set it there" });
+        }
+
+        var on = flag.GetBoolean();
+        var result = writer.SetPromote(corpora.ReadText(app), on);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), on ? $"let the agent promote {app} to main" : $"stop the agent promoting {app} to main", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>

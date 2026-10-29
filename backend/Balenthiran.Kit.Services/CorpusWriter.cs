@@ -232,6 +232,68 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-SETTINGS-4: adds the <c># kit:promote self</c> line after the file's last leading
+    /// <c># kit:</c> directive (else at the very top), or removes every <c>kit:promote</c> line.
+    /// Asking for the state the file is already in rewrites nothing, so a double press is no commit.
+    /// </summary>
+    public IWriteResult SetPromote(string text, bool on)
+    {
+        if (PromoteDirective.IsGranted(text) == on)
+        {
+            return new WriteResult { Ok = true, Text = text };
+        }
+
+        var lines = text.Split('\n').ToList();
+        if (on)
+        {
+            var anchor = -1;
+            for (var i = 0; i < lines.Count; i++)
+            {
+                var t = lines[i].Trim(CorpusParser.WsChars);
+                if (t.Length > 0 && !t.StartsWith('#'))
+                {
+                    break;
+                }
+
+                if (t.StartsWith('#') && t[1..].TrimStart(CorpusParser.WsChars).StartsWith("kit:", StringComparison.Ordinal))
+                {
+                    anchor = i;
+                }
+            }
+
+            lines.Insert(anchor + 1, PromoteDirective.Line);
+        }
+        else
+        {
+            foreach (var i in PromoteDirective.Lines([.. lines]).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+
+        var after = string.Join('\n', lines);
+        try
+        {
+            parser.ParseCorpus(text, "before");
+        }
+        catch (CorpusParseException e)
+        {
+            return WriteResult.Refuse("corpus-already-invalid", $"the file did not parse before this edit: {e.Message}");
+        }
+
+        try
+        {
+            parser.ParseCorpus(after, "after");
+        }
+        catch (CorpusParseException e)
+        {
+            return WriteResult.Refuse("would-not-parse", e.Message);
+        }
+
+        return new WriteResult { Ok = true, Text = after };
+    }
+
+    /// <summary>
     /// BEH-INBOX-1: replaces the <c>priority</c> line, or adds one under the last header-adjacent line.
     /// Only 1 to 5 is written; the parser would refuse the file otherwise.
     /// </summary>

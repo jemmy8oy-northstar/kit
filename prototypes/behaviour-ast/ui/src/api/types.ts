@@ -101,6 +101,11 @@ export interface ProjectSummary {
   project?: string
   /** A `# kit:idea` file (kit#284): app ideas, not a project. Absent, never false, otherwise. */
   idea?: boolean
+  /**
+   * `"self"` when the agent may promote this project's `dev` to `main` itself (BEH-SETTINGS-4): its
+   * primary file carries `# kit:promote self`. Absent, never false or null, otherwise.
+   */
+  promote?: 'self'
 }
 
 export interface StepRef {
