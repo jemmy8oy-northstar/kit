@@ -1673,6 +1673,7 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   when opens page:KitInbox
   then sees region:KitMain
   contract "A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority"
+  contract his verdict after using it (kit.notes.md#2026-10-28-2355): "This inbox card feature is incredibly successful. No need to navigate a board." So the agent puts what needs him where the Inbox shows it (a needs-context line or a review request), not only in a PR thread
   contract "a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing. Maybe even an option to deprioritise"
   contract my assumption: "mine" is every card the board badges 👤 yours (BEH-BOARD-17): review requests, unreviewed proposals, needs-context lines, and paused cards
   contract my assumption: one card fills the screen, with its title, its question or needs-context line, and buttons for approve, deny, pause, answer, comment, and lower priority. Answering moves to the next card
