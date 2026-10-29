@@ -98,3 +98,4 @@ behaviour BEH-STATUS-2 "The /status page shows the site's work as lanes on a boa
   actor visitor
   when opens page:Status
   then sees region:Lanes
+  contract removed 2026-10-29 by his denial: the page, its lane data and its e2e test are gone (balenthiran.co.uk#32, on dev); GET /api/status stays (BEH-STATUS-1)
