@@ -33,11 +33,11 @@
 feature FEAT-PROJECT "How this project is worked"
   stage logic
 feature FEAT-TRIP "Trips and the people in them"
-  stage logic
+  stage development
 feature FEAT-ENGINE "The Compromise Engine: ranked options with reasons"
-  stage logic
+  stage development
 feature FEAT-STATUS "What the service says about itself"
-  stage logic
+  stage development
 
 
 # ═══ DEFINED — his notes ═══
@@ -47,6 +47,7 @@ behaviour BEH-SHARE-1 "The project is shared with his first test user, and the b
   layer technical
   source defined kit.notes.md#2026-10-29-0809
   review unreviewed
+  pending
   priority 2
   actor owner
   contract "This will be a shared repo so my bot can actually pick up the new items"
