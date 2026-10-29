@@ -1687,7 +1687,7 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract my assumption: swiping is a later step; buttons first, as they also work on a laptop
   contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
   contract built 2026-10-28: Inbox in the nav at /inbox; lower priority writes through a new priority edit, made the same way as pause
-  contract my assumption: his "dismiss" is Skip, which moves on and writes nothing, so the card is still his next time
+  contract his word (kit.notes.md#2026-10-29-1456): "Skipped cards are not marked as skipped only skipped termporsrily on the users device so they can differ acting". So Skip writes nothing to the card: it only moves on, and the card comes back next time, behind the ones he has not opened (the "seen" mark lives in this browser)
   contract my assumption: answer and comment both leave a note on the card, which reaches the agent like any note; a card with no priority goes to 5 when lowered
   contract my assumption: the order is fixed when the page opens, so acting on one card never reshuffles the rest
 
