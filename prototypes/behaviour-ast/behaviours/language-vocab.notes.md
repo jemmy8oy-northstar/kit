@@ -19,3 +19,7 @@ i think i need a learning mode where i can flick through maybe 5 words where it 
 ## 2026-10-15 23:08Z · new behaviour
 
 Another idea that I have had for language vocab is vocab packs, i am just thinking idrk how words are grouped yet but i would love to add a mahjong vocab pack. I did at one point know all the numbers and then obiously wan bing idek remember the other one and i am sure the spelling here is bad but you get it. I would love to contribute vocab packs and i think this is a fun and intuitive way to get interested in learning a language and i guess grouping lessons and drills.
+
+## 2026-10-29 13:32Z · BEH-BOOTSTRAP-1
+
+What sites this man
