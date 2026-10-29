@@ -215,7 +215,7 @@ behaviour BEH-SEED-1 "Seeding is idempotent and updates changed rows in place"
 behaviour BEH-SEED-2 "The real HSK1 list is embedded and loads 150 words"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_the_real_hsk1_list_inserts_150_words
   priority 4
-  review unreviewed
+  review approved
   serves BEH-SEEDDATA-1
 
 behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
