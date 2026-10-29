@@ -1,6 +1,10 @@
 {
   "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/balenthiran.co.uk. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string).",
-  "_authored": "2026-10-28, at onboarding: the tests the site already had. APPS-1 is mapped when its page lands on dev.",
+  "_authored": "2026-10-28, at onboarding: the tests the site already had. 2026-10-29: APPS-1 from balenthiran.co.uk#30.",
+  "BEH-APPS-1": [
+    { "file": "frontend/e2e/apps.spec.ts", "title": "apps page lists every live app" },
+    { "file": "frontend/e2e/apps.spec.ts", "title": "apps page is reachable from the navbar" }
+  ],
   "BEH-HOME-1": [
     { "file": "frontend/e2e/home.spec.ts", "title": "home page renders hero and project grid" }
   ],
