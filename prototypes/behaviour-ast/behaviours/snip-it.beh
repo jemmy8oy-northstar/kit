@@ -151,7 +151,7 @@ behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words a
   in FEAT-TELEPROMPTER
   layer technical
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 3
   pending
   actor creator
