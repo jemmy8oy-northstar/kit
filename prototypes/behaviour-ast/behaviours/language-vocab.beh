@@ -167,7 +167,7 @@ behaviour BEH-GRADE-3 "A wrong tone is reported as tones-provided-but-incorrect"
 behaviour BEH-GRADE-4 "The grade carries the canonical form of the answer"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Result_carries_the_canonical_form
   priority 4
-  review unreviewed
+  review approved
   serves BEH-CARD-1
   contract the canonical form is what the amber and red feedback display
 
