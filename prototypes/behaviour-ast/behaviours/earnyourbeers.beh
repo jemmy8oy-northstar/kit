@@ -160,7 +160,7 @@ behaviour BEH-LOG-2 "Repeat taps within an hour add to the latest entry instead 
   in FEAT-LOG
   layer technical
   source inferred lib/core/logic/app_state.dart:486
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract only the newest entry of all is checked: same activity type, or a vice after a vice, logged under 1 hour ago
@@ -169,7 +169,7 @@ behaviour BEH-LOG-3 "Only the newest entry this week can be edited or deleted"
   in FEAT-LOG
   layer ux
   source inferred lib/ui/screens/dashboard_screen.dart:368
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Dashboard
@@ -180,7 +180,7 @@ behaviour BEH-HISTORY-1 "Past weeks can be paged through, back to the first log"
   in FEAT-BALANCE
   layer ux
   source inferred test/dashboard_interaction_test.dart:Weekly History Swipe Navigation
-  review unreviewed
+  review approved
   priority 3
   actor athlete
   when opens page:Dashboard
@@ -193,7 +193,7 @@ behaviour BEH-LEAGUE-1 "There are 20 tiers in four divisions, and the banner sho
   in FEAT-LEAGUE
   layer ux
   source inferred lib/core/logic/app_state.dart:23
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Dashboard
@@ -205,7 +205,7 @@ behaviour BEH-SETTLE-1 "Each new week settles the last: its net balance moves th
   in FEAT-LEAGUE
   layer technical
   source inferred test/league_settlement_test.dart:single promotion at +25 points
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract tally ≥ 50: up two tiers and −50; tally ≥ 25: up one and −25; tally ≤ −25: down one and +25; otherwise it carries over
@@ -231,7 +231,7 @@ behaviour BEH-ONBOARD-1 "Onboarding asks for a sport, a weekly volume, a vice, a
   in FEAT-ONBOARD
   layer ux
   source inferred lib/ui/screens/onboarding_screen.dart:86
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   when opens page:Onboarding
@@ -248,7 +248,7 @@ behaviour BEH-ONBOARD-2 "The answers seed the starting tier"
   in FEAT-ONBOARD
   layer technical
   source inferred lib/ui/screens/onboarding_screen.dart:471
-  review unreviewed
+  review approved
   priority 2
   actor athlete
   contract weekly points at tier 0 = volume × base rate × 10; tier = round(ln(points / 25) / 0.23025), clamped 0 to 20

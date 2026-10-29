@@ -366,3 +366,19 @@ Kit should also probably try to schedule in improving the test health when it is
 I guess this is kind of like tech debt
 
 But the whole point of kit is spec driven where the spec drives tests and the tests drive the code
+
+## 2026-10-28 00:03Z
+
+Oh it won’t let me install it because it’s already installed should I uninstall it and install it with oauth to test the feature?
+
+## 2026-10-28 15:05Z
+
+Kit you decided to sleep to conserve following usage limit hit. I didn’t ask you to do that. That does make me think though maybe there should be a part of settings where we configure the agents churn rate. What do we want the agent to do. Wake as soon as some changes something? Work on tech debt when nothing is available? Suggest ideas when no tasks are available. Sit idle until instructed specifically to conserve tokens?
+
+## 2026-10-28 22:37Z
+
+Balenthiran should be tracked, want to get /apps on it
+
+## 2026-10-28 23:55Z
+
+This inbox card feature is incredibly successful. No need to navigate a board.

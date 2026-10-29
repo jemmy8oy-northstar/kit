@@ -33,3 +33,7 @@ I didn’t see this on tracks today why is it marked as done?
 ## 2026-10-26 23:05Z · new behaviour
 
 Not seeing how we r going to make money from tracks in the next month thinking about cancelling my strava subscription. Could we move it to garmin for personal use? And maybe support strava again later if we are able to attract paying users. Is it free to use Garmin. Also is it free to use strava api for only my account? No April for more than one user on my app.
+
+## 2026-10-28 07:40Z
+
+Tracks supports garmin
