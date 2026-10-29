@@ -394,3 +394,7 @@ Inbox only show reason for denying text input if the original text input is empt
 ## 2026-10-29 14:56Z
 
 Skipped cards are not marked as skipped only skipped termporsrily on the users device so they can differ acting
+
+## 2026-10-29 22:08Z
+
+Did any skipped items get marked as skipped in the specs/repo? They shouldn’t have been. This should be undone
