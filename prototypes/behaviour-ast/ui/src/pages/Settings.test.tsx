@@ -16,13 +16,15 @@ import { githubNavigation } from '../components/githubNavigation'
 type Posted = { path: string; body: unknown }
 
 /** A session that answers GET with `sessions` in turn (last one repeats) and records every POST. */
-function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = []) {
+function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], idle = 'health') {
   const posted: Posted[] = []
   let gets = 0
   const fn = vi.fn((path: string, init?: RequestInit) => {
     if (init?.method === 'POST') {
-      posted.push({ path, body: JSON.parse(init.body as string) })
+      const sent = JSON.parse(init.body as string)
+      posted.push({ path, body: sent })
       const r = reply ?? { status: 200, body: { ok: true, signedIn: true, user: 'sam' } }
+      if (path === '/api/settings/idle' && r.status < 400) idle = sent.idle
       return Promise.resolve({
         ok: r.status < 400, status: r.status, json: () => Promise.resolve(r.body),
       } as Response)
@@ -33,6 +35,9 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
     }
     if (path === '/api/projects') {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ projects }) } as Response)
+    }
+    if (path === '/api/settings/idle') {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ idle }) } as Response)
     }
     throw new Error(`unexpected fetch to ${path}`)
   })
@@ -263,6 +268,53 @@ describe('Promotion to main (BEH-SETTINGS-4)', () => {
     expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Promotion to main' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+})
+
+describe('Idle behaviour (BEH-SETTINGS-5)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+
+  it('shows the operator four choices, the default ticked, and says asked-for work is always built', async () => {
+    vi.stubGlobal('fetch', server([james]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'When nothing is asked of the agent' })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: 'Work on test health when idle' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Wake on any change' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Suggest ideas when idle' })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Idle until asked' })).not.toBeChecked()
+    expect(screen.getByText(/Work you have asked for is always built/)).toBeInTheDocument()
+  })
+
+  it('shows the mode the server says is chosen', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, [], 'ideas').fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('radio', { name: 'Suggest ideas when idle' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Work on test health when idle' })).not.toBeChecked()
+  })
+
+  it('posts the named mode when one is picked, says so, and shows it ticked', async () => {
+    const s = server([james], { status: 200, body: { app: 'kit' } })
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('radio', { name: 'Idle until asked' }))
+    expect(await screen.findByText(/the agent will now: idle until asked/)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { idle: 'idle' } }])
+    expect(await screen.findByRole('radio', { name: 'Idle until asked' })).toBeChecked()
+  })
+
+  it('shows the server reason when the change is refused', async () => {
+    vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('radio', { name: 'Wake on any change' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
+  })
+
+  it('does not show the choice to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'When nothing is asked of the agent' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
   })
 })
 

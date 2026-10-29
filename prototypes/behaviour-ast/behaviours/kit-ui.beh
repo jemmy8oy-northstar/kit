@@ -1815,7 +1815,6 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-28-1505
   review unreviewed
-  pending
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1825,7 +1824,8 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
   contract my assumption: one choice of four, read by the agent at each wake: "wake on any change", "work on test health when idle" (BEH-HEALTH-2), "suggest ideas when idle", "idle until asked"
   contract my assumption: whichever is chosen, work he has asked for is always built; the choice only decides what happens when the Queue is empty
   contract my assumption: the default is "work on test health when idle", and a usage limit never changes the choice by itself
-  contract my assumption: until this is built, the agent behaves as the default and never sleeps to save tokens while the Queue has work
+  contract my assumption: the choice is stored as a "# kit:idle <mode>" line in Kit's own corpus (kit.beh), so every change is a commit he can see; the agent behaves as the default and never sleeps to save tokens while the Queue has work until he approves its rules reading it
+  contract built: a "When nothing is asked of the agent" section on Settings, for the operator only, with four radio choices (on-change, health, ideas, idle; health when no line); GET /api/settings/idle serves { idle } and POST /api/settings/idle with { idle: <mode> } adds or replaces the line in kit.beh behind the same operator-only gate as every write
 
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV

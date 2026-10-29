@@ -102,7 +102,7 @@ public class AccountsTests
             "/api/projects/kit/schedule", "/api/projects/kit/bindings", "/api/projects/kit/behaviours",
             "/api/projects/kit/behaviours/BEH-1/title", "/api/projects/kit/behaviours/BEH-1/review",
             "/api/projects/kit/behaviours/BEH-1/paused", "/api/projects/kit/behaviours/BEH-1/remove",
-            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote",
+            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote", "/api/settings/idle",
             "/api/projects/kit/behaviours/BEH-1/steps/0",
         };
 

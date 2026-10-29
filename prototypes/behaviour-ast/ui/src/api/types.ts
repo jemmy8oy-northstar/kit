@@ -118,6 +118,14 @@ export interface ProjectSummary {
   promote?: 'self'
 }
 
+/** How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5). */
+export type IdleMode = 'on-change' | 'health' | 'ideas' | 'idle'
+
+export interface IdleSetting {
+  /** Absent from the corpus means `health`; the server always says which. */
+  idle: IdleMode
+}
+
 export interface StepRef {
   kind: string
   name: string

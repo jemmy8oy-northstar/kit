@@ -434,6 +434,24 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
+  "BEH-SETTINGS-5": [
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "No_line_means_the_default_which_is_test_health" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "Each_of_the_four_modes_is_read_when_spelled_exactly" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "A_malformed_line_is_the_default" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "The_route_serves_the_chosen_mode_as_json" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "The_writer_adds_the_line_after_the_leading_directives_and_replaces_it_after" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "Setting_what_it_already_says_changes_nothing" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "A_duplicated_or_malformed_line_is_replaced_by_one_good_one" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "The_writer_refuses_a_mode_that_is_not_one_of_the_four" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "The_operator_chooses_over_the_route_and_the_file_changes" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "A_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "The_body_must_name_one_of_the_four_modes" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator four choices, the default ticked, and says asked-for work is always built" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the mode the server says is chosen" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named mode when one is picked, says so, and shows it ticked" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the change is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the choice to anyone but the operator" }
+  ],
   "BEH-SETTINGS-4": [
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "The_directive_is_read_into_the_summary_as_self" },
     { "file": "backend/Balenthiran.Kit.Tests/PromoteTests.cs", "title": "Absent_means_no_key_at_all_never_false_or_null" },
