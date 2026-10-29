@@ -1,0 +1,21 @@
+{
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/balenthiran.co.uk. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string).",
+  "_authored": "2026-10-28, at onboarding: the tests the site already had. APPS-1 is mapped when its page lands on dev.",
+  "BEH-HOME-1": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "home page renders hero and project grid" }
+  ],
+  "BEH-HOME-2": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "project detail page renders" }
+  ],
+  "BEH-HOME-3": [
+    { "file": "backend/Balenthiran.Tests/InterestServiceTests.cs", "title": "Registers_a_new_subscriber_against_a_project" },
+    { "file": "backend/Balenthiran.Tests/InterestServiceTests.cs", "title": "Rejects_an_email_that_is_not_an_email" }
+  ],
+  "BEH-STATUS-1": [
+    { "file": "backend/Balenthiran.Tests/StatusApiTests.cs", "title": "Get_status_returns_ok_with_a_version" },
+    { "file": "backend/Balenthiran.Tests/StatusServiceTests.cs", "title": "Reports_a_version_and_a_recent_timestamp" }
+  ],
+  "BEH-STATUS-2": [
+    { "file": "frontend/e2e/home.spec.ts", "title": "status board renders its lanes" }
+  ]
+}
