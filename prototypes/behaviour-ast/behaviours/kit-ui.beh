@@ -1211,7 +1211,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
   in FEAT-USER-SIGNUP
   source defined kit.notes.md#2026-10-27-1259
-  review requested it is live: please try it once as a test user (sign in with the password, connect GitHub, sign out, then Sign in with GitHub). That is the only test of the client secret and callback URL. Approve if it works; leave a note if it fails
+  review approved
   priority 4
   actor engineer
   when opens page:KitProjects
