@@ -50,7 +50,7 @@ behaviour BEH-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full suite of
 behaviour BEH-HOME-1 "The home page shows a grid of projects, each a card"
   in FEAT-HOME
   source inferred frontend/src/components/ProjectGrid.tsx:1
-  review unreviewed
+  review approved
   priority 4
   actor visitor
   when opens page:Home
