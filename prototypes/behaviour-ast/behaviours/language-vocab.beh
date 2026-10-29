@@ -208,7 +208,7 @@ behaviour BEH-UNLOCK-2 "Unlocking adds the next batch by rank and stops when not
 behaviour BEH-SEED-1 "Seeding is idempotent and updates changed rows in place"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_is_idempotent_second_run_changes_nothing
   priority 4
-  review unreviewed
+  review approved
   serves BEH-SEEDDATA-1
   contract a changed gloss updates the existing row rather than inserting a duplicate
 
