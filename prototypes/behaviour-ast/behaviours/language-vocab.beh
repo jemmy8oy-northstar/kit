@@ -147,7 +147,7 @@ behaviour BEH-SEEDDATA-1 "HSK1 is seeded from versioned data in the repo"
 behaviour BEH-GRADE-1 "An answer is graded correct, almost, or wrong"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PinyinGraderTests.cs:Grade_correct
   priority 4
-  review unreviewed
+  review approved
   serves BEH-TONE-2
   contract the three verdicts are exhaustive
 
