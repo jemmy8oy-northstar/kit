@@ -91,3 +91,7 @@ Kit shows transcript with take locally
 ## 2026-10-22 07:27Z · BEH-EDITION-3
 
 Oh I didn’t mean the volume is on kit I meant the volume is on snip it
+
+## 2026-10-29 08:05Z
+
+I just wrote something I want to take it backish. Only as an experimental feature should scripts come from snip it. For general access it’s just written in the app
