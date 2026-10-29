@@ -1686,6 +1686,18 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract my assumption: answer and comment both leave a note on the card, which reaches the agent like any note; a card with no priority goes to 5 when lowered
   contract my assumption: the order is fixed when the page opens, so acting on one card never reshuffles the rest
 
+behaviour BEH-INBOX-2 "Denying in the Inbox asks for a reason only when he has not already typed one"
+  in FEAT-INBOX
+  layer ux
+  source defined kit.notes.md#2026-10-29-0810
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "Inbox only show reason for denying text input if the original text input is empty. Should still show confirm to deny though at least for now"
+  contract built 2026-10-29: with words in "Your words", Deny shows a line saying they are the reason, and Confirm deny sends them
+
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
 
