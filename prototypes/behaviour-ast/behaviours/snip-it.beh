@@ -162,7 +162,7 @@ behaviour BEH-PIPE-5 "A recorded take is cut in the editor from its card, and th
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 3
   actor creator
   contract the card links to the existing upload, transcribe and cut flow (BEH-UP-1, BEH-CUT-1) rather than rebuilding it
