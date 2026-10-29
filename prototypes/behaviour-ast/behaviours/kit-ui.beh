@@ -1315,6 +1315,7 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   when opens page:KitProjects
   then sees region:KitMain
   contract his note: "for the first user we have an independent agent acting. Because we need to move away from you at some point for kit. Before that we will test it internally and figure out costs"
+  contract his note (kit.notes.md#2026-10-29-0809): his first test user starts on a repo shared with him (holiday-planning), which his own agent works; "Will have to implement a different mechanism for the testers own projects. Ai api most likely". So this agent is for the tester's own repos, and is most likely driven through an AI API
   contract my assumption: before the first user, the agent runs on one of James's own projects, so its cost per task is measured before anyone else relies on it
   contract my assumption: it runs the shared process of BEH-USERS-4, and nothing it does is carried by the agent that maintains Kit
 
