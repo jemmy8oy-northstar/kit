@@ -86,7 +86,7 @@ behaviour BEH-HOME-4 "The YouTube page presents the channel"
 behaviour BEH-STATUS-1 "GET /api/status says which version is running and when it answered"
   in FEAT-STATUS
   source inferred backend/Balenthiran.WebApi/Routes/StatusRoutes.cs:13
-  review unreviewed
+  review approved
   priority 4
   actor engineer
 
