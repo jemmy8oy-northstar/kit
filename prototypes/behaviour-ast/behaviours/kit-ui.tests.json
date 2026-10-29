@@ -516,5 +516,8 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "answer and comment each leave a note on the card, and need words (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "lower priority adds 1 as an ordinary edit, and stops at 5 (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "a refused write keeps the card on screen and says why (BEH-INBOX-1)" }
+  ],
+  "BEH-INBOX-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "deny uses his words as the reason when he has typed some, and still asks to confirm (BEH-INBOX-2)" }
   ]
 }
