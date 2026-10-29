@@ -174,7 +174,7 @@ behaviour BEH-GRADE-4 "The grade carries the canonical form of the answer"
 behaviour BEH-STRENGTH-1 "Strength moves by one and clamps to the 0..5 band"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolMathTests.cs:NextStrength_moves_and_clamps
   priority 4
-  review unreviewed
+  review approved
   serves BEH-STRENGTH-MVP
 
 behaviour BEH-WEIGHT-1 "Sampling weight favours weakness and never reaches zero"
