@@ -173,7 +173,7 @@ behaviour BEH-PIPE-6 "A creator marks a video Published with its link, so the bo
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 3
   actor creator
   contract publishing stays manual (a pasted YouTube link); posting to YouTube for him is out of scope
