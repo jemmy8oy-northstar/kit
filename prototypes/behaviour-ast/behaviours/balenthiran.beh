@@ -93,7 +93,7 @@ behaviour BEH-STATUS-1 "GET /api/status says which version is running and when i
 behaviour BEH-STATUS-2 "The /status page shows the site's work as lanes on a board"
   in FEAT-STATUS
   source inferred frontend/src/App.tsx:35
-  review unreviewed
+  review denied Let’s remove the status board we don’t need this anymore
   priority 4
   actor visitor
   when opens page:Status
