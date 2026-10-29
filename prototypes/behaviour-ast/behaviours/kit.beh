@@ -8,6 +8,7 @@
 # kit:repo jemmy8oy-northstar/kit@dev
 #   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count
 #   coverage; no line, no number — and the page says why.
+# kit:promote self
 #
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation

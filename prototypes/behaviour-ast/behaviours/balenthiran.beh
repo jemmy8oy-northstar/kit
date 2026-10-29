@@ -24,7 +24,7 @@
 feature FEAT-HOME "The home page and its projects"
   stage ui
 feature FEAT-APPS "balenthiran.co.uk/apps: one page showing the full suite of apps"
-  stage ux
+  stage ui
 feature FEAT-STATUS "What the site says about itself"
   stage ui
 
@@ -35,14 +35,14 @@ behaviour BEH-APPS-1 "A visitor to balenthiran.co.uk/apps sees the full suite of
   in FEAT-APPS
   source defined kit.notes.md#2026-10-28-2237
   priority 2
-  pending
   actor visitor
   when opens page:Apps
   then sees region:AppList
   contract "I think we need some kind of /apps on balenthiran.co.uk to show the full suite of apps" (2026-10-16); "want to get /apps on it" (2026-10-28)
   contract my assumption: it lists only apps that are live, each with its name, one line on what it is, and a link that opens it
   contract my assumption: the list is a file in the site's repo, not read from Kit at run time, so the page works when Kit is down
-  contract my assumption: apps for one person (the birthday site) and the hosting plumbing are left off
+  contract my assumption: apps for one person (the birthday site) and the hosting plumbing are left off, and so is holiday-planning, an early idea rather than an app
+  contract built (balenthiran.co.uk#30, on dev): six cards — Kit, Tracks, Earn Your Beers, Language Vocab, Snip-it, Macro Metrics — from frontend/src/data/apps.json, and an Apps link in the navbar; it goes public when he promotes the site to main
 
 
 # ═══ INFERRED — what the site already does ═══

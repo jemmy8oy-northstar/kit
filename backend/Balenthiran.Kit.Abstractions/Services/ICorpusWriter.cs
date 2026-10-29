@@ -27,6 +27,12 @@ public interface ICorpusWriter
     IWriteResult SetPriority(string text, string id, int priority);
 
     /// <summary>
+    /// Adds or removes the file's <c># kit:promote self</c> line (BEH-SETTINGS-4). Asking for the
+    /// state it is already in rewrites nothing. A file-level directive, so no behaviour changes.
+    /// </summary>
+    IWriteResult SetPromote(string text, bool on);
+
+    /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
     /// </summary>

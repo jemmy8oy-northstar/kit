@@ -6,6 +6,7 @@
 # that exists in the repo. As with habits, the citation is the point: a reader
 # can go and check, and the suite asserts every behaviour cites something.
 # kit:repo jemmy8oy-northstar/language-vocab@dev
+# kit:promote self
 #
 # ⚠️ THIS APP IS A DIFFERENT SHAPE FROM HABITS, AND THE DIFFERENCE IS THE RESULT.
 # habits has a full backend and no frontend. vocab has NEITHER: the only route in

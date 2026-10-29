@@ -1673,6 +1673,7 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   when opens page:KitInbox
   then sees region:KitMain
   contract "A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority"
+  contract his verdict after using it (kit.notes.md#2026-10-28-2355): "This inbox card feature is incredibly successful. No need to navigate a board." So the agent puts what needs him where the Inbox shows it (a needs-context line or a review request), not only in a PR thread
   contract "a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing. Maybe even an option to deprioritise"
   contract my assumption: "mine" is every card the board badges 👤 yours (BEH-BOARD-17): review requests, unreviewed proposals, needs-context lines, and paused cards
   contract my assumption: one card fills the screen, with its title, its question or needs-context line, and buttons for approve, deny, pause, answer, comment, and lower priority. Answering moves to the next card
@@ -1797,8 +1798,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-2111
-  review unreviewed
-  pending
+  review requested it is live in Settings, seeded with your four grants (kit, language-vocab, earnyourbeers, tracks). The agent only obeys the switch once you merge claude-code-bot#128, which points its rules at it. Approve if the switch should be in charge, or deny and the thread grants stay the record
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1808,7 +1808,8 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
   contract my assumption: Settings lists every project on the board with an on/off switch, plus a default for new projects (off), and the agent reads the switch at each wake instead of its written list
   contract my assumption: only he can change it; a test user's projects have no switch until BEH-USERS-4 gives them an agent
   contract my assumption: turning a project off stops future promotions only; anything already on main stays
-  contract my assumption: until this is built, his grants in threads stay the record
+  contract my assumption: the switch is stored as a "# kit:promote self" line in the project's corpus, so every change is a commit he can see; it was seeded from his thread grants (kit#286, earnyourbeers#1, tracks#28) and the agent's own rules point at it only after he approves that change
+  contract built: a "Promotion to main" section on Settings, for the operator only, lists each project (not ideas or trials, one row per project) with a checkbox; POST /api/projects/<project>/promote with { promote: true|false } adds or removes the line in the project's own file (the one named for the project, so kit.beh for kit) behind the same operator-only gate as every write, and GET /api/projects serves promote: "self" on that row, absent otherwise
 
 behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
   in FEAT-SETTINGS

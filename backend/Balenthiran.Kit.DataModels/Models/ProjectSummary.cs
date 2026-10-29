@@ -41,5 +41,12 @@ public sealed class ProjectSummary : IProjectSummary
 
     bool IProjectSummary.Idea => Idea == true;
 
+    // BEH-SETTINGS-4: "self" when this project's primary file carries `# kit:promote self`; absent otherwise.
+    [JsonPropertyOrder(11)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Promote { get; init; }
+
+    string? IProjectSummary.Promote => Promote;
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }

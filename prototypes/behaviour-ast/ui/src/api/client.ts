@@ -252,6 +252,14 @@ export function setPaused(app: string, id: string, paused: boolean): Promise<Wri
   )
 }
 
+/**
+ * Let the agent promote a project's `dev` to `main` itself, or stop it (BEH-SETTINGS-4): named, not
+ * toggled. It adds or removes the `# kit:promote self` line in the project's own corpus. Operator only.
+ */
+export function setPromote(project: string, promote: boolean): Promise<WriteResult> {
+  return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/promote`, { promote })
+}
+
 /** Set a behaviour's priority, 1 (first) to 5 (BEH-INBOX-1): it rewrites the corpus's `priority` line. */
 export function setPriority(app: string, id: string, priority: number): Promise<WriteResult> {
   return post<WriteResult>(

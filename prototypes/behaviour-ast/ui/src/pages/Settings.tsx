@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, signOut } from '../api/client'
+import { addUser, changePassword, connectGitHub, fetchProjects, setPromote, signOut } from '../api/client'
 import type { SessionState } from '../api/types'
+import { isIdea, isTrial, projectOf } from '../board'
 import { githubNavigation } from '../components/githubNavigation'
 import { OpeningPageSetting } from '../components/OpeningPage'
+import ResourceView from '../components/Resource'
 import { useSession } from '../components/session'
+import { useReloadableResource } from '../hooks/useResource'
 
 type Outcome = { ok: true; text: string } | { ok: false; text: string } | null
 
@@ -173,6 +176,62 @@ function OperatorGitHub({ session }: { session: SessionState }) {
 }
 
 /**
+ * BEH-SETTINGS-4: which projects the agent may promote to main itself. Each switch is the
+ * `# kit:promote self` line in that project's own corpus, so a change is a commit he can see.
+ * One row per project (its primary file), ideas and trials left out. New projects start off.
+ */
+function PromotionSetting() {
+  const { resource, reload } = useReloadableResource(async () => {
+    const { projects } = await fetchProjects()
+    return projects
+      .filter((p) => !p.error && !isIdea(p) && !isTrial(p) && projectOf(p) === p.app)
+      .map((p) => ({ app: p.app, on: p.promote === 'self' }))
+      .sort((a, b) => a.app.localeCompare(b.app))
+  }, [])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function change(app: string, on: boolean) {
+    setBusy(app)
+    setOutcome(null)
+    setPromote(app, on)
+      .then(() => {
+        setOutcome({ ok: true, text: on ? `The agent may now promote ${app} to main.` : `The agent no longer promotes ${app} to main.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(null))
+  }
+
+  return (
+    <section aria-labelledby="promotion-to-main">
+      <h2 id="promotion-to-main">Promotion to main</h2>
+      <p>
+        When on, the agent may merge this project's dev into main itself once a feature is complete and
+        dev's CI is green. Turning it off stops future promotions; nothing already on main changes.
+      </p>
+      <p className="muted">New projects start off.</p>
+      <ResourceView resource={resource}>
+        {(rows) => (
+          <ul>
+            {rows.map((r) => (
+              <li key={r.app}>
+                <label>
+                  <input type="checkbox" checked={r.on} disabled={busy === r.app}
+                    onChange={(e) => change(r.app, e.target.checked)} />
+                  {' '}{r.app}
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </ResourceView>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
+/**
  * GitHub sends a user back to Kit's root (the App's registered callback URL), so
  * a return lands wherever that is and is sent on here, query intact, without the
  * callback URL having to change. Renders nothing otherwise.
@@ -217,6 +276,7 @@ export default function Settings() {
           {session.operator ? <><OperatorGitHub session={session} /><AddUser /></> : <><ConnectGitHub session={session} />{session.gitHub ? null : <ChangePassword />}</>}
         </div>
       )}
+      {session?.operator && accounts ? <PromotionSetting /> : null}
       <OpeningPageSetting />
     </>
   )
