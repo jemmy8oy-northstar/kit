@@ -306,7 +306,7 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   in FEAT-SHARE
   layer ux
   source inferred tracks#1
-  review unreviewed
+  review approved
   pending
   priority 3
   actor runner
