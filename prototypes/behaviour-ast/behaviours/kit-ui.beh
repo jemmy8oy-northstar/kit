@@ -1723,7 +1723,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
   contract my assumption: the health page shows the last such PR, so the work is visible
   contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
-  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
+  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22); balenthiran 6 → 7/7 (balenthiran.co.uk#31, 2026-10-29). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
   contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
@@ -1815,7 +1815,6 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-28-1505
   review unreviewed
-  pending
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1825,7 +1824,8 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
   contract my assumption: one choice of four, read by the agent at each wake: "wake on any change", "work on test health when idle" (BEH-HEALTH-2), "suggest ideas when idle", "idle until asked"
   contract my assumption: whichever is chosen, work he has asked for is always built; the choice only decides what happens when the Queue is empty
   contract my assumption: the default is "work on test health when idle", and a usage limit never changes the choice by itself
-  contract my assumption: until this is built, the agent behaves as the default and never sleeps to save tokens while the Queue has work
+  contract my assumption: the choice is stored as a "# kit:idle <mode>" line in Kit's own corpus (kit.beh), so every change is a commit he can see; the agent behaves as the default and never sleeps to save tokens while the Queue has work until he approves its rules reading it
+  contract built: a "When nothing is asked of the agent" section on Settings, for the operator only, with four radio choices (on-change, health, ideas, idle; health when no line); GET /api/settings/idle serves { idle } and POST /api/settings/idle with { idle: <mode> } adds or replaces the line in kit.beh behind the same operator-only gate as every write
 
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV

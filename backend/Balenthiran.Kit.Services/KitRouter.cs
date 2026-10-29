@@ -164,6 +164,15 @@ public sealed partial class KitRouter(
                 : UsersProjects(UserOf(cookie), corpora.Corpora().Select(viewer.Summary).ToList());
         }
 
+        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; a read like the rest (BEH-GATE-H1).
+        if (pathname == "/api/settings/idle")
+        {
+            return Json(200, new IdleSetting
+            {
+                Idle = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal) ? IdleDirective.Read(corpora.ReadText(IdleDirective.App)) : IdleDirective.Default,
+            });
+        }
+
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
         if (pathname == "/api/activity")
         {
@@ -408,6 +417,14 @@ public sealed partial class KitRouter(
         if (pathname.StartsWith("/api/push/", StringComparison.Ordinal))
         {
             return PushWrite(pathname, body);
+        }
+
+        if (pathname == "/api/settings/idle")
+        {
+            lock (writeGate)
+            {
+                return SetIdle(body);
+            }
         }
 
         var bm = Bindings.Match(pathname);
@@ -843,6 +860,37 @@ public sealed partial class KitRouter(
 
         corpora.WriteText(app, result.Text!);
         return Json(200, GitOutcome(corpora.FullPath(app), on ? $"let the agent promote {app} to main" : $"stop the agent promoting {app} to main", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>
+    /// BEH-SETTINGS-5: choose how busy the agent is when nothing is asked of it — the
+    /// <c># kit:idle</c> line in Kit's own primary file, committed like any edit. Operator-only, by the
+    /// gate every write sits behind. Named, not toggled, so a double press is a no-op.
+    /// </summary>
+    private KitResponse SetIdle(JsonElement? body)
+    {
+        if (body is not { ValueKind: JsonValueKind.Object } b
+            || Field(b, "idle") is not { ValueKind: JsonValueKind.String } mode
+            || !IdleDirective.Modes.Contains(mode.GetString()!))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"idle must be one of {string.Join(", ", IdleDirective.Modes)}" });
+        }
+
+        var app = IdleDirective.App;
+        if (!corpora.Corpora().Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"the setting lives in the corpus named '{app}', which this Kit does not serve" });
+        }
+
+        var chosen = mode.GetString()!;
+        var result = writer.SetIdle(corpora.ReadText(app), chosen);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle behaviour to {chosen}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>

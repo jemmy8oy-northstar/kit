@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, Binding, BindResult, CompletionList, IdleMode, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
@@ -258,6 +258,16 @@ export function setPaused(app: string, id: string, paused: boolean): Promise<Wri
  */
 export function setPromote(project: string, promote: boolean): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/promote`, { promote })
+}
+
+/** How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5). */
+export function fetchIdle(): Promise<IdleSetting> {
+  return get<IdleSetting>('/api/settings/idle')
+}
+
+/** Choose it: rewrites the `# kit:idle` line in Kit's own corpus. Operator only. */
+export function setIdle(idle: IdleMode): Promise<WriteResult> {
+  return post<WriteResult>('/api/settings/idle', { idle })
 }
 
 /** Set a behaviour's priority, 1 (first) to 5 (BEH-INBOX-1): it rewrites the corpus's `priority` line. */

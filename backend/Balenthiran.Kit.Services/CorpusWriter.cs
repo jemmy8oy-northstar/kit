@@ -246,22 +246,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var lines = text.Split('\n').ToList();
         if (on)
         {
-            var anchor = -1;
-            for (var i = 0; i < lines.Count; i++)
-            {
-                var t = lines[i].Trim(CorpusParser.WsChars);
-                if (t.Length > 0 && !t.StartsWith('#'))
-                {
-                    break;
-                }
-
-                if (t.StartsWith('#') && t[1..].TrimStart(CorpusParser.WsChars).StartsWith("kit:", StringComparison.Ordinal))
-                {
-                    anchor = i;
-                }
-            }
-
-            lines.Insert(anchor + 1, PromoteDirective.Line);
+            lines.Insert(HeaderAnchor(lines) + 1, PromoteDirective.Line);
         }
         else
         {
@@ -271,10 +256,71 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             }
         }
 
-        var after = string.Join('\n', lines);
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
+    /// <summary>
+    /// BEH-SETTINGS-5: sets the file's <c># kit:idle</c> line to <paramref name="mode"/>, replacing the
+    /// first and dropping any others, else adding it after the last leading <c># kit:</c> directive.
+    /// Asking for what the file already says rewrites nothing; the default with no line is already that.
+    /// </summary>
+    public IWriteResult SetIdle(string text, string mode)
+    {
+        if (!IdleDirective.Modes.Contains(mode))
+        {
+            return WriteResult.Refuse("bad-mode", $"idle must be one of {string.Join(", ", IdleDirective.Modes)}");
+        }
+
+        if (IdleDirective.Read(text) == mode)
+        {
+            return new WriteResult { Ok = true, Text = text };
+        }
+
+        var lines = text.Split('\n').ToList();
+        var existing = IdleDirective.Lines([.. lines]).ToList();
+        if (existing.Count > 0)
+        {
+            lines[existing[0]] = IdleDirective.Line(mode);
+            foreach (var i in existing.Skip(1).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else
+        {
+            lines.Insert(HeaderAnchor(lines) + 1, IdleDirective.Line(mode));
+        }
+
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
+    /// <summary>The index of the last leading <c># kit:</c> directive line, or -1 when the header has none.</summary>
+    private static int HeaderAnchor(List<string> lines)
+    {
+        var anchor = -1;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var t = lines[i].Trim(CorpusParser.WsChars);
+            if (t.Length > 0 && !t.StartsWith('#'))
+            {
+                break;
+            }
+
+            if (t.StartsWith('#') && t[1..].TrimStart(CorpusParser.WsChars).StartsWith("kit:", StringComparison.Ordinal))
+            {
+                anchor = i;
+            }
+        }
+
+        return anchor;
+    }
+
+    /// <summary>A file-level edit is written only if the file parsed before it and parses after it.</summary>
+    private IWriteResult ValidatedEdit(string before, string after)
+    {
         try
         {
-            parser.ParseCorpus(text, "before");
+            parser.ParseCorpus(before, "before");
         }
         catch (CorpusParseException e)
         {
