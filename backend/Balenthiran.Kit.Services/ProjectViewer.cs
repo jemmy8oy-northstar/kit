@@ -212,6 +212,7 @@ public sealed class ProjectViewer(
                 Available = true,
                 Covered = counted.Covered.Select(b => b.Id).ToList(),
                 Uncovered = counted.Uncovered.Select(b => b.Id).ToList(),
+                LastImprovedBy = CoverageCounter.ReadLastImprovedBy(map),
             };
     }
 
@@ -281,7 +282,7 @@ public sealed class ProjectViewer(
             Behaviours = p.Behaviours.Count,
             Conflicts = p.Conflicts.Count,
             Coverage = p.Coverage is AvailableCoverage a
-                ? new CoverageSummary { Available = true, Covered = a.Covered.Count, Uncovered = a.Uncovered.Count, Reason = null }
+                ? new CoverageSummary { Available = true, Covered = a.Covered.Count, Uncovered = a.Uncovered.Count, Reason = null, LastImprovedBy = a.LastImprovedBy }
                 : new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = ((UnavailableCoverage)p.Coverage).Reason },
             Unreviewed = p.Adjudication.Unreviewed.Count,
             Project = p.Project,

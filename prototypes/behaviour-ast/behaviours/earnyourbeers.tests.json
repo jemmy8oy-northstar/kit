@@ -1,5 +1,6 @@
 {
-  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/earnyourbeers. Keyed on file + title (a C# test's title is its method name).",
+  "lastImprovedBy": { "pr": "kit#539", "url": "https://github.com/jemmy8oy-northstar/kit/pull/539", "on": "2026-10-28" },
+  "_":"behaviour -> the test(s) that name it, in jemmy8oy-northstar/earnyourbeers. Keyed on file + title (a C# test's title is its method name).",
   "_authored": "2026-10-16, from earnyourbeers#5 (the rules ported from the Flutter code). Only the pure rules exist on the web so far; every page, the accounts and the DB are still to build, so `kit check earnyourbeers` names them. 2026-10-16 later: LOG-2/3 and AUTH-2 (data half) from earnyourbeers#6. Later still: ONBOARD-1, VICE-1, RESET-1 from earnyourbeers#9/#10; the dashboard UI (AUTH-1, BALANCE-1, LOG-1/3, LEAGUE-1, SETTLE-2, HISTORY-1) from earnyourbeers#11. Then the onboarding and settings screens (ONBOARD-1, VICE-1, THEME-1, RESET-1) from earnyourbeers#12.",
   "BEH-SCORE-1": [
     {

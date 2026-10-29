@@ -101,6 +101,8 @@ function Total({ rows }: { rows: Row[] }) {
 
 function HealthRow({ row }: { row: Row }) {
   const { project, measured, reason } = row
+  const c = project.coverage
+  const last = c && c.available ? c.lastImprovedBy : undefined
   return (
     <Card>
       <h3>
@@ -115,6 +117,11 @@ function HealthRow({ row }: { row: Row }) {
         <CoverageBadge coverage={project.coverage} />
       </div>
       {reason ? <p className="muted">Not measured: {reason}</p> : null}
+      {last ? (
+        <p className="muted">
+          Last improved by <a href={last.url}>{last.pr}</a> on {last.on}
+        </p>
+      ) : null}
     </Card>
   )
 }
