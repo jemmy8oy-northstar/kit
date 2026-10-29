@@ -70,7 +70,7 @@ behaviour BEH-HOME-2 "A project card opens that project's own page"
 behaviour BEH-HOME-3 "A visitor can leave an email to hear when a project launches"
   in FEAT-HOME
   source inferred backend/Balenthiran.WebApi/Routes/InterestRoutes.cs:17
-  review unreviewed
+  review approved
   priority 4
   actor visitor
   contract an address that is not an email is refused
