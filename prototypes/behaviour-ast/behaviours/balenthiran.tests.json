@@ -22,8 +22,5 @@
   "BEH-STATUS-1": [
     { "file": "backend/Balenthiran.Tests/StatusApiTests.cs", "title": "Get_status_returns_ok_with_a_version" },
     { "file": "backend/Balenthiran.Tests/StatusServiceTests.cs", "title": "Reports_a_version_and_a_recent_timestamp" }
-  ],
-  "BEH-STATUS-2": [
-    { "file": "frontend/e2e/home.spec.ts", "title": "status board renders its lanes" }
   ]
 }
