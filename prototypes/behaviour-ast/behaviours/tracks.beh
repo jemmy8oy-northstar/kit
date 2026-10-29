@@ -326,6 +326,7 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
+  needs-context "Writing to Strava needs its activity:write permission; today Tracks asks only for read, so every runner would have to connect Strava again. Add it? If no answer by 2026-11-09, I leave it out and the songs stay on the share card only."
 
 # ═══ HIGHLIGHTS — his questions in Kit, 2026-10-24 ═══
 # Each answers "is Tracks able to…" with yes or no and how, as a proposal he can deny.

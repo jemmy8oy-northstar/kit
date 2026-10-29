@@ -53,6 +53,7 @@ behaviour BEH-SHARE-1 "The project is shared with his first test user, and the b
   contract "This will be a shared repo so my bot can actually pick up the new items"
   contract my assumption: the test user's items on this repo reach the bot the way any Kit project's do, through the Kit spec and its Queue
   contract not built here: "Will have to implement a different mechanism for the testers own projects. Ai api most likely" is about the tester's own projects, which are not this repo, and is left for him to spec
+  needs-context "The bot half is done: holiday-planning is on Kit and its Queue reaches me. What's left is giving your test user access to the repo and to Kit, which is yours. Have you? If no answer by 2026-11-05, I mark this built and the access stays on your list."
 
 
 # ═══ INFERRED — what the backend already does ═══
