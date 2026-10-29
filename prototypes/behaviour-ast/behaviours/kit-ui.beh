@@ -1814,7 +1814,7 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
 behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-28-1505
-  review unreviewed
+  review requested it is live in Settings, set to "work on test health" (the default). The agent only obeys it once you merge claude-code-bot#129, which points its rules at it; until then it does the default anyway. Approve if the four choices are right, or deny and say what you want instead
   priority 4
   actor engineer
   when opens page:KitSettings
