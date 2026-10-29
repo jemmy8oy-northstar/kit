@@ -705,7 +705,7 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-21-0710
-  review unreviewed
+  review denied Deny backlog cards a placed based on the state they are in
   priority 3
   pending
   paused
