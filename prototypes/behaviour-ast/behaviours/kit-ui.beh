@@ -1745,12 +1745,12 @@ behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviour
   in FEAT-HEALTH
   source inferred kit.notes.md#2026-10-27-2133
   review approved
-  pending
   priority 3
   actor engineer
   when opens page:KitHealth
   then sees region:KitMain
   contract my assumption: split from BEH-HEALTH-1, which shows the numbers; the list endpoint only carries counts, so this reads each project's own view for the ids, and each id links to its behaviour page
+  contract built 2026-10-29: under each measured project with unnamed behaviours the Health page reads that project's own /api/projects/<app> view and lists each uncovered id (linked to its behaviour page) with its title; a project with none says nothing extra, and a failed read says why in words
 
 feature FEAT-SETTINGS "Settings"
   stage ui
