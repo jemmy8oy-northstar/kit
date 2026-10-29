@@ -1576,6 +1576,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
 behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-26-2312
+  review approved
   priority 4
   pending
   paused
