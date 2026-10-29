@@ -78,7 +78,7 @@ behaviour BEH-HOME-3 "A visitor can leave an email to hear when a project launch
 behaviour BEH-HOME-4 "The YouTube page presents the channel"
   in FEAT-HOME
   source inferred frontend/src/App.tsx:34
-  review unreviewed
+  review approved
   priority 4
   actor visitor
   when opens page:YouTube
