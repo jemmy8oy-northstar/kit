@@ -401,6 +401,7 @@ behaviour BEH-HIGH-5 "Each song shows its BPM"
   contract not from Spotify: its audio-features endpoint, which gave tempo, has refused apps created after 27 November 2024, which includes Tracks's
   contract it would need a second source looked up by song and artist, such as GetSongBPM's free API, which asks for a visible link back
   needs-context "Spotify no longer gives new apps a song's BPM. A free outside source (GetSongBPM) could, in return for a link to them on the page. Use it? If no answer by 2026-11-07, I leave BPM out and keep the other highlights."
+  paused
 
 # ═══ COST — his note in Kit, 2026-10-26 23:05Z ═══
 # Measured the same night: since 2026-06 Strava's API needs a Strava subscription even
