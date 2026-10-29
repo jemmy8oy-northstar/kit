@@ -15,6 +15,10 @@ public sealed class AvailableCoverage : IAvailableCoverage
     [JsonPropertyOrder(3)]
     public required List<string> Uncovered { get; init; }
 
+    // BEH-HEALTH-2: carried to the list row only; the detail's JSON is unchanged.
+    [JsonIgnore]
+    public LastImprovedBy? LastImprovedBy { get; init; }
+
     IReadOnlyList<string> IAvailableCoverage.Covered => Covered;
 
     IReadOnlyList<string> IAvailableCoverage.Uncovered => Uncovered;

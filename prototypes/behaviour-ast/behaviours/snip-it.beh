@@ -119,7 +119,7 @@ behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages:
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "reviewing what the pipeline / boards look like": the board is the first screen, so the pipeline is visible before any content exists
@@ -130,7 +130,7 @@ behaviour BEH-PIPE-2 "A creator adds a video idea as a card with a working title
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "beginning to plan videos": an idea needs only a title, so capturing one takes seconds
@@ -140,7 +140,7 @@ behaviour BEH-PIPE-3 "A creator writes a video's script on its card, and the car
   in FEAT-PIPELINE
   layer ux
   source inferred claude-code-bot#114
-  review unreviewed
+  review approved
   priority 2
   actor creator
   contract "plan videos and scripts there": the script is plain text, edited in the browser and saved with the card

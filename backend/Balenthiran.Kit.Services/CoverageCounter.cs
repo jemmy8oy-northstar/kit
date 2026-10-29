@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
+using Balenthiran.Kit.DataModels.Models;
 
 namespace Balenthiran.Kit.Services;
 
@@ -15,6 +16,28 @@ public sealed class CoverageCounter(ITestTitleReader reader) : ICoverageCounter
         "node_modules", ".git", "bin", "obj", "dist", "build", ".next", "coverage", "playwright-report", "test-results",
         ".build", "DerivedData",
     };
+
+    /// <summary>The one non-comment top-level key of a <c>tests.json</c> that is not a behaviour id.</summary>
+    internal const string LastImprovedByKey = "lastImprovedBy";
+
+    /// <summary>
+    /// BEH-HEALTH-2: the mapping's <c>lastImprovedBy</c>, or null when it is absent or not three
+    /// non-empty strings — a malformed value is ignored, it never fails coverage.
+    /// </summary>
+    internal static LastImprovedBy? ReadLastImprovedBy(JsonObject map)
+    {
+        if (!map.TryGetPropertyValue(LastImprovedByKey, out var node) || node is not JsonObject o)
+        {
+            return null;
+        }
+
+        var pr = Field(o, "pr");
+        var url = Field(o, "url");
+        var on = Field(o, "on");
+        return string.IsNullOrWhiteSpace(pr) || string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(on)
+            ? null
+            : new LastImprovedBy { Pr = pr, Url = url, On = on };
+    }
 
     /// <inheritdoc />
     public bool SkipsDirectory(string name) => SkipDir.Contains(name);
@@ -86,7 +109,8 @@ public sealed class CoverageCounter(ITestTitleReader reader) : ICoverageCounter
 
         foreach (var (id, node) in JsValue.Entries(map))
         {
-            if (id.StartsWith('_'))
+            // `_…` keys are comments; `lastImprovedBy` is project metadata (BEH-HEALTH-2), not a behaviour id.
+            if (id.StartsWith('_') || id == LastImprovedByKey)
             {
                 continue;
             }

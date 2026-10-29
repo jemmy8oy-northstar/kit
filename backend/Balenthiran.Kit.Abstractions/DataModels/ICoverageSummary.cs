@@ -10,4 +10,7 @@ public interface ICoverageSummary
     int? Uncovered { get; }
 
     string? Reason { get; }
+
+    /// <summary>The last PR that improved this project's test health, when its mapping names one (BEH-HEALTH-2).</summary>
+    ILastImprovedBy? LastImprovedBy { get; }
 }

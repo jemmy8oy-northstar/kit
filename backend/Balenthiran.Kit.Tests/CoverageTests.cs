@@ -255,6 +255,51 @@ public class CoverageTests
         Assert.Equal("""{"available":true,"covered":1,"uncovered":1}""", row.ToJsonString());
     }
 
+    // ── the last PR that improved a project's health (BEH-HEALTH-2) ─────────────
+
+    private const string Last = """{"pr": "kit#538", "url": "https://github.com/o/r/pull/538", "on": "2026-10-28"}""";
+
+    private static JsonNode RowWith(string lastImprovedBy)
+    {
+        var mapping = lastImprovedBy.Length == 0 ? Mapping : Mapping.TrimEnd('}') + ", \"lastImprovedBy\": " + lastImprovedBy + "}";
+        return JsonNode.Parse(new EngineJsonSerialiser().Serialise(Viewer(Corpus, mapping, new Store(Reading())).Summary("app")))!["coverage"]!;
+    }
+
+    [Fact]
+    public void BEH_HEALTH_2_The_last_improving_pr_round_trips_to_the_list_row_and_is_not_a_behaviour()
+    {
+        var row = RowWith(Last);
+
+        Assert.Equal(
+            """{"available":true,"covered":1,"uncovered":1,"lastImprovedBy":{"pr":"kit#538","url":"https://github.com/o/r/pull/538","on":"2026-10-28"}}""",
+            row.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\"kit#538\"")]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("""{"pr": "kit#538"}""")]
+    [InlineData("""{"pr": 538, "url": "u", "on": "2026-10-28"}""")]
+    [InlineData("""{"pr": "", "url": "u", "on": "2026-10-28"}""")]
+    public void BEH_HEALTH_2_An_absent_or_malformed_last_pr_is_absent_and_coverage_is_unchanged(string value)
+    {
+        Assert.Equal("""{"available":true,"covered":1,"uncovered":1}""", RowWith(value).ToJsonString());
+    }
+
+    [Fact]
+    public void BEH_HEALTH_2_The_last_pr_key_is_not_counted_as_a_mapped_behaviour_id()
+    {
+        var map = JsonNode.Parse(Mapping.TrimEnd('}') + ", \"lastImprovedBy\": " + Last + ", \"_note\": \"x\"}")!.AsObject();
+
+        var counted = Counter.Count(Behaviours(), map, Reading().Titles, "app.tests.json");
+
+        Assert.Null(counted.Refusal);
+        Assert.Empty(counted.Errors);
+        Assert.Equal(["BEH-1"], counted.Covered.Select(b => b.Id));
+    }
+
     [Fact]
     public void Local_kit_has_no_store_and_keeps_saying_no_repo_was_given()
     {

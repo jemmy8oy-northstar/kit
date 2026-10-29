@@ -943,7 +943,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-0823
   source inferred kit.notes.md#2026-10-19-1616
-  review unreviewed
+  review approved
   priority 2
   actor engineer
   when opens page:KitStages
@@ -966,7 +966,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
-behaviour BEH-STAGE-11 "A feature with nothing built yet is placed by how much of it is written"
+behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review unreviewed
@@ -977,6 +977,7 @@ behaviour BEH-STAGE-11 "A feature with nothing built yet is placed by how much o
   contract my assumption: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
   contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
   contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet, where I go by the writing: a one-line idea sits at problem, one that says who does what step by step sits at ux, and one whose rules are written down sits at logic
+  contract his question (kit-ui.notes.md#2026-10-28-2353), "Do you mean spec wise? It's placed on the board by what stage it's at": yes, spec-wise. The title said "how much of it is written", and it now says what it means: the stage is the furthest of ux, behaviour, ui and implementation that the feature has, and with no code that is the furthest its spec has reached
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -1333,9 +1334,10 @@ behaviour BEH-USERS-5 "A user's production secrets are stored for them, and neve
   contract his note (kit.notes.md#2026-10-26-1821): "Secrets can be added or updated from a ui", and "Secrets cannot be read once written"
   contract my assumption: the first user is James, for Kit's own secrets (kit-github-connect, kit-push), so he can do the kubectl steps on BEH-USERS-2 and BEH-NOTIFY-3 from his phone. Other users' secrets come with BEH-USERS-9
   contract my assumption: the page lists each secret by name with its key names and when each was last written, never a value; each key has a write-only box, and a saved value is not echoed in the page, the API response or a log
-  contract my assumption: Kit's service account gets a Role in its own namespace that can create, update and patch Secrets but cannot get, list or watch them, so even Kit cannot read a value back through this route
+  contract his answer (kit-ui.notes.md#2026-10-28-2353): "This is not about Kubernetes secrets. The future direction is we use some kind of vault". So values live in a secrets vault that Kit writes to, and the cluster reads them from there; the Kubernetes write-only Role idea is dropped
+  contract my assumption: Kit can write a value into the vault but cannot read one back, so even Kit cannot echo a secret
   contract my assumption: priority 3 to 2, because it removes his only remaining kubectl steps
-  needs-context "Letting Kit's pod write Kubernetes Secrets is a secrets and auth change. My default if you're silent by 2026-11-02: I build it as above, with the write-only Role in Kit's chart, and raise it as a PR for you to merge. I won't self-merge it."
+  needs-context "Which vault? It is a platform choice, so yours. My default if you're silent by 2026-11-04: I write a short comparison of OCI Vault, OpenBao and Infisical (cost, and how Kit writes without reading) as a review request on this card, and build nothing until you pick."
 
 feature FEAT-USER-DATABASES "A database per user, in two tiers"
   in EPIC-KIT-USERS
@@ -1720,7 +1722,8 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: it only maps a test to a behaviour when the test checks what the behaviour says; a test is never renamed just to raise the number
   contract my assumption: the health page shows the last such PR, so the work is visible
   contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
-  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22). Next: the corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app, ideas), where first check each has a repo with tests
+  contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
+  contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH

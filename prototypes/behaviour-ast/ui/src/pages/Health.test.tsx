@@ -74,6 +74,25 @@ describe('Health', () => {
     expect(screen.queryByText(/100%/)).not.toBeInTheDocument()
   })
 
+  it('shows the last PR that improved a project, linked, and nothing when none is named (BEH-HEALTH-2)', async () => {
+    const withPr = {
+      ...measured('a', 1, 1),
+      coverage: {
+        available: true,
+        covered: 1,
+        uncovered: 1,
+        lastImprovedBy: { pr: 'kit#538', url: 'https://github.com/o/r/pull/538', on: '2026-10-28' },
+      },
+    }
+    mockApi([withPr, measured('b', 1, 1)])
+    open()
+
+    const link = await screen.findByRole('link', { name: 'kit#538' })
+    expect(link).toHaveAttribute('href', 'https://github.com/o/r/pull/538')
+    expect(link.parentElement).toHaveTextContent('Last improved by kit#538 on 2026-10-28')
+    expect(screen.getAllByText(/Last improved by/)).toHaveLength(1)
+  })
+
   it('orders lowest percentage first and unmeasured last (BEH-HEALTH-1)', async () => {
     mockApi([unmeasured('zz', 'none'), measured('high', 9, 1), measured('low', 1, 9), measured('mid', 5, 5)])
     open()

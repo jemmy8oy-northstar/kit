@@ -19,4 +19,11 @@ public sealed class CoverageSummary : ICoverageSummary
     [JsonPropertyOrder(4)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public required string? Reason { get; init; }
+
+    // BEH-HEALTH-2: absent, not null, when the mapping names no (well-formed) last PR.
+    [JsonPropertyOrder(5)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LastImprovedBy? LastImprovedBy { get; init; }
+
+    ILastImprovedBy? ICoverageSummary.LastImprovedBy => LastImprovedBy;
 }

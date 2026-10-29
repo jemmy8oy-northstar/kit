@@ -29,3 +29,11 @@ What does this mean
 ## 2026-10-27 21:16Z · BEH-STAGE-9
 
 What does this mean
+
+## 2026-10-28 23:53Z · BEH-STAGE-11
+
+Placed by how much of it is written? Do you mean spec wise? It’s placed on the board by what stage it’s at. How much of ux beh ui impl or
+
+## 2026-10-28 23:53Z · BEH-USERS-5
+
+This is not about Kubernetes secrets. The future direction is we use some kind of vault
