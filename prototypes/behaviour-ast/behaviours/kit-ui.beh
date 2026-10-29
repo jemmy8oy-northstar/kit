@@ -702,23 +702,6 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
   contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note
   contract "when the dev bells an item kit might choose to change priority of it": ringing the bell is how he lifts an old card (BEH-BELL-1/2)
 
-behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
-  in FEAT-BOARD
-  source defined kit.notes.md#2026-10-21-0710
-  review denied Deny backlog cards a placed based on the state they are in
-  priority 3
-  pending
-  paused
-  actor engineer
-  when opens page:KitBoard
-  then sees region:KitBoardBacklog
-  contract "Ability for me to reorganise the order of the backlog … This would be expensive I. Kit having to commit to every repo. What is a good approach here"
-  contract my answer: every corpus lives in the kit repo, so a reorder is one commit to one repo, never one per project repo
-  contract my proposal: the order he sets is one list of ids in one file beside the corpora; a card not on it falls back to (score, most recent) below the ones that are, so a new card never needs a write
-  contract my proposal: drags made within a few seconds of each other land as one commit, so rearranging ten cards is not ten commits
-  contract my proposal: a drag across a priority boundary does not rewrite the priority line; the list is his order, the score stays the agent's, and a bell still lifts a card above both (BEH-BELL-3)
-  contract paused, by his word when he denied it on 2026-10-22 11:19Z: "Tbh I think let's just pause this for now. Do we have an option for backlog but don't action. Paused seems appropriate. I think we pause because we have bell now. Let's see how that goes first." The denial stood in for a pause until BEH-BOARD-16 existed; Resume brings it back, Deny drops it
-
 # His denial of BEH-BOARD-13 (2026-10-22 11:19Z) asked for this state, and BOARD-13
 # is to be its first card once it is built.
 behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the agent does not build it"
