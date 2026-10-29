@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Card } from '@jemmy8oy-northstar/design-system'
-import { fetchProjects } from '../api/client'
+import { fetchProject, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
@@ -122,6 +122,34 @@ function HealthRow({ row }: { row: Row }) {
           Last improved by <a href={last.url}>{last.pr}</a> on {last.on}
         </p>
       ) : null}
+      {measured && measured.covered < measured.total ? <Untested app={project.app} /> : null}
     </Card>
+  )
+}
+
+/**
+ * BEH-HEALTH-3: the behaviours no test names. The list endpoint only carries counts, so this reads
+ * the project's own view, which carries the ids, and takes each title from the same response.
+ */
+function Untested({ app }: { app: string }) {
+  const detail = useResource(() => fetchProject(app), [app])
+  if (detail.state === 'loading') return <p className="muted">Reading which behaviours no test names…</p>
+  if (detail.state === 'error') return <p className="muted">Could not list the untested behaviours: {detail.message}</p>
+  const { coverage, behaviours } = detail.value
+  if (!coverage || !coverage.available) return null
+  const titles = new Map(behaviours.map((b) => [b.id, b.title]))
+  if (coverage.uncovered.length === 0) return null
+  return (
+    <>
+      <p className="muted">No test names these {coverage.uncovered.length}:</p>
+      <ul aria-label={`Untested in ${app}`}>
+        {coverage.uncovered.map((id) => (
+          <li key={id}>
+            <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
+            {titles.has(id) ? ` ${titles.get(id)}` : ''}
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
