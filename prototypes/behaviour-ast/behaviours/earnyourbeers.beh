@@ -276,7 +276,7 @@ behaviour BEH-THEME-1 "The theme is auto, light, or dark"
   in FEAT-SETTINGS
   layer ux
   source inferred test/rebrand_flow_test.dart:updates theme mode
-  review unreviewed
+  review approved
   priority 4
   actor athlete
   when opens page:Settings
