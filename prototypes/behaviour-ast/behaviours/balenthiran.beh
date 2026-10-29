@@ -61,7 +61,7 @@ behaviour BEH-HOME-1 "The home page shows a grid of projects, each a card"
 behaviour BEH-HOME-2 "A project card opens that project's own page"
   in FEAT-HOME
   source inferred frontend/src/App.tsx:27
-  review unreviewed
+  review approved
   priority 4
   actor visitor
   when opens page:Project
