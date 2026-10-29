@@ -221,7 +221,7 @@ behaviour BEH-SEED-2 "The real HSK1 list is embedded and loads 150 words"
 behaviour BEH-SEED-3 "The loader derives normalised pinyin through the grader"
   source inferred backend/Balenthiran.LanguageVocab.Tests/SeedLoaderTests.cs:Load_derives_normalised_pinyin_via_the_grader
   priority 4
-  review unreviewed
+  review approved
   serves BEH-NORMALISE-1
   contract seed data and typed answers are normalised by the same code
 
