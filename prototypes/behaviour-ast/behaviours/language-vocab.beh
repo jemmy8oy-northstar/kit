@@ -265,7 +265,7 @@ behaviour BEH-ITEMTYPE-1 "A vocabulary item has a type, defaulting to word"
 behaviour BEH-DETERMINISM-1 "Selection is deterministic for a given seed"
   source inferred backend/Balenthiran.LanguageVocab.Tests/PoolServiceTests.cs:SelectNext_is_deterministic_for_the_same_seed
   priority 4
-  review unreviewed
+  review approved
   contract the same seed picks the same word, so the sampler is testable
   asks "SelectNextAsync takes a required `int seed` and NOTHING calls it outside the tests — the drill API is PR 4 and does not exist. So where the seed comes from in production has never been decided, and it is a user-visible choice, not an implementation detail. Which is it: the client sends a seed, or the server makes one?"
   option "The server generates it per request" "The drill route makes a fresh seed each call. Determinism reverts to what DESIGN.md:66-67 says it is for — unit-testability — and every draw is independent. A refresh gives a different card. Resuming a session mid-way is then a separate feature with its own state, not something the seed gives you."
