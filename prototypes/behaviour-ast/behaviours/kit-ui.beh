@@ -1849,7 +1849,7 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
 behaviour BEH-SETTINGS-6 "He puts the agent's idle work in his order, and switches off what he does not want"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-30-0038
-  review requested it is live in Settings once promoted: tick what you want, in your order, top first; nothing ticked means the agent sleeps until asked. I dropped "wake on any change" as a choice, since the agent wakes on your Kit actions anyway. Approve, or deny and say what to change
+  review approved
   priority 3
   actor engineer
   when opens page:KitSettings
