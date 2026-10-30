@@ -390,3 +390,17 @@ Can we onboard holiday app onto kit, I am going to add this with my first test u
 ## 2026-10-29 08:10Z
 
 Inbox only show reason for denying text input if the original text input is empty. Should still show confirm to deny though at least for now
+
+## 2026-10-29 14:56Z
+
+Skipped cards are not marked as skipped only skipped termporsrily on the users device so they can differ acting
+
+## 2026-10-29 22:08Z
+
+Did any skipped items get marked as skipped in the specs/repo? They shouldn’t have been. This should be undone
+
+## 2026-10-30 00:38Z
+
+A user can order idle priority not just pick one
+
+They can also decide which options are not a priority or they do not want Kit working on it
