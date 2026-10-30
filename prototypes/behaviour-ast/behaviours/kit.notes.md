@@ -398,3 +398,9 @@ Skipped cards are not marked as skipped only skipped termporsrily on the users d
 ## 2026-10-29 22:08Z
 
 Did any skipped items get marked as skipped in the specs/repo? They shouldn’t have been. This should be undone
+
+## 2026-10-30 00:38Z
+
+A user can order idle priority not just pick one
+
+They can also decide which options are not a priority or they do not want Kit working on it
