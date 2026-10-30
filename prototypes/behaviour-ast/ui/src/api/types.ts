@@ -118,12 +118,14 @@ export interface ProjectSummary {
   promote?: 'self'
 }
 
-/** How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5). */
-export type IdleMode = 'on-change' | 'health' | 'ideas' | 'idle'
+/** The agent's kinds of idle work (BEH-SETTINGS-6). One not in the order is switched off. */
+export type IdleItem = 'health' | 'ideas'
 
 export interface IdleSetting {
-  /** Absent from the corpus means `health`; the server always says which. */
-  idle: IdleMode
+  /** The first item on, or `idle` when none is (BEH-SETTINGS-5's field, still served). */
+  idle: string
+  /** The items switched on, highest priority first. Absent from the corpus means `['health']`. */
+  order: IdleItem[]
 }
 
 export interface StepRef {
