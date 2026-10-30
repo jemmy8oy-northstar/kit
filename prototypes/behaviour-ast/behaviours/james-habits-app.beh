@@ -63,6 +63,7 @@ behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and ba
 # (claude-code-bot#49). Resume either one to queue it.
 behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
   source defined docs/DESIGN.md#mvp-4
+  review approved
   priority 5
   pending
   paused
