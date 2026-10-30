@@ -20,24 +20,47 @@ public static class IdleDirective
     private static readonly Regex Directive = new(
         $@"^#[{CorpusParser.Ws}]*kit:idle(?![A-Za-z0-9_-])(.*)\z", RegexOptions.Compiled);
 
-    public static string Line(string mode) => $"# kit:idle {mode}";
+    /// <summary>The two kinds of idle work (BEH-SETTINGS-6). Order is priority; one not listed is off.</summary>
+    public static readonly IReadOnlyList<string> Items = ["health", "ideas"];
+
+    public static string Line(IReadOnlyList<string> order) =>
+        $"# kit:idle {(order.Count == 0 ? "none" : string.Join(", ", order))}";
+
+    /// <summary>The order a legacy single mode meant (BEH-SETTINGS-5): <c>idle</c> and <c>on-change</c> are none.</summary>
+    public static IReadOnlyList<string> OrderOfMode(string mode) =>
+        mode is "health" or "ideas" ? [mode] : [];
+
+    /// <summary>Parses the text after <c>kit:idle</c>; null when malformed.</summary>
+    private static IReadOnlyList<string>? Parse(string value)
+    {
+        if (value is "idle" or "on-change" or "none")
+        {
+            return [];
+        }
+
+        var tokens = value.Split(',').Select(t => t.Trim(CorpusParser.WsChars)).ToList();
+        return tokens.All(Items.Contains) && tokens.Distinct().Count() == tokens.Count ? tokens : null;
+    }
 
     /// <summary>The 0-based line numbers of every <c>kit:idle</c> line, however malformed.</summary>
     public static IEnumerable<int> Lines(string[] lines) =>
         Enumerable.Range(0, lines.Length).Where(i => Directive.IsMatch(lines[i].TrimEnd('\r')));
 
-    /// <summary>The chosen mode: the first well-formed <c>kit:idle</c> line, else the default.</summary>
-    public static string Read(string src)
+    /// <summary>The idle work in his order: the first well-formed <c>kit:idle</c> line, else the default.</summary>
+    public static IReadOnlyList<string> ReadOrder(string src)
     {
         foreach (var line in src.TrimStart('﻿').Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
         {
             var m = Directive.Match(line);
-            if (m.Success && m.Groups[1].Value.Trim(CorpusParser.WsChars) is var mode && Modes.Contains(mode))
+            if (m.Success && Parse(m.Groups[1].Value.Trim(CorpusParser.WsChars)) is { } order)
             {
-                return mode;
+                return order;
             }
         }
 
-        return Default;
+        return [Default];
     }
+
+    /// <summary>Compatibility for BEH-SETTINGS-5 readers: the first item on, or <c>idle</c> when none is.</summary>
+    public static string Read(string src) => ReadOrder(src) is [var first, ..] ? first : "idle";
 }

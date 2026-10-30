@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import SignIn from '../components/SignIn'
 import Settings, { GitHubReturn } from './Settings'
@@ -16,7 +16,7 @@ import { githubNavigation } from '../components/githubNavigation'
 type Posted = { path: string; body: unknown }
 
 /** A session that answers GET with `sessions` in turn (last one repeats) and records every POST. */
-function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], idle = 'health') {
+function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], order: string[] = ['health']) {
   const posted: Posted[] = []
   let gets = 0
   const fn = vi.fn((path: string, init?: RequestInit) => {
@@ -24,7 +24,7 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
       const sent = JSON.parse(init.body as string)
       posted.push({ path, body: sent })
       const r = reply ?? { status: 200, body: { ok: true, signedIn: true, user: 'sam' } }
-      if (path === '/api/settings/idle' && r.status < 400) idle = sent.idle
+      if (path === '/api/settings/idle' && r.status < 400) order = sent.order
       return Promise.resolve({
         ok: r.status < 400, status: r.status, json: () => Promise.resolve(r.body),
       } as Response)
@@ -37,7 +37,7 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ projects }) } as Response)
     }
     if (path === '/api/settings/idle') {
-      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ idle }) } as Response)
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ idle: order[0] ?? 'idle', order }) } as Response)
     }
     throw new Error(`unexpected fetch to ${path}`)
   })
@@ -271,41 +271,73 @@ describe('Promotion to main (BEH-SETTINGS-4)', () => {
   })
 })
 
-describe('Idle behaviour (BEH-SETTINGS-5)', () => {
+describe('Idle work order (BEH-SETTINGS-6)', () => {
   const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const items = async () => (await screen.findAllByRole('listitem')).map((li) => within(li).getByRole('checkbox').closest('label')!.textContent!.trim())
 
-  it('shows the operator four choices, the default ticked, and says asked-for work is always built', async () => {
+  it('shows the operator the idle work with the default switched on, and says asked-for work is always built', async () => {
     vi.stubGlobal('fetch', server([james]).fn)
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByRole('heading', { name: 'When nothing is asked of the agent' })).toBeInTheDocument()
-    expect(await screen.findByRole('radio', { name: 'Work on test health when idle' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Wake on any change' })).not.toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Suggest ideas when idle' })).not.toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Idle until asked' })).not.toBeChecked()
+    expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Suggest ideas' })).not.toBeChecked()
     expect(screen.getByText(/Work you have asked for is always built/)).toBeInTheDocument()
+    expect(screen.getByText(/with everything off it sleeps until asked/)).toBeInTheDocument()
   })
 
-  it('shows the mode the server says is chosen', async () => {
-    vi.stubGlobal('fetch', server([james], undefined, [], 'ideas').fn)
+  it('lists the switched-on items in the server order, then the switched-off ones', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, [], ['ideas', 'health']).fn)
     render(<SignIn>{app}</SignIn>)
-    expect(await screen.findByRole('radio', { name: 'Suggest ideas when idle' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Work on test health when idle' })).not.toBeChecked()
+    expect(await items()).toEqual(['Suggest ideas', 'Work on test health'])
+    expect(screen.getByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Work on test health' })).toBeChecked()
   })
 
-  it('posts the named mode when one is picked, says so, and shows it ticked', async () => {
+  it('puts a switched-off item last and offers it no moves', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, [], ['ideas']).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await items()).toEqual(['Suggest ideas', 'Work on test health'])
+    expect(screen.getByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Move Work on test health up' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Move Work on test health down' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Move Suggest ideas up' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Move Suggest ideas down' })).toBeDisabled()
+  })
+
+  it('posts the new order when an item is switched on, and says so', async () => {
     const s = server([james], { status: 200, body: { app: 'kit' } })
     vi.stubGlobal('fetch', s.fn)
     render(<SignIn>{app}</SignIn>)
-    fireEvent.click(await screen.findByRole('radio', { name: 'Idle until asked' }))
-    expect(await screen.findByText(/the agent will now: idle until asked/)).toBeInTheDocument()
-    expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { idle: 'idle' } }])
-    expect(await screen.findByRole('radio', { name: 'Idle until asked' })).toBeChecked()
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Suggest ideas' }))
+    expect(await screen.findByText(/the agent will now: work on test health, then suggest ideas\./)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: ['health', 'ideas'] } }])
+    expect(await screen.findByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked()
   })
 
-  it('shows the server reason when the idle choice is refused', async () => {
+  it('posts the reordered list when an item is moved down, and shows it moved', async () => {
+    const s = server([james], { status: 200, body: { app: 'kit' } }, [], ['health', 'ideas'])
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Move Work on test health down' }))
+    expect(await screen.findByText(/the agent will now: suggest ideas, then work on test health\./)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: ['ideas', 'health'] } }])
+    await waitFor(async () => expect(await items()).toEqual(['Suggest ideas', 'Work on test health']))
+  })
+
+  it('says the agent sleeps until asked when the last item is switched off', async () => {
+    const s = server([james], { status: 200, body: { app: 'kit' } })
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Work on test health' }))
+    expect(await screen.findByText(/the agent will now: sleep until asked\./)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: [] } }])
+    expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked()
+  })
+
+  it('shows the server reason when the idle order is refused', async () => {
     vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }).fn)
     render(<SignIn>{app}</SignIn>)
-    fireEvent.click(await screen.findByRole('radio', { name: 'Wake on any change' }))
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Suggest ideas' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
   })
 
@@ -314,7 +346,7 @@ describe('Idle behaviour (BEH-SETTINGS-5)', () => {
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'When nothing is asked of the agent' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Suggest ideas' })).not.toBeInTheDocument()
   })
 })
 

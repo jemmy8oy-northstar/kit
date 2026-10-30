@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, IdleMode, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, Binding, BindResult, CompletionList, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, WriteResult,
 } from './types'
 
@@ -265,9 +265,9 @@ export function fetchIdle(): Promise<IdleSetting> {
   return get<IdleSetting>('/api/settings/idle')
 }
 
-/** Choose it: rewrites the `# kit:idle` line in Kit's own corpus. Operator only. */
-export function setIdle(idle: IdleMode): Promise<WriteResult> {
-  return post<WriteResult>('/api/settings/idle', { idle })
+/** Set the idle work, in order (BEH-SETTINGS-6): rewrites the `# kit:idle` line in Kit's own corpus. Operator only. */
+export function setIdleOrder(order: IdleItem[]): Promise<WriteResult> {
+  return post<WriteResult>('/api/settings/idle', { order })
 }
 
 /** Set a behaviour's priority, 1 (first) to 5 (BEH-INBOX-1): it rewrites the corpus's `priority` line. */

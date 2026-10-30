@@ -1576,6 +1576,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
 behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   in FEAT-NOTIFICATIONS
   source defined kit.notes.md#2026-10-26-2312
+  review approved
   priority 4
   pending
   paused
@@ -1686,7 +1687,8 @@ behaviour BEH-INBOX-1 "A page shows the items that need him one at a time, unsee
   contract my assumption: swiping is a later step; buttons first, as they also work on a laptop
   contract this overlaps BEH-SHEET-2, which puts what Kit is asking at the top of a project's Questions tab. This page is across every project; if he prefers it, SHEET-2 can be withdrawn
   contract built 2026-10-28: Inbox in the nav at /inbox; lower priority writes through a new priority edit, made the same way as pause
-  contract my assumption: his "dismiss" is Skip, which moves on and writes nothing, so the card is still his next time
+  contract his word (kit.notes.md#2026-10-29-1456): "Skipped cards are not marked as skipped only skipped termporsrily on the users device so they can differ acting". So Skip writes nothing to the card: it only moves on, and the card comes back next time, behind the ones he has not opened (the "seen" mark lives in this browser)
+  contract his check (kit.notes.md#2026-10-29-2208): "Did any skipped items get marked as skipped in the specs/repo? They shouldn't have been. This should be undone". Audited 2026-10-29: none were, so there is nothing to undo. Skip has only ever moved to the next card since it shipped (d80aad1), and every Kit write since is an approve, deny, note, pause or priority he chose; the one pause was snip-it BEH-TELE-10 at 13:33Z, which he can Resume if it was meant as a skip
   contract my assumption: answer and comment both leave a note on the card, which reaches the agent like any note; a card with no priority goes to 5 when lowered
   contract my assumption: the order is fixed when the page opens, so acting on one card never reshuffles the rest
 
@@ -1842,6 +1844,24 @@ behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothin
   contract my assumption: the default is "work on test health when idle", and a usage limit never changes the choice by itself
   contract my assumption: the choice is stored as a "# kit:idle <mode>" line in Kit's own corpus (kit.beh), so every change is a commit he can see; the agent behaves as the default and never sleeps to save tokens while the Queue has work until he approves its rules reading it
   contract built: a "When nothing is asked of the agent" section on Settings, for the operator only, with four radio choices (on-change, health, ideas, idle; health when no line); GET /api/settings/idle serves { idle } and POST /api/settings/idle with { idle: <mode> } adds or replaces the line in kit.beh behind the same operator-only gate as every write
+  contract the single radio choice is replaced by BEH-SETTINGS-6, an ordered list he can switch items off in; { idle } is still served, so an agent reading it keeps working
+
+behaviour BEH-SETTINGS-6 "He puts the agent's idle work in his order, and switches off what he does not want"
+  in FEAT-SETTINGS
+  source defined kit.notes.md#2026-10-30-0038
+  review requested it is live in Settings once promoted: tick what you want, in your order, top first; nothing ticked means the agent sleeps until asked. I dropped "wake on any change" as a choice, since the agent wakes on your Kit actions anyway. Approve, or deny and say what to change
+  priority 3
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "A user can order idle priority not just pick one. They can also decide which options are not a priority or they do not want Kit working on it"
+  contract my assumption: the list holds the two kinds of idle work, "work on test health" (BEH-HEALTH-2) and "suggest ideas"; when the Queue is empty the agent does the first one switched on that has anything to do, then the next
+  contract my assumption: each item has a switch and up/down buttons; one switched off is never worked on, and with every item off the agent sleeps until asked
+  contract my assumption: "wake on any change" and "idle until asked" stop being choices: the first is how the agent wakes anyway (BEH-NOTIFY-4), the second is everything switched off
+  contract my assumption: the default, with no line, is test health alone, as before
+  contract my assumption: stored as "# kit:idle health, ideas" in kit.beh, in his order, or "# kit:idle none" with all off; an old single-mode line still reads, with "idle" and "on-change" meaning none
+  contract my assumption: GET /api/settings/idle serves { idle, order }, where idle is the first item on or "idle" when none; POST takes { order: [...] }
+  contract built: the "When nothing is asked of the agent" section on Settings is an ordered list, switched-on items first in his order then the off ones, each with a checkbox and Move up / Move down buttons (only on-items move); every change posts { order } at once, and a POST of the old { idle: <mode> } still works, mapping health and ideas to a one-item list and idle and on-change to none
 
 behaviour BEH-LOADING-1 "While Kit opens, the screen shows Kit's name and a spinner, and says so if the server is slow"
   in FEAT-NAV

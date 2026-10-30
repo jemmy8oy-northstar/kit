@@ -264,14 +264,23 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     /// first and dropping any others, else adding it after the last leading <c># kit:</c> directive.
     /// Asking for what the file already says rewrites nothing; the default with no line is already that.
     /// </summary>
-    public IWriteResult SetIdle(string text, string mode)
+    public IWriteResult SetIdle(string text, string mode) =>
+        IdleDirective.Modes.Contains(mode)
+            ? SetIdleOrder(text, IdleDirective.OrderOfMode(mode))
+            : WriteResult.Refuse("bad-mode", $"idle must be one of {string.Join(", ", IdleDirective.Modes)}");
+
+    /// <summary>
+    /// BEH-SETTINGS-6: sets the <c># kit:idle</c> line to <paramref name="order"/> (empty is <c>none</c>),
+    /// replacing the first and dropping the rest, else adding it after the leading directives.
+    /// </summary>
+    public IWriteResult SetIdleOrder(string text, IReadOnlyList<string> order)
     {
-        if (!IdleDirective.Modes.Contains(mode))
+        if (order.Any(i => !IdleDirective.Items.Contains(i)) || order.Distinct().Count() != order.Count)
         {
-            return WriteResult.Refuse("bad-mode", $"idle must be one of {string.Join(", ", IdleDirective.Modes)}");
+            return WriteResult.Refuse("bad-order", $"idle order may hold each of {string.Join(", ", IdleDirective.Items)} at most once");
         }
 
-        if (IdleDirective.Read(text) == mode)
+        if (IdleDirective.ReadOrder(text).SequenceEqual(order))
         {
             return new WriteResult { Ok = true, Text = text };
         }
@@ -280,7 +289,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         var existing = IdleDirective.Lines([.. lines]).ToList();
         if (existing.Count > 0)
         {
-            lines[existing[0]] = IdleDirective.Line(mode);
+            lines[existing[0]] = IdleDirective.Line(order);
             foreach (var i in existing.Skip(1).Reverse())
             {
                 lines.RemoveAt(i);
@@ -288,7 +297,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         }
         else
         {
-            lines.Insert(HeaderAnchor(lines) + 1, IdleDirective.Line(mode));
+            lines.Insert(HeaderAnchor(lines) + 1, IdleDirective.Line(order));
         }
 
         return ValidatedEdit(text, string.Join('\n', lines));

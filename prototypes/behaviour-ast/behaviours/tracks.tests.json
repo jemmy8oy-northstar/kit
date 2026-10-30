@@ -2,7 +2,7 @@
   "lastImprovedBy": { "pr": "kit#522", "url": "https://github.com/jemmy8oy-northstar/kit/pull/522", "on": "2026-10-28" },
   "_":"behaviour -> the test(s) that name it, in jemmy8oy-northstar/tracks. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string, describe blocks are not part of it).",
   "_authored": "2026-10-28, by reading tracks.beh against tracks@dev backend/Balenthiran.Tracks.Tests and frontend/e2e. A test is mapped only where it checks what the behaviour's contracts say; the e2e titles still carry the older BEH-AUTH-n ids, which are mapped by what they assert, not by that prefix.",
-  "_incomplete": "BEH-SHARE-1, BEH-SHARE-2, BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them.",
+  "_incomplete": "BEH-SHARE-2, BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them.",
 
   "BEH-BRAND-1": [
     { "file": "frontend/e2e/home.spec.ts", "title": "BEH-BRAND-1: home page renders the Tracks hero" }
@@ -133,6 +133,13 @@
     { "file": "frontend/e2e/home.spec.ts", "title": "BEH-MAP-1 / BEH-MAP-2 / BEH-MAP-3: a run draws its route with each song pinned where it started; a run without GPS draws none" },
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunRouteTests.cs", "title": "No_GPS_gives_no_route" },
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_run_with_no_GPS_is_read_once_and_has_no_route" }
+  ],
+
+  "BEH-SHARE-1": [
+    { "file": "frontend/e2e/share-card.spec.ts", "title": "a run with songs can be shared as a 1080x1920 card; a run without songs has no Share button (BEH-SHARE-1)" },
+    { "file": "frontend/e2e/share-card.spec.ts", "title": "route projection keeps the whole route inside the card box and centred (BEH-SHARE-1)" },
+    { "file": "frontend/e2e/share-card.spec.ts", "title": "route projection keeps north up and survives a single point or no route (BEH-SHARE-1)" },
+    { "file": "frontend/e2e/share-card.spec.ts", "title": "cover layout puts every cover on the card without overlap, capped at the most a card holds (BEH-SHARE-1)" }
   ],
 
   "BEH-HIGH-1": [

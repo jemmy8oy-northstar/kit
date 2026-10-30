@@ -167,10 +167,10 @@ public sealed partial class KitRouter(
         // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; a read like the rest (BEH-GATE-H1).
         if (pathname == "/api/settings/idle")
         {
-            return Json(200, new IdleSetting
-            {
-                Idle = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal) ? IdleDirective.Read(corpora.ReadText(IdleDirective.App)) : IdleDirective.Default,
-            });
+            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
+                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
+                : [IdleDirective.Default];
+            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
         }
 
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
@@ -869,11 +869,23 @@ public sealed partial class KitRouter(
     /// </summary>
     private KitResponse SetIdle(JsonElement? body)
     {
-        if (body is not { ValueKind: JsonValueKind.Object } b
-            || Field(b, "idle") is not { ValueKind: JsonValueKind.String } mode
-            || !IdleDirective.Modes.Contains(mode.GetString()!))
+        IReadOnlyList<string>? chosen = null;
+        if (body is { ValueKind: JsonValueKind.Object } b)
         {
-            return Json(400, new ApiError { Error = "bad-request", Reason = $"idle must be one of {string.Join(", ", IdleDirective.Modes)}" });
+            if (Field(b, "order") is { ValueKind: JsonValueKind.Array } arr
+                && arr.EnumerateArray().All(e => e.ValueKind == JsonValueKind.String))
+            {
+                chosen = arr.EnumerateArray().Select(e => e.GetString()!).ToList();
+            }
+            else if (Field(b, "idle") is { ValueKind: JsonValueKind.String } mode && IdleDirective.Modes.Contains(mode.GetString()!))
+            {
+                chosen = IdleDirective.OrderOfMode(mode.GetString()!);
+            }
+        }
+
+        if (chosen is null || chosen.Any(i => !IdleDirective.Items.Contains(i)) || chosen.Distinct().Count() != chosen.Count)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"send order: a list holding each of {string.Join(", ", IdleDirective.Items)} at most once" });
         }
 
         var app = IdleDirective.App;
@@ -882,15 +894,14 @@ public sealed partial class KitRouter(
             return Json(404, new ApiError { Error = "no-such-project", Reason = $"the setting lives in the corpus named '{app}', which this Kit does not serve" });
         }
 
-        var chosen = mode.GetString()!;
-        var result = writer.SetIdle(corpora.ReadText(app), chosen);
+        var result = writer.SetIdleOrder(corpora.ReadText(app), chosen);
         if (!result.Ok)
         {
             return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
         }
 
         corpora.WriteText(app, result.Text!);
-        return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle behaviour to {chosen}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+        return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle work to {(chosen.Count == 0 ? "none" : string.Join(", ", chosen))}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>

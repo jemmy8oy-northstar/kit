@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setIdle, setPromote, signOut } from '../api/client'
-import type { IdleMode, SessionState } from '../api/types'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setIdleOrder, setPromote, signOut } from '../api/client'
+import type { IdleItem, SessionState } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { githubNavigation } from '../components/githubNavigation'
 import { OpeningPageSetting } from '../components/OpeningPage'
@@ -231,55 +231,81 @@ function PromotionSetting() {
   )
 }
 
-const IDLE_MODES: { mode: IdleMode; label: string }[] = [
-  { mode: 'on-change', label: 'Wake on any change' },
-  { mode: 'health', label: 'Work on test health when idle' },
-  { mode: 'ideas', label: 'Suggest ideas when idle' },
-  { mode: 'idle', label: 'Idle until asked' },
+const IDLE_ITEMS: { item: IdleItem; label: string }[] = [
+  { item: 'health', label: 'Work on test health' },
+  { item: 'ideas', label: 'Suggest ideas' },
 ]
 
+const labelOf = (item: IdleItem) => IDLE_ITEMS.find((i) => i.item === item)!.label
+
 /**
- * BEH-SETTINGS-5: how busy the agent is when nothing is asked of it. One of four, stored as the
- * `# kit:idle` line in Kit's own corpus, so a change is a commit he can see. Default: test health.
+ * BEH-SETTINGS-6: the agent's idle work in his order, each item switchable off. Stored as the
+ * `# kit:idle health, ideas` line in Kit's own corpus, so a change is a commit he can see.
+ * Default: test health alone. Every change posts the new order of the items that are on.
  */
 function IdleSettingSection() {
   const { resource, reload } = useReloadableResource(fetchIdle, [])
   const [busy, setBusy] = useState(false)
   const [outcome, setOutcome] = useState<Outcome>(null)
 
-  function change(mode: IdleMode, label: string) {
+  function change(order: IdleItem[]) {
     setBusy(true)
     setOutcome(null)
-    setIdle(mode)
+    setIdleOrder(order)
       .then(() => {
-        setOutcome({ ok: true, text: `When nothing is asked of it, the agent will now: ${label.toLowerCase()}.` })
+        const text = order.length === 0
+          ? 'sleep until asked'
+          : order.map((i) => labelOf(i).toLowerCase()).join(', then ')
+        setOutcome({ ok: true, text: `When nothing is asked of it, the agent will now: ${text}.` })
         reload()
       })
       .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
       .finally(() => setBusy(false))
   }
 
+  function move(order: IdleItem[], index: number, by: -1 | 1) {
+    const next = [...order]
+    ;[next[index], next[index + by]] = [next[index + by], next[index]]
+    change(next)
+  }
+
   return (
     <section aria-labelledby="agent-idle">
       <h2 id="agent-idle">When nothing is asked of the agent</h2>
       <p>
-        Work you have asked for is always built. This choice only decides what the agent does when the Queue is empty.
+        Work you have asked for is always built. This list only decides what the agent does when the Queue is empty.
+      </p>
+      <p className="muted">
+        Top first. Switch off anything you don't want the agent doing; with everything off it sleeps until asked.
       </p>
       <ResourceView resource={resource}>
-        {(current) => (
-          <fieldset disabled={busy}>
-            <legend>Idle behaviour</legend>
-            {IDLE_MODES.map(({ mode, label }) => (
-              <div key={mode}>
-                <label>
-                  <input type="radio" name="agent-idle" value={mode} checked={current.idle === mode}
-                    onChange={() => change(mode, label)} />
-                  {' '}{label}
-                </label>
-              </div>
-            ))}
-          </fieldset>
-        )}
+        {({ order }) => {
+          const off = IDLE_ITEMS.map((i) => i.item).filter((i) => !order.includes(i))
+          return (
+            <ol>
+              {[...order, ...off].map((item) => {
+                const index = order.indexOf(item)
+                const on = index >= 0
+                const label = labelOf(item)
+                return (
+                  <li key={item}>
+                    <label>
+                      <input type="checkbox" checked={on} disabled={busy}
+                        onChange={(e) => change(e.target.checked ? [...order, item] : order.filter((i) => i !== item))} />
+                      {' '}{label}
+                    </label>
+                    {' '}
+                    <button type="button" aria-label={`Move ${label} up`} disabled={busy || !on || index === 0}
+                      onClick={() => move(order, index, -1)}>Move up</button>
+                    {' '}
+                    <button type="button" aria-label={`Move ${label} down`} disabled={busy || !on || index === order.length - 1}
+                      onClick={() => move(order, index, 1)}>Move down</button>
+                  </li>
+                )
+              })}
+            </ol>
+          )
+        }}
       </ResourceView>
       <Say outcome={outcome} />
     </section>

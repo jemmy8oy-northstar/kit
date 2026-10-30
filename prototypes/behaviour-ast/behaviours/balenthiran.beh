@@ -95,7 +95,10 @@ behaviour BEH-STATUS-2 "The /status page shows the site's work as lanes on a boa
   source inferred frontend/src/App.tsx:35
   review denied Let’s remove the status board we don’t need this anymore
   priority 4
+  pending
+  paused
   actor visitor
   when opens page:Status
   then sees region:Lanes
   contract removed 2026-10-29 by his denial: the page, its lane data and its e2e test are gone (balenthiran.co.uk#32, on dev); GET /api/status stays (BEH-STATUS-1)
+  contract pending and paused, as denied BEH-BOARD-13 is: nothing is built, so Health no longer asks for a test, and the agent does not rebuild it

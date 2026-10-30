@@ -46,7 +46,7 @@ feature FEAT-CONNECT "Connecting Strava and Spotify"
 feature FEAT-MAP "The music map of a workout"
   stage ui
 feature FEAT-SHARE "Sharing a workout"
-  stage problem
+  stage development
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
 feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
   stage development
@@ -307,15 +307,15 @@ behaviour BEH-SHARE-1 "A workout can be saved as a share card: the route with th
   layer ux
   source inferred tracks#1
   review approved
-  pending
   priority 3
   actor runner
   given workout:WithSongs
   when opens page:Workout
   when activates button:Share
   then sees region:ShareCard
-  contract sized for an Instagram or Strava story, from the Gemini reply he pasted
+  contract sized for an Instagram or Strava story (1080x1920), from the Gemini reply he pasted in tracks#1
   contract minimal and high-contrast: the word TRACKS, the route line, the covers
+  contract built 2026-10-29: Share on a run with songs draws a 1080x1920 black card (TRACKS, the white route line with numbered dots, the numbered covers in a grid below) in the browser, previews it, and Save image opens the share sheet or downloads the PNG; Spotify's image host sends access-control-allow-origin: *, so no proxy was needed
 
 behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's description"
   in FEAT-SHARE
@@ -326,6 +326,7 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
+  needs-context "Writing to Strava needs its activity:write permission; today Tracks asks only for read, so every runner would have to connect Strava again. Add it? If no answer by 2026-11-09, I leave it out and the songs stay on the share card only."
 
 # ═══ HIGHLIGHTS — his questions in Kit, 2026-10-24 ═══
 # Each answers "is Tracks able to…" with yes or no and how, as a proposal he can deny.
