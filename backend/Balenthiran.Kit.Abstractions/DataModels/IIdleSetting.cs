@@ -1,8 +1,11 @@
 namespace Balenthiran.Kit.Abstractions.DataModels;
 
-/// <summary>How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5).</summary>
+/// <summary>The agent's idle work, in his order (BEH-SETTINGS-6; BEH-SETTINGS-5's <c>idle</c> still served).</summary>
 public interface IIdleSetting
 {
-    /// <summary>One of <c>on-change</c>, <c>health</c>, <c>ideas</c>, <c>idle</c>.</summary>
+    /// <summary>The first item on, or <c>idle</c> when none is.</summary>
     string Idle { get; }
+
+    /// <summary>The items switched on, <c>health</c> and/or <c>ideas</c>, highest priority first.</summary>
+    IReadOnlyList<string> Order { get; }
 }

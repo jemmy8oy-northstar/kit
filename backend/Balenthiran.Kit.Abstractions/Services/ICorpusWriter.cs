@@ -39,6 +39,12 @@ public interface ICorpusWriter
     IWriteResult SetIdle(string text, string mode);
 
     /// <summary>
+    /// Sets the file's <c># kit:idle</c> line to the ordered idle work (BEH-SETTINGS-6): <c>health</c>
+    /// and/or <c>ideas</c>, each at most once; empty means <c>none</c>. Asking for what it already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetIdleOrder(string text, IReadOnlyList<string> order);
+
+    /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
     /// </summary>
