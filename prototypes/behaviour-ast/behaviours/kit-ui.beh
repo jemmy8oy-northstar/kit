@@ -1387,6 +1387,7 @@ behaviour BEH-USERS-5 "A user's production secrets are stored for them, and neve
   contract my answer, unreviewed: OCI Vault is my pick. It is in the same Oracle account as the cluster, so there is no new provider and nothing for us to run, and its software-protected tier costs little or nothing (to confirm on your account). Oracle's access rules can let Kit add a new version of a secret without being allowed to read secret contents, and the cluster reads them through External Secrets
   contract my answer, unreviewed: HashiCorp Vault means either running it ourselves on the cluster (unsealing, backups, upgrades: the admin you wanted to avoid for databases) or paying for HashiCorp's hosted Vault. Pick it if you want to stay portable off Oracle; OpenBao is the same thing without the licence question
   needs-context "OCI Vault (my pick: same account as the cluster, nothing to run) or HashiCorp Vault (portable, but we run it or pay for it)? If you're silent by 2026-11-07, I take OCI Vault and write Kit's side against it, with nothing created in your Oracle account; creating the vault and its access rules stays yours."
+  paused until 2026-11-14
 
 feature FEAT-USER-DATABASES "A database per user, in two tiers"
   in EPIC-KIT-USERS
