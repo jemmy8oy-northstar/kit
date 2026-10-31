@@ -416,3 +416,7 @@ Am I able to act as a test user myself by logging in with a different organisati
 ## 2026-10-31 00:57Z
 
 Where are we at in terms of supporting other users? We have no ai support unless I am also a contributor right? And that would be by the bot. Can you explain how expensive running this would be if we were to support anthropic api using opus 5.5 delegating just as you do? Please can you also audit your own materials and figure out what we can reuse for the generic bot and what we don’t want to leak.
+
+## 2026-10-31 00:58Z
+
+Ai support is higher priority than db support for now we can allow users to manage their own deployments for now
