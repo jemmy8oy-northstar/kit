@@ -169,7 +169,7 @@ behaviour BEH-STREAK-1 "Today counts as a grace day — an unlogged today does n
 behaviour BEH-STREAK-2 "A streak stops at the first missed day"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:CurrentStreak_stops_at_the_first_gap
   priority 5
-  review unreviewed
+  review approved
   serves BEH-HISTORY-1
   actor owner
   contract the current streak ends at the first incomplete day before today
