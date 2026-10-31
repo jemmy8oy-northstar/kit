@@ -709,7 +709,7 @@ behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   review denied Deny backlog cards a placed based on the state they are in
   priority 3
   pending
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -770,6 +770,7 @@ behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should 
   contract the card's page and the Backlog badge say when it will be asked about again
   contract a rung bell overrides the date: the agent answers it as any bell (BEH-BELL-2), and if the answer is to ask him rather than resume, it drops the date so the card is back in his Inbox at once
   contract ordering: no corpus carries a dated `paused` line until the parser that reads it is live in production; the bare lines already in the corpora get their dates in a later pull request, once it is
+  contract done 2026-10-31: the parser went live with kit#579 (its bundle served "Ask again in 2 weeks"), and then the eleven bare `paused` lines across six corpora were dated 2026-11-14, so every paused card leaves his Inbox for 14 days
   contract built 2026-10-31: the parser takes `paused` or `paused until YYYY-MM-DD` and refuses anything else, served as `pausedUntil`; Pause writes today (UTC) plus 14 days, and pausing a paused card re-dates it; the Inbox leaves out a card paused until a later date and offers "Ask again in 2 weeks" beside Resume; the badge and the card's page read "asks again <date>"
   contract the bell half is the agent's (claude-code-bot): when it answers a bell on a dated paused card by asking him, it rewrites the line bare
 
@@ -1269,7 +1270,7 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   review unreviewed
   pending
   priority 4
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1645,7 +1646,7 @@ behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   review approved
   priority 4
   pending
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
