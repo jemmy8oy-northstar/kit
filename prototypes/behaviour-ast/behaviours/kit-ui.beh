@@ -1785,6 +1785,22 @@ behaviour BEH-INBOX-3 "When he asks a question in a note, the answer comes up fi
   contract my assumption: the agent answers a question on the card it is about, and marks that card review requested, with the short answer as the request; a question about no card goes on the card it most concerns
   contract my assumption: the Inbox shows review requests before Kit's own questions (needs-context lines) and before unreviewed proposals, still unseen first within each group
 
+behaviour BEH-INBOX-4 "He can filter his Inbox by project"
+  in FEAT-INBOX
+  layer ux
+  source defined kit.notes.md#2026-10-31-1623
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "kit you should be able to filter projects when going through your inbox"
+  contract built 2026-10-31: one button per project that has a card waiting on him, the same buttons the board uses; the card counter and Skip/Approve/etc. move through only the picked projects, and with none picked the Inbox is as before
+  contract my assumption: he can pick several projects, as on the board, rather than only one
+  contract my assumption: the pick lives in the url as ?project=a,b, like the board's (BEH-BOARD-2), so it survives a reload and can be shared; it is not remembered across visits
+  contract my assumption: the buttons list only projects that had a card for him when the page opened, and the order stays fixed (BEH-INBOX-1): changing the filter never reshuffles, and a card he has acted on or skipped does not come back when the filter widens
+  contract my assumption: "project" is the card's project as the board names it (a `# kit:project` line, else the file's name), so files sharing one project share one button
+
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
 
@@ -1893,6 +1909,10 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   contract found in review: his Kit never read the database before this card, so if the database cannot be read his session and board load as before, with no GitHub shown
   contract "Oh it won't let me install it because it's already installed should I uninstall it and install it with oauth to test the feature?"
   contract my assumption: no uninstalling. GitHub's install page dead-ends for an account that already has the App, so beside "Connect" Settings offers "Already installed? Connect it", which goes straight to GitHub's authorise step and finds the existing installation; a user sees the same link
+  contract "When I click already installed? connect it i get - This GitHub App must be configured with a callback URL. also slightly confused what this is acc for - on my account it is already installed everything is working fine what's left?"
+  contract found: the authorise step sends GitHub back to https://balenthiran.co.uk/kit/, and Kit's GitHub App has no Callback URL registered, so GitHub refuses before Kit is reached. "Sign in with GitHub" (BEH-USERS-10) goes through the same step, so a tester's GitHub sign-in fails the same way. Nothing in Kit can set it: it is on the App's settings page
+  contract what it is for: the board's projects run on the org's installation, which already works and is not what this connects. This connects his personal account, so repos there that carry a corpus show under "From your GitHub". If he keeps no corpus on his personal account, nothing is left for him here
+  needs-context "Set Kit's GitHub App's Callback URL to https://balenthiran.co.uk/kit/ (App settings → General → Callback URL), which fixes this and testers' GitHub sign-in. Do you want your personal GitHub connected at all? If you're silent by 2026-11-07, I take the Connect offer off your own Settings (testers keep theirs), since your board already works without it."
 
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
@@ -2021,6 +2041,62 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   then sees region:KitMain
   contract "Or maybe this is abstracted away from the user? Idk I kind of feel that everything is opt in for a user they should be able to go as high level or as involved as they like"
   contract my assumption: a per-user depth setting (goals only, behaviours, or behaviours and architecture); what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later
+
+# Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
+# my reading, so every one is unreviewed until he rules on it.
+
+decision ADR-FRONTEND-1 "The UI is a React single-page app built with Vite, on the shared design system"
+  part frontend
+  chosen React 19, Vite and react-router 7, with components from @jemmy8oy-northstar/design-system taken as a git-URL dependency on its dev branch
+  considered Redux / RTK Query for data fetching (skipped: there is no OpenAPI client to generate)
+  because it follows web-template, so Kit is not a third way of building a frontend
+  because the design system supplies Button, Card, Badge and Input, and its identity is not Kit's to invent
+  source defined docs/design/ui.md#stack
+  review unreviewed
+
+decision ADR-BACKEND-1 "The backend is ASP.NET Core on .NET, serving the API and the built UI"
+  part backend
+  chosen ASP.NET Core (Kestrel) on .NET 10, one process on one port serving both the API and the built UI bundle
+  considered The Node engine (ui.js, kit.js), which was the original server and is now the specification the C# port is scored against
+  because the port is verified request by request against the Node engine by the conformance goldens, so behaviour did not change when the language did
+  because Node is build-time only: the running container does not need it
+  source defined Dockerfile
+  review unreviewed
+
+decision ADR-DATA-1 "A project's spec is plain-text .beh files in its repo, not rows in a database"
+  part data
+  chosen line-based .beh corpus files in git, written by surgical block edits that leave comments and neighbouring blocks alone
+  considered YAML or JSON for the corpus, which fail a human writing the tree by hand on punctuation alone
+  considered A database holding the corpus, which James parked on kit#41 ("let's stick to git for now and park db")
+  because a corpus stays a file in his repo that he reviews as a diff, which is Kit's central premise
+  source defined docs/design/ui.md#decision-2
+  review unreviewed
+
+decision ADR-DATA-2 "Early-access accounts live in Postgres, optional, and nothing else does"
+  part data
+  chosen a Postgres database, reached through the KIT_DATABASE connection string, holding early-access accounts only
+  because accounts need somewhere that is not the corpus files, and the database was approved on BEH-USERS-4
+  because it is optional: with KIT_DATABASE unset, accounts stay off and Kit keeps its one operator password
+  source defined helm/values.yaml
+  review unreviewed
+
+decision ADR-DEPLOYMENT-1 "Kit ships as one container image, served under a path prefix on the shared host"
+  part deployment
+  chosen one multi-stage Docker image (Node builds the bundle, the .NET SDK publishes the server, the aspnet image serves both), deployed from a Helm chart that ArgoCD reads, at balenthiran.co.uk/kit
+  considered Two images, a .NET backend and an nginx frontend, as the rest of the estate builds them
+  because Kit is one process serving the SPA and the API, so a second image would have nothing to hold
+  because the ingress does not rewrite paths, so the prefix is baked into the bundle at build time through KIT_BASE_PATH
+  source defined Dockerfile
+  review unreviewed
+
+decision ADR-DEPLOYMENT-2 "A deployed Kit commits its edits to kit/hosted and proposes them to dev as one pull request"
+  part deployment
+  chosen hosted write-back: the entrypoint clones the repo, every edit is committed and pushed to the kit/hosted branch, and the Commit button opens one pull request into dev
+  considered Writing the file and never touching git, which stays the behaviour of a local Kit
+  because James asked for a Kit he can use from his phone, which a local-only tool cannot be
+  because nothing reaches dev until that pull request is merged, so git remains the review step
+  source defined docs/design/ui.md#both-defaults-were-later-overruled-by-james-and-that-is-the-queue-working
+  review unreviewed
 
 feature FEAT-FLAGS "Features switched on and off, separately for him and for testers"
   stage problem
