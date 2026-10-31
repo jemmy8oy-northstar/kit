@@ -450,3 +450,9 @@ Kit would benefit from the agent driving some narrative for the user. Some rules
 ## 2026-10-31 16:23Z
 
 kit you should be able to filter projects when going through your inbox
+
+## 2026-10-31 16:26Z
+
+When I click already installed? connect it i get - This GitHub App must be configured with a callback URL
+
+also slightly confused what this is acc for - on my account it is already installed everything is working fine what’s left?
