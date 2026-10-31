@@ -408,3 +408,7 @@ They can also decide which options are not a priority or they do not want Kit wo
 ## 2026-10-31 00:55Z
 
 If direct questions are asked as notes replies can come up in the inbox maybe before the questions asked to the user
+
+## 2026-10-31 00:55Z
+
+Am I able to act as a test user myself by logging in with a different organisation or my personal account?
