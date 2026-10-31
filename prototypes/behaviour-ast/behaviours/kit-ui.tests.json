@@ -559,5 +559,37 @@
   "BEH-INBOX-4": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "narrows the queue and the counter to the projects he picks, and unfiltered is unchanged (BEH-INBOX-4)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "says so when the projects he picked have nothing waiting (BEH-INBOX-4)" }
+  ],
+  "BEH-FLAGS-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_no_line_means_on_for_him_and_off_for_testers" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_line_overrides_the_default" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_malformed_line_is_skipped_so_the_default_stands" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_the_first_good_line_for_a_feature_and_group_wins" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_the_parser_ignores_the_line_as_a_comment_so_main_reads_the_file_unchanged" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_writing_a_switch_adds_one_line_and_leaves_every_other_line_byte_identical" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_second_switch_goes_after_the_first_and_a_change_replaces_in_place" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_setting_back_to_the_default_removes_the_line_and_the_file_is_as_it_was" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_setting_what_the_file_already_says_changes_nothing" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_repeated_line_is_collapsed_to_one_good_one" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_the_writer_refuses_an_unknown_feature_shape_or_group" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_the_operator_sees_every_feature_with_both_switches" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_feature_in_another_file_of_the_kit_project_is_listed_too" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_the_operator_switches_over_the_route_and_the_file_changes" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_signed_in_tester_cannot_write_a_switch_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_a_bad_body_is_a_400_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_1_an_unknown_feature_or_group_is_refused_and_nothing_is_written" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 lists every feature with a You and a Testers switch, defaulting as the server says" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 says a feature with no screen of its own has no visible effect yet" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 posts the named switch when Testers is ticked" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 shows a tester no Features section" }
+  ],
+  "BEH-FLAGS-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_tester_is_served_what_is_off_for_testers_and_not_the_table" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_a_tester" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 leaves the navigation entry of a feature that is off for testers out of their bar" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows the same feature in his bar when it is on for him" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard" }
   ]
 }

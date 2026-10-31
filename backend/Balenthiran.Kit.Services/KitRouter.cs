@@ -175,6 +175,12 @@ public sealed partial class KitRouter(
             return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
         }
 
+        // BEH-FLAGS-1/2: Kit's features switched on and off for him and for testers; a read like the rest.
+        if (pathname == "/api/settings/features")
+        {
+            return Json(200, FeaturesFor(cookie));
+        }
+
         // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
         if (pathname == "/api/activity")
         {
@@ -426,6 +432,14 @@ public sealed partial class KitRouter(
             lock (writeGate)
             {
                 return SetIdle(body);
+            }
+        }
+
+        if (pathname == "/api/settings/features")
+        {
+            lock (writeGate)
+            {
+                return SetSwitch(body);
             }
         }
 
@@ -937,6 +951,101 @@ public sealed partial class KitRouter(
 
         corpora.WriteText(app, result.Text!);
         return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle work to {(chosen.Count == 0 ? "none" : string.Join(", ", chosen))}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>Kit's own features (the files of project <c>kit</c>), in file order, each id once.</summary>
+    private List<(string Id, string Title)> KitFeatures()
+    {
+        var found = new List<(string, string)>();
+        var parser = new CorpusParser();
+        foreach (var app in corpora.Corpora().Order(StringComparer.Ordinal))
+        {
+            try
+            {
+                var corpus = parser.ParseCorpus(corpora.ReadText(app), app);
+                if ((corpus.Project ?? app) != SwitchDirective.App)
+                {
+                    continue;
+                }
+
+                foreach (var f in corpus.Features.Where(f => found.All(x => x.Item1 != f.Id)))
+                {
+                    found.Add((f.Id, f.Title));
+                }
+            }
+            catch (CorpusParseException)
+            {
+                // A file that does not parse lists no features; the projects page already says why.
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// BEH-FLAGS-1/2: the caller's group, the features switched off for it, and (to the operator only)
+    /// every feature with both switches. With a lock, anyone who is not the operator, a caller with no
+    /// session included, is a tester; without one the only caller is the operator on loopback.
+    /// </summary>
+    private FeatureSwitches FeaturesFor(string? cookie)
+    {
+        var isOperator = !lockRequired || UserOf(cookie) == ISessionStore.Operator;
+        var group = isOperator ? SwitchDirective.Operator : SwitchDirective.Testers;
+        var switches = corpora.Corpora().Contains(SwitchDirective.App, StringComparer.Ordinal)
+            ? SwitchDirective.Read(corpora.ReadText(SwitchDirective.App))
+            : [];
+        var features = KitFeatures();
+        return new FeatureSwitches
+        {
+            Group = group,
+            Off = features.Where(f => !SwitchDirective.IsOn(switches, f.Id, group)).Select(f => f.Id).ToList(),
+            Features = isOperator
+                ? features.Select(f => (IFeatureSwitch)new FeatureSwitch
+                {
+                    Id = f.Id,
+                    Title = f.Title,
+                    Operator = SwitchDirective.IsOn(switches, f.Id, SwitchDirective.Operator),
+                    Testers = SwitchDirective.IsOn(switches, f.Id, SwitchDirective.Testers),
+                }).ToList()
+                : null,
+        };
+    }
+
+    /// <summary>
+    /// BEH-FLAGS-1: switch one of Kit's features on or off for the operator or for testers — a
+    /// <c># kit:switch</c> line in Kit's own primary file, committed like any edit. Operator-only, by the
+    /// gate every write sits behind. Named, not toggled, so a double press is a no-op.
+    /// </summary>
+    private KitResponse SetSwitch(JsonElement? body)
+    {
+        if (body is not { ValueKind: JsonValueKind.Object } b
+            || Field(b, "feature") is not { ValueKind: JsonValueKind.String } feature
+            || Field(b, "group") is not { ValueKind: JsonValueKind.String } group
+            || Field(b, "on") is not { ValueKind: JsonValueKind.True or JsonValueKind.False } on)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "send feature (a FEAT- id), group (operator or testers) and on (true or false)" });
+        }
+
+        var app = SwitchDirective.App;
+        if (!corpora.Corpora().Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"the switches live in the corpus named '{app}', which this Kit does not serve" });
+        }
+
+        if (!KitFeatures().Any(f => f.Id == feature.GetString()))
+        {
+            return Json(404, new ApiError { Error = "no-such-feature", Reason = $"Kit has no feature {feature.GetString()}" });
+        }
+
+        var result = writer.SetSwitch(corpora.ReadText(app), feature.GetString()!, group.GetString()!, on.GetBoolean());
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        var who = group.GetString() == SwitchDirective.Operator ? "you" : "testers";
+        return Json(200, GitOutcome(corpora.FullPath(app), $"switch {feature.GetString()} {(on.GetBoolean() ? "on" : "off")} for {who}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>
