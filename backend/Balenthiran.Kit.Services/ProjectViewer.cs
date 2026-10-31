@@ -316,6 +316,8 @@ public sealed class ProjectViewer(
             Idea = p.Idea,
             // Only the primary file (named for its project) can grant: see PromoteDirective.
             Promote = p.Project == app && PromoteDirective.IsGranted(corpora.Read(app)) ? "self" : null,
+            // Same rule for the goal: only the primary file can mark the project maintained.
+            Goal = p.Project == app && GoalDirective.IsMaintained(corpora.Read(app)) ? "maintained" : null,
         };
     }
 

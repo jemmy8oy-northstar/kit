@@ -30,4 +30,7 @@ public interface IProjectSummary
 
     /// <summary><c>"self"</c> when the agent may promote this project's <c>dev</c> to <c>main</c> itself (BEH-SETTINGS-4); <c>null</c> otherwise.</summary>
     string? Promote { get; }
+
+    /// <summary><c>"maintained"</c> when the project is marked as kept going, not worked towards (BEH-NARR-2); <c>null</c> otherwise.</summary>
+    string? Goal { get; }
 }
