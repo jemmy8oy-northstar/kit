@@ -48,6 +48,12 @@ public interface ICorpusWriter
     IWriteResult SetIdleOrder(string text, IReadOnlyList<string> order);
 
     /// <summary>
+    /// Sets one feature's <c># kit:switch</c> line for <c>operator</c> or <c>testers</c> (BEH-FLAGS-1).
+    /// The default is stored as no line. Asking for what the file already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetSwitch(string text, string feature, string group, bool on);
+
+    /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when
     /// the id is absent or any OTHER behaviour or question still <c>serves</c> or <c>cites</c> it.
     /// </summary>

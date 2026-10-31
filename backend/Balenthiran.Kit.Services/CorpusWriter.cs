@@ -426,6 +426,61 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         return ValidatedEdit(text, string.Join('\n', lines));
     }
 
+    /// <summary>
+    /// BEH-FLAGS-1: sets one feature's switch for one group as a <c># kit:switch</c> comment line. The
+    /// default (on for the operator, off for testers) is stored as no line, so setting it back removes
+    /// the line; anything else replaces the first line for that feature and group, drops repeats, or is
+    /// added after the last switch line (else after the leading directives). Every other line is untouched.
+    /// </summary>
+    public IWriteResult SetSwitch(string text, string feature, string group, bool on)
+    {
+        if (!SwitchDirective.IsFeatureId(feature))
+        {
+            return WriteResult.Refuse("bad-feature", "a feature id looks like FEAT-NAME");
+        }
+
+        if (!SwitchDirective.Groups.Contains(group))
+        {
+            return WriteResult.Refuse("bad-group", $"group must be one of {string.Join(", ", SwitchDirective.Groups)}");
+        }
+
+        var lines = text.Split('\n').ToList();
+        var existing = SwitchDirective.Lines([.. lines], feature, group).ToList();
+        if (on == SwitchDirective.DefaultFor(group))
+        {
+            if (existing.Count == 0)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            foreach (var i in existing.AsEnumerable().Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else if (existing.Count > 0)
+        {
+            var wanted = SwitchDirective.Line(feature, group, on);
+            if (existing.Count == 1 && lines[existing[0]].TrimEnd('\r') == wanted)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            lines[existing[0]] = wanted;
+            foreach (var i in existing.Skip(1).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else
+        {
+            var last = SwitchDirective.LastLine([.. lines]);
+            lines.Insert((last >= 0 ? last : HeaderAnchor(lines)) + 1, SwitchDirective.Line(feature, group, on));
+        }
+
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
     /// <summary>The index of the last leading <c># kit:</c> directive line, or -1 when the header has none.</summary>
     private static int HeaderAnchor(List<string> lines)
     {
