@@ -95,3 +95,7 @@ Oh I didn’t mean the volume is on kit I meant the volume is on snip it
 ## 2026-10-29 08:05Z
 
 I just wrote something I want to take it backish. Only as an experimental feature should scripts come from snip it. For general access it’s just written in the app
+
+## 2026-10-31 01:08Z · BEH-EDITION-3
+
+Let’s pause for now I don’t have any footage to add yet. But when I do we can add it

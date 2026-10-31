@@ -415,6 +415,7 @@ behaviour BEH-HIGH-5 "Each song shows its BPM"
 behaviour BEH-COST-1 "Tracks keeps working for James without paying for more than he uses"
   in FEAT-CONNECT
   source defined tracks.notes.md#2026-10-26-2305
+  review approved
   priority 3
   pending
   needs-context "Not with Garmin, sadly: its sign-in comes only with the developer program that is turning personal apps away. A Strava-free sign-in could be GitHub, as Kit does, or a passkey on your phone. Want one of those? If no answer by 2026-11-07, sign-in stays on Strava and I build nothing more here."

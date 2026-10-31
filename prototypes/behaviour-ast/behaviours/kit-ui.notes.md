@@ -49,3 +49,7 @@ Oh I haven’t heard of openbao or infiacal. I was thinking oci or hashicorp
 ## 2026-10-31 01:01Z · BEH-GATE-H2
 
 What does this mean?
+
+## 2026-10-31 01:07Z · BEH-USERS-6
+
+For all of these would it be better to let the user integrate their own account or spin up instances for the user? Which would be better for our pricing model as well? I guess we could price the user for what they use. Do you think neon would be good for us?
