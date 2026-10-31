@@ -2023,7 +2023,7 @@ behaviour BEH-LOADING-2 "On the installed iPhone app, pulling the page down relo
 # streamline the experience".
 
 feature FEAT-ARCH "Architecture design, as deep as the user wants to go"
-  stage problem
+  stage development
 
 behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts and the decisions behind them"
   in FEAT-ARCH
@@ -2031,7 +2031,6 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
