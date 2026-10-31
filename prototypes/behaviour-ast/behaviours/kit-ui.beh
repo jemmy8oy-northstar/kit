@@ -2184,7 +2184,7 @@ feature FEAT-SPEC-AGENT "A spec agent that talks the project through with the us
   stage problem
 
 behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit projects with test health, or is offered a new one"
-  in EPIC-KIT-USERS
+  in FEAT-USER-SIGNUP
   layer ux
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
@@ -2257,7 +2257,7 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   contract my assumption: it needs a model API key and a spend cap set by him first, the same gate as BEH-USERS-9, so the page is built switched off until both are set
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
-  in EPIC-KIT-USERS
+  in FEAT-USER-DATABASES
   layer ux
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
