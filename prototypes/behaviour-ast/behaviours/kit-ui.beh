@@ -250,7 +250,7 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 behaviour BEH-GATE-H2 "Every note box warns that what you type is public"
   in FEAT-NOTES
   source inferred claude-code-bot#35
-  review requested your notes are saved to the public kit repo on GitHub, so anyone can read them. It is the one-line warning already under each note box. Approve to keep it, deny if you'd rather not
+  review approved
   priority 3
   actor engineer
   when opens page:KitProject
@@ -742,6 +742,36 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   contract my assumption: a rung bell lifts a paused card above every priority, under the Rung heading and still badged paused, because ringing it is how he asks whether to resume (BEH-BELL-3); the bell never un-pauses it, only Resume does
   contract ordering: no corpus carries a `paused` line until the parser that reads it is live in production, or production refuses the whole file; the first one, BEH-BOARD-13, was paused after kit#405 put it there
 
+behaviour BEH-BOARD-25 "Approving a paused card resumes it, unless something still blocks it"
+  in FEAT-BOARD
+  layer technical
+  source defined kit.notes.md#2026-10-31-0942
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitInbox
+  contract "Kit approving unpauses if there are no blockers"
+  contract approving a paused card removes its `paused` line in the same commit as the approval, so it moves from Backlog to the Queue without a second press
+  contract my assumption: the one blocker a card can carry today is a needs-context line (BEH-BOARD-17), because it means the agent still needs his answer before it can build; approving a paused card that has one approves it and leaves it paused, and the write says why
+  contract my assumption: approving a card that is not paused does exactly what it did before; denying a paused card still drops it, and leaves the `paused` line where it is
+
+behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should be asked about again"
+  in FEAT-BOARD
+  layer technical
+  source defined kit.notes.md#2026-10-31-0946
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitInbox
+  contract "Kit pause has some reask date tag or soemthing so it doesn't keep appearing in the inbox whilst it's paused. I guess bell can override this"
+  contract my assumption: the date is on the line, `paused until 2026-11-14`, so the corpus says it and every reader sees the same date; a bare `paused` still parses, and means "ask again now"
+  contract my assumption: Pause writes a date 14 days out; the card stays on the Backlog under Paused, and the Inbox leaves it out until that date, then shows it again with Resume and Pause (which pushes the date another 14 days)
+  contract the card's page and the Backlog badge say when it will be asked about again
+  contract a rung bell overrides the date: the agent answers it as any bell (BEH-BELL-2), and if the answer is to ask him rather than resume, it drops the date so the card is back in his Inbox at once
+  contract ordering: no corpus carries a dated `paused` line until the parser that reads it is live in production; the bare lines already in the corpora get their dates in a later pull request, once it is
+
 behaviour BEH-BOARD-17 "Every card on the board says whose move it is: his, or the agent's"
   in FEAT-BOARD
   source defined kit-ui.beh#BEH-BOARD-16
@@ -1213,7 +1243,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
   in FEAT-USER-SIGNUP
   source defined kit.notes.md#2026-10-27-1259
-  review requested yes, you can be your own test user with your personal GitHub account, not with another organisation. Make a user in Settings, sign in as them in a private window, and connect your personal GitHub (or a second one, if you already linked yours to yourself in Settings). Approve to put this card back as it was
+  review approved
   priority 4
   actor engineer
   when opens page:KitProjects
@@ -1850,7 +1880,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-2111
-  review requested it is live in Settings, seeded with your four grants (kit, language-vocab, earnyourbeers, tracks). The agent only obeys the switch once you merge claude-code-bot#128, which points its rules at it. Approve if the switch should be in charge, or deny and the thread grants stay the record
+  review approved
   priority 4
   actor engineer
   when opens page:KitSettings
@@ -1866,7 +1896,7 @@ behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to 
 behaviour BEH-SETTINGS-5 "Settings says how busy the agent should be when nothing is asked of it, and he can change it"
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-28-1505
-  review requested it is live in Settings, set to "work on test health" (the default). The agent only obeys it once you merge claude-code-bot#129, which points its rules at it; until then it does the default anyway. Approve if the four choices are right, or deny and say what you want instead
+  review approved
   priority 4
   actor engineer
   when opens page:KitSettings

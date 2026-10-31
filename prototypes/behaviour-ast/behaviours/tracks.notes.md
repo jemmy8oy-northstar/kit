@@ -49,3 +49,7 @@ Are these not secrets? Should these be stored in vault?
 ## 2026-10-31 01:09Z · BEH-HIGH-5
 
 Keep paused
+
+## 2026-10-31 09:35Z · BEH-ACCOUNT-3
+
+Would be more secure all in vault right or is that overkill?
