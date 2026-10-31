@@ -245,7 +245,7 @@ public sealed class CorpusParser : ICorpusParser
 
             // BEH-ARCH-1 slice B2: a behaviour names the architecture decision it rests
             // on. Repeatable; the same id twice is refused, as `in` refuses it. Whether
-            // the decision exists is a finding (ProjectReporter), not a parse error.
+            // the decision exists is a finding (ProjectViewer), not a parse error.
             if (kw == "depends-on" && cur is not null)
             {
                 if (!DependsOnRest.IsMatch(rest)) throw new CorpusParseException($"{at}: depends-on wants a decision id (ADR-…), got: {rest}");
