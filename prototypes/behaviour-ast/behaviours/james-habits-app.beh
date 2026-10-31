@@ -145,7 +145,7 @@ behaviour BEH-ARCHIVE-1 "An archived habit disappears from the list but stays re
 behaviour BEH-ARCHIVE-2 "Archived habits can be asked for explicitly"
   source inferred backend/Balenthiran.Habits.Tests/HabitServiceTests.cs:GetAll_excludes_archived_unless_asked
   priority 5
-  review unreviewed
+  review approved
   actor owner
   contract GET /api/habits takes a flag that includes archived habits
   asks "Should the Manage screen gain a view of archived habits, or should the includeArchived flag go?"
