@@ -46,7 +46,7 @@ behaviour BEH-SHARE-1 "The project is shared with his first test user, and the b
   in FEAT-PROJECT
   layer technical
   source defined kit.notes.md#2026-10-29-0809
-  review unreviewed
+  review approved
   pending
   priority 2
   actor owner
