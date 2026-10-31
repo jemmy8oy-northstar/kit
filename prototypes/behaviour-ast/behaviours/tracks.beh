@@ -134,7 +134,7 @@ behaviour BEH-CONNECT-1 "A runner signs in to Tracks with their Strava account"
   when opens page:Home
   when activates button:SignInWithStrava
   then sees region:Runs
-  contract signed out, the home page shows the hero and one action, Sign in with Strava, with a note that Tracks only reads Strava and Spotify
+  contract signed out, the home page shows the hero and one action, Sign in with Strava, with a note that Tracks only reads Strava and Spotify, and only writes to Strava if the runner turns that on (BEH-SHARE-2)
   contract the button goes to Strava and returns to the home page signed in. Signing in is how Strava gets connected (BEH-ACCOUNT-1), so there is no separate Connect page
   contract read-only: Tracks never writes to Strava unless BEH-SHARE-2 is approved
   contract unreviewed because the single-page flow is my choice; it replaced the Connect page this spec first named
@@ -325,12 +325,15 @@ behaviour BEH-SHARE-2 "The songs can be written into the Strava activity's descr
   in FEAT-SHARE
   layer technical
   source inferred tracks#1
+  source defined tracks.notes.md#2026-10-31-1646
   review approved
-  pending
   priority 3
   actor runner
   contract only when the runner turns it on: it is the one write Tracks would make to Strava
-  needs-context "Writing to Strava needs its activity:write permission; today Tracks asks only for read, so every runner would have to connect Strava again. Add it? If no answer by 2026-11-09, I leave it out and the songs stay on the share card only."
+  contract "I thought we agreed yes add it": his answer to adding Strava's activity:write permission
+  contract built (tracks#33): sign-in asks for activity:write beside activity:read_all, with only read required, and keeps the scope Strava granted. A checkbox on Home, off by default, says "Add songs to my Strava activity description"; without the write grant it is disabled beside a "Reconnect Strava" link
+  contract built: after a run's songs are matched, a plain-text block between "── Tracks ──" and "── end Tracks ──" goes after the runner's own text; a later sync replaces only that block, writes nothing when it would not change, and a Strava error never stops the sync
+  contract my assumption: only runs synced after the runner turns it on get a block; a Garmin upload has no Strava activity, so it never writes
 
 # ═══ HIGHLIGHTS — his questions in Kit, 2026-10-24 ═══
 # Each answers "is Tracks able to…" with yes or no and how, as a proposal he can deny.

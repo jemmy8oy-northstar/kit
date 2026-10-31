@@ -6,7 +6,7 @@ import BoardViews from '../components/BoardViews'
 import { hueOf } from '../board'
 import { featureHref } from '../features'
 import { loadRealProjects } from '../realProjects'
-import { COLUMNS, UNSTAGED, stageCards } from '../stages'
+import { COLUMNS, columnFor, stageCards } from '../stages'
 
 /** Every real project's features, with what is built beneath each. */
 async function loadStages() {
@@ -27,7 +27,7 @@ export default function Stages() {
       <BoardViews />
       <p className="muted">
         Every feature by the stage it is at: problem statement, UX requirements, business logic,
-        development, then UI requirements. A feature is staged once its block in the corpus has a
+        development, then UI requirements; once everything under it is built it moves to Done. A feature is staged once its block in the corpus has a
         <code> stage</code> line; until then it is Unstaged.
       </p>
       <ResourceView resource={loaded}>
@@ -42,7 +42,7 @@ export default function Stages() {
             ))}
             <div className="board" role="region" aria-label="Feature stages">
               {COLUMNS.map((stage) => {
-                const here = cards.filter((c) => (c.feature.stage ?? UNSTAGED) === stage.id)
+                const here = cards.filter((c) => columnFor(c) === stage.id)
                 return (
                   <section key={stage.id} aria-labelledby={`stage-${stage.id}`}>
                     <h2>
