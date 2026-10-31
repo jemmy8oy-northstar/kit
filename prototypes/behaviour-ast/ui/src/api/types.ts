@@ -209,6 +209,8 @@ export interface Epic {
   id: string
   title: string
   at: string
+  /** Lower is more urgent (BEH-NARR-1). The grammar does not serve one yet; absent today. */
+  priority?: number
 }
 
 /** The five stages, in his order (BEH-STAGE-1). */
