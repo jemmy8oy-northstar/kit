@@ -217,7 +217,7 @@ behaviour BEH-SETTLE-2 "Settlement is shown as a report you must dismiss before 
   in FEAT-LEAGUE
   layer ux
   source inferred lib/ui/dialogs/weekly_settlement_dialog.dart:98
-  review unreviewed
+  review approved
   priority 3
   actor athlete
   when opens page:Dashboard
