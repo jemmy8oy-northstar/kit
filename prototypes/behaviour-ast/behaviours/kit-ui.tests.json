@@ -629,5 +629,13 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/DecisionsList.test.tsx", "title": "approves: posts to the decision route, drops the Unreviewed badge and shows Approved" },
     { "file": "prototypes/behaviour-ast/ui/src/components/DecisionsList.test.tsx", "title": "denies only with a correction, sends it, and shows it on the card" },
     { "file": "prototypes/behaviour-ast/ui/src/components/DecisionsList.test.tsx", "title": "shows the server’s refusal and leaves the card unreviewed" }
+  ],
+  "BEH-COMMENT-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: a cited comment stays on its item page and links the card that answered it" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: an answered comment does not count as open on its item page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: an uncited comment on an item page says it has not been picked up yet" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: says nothing either way while the citations are unknown" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: the project page still archives a cited note and shows no picked-up line" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "BEH-COMMENT-2: a comment a card cites says which card, and one nobody cites says so" }
   ]
 }
