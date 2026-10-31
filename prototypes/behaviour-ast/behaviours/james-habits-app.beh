@@ -207,7 +207,7 @@ behaviour BEH-HISTORY-2 "The history window length is requested by the caller, d
 behaviour BEH-HISTORY-3 "The history window parameter is named historyDays, not days"
   source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:68
   priority 5
-  review unreviewed
+  review approved
   serves BEH-HISTORY-1
   actor owner
   contract the query parameter is `historyDays`, and `?days=` is silently ignored
