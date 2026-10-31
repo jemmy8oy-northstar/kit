@@ -130,7 +130,7 @@ behaviour BEH-ORDER-1 "A newly created habit is appended to the end of the displ
 behaviour BEH-ARCHIVE-1 "An archived habit disappears from the list but stays retrievable by id"
   source inferred backend/Balenthiran.Habits.Tests/HabitApiTests.cs:Archive_hides_the_habit_but_keeps_it_retrievable
   priority 5
-  review unreviewed
+  review approved
   serves BEH-MANAGE-1
   actor owner
   contract DELETE /api/habits/{id} archives rather than deletes
