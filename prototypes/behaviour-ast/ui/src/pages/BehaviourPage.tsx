@@ -107,6 +107,28 @@ function Detail({
         </p>
       )}
       <BellButton app={project.app} item={behaviour.id} />
+      {/* BEH-ARCH-1 slice B2: the decisions this rests on, each a link to its card on the Architecture tab. */}
+      {behaviour.dependsOn && behaviour.dependsOn.length > 0 && (
+        <section aria-label="Depends on">
+          <h2>Depends on</h2>
+          <ul>
+            {behaviour.dependsOn.map((did) => {
+              const decision = project.decisions?.find((d) => d.id === did)
+              return (
+                <li key={did}>
+                  {decision ? (
+                    <Link to={`/projects/${encodeURIComponent(project.app)}?tab=architecture#${did}`}>
+                      {did} {decision.title}
+                    </Link>
+                  ) : (
+                    <span className="muted">{did} (no such decision in this corpus)</span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
       {broad && (
         <p className="muted" data-testid="broad">
           Could be a feature ({broad}). The agent will propose the split for you to review.

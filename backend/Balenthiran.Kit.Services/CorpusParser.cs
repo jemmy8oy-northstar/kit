@@ -73,6 +73,7 @@ public sealed class CorpusParser : ICorpusParser
     private static readonly Regex EpicLine = new($@"^epic[{Ws}]+(EPIC-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex DecisionLine = new($@"^decision[{Ws}]+(ADR-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
+    private static readonly Regex DependsOnRest = new(@"^ADR-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex InEpic = new(@"^EPIC-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex SourceRest = new($@"^(defined|inferred)(?:[{Ws}]+(.+))?\z", RegexOptions.Compiled);
@@ -239,6 +240,22 @@ public sealed class CorpusParser : ICorpusParser
                 }
 
                 tags.Add(new IdRef { Id = rest, At = at });
+                continue;
+            }
+
+            // BEH-ARCH-1 slice B2: a behaviour names the architecture decision it rests
+            // on. Repeatable; the same id twice is refused, as `in` refuses it. Whether
+            // the decision exists is a finding (ProjectReporter), not a parse error.
+            if (kw == "depends-on" && cur is not null)
+            {
+                if (!DependsOnRest.IsMatch(rest)) throw new CorpusParseException($"{at}: depends-on wants a decision id (ADR-…), got: {rest}");
+                var deps = cur.DependsOn ??= [];
+                if (deps.Find(t => t.Id == rest) is { } again)
+                {
+                    throw new CorpusParseException($"{at}: already depends-on {rest} at {again.At}");
+                }
+
+                deps.Add(new IdRef { Id = rest, At = at });
                 continue;
             }
 

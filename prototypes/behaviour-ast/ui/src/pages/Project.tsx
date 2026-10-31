@@ -85,7 +85,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         schedule={<SchedulePanel apps={[project.app]} />}
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
-        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} /> : null}
+        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} behaviours={project.behaviours.map((b) => ({ ...b, app: project.app }))} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
@@ -418,7 +418,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         }
         schedule={<SchedulePanel apps={files.map((f) => f.app)} />}
         principles={principles.length ? <PrinciplesList principles={principles} /> : null}
-        architecture={decisions.length ? <DecisionsList decisions={decisions} /> : null}
+        architecture={decisions.length ? <DecisionsList decisions={decisions} behaviours={files.flatMap((f) => f.behaviours.map((b) => ({ ...b, app: f.app })))} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />

@@ -74,6 +74,13 @@ public sealed class BehaviourView : IBehaviourView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? OnDev { get; init; }
 
+    // BEH-ARCH-1 slice B2: the decision ids it rests on, from `depends-on` lines. Absent when none.
+    [JsonPropertyOrder(31)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? DependsOn { get; init; }
+
+    IReadOnlyList<string> IBehaviourView.DependsOn => (IReadOnlyList<string>?)DependsOn ?? [];
+
     IReadOnlyList<string> IBehaviourView.In => In;
 
     IReadOnlyList<IStepView> IBehaviourView.Steps => Steps;

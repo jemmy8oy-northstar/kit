@@ -840,3 +840,36 @@ describe('a needs-context line', () => {
     expect(screen.queryByTestId('needs-context')).toBeNull()
   })
 })
+
+// ── BEH-ARCH-1 slice B2: the decision a behaviour depends on ────────────────
+
+describe('a depends-on line', () => {
+  const decision = {
+    id: 'ADR-DATA-1', title: 'Data is files', part: 'data', chosen: 'files', considered: [], because: ['b'],
+    review: { state: 'unreviewed', note: null }, source: { origin: 'defined', ref: null }, at: 'x.beh:1',
+  }
+
+  it('lists each decision with its title, linked to the Architecture tab (BEH-ARCH-1)', async () => {
+    renderScripted(
+      [{ ok: true, status: 200, body: { ...withBehaviour({ dependsOn: ['ADR-DATA-1'] }), decisions: [decision] } }],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    const link = await screen.findByRole('link', { name: 'ADR-DATA-1 Data is files' })
+    expect(link).toHaveAttribute('href', '/projects/snip-it?tab=architecture#ADR-DATA-1')
+  })
+
+  it('says so, plainly, when the decision is not in the corpus (BEH-ARCH-1)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({ dependsOn: ['ADR-GONE-9'] }) }], 'snip-it', 'BEH-HOME-1')
+
+    expect(await screen.findByText('ADR-GONE-9 (no such decision in this corpus)')).toBeInTheDocument()
+  })
+
+  it('shows no Depends on section when there is none (BEH-ARCH-1)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({}) }], 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByRole('button', { name: 'Approve' })
+    expect(screen.queryByRole('region', { name: 'Depends on' })).toBeNull()
+  })
+})

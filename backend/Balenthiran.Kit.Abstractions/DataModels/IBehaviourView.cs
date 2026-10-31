@@ -42,6 +42,9 @@ public interface IBehaviourView
     /// <summary>Parent feature ids (kit#237); empty when untagged.</summary>
     IReadOnlyList<string> In { get; }
 
+    /// <summary>Decision ids it rests on (BEH-ARCH-1 slice B2); empty when none.</summary>
+    IReadOnlyList<string> DependsOn { get; }
+
     /// <summary>1 (first) to 5, from a <c>priority</c> line (kit#284); null when there is none.</summary>
     int? Priority { get; }
 }
