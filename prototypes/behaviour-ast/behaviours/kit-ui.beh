@@ -1213,7 +1213,7 @@ behaviour BEH-USERS-1 "An early-access user signs in with a username and passwor
 behaviour BEH-USERS-10 "Once a test user has connected their GitHub, they sign in with GitHub"
   in FEAT-USER-SIGNUP
   source defined kit.notes.md#2026-10-27-1259
-  review requested yes, you can be your own test user with your personal GitHub account, not with another organisation. Make a user in Settings, sign in as them in a private window, and connect your personal GitHub (or a second one, if you already linked yours to yourself in Settings). Approve to put this card back as it was
+  review approved
   priority 4
   actor engineer
   when opens page:KitProjects
