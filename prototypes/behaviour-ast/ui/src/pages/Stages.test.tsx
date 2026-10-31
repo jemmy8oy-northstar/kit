@@ -36,12 +36,17 @@ const details: Record<string, { features: Feature[]; behaviours: Behaviour[] }> 
       feat('FEAT-BUILDING', { stage: 'development' }),
       feat('FEAT-PART', { in: ['FEAT-BUILDING'] }),
       feat('FEAT-PAGE'),
+      feat('FEAT-SHIPPED', { stage: 'development' }),
+      feat('FEAT-HELD', { stage: 'development' }),
     ],
     behaviours: [
       beh('A-1', { in: ['FEAT-BUILDING'] }),
       beh('A-2', { in: ['FEAT-PART'], pending: true }),
       beh('A-3', { in: ['FEAT-PART'] }),
       beh('A-UI', { in: ['FEAT-PROBLEM'], layer: 'ui', pending: true }),
+      beh('A-4', { in: ['FEAT-SHIPPED'] }),
+      beh('A-5', { in: ['FEAT-HELD'] }),
+      beh('A-6', { in: ['FEAT-HELD'], pending: true, paused: true }),
     ],
   },
   'kit-ui': { features: [feat('FEAT-UX', { stage: 'ux' })], behaviours: [] },
@@ -89,6 +94,7 @@ describe('Stages', () => {
       'Business logic',
       'Development',
       'UI requirements',
+      'Done',
     ])
     expect((await stage('Problem statement')).getByText('FEAT-PROBLEM')).toBeInTheDocument()
     expect((await stage('Development')).getByText('FEAT-BUILDING')).toBeInTheDocument()
@@ -111,6 +117,19 @@ describe('Stages', () => {
     expect(col.getByText('FEAT-PART')).toBeInTheDocument()
     expect(col.getByText('FEAT-PAGE').closest('.board-card')).toHaveClass(`hue-${hueOf('alpha')}`)
     expect(col.queryByText('FEAT-PROBLEM')).not.toBeInTheDocument()
+  })
+
+  it('puts a feature whose behaviours are all built in a last Done column, and keeps one with a paused behaviour or none in its stage (BEH-STAGE-12)', async () => {
+    renderStages()
+    const board = await screen.findByRole('region', { name: 'Feature stages' })
+    const heads = within(board).getAllByRole('heading', { level: 2 })
+    expect(heads[heads.length - 1].firstChild!.textContent).toBe('Done')
+    const done = await stage('Done')
+    expect(done.getByText('FEAT-SHIPPED')).toBeInTheDocument()
+    expect(done.queryByText('FEAT-HELD')).not.toBeInTheDocument()
+    expect(done.queryByText('FEAT-PAGE')).not.toBeInTheDocument()
+    expect((await stage('Development')).getByText('FEAT-HELD')).toBeInTheDocument()
+    expect((await stage('Development')).queryByText('FEAT-SHIPPED')).not.toBeInTheDocument()
   })
 
   it('links a card to its feature page and colours it by project (BEH-STAGE-1)', async () => {
@@ -136,6 +155,22 @@ describe('Stages', () => {
 })
 
 describe('stage rules', () => {
+  it('is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)', () => {
+    const features = [feat('FEAT-A', { stage: 'ui' }), feat('FEAT-B', { stage: 'ui' }), feat('FEAT-C', { stage: 'ui' }), feat('FEAT-D', { stage: 'ui' })]
+    const behaviours = [
+      beh('A1', { in: ['FEAT-A'] }),
+      beh('B1', { in: ['FEAT-B'] }),
+      beh('B2', { in: ['FEAT-B'], needsContext: 'a secret' }),
+      beh('C1', { in: ['FEAT-C'], review: { state: 'denied', note: null } }),
+    ]
+    expect(stageCards('app', 'app', features, behaviours).map((c) => [c.feature.id, c.done])).toEqual([
+      ['FEAT-A', true],
+      ['FEAT-B', false],
+      ['FEAT-C', false],
+      ['FEAT-D', false],
+    ])
+  })
+
   it('counts a behaviour under two staged features once in each, and a stage-less one gets a card too (BEH-STAGE-7)', () => {
     const features = [feat('FEAT-A', { stage: 'logic' }), feat('FEAT-B', { stage: 'development' }), feat('FEAT-C')]
     const behaviours = [beh('X', { in: ['FEAT-A', 'FEAT-B'], pending: true })]
