@@ -432,3 +432,9 @@ Kit pause has some reask date tag or soemthing so it doesn’t keep appearing in
 ## 2026-10-31 09:48Z
 
 Kit reads comments to see if it needs to respond to them
+
+## 2026-10-31 10:39Z
+
+Maybe kit needs another layer to its ux ui business logic spec state. Maybe it needs an architecture design page. Or maybe this is abstracted away from the user? Idk I kind of feel that everything is opt in for a user they should be able to go as high level or as involved as they like. I think kit system currently requires architecture design so we should build the feature out.
+
+Can you also build a way for features to be toggled on and off for myself and for users as two separate user groups. This way we can be very experimental but can customise the testers experience to be more minimal
