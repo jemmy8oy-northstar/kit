@@ -96,7 +96,7 @@ behaviour BEH-STATUS-2 "The /status page shows the site's work as lanes on a boa
   review denied Let’s remove the status board we don’t need this anymore
   priority 4
   pending
-  paused
+  paused until 2026-11-14
   actor visitor
   when opens page:Status
   then sees region:Lanes

@@ -66,7 +66,7 @@ behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
   review approved
   priority 5
   pending
-  paused
+  paused until 2026-11-14
   actor owner
   when opens page:Manage
   then sees button:AddHabit
@@ -76,7 +76,7 @@ behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current 
   source defined docs/DESIGN.md#mvp-5
   priority 5
   pending
-  paused
+  paused until 2026-11-14
   actor owner
   when opens page:History
   then sees region:CompletionGrid

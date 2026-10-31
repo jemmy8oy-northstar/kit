@@ -257,7 +257,7 @@ behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entr
   priority 3
   actor visitor
   pending
-  paused
+  paused until 2026-11-14
   contract "Fine to park maybe also backlog": parked pending a defamation review (whos-accountable#5)
   contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but this card was parked for its own reason, so it is paused rather than asked about again; Resume brings it back
 
@@ -269,7 +269,7 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   priority 3
   actor visitor
   pending
-  paused
+  paused until 2026-11-14
   contract "sentiment as a backlog" (whos-accountable#6)
   contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but he asked for this card "as a backlog", so it is paused rather than asked about again; Resume brings it back
   contract sentiment never feeds the evidence score: crowd voting invites brigading and defamation risk
