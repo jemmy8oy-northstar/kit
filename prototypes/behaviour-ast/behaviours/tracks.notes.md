@@ -41,3 +41,11 @@ Tracks supports garmin
 ## 2026-10-29 08:07Z · BEH-COST-1
 
 Is there anyway we could do a similar Garmin oauth style sign in?
+
+## 2026-10-31 00:51Z · BEH-ACCOUNT-3
+
+Are these not secrets? Should these be stored in vault?
+
+## 2026-10-31 01:09Z · BEH-HIGH-5
+
+Keep paused

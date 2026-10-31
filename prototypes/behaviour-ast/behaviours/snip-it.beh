@@ -394,6 +394,7 @@ behaviour BEH-EDITION-3 "Studio: a take can be saved to snip-it's server, and ne
   pending
   needs-context "You merged snip-it#69, so saving is built but switched off. Turn it on, which adds a 50Gi volume to snip-it in the cluster? I leave it off."
   paused
+  contract his word (snip-it.notes.md#2026-10-31-0108): "Let's pause for now I don't have any footage to add yet. But when I do we can add it". So saving stays off and the card stays paused until he has footage and resumes it
   actor creator
   contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default" (snip-it.notes.md, 2026-10-21 16:49Z): a take leaves the phone only when he chooses Save on it
   contract "I didn't mean the volume is on kit I meant the volume is on snip it": a saved take is stored on a volume belonging to snip-it's server, not Kit's
