@@ -748,13 +748,13 @@ behaviour BEH-BOARD-25 "Approving a paused card resumes it, unless something sti
   source defined kit.notes.md#2026-10-31-0942
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitInbox
   contract "Kit approving unpauses if there are no blockers"
   contract approving a paused card removes its `paused` line in the same commit as the approval, so it moves from Backlog to the Queue without a second press
-  contract my assumption: the one blocker a card can carry today is a needs-context line (BEH-BOARD-17), because it means the agent still needs his answer before it can build; approving a paused card that has one approves it and leaves it paused, and the write says why
+  contract my assumption: the one blocker a card can carry today is a needs-context line (BEH-BOARD-17), because it means the agent still needs his answer before it can build; approving a paused card that has one approves it and leaves it paused
   contract my assumption: approving a card that is not paused does exactly what it did before; denying a paused card still drops it, and leaves the `paused` line where it is
+  contract built 2026-10-31: CorpusWriter.SetReview drops a dated or bare `paused` line when the state is approved and the card has no needs-context line, in the one write the approval makes, so the Inbox, the card's page and the board all get it
 
 behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should be asked about again"
   in FEAT-BOARD
@@ -762,7 +762,6 @@ behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should 
   source defined kit.notes.md#2026-10-31-0946
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitInbox
   contract "Kit pause has some reask date tag or soemthing so it doesn't keep appearing in the inbox whilst it's paused. I guess bell can override this"
@@ -771,6 +770,8 @@ behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should 
   contract the card's page and the Backlog badge say when it will be asked about again
   contract a rung bell overrides the date: the agent answers it as any bell (BEH-BELL-2), and if the answer is to ask him rather than resume, it drops the date so the card is back in his Inbox at once
   contract ordering: no corpus carries a dated `paused` line until the parser that reads it is live in production; the bare lines already in the corpora get their dates in a later pull request, once it is
+  contract built 2026-10-31: the parser takes `paused` or `paused until YYYY-MM-DD` and refuses anything else, served as `pausedUntil`; Pause writes today (UTC) plus 14 days, and pausing a paused card re-dates it; the Inbox leaves out a card paused until a later date and offers "Ask again in 2 weeks" beside Resume; the badge and the card's page read "asks again <date>"
+  contract the bell half is the agent's (claude-code-bot): when it answers a bell on a dated paused card by asking him, it rewrites the line bare
 
 behaviour BEH-BOARD-17 "Every card on the board says whose move it is: his, or the agent's"
   in FEAT-BOARD

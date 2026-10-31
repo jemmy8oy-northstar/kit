@@ -23,7 +23,7 @@ export function localDate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
-export const keyOf =(c: InboxCard) => `${c.app}/${c.b.id}`
+export const keyOf = (c: InboxCard) => `${c.app}/${c.b.id}`
 
 /**
  * Every card whose move is his, across every project (BEH-INBOX-1 on BEH-BOARD-17): `ownerOf` decides,

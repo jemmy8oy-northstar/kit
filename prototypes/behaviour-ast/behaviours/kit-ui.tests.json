@@ -82,6 +82,19 @@
   "BEH-BOARD-14": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "starts each run of a ranked column with a heading that counts it, so the order can be read (BEH-BOARD-14)" }
   ],
+  "BEH-BOARD-25": [
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_25_approving_a_paused_card_with_nothing_blocking_it_resumes_it_in_the_same_write" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_25_a_needs_context_line_keeps_an_approved_card_paused" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_25_denying_a_paused_card_or_approving_an_unpaused_one_leaves_pause_as_it_was" }
+  ],
+  "BEH-BOARD-26": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "a card paused until a later date leaves the inbox; a bare pause or a date reached stays (BEH-BOARD-26)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "a paused card offers \"Ask again in 2 weeks\", which pauses it again so the server re-dates it (BEH-BOARD-26)" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_26_a_bare_paused_has_no_date_and_a_dated_one_carries_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_26_a_malformed_paused_until_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_26_pausing_writes_the_date_repausing_replaces_it_and_resuming_removes_the_line" },
+    { "file": "backend/Balenthiran.Kit.Tests/PausedTests.cs", "title": "BEH_BOARD_26_the_pause_route_dates_it_fourteen_days_from_the_injected_today" }
+  ],
   "BEH-BOARD-16": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "holds a paused card in Backlog, not the Queue, under a Paused heading with a paused badge, and a rung bell still lifts it (BEH-BOARD-16, BEH-BOARD-18)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "keeps a paused behaviour in Backlog even when a schedule lists it (BEH-BOARD-16)" },
