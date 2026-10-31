@@ -41,3 +41,7 @@ This is not about Kubernetes secrets. The future direction is we use some kind o
 ## 2026-10-29 08:04Z · BEH-USERS-6
 
 Do you have any other suggestions here?
+
+## 2026-10-31 01:00Z · BEH-USERS-5
+
+Oh I haven’t heard of openbao or infiacal. I was thinking oci or hashicorp
