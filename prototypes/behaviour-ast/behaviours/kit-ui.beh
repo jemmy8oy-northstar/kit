@@ -2203,7 +2203,7 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   layer ux
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
-  priority 3
+  priority 4
   pending
   actor engineer
   when opens page:KitProjects
@@ -2218,7 +2218,7 @@ behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a
   layer ux
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
-  priority 2
+  priority 3
   pending
   actor engineer
   when opens page:KitProject
@@ -2233,7 +2233,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   layer technical
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
-  priority 3
+  priority 4
   pending
   actor engineer
   when opens page:KitBoard
@@ -2248,7 +2248,7 @@ behaviour BEH-SPECAGENT-3 "A technical question to the spec agent goes on an ope
   layer ux
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
-  priority 3
+  priority 4
   pending
   actor engineer
   when opens page:KitProject
