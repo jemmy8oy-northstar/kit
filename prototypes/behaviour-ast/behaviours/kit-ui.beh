@@ -250,7 +250,7 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 behaviour BEH-GATE-H2 "Every note box warns that what you type is public"
   in FEAT-NOTES
   source inferred claude-code-bot#35
-  review requested your notes are saved to the public kit repo on GitHub, so anyone can read them. It is the one-line warning already under each note box. Approve to keep it, deny if you'd rather not
+  review approved
   priority 3
   actor engineer
   when opens page:KitProject
