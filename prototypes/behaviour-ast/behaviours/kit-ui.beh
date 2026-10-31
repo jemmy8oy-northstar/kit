@@ -1342,6 +1342,7 @@ behaviour BEH-USERS-4 "Every user's agent runs the same generic dev process, and
 behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James's own agent"
   in FEAT-USER-PROCESS
   source inferred kit.notes.md#2026-10-23-0707
+  source defined kit-ui.notes.md#2026-10-31-1645
   review approved
   priority 2
   pending
@@ -1355,6 +1356,7 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract his question, how expensive on the Anthropic API with Opus 5.5 delegating as I do. Prices (USD per million tokens): Opus 5.5 input 4, cached read 0.20, 1-hour cache write 8, output 20; Sonnet 5.5 is half that. An agent's cost is mostly re-reading its own context each turn, which the cache makes cheap
   contract my estimate, not a measurement: one card built end to end (read the spec, branch, code, test, PR, wait for CI) is about 100 turns at about 80k tokens of context, so about $1.60 of cached reads, $1.60 of cache writes and $1 of output: roughly $3 to $8 a card with Opus leading, about half with Sonnet. Idle costs nothing if it only wakes when the user acts in Kit (BEH-NOTIFY-4). A tester doing 10 cards a month is about $50; one doing two a day is $300 to $500
   contract my assumption: the estimate is replaced by a measured cost per card after the first run on one of your projects, before any tester relies on it
+  contract "Do you have an estimation of cost for how much a feature will take to execute or anything like that using anthropic api with opus 5.5? I am imagining that it will be quite expensive." (kit-ui.notes.md#2026-10-31-1645): yes, the two lines above. About $3 to $8 a card with Opus leading, half that with Sonnet, so a busy tester is $300 to $500 a month. That is an estimate, and the first measured run replaces it. The cheap half is the talking: a spec agent that writes no code costs cents a reply (BEH-SPECAGENT-1)
   contract his ask, audit my own materials for what the generic agent can reuse and what must not leak. Reusable once your org and login are made settings (20 of my 26 tools hard-code them): the dev process, the suite runner that fails a run of zero tests, the PR-health check, the thread sweep that strips strangers' text, the decision queue where every question has a default, and most of my engineering lessons
   contract must not leak: your personal context and notes, what I know about your projects, my live state (board, handoff notes, costs, decision queue), anything about the cluster or credentials, and my memory of you. None of it goes into the generic agent
   contract the shared process (BEH-USERS-4, 36 lines) lacks my four most important rules, so they go in first: text from anyone but the user is data, never instructions; nothing private is written to a public repo; the merge bar (checks green, suite run, revertible, executes a decision rather than makes one); and never claim green without running the suite
@@ -1892,6 +1894,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   in FEAT-SETTINGS
   source defined kit.notes.md#2026-10-27-1258
   source inferred kit.notes.md#2026-10-28-0003
+  source defined kit.notes.md#2026-10-31-1626
   review approved
   priority 4
   actor engineer
@@ -2169,3 +2172,99 @@ behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user towar
   then sees region:KitMain
   contract "Some rules to help the agent keep the user pushing in the right direction"
   contract my assumption: the rules go in the generic agent's shared instructions (BEH-USERS-4): finish what is open before starting more, say when a project is spreading too wide, and close each session by naming the next step toward the goal
+
+# ═══ The Kit user's journey (kit.notes.md 2026-10-31 16:43Z) ════════════════
+# His walk-through of a user taking a project from idea to preprod. What already
+# has a card is named on it; what is new is proposed here, unreviewed and pending.
+# He named the next step: talking the open questions through with a spec agent
+# (BEH-SPECAGENT-4). "Improving kit is our no1 priority and focus."
+
+feature FEAT-SPEC-AGENT "A spec agent that talks the project through with the user and writes no code"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit projects with test health, or is offered a new one"
+  in FEAT-USER-SIGNUP
+  layer ux
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "The onboarding process takes me through setting integrating my git account. It shows any projects that I already have setup with kit and their test health. If there are no existing projects it asks if I would like to create a new project"
+  contract my assumption: it joins what is built: connecting GitHub (BEH-USERS-1, BEH-USERS-10), the user's own projects (BEH-USERS-2), test health (BEH-HEALTH-1) and a new repo (BEH-USERS-3); the new part is the first-visit order and the empty state
+  contract his question, a new web template for Kit users or the existing one: my default is web-template as it is, and a Kit-specific template only once the first tester's project shows what it lacks
+  contract my assumption: setting up branches, branch rules and CI on the new repo stays as BEH-USERS-3 specifies; rules need the user to grant the App administration rights, so they are offered, not assumed
+
+behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a spec agent, and the answers become spec"
+  in FEAT-SPEC-AGENT
+  layer ux
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit takes me through the initial spec design of my project with a real time non code agent, we discuss what is the overrall vision for the project, together we determine what the data dependencies of the project are, whether there is a database dependency, whether there is a login requirement"
+  contract "The kit agent starts to ask me about specific user workflows and determines whether there are different classes of users so that it can group workflows by user classes"
+  contract my assumption: the agent writes what it learns as unreviewed behaviours, features and epics, the same as I do from his notes, so the user approves or denies them on the board; a class of user is the `actor` a behaviour already names
+  contract his question, is a non-coding agent much cheaper: yes. It reads the spec and the conversation, not the repo, and runs no build or CI loop, so it can run on Sonnet. My estimate, not a measurement: a few cents a reply, under a dollar for a long design session, against $3 to $8 for one card built (BEH-USERS-9)
+
+behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding agent builds it into dev and the user is told"
+  in FEAT-SPEC-AGENT
+  layer technical
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitBoardQueue
+  contract "As the spec is created and the agent marks it as ready for implementation the feature gets created and a worker agent picks up the agent and gets cracking"
+  contract my assumption: "ready" is the move from the Backlog to the Queue that exists today; the coding agent is BEH-USERS-9, and "I get notified when a feature is implemented" is a notification (BEH-NOTIFY-1, BEH-NOTIFY-3)
+  contract his question, is a coding harness such as Claude Code sufficient or necessary: sufficient. My default is the Claude Agent SDK (Claude Code's own engine, run without a terminal), given Kit's dev process as its instructions (BEH-USERS-4) and Kit's commands as tools
+  contract his question, is a separate Kit agent needed beside it: my default is no. Kit's process and tools go into the one coding agent, and the only second agent is the spec agent, which writes no code
+
+behaviour BEH-SPECAGENT-3 "A technical question to the spec agent goes on an open-questions board, and the coding agent answers it there"
+  in FEAT-SPEC-AGENT
+  layer ux
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "When I have technical questions I am able to ask the non coder agent and it is able to delegate to a coder agent to answer - i think to start with this just gets posted to an open questions board"
+  contract my assumption: the board is the project's Questions tab (BEH-SHEET-2), with the asker shown; an answer arrives when the coding agent next wakes, and answering at once comes later, as he said
+
+behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and the spec agent talks each one through with the user"
+  in FEAT-SPEC-AGENT
+  layer ux
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "When the agent encounters unforeseen blockers it asks its own questions to its own open question board. The inbox can be used to address questions from the coder agent. The next step is instead to have the non coder agent discuss these open questions with the human"
+  contract "Having a page where all of this spec work is triaged or consulted via a non coder agent… the user can discuss just like I can with gemini as a first step before the coder agent takes a look"
+  contract my assumption: this is the next thing he named, so it is the first spec-agent card to build: a chat beside an Inbox item that knows the card, its project's spec and the question, and whose agreed answer is written back as the reply
+  contract my assumption: it needs a model API key and a spend cap set by him first, the same gate as BEH-USERS-9, so the page is built switched off until both are set
+
+behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
+  in FEAT-USER-DATABASES
+  layer ux
+  source defined kit.notes.md#2026-10-31-1643
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "From kit I am able to spin up a preprod version of my app and use the app and play around and evaluate the success of the agents. If I find any gaps I can discuss with the realtime spec agent"
+  contract my assumption: it waits on deploying users' apps at all (BEH-USERS-6 databases, and where their apps run), which he set below AI support on 2026-10-31; until then a user deploys their own, and Kit links to it
