@@ -13,7 +13,7 @@ describe('goalOf (BEH-NARR-1)', () => {
     expect(goalOf([file([], [], [beh('B', 'F', true)])])).toBeNull()
   })
 
-  it('BEH-NARR-1: falls back to the first open epic in corpus order', () => {
+  it('BEH-NARR-1: picks the first open epic in corpus order', () => {
     const f = file(
       [epic('E1'), epic('E2')],
       [feat('F1', 'E1'), feat('F2', 'E2')],
