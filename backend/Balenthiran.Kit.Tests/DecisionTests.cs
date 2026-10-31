@@ -174,6 +174,74 @@ public class DecisionTests
         Assert.Equal(["ADR-BACKEND-1", "ADR-DATA-1"], r.Known);
     }
 
+    // ── BEH-ARCH-1 slice B2: a behaviour names the decision it depends on ──────────────────
+
+    private const string Depending =
+        "behaviour BEH-A \"a\"\n  depends-on ADR-BACKEND-1\n  depends-on ADR-DATA-1\n  when opens page:Home\n\n" + "decision ADR-BACKEND-1 \"B\"\n  part backend\n  chosen x\n  because y\n\n" +
+        "decision ADR-DATA-1 \"D\"\n  part data\n  chosen x\n  because y\n";
+
+    [Fact]
+    public void BEH_ARCH_1_depends_on_is_repeatable_and_keeps_its_order_and_lines()
+    {
+        var b = _parser.ParseCorpus(Depending, "t.beh").Behaviours[0];
+        Assert.Equal(["ADR-BACKEND-1", "ADR-DATA-1"], b.DependsOn.Select(d => d.Id));
+        Assert.Equal("t.beh:2", b.DependsOn[0].At);
+    }
+
+    [Theory]
+    [InlineData("behaviour BEH-A \"a\"\n  depends-on ADR-X-1\n  depends-on ADR-X-1\n", "t.beh:3: already depends-on ADR-X-1 at t.beh:2")]
+    [InlineData("behaviour BEH-A \"a\"\n  depends-on BEH-B\n", "t.beh:2: depends-on wants a decision id (ADR-…), got: BEH-B")]
+    [InlineData("behaviour BEH-A \"a\"\n  depends-on adr-x-1\n", "t.beh:2: depends-on wants a decision id (ADR-…), got: adr-x-1")]
+    [InlineData("behaviour BEH-A \"a\"\n  depends-on\n", "t.beh:2: depends-on wants a decision id (ADR-…), got: ")]
+    public void BEH_ARCH_1_a_bad_depends_on_is_refused_naming_the_line(string corpus, string message)
+    {
+        var e = Assert.Throws<CorpusParseException>(() => _parser.Parse(corpus, "t.beh"));
+        Assert.Equal(message, e.Message);
+    }
+
+    [Fact]
+    public void BEH_ARCH_1_a_behaviour_without_depends_on_serves_no_such_key_and_one_with_serves_the_ids()
+    {
+        var ser = new EngineJsonSerialiser();
+        var with = _parser.ParseCorpus(Depending, "t.beh").Behaviours[0];
+        Assert.Equal(["ADR-BACKEND-1", "ADR-DATA-1"], JsonNode.Parse(ser.Serialise(with))!["dependsOn"]!.AsArray().Select(n => n!["id"]!.GetValue<string>()));
+        var without = _parser.ParseCorpus(WithDecision, "t.beh").Behaviours[0];
+        Assert.False(JsonNode.Parse(ser.Serialise(without))!.AsObject().ContainsKey("dependsOn"));
+    }
+
+    [Fact]
+    public void BEH_ARCH_1_a_review_write_on_a_behaviour_with_depends_on_leaves_it_intact()
+    {
+        var corpus = Depending.Replace("  when opens", "  source inferred x\n  review unreviewed\n  when opens", StringComparison.Ordinal);
+        var r = Writer.SetReview(corpus, "BEH-A", "approved");
+
+        Assert.True(r.Ok, r.Reason);
+        Assert.Equal(["ADR-BACKEND-1", "ADR-DATA-1"], new CorpusParser().ParseCorpus(r.Text!, "t.beh").Behaviours[0].DependsOn.Select(d => d.Id));
+    }
+
+    [Fact]
+    public void BEH_ARCH_1_a_depends_on_naming_no_decision_is_a_surface_error_not_a_parse_error()
+    {
+        var root = Directory.CreateTempSubdirectory("kit-depends-").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "demo.beh"), Depending.Replace("  depends-on ADR-DATA-1\n", "  depends-on ADR-GONE-9\n", StringComparison.Ordinal));
+            var corpora = new Balenthiran.Kit.Database.CorpusDirectory(root, root);
+            var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
+            var router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null);
+
+            var res = router.Route("GET", "/api/projects/demo");
+            Assert.Equal(200, res.Status);
+            var view = Assert.IsType<ProjectView>(res.Body);
+            Assert.Equal(["demo.beh:3: BEH-A depends-on ADR-GONE-9, which is not a decision in this corpus"], view.Surface.Errors);
+            Assert.Equal(["ADR-BACKEND-1", "ADR-GONE-9"], view.Behaviours[0].DependsOn);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void BEH_ARCH_1_the_decision_route_adjudicates_through_the_same_write_as_a_behaviour()
     {

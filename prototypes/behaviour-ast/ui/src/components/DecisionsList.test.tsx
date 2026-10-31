@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import DecisionsList, { type DecisionIn } from './DecisionsList'
+import { MemoryRouter } from 'react-router-dom'
+import DecisionsList,{ type DecisionIn } from './DecisionsList'
 import type { Decision } from '../api/types'
 
 const decision = (id: string, part: Decision['part'], extra: Partial<DecisionIn> = {}): DecisionIn => ({
@@ -68,6 +69,32 @@ describe('DecisionsList (BEH-ARCH-1)', () => {
     render(<DecisionsList decisions={[decision('ADR-DATA-1', 'data')]} />)
 
     expect(screen.queryByRole('button', { name: /Approve/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('behaviours resting on a decision (BEH-ARCH-1 slice B2)', () => {
+  const rest = [
+    { app: 'kit-ui', id: 'BEH-A', title: 'Opens the page', dependsOn: ['ADR-DATA-1'] },
+    { app: 'kit-ui', id: 'BEH-B', title: 'Unrelated' },
+  ]
+
+  it('lists, linked, only the behaviours that name this decision (BEH-ARCH-1)', () => {
+    render(
+      <MemoryRouter>
+        <DecisionsList decisions={[decision('ADR-DATA-1', 'data'), decision('ADR-DATA-2', 'data')]} behaviours={rest} />
+      </MemoryRouter>,
+    )
+
+    const list = screen.getByRole('list', { name: 'Resting on ADR-DATA-1' })
+    expect(within(list).getByRole('link', { name: 'Opens the page' })).toHaveAttribute('href', '/projects/kit-ui/behaviours/BEH-A')
+    expect(screen.queryByText('Unrelated')).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Resting on ADR-DATA-2' })).not.toBeInTheDocument()
+  })
+
+  it('shows nothing when no behaviour depends on any decision (BEH-ARCH-1)', () => {
+    render(<DecisionsList decisions={[decision('ADR-DATA-1', 'data')]} />)
+
+    expect(screen.queryByText('Behaviours resting on this:')).not.toBeInTheDocument()
   })
 })
 

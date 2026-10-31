@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Input } from '@jemmy8oy-northstar/design-system'
 import { setDecisionReview } from '../api/client'
 import type { Decision, DecisionPart } from '../api/types'
@@ -22,7 +23,7 @@ export type DecisionIn = Decision & { app?: string }
  * my reading of the repo until he agrees; slice B1 lets him say so from the card. A decision with no
  * `app` has nowhere to write to, so it stays read-only.
  */
-export default function DecisionsList({ decisions }: { decisions: DecisionIn[] }) {
+export default function DecisionsList({ decisions, behaviours = [] }: { decisions: DecisionIn[]; behaviours?: Resting[] }) {
   return (
     <>
       {PARTS.map(({ part, label }) => {
@@ -34,8 +35,8 @@ export default function DecisionsList({ decisions }: { decisions: DecisionIn[] }
             <h2>{label}</h2>
             <ul className="cards">
               {own.map((d) => (
-                <li key={d.id}>
-                  <DecisionCard d={d} />
+                <li key={d.id} id={d.id}>
+                  <DecisionCard d={d} resting={behaviours.filter((b) => b.dependsOn?.includes(d.id))} />
                 </li>
               ))}
             </ul>
@@ -46,7 +47,10 @@ export default function DecisionsList({ decisions }: { decisions: DecisionIn[] }
   )
 }
 
-function DecisionCard({ d }: { d: DecisionIn }) {
+/** A behaviour as the card needs it to say what rests on a decision (BEH-ARCH-1 slice B2). */
+export type Resting = { app: string; id: string; title: string; dependsOn?: string[] }
+
+function DecisionCard({ d, resting }: { d: DecisionIn; resting: Resting[] }) {
   // What the server just wrote, shown at once; the served value wins again whenever it changes.
   const [local, setLocal] = useState<Decision['review'] | null>(null)
   useEffect(() => setLocal(null), [d.review.state, d.review.note])
@@ -91,6 +95,18 @@ function DecisionCard({ d }: { d: DecisionIn }) {
           <li key={b}>{b}</li>
         ))}
       </ul>
+      {resting.length > 0 && (
+        <>
+          <p>Behaviours resting on this:</p>
+          <ul aria-label={`Resting on ${d.id}`}>
+            {resting.map((b) => (
+              <li key={`${b.app}/${b.id}`}>
+                <Link to={`/projects/${encodeURIComponent(b.app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <p className="muted">
         {d.id} · {d.at}
       </p>

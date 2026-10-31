@@ -57,6 +57,9 @@ public interface IBehaviour
     /// <summary>The features it is tagged into, one per <c>in</c> line (kit#237); empty when untagged.</summary>
     IReadOnlyList<IIdRef> In { get; }
 
+    /// <summary>The architecture decisions it rests on, one per <c>depends-on</c> line (BEH-ARCH-1 slice B2); empty when none.</summary>
+    IReadOnlyList<IIdRef> DependsOn { get; }
+
     bool? ReviewExplicit { get; }
 
     /// <summary>Holes another behaviour filled. Null until <c>resolve</c> has run.</summary>
