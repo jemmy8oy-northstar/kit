@@ -81,7 +81,9 @@ function Queue({ entries }: { entries: Entry[] }) {
         <p>
           {shown.length === 0
             ? 'Nothing is waiting on you in the projects you picked.'
-            : 'That is all of them: nothing else is waiting on you.'}
+            : queue.some((c) => !handled.has(keyOf(c)))
+              ? 'That is all of them in the projects you picked. Clear the filter to see the rest.'
+              : 'That is all of them: nothing else is waiting on you.'}
         </p>
       </>
     )

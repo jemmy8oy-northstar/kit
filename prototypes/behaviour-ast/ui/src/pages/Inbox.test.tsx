@@ -177,6 +177,20 @@ describe('Inbox', () => {
     expect(screen.getByRole('button', { name: 'Filter to alpha' })).toBeInTheDocument()
   })
 
+  it('does not say nothing else is waiting when only the picked projects are done (BEH-INBOX-4)', async () => {
+    mockApi()
+    render(
+      <MemoryRouter initialEntries={['/inbox?project=beta']}>
+        <Inbox />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(await screen.findByText(/Clear the filter to see the rest/)).toBeInTheDocument()
+    expect(screen.queryByText(/nothing else is waiting on you/)).not.toBeInTheDocument()
+  })
+
   it('says so plainly when nothing is waiting on him (BEH-INBOX-1)', async () => {
     mockApi({ alpha: [beh('A-QUEUE', { pending: true }), beh('A-DONE')] })
     render(
