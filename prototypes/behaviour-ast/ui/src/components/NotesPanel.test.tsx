@@ -295,6 +295,20 @@ describe('NotesPanel picked-up state (BEH-COMMENT-2)', () => {
     expect(within(card).getByText(/Picked up — answered by/)).toBeInTheDocument()
     expect(within(card).getByRole('link', { name: 'Notes are a tab' })).toHaveAttribute('href', '/projects/demo-ui/behaviours/BEH-FEAT-7')
     expect(screen.queryByRole('region', { name: 'Archived' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Each says whether a card has picked it up/)).toBeInTheDocument()
+    expect(screen.queryByText(/archived below/)).not.toBeInTheDocument()
+  })
+
+  it('BEH-COMMENT-2: an answered comment does not count as open on its item page', async () => {
+    server([note('2026-10-16 07:13Z', 'BEH-2', 'tabs please'), note('2026-10-16 07:20Z', 'BEH-2', 'later maybe')])
+    const counts: number[] = []
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" behaviour="BEH-2" citations={citations} onOpenCount={(n) => counts.push(n)} />
+      </MemoryRouter>,
+    )
+    await within(region()).findByText('later maybe')
+    expect(counts.at(-1)).toBe(1)
   })
 
   it('BEH-COMMENT-2: an uncited comment on an item page says it has not been picked up yet', async () => {

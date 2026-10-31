@@ -81,7 +81,7 @@ export default function NotesPanel({
       })
       .filter(({ note }) => !behaviour || note.behaviour === behaviour)
       .reverse()
-  const open = resource.state === 'ready' ? mine(resource.value.notes).filter((p) => !p.folded.length).length : null
+  const open = resource.state === 'ready' ? mine(resource.value.notes).filter((p) => !p.folded.length && !p.status?.length).length : null
   useEffect(() => {
     if (open !== null) onOpenCount?.(open)
   }, [open, onOpenCount])
@@ -102,6 +102,7 @@ export default function NotesPanel({
               app={app}
               notes={mine(list.notes).filter(({ note, folded }) => note.questions.length === 0 && !folded.length)}
               file={list.file}
+              onItem={!!behaviour}
               onChanged={reload}
             />
           )}
@@ -208,7 +209,19 @@ function NeedsAnswer({ app, notes, onChanged }: { app: string; notes: Placed[]; 
   )
 }
 
-function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed[]; file: string; onChanged: () => void }) {
+function OpenNotes({
+  app,
+  notes,
+  file,
+  onItem,
+  onChanged,
+}: {
+  app: string
+  notes: Placed[]
+  file: string
+  onItem: boolean
+  onChanged: () => void
+}) {
   if (!notes.length) {
     // BEH-NOTE-3: says so rather than vanishing — an empty region and a broken one look the same.
     return <p className="muted">No open notes.</p>
@@ -220,7 +233,8 @@ function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed
         <Count n={notes.length} one="open note" />
       </div>
       <p className="muted">
-        In <code>{file}</code>. Once a behaviour cites one, it is archived below.
+        {/* BEH-COMMENT-2: on an item's page a cited comment stays here, so the project page's hint would be wrong. */}
+        In <code>{file}</code>. {onItem ? 'Each says whether a card has picked it up.' : 'Once a behaviour cites one, it is archived below.'}
       </p>
       <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} status={status} />} />
     </>
