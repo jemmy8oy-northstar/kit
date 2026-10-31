@@ -102,7 +102,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         schedule={<SchedulePanel apps={[project.app]} />}
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
-        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions} /> : null}
+        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
@@ -407,7 +407,8 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   const [tab, select] = useTab()
   const [open, setOpen] = useState<number | null>(null)
   const principles = files.flatMap((f) => f.principles ?? [])
-  const decisions = files.flatMap((f) => f.decisions ?? [])
+  // Each carries the file it was read from: that is the corpus an approval is written to.
+  const decisions = files.flatMap((f) => (f.decisions ?? []).map((d) => ({ ...d, app: f.app })))
 
   return (
     <>

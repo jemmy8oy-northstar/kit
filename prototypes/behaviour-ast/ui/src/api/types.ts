@@ -128,6 +128,25 @@ export interface IdleSetting {
   order: IdleItem[]
 }
 
+/** The two groups a Kit feature is switched for (BEH-FLAGS-1). */
+export type SwitchGroup = 'operator' | 'testers'
+
+export interface FeatureSwitch {
+  id: string
+  title: string
+  /** On for him. On unless a `# kit:switch` line says off. */
+  operator: boolean
+  /** On for test users. Off unless a `# kit:switch` line says on. */
+  testers: boolean
+}
+
+/** What `GET /api/settings/features` returns: the caller's group, what is off for it, and (operator only) every switch. */
+export interface FeatureSwitches {
+  group: SwitchGroup
+  off: string[]
+  features?: FeatureSwitch[]
+}
+
 export interface StepRef {
   kind: string
   name: string

@@ -18,11 +18,25 @@ import NoteFab from './components/NoteFab'
 import PullToRefresh from './components/PullToRefresh'
 import { BoardNavLink } from './components/BoardViews'
 import { OpeningPage } from './components/OpeningPage'
+import { FeatureGate, FlagsProvider } from './components/FeatureGate'
+import { FEATURE_PAGES, useFlags } from './components/flags'
 import { IDEAS } from './board'
+
+/** BEH-FLAGS-2: a page that belongs to a feature, shown only when that feature is on for this group. */
+function gated(feature: string, page: React.ReactNode) {
+  return <FeatureGate feature={feature}>{page}</FeatureGate>
+}
+
+/** BEH-FLAGS-2: a navigation entry that belongs to a feature, left out when that feature is off for this group. */
+function FeatureNavLink({ feature }: { feature: string }) {
+  const { path, label } = FEATURE_PAGES[feature]
+  return useFlags().isOn(feature) ? <NavLink to={path}>{label}</NavLink> : null
+}
 
 export default function App() {
   return (
     <SignIn>
+      <FlagsProvider>
       {/*
       `basename` is kit#49's rule 8 in the router. Without it every `<Link to="/">`
       navigates to the host root — which on a shared host is a DIFFERENT APP that
@@ -69,11 +83,11 @@ export default function App() {
               <BoardNavLink />
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
-              <NavLink to="/inbox">Inbox</NavLink>
+              <FeatureNavLink feature="FEAT-INBOX" />
               <NavLink to="/principles">Principles</NavLink>
-              <NavLink to="/health">Health</NavLink>
-              <NavLink to="/activity">Activity</NavLink>
-              <NavLink to="/notifications">Notifications</NavLink>
+              <FeatureNavLink feature="FEAT-HEALTH" />
+              <FeatureNavLink feature="FEAT-ACTIVITY" />
+              <FeatureNavLink feature="FEAT-NOTIFICATIONS" />
               {/* BEH-SETTINGS-1: the account area, GitHub and config, on a page of its own. */}
               <NavLink to="/settings">Settings</NavLink>
               <NavLink to="/" end>
@@ -90,14 +104,14 @@ export default function App() {
           <main>
             <Routes>
               <Route path="/" element={<Projects />} />
-              <Route path="/board" element={<Board />} />
-              <Route path="/stages" element={<Stages />} />
-              <Route path="/epics" element={<Epics />} />
+              <Route path="/board" element={gated('FEAT-BOARD', <Board />)} />
+              <Route path="/stages" element={gated('FEAT-STAGES', <Stages />)} />
+              <Route path="/epics" element={gated('FEAT-EPICS', <Epics />)} />
               <Route path="/principles" element={<Principles />} />
-              <Route path="/health" element={<Health />} />
-              <Route path="/inbox" element={<Inbox />} />
-              <Route path="/activity" element={<Activity />} />
-              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/health" element={gated('FEAT-HEALTH', <Health />)} />
+              <Route path="/inbox" element={gated('FEAT-INBOX', <Inbox />)} />
+              <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
+              <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />
               <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
@@ -109,6 +123,7 @@ export default function App() {
           <NoteFab />
         </div>
       </Router>
+      </FlagsProvider>
     </SignIn>
   )
 }

@@ -20,6 +20,9 @@ public interface ICorpusWriter
     /// <summary>Set a behaviour's review state, replacing its review line or inserting one.</summary>
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
+    /// <summary>BEH-ARCH-1 slice B1: <see cref="SetReview"/> on an architecture decision; only that block's review line changes.</summary>
+    IWriteResult SetDecisionReview(string text, string id, string state, string? note = null);
+
     /// <summary>Add or remove a behaviour's bare <c>paused</c> line (BEH-BOARD-16); asking for the state it is already in writes nothing new.</summary>
     IWriteResult SetPaused(string text, string id, bool paused, string? until = null);
 
@@ -43,6 +46,12 @@ public interface ICorpusWriter
     /// and/or <c>ideas</c>, each at most once; empty means <c>none</c>. Asking for what it already says rewrites nothing.
     /// </summary>
     IWriteResult SetIdleOrder(string text, IReadOnlyList<string> order);
+
+    /// <summary>
+    /// Sets one feature's <c># kit:switch</c> line for <c>operator</c> or <c>testers</c> (BEH-FLAGS-1).
+    /// The default is stored as no line. Asking for what the file already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetSwitch(string text, string feature, string group, bool on);
 
     /// <summary>
     /// Splice one behaviour's block out of the file (BEH-ACT-3). Refused, writing nothing, when

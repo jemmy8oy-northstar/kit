@@ -1,6 +1,6 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
-  PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, WriteResult,
+  ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -242,6 +242,22 @@ export function setReview(
 }
 
 /**
+ * BEH-ARCH-1 slice B1: the same adjudication as {@link setReview}, on an architecture decision.
+ * Same body, same refusals (a denial must carry its correction), its own address.
+ */
+export function setDecisionReview(
+  app: string,
+  id: string,
+  state: ReviewState,
+  note: string | null = null,
+): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/decisions/${encodeURIComponent(id)}/review`,
+    { state, note },
+  )
+}
+
+/**
  * Pause a behaviour, or resume it (BEH-BOARD-16): the state is named, not toggled, so a double press
  * writes nothing new. It adds or removes the corpus's `paused` line.
  */
@@ -268,6 +284,16 @@ export function fetchIdle(): Promise<IdleSetting> {
 /** Set the idle work, in order (BEH-SETTINGS-6): rewrites the `# kit:idle` line in Kit's own corpus. Operator only. */
 export function setIdleOrder(order: IdleItem[]): Promise<WriteResult> {
   return post<WriteResult>('/api/settings/idle', { order })
+}
+
+/** Kit's features and which are off for this session's group (BEH-FLAGS-1, BEH-FLAGS-2). */
+export function fetchFeatureSwitches(): Promise<FeatureSwitches> {
+  return get<FeatureSwitches>('/api/settings/features')
+}
+
+/** Switch one of Kit's features on or off for him or for testers (BEH-FLAGS-1): a `# kit:switch` line in Kit's own corpus. Operator only. */
+export function setFeatureSwitch(feature: string, group: SwitchGroup, on: boolean): Promise<WriteResult> {
+  return post<WriteResult>('/api/settings/features', { feature, group, on })
 }
 
 /** Set a behaviour's priority, 1 (first) to 5 (BEH-INBOX-1): it rewrites the corpus's `priority` line. */
