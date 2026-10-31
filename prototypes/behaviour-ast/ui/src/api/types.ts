@@ -288,6 +288,24 @@ export interface ProjectDetail {
   principles?: Principle[]
   /** Its `epic` blocks (BEH-EPIC-2), in file order. Absent when it declares none. */
   epics?: Epic[]
+  /** Its `decision` blocks (BEH-ARCH-1), in file order. Absent when it declares none. */
+  decisions?: Decision[]
+}
+
+/** The parts of a system an architecture decision belongs to, in the order the page shows them. */
+export type DecisionPart = 'frontend' | 'backend' | 'data' | 'deployment'
+
+/** A `decision` block (BEH-ARCH-1): what was chosen, what else was considered, and why. */
+export interface Decision {
+  id: string
+  title: string
+  part: DecisionPart
+  chosen: string
+  considered: string[]
+  because: string[]
+  review: { state: ReviewState; note: string | null }
+  source: { origin: string; ref: string | null }
+  at: string
 }
 
 /** One `# kit:principle [global] <Name>: <what it means>` line. */

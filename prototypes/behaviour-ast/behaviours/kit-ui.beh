@@ -1894,6 +1894,10 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
   contract found in review: his Kit never read the database before this card, so if the database cannot be read his session and board load as before, with no GitHub shown
   contract "Oh it won't let me install it because it's already installed should I uninstall it and install it with oauth to test the feature?"
   contract my assumption: no uninstalling. GitHub's install page dead-ends for an account that already has the App, so beside "Connect" Settings offers "Already installed? Connect it", which goes straight to GitHub's authorise step and finds the existing installation; a user sees the same link
+  contract "When I click already installed? connect it i get - This GitHub App must be configured with a callback URL. also slightly confused what this is acc for - on my account it is already installed everything is working fine what's left?"
+  contract found: the authorise step sends GitHub back to https://balenthiran.co.uk/kit/, and Kit's GitHub App has no Callback URL registered, so GitHub refuses before Kit is reached. "Sign in with GitHub" (BEH-USERS-10) goes through the same step, so a tester's GitHub sign-in fails the same way. Nothing in Kit can set it: it is on the App's settings page
+  contract what it is for: the board's projects run on the org's installation, which already works and is not what this connects. This connects his personal account, so repos there that carry a corpus show under "From your GitHub". If he keeps no corpus on his personal account, nothing is left for him here
+  needs-context "Set Kit's GitHub App's Callback URL to https://balenthiran.co.uk/kit/ (App settings → General → Callback URL), which fixes this and testers' GitHub sign-in. Do you want your personal GitHub connected at all? If you're silent by 2026-11-07, I take the Connect offer off your own Settings (testers keep theirs), since your board already works without it."
 
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
@@ -1995,6 +1999,7 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   contract "Maybe it needs an architecture design page… I think kit system currently requires architecture design so we should build the feature out"
   contract my assumption: each architecture decision is a card he can approve or deny, like a behaviour, because platform and architecture choices are his to make; a decision names what was chosen, what else was considered, and why
   contract my assumption: the page groups a project's decisions by part (front end, back end, data, deployment), and each behaviour can name the decision it depends on
+  contract my assumption: slice A is read-only; approving or denying a decision, and a behaviour naming the decision it depends on, come in slice B
 
 behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is built"
   in FEAT-ARCH
