@@ -46,12 +46,12 @@ behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offend
   source defined whos-accountable#1
   review approved
   priority 1
-  pending
   actor visitor
   when opens page:WorstOffenders
   then sees region:Leaderboard
   contract "The core part will be company and individual leaderboards. Showing both ways - worse offenders leaderboard and top do gooders"
   contract the aim is visibility: "keep billionairs and corporations accountable for their actions"
+  contract built 2026-10-31 (whos-accountable#21): the home page lists companies lowest score first, with rank, sector, score and pillar coverage, and a sector filter; companies only, as individuals wait on their own review (BEH-BACKLOG-2); not deployed
 
 behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   in FEAT-LEADERBOARD
@@ -59,11 +59,11 @@ behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   source defined whos-accountable#1
   review approved
   priority 1
-  pending
   actor visitor
   when opens page:TopDoGooders
   then sees region:Leaderboard
   contract the same companies, ordered the other way round
+  contract built 2026-10-31 (whos-accountable#21) at /best; on today's real data every company scores 0, so both boards read the same until the scale is calibrated (BEH-SCORE-7)
 
 behaviour BEH-SCOPE-1 "Version 1 covers UK companies only"
   in FEAT-LEADERBOARD
