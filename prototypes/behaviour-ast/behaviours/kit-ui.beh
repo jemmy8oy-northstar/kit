@@ -2172,7 +2172,7 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
-  stage problem
+  stage development
 
 behaviour BEH-NARR-1 "Each project says what it is working towards, taken from its open epics"
   in FEAT-NARRATIVE
