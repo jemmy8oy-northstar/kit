@@ -2172,7 +2172,7 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
-  stage problem
+  stage development
 
 behaviour BEH-NARR-1 "Each project says what it is working towards, taken from its open epics"
   in FEAT-NARRATIVE
@@ -2180,12 +2180,13 @@ behaviour BEH-NARR-1 "Each project says what it is working towards, taken from i
   source defined kit.notes.md#2026-10-31-1041
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "Kit would benefit from the agent driving some narrative for the user… I guess epics can help figure out what the big goals are"
   contract my assumption: the top of a project's page names its current goal (its highest-priority open epic) and how far along it is, and the agent picks work that moves that goal before anything else
+  contract built 2026-10-31: the project page leads with "Working towards" and its goal epic, linked, with how many of its behaviours are built; an epic is open while any behaviour under it is pending, and the goal is the first open epic in the corpus (epics carry no priority yet)
+  contract my assumption: the agent ranking its own work by that goal is not built here; its Queue order still comes from card priorities
 
 behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towards, or whether it is being maintained"
   in FEAT-NARRATIVE

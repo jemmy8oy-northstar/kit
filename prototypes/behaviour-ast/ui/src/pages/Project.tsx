@@ -16,6 +16,7 @@ import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
 import DecisionsList from '../components/DecisionsList'
 import PrinciplesList from '../components/PrinciplesList'
+import WorkingTowards from '../components/WorkingTowards'
 import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
 import SchedulePanel from '../components/SchedulePanel'
@@ -60,6 +61,7 @@ function Detail({ project }: { project: ProjectDetail }) {
     <>
       <h1>{project.app}</h1>
       <p className="muted">{project.corpus}</p>
+      <WorkingTowards files={[project]} />
       <div className="badges">
         <Count n={project.behaviours.length} one="behaviour" tone="primary" />
         <CoverageBadge coverage={project.coverage} />
@@ -396,6 +398,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   return (
     <>
       <h1>{name}</h1>
+      <WorkingTowards files={files} />
       <div className="badges">
         <Count n={sum((f) => f.behaviours.length)} one="behaviour" tone="primary" />
         <Badge tone="neutral">{sum((f) => f.adjudication.defined)} defined</Badge>
