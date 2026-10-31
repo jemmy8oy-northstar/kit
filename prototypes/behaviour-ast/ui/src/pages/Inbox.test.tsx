@@ -116,6 +116,28 @@ describe('Inbox', () => {
     expect(JSON.parse(window.localStorage.getItem('kit.inboxSeen')!)).toContain('beta/B-PROP')
   })
 
+  it('puts an answer to his question before higher-priority cards, opened ones still last (BEH-INBOX-3)', async () => {
+    mockApi({
+      alpha: [
+        beh('A-NEEDS', { pending: true, needsContext: 'Add the API key', priority: 1 }),
+        beh('A-PROP', { ...proposed, priority: 1 }),
+        beh('A-ANSWER', { review: { state: 'requested', note: 'Yes, your personal account works' }, priority: 4 }),
+        beh('A-OLD-ANSWER', { review: { state: 'requested', note: 'Already read' }, priority: 1 }),
+      ],
+    })
+    window.localStorage.setItem('kit.inboxSeen', JSON.stringify(['alpha/A-OLD-ANSWER']))
+    await open()
+
+    const order: (string | null)[] = []
+    for (let i = 0; i < 3; i++) {
+      order.push(current())
+      fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(current() !== order[i]).toBe(true))
+    }
+    order.push(current())
+    expect(order).toEqual(['A-ANSWER', 'A-NEEDS', 'A-PROP', 'A-OLD-ANSWER'])
+  })
+
   it('says so plainly when nothing is waiting on him (BEH-INBOX-1)', async () => {
     mockApi({ alpha: [beh('A-QUEUE', { pending: true }), beh('A-DONE')] })
     render(

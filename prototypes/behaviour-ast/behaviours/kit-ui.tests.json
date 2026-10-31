@@ -535,5 +535,8 @@
   ],
   "BEH-INBOX-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "deny uses his words as the reason when he has typed some, and still asks to confirm (BEH-INBOX-2)" }
+  ],
+  "BEH-INBOX-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "puts an answer to his question before higher-priority cards, opened ones still last (BEH-INBOX-3)" }
   ]
 }

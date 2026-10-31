@@ -174,12 +174,35 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   in FEAT-DATA
   layer technical
   source inferred whos-accountable#13
-  review unreviewed
+  review approved
   priority 4
   actor maintainer
   pending
   contract data is versioned in the repo as data-as-code
   contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
+
+behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 English water and sewerage companies"
+  in FEAT-DATA
+  layer technical
+  source inferred whos-accountable#19
+  review unreviewed
+  priority 4
+  actor maintainer
+  contract slice 1 is the 10 companies filing an EA storm-overflow (EDM) annual return in England, by Companies House number, with their 2025 spill events and hours (whos-accountable#19)
+  contract then UK ETS emissions for energy utilities, then UK-linked Carbon Majors, then the FTSE 100; each slice is its own PR
+  contract one year per company until the engine scores per year, because it sums every record a company holds
+
+behaviour BEH-SCORE-7 "The violations scale is calibrated on the real cohort, so real companies spread across 0-100"
+  in FEAT-SCORING
+  layer technical
+  source inferred whos-accountable#19
+  review unreviewed
+  priority 4
+  actor visitor
+  pending
+  contract on the real 2025 water data every company scores 0.00 on violations, because the v1 scale of 5 harm units was set for the synthetic cohort and one company's discharge hours alone come to 14 to 407 units
+  contract counting each spill event as an incident as well as its hours counts the same discharge twice
+  needs-context "Real water data scores every company 0 on violations. May I recalibrate: score on discharge hours only, with the scale set so the cohort's median company scores 50? If no answer by 2026-11-06, I change nothing and nothing is published."
 
 behaviour BEH-COMPANY-1 "A company page shows its score, its pillar sub-scores and the evidence behind them"
   in FEAT-COMPANY

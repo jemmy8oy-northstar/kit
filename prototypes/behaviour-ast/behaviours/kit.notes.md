@@ -390,3 +390,33 @@ Can we onboard holiday app onto kit, I am going to add this with my first test u
 ## 2026-10-29 08:10Z
 
 Inbox only show reason for denying text input if the original text input is empty. Should still show confirm to deny though at least for now
+
+## 2026-10-29 14:56Z
+
+Skipped cards are not marked as skipped only skipped termporsrily on the users device so they can differ acting
+
+## 2026-10-29 22:08Z
+
+Did any skipped items get marked as skipped in the specs/repo? They shouldn’t have been. This should be undone
+
+## 2026-10-30 00:38Z
+
+A user can order idle priority not just pick one
+
+They can also decide which options are not a priority or they do not want Kit working on it
+
+## 2026-10-31 00:55Z
+
+If direct questions are asked as notes replies can come up in the inbox maybe before the questions asked to the user
+
+## 2026-10-31 00:55Z
+
+Am I able to act as a test user myself by logging in with a different organisation or my personal account?
+
+## 2026-10-31 00:57Z
+
+Where are we at in terms of supporting other users? We have no ai support unless I am also a contributor right? And that would be by the bot. Can you explain how expensive running this would be if we were to support anthropic api using opus 5.5 delegating just as you do? Please can you also audit your own materials and figure out what we can reuse for the generic bot and what we don’t want to leak.
+
+## 2026-10-31 00:58Z
+
+Ai support is higher priority than db support for now we can allow users to manage their own deployments for now
