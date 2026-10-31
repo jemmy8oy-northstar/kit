@@ -218,11 +218,12 @@ behaviour BEH-ACCOUNT-3 "Each runner's tokens live in the database, not in confi
   in FEAT-ACCOUNTS
   layer technical
   source inferred tracks#6
-  review requested yes, they are secrets. Today the runners' tokens sit in the database unencrypted. My proposal: keep them there but encrypted, with the key kept in the vault. Approve, or deny and say how you want them held
+  review requested overkill, and not more secure. Each refresh token changes every time Tracks refreshes it, so Tracks would need write access to the vault, and anyone who took over Tracks would have the vault too. Encrypting them in the database, with the key in the vault, protects against the real risk (a leaked database or backup) just as well. Approve that, or deny and say how you want them held
   priority 1
   actor runner
   contract each runner's Strava and Spotify refresh tokens live in the database, not in config; config holds only the app's client id and secret per provider and the webhook verify token
   contract his question (tracks.notes.md#2026-10-31-0051), "Are these not secrets? Should these be stored in vault?": yes, all of them are. Two kinds, though. The app's client secrets and webhook token are a handful of fixed values in a Kubernetes secret today, and they move to the vault when Kit has one (kit-ui BEH-USERS-5). Each runner's refresh token is per-person data that Strava and Spotify replace on every refresh, so it belongs in the database beside the runner, as a vault is built for few, slow-changing values
+  contract his follow-up (tracks.notes.md#2026-10-31-0935), "Would be more secure all in vault right or is that overkill?": overkill. A vault holding per-runner tokens would be written on every refresh, so Tracks would hold vault write credentials, and a compromise of Tracks is then a compromise of the vault; it only adds safety against someone who reads the database without the app, and encryption with the key in the vault covers that case already
   contract measured 2026-10-31: the refresh tokens are stored as plain text in the users table (UserEntity.StravaRefreshToken, SpotifyRefreshToken), so anyone who reads the database or a backup can act as a runner on Strava and Spotify
   contract my proposal, unreviewed: encrypt each refresh token before it is written, with ASP.NET Data Protection, which Tracks already uses for its sign-in cookie and whose keys it already keeps in the database; once the vault exists, the key that protects those keys moves to it
 
