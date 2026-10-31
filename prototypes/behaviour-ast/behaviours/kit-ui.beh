@@ -2123,7 +2123,7 @@ decision ADR-DEPLOYMENT-2 "A deployed Kit commits its edits to kit/hosted and pr
   review unreviewed
 
 feature FEAT-FLAGS "Features switched on and off, separately for him and for testers"
-  stage problem
+  stage development
 
 behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and one for testers"
   in FEAT-FLAGS
@@ -2131,14 +2131,19 @@ behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
   contract "Can you also build a way for features to be toggled on and off for myself and for users as two separate user groups. This way we can be very experimental but can customise the testers experience to be more minimal"
+  contract built: a "Features" section on Settings, for the operator only (the same condition as the other sections), lists every feature of Kit's own corpus (the files of project kit) with two checkboxes, "You" and "Testers"; GET /api/settings/features serves { group, off, features: [{ id, title, operator, testers }] } and POST /api/settings/features with { feature, group: "operator"|"testers", on } writes the switch behind the same operator-only gate as every write, committed and written back like the promotion switch
+  contract built: a switch is one comment line in Kit's primary file (kit.beh), `# kit:switch FEAT-X operator|testers on|off`, placed after the leading `# kit:` lines; main's parser skips every `#` line, so production reads the file unchanged. A malformed line is skipped, and the first good line for a feature and group wins. Setting a switch back to its default removes its line
+  contract built: a feature whose row has no screen of its own says "no visible effect" beside it, because only features that own a page or navigation entry (BEH-FLAGS-2) change anything yet
   contract his stance (kit.notes.md#2026-10-31-1040): "The current approach with kit is aggressive experimentation and then later we can refine the ui and streamline the experience"; switches are what let an experiment reach him without reaching testers
   contract my assumption: a switch is per Kit feature (a FEAT- in the kit corpus), and the two groups are the operator and test users (BEH-USERS-1)
   contract my assumption: a new feature starts on for him and off for testers, so experiments reach him first and testers see a minimal Kit
+  contract my assumption: the storage line is `# kit:switch FEAT-X operator|testers on|off` in kit.beh, one line per feature and group, because Kit's own features span kit.beh, kit-ui.beh and kit-hosted.beh and the promotion and idle settings already live in the primary file; the default is stored as no line, so a new feature needs no edit anywhere
+  contract my assumption: the group names are "operator" in the file and "You" in the UI, since the file is read by agents and the page by him
+  contract my assumption: the section shows only when accounts are on, as the promotion and idle sections do, because a Kit with no accounts has no testers to switch for
 
 behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that group's pages and navigation"
   in FEAT-FLAGS
@@ -2146,12 +2151,17 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
-  contract my assumption: switched off means hidden and its routes refused for that group, not just greyed out, so a tester never meets half an experiment
+  contract built: the UI asks GET /api/settings/features, which names the caller's group from the session (the operator, or anyone else, a caller with no session on a locked Kit included, as a tester) and the features switched off for it; a switched-off feature's navigation entry is left out, and visiting its route directly shows a "Not available" heading and one line instead of the page
+  contract built: a small explicit table in the UI (components/flags.ts) maps features to the screens they own: FEAT-BOARD /board, FEAT-STAGES /stages, FEAT-EPICS /epics, FEAT-INBOX /inbox, FEAT-HEALTH /health, FEAT-ACTIVITY /activity, FEAT-NOTIFICATIONS /notifications; the Board link goes to the first of the three board views that is on, and is left out when none is
+  contract built: while the switches load, or if they cannot be read, every screen shows
+  contract my assumption: switched off means hidden, not greyed out, and a direct visit gets a short "not available" message rather than a blank page or a redirect, so a tester never meets half an experiment
   contract my assumption: the switches are stored in the corpus, as the promotion switch is (BEH-SETTINGS-4), so a change is a commit he can see and revert
+  contract my assumption: this hides screens per group; it is not a security boundary. API routes are not refused, because what a tester may reach is already decided by their account (BEH-USERS-*). This replaces the earlier "its routes refused" assumption
+  contract my assumption: the table maps only features that own a page or navigation entry; every other feature has a switch with no visible effect yet, and Settings says so beside it
+  contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
   stage problem

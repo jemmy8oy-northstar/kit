@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setIdleOrder, setPromote, signOut } from '../api/client'
-import type { IdleItem, SessionState } from '../api/types'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
+import type { IdleItem, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
+import { FEATURE_PAGES, useFlags } from '../components/flags'
 import { githubNavigation } from '../components/githubNavigation'
 import { OpeningPageSetting } from '../components/OpeningPage'
 import ResourceView from '../components/Resource'
@@ -313,6 +314,62 @@ function IdleSettingSection() {
 }
 
 /**
+ * BEH-FLAGS-1: each of Kit's features with two switches, "You" and "Testers". Stored as
+ * `# kit:switch` comment lines in Kit's own corpus, so a change is a commit he can see. A new
+ * feature starts on for him and off for testers. The switches hide UI per group (BEH-FLAGS-2);
+ * they are not a security boundary. A feature without a page or navigation entry has a switch
+ * with no visible effect yet, and the row says so.
+ */
+function FeatureSwitchesSection() {
+  const { switches, reload } = useFlags()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+  if (!switches?.features) return null
+
+  function change(id: string, group: SwitchGroup, on: boolean) {
+    setBusy(`${id}/${group}`)
+    setOutcome(null)
+    setFeatureSwitch(id, group, on)
+      .then(() => {
+        setOutcome({ ok: true, text: `${id} is now ${on ? 'on' : 'off'} for ${group === 'operator' ? 'you' : 'testers'}.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(null))
+  }
+
+  return (
+    <section aria-labelledby="feature-switches">
+      <h2 id="feature-switches">Features</h2>
+      <p>
+        Switch each of Kit's features on or off for you and for testers. A feature that is off is gone from
+        that group's navigation and pages. This hides screens; it does not stop anyone reaching the API.
+      </p>
+      <p className="muted">A new feature starts on for you and off for testers.</p>
+      <ul>
+        {switches.features.map((f) => (
+          <li key={f.id}>
+            <strong>{f.title}</strong> <span className="muted">{f.id}</span>
+            {FEATURE_PAGES[f.id] ? null : <span className="muted"> · no screen of its own yet, so no visible effect</span>}
+            {' '}
+            {(['operator', 'testers'] as const).map((group) => (
+              <label key={group}>
+                <input type="checkbox" checked={group === 'operator' ? f.operator : f.testers}
+                  disabled={busy === `${f.id}/${group}`}
+                  aria-label={`${group === 'operator' ? 'You' : 'Testers'}: ${f.title}`}
+                  onChange={(e) => change(f.id, group, e.target.checked)} />
+                {' '}{group === 'operator' ? 'You' : 'Testers'}{' '}
+              </label>
+            ))}
+          </li>
+        ))}
+      </ul>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
+/**
  * GitHub sends a user back to Kit's root (the App's registered callback URL), so
  * a return lands wherever that is and is sent on here, query intact, without the
  * callback URL having to change. Renders nothing otherwise.
@@ -359,6 +416,7 @@ export default function Settings() {
       )}
       {session?.operator && accounts ? <PromotionSetting /> : null}
       {session?.operator && accounts ? <IdleSettingSection /> : null}
+      {session?.operator && accounts ? <FeatureSwitchesSection /> : null}
       <OpeningPageSetting />
     </>
   )
