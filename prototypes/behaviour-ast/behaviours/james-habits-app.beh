@@ -230,7 +230,7 @@ behaviour BEH-REORDER-1 "Habits can be reordered as a whole list in one call"
 behaviour BEH-ERROR-1 "An unknown habit is a 404 carrying a machine-readable error code"
   source inferred backend/Balenthiran.Habits.Tests/ProblemDetailsResponseTests.cs:Not_found_returns_a_problem_details_body_with_error_code
   priority 5
-  review unreviewed
+  review approved
   actor owner
   contract GET, PUT, DELETE and history for an unknown habit id all return 404
   contract the body is ProblemDetails and carries an error code
