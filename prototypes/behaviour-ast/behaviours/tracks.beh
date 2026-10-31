@@ -198,7 +198,7 @@ behaviour BEH-ACCOUNT-1 "Signing in with Strava is the account, held in an HttpO
   in FEAT-ACCOUNTS
   layer technical
   source inferred tracks#6
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract signing in with Strava is the account: the Strava athlete is the user, so there is no password. Unreviewed: my choice
