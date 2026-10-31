@@ -2122,7 +2122,7 @@ decision ADR-DEPLOYMENT-2 "A deployed Kit commits its edits to kit/hosted and pr
   review unreviewed
 
 feature FEAT-FLAGS "Features switched on and off, separately for him and for testers"
-  stage problem
+  stage development
 
 behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and one for testers"
   in FEAT-FLAGS
