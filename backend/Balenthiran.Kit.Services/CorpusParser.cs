@@ -28,6 +28,9 @@ public sealed class CorpusParser : ICorpusParser
     // by the gate until visual checks are designed).
     private static readonly HashSet<string> Layers = ["ux", "technical", "ui"];
 
+    // BEH-ARCH-1: the parts of the system a decision can belong to, in the order the page shows them.
+    internal static readonly string[] DecisionParts = ["frontend", "backend", "data", "deployment"];
+
     // FEAT-STAGES (kit.notes.md 2026-10-19 08:23Z, BEH-STAGE-1 approved 13:39Z): the five
     // stages in his order. A list, not a set, because the order is the board's columns.
     internal static readonly string[] Stages = ["problem", "ux", "logic", "development", "ui"];
@@ -68,6 +71,7 @@ public sealed class CorpusParser : ICorpusParser
     private static readonly Regex BehaviourLine = new($@"^behaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex FeatureLine = new($@"^feature[{Ws}]+(FEAT-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex EpicLine = new($@"^epic[{Ws}]+(EPIC-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
+    private static readonly Regex DecisionLine = new($@"^decision[{Ws}]+(ADR-[A-Z0-9-]+)[{Ws}]+""(.*)""\z", RegexOptions.Compiled);
     private static readonly Regex ProjectName = new(@"^[a-z0-9][a-z0-9-]*\z", RegexOptions.Compiled);
     private static readonly Regex InRest =new(@"^FEAT-[A-Z0-9-]+\z", RegexOptions.Compiled);
     private static readonly Regex InEpic = new(@"^EPIC-[A-Z0-9-]+\z", RegexOptions.Compiled);
@@ -100,6 +104,8 @@ public sealed class CorpusParser : ICorpusParser
         Behaviour? cur = null;
         Feature? feat = null;
         Epic? epic = null;
+        var decisions = new List<Decision>();
+        Decision? dec = null;
 
         // `String.prototype.split('\n')` — a single-character split, not a
         // line-break-aware one. A lone `\r` is left on the end of the line and
@@ -127,6 +133,7 @@ public sealed class CorpusParser : ICorpusParser
                 behaviours.Add(cur);
                 feat = null;
                 epic = null;
+                dec = null;
                 continue;
             }
 
@@ -150,6 +157,7 @@ public sealed class CorpusParser : ICorpusParser
                 features.Add(feat);
                 cur = null;
                 epic = null;
+                dec = null;
                 continue;
             }
 
@@ -170,6 +178,33 @@ public sealed class CorpusParser : ICorpusParser
                 epics.Add(epic);
                 cur = null;
                 feat = null;
+                dec = null;
+                continue;
+            }
+
+            // ── FEAT-ARCH, BEH-ARCH-1 ────────────────────────────────────────
+            // An architecture decision: its own block, owned by one part of the system. Free text
+            // after each keyword, because a decision is prose; `considered` and `because` repeat.
+            if (kw == "decision")
+            {
+                var d = DecisionLine.Match(line);
+                if (!d.Success) throw new CorpusParseException($@"{at}: decision wants ADR-<ID> ""<title>"", got: {line}");
+                if (decisions.Find(x => x.Id == d.Groups[1].Value) is { } dup)
+                {
+                    throw new CorpusParseException($"{at}: decision {dup.Id} is already declared at {dup.At}");
+                }
+
+                dec = new Decision { Id = d.Groups[1].Value, Title = d.Groups[2].Value, At = at };
+                decisions.Add(dec);
+                cur = null;
+                feat = null;
+                epic = null;
+                continue;
+            }
+
+            if (dec is not null)
+            {
+                ParseDecisionLine(dec, kw, rest, at, line);
                 continue;
             }
 
@@ -468,8 +503,58 @@ public sealed class CorpusParser : ICorpusParser
             throw new CorpusParseException($@"{at}: unrecognised keyword ""{kw}""");
         }
 
+        foreach (var d in decisions)
+        {
+            if (d.Part.Length == 0) throw new CorpusParseException($"{d.At}: decision {d.Id} needs a part ({string.Join("|", DecisionParts)})");
+            if (d.Chosen.Length == 0) throw new CorpusParseException($"{d.At}: decision {d.Id} needs a chosen line");
+            if (d.Because.Count == 0) throw new CorpusParseException($"{d.At}: decision {d.Id} needs at least one because line");
+        }
+
         CheckTags(behaviours, features, epics);
-        return new ParsedCorpus { Behaviours = behaviours, Features = features, Epics = epics, Project = FileProject(lines, file) };
+        return new ParsedCorpus { Behaviours = behaviours, Features = features, Epics = epics, Decisions = decisions, Project = FileProject(lines, file) };
+    }
+
+    /// <summary>One line inside a <c>decision</c> block (BEH-ARCH-1); anything else is refused like an unknown feature line.</summary>
+    private static void ParseDecisionLine(Decision dec, string kw, string rest, string at, string line)
+    {
+        switch (kw)
+        {
+            case "part":
+                if (!DecisionParts.Contains(rest)) throw new CorpusParseException($@"{at}: part wants ""{string.Join(@"""|""", DecisionParts)}"", got: {rest}");
+                if (dec.Part.Length > 0) throw new CorpusParseException($"{at}: part is already set on {dec.Id}");
+                dec.Part = rest;
+                return;
+            case "chosen":
+                if (rest.Length == 0) throw new CorpusParseException($"{at}: chosen wants the text of what was chosen");
+                if (dec.Chosen.Length > 0) throw new CorpusParseException($"{at}: chosen is already set on {dec.Id}");
+                dec.Chosen = rest;
+                return;
+            case "considered":
+                if (rest.Length == 0) throw new CorpusParseException($"{at}: considered wants the text of an alternative");
+                dec.Considered.Add(rest);
+                return;
+            case "because":
+                if (rest.Length == 0) throw new CorpusParseException($"{at}: because wants a reason");
+                dec.Because.Add(rest);
+                return;
+            case "source":
+                var s = SourceRest.Match(rest);
+                if (!s.Success) throw new CorpusParseException($@"{at}: source wants ""defined""|""inferred"" [ref], got: {rest}");
+                dec.Source = new Source { Origin = s.Groups[1].Value, Ref = Opt(s.Groups[2]) };
+                return;
+            case "review":
+                var r = ReviewRest.Match(rest);
+                if (!r.Success) throw new CorpusParseException($@"{at}: review wants ""unreviewed""|""approved""|""requested""|""denied"" [note], got: {rest}");
+                if (r.Groups[1].Value is "requested" or "denied" && !r.Groups[2].Success)
+                {
+                    throw new CorpusParseException($"{at}: a {(r.Groups[1].Value == "denied" ? "denied decision must state the correction" : "review request must say what to look at")}");
+                }
+
+                dec.Review = new Review { State = r.Groups[1].Value, Note = Opt(r.Groups[2]) };
+                return;
+            default:
+                throw new CorpusParseException($@"{at}: unrecognised keyword ""{kw}"" in a decision, got: {line}");
+        }
     }
 
     /// <summary>

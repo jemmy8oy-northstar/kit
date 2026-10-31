@@ -11,7 +11,11 @@ public sealed class ParsedCorpus : IParsedCorpus
 
     public List<Epic> Epics { get; init; } = [];
 
+    public List<Decision> Decisions { get; init; } = [];
+
     public string? Project { get; init; }
+
+    IReadOnlyList<IDecision> IParsedCorpus.Decisions => Decisions;
 
     IReadOnlyList<IBehaviour> IParsedCorpus.Behaviours => Behaviours;
 
