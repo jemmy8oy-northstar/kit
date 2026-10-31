@@ -551,5 +551,9 @@
   ],
   "BEH-INBOX-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "puts an answer to his question before higher-priority cards, opened ones still last (BEH-INBOX-3)" }
+  ],
+  "BEH-INBOX-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "narrows the queue and the counter to the projects he picks, and unfiltered is unchanged (BEH-INBOX-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "says so when the projects he picked have nothing waiting (BEH-INBOX-4)" }
   ]
 }

@@ -138,6 +138,59 @@ describe('Inbox', () => {
     expect(order).toEqual(['A-ANSWER', 'A-NEEDS', 'A-PROP', 'A-OLD-ANSWER'])
   })
 
+  it('narrows the queue and the counter to the projects he picks, and unfiltered is unchanged (BEH-INBOX-4)', async () => {
+    mockApi()
+    await open()
+    expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 5')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to beta' }))
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 1'))
+    expect(current()).toBe('B-PROP')
+    expect(screen.getByRole('button', { name: 'Filter to beta' })).toHaveAttribute('aria-pressed', 'true')
+
+    // Both picked: everything again; unpicking beta leaves alpha's four, in order.
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to alpha' }))
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 5'))
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to beta' }))
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 4'))
+    expect(current()).toBe('A-ASK')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 2 of 4'))
+    expect(current()).toBe('A-NEEDS')
+
+    // A card he has skipped does not come back when the filter is cleared.
+    fireEvent.click(screen.getByRole('button', { name: 'Filter to alpha' }))
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 2 of 5'))
+    expect(current()).toBe('B-PROP')
+    expect(writes).toEqual([])
+  })
+
+  it('says so when the projects he picked have nothing waiting (BEH-INBOX-4)', async () => {
+    mockApi()
+    render(
+      <MemoryRouter initialEntries={['/inbox?project=gamma']}>
+        <Inbox />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/in the projects you picked/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Filter to alpha' })).toBeInTheDocument()
+  })
+
+  it('does not say nothing else is waiting when only the picked projects are done (BEH-INBOX-4)', async () => {
+    mockApi()
+    render(
+      <MemoryRouter initialEntries={['/inbox?project=beta']}>
+        <Inbox />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(await screen.findByText(/Clear the filter to see the rest/)).toBeInTheDocument()
+    expect(screen.queryByText(/nothing else is waiting on you/)).not.toBeInTheDocument()
+  })
+
   it('says so plainly when nothing is waiting on him (BEH-INBOX-1)', async () => {
     mockApi({ alpha: [beh('A-QUEUE', { pending: true }), beh('A-DONE')] })
     render(
