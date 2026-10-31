@@ -227,7 +227,7 @@ behaviour BEH-ACCOUNT-4 "A Strava event reaches only its owner, and a runner who
   in FEAT-ACCOUNTS
   layer technical
   source inferred tracks#6
-  review unreviewed
+  review approved
   priority 1
   actor runner
   contract a Strava webhook event is routed by its owner_id to that runner; an athlete who never signed in is acknowledged and ignored
