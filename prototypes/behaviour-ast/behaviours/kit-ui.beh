@@ -2022,62 +2022,6 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   contract "Or maybe this is abstracted away from the user? Idk I kind of feel that everything is opt in for a user they should be able to go as high level or as involved as they like"
   contract my assumption: a per-user depth setting (goals only, behaviours, or behaviours and architecture); what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later
 
-# Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
-# my reading, so every one is unreviewed until he rules on it.
-
-decision ADR-FRONTEND-1 "The UI is a React single-page app built with Vite, on the shared design system"
-  part frontend
-  chosen React 19, Vite and react-router 7, with components from @jemmy8oy-northstar/design-system taken as a git-URL dependency on its dev branch
-  considered Redux / RTK Query for data fetching (skipped: there is no OpenAPI client to generate)
-  because it follows web-template, so Kit is not a third way of building a frontend
-  because the design system supplies Button, Card, Badge and Input, and its identity is not Kit's to invent
-  source defined docs/design/ui.md#stack
-  review unreviewed
-
-decision ADR-BACKEND-1 "The backend is ASP.NET Core on .NET, serving the API and the built UI"
-  part backend
-  chosen ASP.NET Core (Kestrel) on .NET 10, one process on one port serving both the API and the built UI bundle
-  considered The Node engine (ui.js, kit.js), which was the original server and is now the specification the C# port is scored against
-  because the port is verified request by request against the Node engine by the conformance goldens, so behaviour did not change when the language did
-  because Node is build-time only: the running container does not need it
-  source defined Dockerfile
-  review unreviewed
-
-decision ADR-DATA-1 "A project's spec is plain-text .beh files in its repo, not rows in a database"
-  part data
-  chosen line-based .beh corpus files in git, written by surgical block edits that leave comments and neighbouring blocks alone
-  considered YAML or JSON for the corpus, which fail a human writing the tree by hand on punctuation alone
-  considered A database holding the corpus, which James parked on kit#41 ("let's stick to git for now and park db")
-  because a corpus stays a file in his repo that he reviews as a diff, which is Kit's central premise
-  source defined docs/design/ui.md#decision-2
-  review unreviewed
-
-decision ADR-DATA-2 "Early-access accounts live in Postgres, optional, and nothing else does"
-  part data
-  chosen a Postgres database, reached through the KIT_DATABASE connection string, holding early-access accounts only
-  because accounts need somewhere that is not the corpus files, and the database was approved on BEH-USERS-4
-  because it is optional: with KIT_DATABASE unset, accounts stay off and Kit keeps its one operator password
-  source defined helm/values.yaml
-  review unreviewed
-
-decision ADR-DEPLOYMENT-1 "Kit ships as one container image, served under a path prefix on the shared host"
-  part deployment
-  chosen one multi-stage Docker image (Node builds the bundle, the .NET SDK publishes the server, the aspnet image serves both), deployed from a Helm chart that ArgoCD reads, at balenthiran.co.uk/kit
-  considered Two images, a .NET backend and an nginx frontend, as the rest of the estate builds them
-  because Kit is one process serving the SPA and the API, so a second image would have nothing to hold
-  because the ingress does not rewrite paths, so the prefix is baked into the bundle at build time through KIT_BASE_PATH
-  source defined Dockerfile
-  review unreviewed
-
-decision ADR-DEPLOYMENT-2 "A deployed Kit commits its edits to kit/hosted and proposes them to dev as one pull request"
-  part deployment
-  chosen hosted write-back: the entrypoint clones the repo, every edit is committed and pushed to the kit/hosted branch, and the Commit button opens one pull request into dev
-  considered Writing the file and never touching git, which stays the behaviour of a local Kit
-  because James asked for a Kit he can use from his phone, which a local-only tool cannot be
-  because nothing reaches dev until that pull request is merged, so git remains the review step
-  source defined docs/design/ui.md#both-defaults-were-later-overruled-by-james-and-that-is-the-queue-working
-  review unreviewed
-
 feature FEAT-FLAGS "Features switched on and off, separately for him and for testers"
   stage problem
 
