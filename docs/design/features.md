@@ -39,6 +39,12 @@ behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it 
   the file's project as its parent and no lines yet. A feature joins it with `in EPIC-…`, which is
   kept in `epics` apart from `in`, so the project tree never changes. A behaviour reaches an epic
   through its feature. ⚠️ A corpus may use `epic` only once the parser is on main.
+- **`decision ADR-<PART>-<N> "<title>"`** (BEH-ARCH-1, slice A, read-only) is its own block: one
+  architecture decision. Lines: `part frontend|backend|data|deployment` and `chosen <text>` (both
+  required, once each), `considered <text>` (optional, repeatable), `because <text>` (required,
+  repeatable), and the `source` and `review` lines a behaviour takes. A decision with no `review`
+  line is unreviewed. The project page's Architecture tab groups them by part; the tab shows only
+  when the corpus has one. ⚠️ A corpus may use `decision` only once the parser is on main.
 - **`in <FEAT-ID>`** names a parent. It can be repeated, and each line is a tag, not an ownership, so a
   card can sit under the board *and* the project page. It is valid on a feature and on a behaviour.
 - **No `in` means top level** of the project. Nothing has to be tagged, so every existing corpus
