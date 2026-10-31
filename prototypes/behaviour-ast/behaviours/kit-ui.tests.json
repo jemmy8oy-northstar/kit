@@ -591,5 +591,14 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard" }
+  ],
+  "BEH-NARR-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: no epics gives null" },
+    { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: picks the first open epic in corpus order" },
+    { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: skips epics that are fully built" },
+    { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: every epic built gives a goal of null, not no epics" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: names the goal epic as a link, with how many of its behaviours are built" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: says every goal is built when no epic has a pending behaviour" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: shows nothing for a project with no epics" }
   ]
 }
