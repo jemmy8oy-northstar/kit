@@ -1079,7 +1079,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   then sees region:KitStagesBoard
   contract "the feature board gets a done column, each column represents what spec needs to be provided, development represents in development, done represents done"
   contract my assumption: Done is derived in the page, not a sixth `stage` word, because production Kit parses the corpus with main's parser and an unknown stage value throws; like Unstaged (BEH-STAGE-7) it is a column and not a stage
-  contract my assumption: a feature is Done when it has at least one behaviour beneath it (child features counted) and every one is in the Done column of the behaviour board (BEH-BOARD-1), so a paused, blocked, proposed, in-review or denied behaviour keeps it in its stage's column; a feature with no behaviours is never Done
+  contract my assumption: a feature is Done when it has at least one behaviour beneath it (child features counted) and every one is in the Done column of the behaviour board (BEH-BOARD-1), so a paused, blocked, proposed or in-review behaviour keeps it in its stage's column; a denied one is not work (BEH-BOARD-21) and is left out; a feature with no live behaviours is never Done
   contract my assumption: Done leaves a feature's written stage line alone; it only decides where the card is shown, so a behaviour added later or un-built moves the card back to its stage
   contract my assumption: Done keeps corpus order, not most recently completed first (BEH-BOARD-4), because that order needs each project's commit history, which this page does not read
   contract built: the Done column after UI requirements, from the same columnOf the behaviour board uses

@@ -1,5 +1,5 @@
 import type { Behaviour, Feature, Stage } from './api/types'
-import { columnOf } from './board'
+import { columnOf, isDenied } from './board'
 import { behavioursUnder } from './features'
 
 /**
@@ -57,8 +57,10 @@ export function stageCards(app: string, project: string, features: Feature[], be
   return features.map((feature) => {
     const under = [...behavioursUnder({ features, behaviours }, feature.id)]
     // BEH-STAGE-12: Done is the behaviour board's own Done (columnOf), so paused, blocked, proposed or
-    // denied work beneath a feature keeps it out of Done.
-    const done = under.length > 0 && under.every((id) => byId.has(id) && columnOf(byId.get(id)!) === 'done')
+    // denied work beneath a feature keeps it out of Done. A denied card is not work (BEH-BOARD-21), so
+    // it neither blocks Done nor counts towards it.
+    const live = under.filter((id) => !(byId.has(id) && isDenied(byId.get(id)!)))
+    const done = live.length > 0 && live.every((id) => byId.has(id) && columnOf(byId.get(id)!) === 'done')
     return { app, project, feature, built: under.filter((id) => !byId.get(id)?.pending).length, total: under.length, done }
   })
 }

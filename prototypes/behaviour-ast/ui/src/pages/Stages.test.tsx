@@ -156,18 +156,28 @@ describe('Stages', () => {
 
 describe('stage rules', () => {
   it('is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)', () => {
-    const features = [feat('FEAT-A', { stage: 'ui' }), feat('FEAT-B', { stage: 'ui' }), feat('FEAT-C', { stage: 'ui' }), feat('FEAT-D', { stage: 'ui' })]
+    const features = [
+      feat('FEAT-A', { stage: 'ui' }),
+      feat('FEAT-B', { stage: 'ui' }),
+      feat('FEAT-C', { stage: 'ui' }),
+      feat('FEAT-D', { stage: 'ui' }),
+      feat('FEAT-E', { stage: 'ui' }),
+    ]
     const behaviours = [
       beh('A1', { in: ['FEAT-A'] }),
       beh('B1', { in: ['FEAT-B'] }),
       beh('B2', { in: ['FEAT-B'], needsContext: 'a secret' }),
       beh('C1', { in: ['FEAT-C'], review: { state: 'denied', note: null } }),
+      // A denied card is not work (BEH-BOARD-21): it neither blocks Done nor makes it.
+      beh('E1', { in: ['FEAT-E'] }),
+      beh('E2', { in: ['FEAT-E'], pending: true, review: { state: 'denied', note: null } }),
     ]
     expect(stageCards('app', 'app', features, behaviours).map((c) => [c.feature.id, c.done])).toEqual([
       ['FEAT-A', true],
       ['FEAT-B', false],
       ['FEAT-C', false],
       ['FEAT-D', false],
+      ['FEAT-E', true],
     ])
   })
 
