@@ -424,3 +424,7 @@ Ai support is higher priority than db support for now we can allow users to mana
 ## 2026-10-31 09:42Z
 
 Kit approving unpauses if there are no blockers
+
+## 2026-10-31 09:46Z
+
+Kit pause has some reask date tag or soemthing so it doesn’t keep appearing in the inbox whilst it’s paused. I guess bell can override this
