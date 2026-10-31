@@ -177,7 +177,7 @@ behaviour BEH-STREAK-2 "A streak stops at the first missed day"
 behaviour BEH-STREAK-3 "Longest streak ignores duplicate and out-of-order dates"
   source inferred backend/Balenthiran.Habits.Tests/HabitCalculatorTests.cs:LongestStreak_ignores_duplicate_and_unordered_dates
   priority 5
-  review unreviewed
+  review approved
   serves BEH-HISTORY-1
   actor owner
   contract duplicate and unordered entry dates do not inflate the longest streak
