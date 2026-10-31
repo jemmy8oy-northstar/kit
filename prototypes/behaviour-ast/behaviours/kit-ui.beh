@@ -893,6 +893,7 @@ behaviour BEH-LOOK-2 "Kit wears the design system's professional theme, and a ti
 behaviour BEH-FEEDBACK-1 "Once Kit has users, the free-text box takes feedback on Kit itself"
   in FEAT-NOTES
   source defined kit.notes.md#2026-10-16-0730
+  review approved
   priority 5
   pending
   needs-context "Does Kit have a user other than you yet? Until you say yes, I leave this."
