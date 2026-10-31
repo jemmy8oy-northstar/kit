@@ -232,8 +232,9 @@ behaviour BEH-API-1 "A read-only web API serves the leaderboards and company pag
   review unreviewed
   priority 4
   actor visitor
-  pending
   contract a WebApi with an EF read model; there is no API in the repo yet
+  contract my assumption, which replaces the EF read model: no database for v1. The cohort is committed data-as-code and scoring is a pure function of it, so the API scores it once at startup and holds the result in memory; a database comes back if refreshes ever stop being pull requests
+  contract built 2026-10-31 (whos-accountable#20): GET /api/leaderboard?direction=worst|best&sector=, /api/companies/{id}, /api/methodology and /api/status; a company with an unknown score sorts last both ways (BEH-SCORE-4)
 
 
 # ═══ BACKLOG — the bot's issues, lowest priority ═══
