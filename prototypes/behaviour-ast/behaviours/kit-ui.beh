@@ -1513,7 +1513,7 @@ behaviour BEH-BELL-3 "A rung card sits at the top of its board column until its 
   contract a rung card carries a "rung" badge; Scheduled, In progress and Done keep their own order
 
 feature FEAT-COMMENTS "Comments under an item"
-  stage ui
+  stage development
 
 behaviour BEH-COMMENT-1 "Epics, features, behaviours and projects each carry their own comments"
   in FEAT-COMMENTS
@@ -1533,7 +1533,6 @@ behaviour BEH-COMMENT-2 "The agent reads every comment and answers the ones that
   source defined kit.notes.md#2026-10-31-0948
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitBehaviour
   then sees region:KitMain
