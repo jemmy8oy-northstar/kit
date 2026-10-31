@@ -10,11 +10,13 @@ export interface Goal {
  * The project's current goal, or null when it declares no epic (nothing to say yet).
  * An epic is open while any behaviour beneath its features is pending; the goal is the first
  * open epic in the corpus. Epics carry no priority in the grammar, so file order decides.
+ * An epic whose title parks it "out of scope" is never the goal (his convention, BEH-EPIC-6).
  */
 export function goalOf(files: ProjectDetail[]): Goal | null {
   const cards = files.flatMap((f) =>
     epicCards(f.app, f.project, f.epics ?? [], f.features ?? [], f.behaviours),
   )
   if (cards.length === 0) return null
-  return { goal: cards.find((card) => card.built < card.total) ?? null }
+  const open = (card: EpicCard) => card.built < card.total && !/out of scope/i.test(card.epic.title)
+  return { goal: cards.find(open) ?? null }
 }

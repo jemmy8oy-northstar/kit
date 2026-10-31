@@ -35,6 +35,15 @@ describe('goalOf (BEH-NARR-1)', () => {
     expect([g.built, g.total]).toEqual([1, 2])
   })
 
+  it('BEH-NARR-1: never picks an epic its title parks out of scope', () => {
+    const f = file(
+      [{ id: 'E1', title: 'Onboard (backlog, out of scope for now)', at: 'x:1' }, epic('E2')],
+      [feat('F1', 'E1'), feat('F2', 'E2')],
+      [beh('B1', 'F1', true), beh('B2', 'F2', true)],
+    )
+    expect(goalOf([f])!.goal!.epic.id).toBe('E2')
+  })
+
   it('BEH-NARR-1: every epic built gives a goal of null, not no epics', () => {
     const f = file([epic('E1')], [feat('F1', 'E1')], [beh('B1', 'F1')])
     expect(goalOf([f])).toEqual({ goal: null })

@@ -2185,7 +2185,7 @@ behaviour BEH-NARR-1 "Each project says what it is working towards, taken from i
   then sees region:KitMain
   contract "Kit would benefit from the agent driving some narrative for the user… I guess epics can help figure out what the big goals are"
   contract my assumption: the top of a project's page names its current goal (its highest-priority open epic) and how far along it is, and the agent picks work that moves that goal before anything else
-  contract built 2026-10-31: the project page leads with "Working towards" and its goal epic, linked, with how many of its behaviours are built; an epic is open while any behaviour under it is pending, and the goal is the first open epic in the corpus (epics carry no priority yet)
+  contract built 2026-10-31: the project page leads with "Working towards" and its goal epic, linked, with how many of its behaviours are built; an epic is open while any behaviour under it is pending, and the goal is the first open epic in the corpus (epics carry no priority yet), never one its title parks "out of scope"
   contract my assumption: the agent ranking its own work by that goal is not built here; its Queue order still comes from card priorities
 
 behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towards, or whether it is being maintained"

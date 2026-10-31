@@ -596,6 +596,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: no epics gives null" },
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: picks the first open epic in corpus order" },
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: skips epics that are fully built" },
+    { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: never picks an epic its title parks out of scope" },
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: every epic built gives a goal of null, not no epics" },
     { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: names the goal epic as a link, with how many of its behaviours are built" },
     { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: says every goal is built when no epic has a pending behaviour" },
