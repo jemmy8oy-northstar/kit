@@ -77,7 +77,7 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
       <p className="muted">{project === app ? app : `${project} · ${app}`}</p>
       <div className="badges">
         {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
-        {b.paused && <Badge tone="neutral">⏸ paused</Badge>}
+        {b.paused && <Badge tone="neutral">⏸ paused{b.pausedUntil ? ` · asks again ${b.pausedUntil}` : ''}</Badge>}
         {b.priority !== undefined && <Badge tone={b.priority === 1 ? 'danger' : 'neutral'}>P{b.priority}</Badge>}
         <Badge tone="neutral">{b.layer}</Badge>
       </div>
@@ -100,6 +100,12 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
         {(b.pending || b.paused) && (
           <Button type="button" variant="secondary" onClick={() => run(() => setPaused(app, b.id, !b.paused))} disabled={saving}>
             {b.paused ? 'Resume' : 'Pause'}
+          </Button>
+        )}
+        {/* BEH-BOARD-26: pausing a paused card re-dates it, so this is how "ask me again later" is said. */}
+        {b.paused && (
+          <Button type="button" variant="secondary" onClick={() => run(() => setPaused(app, b.id, true))} disabled={saving}>
+            Ask again in 2 weeks
           </Button>
         )}
         <Button type="button" onClick={() => run(() => leaveNote(app, words.trim(), b.id))} disabled={saving || words.trim() === ''}>

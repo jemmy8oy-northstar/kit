@@ -39,6 +39,9 @@ public interface IBehaviour
     /// <summary>Held on the Backlog and not built (BEH-BOARD-16); a <c>paused</c> line.</summary>
     bool Paused { get; }
 
+    /// <summary>The <c>YYYY-MM-DD</c> in <c>paused until</c> (BEH-BOARD-26); null for a bare <c>paused</c>.</summary>
+    string? PausedUntil { get; }
+
     /// <summary>What he must add before the agent can go on (BEH-BOARD-17); a <c>needs-context</c> line, else null.</summary>
     string? NeedsContext { get; }
 

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Inbox from './Inbox'
-import { lowered } from '../inbox'
+import { localDate, lowered } from '../inbox'
 import type { Behaviour } from '../api/types'
 
 function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
@@ -220,6 +220,32 @@ describe('Inbox', () => {
       ['/api/projects/alpha/behaviours/A-NEEDS/paused', { paused: true }],
       ['/api/projects/alpha/behaviours/A-PAUSED/paused', { paused: false }],
     ])
+  })
+
+  it('a card paused until a later date leaves the inbox; a bare pause or a date reached stays (BEH-BOARD-26)', async () => {
+    mockApi({
+      alpha: [
+        beh('A-FUTURE', { pending: true, paused: true, pausedUntil: '2999-01-01', priority: 1 }),
+        beh('A-TODAY', { pending: true, paused: true, pausedUntil: localDate(), priority: 2 }),
+        beh('A-PAST', { pending: true, paused: true, pausedUntil: '2000-01-01', priority: 3 }),
+        beh('A-BARE', { pending: true, paused: true, priority: 4 }),
+      ],
+    })
+    await open()
+
+    expect(screen.getByTestId('inbox-position')).toHaveTextContent('Card 1 of 3')
+    expect(document.body.textContent).not.toContain('A-FUTURE')
+  })
+
+  it('a paused card offers "Ask again in 2 weeks", which pauses it again so the server re-dates it (BEH-BOARD-26)', async () => {
+    mockApi({ alpha: [beh('A-PAUSED', { pending: true, paused: true, pausedUntil: '2000-01-01', priority: 2 })] })
+    await open()
+
+    expect(screen.getByText(/asks again 2000-01-01/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Ask again in 2 weeks' }))
+    await screen.findByText(/That is all of them/)
+
+    expect(writes).toEqual([['/api/projects/alpha/behaviours/A-PAUSED/paused', { paused: true }]])
   })
 
   it('answer and comment each leave a note on the card, and need words (BEH-INBOX-1)', async () => {

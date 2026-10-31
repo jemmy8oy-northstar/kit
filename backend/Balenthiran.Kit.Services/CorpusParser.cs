@@ -240,9 +240,22 @@ public sealed class CorpusParser : ICorpusParser
             // second `priority`, rather than silently agreeing with the first.
             if (kw == "paused")
             {
-                if (rest.Length > 0) throw new CorpusParseException($"{at}: paused takes nothing after it, got: {rest}");
+                // BEH-BOARD-26: bare, or `paused until YYYY-MM-DD` (strict ISO date, nothing else).
+                string? until = null;
+                if (rest.Length > 0)
+                {
+                    var parts = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length != 2 || parts[0] != "until" || !IsoDate(parts[1]))
+                    {
+                        throw new CorpusParseException($"{at}: paused takes nothing after it but `until YYYY-MM-DD`, got: {rest}");
+                    }
+
+                    until = parts[1];
+                }
+
                 if (cur.Paused) throw new CorpusParseException($"{at}: paused is already set on {cur.Id}");
                 cur.Paused = true;
+                cur.PausedUntil = until;
                 continue;
             }
 
@@ -563,6 +576,10 @@ public sealed class CorpusParser : ICorpusParser
     /// <c>Ws</c> comment for the two codepoints they disagree about.
     /// </summary>
     private static string Trim(string s) => s.Trim(WsChars);
+
+    /// <summary>A strict ISO calendar date, <c>YYYY-MM-DD</c> and nothing looser (BEH-BOARD-26).</summary>
+    internal static bool IsoDate(string s) =>
+        s.Length == 10 && DateOnly.TryParseExact(s, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _);
 
     /// <summary>
     /// <c>fileLayer</c> in <c>kit.js</c>: a <c># kit:layer &lt;x&gt;</c> line sets

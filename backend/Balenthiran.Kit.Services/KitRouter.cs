@@ -485,6 +485,10 @@ public sealed partial class KitRouter(
         }
     }
 
+    /// <summary>BEH-BOARD-26: a pause asks again in 14 days, counted server-side from today (UTC).</summary>
+    private string PausedUntil() =>
+        DateOnly.FromDateTime((clock ?? TimeProvider.System).GetUtcNow().UtcDateTime).AddDays(14).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary><c>write()</c> past its gates: create, add or replace a step, retitle, adjudicate, or remove.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
     {
@@ -556,7 +560,7 @@ public sealed partial class KitRouter(
             : update
             ? writer.UpdateStep(text, id!, index, Str(body, "step")!)
             : paused
-            ? writer.SetPaused(text, id!, Field(body, "paused")!.Value.GetBoolean())
+            ? writer.SetPaused(text, id!, Field(body, "paused")!.Value.GetBoolean(), PausedUntil())
             : priority
             ? writer.SetPriority(text, id!, Field(body, "priority")!.Value.GetInt32())
             : title
