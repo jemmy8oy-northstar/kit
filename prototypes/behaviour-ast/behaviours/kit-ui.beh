@@ -1785,6 +1785,22 @@ behaviour BEH-INBOX-3 "When he asks a question in a note, the answer comes up fi
   contract my assumption: the agent answers a question on the card it is about, and marks that card review requested, with the short answer as the request; a question about no card goes on the card it most concerns
   contract my assumption: the Inbox shows review requests before Kit's own questions (needs-context lines) and before unreviewed proposals, still unseen first within each group
 
+behaviour BEH-INBOX-4 "He can filter his Inbox by project"
+  in FEAT-INBOX
+  layer ux
+  source defined kit.notes.md#2026-10-31-1623
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "kit you should be able to filter projects when going through your inbox"
+  contract built 2026-10-31: one button per project that has a card waiting on him, the same buttons the board uses; the card counter and Skip/Approve/etc. move through only the picked projects, and with none picked the Inbox is as before
+  contract my assumption: he can pick several projects, as on the board, rather than only one
+  contract my assumption: the pick lives in the url as ?project=a,b, like the board's (BEH-BOARD-2), so it survives a reload and can be shared; it is not remembered across visits
+  contract my assumption: the buttons list only projects that had a card for him when the page opened, and the order stays fixed (BEH-INBOX-1): changing the filter never reshuffles, and a card he has acted on or skipped does not come back when the filter widens
+  contract my assumption: "project" is the card's project as the board names it (a `# kit:project` line, else the file's name), so files sharing one project share one button
+
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
 

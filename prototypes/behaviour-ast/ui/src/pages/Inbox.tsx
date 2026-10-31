@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import { leaveNote, setPaused, setPriority, setReview } from '../api/client'
 import { useResource } from '../hooks/useResource'
@@ -30,8 +30,20 @@ export default function Inbox() {
 function Queue({ entries }: { entries: Entry[] }) {
   // Frozen at open: reading "seen" and ordering once is what keeps the queue from moving under his thumb.
   const [queue] = useState(() => ordered(mine(entries), readSeen()))
-  const [at, setAt] = useState(0)
-  const card = queue[at]
+  // BEH-INBOX-4: the same `?project=a,b` filter the board keeps in the url (BEH-BOARD-2).
+  const [params, setParams] = useSearchParams()
+  const selected = (params.get('project') ?? '').split(',').filter(Boolean)
+  // Cards he has acted on or skipped this visit. The queue is frozen, so the filter changing must not bring them back.
+  const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
+  const shown = selected.length === 0 ? queue : queue.filter((c) => selected.includes(c.project))
+  const at = shown.filter((c) => handled.has(keyOf(c))).length
+  const card = shown.find((c) => !handled.has(keyOf(c)))
+  const projects = [...new Set(queue.map((c) => c.project))]
+
+  function toggle(p: string) {
+    const next = selected.includes(p) ? selected.filter((a) => a !== p) : [...selected, p]
+    setParams(next.length ? { project: next.join(',') } : {}, { replace: true })
+  }
 
   // Opened is remembered in this browser, like the opening page (BEH-SETTINGS-2).
   useEffect(() => {
@@ -44,15 +56,43 @@ function Queue({ entries }: { entries: Entry[] }) {
   if (queue.length === 0) {
     return <p>Nothing is waiting on you.</p>
   }
+  const filter = (
+    <div className="board-controls" role="group" aria-label="Project">
+      {projects.map((p) => (
+        <Button
+          key={p}
+          type="button"
+          size="sm"
+          variant={selected.includes(p) ? 'secondary' : 'ghost'}
+          aria-pressed={selected.includes(p)}
+          aria-label={`Filter to ${p}`}
+          onClick={() => toggle(p)}
+        >
+          <span className={`dot hue-${hueOf(p)}`} aria-hidden="true" />
+          {p}
+        </Button>
+      ))}
+    </div>
+  )
   if (!card) {
-    return <p>That is all of them: nothing else is waiting on you.</p>
+    return (
+      <>
+        {filter}
+        <p>
+          {shown.length === 0
+            ? 'Nothing is waiting on you in the projects you picked.'
+            : 'That is all of them: nothing else is waiting on you.'}
+        </p>
+      </>
+    )
   }
   return (
     <>
+      {filter}
       <p className="muted" data-testid="inbox-position">
-        Card {at + 1} of {queue.length}
+        Card {at + 1} of {shown.length}
       </p>
-      <CardView key={keyOf(card)} card={card} onDone={() => setAt((n) => n + 1)} />
+      <CardView key={keyOf(card)} card={card} onDone={() => setHandled((h) => new Set(h).add(keyOf(card)))} />
     </>
   )
 }
