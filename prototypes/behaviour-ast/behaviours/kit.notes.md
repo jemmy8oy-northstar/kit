@@ -478,3 +478,7 @@ When I have technical questions I am able to ask the non coder agent and it is a
 When the agent encounters unforeseen blockers it asks its own questions to its own open question board. The inbox can be used to address questions from the coder agent. The next step is instead to have the non coder agent discuss these open questions with the human to get these resolves. Maybe we need towards this next. Having a page where all of this spec work is triaged or consulted via a non coder agent. Non coder agent is much cheaper right? But this would create great value because then the user can discuss just like I can with gemini as a first step before the coder agent takes a look. But this agent will have way more context than gemini.
 
 I also want to say improving kit is our no1 priority and focus. I get that when kit is blocked you can tick on with other things but we need to be working towards the kit dream.
+
+## 2026-10-31 16:47Z
+
+the feature board gets a done column, each column represents what spec needs to be provided, development represents in development, done represents done
