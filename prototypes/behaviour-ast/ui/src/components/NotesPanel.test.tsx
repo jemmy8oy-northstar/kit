@@ -277,6 +277,75 @@ describe('NotesPanel order, cap and folded notes', () => {
   })
 })
 
+// ── BEH-COMMENT-2: James's side of "the agent reads every comment" ──
+
+describe('NotesPanel picked-up state (BEH-COMMENT-2)', () => {
+  const citations = citationsOf('demo', [
+    { app: 'demo-ui', behaviours: [{ id: 'BEH-FEAT-7', title: 'Notes are a tab', source: { ref: 'demo.notes.md#2026-10-16-0713' } }] },
+  ])
+
+  it('BEH-COMMENT-2: a cited comment stays on its item page and links the card that answered it', async () => {
+    server([note('2026-10-16 07:13Z', 'BEH-2', 'tabs please')])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" behaviour="BEH-2" citations={citations} />
+      </MemoryRouter>,
+    )
+    const card = (await within(region()).findByText('tabs please')).closest('li')!
+    expect(within(card).getByText(/Picked up — answered by/)).toBeInTheDocument()
+    expect(within(card).getByRole('link', { name: 'Notes are a tab' })).toHaveAttribute('href', '/projects/demo-ui/behaviours/BEH-FEAT-7')
+    expect(screen.queryByRole('region', { name: 'Archived' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Each says whether a card has picked it up/)).toBeInTheDocument()
+    expect(screen.queryByText(/archived below/)).not.toBeInTheDocument()
+  })
+
+  it('BEH-COMMENT-2: an answered comment does not count as open on its item page', async () => {
+    server([note('2026-10-16 07:13Z', 'BEH-2', 'tabs please'), note('2026-10-16 07:20Z', 'BEH-2', 'later maybe')])
+    const counts: number[] = []
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" behaviour="BEH-2" citations={citations} onOpenCount={(n) => counts.push(n)} />
+      </MemoryRouter>,
+    )
+    await within(region()).findByText('later maybe')
+    expect(counts.at(-1)).toBe(1)
+  })
+
+  it('BEH-COMMENT-2: an uncited comment on an item page says it has not been picked up yet', async () => {
+    server([note('2026-10-16 07:20Z', 'BEH-2', 'later maybe')])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" behaviour="BEH-2" citations={citations} />
+      </MemoryRouter>,
+    )
+    const card = (await within(region()).findByText('later maybe')).closest('li')!
+    expect(within(card).getByText('Not picked up yet')).toBeInTheDocument()
+    expect(within(card).queryByText(/Picked up/)).not.toBeInTheDocument()
+  })
+
+  it('BEH-COMMENT-2: says nothing either way while the citations are unknown', async () => {
+    server([note('2026-10-16 07:20Z', 'BEH-2', 'later maybe')])
+    render(<NotesPanel app="demo" behaviour="BEH-2" />)
+    await within(region()).findByText('later maybe')
+    expect(screen.queryByText('Not picked up yet')).not.toBeInTheDocument()
+  })
+
+  it('BEH-COMMENT-2: the project page still archives a cited note and shows no picked-up line', async () => {
+    server([note('2026-10-16 07:13Z', 'BEH-2', 'tabs please'), note('2026-10-16 07:20Z', null, 'later maybe')])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" citations={citations} />
+      </MemoryRouter>,
+    )
+    const folded = await screen.findByRole('region', { name: 'Archived' })
+    expect(within(folded).getByRole('button', { name: 'Show archived (1)' })).toBeInTheDocument()
+    expect(within(region()).queryByText('tabs please')).not.toBeInTheDocument()
+    expect(within(region()).getByText('later maybe')).toBeInTheDocument()
+    expect(screen.queryByText('Not picked up yet')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Picked up/)).not.toBeInTheDocument()
+  })
+})
+
 describe('note anchors (BEH-NOTE-10)', () => {
   it('turns a heading time into the anchor a source line cites', () => {
     expect(noteAnchor('2026-10-16 07:13Z')).toBe('2026-10-16-0713')

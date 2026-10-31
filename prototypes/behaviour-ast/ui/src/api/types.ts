@@ -178,6 +178,8 @@ export interface Behaviour {
   at: string
   /** The features it is tagged into, one per `in` line (kit#237); empty when untagged. */
   in: string[]
+  /** The architecture decisions it rests on, one per `depends-on` line (BEH-ARCH-1 slice B2); absent when none. */
+  dependsOn?: string[]
   /** 1 (first) to 5, from a `priority` line (kit#284); absent when there is none. */
   priority?: number
   /** A `paused` line (BEH-BOARD-16): held on the Backlog, not built. Absent when not paused. */

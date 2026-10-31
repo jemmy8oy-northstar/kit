@@ -3,7 +3,7 @@ import { fetchProject } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
 import BellButton from '../components/BellButton'
-import NotesPanel from '../components/NotesPanel'
+import ItemNotes from '../components/ItemNotes'
 import ResourceView from '../components/Resource'
 import { epicCards } from '../epics'
 import { featureHref } from '../features'
@@ -68,7 +68,7 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
       </section>
 
       {/* BEH-COMMENT-1: an epic carries its own comments, which are the notes left on it. */}
-      <NotesPanel app={app} behaviour={card.epic.id} />
+      <ItemNotes project={project} behaviour={card.epic.id} />
     </>
   )
 }

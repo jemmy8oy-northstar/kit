@@ -53,3 +53,7 @@ Keep paused
 ## 2026-10-31 09:35Z · BEH-ACCOUNT-3
 
 Would be more secure all in vault right or is that overkill?
+
+## 2026-10-31 16:46Z · BEH-SHARE-2
+
+I thought we agreed yes add it

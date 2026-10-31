@@ -1404,6 +1404,7 @@ behaviour BEH-USERS-5 "A user's production secrets are stored for them, and neve
   contract my answer, unreviewed: OCI Vault is my pick. It is in the same Oracle account as the cluster, so there is no new provider and nothing for us to run, and its software-protected tier costs little or nothing (to confirm on your account). Oracle's access rules can let Kit add a new version of a secret without being allowed to read secret contents, and the cluster reads them through External Secrets
   contract my answer, unreviewed: HashiCorp Vault means either running it ourselves on the cluster (unsealing, backups, upgrades: the admin you wanted to avoid for databases) or paying for HashiCorp's hosted Vault. Pick it if you want to stay portable off Oracle; OpenBao is the same thing without the licence question
   needs-context "OCI Vault (my pick: same account as the cluster, nothing to run) or HashiCorp Vault (portable, but we run it or pay for it)? If you're silent by 2026-11-07, I take OCI Vault and write Kit's side against it, with nothing created in your Oracle account; creating the vault and its access rules stays yours."
+  paused until 2026-11-14
 
 feature FEAT-USER-DATABASES "A database per user, in two tiers"
   in EPIC-KIT-USERS
@@ -1539,6 +1540,8 @@ behaviour BEH-COMMENT-2 "The agent reads every comment and answers the ones that
   contract on the agent's side this holds today: its wake sweep lists every comment it has not read, and refuses to mark them read until each is cited by a card (claude-code-bot tools/gh-sync.js notes and ack-notes)
   contract my assumption: a comment that asks something is answered as a review request on its card, which leads his Inbox (BEH-INBOX-3); one that tells it what to do is done and cited, and gets no reply of its own
   contract my assumption: what is missing is his side of it: each comment shows whether the agent has read it, and which card answered it, so a comment that needed no reply does not look ignored
+  contract built 2026-10-31: on a behaviour, feature or epic page each comment says "Picked up — answered by" the card that cites it, or "Not picked up yet"; a cited comment stays on its item's page rather than moving to Archived
+  contract my assumption: "picked up" means a card cites the comment, which is also what the agent's own sweep requires before it marks a comment read
 
 behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
@@ -2034,7 +2037,8 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   contract my assumption: the page groups a project's decisions by part (front end, back end, data, deployment), and each behaviour can name the decision it depends on
   contract built 2026-10-31 (slice A): the `decision ADR-<PART>-<N> "<title>"` block, served as `decisions` and shown on the project page's Architecture tab, grouped by part
   contract built 2026-10-31 (slice B1): approving or denying a decision. Each card on the Architecture tab has Approve, and Deny which asks for the correction (as the Inbox does, BEH-INBOX-2); POST /api/projects/<app>/decisions/<id>/review with { state, note } takes the behaviour review's body and refusals (a denial without a correction is refused), runs under the same edit lock and commits through the same write-back as a behaviour's review, and CorpusWriter.SetDecisionReview rewrites only that decision's `review` line (or adds one at the end of its block), refusing the write if anything else in the corpus would parse differently. No new keyword: `review` on a decision was already parsed
-  contract my assumption: what is still to build is slice B2, a behaviour naming the decision it depends on; that needs a new corpus line, so it waits until production's parser takes it
+  contract built 2026-10-31 (slice B2, grammar): a behaviour may carry `depends-on ADR-<PART>-<N>` lines; the behaviour page shows what it depends on, and each decision card lists the behaviours resting on it
+  contract my assumption: Kit's own behaviours get their depends-on lines only after this reaches main, because production's parser refuses a keyword it does not know
   contract my assumption: a card keeps both buttons after it is ruled on, so a ruling can be changed; Approve is disabled on an approved card
   contract my assumption: `requested` stays a valid state on the route, as for a behaviour, but the Architecture tab offers only approve and deny
   contract my assumption: a project of several files writes the ruling to the file the decision was read from

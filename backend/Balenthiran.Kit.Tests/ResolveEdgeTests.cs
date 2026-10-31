@@ -70,6 +70,8 @@ public class ResolveEdgeTests
 
         public IReadOnlyList<IIdRef> Serves => [];
 
+        public IReadOnlyList<IIdRef> DependsOn => [];
+
         public string At => "x:1";
 
         public bool Paused => false;

@@ -218,7 +218,7 @@ behaviour BEH-ACCOUNT-3 "Each runner's tokens live in the database, not in confi
   in FEAT-ACCOUNTS
   layer technical
   source inferred tracks#6
-  review requested overkill, and not more secure. Each refresh token changes every time Tracks refreshes it, so Tracks would need write access to the vault, and anyone who took over Tracks would have the vault too. Encrypting them in the database, with the key in the vault, protects against the real risk (a leaked database or backup) just as well. Approve that, or deny and say how you want them held
+  review approved
   priority 1
   actor runner
   contract each runner's Strava and Spotify refresh tokens live in the database, not in config; config holds only the app's client id and secret per provider and the webhook verify token

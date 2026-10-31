@@ -446,3 +446,39 @@ The current approach with kit is aggressive experimentation and then later we ca
 ## 2026-10-31 10:41Z
 
 Kit would benefit from the agent driving some narrative for the user. Some rules to help the agent keep the user pushing in the right direction. I guess epics can help figure out what the big goals are. And if there aren’t any big goals the ai can probe to find out the direction, what are we working towards or are we maintaining?
+
+## 2026-10-31 16:23Z
+
+kit you should be able to filter projects when going through your inbox
+
+## 2026-10-31 16:26Z
+
+When I click already installed? connect it i get - This GitHub App must be configured with a callback URL
+
+also slightly confused what this is acc for - on my account it is already installed everything is working fine what’s left?
+
+## 2026-10-31 16:43Z
+
+UX - probably a feature or an epic or maybe even makes up a selection of all
+
+Just talking through the envisioned user experience so that we can ensure that we are working in the right direction to get there.
+
+As a kit user I want to be able to work on a project start start to finish through designing spec. I want to worry about implementation details as little as possible and i want to focus on UX and then later UI.
+
+The onboarding process takes me through setting integrating my git account. It shows any projects that I already have setup with kit and their test health. If there are no existing projects it asks if I would like to create a new project to get started or something along these lines. 
+
+Creating a new project in kit creates a new web template project - do we need to make a new web template for kit users? or is the existing one appropriate.
+
+It sets up the branches appropriately, it adds branch rules and actions if possible. Kit takes me through the initial spec design of my project with a real time non code agent, we discuss what is the overrall vision for the project, together we determine what the data dependencies of the project are, whether there is a database dependency, whether there is a login requirement. This all begins to get recorded in kit as spec. The kit agent starts to ask me about specific user workflows and determines whether there are different classes of users so that it can group workflows by user classes and document this all explicitly as spec. As the spec is created and the agent marks it as ready for implementation the feature gets created and a worker agent picks up the agent and gets cracking. This worker agent is a coding agent it has a coding harness such as claude code (is this sufficient / necessary?) and an additional kit agent (is this sufficient / necessary?) In the background the agent implements the features and merges it into the dev branch (preprod).
+
+From kit I am able to spin up a preprod version of my app and use the app and play around and evaluate the success of the agents. If I find any gaps I can discuss with the realtime spec agent what the gaps are and it helps me ensure that it has all the details so that the feature branch can be created and the coder agent can work on this and get it implemented. I get notified when a feature is implemented.
+
+When I have technical questions I am able to ask the non coder agent and it is able to delegate to a coder agent to answer - i think to start with this just gets posted to an open questions board or something and the answer becomes available when the coder agent picks it up and answers it - later this can be picked up instantly and answered instantly.
+
+When the agent encounters unforeseen blockers it asks its own questions to its own open question board. The inbox can be used to address questions from the coder agent. The next step is instead to have the non coder agent discuss these open questions with the human to get these resolves. Maybe we need towards this next. Having a page where all of this spec work is triaged or consulted via a non coder agent. Non coder agent is much cheaper right? But this would create great value because then the user can discuss just like I can with gemini as a first step before the coder agent takes a look. But this agent will have way more context than gemini.
+
+I also want to say improving kit is our no1 priority and focus. I get that when kit is blocked you can tick on with other things but we need to be working towards the kit dream.
+
+## 2026-10-31 16:47Z
+
+the feature board gets a done column, each column represents what spec needs to be provided, development represents in development, done represents done

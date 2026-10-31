@@ -93,6 +93,21 @@ public sealed class ProjectViewer(
         }).ToList();
 
         var report = (EngineReport)reporter.Report(resolution.Behaviours, resolution.Conflicts, bindings);
+
+        // BEH-ARCH-1 slice B2: a `depends-on` naming a decision this file does not define is a broken link,
+        // reported where a dangling `serves` is — the surface errors — not refused at parse.
+        var decisionIds = corpus.Decisions.Select(d => d.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var b in behaviours)
+        {
+            foreach (var d in b.DependsOn ?? [])
+            {
+                if (!decisionIds.Contains(d.Id))
+                {
+                    report.Surface.Errors.Add($"{d.At}: {b.Id} depends-on {d.Id}, which is not a decision in this corpus");
+                }
+            }
+        }
+
         var corpusNouns = CorpusNouns();
         NounView Decorate(NounRequirement n) => new()
         {
@@ -128,6 +143,7 @@ public sealed class ProjectViewer(
                 Pending = b.Pending,
                 Layer = b.Layer,
                 In = (b.In ?? []).Select(t => t.Id).ToList(),
+                DependsOn = b.DependsOn is { Count: > 0 } dep ? dep.Select(t => t.Id).ToList() : null,
                 Priority = b.Priority,
                 Paused = b.Paused,
                 PausedUntil = b.PausedUntil,

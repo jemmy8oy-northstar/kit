@@ -12,7 +12,7 @@ import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
 import { useWrite } from '../components/useWrite'
-import NotesPanel from '../components/NotesPanel'
+import ItemNotes from '../components/ItemNotes'
 import BellButton from '../components/BellButton'
 import { broadness } from '../broad'
 
@@ -107,6 +107,28 @@ function Detail({
         </p>
       )}
       <BellButton app={project.app} item={behaviour.id} />
+      {/* BEH-ARCH-1 slice B2: the decisions this rests on, each a link to its card on the Architecture tab. */}
+      {behaviour.dependsOn && behaviour.dependsOn.length > 0 && (
+        <section aria-label="Depends on">
+          <h2>Depends on</h2>
+          <ul>
+            {behaviour.dependsOn.map((did) => {
+              const decision = project.decisions?.find((d) => d.id === did)
+              return (
+                <li key={did}>
+                  {decision ? (
+                    <Link to={`/projects/${encodeURIComponent(project.app)}?tab=architecture#${did}`}>
+                      {did} {decision.title}
+                    </Link>
+                  ) : (
+                    <span className="muted">{did} (no such decision in this corpus)</span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
       {broad && (
         <p className="muted" data-testid="broad">
           Could be a feature ({broad}). The agent will propose the split for you to review.
@@ -133,7 +155,7 @@ function Detail({
         </section>
       </div>
 
-      <NotesPanel app={project.app} behaviour={behaviour.id} />
+      <ItemNotes project={project} behaviour={behaviour.id} />
 
       <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
     </>

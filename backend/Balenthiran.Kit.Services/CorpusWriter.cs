@@ -964,6 +964,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         against = b.Against,
         cites = b.Cites.Select(c => c.Id).ToList(),
         @in = b.In.Select(t => t.Id).ToList(),
+        dependsOn = b.DependsOn.Select(t => t.Id).ToList(),
     });
 
     private static string Shape(IReadOnlyList<IFeature> features) =>

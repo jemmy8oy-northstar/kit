@@ -1,7 +1,8 @@
 import { useCallback, useId, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
-import { askForBehaviour, fetchNotes, fetchProject, fetchProjects, leaveNote, resolveDecision } from '../api/client'
+import { askForBehaviour, fetchNotes, leaveNote, resolveDecision } from '../api/client'
+import { filesOf } from '../projectFiles'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, Note, ProjectDetail, Question } from '../api/types'
 import { behavioursUnder, featureHref, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
@@ -20,24 +21,6 @@ import ResourceView from '../components/Resource'
 import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
-
-/**
- * BEH-FEAT-5 (kit#246): the files a project page draws from. A name that is a project of
- * several files — or whose one file has another name — is every file naming it; anything
- * else is the one file, as it always was. A list that cannot be read falls back to the one
- * file: the page is still true of it, only no longer of its siblings.
- */
-async function filesOf(app: string): Promise<ProjectDetail[]> {
-  const rows = await fetchProjects().then(
-    (r) => r.projects ?? [],
-    () => [],
-  )
-  const names = rows.filter((r) => !r.error && (r.project ?? r.app) === app).map((r) => r.app)
-  if (names.length > 1 || (names.length === 1 && names[0] !== app)) {
-    return Promise.all(names.map(fetchProject))
-  }
-  return [await fetchProject(app)]
-}
 
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
@@ -102,7 +85,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         schedule={<SchedulePanel apps={[project.app]} />}
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
-        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} /> : null}
+        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions.map((d) => ({ ...d, app: project.app }))} behaviours={project.behaviours.map((b) => ({ ...b, app: project.app }))} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
@@ -435,7 +418,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         }
         schedule={<SchedulePanel apps={files.map((f) => f.app)} />}
         principles={principles.length ? <PrinciplesList principles={principles} /> : null}
-        architecture={decisions.length ? <DecisionsList decisions={decisions} /> : null}
+        architecture={decisions.length ? <DecisionsList decisions={decisions} behaviours={files.flatMap((f) => f.behaviours.map((b) => ({ ...b, app: f.app })))} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />

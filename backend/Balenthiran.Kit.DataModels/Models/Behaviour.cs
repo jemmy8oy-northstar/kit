@@ -142,6 +142,12 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? OnDev { get; set; }
 
+    // BEH-ARCH-1 slice B2: one entry per `depends-on` line, the decisions it rests on. Absent
+    // without one, so no committed golden changes.
+    [JsonPropertyOrder(27)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<IdRef>? DependsOn { get; set; }
+
     // The interface view. Explicit, so System.Text.Json — which serialises
     // public members only — never sees it, and the wire shape stays the
     // concrete properties above with their stated order.
@@ -155,6 +161,7 @@ public sealed class Behaviour : IBehaviour
     ISource IBehaviour.Source => Source;
     IReview IBehaviour.Review => Review;
     IReadOnlyList<IIdRef> IBehaviour.In => (IReadOnlyList<IIdRef>?)In ?? [];
+    IReadOnlyList<IIdRef> IBehaviour.DependsOn => (IReadOnlyList<IIdRef>?)DependsOn ?? [];
     IReadOnlyList<IFilled>? IBehaviour.Filled => Filled;
     IReadOnlyList<IOpenHole>? IBehaviour.Open => Open;
 }

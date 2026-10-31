@@ -1,15 +1,26 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import BehaviourPage from './BehaviourPage'
 import { noNotes } from '../test/noNotes'
 import habits from '../test/fixtures/project-james-habits-app.json'
 import snipIt from '../test/fixtures/project-snip-it.json'
 
+/**
+ * The notes panel and the project list answered, so neither eats a response a test scripted
+ * for its own read or write (BEH-COMMENT-2: the page also reads the list for sibling files).
+ */
+function quiet(url: string, init?: RequestInit) {
+  if (url === '/api/projects' && (init?.method ?? 'GET') === 'GET') {
+    return { ok: true, status: 200, statusText: 'OK', json: async () => ({ projects: [] }) }
+  }
+  return noNotes(url, init)
+}
+
 function renderAt(body: unknown, app: string, id: string) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string, init?: RequestInit) => noNotes(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
+    vi.fn(async (url: string, init?: RequestInit) => quiet(url, init) ?? ({ ok: true, status: 200, statusText: 'OK', json: async () => body })),
   )
 
   return render(
@@ -220,7 +231,7 @@ function scripted(responses: { ok: boolean; status: number; body: unknown }[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      const notes = noNotes(url, init)
+      const notes = quiet(url, init)
       if (notes) return notes
       calls.push({ url, init })
       const next = responses.shift()
@@ -641,7 +652,7 @@ describe('adjudicating an inference', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
-        const notes = noNotes(url, init)
+        const notes = quiet(url, init)
         if (notes) return notes
         await new Promise((r) => setTimeout(r, 0)) // a real tick, so `loading` commits
         const next = responses.shift()
@@ -719,6 +730,41 @@ describe('adjudicating an inference', () => {
   })
 })
 
+// ── BEH-COMMENT-2: each comment says whether a card picked it up ─────────────
+
+describe('comments on a behaviour page (BEH-COMMENT-2)', () => {
+  it('BEH-COMMENT-2: a comment a card cites says which card, and one nobody cites says so', async () => {
+    const project = structuredClone(snipIt)
+    const other = project.behaviours.find((b) => b.id !== 'BEH-HOME-1')!
+    ;(other.source as { ref: string | null }).ref = 'snip-it.notes.md#2026-10-16-0713'
+    const notes = [
+      { at: '2026-10-16 07:13Z', kind: 'note', behaviour: 'BEH-HOME-1', resolves: null, text: 'cited one', thread: [], questions: [] },
+      { at: '2026-10-16 07:20Z', kind: 'note', behaviour: 'BEH-HOME-1', resolves: null, text: 'quiet one', thread: [], questions: [] },
+    ]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url === '/api/projects/snip-it/notes') return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'snip-it', file: 'x', notes }) }
+        if (url === '/api/projects') return { ok: true, status: 200, statusText: 'OK', json: async () => ({ projects: [] }) }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => project }
+      }),
+    )
+    render(
+      <MemoryRouter initialEntries={['/projects/snip-it/behaviours/BEH-HOME-1']}>
+        <Routes>
+          <Route path="/projects/:app/behaviours/:id" element={<BehaviourPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const cited = (await screen.findByText('cited one')).closest('li')!
+    expect(await within(cited).findByText(/Picked up — answered by/)).toBeInTheDocument()
+    expect(within(cited).getByRole('link', { name: other.title })).toBeInTheDocument()
+    const quiet = screen.getByText('quiet one').closest('li')!
+    expect(within(quiet).getByText('Not picked up yet')).toBeInTheDocument()
+  })
+})
+
 // ── BEH-BOARD-16: held on the Backlog, not built ────────────────────────────
 
 function withBehaviour(over: Record<string, unknown>) {
@@ -792,5 +838,38 @@ describe('a needs-context line', () => {
 
     await screen.findByRole('button', { name: 'Approve' })
     expect(screen.queryByTestId('needs-context')).toBeNull()
+  })
+})
+
+// ── BEH-ARCH-1 slice B2: the decision a behaviour depends on ────────────────
+
+describe('a depends-on line', () => {
+  const decision = {
+    id: 'ADR-DATA-1', title: 'Data is files', part: 'data', chosen: 'files', considered: [], because: ['b'],
+    review: { state: 'unreviewed', note: null }, source: { origin: 'defined', ref: null }, at: 'x.beh:1',
+  }
+
+  it('lists each decision with its title, linked to the Architecture tab (BEH-ARCH-1)', async () => {
+    renderScripted(
+      [{ ok: true, status: 200, body: { ...withBehaviour({ dependsOn: ['ADR-DATA-1'] }), decisions: [decision] } }],
+      'snip-it',
+      'BEH-HOME-1',
+    )
+
+    const link = await screen.findByRole('link', { name: 'ADR-DATA-1 Data is files' })
+    expect(link).toHaveAttribute('href', '/projects/snip-it?tab=architecture#ADR-DATA-1')
+  })
+
+  it('says so, plainly, when the decision is not in the corpus (BEH-ARCH-1)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({ dependsOn: ['ADR-GONE-9'] }) }], 'snip-it', 'BEH-HOME-1')
+
+    expect(await screen.findByText('ADR-GONE-9 (no such decision in this corpus)')).toBeInTheDocument()
+  })
+
+  it('shows no Depends on section when there is none (BEH-ARCH-1)', async () => {
+    renderScripted([{ ok: true, status: 200, body: withBehaviour({}) }], 'snip-it', 'BEH-HOME-1')
+
+    await screen.findByRole('button', { name: 'Approve' })
+    expect(screen.queryByRole('region', { name: 'Depends on' })).toBeNull()
   })
 })
