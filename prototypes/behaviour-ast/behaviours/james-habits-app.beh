@@ -215,7 +215,7 @@ behaviour BEH-HISTORY-3 "The history window parameter is named historyDays, not 
 behaviour BEH-REORDER-1 "Habits can be reordered as a whole list in one call"
   source inferred backend/Balenthiran.Habits.WebApi/Routes/HabitRoutes.cs:ReorderHabits
   priority 5
-  review unreviewed
+  review approved
   serves BEH-MANAGE-1
   actor owner
   contract PUT /api/habits/reorder rewrites every sort position
