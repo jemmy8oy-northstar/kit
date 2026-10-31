@@ -208,6 +208,88 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-ARCH-1 slice B1: the same review as <see cref="SetReview"/>, on a <c>decision</c> block.
+    /// Only that block's <c>review</c> line is replaced (or appended when it has none); every
+    /// other byte stays, and the result is refused unless the rest of the corpus parses identically.
+    /// A denial must state its correction: the parser enforces it for a decision as for a behaviour.
+    /// </summary>
+    public IWriteResult SetDecisionReview(string text, string id, string state, string? note = null)
+    {
+        var st = Trim(state);
+        var nt = note is null ? string.Empty : Trim(note);
+        if (st.Length == 0)
+        {
+            return WriteResult.Refuse("empty-review", "a review needs a state: unreviewed, approved, requested or denied");
+        }
+
+        if (state.Contains('\n', StringComparison.Ordinal) || (note?.Contains('\n', StringComparison.Ordinal) ?? false))
+        {
+            return WriteResult.Refuse("multiline-review", "a review is one line; a state or a note cannot contain a newline");
+        }
+
+        if (DecisionBlock(text, id) is not { } b)
+        {
+            return WriteResult.Refuse("no-such-decision", $"no decision {id} in this corpus", DecisionIds(text));
+        }
+
+        var lines = text.Split('\n').ToList();
+        var line = Indent + (nt.Length > 0 ? $"review {st} {nt}" : $"review {st}");
+        var at = -1;
+        for (var i = b.Start + 1; i <= b.End; i++)
+        {
+            if (FirstToken(lines[i]) == "review")
+            {
+                at = i;
+                break;
+            }
+        }
+
+        if (at != -1)
+        {
+            lines[at] = line;
+        }
+        else
+        {
+            lines.Insert(b.End + 1, line);
+        }
+
+        var after = string.Join('\n', lines);
+        IParsedCorpus oldCorpus;
+        IParsedCorpus newCorpus;
+        try
+        {
+            oldCorpus = parser.ParseCorpus(text, "before");
+        }
+        catch (CorpusParseException e)
+        {
+            return WriteResult.Refuse("corpus-already-invalid", $"the file did not parse before this edit: {e.Message}");
+        }
+
+        try
+        {
+            newCorpus = parser.ParseCorpus(after, "after");
+        }
+        catch (CorpusParseException e)
+        {
+            return WriteResult.Refuse("would-not-parse", e.Message);
+        }
+
+        // The edit is a decision's review, so nothing else may differ — behaviours, features, epics, or any other decision.
+        if (Shape(oldCorpus.Features) != Shape(newCorpus.Features)
+            || Shape(oldCorpus.Epics) != Shape(newCorpus.Epics)
+            || Shape(oldCorpus.Behaviours) != Shape(newCorpus.Behaviours)
+            || Shape(oldCorpus.Decisions.Where(d => d.Id != id).ToList()) != Shape(newCorpus.Decisions.Where(d => d.Id != id).ToList()))
+        {
+            return WriteResult.Refuse("collateral-change", $"something other than {id} changed, and only its review was meant to");
+        }
+
+        return new WriteResult { Ok = true, Text = after };
+    }
+
+    private static string Shape(IReadOnlyList<IBehaviour> behaviours) =>
+        string.Join("\n", behaviours.Select(Shape));
+
+    /// <summary>
     /// BEH-BOARD-16: adds or removes the bare <c>paused</c> line. The line goes under the last
     /// header-adjacent line, like the review line, so a pause reads as part of the card's head.
     /// Asking for the state it is already in rewrites nothing, so a double press is not a commit.
@@ -882,6 +964,50 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
         return (start, end);
     }
+
+    // `decision ADR-<ID> "` — the parser's DecisionLine, anchored for one line.
+    private static readonly Regex DecisionHeader = new($@"\Gdecision[{Ws}]+(ADR-[A-Z0-9-]+)[{Ws}]+""", RegexOptions.Compiled);
+    private static readonly Regex AnyHeader = new($@"\G(?:behaviour|feature|epic|decision)[{Ws}]", RegexOptions.Compiled);
+
+    /// <summary>One decision's line range; <c>End</c> is its last content line, as for <see cref="Block"/>.</summary>
+    private static (int Start, int End)? DecisionBlock(string text, string id)
+    {
+        var lines = text.Split('\n');
+        var start = -1;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (DecisionHeader.Match(lines[i]) is { Success: true } m && m.Groups[1].Value == id)
+            {
+                start = i;
+                break;
+            }
+        }
+
+        if (start == -1)
+        {
+            return null;
+        }
+
+        var end = start;
+        for (var i = start + 1; i < lines.Length; i++)
+        {
+            if (AnyHeader.IsMatch(lines[i]))
+            {
+                break;
+            }
+
+            var t = Trim(lines[i]);
+            if (t.Length > 0 && !t.StartsWith('#'))
+            {
+                end = i;
+            }
+        }
+
+        return (start, end);
+    }
+
+    private static List<string> DecisionIds(string text) =>
+        text.Split('\n').Select(l => DecisionHeader.Match(l)).Where(m => m.Success).Select(m => m.Groups[1].Value).ToList();
 
     /// <summary>
     /// Every behaviour id, in order. JavaScript's <c>/^…/gm</c> starts a line after

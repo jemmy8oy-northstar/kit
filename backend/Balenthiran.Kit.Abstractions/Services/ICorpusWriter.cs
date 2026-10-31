@@ -20,6 +20,9 @@ public interface ICorpusWriter
     /// <summary>Set a behaviour's review state, replacing its review line or inserting one.</summary>
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
+    /// <summary>BEH-ARCH-1 slice B1: <see cref="SetReview"/> on an architecture decision; only that block's review line changes.</summary>
+    IWriteResult SetDecisionReview(string text, string id, string state, string? note = null);
+
     /// <summary>Add or remove a behaviour's bare <c>paused</c> line (BEH-BOARD-16); asking for the state it is already in writes nothing new.</summary>
     IWriteResult SetPaused(string text, string id, bool paused, string? until = null);
 

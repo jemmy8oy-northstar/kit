@@ -2032,7 +2032,12 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   contract "Maybe it needs an architecture design page… I think kit system currently requires architecture design so we should build the feature out"
   contract my assumption: each architecture decision is a card he can approve or deny, like a behaviour, because platform and architecture choices are his to make; a decision names what was chosen, what else was considered, and why
   contract my assumption: the page groups a project's decisions by part (front end, back end, data, deployment), and each behaviour can name the decision it depends on
-  contract my assumption: slice A is read-only; approving or denying a decision, and a behaviour naming the decision it depends on, come in slice B
+  contract built 2026-10-31 (slice A): the `decision ADR-<PART>-<N> "<title>"` block, served as `decisions` and shown on the project page's Architecture tab, grouped by part
+  contract built 2026-10-31 (slice B1): approving or denying a decision. Each card on the Architecture tab has Approve, and Deny which asks for the correction (as the Inbox does, BEH-INBOX-2); POST /api/projects/<app>/decisions/<id>/review with { state, note } takes the behaviour review's body and refusals (a denial without a correction is refused), runs under the same edit lock and commits through the same write-back as a behaviour's review, and CorpusWriter.SetDecisionReview rewrites only that decision's `review` line (or adds one at the end of its block), refusing the write if anything else in the corpus would parse differently. No new keyword: `review` on a decision was already parsed
+  contract my assumption: what is still to build is slice B2, a behaviour naming the decision it depends on; that needs a new corpus line, so it waits until production's parser takes it
+  contract my assumption: a card keeps both buttons after it is ruled on, so a ruling can be changed; Approve is disabled on an approved card
+  contract my assumption: `requested` stays a valid state on the route, as for a behaviour, but the Architecture tab offers only approve and deny
+  contract my assumption: a project of several files writes the ruling to the file the decision was read from
 
 behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is built"
   in FEAT-ARCH

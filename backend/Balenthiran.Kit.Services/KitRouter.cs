@@ -97,7 +97,9 @@ public sealed partial class KitRouter(
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex PromoteRoute = new(@"^/api/projects/([^/]+)/promote\z", RegexOptions.Compiled);
-    private static readonly Regex Behaviours = new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
+    // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
+    private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
+    private static readonly Regex Behaviours =new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public IKitResponse Route(string method, string pathname, string? cookie = null, string? origin = null, JsonElement? body = null)
@@ -432,7 +434,8 @@ public sealed partial class KitRouter(
         var na = NoteAction.Match(pathname);
         var sm = ScheduleRoute.Match(pathname);
         var pm = PromoteRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : Behaviours.Match(pathname);
+        var dm = DecisionReview.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : dm.Success ? dm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -468,6 +471,7 @@ public sealed partial class KitRouter(
                 : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
                 : sm.Success ? Reschedule(app, b)
                 : pm.Success ? SetPromote(app, b)
+                : dm.Success ? ReviewDecision(app, dm.Groups[2].Value, b)
                 : Edit(app, m, b);
         }
     }
@@ -488,6 +492,33 @@ public sealed partial class KitRouter(
     /// <summary>BEH-BOARD-26: a pause asks again in 14 days, counted server-side from today (UTC).</summary>
     private string PausedUntil() =>
         DateOnly.FromDateTime((clock ?? TimeProvider.System).GetUtcNow().UtcDateTime).AddDays(14).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// BEH-ARCH-1 slice B1: approve, deny or reset an architecture decision. The same body as a
+    /// behaviour's review, the same lock, write and commit path (<see cref="GitOutcome"/>) — only
+    /// the writer method differs, and it rewrites only that decision's review line.
+    /// </summary>
+    private KitResponse ReviewDecision(string app, string rawId, JsonElement body)
+    {
+        if (DecodeUriComponent(rawId) is not { } id)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the decision id is not valid percent-encoding" });
+        }
+
+        if (TypeError(body, ReviewFields) is { } wrongType)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = wrongType });
+        }
+
+        var result = writer.SetDecisionReview(corpora.ReadText(app), id, Str(body, "state")!, Str(body, "note"));
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason!, Known = result.Known?.ToList() });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), $"adjudicate {id}", app, new WriteOutcome { App = app, Behaviour = id, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
 
     /// <summary><c>write()</c> past its gates: create, add or replace a step, retitle, adjudicate, or remove.</summary>
     private KitResponse Edit(string app, Match m, JsonElement body)
