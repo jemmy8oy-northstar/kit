@@ -442,3 +442,7 @@ Can you also build a way for features to be toggled on and off for myself and fo
 ## 2026-10-31 10:40Z
 
 The current approach with kit is aggressive experimentation and then later we can refine the ui and streamline the experience
+
+## 2026-10-31 10:41Z
+
+Kit would benefit from the agent driving some narrative for the user. Some rules to help the agent keep the user pushing in the right direction. I guess epics can help figure out what the big goals are. And if there aren’t any big goals the ai can probe to find out the direction, what are we working towards or are we maintaining?
