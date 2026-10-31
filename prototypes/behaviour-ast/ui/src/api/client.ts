@@ -242,6 +242,22 @@ export function setReview(
 }
 
 /**
+ * BEH-ARCH-1 slice B1: the same adjudication as {@link setReview}, on an architecture decision.
+ * Same body, same refusals (a denial must carry its correction), its own address.
+ */
+export function setDecisionReview(
+  app: string,
+  id: string,
+  state: ReviewState,
+  note: string | null = null,
+): Promise<WriteResult> {
+  return post<WriteResult>(
+    `/api/projects/${encodeURIComponent(app)}/decisions/${encodeURIComponent(id)}/review`,
+    { state, note },
+  )
+}
+
+/**
  * Pause a behaviour, or resume it (BEH-BOARD-16): the state is named, not toggled, so a double press
  * writes nothing new. It adds or removes the corpus's `paused` line.
  */
