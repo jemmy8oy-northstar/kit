@@ -970,7 +970,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
 behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
-  review unreviewed
+  review approved
   priority 2
   actor engineer
   when opens page:KitStages
