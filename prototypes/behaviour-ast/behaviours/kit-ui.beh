@@ -1233,6 +1233,7 @@ feature FEAT-USER-SIGNUP "Sign up with your own GitHub"
 
 behaviour BEH-USERS-1 "An early-access user signs in with a username and password James made, then connects their GitHub"
   in FEAT-USER-SIGNUP
+  depends-on ADR-DATA-2
   source inferred kit.notes.md#2026-10-19-1721
   priority 5
   review approved
@@ -1643,6 +1644,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
 
 behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Kit"
   in FEAT-NOTIFICATIONS
+  depends-on ADR-DEPLOYMENT-2
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
@@ -1937,6 +1939,7 @@ behaviour BEH-SETTINGS-3 "The operator can connect his own GitHub account from S
 
 behaviour BEH-SETTINGS-4 "Settings says which projects the agent may promote to main itself, and he can change it per project"
   in FEAT-SETTINGS
+  depends-on ADR-DATA-1
   source defined kit.notes.md#2026-10-27-2111
   review approved
   priority 4
@@ -2039,6 +2042,7 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   contract built 2026-10-31 (slice B1): approving or denying a decision. Each card on the Architecture tab has Approve, and Deny which asks for the correction (as the Inbox does, BEH-INBOX-2); POST /api/projects/<app>/decisions/<id>/review with { state, note } takes the behaviour review's body and refusals (a denial without a correction is refused), runs under the same edit lock and commits through the same write-back as a behaviour's review, and CorpusWriter.SetDecisionReview rewrites only that decision's `review` line (or adds one at the end of its block), refusing the write if anything else in the corpus would parse differently. No new keyword: `review` on a decision was already parsed
   contract built 2026-10-31 (slice B2, grammar): a behaviour may carry `depends-on ADR-<PART>-<N>` lines; the behaviour page shows what it depends on, and each decision card lists the behaviours resting on it
   contract my assumption: Kit's own behaviours get their depends-on lines only after this reaches main, because production's parser refuses a keyword it does not know
+  contract my assumption, written once B2 reached main (kit#600): the first links are the four cards that rest most plainly on one decision: BEH-USERS-1 on ADR-DATA-2 (accounts in Postgres), BEH-SETTINGS-4 and BEH-FLAGS-1 on ADR-DATA-1 (their switches are corpus lines), BEH-NOTIFY-4 on ADR-DEPLOYMENT-2 (his action is a kit/hosted commit). Each is my reading; more are added as cards are touched, not in a sweep
   contract my assumption: a card keeps both buttons after it is ruled on, so a ruling can be changed; Approve is disabled on an approved card
   contract my assumption: `requested` stays a valid state on the route, as for a behaviour, but the Architecture tab offers only approve and deny
   contract my assumption: a project of several files writes the ruling to the file the decision was read from
@@ -2130,6 +2134,7 @@ feature FEAT-FLAGS "Features switched on and off, separately for him and for tes
 
 behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and one for testers"
   in FEAT-FLAGS
+  depends-on ADR-DATA-1
   layer ux
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
