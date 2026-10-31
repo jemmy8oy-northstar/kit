@@ -28,6 +28,9 @@ public interface IBehaviourView
     /// <summary>A <c>paused</c> line (BEH-BOARD-16).</summary>
     bool Paused { get; }
 
+    /// <summary>The date a paused card is asked about again (BEH-BOARD-26); null for a bare <c>paused</c>.</summary>
+    string? PausedUntil { get; }
+
     /// <summary>A <c>needs-context</c> line (BEH-BOARD-17).</summary>
     string? NeedsContext { get; }
 

@@ -38,7 +38,8 @@ feature FEAT-BACKLOG "Later: other countries, individuals, sentiment"
 # kit.notes.md#2026-10-26-2252, "Getting who's accountable can't be read error": a missing space
 # after BEH-LEADER-1 below stopped this file parsing on hosted. Fixed in kit#478.
 # LEADER-1/2 and SCORE-5 read as built until 2026-10-26 (they predate `pending`); the repo has no
-# frontend. The leaderboards are paused by the agent while the project is parked (BEH-BACKLOG-1).
+# frontend. The agent paused the leaderboards while the project was parked, and resumed them when he
+# restarted it on 2026-10-31 (whos-accountable.notes.md#2026-10-31-0949, on BEH-BACKLOG-1).
 behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offenders"
   in FEAT-LEADERBOARD
   layer ux
@@ -46,7 +47,6 @@ behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offend
   review approved
   priority 1
   pending
-  paused
   actor visitor
   when opens page:WorstOffenders
   then sees region:Leaderboard
@@ -60,7 +60,6 @@ behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   review approved
   priority 1
   pending
-  paused
   actor visitor
   when opens page:TopDoGooders
   then sees region:Leaderboard
@@ -245,10 +244,10 @@ behaviour BEH-BACKLOG-1 "Coverage expands from the UK to the US, then the EU, th
   source defined whos-accountable#1
   review approved
   priority 3
-  needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
   pending
   contract "create an issue to expand to uk + us and then maybe eu and global later" (issue whos-accountable#4)
+  contract his answer to "restart whos-accountable now, or keep it parked?" (whos-accountable.notes.md#2026-10-31-0949): "Yes start it!"; whos-accountable is unparked, and its Queue is built from the top, so the UK dataset (BEH-DATA-3) comes before this expansion
 
 behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entries"
   in FEAT-BACKLOG
@@ -256,10 +255,11 @@ behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entr
   source defined whos-accountable#1
   review approved
   priority 3
-  needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
   pending
+  paused
   contract "Fine to park maybe also backlog": parked pending a defamation review (whos-accountable#5)
+  contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but this card was parked for its own reason, so it is paused rather than asked about again; Resume brings it back
 
 behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside the evidence-based score"
   in FEAT-BACKLOG
@@ -267,8 +267,9 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   source defined whos-accountable#1
   review approved
   priority 3
-  needs-context "Restart whos-accountable now, or keep it parked until snip-it ships? I keep it parked."
   actor visitor
   pending
+  paused
   contract "sentiment as a backlog" (whos-accountable#6)
+  contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but he asked for this card "as a backlog", so it is paused rather than asked about again; Resume brings it back
   contract sentiment never feeds the evidence score: crowd voting invites brigading and defamation risk

@@ -420,3 +420,15 @@ Where are we at in terms of supporting other users? We have no ai support unless
 ## 2026-10-31 00:58Z
 
 Ai support is higher priority than db support for now we can allow users to manage their own deployments for now
+
+## 2026-10-31 09:42Z
+
+Kit approving unpauses if there are no blockers
+
+## 2026-10-31 09:46Z
+
+Kit pause has some reask date tag or soemthing so it doesn’t keep appearing in the inbox whilst it’s paused. I guess bell can override this
+
+## 2026-10-31 09:48Z
+
+Kit reads comments to see if it needs to respond to them
