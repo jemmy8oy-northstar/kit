@@ -404,3 +404,7 @@ Did any skipped items get marked as skipped in the specs/repo? They shouldn’t 
 A user can order idle priority not just pick one
 
 They can also decide which options are not a priority or they do not want Kit working on it
+
+## 2026-10-31 00:55Z
+
+If direct questions are asked as notes replies can come up in the inbox maybe before the questions asked to the user
