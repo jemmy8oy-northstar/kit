@@ -72,7 +72,13 @@ export default function NotesPanel({
   // Newest first (BEH-NOTE-9): the file is oldest first, so the list is read backwards.
   const mine = (notes: Note[]) =>
     notes
-      .map((note, index) => ({ note, index, folded: foldedBy(note, citations) }))
+      .map((note, index) => {
+        const cited = foldedBy(note, citations)
+        // BEH-COMMENT-2: on an item's page a cited comment stays in place and says who answered it.
+        return behaviour
+          ? { note, index, folded: [], status: citations ? cited : undefined }
+          : { note, index, folded: cited, status: undefined }
+      })
       .filter(({ note }) => !behaviour || note.behaviour === behaviour)
       .reverse()
   const open = resource.state === 'ready' ? mine(resource.value.notes).filter((p) => !p.folded.length).length : null
@@ -133,7 +139,8 @@ export default function NotesPanel({
   )
 }
 
-type Placed = { note: Note; index: number; folded: Citation[] }
+/** `status` is the item-page reading (BEH-COMMENT-2): the citing cards, or none; absent when unknown. */
+type Placed = { note: Note; index: number; folded: Citation[]; status: Citation[] | undefined }
 
 /** BEH-NOTE-9: the first ten of a list already in order, and a button for ten more. */
 function Capped({ items, render }: { items: Placed[]; render: (p: Placed) => React.ReactNode }) {
@@ -196,7 +203,7 @@ function NeedsAnswer({ app, notes, onChanged }: { app: string; notes: Placed[]; 
   return (
     <section aria-labelledby="needs-answer">
       <h2 id="needs-answer">Needs your answer</h2>
-      <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
+      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} status={status} />} />
     </section>
   )
 }
@@ -215,7 +222,20 @@ function OpenNotes({ app, notes, file, onChanged }: { app: string; notes: Placed
       <p className="muted">
         In <code>{file}</code>. Once a behaviour cites one, it is archived below.
       </p>
-      <Capped items={notes} render={({ note, index }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} />} />
+      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} status={status} />} />
+    </>
+  )
+}
+
+function CardLinks({ cards }: { cards: Citation[] }) {
+  return (
+    <>
+      {cards.map((c, i) => (
+        <span key={`${c.app}/${c.id}`}>
+          {i > 0 && ', '}
+          <Link to={`/projects/${encodeURIComponent(c.app)}/behaviours/${encodeURIComponent(c.id)}`}>{c.title}</Link>
+        </span>
+      ))}
     </>
   )
 }
@@ -226,12 +246,14 @@ function NoteCard({
   index,
   onChanged,
   folded = [],
+  status,
 }: {
   app: string
   note: Note
   index: number
   onChanged: () => void
   folded?: Citation[]
+  status?: Citation[]
 }) {
   const answer = useWrite(onChanged)
   const dismiss = useWrite(onChanged)
@@ -261,15 +283,16 @@ function NoteCard({
       {note.text && <p className="note-body">{note.text}</p>}
       {folded.length > 0 && (
         <p className="muted">
-          Became{' '}
-          {folded.map((c, i) => (
-            <span key={`${c.app}/${c.id}`}>
-              {i > 0 && ', '}
-              <Link to={`/projects/${encodeURIComponent(c.app)}/behaviours/${encodeURIComponent(c.id)}`}>{c.title}</Link>
-            </span>
-          ))}
+          Became <CardLinks cards={folded} />
         </p>
       )}
+      {/* BEH-COMMENT-2: James's side of "the agent reads every comment". */}
+      {status && status.length > 0 && (
+        <p className="muted">
+          Picked up — answered by <CardLinks cards={status} />
+        </p>
+      )}
+      {status && status.length === 0 && <p className="muted">Not picked up yet</p>}
 
       {/* Earlier rounds stay visible, so an answer is read beside what it answered. */}
       {note.thread.slice(0, note.questions.length ? -1 : undefined).map((entry, i) => (

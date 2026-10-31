@@ -12,7 +12,7 @@ import ResourceView from '../components/Resource'
 import Count from '../components/Count'
 import WriteResultNote from '../components/WriteResultNote'
 import { useWrite } from '../components/useWrite'
-import NotesPanel from '../components/NotesPanel'
+import ItemNotes from '../components/ItemNotes'
 import BellButton from '../components/BellButton'
 import { broadness } from '../broad'
 
@@ -133,7 +133,7 @@ function Detail({
         </section>
       </div>
 
-      <NotesPanel app={project.app} behaviour={behaviour.id} />
+      <ItemNotes project={project} behaviour={behaviour.id} />
 
       <RemoveForm app={project.app} id={behaviour.id} onRemoved={onRemoved} />
     </>
