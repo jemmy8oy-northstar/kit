@@ -2035,6 +2035,7 @@ behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and
   when opens page:KitSettings
   then sees region:KitMain
   contract "Can you also build a way for features to be toggled on and off for myself and for users as two separate user groups. This way we can be very experimental but can customise the testers experience to be more minimal"
+  contract his stance (kit.notes.md#2026-10-31-1040): "The current approach with kit is aggressive experimentation and then later we can refine the ui and streamline the experience"; switches are what let an experiment reach him without reaching testers
   contract my assumption: a switch is per Kit feature (a FEAT- in the kit corpus), and the two groups are the operator and test users (BEH-USERS-1)
   contract my assumption: a new feature starts on for him and off for testers, so experiments reach him first and testers see a minimal Kit
 
