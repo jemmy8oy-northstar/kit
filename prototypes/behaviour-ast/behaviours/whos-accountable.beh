@@ -46,12 +46,12 @@ behaviour BEH-LEADER-1 "The core of the app is a leaderboard of the worst offend
   source defined whos-accountable#1
   review approved
   priority 1
-  pending
   actor visitor
   when opens page:WorstOffenders
   then sees region:Leaderboard
   contract "The core part will be company and individual leaderboards. Showing both ways - worse offenders leaderboard and top do gooders"
   contract the aim is visibility: "keep billionairs and corporations accountable for their actions"
+  contract built 2026-10-31 (whos-accountable#21): the home page lists companies lowest score first, with rank, sector, score and pillar coverage, and a sector filter; companies only, as individuals wait on their own review (BEH-BACKLOG-2); not deployed
 
 behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   in FEAT-LEADERBOARD
@@ -59,11 +59,11 @@ behaviour BEH-LEADER-2 "A second leaderboard shows the top do-gooders"
   source defined whos-accountable#1
   review approved
   priority 1
-  pending
   actor visitor
   when opens page:TopDoGooders
   then sees region:Leaderboard
   contract the same companies, ordered the other way round
+  contract built 2026-10-31 (whos-accountable#21) at /best; on today's real data every company scores 0, so both boards read the same until the scale is calibrated (BEH-SCORE-7)
 
 behaviour BEH-SCOPE-1 "Version 1 covers UK companies only"
   in FEAT-LEADERBOARD
@@ -232,8 +232,9 @@ behaviour BEH-API-1 "A read-only web API serves the leaderboards and company pag
   review unreviewed
   priority 4
   actor visitor
-  pending
   contract a WebApi with an EF read model; there is no API in the repo yet
+  contract my assumption, which replaces the EF read model: no database for v1. The cohort is committed data-as-code and scoring is a pure function of it, so the API scores it once at startup and holds the result in memory; a database comes back if refreshes ever stop being pull requests
+  contract built 2026-10-31 (whos-accountable#20): GET /api/leaderboard?direction=worst|best&sector=, /api/companies/{id}, /api/methodology and /api/status; a company with an unknown score sorts last both ways (BEH-SCORE-4)
 
 
 # ═══ BACKLOG — the bot's issues, lowest priority ═══
@@ -257,7 +258,7 @@ behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entr
   priority 3
   actor visitor
   pending
-  paused
+  paused until 2026-11-14
   contract "Fine to park maybe also backlog": parked pending a defamation review (whos-accountable#5)
   contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but this card was parked for its own reason, so it is paused rather than asked about again; Resume brings it back
 
@@ -269,7 +270,7 @@ behaviour BEH-BACKLOG-3 "A clearly separate public-sentiment layer sits beside t
   priority 3
   actor visitor
   pending
-  paused
+  paused until 2026-11-14
   contract "sentiment as a backlog" (whos-accountable#6)
   contract my assumption: his "Yes start it!" (whos-accountable.notes.md#2026-10-31-0949) restarts the project, but he asked for this card "as a backlog", so it is paused rather than asked about again; Resume brings it back
   contract sentiment never feeds the evidence score: crowd voting invites brigading and defamation risk

@@ -393,7 +393,7 @@ behaviour BEH-EDITION-3 "Studio: a take can be saved to snip-it's server, and ne
   priority 3
   pending
   needs-context "You merged snip-it#69, so saving is built but switched off. Turn it on, which adds a 50Gi volume to snip-it in the cluster? I leave it off."
-  paused
+  paused until 2026-11-14
   contract his word (snip-it.notes.md#2026-10-31-0108): "Let's pause for now I don't have any footage to add yet. But when I do we can add it". So saving stays off and the card stays paused until he has footage and resumes it
   actor creator
   contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default" (snip-it.notes.md, 2026-10-21 16:49Z): a take leaves the phone only when he chooses Save on it
@@ -427,7 +427,7 @@ behaviour BEH-TELE-10 "When the creator stalls mid-sentence, the prompter offers
   priority 4
   pending
   needs-context "Is the simpler-line prompt work now, or still an idea? I leave it as an idea."
-  paused
+  paused until 2026-11-14
   actor creator
   contract "detect a break in speech and if you aren't pausing at a line break or punctuation it shows that it is rephrasing … cancel or continue": a pause away from punctuation or a line break is a stall; a pause at one is a breath and does nothing
   contract a rephrase appears beside the current line, marked as a suggestion; Continue reads it, Cancel keeps the script, and the script itself is only changed if he keeps the suggestion

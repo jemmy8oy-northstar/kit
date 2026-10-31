@@ -709,7 +709,7 @@ behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
   review denied Deny backlog cards a placed based on the state they are in
   priority 3
   pending
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardBacklog
@@ -770,6 +770,7 @@ behaviour BEH-BOARD-26 "A paused card leaves his Inbox until the date it should 
   contract the card's page and the Backlog badge say when it will be asked about again
   contract a rung bell overrides the date: the agent answers it as any bell (BEH-BELL-2), and if the answer is to ask him rather than resume, it drops the date so the card is back in his Inbox at once
   contract ordering: no corpus carries a dated `paused` line until the parser that reads it is live in production; the bare lines already in the corpora get their dates in a later pull request, once it is
+  contract done 2026-10-31: the parser went live with kit#579 (its bundle served "Ask again in 2 weeks"), and then the eleven bare `paused` lines across six corpora were dated 2026-11-14, so every paused card leaves his Inbox for 14 days
   contract built 2026-10-31: the parser takes `paused` or `paused until YYYY-MM-DD` and refuses anything else, served as `pausedUntil`; Pause writes today (UTC) plus 14 days, and pausing a paused card re-dates it; the Inbox leaves out a card paused until a later date and offers "Ask again in 2 weeks" beside Resume; the badge and the card's page read "asks again <date>"
   contract the bell half is the agent's (claude-code-bot): when it answers a bell on a dated paused card by asking him, it rewrites the line bare
 
@@ -1269,7 +1270,7 @@ behaviour BEH-USERS-11 "The operator can reset a test user's sign-in when their 
   review unreviewed
   pending
   priority 4
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1645,7 +1646,7 @@ behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   review approved
   priority 4
   pending
-  paused
+  paused until 2026-11-14
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
@@ -1970,3 +1971,125 @@ behaviour BEH-LOADING-2 "On the installed iPhone app, pulling the page down relo
   contract my assumption: it only starts when the page is already scrolled to the top, so normal scrolling never triggers it
   contract my assumption: in a Safari tab Kit draws nothing, because Safari already has its own pull-to-refresh
   contract my assumption: the page keeps showing its data while the new read is in flight, rather than blanking to a spinner
+
+# His notes of 2026-10-31 10:39–10:41Z: an architecture layer, feature switches per user group,
+# and the agent steering each project toward a goal. Written at the problem stage with their
+# children inferred; every child is my proposal until he approves it. His 10:40Z note sets the
+# stance for all three: "aggressive experimentation and then later we can refine the ui and
+# streamline the experience".
+
+feature FEAT-ARCH "Architecture design, as deep as the user wants to go"
+  stage problem
+
+behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts and the decisions behind them"
+  in FEAT-ARCH
+  layer technical
+  source defined kit.notes.md#2026-10-31-1039
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Maybe it needs an architecture design page… I think kit system currently requires architecture design so we should build the feature out"
+  contract my assumption: each architecture decision is a card he can approve or deny, like a behaviour, because platform and architecture choices are his to make; a decision names what was chosen, what else was considered, and why
+  contract my assumption: the page groups a project's decisions by part (front end, back end, data, deployment), and each behaviour can name the decision it depends on
+  contract my assumption: slice A is read-only; approving or denying a decision, and a behaviour naming the decision it depends on, come in slice B
+
+behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is built"
+  in FEAT-ARCH
+  layer technical
+  source defined kit.notes.md#2026-10-31-1039
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Maybe kit needs another layer to its ux ui business logic spec state"
+  contract my assumption: architecture is a stage between logic and development, used only when a feature needs a new part or a new platform choice; a feature that fits the existing design skips it
+
+behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the rest for them"
+  in FEAT-ARCH
+  layer ux
+  source defined kit.notes.md#2026-10-31-1039
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Or maybe this is abstracted away from the user? Idk I kind of feel that everything is opt in for a user they should be able to go as high level or as involved as they like"
+  contract my assumption: a per-user depth setting (goals only, behaviours, or behaviours and architecture); what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later
+
+feature FEAT-FLAGS "Features switched on and off, separately for him and for testers"
+  stage problem
+
+behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and one for testers"
+  in FEAT-FLAGS
+  layer ux
+  source defined kit.notes.md#2026-10-31-1039
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Can you also build a way for features to be toggled on and off for myself and for users as two separate user groups. This way we can be very experimental but can customise the testers experience to be more minimal"
+  contract his stance (kit.notes.md#2026-10-31-1040): "The current approach with kit is aggressive experimentation and then later we can refine the ui and streamline the experience"; switches are what let an experiment reach him without reaching testers
+  contract my assumption: a switch is per Kit feature (a FEAT- in the kit corpus), and the two groups are the operator and test users (BEH-USERS-1)
+  contract my assumption: a new feature starts on for him and off for testers, so experiments reach him first and testers see a minimal Kit
+
+behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that group's pages and navigation"
+  in FEAT-FLAGS
+  layer technical
+  source defined kit.notes.md#2026-10-31-1039
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract my assumption: switched off means hidden and its routes refused for that group, not just greyed out, so a tester never meets half an experiment
+  contract my assumption: the switches are stored in the corpus, as the promotion switch is (BEH-SETTINGS-4), so a change is a commit he can see and revert
+
+feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
+  stage problem
+
+behaviour BEH-NARR-1 "Each project says what it is working towards, taken from its open epics"
+  in FEAT-NARRATIVE
+  layer ux
+  source defined kit.notes.md#2026-10-31-1041
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit would benefit from the agent driving some narrative for the user… I guess epics can help figure out what the big goals are"
+  contract my assumption: the top of a project's page names its current goal (its highest-priority open epic) and how far along it is, and the agent picks work that moves that goal before anything else
+
+behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towards, or whether it is being maintained"
+  in FEAT-NARRATIVE
+  layer technical
+  source defined kit.notes.md#2026-10-31-1041
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitInbox
+  contract "And if there aren't any big goals the ai can probe to find out the direction, what are we working towards or are we maintaining?"
+  contract my assumption: the question reaches the user's Inbox once per project, with a default: if they stay silent, the project is treated as maintained (fix what breaks, build nothing new)
+
+behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user toward their goal"
+  in FEAT-NARRATIVE
+  layer technical
+  source defined kit.notes.md#2026-10-31-1041
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Some rules to help the agent keep the user pushing in the right direction"
+  contract my assumption: the rules go in the generic agent's shared instructions (BEH-USERS-4): finish what is open before starting more, say when a project is spreading too wide, and close each session by naming the next step toward the goal

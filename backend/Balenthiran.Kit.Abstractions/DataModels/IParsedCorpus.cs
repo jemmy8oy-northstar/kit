@@ -10,6 +10,9 @@ public interface IParsedCorpus
     /// <summary>Its <c>epic</c> blocks (BEH-EPIC-2), in file order.</summary>
     IReadOnlyList<IEpic> Epics { get; }
 
+    /// <summary>Its <c>decision</c> blocks (BEH-ARCH-1), in file order.</summary>
+    IReadOnlyList<IDecision> Decisions { get; }
+
     /// <summary>The file's <c># kit:project &lt;name&gt;</c> directive (kit#237), or null when it has none.</summary>
     string? Project { get; }
 }

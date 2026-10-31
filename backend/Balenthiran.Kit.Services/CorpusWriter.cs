@@ -28,7 +28,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     private static readonly Regex Header = new($@"\Gbehaviour[{Ws}]+([A-Z][A-Z0-9-]*)[{Ws}]+""", RegexOptions.Compiled);
     // kit#237: a `feature` block ends the behaviour above it, or an edit to that behaviour
     // would splice into the feature — and a remove would delete it. An `epic` block too (BEH-EPIC-2).
-    private static readonly Regex FeatureHeader = new($@"\G(?:feature|epic)[{Ws}]", RegexOptions.Compiled);
+    private static readonly Regex FeatureHeader = new($@"\G(?:feature|epic|decision)[{Ws}]", RegexOptions.Compiled);
     private static readonly Regex BehaviourId =new(@"^[A-Z][A-Z0-9-]*\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
@@ -743,6 +743,11 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             return WriteResult.Refuse("collateral-change", $"an epic changed, and only {id} was meant to");
         }
 
+        if (Shape(oldCorpus.Decisions) != Shape(newCorpus.Decisions))
+        {
+            return WriteResult.Refuse("collateral-change", $"a decision changed, and only {id} was meant to");
+        }
+
         var oldAst = oldCorpus.Behaviours;
         var newAst = newCorpus.Behaviours;
 
@@ -829,6 +834,14 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
 
     private static string Shape(IReadOnlyList<IEpic> epics) =>
         JsonSerializer.Serialize(epics.Select(e => new { id = e.Id, title = e.Title }));
+
+    private static string Shape(IReadOnlyList<IDecision> decisions) =>
+        JsonSerializer.Serialize(decisions.Select(d => new
+        {
+            id = d.Id, title = d.Title, part = d.Part, chosen = d.Chosen, considered = d.Considered, because = d.Because,
+            source = new { origin = d.Source.Origin, @ref = d.Source.Ref },
+            review = new { state = d.Review.State, note = d.Review.Note },
+        }));
 
     /// <summary>
     /// One behaviour's line range. <c>End</c> is its LAST CONTENT line, so blanks and
