@@ -33,9 +33,12 @@ export function mine(entries: Source[]): InboxCard[] {
     )
 }
 
-/** Cards not yet opened first, highest priority first; then the rest by priority. Ties keep their order. */
+/** A review request is how the agent answers his question (BEH-INBOX-3), so it leads its group. */
+const answerFirst = (c: InboxCard) => (c.b.review.state === 'requested' ? 0 : 1)
+
+/** Cards not yet opened first, answers to him first, then highest priority; then the rest the same way. Ties keep their order. */
 export function ordered(cards: InboxCard[], seen: ReadonlySet<string>): InboxCard[] {
-  const by = (list: InboxCard[]) => [...list].sort((x, y) => byPriority(x.b.priority, y.b.priority))
+  const by = (list: InboxCard[]) => [...list].sort((x, y) => answerFirst(x) - answerFirst(y) || byPriority(x.b.priority, y.b.priority))
   return [...by(cards.filter((c) => !seen.has(keyOf(c)))), ...by(cards.filter((c) => seen.has(keyOf(c))))]
 }
 

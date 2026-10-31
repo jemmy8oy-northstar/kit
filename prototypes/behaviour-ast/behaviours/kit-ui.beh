@@ -1730,11 +1730,11 @@ behaviour BEH-INBOX-3 "When he asks a question in a note, the answer comes up fi
   source defined kit.notes.md#2026-10-31-0055
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitInbox
   then sees region:KitMain
   contract "If direct questions are asked as notes replies can come up in the inbox maybe before the questions asked to the user"
+  contract built 2026-10-31: among the cards he has not opened, and again among the ones he has, a review request comes first and the rest keep their priority order; an answer he has already opened still waits behind every unopened card
   contract my assumption: the agent answers a question on the card it is about, and marks that card review requested, with the short answer as the request; a question about no card goes on the card it most concerns
   contract my assumption: the Inbox shows review requests before Kit's own questions (needs-context lines) and before unreviewed proposals, still unseen first within each group
 
