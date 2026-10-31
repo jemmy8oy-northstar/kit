@@ -179,6 +179,31 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             lines.Insert(anchor + 1, line);
         }
 
+        // BEH-BOARD-25: approving a paused card resumes it, unless a needs-context line still blocks it.
+        // Same write, so one commit; a re-found block keeps the indices honest after the insert above.
+        if (st == "approved" && Block(string.Join('\n', lines), id) is { } nb)
+        {
+            var paused = -1;
+            var blocked = false;
+            for (var i = nb.Start + 1; i <= nb.End; i++)
+            {
+                var kw = FirstToken(lines[i]);
+                if (kw == "paused")
+                {
+                    paused = i;
+                }
+                else if (kw == "needs-context")
+                {
+                    blocked = true;
+                }
+            }
+
+            if (paused != -1 && !blocked)
+            {
+                lines.RemoveAt(paused);
+            }
+        }
+
         return Validate(text, string.Join('\n', lines), id);
     }
 
@@ -187,8 +212,14 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     /// header-adjacent line, like the review line, so a pause reads as part of the card's head.
     /// Asking for the state it is already in rewrites nothing, so a double press is not a commit.
     /// </summary>
-    public IWriteResult SetPaused(string text, string id, bool paused)
+    public IWriteResult SetPaused(string text, string id, bool paused, string? until = null)
     {
+        if (until is not null && !CorpusParser.IsoDate(until))
+        {
+            return WriteResult.Refuse("bad-date", "a paused-until date is YYYY-MM-DD");
+        }
+
+        var line = Indent + (until is null ? "paused" : $"paused until {until}");
         if (Block(text, id) is not { } b)
         {
             return WriteResult.Refuse("no-such-behaviour", $"no behaviour {id} in this corpus", Ids(text));
@@ -217,7 +248,17 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
                 }
             }
 
-            lines.Insert(anchor + 1, Indent + "paused");
+            lines.Insert(anchor + 1, line);
+        }
+        else if (paused && until is not null)
+        {
+            // BEH-BOARD-26: pausing what is paused re-dates it ("ask again later"); the same date writes nothing new.
+            if (lines[at] == line)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            lines[at] = line;
         }
         else if (!paused && at != -1)
         {
@@ -772,6 +813,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         layer = b.Layer,
         priority = b.Priority,
         paused = b.Paused,
+        pausedUntil = b.PausedUntil,
         needsContext = b.NeedsContext,
         onDev = b.OnDev,
         asks = b.Asks,

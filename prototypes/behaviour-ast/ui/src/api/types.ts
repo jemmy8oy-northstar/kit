@@ -163,6 +163,8 @@ export interface Behaviour {
   priority?: number
   /** A `paused` line (BEH-BOARD-16): held on the Backlog, not built. Absent when not paused. */
   paused?: boolean
+  /** `paused until YYYY-MM-DD` (BEH-BOARD-26): when it leaves his Inbox no longer. Absent for a bare `paused`. */
+  pausedUntil?: string
   /** A `needs-context` line (BEH-BOARD-17): what he must add before the agent can go on. Absent when there is none. */
   needsContext?: string
   /** An `on-dev` line (BEH-BOARD-22): built on the project's dev, not live; what will ship it. Absent when there is none. */

@@ -519,6 +519,7 @@ function AdjudicateForm({
             {saving ? 'Writing…' : behaviour.paused ? 'Resume' : 'Pause'}
           </Button>
         )}
+        {behaviour.paused && behaviour.pausedUntil && <span className="muted">asks again {behaviour.pausedUntil}</span>}
       </div>
       <WriteFeedback write={write} />
     </section>

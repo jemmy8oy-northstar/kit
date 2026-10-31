@@ -17,17 +17,25 @@ interface Source {
   bells: Set<string>
 }
 
+/** Today's local date as YYYY-MM-DD, the shape `pausedUntil` compares in. */
+export function localDate(d: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
 export const keyOf = (c: InboxCard) => `${c.app}/${c.b.id}`
 
 /**
  * Every card whose move is his, across every project (BEH-INBOX-1 on BEH-BOARD-17): `ownerOf` decides,
  * exactly as the board's 👤 badge does. Ideas and trial corpora are not work, as on the board.
  */
-export function mine(entries: Source[]): InboxCard[] {
+export function mine(entries: Source[], today: string = localDate()): InboxCard[] {
   return entries
     .filter((e) => !e.error && !isIdea(e.summary) && !isTrial(e.summary))
     .flatMap((e) =>
       e.behaviours
+        // BEH-BOARD-26: a card paused until a later date is out of his Inbox till then; a bare `paused`, or a date reached, shows.
+        .filter((b) => !(b.paused && b.pausedUntil && b.pausedUntil > today))
         .filter((b) => ownerOf(b, columnOf(b, e.places.get(b.id)), isRung(b, e.bells)) === 'james')
         .map((b) => ({ app: e.summary.app, project: projectOf(e.summary), b })),
     )

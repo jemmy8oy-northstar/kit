@@ -245,7 +245,7 @@ export default function Board() {
                               <div className="badges">
                                 {rung &&<Badge tone="warning">🔔 rung</Badge>}
                                 {isQuestion(b) && <Badge tone="primary">❓ question</Badge>}
-                                {b.paused && <Badge tone="neutral">⏸ paused</Badge>}
+                                {b.paused && <Badge tone="neutral">⏸ paused{b.pausedUntil ? ` · asks again ${b.pausedUntil}` : ''}</Badge>}
                                 {/* BEH-BOARD-17: whose move it is. */}
                                 {owner === 'james' && <Badge tone="primary">👤 yours</Badge>}
                                 {owner === 'agent' && <Badge tone="neutral">🤖 agent's</Badge>}

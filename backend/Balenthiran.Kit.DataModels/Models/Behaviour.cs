@@ -127,6 +127,11 @@ public sealed class Behaviour : IBehaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Paused { get; set; }
 
+    // BEH-BOARD-26: `paused until YYYY-MM-DD`, when to ask about it again. Absent for a bare `paused`.
+    [JsonPropertyOrder(26)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PausedUntil { get; set; }
+
     // BEH-BOARD-17: a `needs-context "..."` line, what he must add. Absent without one, so no golden changes.
     [JsonPropertyOrder(24)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

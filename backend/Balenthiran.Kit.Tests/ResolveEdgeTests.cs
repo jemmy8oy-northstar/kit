@@ -73,6 +73,7 @@ public class ResolveEdgeTests
         public string At => "x:1";
 
         public bool Paused => false;
+        public string? PausedUntil => null;
 
         public string? NeedsContext => null;
 

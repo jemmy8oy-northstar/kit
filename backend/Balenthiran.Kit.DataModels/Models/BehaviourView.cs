@@ -59,6 +59,11 @@ public sealed class BehaviourView : IBehaviourView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Paused { get; init; }
 
+    // BEH-BOARD-26: the date a paused card should be asked about again. Absent for a bare `paused`.
+    [JsonPropertyOrder(30)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PausedUntil { get; init; }
+
     // BEH-BOARD-17: what he must add, from a `needs-context` line. Absent when there is none.
     [JsonPropertyOrder(16)]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

@@ -21,7 +21,7 @@ public interface ICorpusWriter
     IWriteResult SetReview(string text, string id, string state, string? note = null);
 
     /// <summary>Add or remove a behaviour's bare <c>paused</c> line (BEH-BOARD-16); asking for the state it is already in writes nothing new.</summary>
-    IWriteResult SetPaused(string text, string id, bool paused);
+    IWriteResult SetPaused(string text, string id, bool paused, string? until = null);
 
     /// <summary>Sets the behaviour's <c>priority</c> line to 1 (first) to 5, adding it when absent. Setting what is already set rewrites nothing.</summary>
     IWriteResult SetPriority(string text, string id, int priority);
