@@ -75,6 +75,11 @@ public sealed class ProjectView : IProjectView
 
     IReadOnlyList<IEpic> IProjectView.Epics => (IReadOnlyList<IEpic>?)Epics ?? [];
 
+    // BEH-ARCH-1: its `decision` blocks, in file order. Absent when it declares none.
+    [JsonPropertyOrder(18)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<DecisionView>? Decisions { get; init; }
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

@@ -1994,6 +1994,7 @@ behaviour BEH-ARCH-1 "A project has an architecture page: its stack, its parts a
   contract "Maybe it needs an architecture design page… I think kit system currently requires architecture design so we should build the feature out"
   contract my assumption: each architecture decision is a card he can approve or deny, like a behaviour, because platform and architecture choices are his to make; a decision names what was chosen, what else was considered, and why
   contract my assumption: the page groups a project's decisions by part (front end, back end, data, deployment), and each behaviour can name the decision it depends on
+  contract my assumption: slice A is read-only; approving or denying a decision, and a behaviour naming the decision it depends on, come in slice B
 
 behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is built"
   in FEAT-ARCH

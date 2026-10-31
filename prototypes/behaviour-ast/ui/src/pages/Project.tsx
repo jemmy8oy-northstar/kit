@@ -13,6 +13,7 @@ import { useLayers } from '../hooks/useLayers'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
 import PendingPanel from '../components/PendingPanel'
+import DecisionsList from '../components/DecisionsList'
 import PrinciplesList from '../components/PrinciplesList'
 import PublishedHint from '../components/PublishedHint'
 import ResourceView from '../components/Resource'
@@ -101,6 +102,7 @@ function Detail({ project }: { project: ProjectDetail }) {
         }
         schedule={<SchedulePanel apps={[project.app]} />}
         principles={project.principles?.length ? <PrinciplesList principles={project.principles} /> : null}
+        architecture={project.decisions?.length ? <DecisionsList decisions={project.decisions} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />
@@ -140,8 +142,8 @@ function Detail({ project }: { project: ProjectDetail }) {
   )
 }
 
-type Tab = 'features' | 'questions' | 'notes' | 'schedule' | 'principles'
-const TABS: Tab[] = ['features', 'questions', 'notes', 'schedule', 'principles']
+type Tab = 'features' | 'questions' | 'notes' | 'schedule' | 'principles' | 'architecture'
+const TABS: Tab[] = ['features', 'questions', 'notes', 'schedule', 'principles', 'architecture']
 
 /**
  * The tab is in the url (`?tab=questions`) so a link can open on it and the back button
@@ -186,6 +188,7 @@ function ProjectTabs({
   notes,
   schedule,
   principles,
+  architecture,
 }: {
   tab: Tab
   select: (next: Tab) => void
@@ -197,6 +200,8 @@ function ProjectTabs({
   notes: React.ReactNode
   schedule: React.ReactNode
   principles: React.ReactNode | null
+  /** BEH-ARCH-1: a project with no `decision` blocks has no tab. */
+  architecture: React.ReactNode | null
 }) {
   const id = useId()
 
@@ -222,6 +227,7 @@ function ProjectTabs({
     },
     { key: 'schedule', label: 'Schedule', panel: schedule },
     ...(principles ? [{ key: 'principles' as Tab, label: 'Principles', panel: principles }] : []),
+    ...(architecture ? [{ key: 'architecture' as Tab, label: 'Architecture', panel: architecture }] : []),
   ]
   const shown = tabs.some((t) => t.key === tab) ? tab : 'features'
 
@@ -401,6 +407,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
   const [tab, select] = useTab()
   const [open, setOpen] = useState<number | null>(null)
   const principles = files.flatMap((f) => f.principles ?? [])
+  const decisions = files.flatMap((f) => f.decisions ?? [])
 
   return (
     <>
@@ -427,6 +434,7 @@ function OneProject({ name, files }: { name: string; files: ProjectDetail[] }) {
         }
         schedule={<SchedulePanel apps={files.map((f) => f.app)} />}
         principles={principles.length ? <PrinciplesList principles={principles} /> : null}
+        architecture={decisions.length ? <DecisionsList decisions={decisions} /> : null}
         features={
           <>
             <LayerChips layers={layers} onToggle={toggleLayer} />

@@ -153,6 +153,16 @@ public sealed class ProjectViewer(
                 Epics = f.Epics.Count > 0 ? f.Epics.Select(t => t.Id).ToList() : null,
             }).ToList(),
             Epics = corpus.Epics.Count > 0 ? corpus.Epics.Select(e => new Epic { Id = e.Id, Title = e.Title, At = e.At }).ToList() : null,
+            Decisions = corpus.Decisions.Count > 0
+                ? corpus.Decisions.Select(d => new DecisionView
+                {
+                    Id = d.Id, Title = d.Title, Part = d.Part, Chosen = d.Chosen,
+                    Considered = d.Considered.ToList(), Because = d.Because.ToList(),
+                    Review = new Review { State = d.Review.State, Note = d.Review.Note },
+                    Source = new Source { Origin = d.Source.Origin, Ref = d.Source.Ref },
+                    At = d.At,
+                }).ToList()
+                : null,
             // kit#237: files naming the same project are shown as one; no directive, its own.
             Project = corpus.Project ?? app,
             Idea = Idea.IsMatch(src) ? true : null,

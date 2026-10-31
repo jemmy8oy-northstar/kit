@@ -262,6 +262,31 @@ describe('the project tabs', () => {
     expect(await screen.findByRole('tab', { name: 'Principles' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Features' })).toHaveAttribute('aria-selected', 'true')
   })
+
+  it('has an Architecture tab only for a project with decisions (BEH-ARCH-1)', async () => {
+    expect(snipIt).not.toHaveProperty('decisions')
+    const { unmount } = renderApp(snipIt, 'snip-it')
+    await screen.findByRole('tab', { name: 'Notes' })
+    expect(screen.queryByRole('tab', { name: 'Architecture' })).not.toBeInTheDocument()
+    unmount()
+
+    const decision = {
+      id: 'ADR-DATA-1',
+      title: 'Specs are files',
+      part: 'data',
+      chosen: 'text files in git',
+      considered: [],
+      because: ['he reviews a diff'],
+      review: { state: 'unreviewed', note: null },
+      source: { origin: 'defined', ref: null },
+      at: 'x.beh:1',
+    }
+    renderApp({ ...snipIt, decisions: [decision] }, 'snip-it', '?tab=architecture')
+
+    expect(await screen.findByRole('tab', { name: 'Architecture' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Chosen: text files in git')).toBeInTheDocument()
+    expect(screen.getByText('Unreviewed suggestion')).toBeInTheDocument()
+  })
 })
 
 // ── the question sheet, which ui.js has always sent and this UI ignored ──────
