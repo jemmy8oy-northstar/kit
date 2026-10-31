@@ -53,6 +53,10 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "puts the Unstaged column first, holding the features with no stage line and none that has one (BEH-STAGE-7)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "counts a behaviour under two staged features once in each, and a stage-less one gets a card too (BEH-STAGE-7)" }
   ],
+  "BEH-STAGE-12": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "puts a feature whose behaviours are all built in a last Done column, and keeps one with a paused behaviour or none in its stage (BEH-STAGE-12)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "is Done only with behaviours beneath it, every one done on the behaviour board (BEH-STAGE-12)" }
+  ],
   "BEH-STAGE-8": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "switches between the epic, feature and behaviour views, with one Board link current on all (BEH-STAGE-8, BEH-EPIC-4)" }
   ],
