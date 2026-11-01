@@ -80,6 +80,11 @@ public sealed class ProjectView : IProjectView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<DecisionView>? Decisions { get; init; }
 
+    // BEH-NARR-2: "maintained" when this is its project's primary file and carries `# kit:goal maintained`. Absent otherwise.
+    [JsonPropertyOrder(19)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Goal { get; init; }
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

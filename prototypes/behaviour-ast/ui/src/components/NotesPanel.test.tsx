@@ -308,7 +308,8 @@ describe('NotesPanel picked-up state (BEH-COMMENT-2)', () => {
       </MemoryRouter>,
     )
     await within(region()).findByText('later maybe')
-    expect(counts.at(-1)).toBe(1)
+    // The count is reported from an effect, which can run after the text is on screen.
+    await waitFor(() => expect(counts.at(-1)).toBe(1))
   })
 
   it('BEH-COMMENT-2: an uncited comment on an item page says it has not been picked up yet', async () => {

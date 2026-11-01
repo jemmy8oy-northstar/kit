@@ -182,6 +182,7 @@ public sealed class ProjectViewer(
             // kit#237: files naming the same project are shown as one; no directive, its own.
             Project = corpus.Project ?? app,
             Idea = Idea.IsMatch(src) ? true : null,
+            Goal = (corpus.Project ?? app) == app && GoalDirective.IsMaintained(src) ? "maintained" : null,
             Principles = Principles(src, app) is { Count: > 0 } p ? p : null,
         };
     }
@@ -316,6 +317,8 @@ public sealed class ProjectViewer(
             Idea = p.Idea,
             // Only the primary file (named for its project) can grant: see PromoteDirective.
             Promote = p.Project == app && PromoteDirective.IsGranted(corpora.Read(app)) ? "self" : null,
+            // Same rule for the goal: only the primary file can mark the project maintained.
+            Goal = p.Project == app && GoalDirective.IsMaintained(corpora.Read(app)) ? "maintained" : null,
         };
     }
 
