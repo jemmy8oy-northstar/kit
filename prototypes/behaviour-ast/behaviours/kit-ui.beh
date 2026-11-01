@@ -2204,12 +2204,13 @@ behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user towar
   source defined kit.notes.md#2026-10-31-1041
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "Some rules to help the agent keep the user pushing in the right direction"
   contract my assumption: the rules go in the generic agent's shared instructions (BEH-USERS-4): finish what is open before starting more, say when a project is spreading too wide, and close each session by naming the next step toward the goal
+  contract built: backend/Balenthiran.Kit.Services/Process/agent.md, served at GET /api/process, has a "Keep the user moving toward their goal" section with those three rules, and says the goal is the epic the project page shows as "Working towards" (BEH-NARR-1), or none for a project marked `# kit:goal maintained` (BEH-NARR-2)
+  contract my assumption: these rules are for the generic user agent only; my own agent's rules (CLAUDE.md) are his to change by PR, so this does not change how I work on Kit
 
 # ═══ The Kit user's journey (kit.notes.md 2026-10-31 16:43Z) ════════════════
 # His walk-through of a user taking a project from idea to preprod. What already
