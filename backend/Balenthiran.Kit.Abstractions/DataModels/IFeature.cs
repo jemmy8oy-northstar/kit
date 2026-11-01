@@ -16,7 +16,7 @@ public interface IFeature
     string At { get; }
 
     /// <summary>
-    /// Its <c>stage</c> line (FEAT-STAGES): <c>problem</c>, <c>ux</c>, <c>logic</c>,
+    /// Its <c>stage</c> line (FEAT-STAGES): <c>problem</c>, <c>ux</c>, <c>logic</c>, <c>architecture</c>,
     /// <c>development</c> or <c>ui</c>. Null when it has none, which keeps it off the stages board.
     /// </summary>
     string? Stage { get; }

@@ -217,7 +217,7 @@ export interface Epic {
 }
 
 /** The five stages, in his order (BEH-STAGE-1). */
-export type Stage = 'problem' | 'ux' | 'logic' | 'development' | 'ui'
+export type Stage = 'problem' | 'ux' | 'logic' | 'architecture' | 'development' | 'ui'
 
 export interface Generated {
   id: string
