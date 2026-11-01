@@ -620,6 +620,9 @@
     { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_the_operator_marks_and_clears_it_over_the_route" },
     { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" }
   ],
+  "BEH-NARR-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "BEH_NARR_3_the_shared_process_steers_the_agent_toward_the_goal" }
+  ],
   "BEH-ARCH-1": [
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_decision_is_its_own_block_with_a_part_and_repeating_considered_and_because" },
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_malformed_decision_is_refused_naming_the_line" },

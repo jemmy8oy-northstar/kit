@@ -33,6 +33,19 @@ public class UserMemoryTests
     }
 
     [Fact]
+    public void BEH_NARR_3_the_shared_process_steers_the_agent_toward_the_goal()
+    {
+        var text = System.Text.Encoding.UTF8.GetString(Router().Route("GET", "/api/process").Raw!);
+
+        Assert.Contains("## Keep the user moving toward their goal", text, StringComparison.Ordinal);
+        Assert.Contains("\"Working towards\"", text, StringComparison.Ordinal);
+        Assert.Contains("# kit:goal maintained", text, StringComparison.Ordinal);
+        Assert.Contains("Finish what is open before starting more", text, StringComparison.Ordinal);
+        Assert.Contains("Say when the project is spreading too wide", text, StringComparison.Ordinal);
+        Assert.Contains("End every session by naming the next step toward the goal", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_users_memory_round_trips_and_is_empty_before_it_is_written()
     {
         var router = Router();
