@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Stages from './Stages'
 import { hueOf } from '../board'
-import { stageCards } from '../stages'
+import { columnFor, stageCards } from '../stages'
 import type { Behaviour, Feature } from '../api/types'
 
 function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
@@ -33,6 +33,7 @@ const details: Record<string, { features: Feature[]; behaviours: Behaviour[] }> 
   alpha: {
     features: [
       feat('FEAT-PROBLEM', { stage: 'problem' }),
+      feat('FEAT-NEWPART', { stage: 'architecture' }),
       feat('FEAT-BUILDING', { stage: 'development' }),
       feat('FEAT-PART', { in: ['FEAT-BUILDING'] }),
       feat('FEAT-PAGE'),
@@ -92,6 +93,7 @@ describe('Stages', () => {
       'Problem statement',
       'UX requirements',
       'Business logic',
+      'Architecture',
       'Development',
       'UI requirements',
       'Done',
@@ -190,5 +192,21 @@ describe('stage rules', () => {
       ['FEAT-B', 0, 1],
       ['FEAT-C', 0, 0],
     ])
+  })
+
+  it('BEH-ARCH-2: shows an Architecture column between Business logic and Development, holding a feature staged architecture', async () => {
+    renderStages()
+    const board = await screen.findByRole('region', { name: 'Feature stages' })
+    const heads = within(board).getAllByRole('heading', { level: 2 }).map((h) => h.firstChild!.textContent)
+    const at = heads.indexOf('Architecture')
+    expect(heads[at - 1]).toBe('Business logic')
+    expect(heads[at + 1]).toBe('Development')
+    expect((await stage('Architecture')).getByText('FEAT-NEWPART')).toBeInTheDocument()
+  })
+
+  it('BEH-ARCH-2: a feature may skip architecture, going from logic to development', () => {
+    const features = [feat('FEAT-A', { stage: 'logic' }), feat('FEAT-B', { stage: 'development' })]
+    const cards = stageCards('app', 'app', features, [])
+    expect(cards.map((c) => columnFor(c))).toEqual(['logic', 'development'])
   })
 })
