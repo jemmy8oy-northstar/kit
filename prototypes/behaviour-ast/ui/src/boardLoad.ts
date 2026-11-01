@@ -1,5 +1,5 @@
 import { ApiError, fetchHistory, fetchNotes, fetchProject, fetchProjects, fetchSchedule } from './api/client'
-import type { Behaviour, ProjectSummary } from './api/types'
+import type { Behaviour, ProjectDetail, ProjectSummary } from './api/types'
 import type { Place } from './board'
 
 /** One project as the board needs it: its row, and either its behaviours or why it has none. */
@@ -19,6 +19,8 @@ export interface Entry {
   historyMissing: string | null
   /** The items whose bell is rung and unanswered (BEH-BELL-3); empty when the notes could not be read. */
   bells: Set<string>
+  /** The whole detail, for what reads more than behaviours (the goal epic, BEH-NARR-2). Absent on an error row. */
+  detail?: ProjectDetail
 }
 
 const messageOf = (e: unknown) => (e instanceof ApiError || e instanceof Error ? e.message : String(e))
@@ -68,6 +70,7 @@ export async function loadBoard(): Promise<Entry[]> {
       return {
         summary,
         behaviours: detail.value.behaviours,
+        detail: detail.value,
         places,
         error: null,
         scheduleError: schedule.status === 'rejected' ? messageOf(schedule.reason) : null,

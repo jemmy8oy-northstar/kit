@@ -1,5 +1,6 @@
-import type { Behaviour, ProjectSummary } from './api/types'
+import type { Behaviour, ProjectDetail, ProjectSummary } from './api/types'
 import { byPriority, columnOf, isIdea, isRung, isTrial, ownerOf, projectOf, type Place } from './board'
+import { goalOf } from './goal'
 
 /** One card that is his move (BEH-INBOX-1). */
 export interface InboxCard {
@@ -15,6 +16,7 @@ interface Source {
   places: Map<string, Place>
   error: string | null
   bells: Set<string>
+  detail?: ProjectDetail
 }
 
 /** Today's local date as YYYY-MM-DD, the shape `pausedUntil` compares in. */
@@ -23,7 +25,47 @@ export function localDate(d: Date = new Date()): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
-export const keyOf = (c: InboxCard) => `${c.app}/${c.b.id}`
+/**
+ * BEH-NARR-2: the question a project with no goal is asked, once. Not a behaviour, so it has no `b`;
+ * `app` is the project's primary file, where "maintained" and the answer's note are written.
+ */
+export interface GoalCard {
+  goalFor: string
+  app: string
+  project: string
+}
+
+/** Anything the inbox queues: a behaviour card, or a project's goal question. */
+export type QueueCard = InboxCard | GoalCard
+
+export const isGoalCard = (c: QueueCard): c is GoalCard => 'goalFor' in c
+
+/** Stable and distinct from a behaviour's `app/id`: no app name carries a colon. */
+export const keyOf = (c: QueueCard) => (isGoalCard(c) ? `goal:${c.goalFor}` : `${c.app}/${c.b.id}`)
+
+/**
+ * BEH-NARR-2 (his "if there aren't any big goals the ai can probe to find out the direction"): one
+ * question for every project that has no goal epic (BEH-NARR-1's rule, `goalOf`) and is not marked
+ * maintained. A project whose primary file is missing, or any of whose files failed to load, is not
+ * asked: there is nowhere to write the answer, or no way to know it has no epic. Ideas and trials
+ * are not projects, as in `mine`.
+ */
+export function goalQuestions(entries: Source[], answered: ReadonlySet<string> = new Set()): GoalCard[] {
+  const byProject = new Map<string, Source[]>()
+  for (const e of entries) {
+    if (isIdea(e.summary) || isTrial(e.summary)) continue
+    const p = projectOf(e.summary)
+    byProject.set(p, [...(byProject.get(p) ?? []), e])
+  }
+  return [...byProject].flatMap(([project, files]) => {
+    if (answered.has(project)) return []
+    if (files.some((f) => f.error || !f.detail)) return []
+    if (files.some((f) => f.summary.goal === 'maintained')) return []
+    if (!files.some((f) => f.summary.app === project)) return []
+    if (goalOf(files.map((f) => f.detail!))?.goal) return []
+    return [{ goalFor: project, app: project, project }]
+  })
+}
 
 /**
  * Every card whose move is his, across every project (BEH-INBOX-1 on BEH-BOARD-17): `ownerOf` decides,
@@ -42,11 +84,14 @@ export function mine(entries: Source[], today: string = localDate()): InboxCard[
 }
 
 /** A review request is how the agent answers his question (BEH-INBOX-3), so it leads its group. */
-const answerFirst = (c: InboxCard) => (c.b.review.state === 'requested' ? 0 : 1)
+const answerFirst = (c: QueueCard) => (!isGoalCard(c) && c.b.review.state === 'requested' ? 0 : 1)
+
+/** A goal question has no score, so it ranks after every scored card in its group. */
+const priorityOf = (c: QueueCard) => (isGoalCard(c) ? undefined : c.b.priority)
 
 /** Cards not yet opened first, answers to him first, then highest priority; then the rest the same way. Ties keep their order. */
-export function ordered(cards: InboxCard[], seen: ReadonlySet<string>): InboxCard[] {
-  const by = (list: InboxCard[]) => [...list].sort((x, y) => answerFirst(x) - answerFirst(y) || byPriority(x.b.priority, y.b.priority))
+export function ordered<T extends QueueCard>(cards: T[], seen: ReadonlySet<string>): T[] {
+  const by = (list: T[]) => [...list].sort((x, y) => answerFirst(x) - answerFirst(y) || byPriority(priorityOf(x), priorityOf(y)))
   return [...by(cards.filter((c) => !seen.has(keyOf(c)))), ...by(cards.filter((c) => seen.has(keyOf(c))))]
 }
 
@@ -56,6 +101,29 @@ export function lowered(priority: number | undefined): number {
 }
 
 const KEY = 'kit.inboxSeen'
+const ANSWERED = 'kit.goalAnswered'
+
+/**
+ * The projects whose goal question he answered with words (BEH-NARR-2). The note only becomes a goal
+ * epic once the agent has turned it into spec, so without this the question would come straight back.
+ * Kept in this browser, like "seen"; "Just maintaining it" needs none, the corpus line is the record.
+ */
+export function readAnswered(): Set<string> {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(ANSWERED) ?? '[]')
+    return new Set(Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : [])
+  } catch {
+    return new Set()
+  }
+}
+
+export function saveAnswered(project: string) {
+  try {
+    window.localStorage.setItem(ANSWERED, JSON.stringify([...readAnswered().add(project)]))
+  } catch {
+    // A browser that refuses storage asks again next visit.
+  }
+}
 
 /** The cards he has opened in this browser, like the opening page (BEH-SETTINGS-2): empty when storage is unavailable. */
 export function readSeen(): Set<string> {

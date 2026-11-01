@@ -35,6 +35,9 @@ public interface ICorpusWriter
     /// </summary>
     IWriteResult SetPromote(string text, bool on);
 
+    /// <summary>Adds or removes the file's <c># kit:goal maintained</c> line (BEH-NARR-2); the state it is already in changes nothing.</summary>
+    IWriteResult SetGoalMaintained(string text, bool on);
+
     /// <summary>
     /// Sets the file's <c># kit:idle</c> line to one of <c>on-change</c>, <c>health</c>, <c>ideas</c>,
     /// <c>idle</c> (BEH-SETTINGS-5), adding it when absent. Asking for what it already says rewrites nothing.

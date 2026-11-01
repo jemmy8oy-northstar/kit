@@ -1,14 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
-import { leaveNote, setPaused, setPriority, setReview } from '../api/client'
+import { leaveNote, setMaintained, setPaused, setPriority, setReview } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 import { loadBoard, type Entry } from '../boardLoad'
 import { hueOf, isQuestion } from '../board'
-import { keyOf, lowered, mine, ordered, readSeen, saveSeen, type InboxCard } from '../inbox'
+import {
+  goalQuestions,
+  isGoalCard,
+  keyOf,
+  lowered,
+  mine,
+  ordered,
+  readAnswered,
+  readSeen,
+  saveAnswered,
+  saveSeen,
+  type GoalCard,
+  type InboxCard,
+  type QueueCard,
+} from '../inbox'
 
 /**
  * BEH-INBOX-1: the cards whose move is his, one at a time across every project. The order is fixed
@@ -29,7 +43,7 @@ export default function Inbox() {
 
 function Queue({ entries }: { entries: Entry[] }) {
   // Frozen at open: reading "seen" and ordering once is what keeps the queue from moving under his thumb.
-  const [queue] = useState(() => ordered(mine(entries), readSeen()))
+  const [queue] = useState(() => ordered<QueueCard>([...mine(entries), ...goalQuestions(entries, readAnswered())], readSeen()))
   // BEH-INBOX-4: the same `?project=a,b` filter the board keeps in the url (BEH-BOARD-2).
   const [params, setParams] = useSearchParams()
   const selected = (params.get('project') ?? '').split(',').filter(Boolean)
@@ -94,8 +108,62 @@ function Queue({ entries }: { entries: Entry[] }) {
       <p className="muted" data-testid="inbox-position">
         Card {at + 1} of {shown.length}
       </p>
-      <CardView key={keyOf(card)} card={card} onDone={() => setHandled((h) => new Set(h).add(keyOf(card)))} />
+      {isGoalCard(card) ? (
+        <GoalView key={keyOf(card)} card={card} onDone={() => setHandled((h) => new Set(h).add(keyOf(card)))} />
+      ) : (
+        <CardView key={keyOf(card)} card={card} onDone={() => setHandled((h) => new Set(h).add(keyOf(card)))} />
+      )}
     </>
+  )
+}
+
+/**
+ * BEH-NARR-2: the question for a project with no goal. Silence is a decision too, and the card says
+ * which: maintained. "Just maintaining it" writes the corpus line; words are a note on the project,
+ * which the agent turns into spec. Either way the card leaves; a refusal stays on screen and the card stays.
+ */
+function GoalView({ card, onDone }: { card: GoalCard; onDone: () => void }) {
+  const { app, project } = card
+  const [words, setWords] = useState('')
+  const { write, run } = useWrite(onDone)
+  const saving = write.state === 'saving'
+
+  return (
+    <Card className={`board-card hue-${hueOf(project)}`}>
+      <h2>What is {project} working towards?</h2>
+      <div className="badges">
+        <Badge tone="primary">❓ question</Badge>
+      </div>
+      <p data-testid="inbox-goal-default">
+        If you don&apos;t answer, I&apos;ll treat it as maintained: fix what breaks, build nothing new.
+      </p>
+
+      <label htmlFor="inbox-goal-words">Working towards…</label>
+      <Input id="inbox-goal-words" value={words} onChange={(e) => setWords(e.target.value)} />
+
+      <div className="badges">
+        <Button
+          type="button"
+          onClick={() =>
+            run(async () => {
+              const r = await leaveNote(app, `Working towards: ${words.trim()}`)
+              saveAnswered(project)
+              return r
+            })
+          }
+          disabled={saving || words.trim() === ''}
+        >
+          Working towards this
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => run(() => setMaintained(app, true))} disabled={saving}>
+          Just maintaining it
+        </Button>
+        <Button type="button" variant="ghost" onClick={onDone} disabled={saving}>
+          Skip
+        </Button>
+      </div>
+      <WriteFeedback write={write} />
+    </Card>
   )
 }
 

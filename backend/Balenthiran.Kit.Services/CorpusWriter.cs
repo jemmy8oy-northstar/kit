@@ -383,6 +383,34 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-NARR-2: adds the <c># kit:goal maintained</c> line after the file's last leading
+    /// <c># kit:</c> directive (else at the very top), or removes every <c>kit:goal</c> line.
+    /// Asking for the state the file is already in rewrites nothing.
+    /// </summary>
+    public IWriteResult SetGoalMaintained(string text, bool on)
+    {
+        if (GoalDirective.IsMaintained(text) == on)
+        {
+            return new WriteResult { Ok = true, Text = text };
+        }
+
+        var lines = text.Split('\n').ToList();
+        if (on)
+        {
+            lines.Insert(HeaderAnchor(lines) + 1, GoalDirective.Line);
+        }
+        else
+        {
+            foreach (var i in GoalDirective.Lines([.. lines]).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
+    /// <summary>
     /// BEH-SETTINGS-5: sets the file's <c># kit:idle</c> line to <paramref name="mode"/>, replacing the
     /// first and dropping any others, else adding it after the last leading <c># kit:</c> directive.
     /// Asking for what the file already says rewrites nothing; the default with no line is already that.

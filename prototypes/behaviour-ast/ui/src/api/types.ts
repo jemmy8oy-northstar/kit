@@ -116,6 +116,11 @@ export interface ProjectSummary {
    * primary file carries `# kit:promote self`. Absent, never false or null, otherwise.
    */
   promote?: 'self'
+  /**
+   * `"maintained"` when the project is kept going, not worked towards (BEH-NARR-2): its primary
+   * file carries `# kit:goal maintained`. Absent, never false or null, otherwise.
+   */
+  goal?: 'maintained'
 }
 
 /** The agent's kinds of idle work (BEH-SETTINGS-6). One not in the order is switched off. */
@@ -311,6 +316,8 @@ export interface ProjectDetail {
   epics?: Epic[]
   /** Its `decision` blocks (BEH-ARCH-1), in file order. Absent when it declares none. */
   decisions?: Decision[]
+  /** `"maintained"` on a project's primary file that carries `# kit:goal maintained` (BEH-NARR-2). Absent otherwise. */
+  goal?: 'maintained'
 }
 
 /** The parts of a system an architecture decision belongs to, in the order the page shows them. */

@@ -48,6 +48,26 @@ describe('WorkingTowards on the project page (BEH-NARR-1)', () => {
     expect(await screen.findByText('Every goal is built')).toBeInTheDocument()
   })
 
+  it('BEH-NARR-2: says it is maintained when the project is marked so and has no open goal', async () => {
+    renderApp({ ...snipIt, goal: 'maintained' })
+
+    expect(await screen.findByText('Maintained: fixing what breaks, building nothing new')).toBeInTheDocument()
+  })
+
+  it('BEH-NARR-2: an open goal wins over the maintained flag', async () => {
+    const body = {
+      ...snipIt,
+      goal: 'maintained',
+      epics: [{ id: 'EPIC-GO', title: 'Ship the editor', at: 'x:1' }],
+      features: [{ id: 'FEAT-GO', title: 'Editor', in: [], at: 'x:1', epics: ['EPIC-GO'] }],
+      behaviours: snipIt.behaviours.map((b) => ({ ...b, in: ['FEAT-GO'], pending: true })),
+    }
+    renderApp(body)
+
+    expect(await screen.findByRole('link', { name: 'Ship the editor' })).toBeInTheDocument()
+    expect(screen.queryByText(/^Maintained:/)).not.toBeInTheDocument()
+  })
+
   it('BEH-NARR-1: shows nothing for a project with no epics', async () => {
     renderApp(snipIt)
 

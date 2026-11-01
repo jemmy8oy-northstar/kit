@@ -97,6 +97,7 @@ public sealed partial class KitRouter(
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex PromoteRoute = new(@"^/api/projects/([^/]+)/promote\z", RegexOptions.Compiled);
+    private static readonly Regex GoalRoute = new(@"^/api/projects/([^/]+)/goal\z", RegexOptions.Compiled);
     // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
     private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours =new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
@@ -449,7 +450,8 @@ public sealed partial class KitRouter(
         var sm = ScheduleRoute.Match(pathname);
         var pm = PromoteRoute.Match(pathname);
         var dm = DecisionReview.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : dm.Success ? dm : Behaviours.Match(pathname);
+        var gm = GoalRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -485,6 +487,7 @@ public sealed partial class KitRouter(
                 : na.Success ? ActOnNote(app, na.Groups[2].Value, b)
                 : sm.Success ? Reschedule(app, b)
                 : pm.Success ? SetPromote(app, b)
+                : gm.Success ? SetGoal(app, b)
                 : dm.Success ? ReviewDecision(app, dm.Groups[2].Value, b)
                 : Edit(app, m, b);
         }
@@ -909,6 +912,44 @@ public sealed partial class KitRouter(
 
         corpora.WriteText(app, result.Text!);
         return Json(200, GitOutcome(corpora.FullPath(app), on ? $"let the agent promote {app} to main" : $"stop the agent promoting {app} to main", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>
+    /// BEH-NARR-2: mark a project as maintained (no goal; fix what breaks, build nothing new), or clear
+    /// it — the <c># kit:goal maintained</c> line in the project's primary file, committed like any edit.
+    /// Same shape and refusals as <see cref="SetPromote"/>.
+    /// </summary>
+    private KitResponse SetGoal(string app, JsonElement body)
+    {
+        if (Field(body, "maintained") is not { ValueKind: JsonValueKind.True or JsonValueKind.False } flag)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "maintained must be true or false" });
+        }
+
+        string project;
+        try
+        {
+            project = viewer.View(app).Project;
+        }
+        catch (ProjectionFailedException e)
+        {
+            return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+        }
+
+        if (project != app)
+        {
+            return Json(409, new ApiError { Error = "not-primary", Reason = $"{app} is part of project {project}; the goal lives in {project}'s own file, so set it there" });
+        }
+
+        var on = flag.GetBoolean();
+        var result = writer.SetGoalMaintained(corpora.ReadText(app), on);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), on ? $"mark {app} as maintained" : $"stop treating {app} as maintained", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>

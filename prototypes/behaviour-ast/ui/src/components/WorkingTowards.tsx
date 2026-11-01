@@ -9,6 +9,10 @@ import { goalOf } from '../goal'
  */
 export default function WorkingTowards({ files }: { files: ProjectDetail[] }) {
   const found = goalOf(files)
+  // BEH-NARR-2: told "maintained", a project with no open goal says so rather than nothing.
+  if (!found?.goal && files.some((f) => f.goal === 'maintained')) {
+    return <p className="muted">Maintained: fixing what breaks, building nothing new</p>
+  }
   if (!found) return null
   if (!found.goal) return <p className="muted">Every goal is built</p>
   const { app, epic, built, total } = found.goal

@@ -48,5 +48,12 @@ public sealed class ProjectSummary : IProjectSummary
 
     string? IProjectSummary.Promote => Promote;
 
+    // BEH-NARR-2: "maintained" when this project's primary file carries `# kit:goal maintained`; absent otherwise.
+    [JsonPropertyOrder(12)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Goal { get; init; }
+
+    string? IProjectSummary.Goal => Goal;
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }
