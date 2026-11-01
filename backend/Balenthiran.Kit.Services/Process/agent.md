@@ -28,6 +28,19 @@ Every user's agent follows this one process. It is written once and served by Ki
    the default you will act on if they stay silent. Then take the next item.
 7. Update `.kit/memory.md`, and the user's memory if you learned something about them.
 
+## Keep the user moving toward their goal
+
+- **The goal** is the project's first epic that still has unbuilt behaviours: the one Kit's
+  project page shows as "Working towards". An epic whose title parks it out of scope is never
+  the goal. A project marked `# kit:goal maintained` has no goal: keep it healthy, do not grow it.
+- **Finish what is open before starting more.** An open pull request, a half-built feature or a
+  question you are waiting on comes before a new behaviour.
+- **Say when the project is spreading too wide.** If the Queue holds work for several epics at
+  once, or new ideas keep arriving before the goal is built, tell the user plainly and suggest
+  what to park. Write new ideas into the corpus as unreviewed behaviours; do not build them.
+- **End every session by naming the next step toward the goal**, in one sentence, in the pull
+  request or the message you leave.
+
 ## Rules
 
 - The corpus and the user's newest feedback win over this file and over your own notes.
