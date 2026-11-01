@@ -602,6 +602,18 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: says every goal is built when no epic has a pending behaviour" },
     { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-1: shows nothing for a project with no epics" }
   ],
+  "BEH-NARR-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/InboxGoal.test.tsx", "title": "BEH-NARR-2: asks once for a project with no goal epic, with the default said, and not for one with a goal or marked maintained" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/InboxGoal.test.tsx", "title": "BEH-NARR-2: \"Just maintaining it\" marks the project maintained and the card leaves" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/InboxGoal.test.tsx", "title": "BEH-NARR-2: words leave a note on the project, the card leaves, and it is not asked again in this browser" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/InboxGoal.test.tsx", "title": "BEH-NARR-2: a project he already answered is not asked again" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-2: says it is maintained when the project is marked so and has no open goal" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/WorkingTowards.test.tsx", "title": "BEH-NARR-2: an open goal wins over the maintained flag" },
+    { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_the_directive_is_read_into_the_summary_as_maintained" },
+    { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_only_the_primary_file_of_a_project_can_mark_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_the_operator_marks_and_clears_it_over_the_route" },
+    { "file": "backend/Balenthiran.Kit.Tests/GoalTests.cs", "title": "BEH_NARR_2_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" }
+  ],
   "BEH-ARCH-1": [
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_decision_is_its_own_block_with_a_part_and_repeating_considered_and_because" },
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_malformed_decision_is_refused_naming_the_line" },

@@ -276,6 +276,14 @@ export function setPromote(project: string, promote: boolean): Promise<WriteResu
   return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/promote`, { promote })
 }
 
+/**
+ * Mark a project as maintained (fix what breaks, build nothing new), or clear it (BEH-NARR-2): the
+ * `# kit:goal maintained` line in the project's own corpus. Named, not toggled. Operator only.
+ */
+export function setMaintained(project: string, maintained: boolean): Promise<WriteResult> {
+  return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/goal`, { maintained })
+}
+
 /** How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5). */
 export function fetchIdle(): Promise<IdleSetting> {
   return get<IdleSetting>('/api/settings/idle')

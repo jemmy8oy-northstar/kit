@@ -1647,7 +1647,6 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
-  needs-context "Thanks for merging claude-code-bot#124 and #125. One step left: merge claude-code-bot#126, the promotion, because the scheduler runs from the built image. Until you do, a note made while you are busy can wait hours."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1660,6 +1659,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract his 2026-10-25 question (kit-ui.notes.md#2026-10-25-1837), "Is this complete now?": not quite. That very note woke nothing for 4h, because my own commit synced in on top of it and the scheduler judged only the newest commit; claude-code-bot#124 looks past mine, and it is live once he merges it and promotes claude-code-bot
   contract his 2026-10-26 notes (kit.notes.md#2026-10-26-2309, "Kit hasn't seemed to wake after my chanegs", and kit.notes.md#2026-10-26-2313, "suspend supersedes an action walking it should be the other way round"): the suspend was not the cause, since an action already overrides my own suspend. He acted every few minutes from 22:50Z to 23:13Z, so no 5-minute look ever saw five quiet minutes
   contract my assumption: an action that has waited 10 minutes wakes the agent even while he is still acting (claude-code-bot#125, his to merge and promote); five minutes after his last action stays the rule when he stops
+  contract he merged claude-code-bot#126 on 2026-10-28, so #124 and #125 are live and nothing here waits on him. It stays pending only because its test lives in claude-code-bot
 
 behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   in FEAT-NOTIFICATIONS
@@ -2192,11 +2192,11 @@ behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towar
   source defined kit.notes.md#2026-10-31-1041
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitInbox
   contract "And if there aren't any big goals the ai can probe to find out the direction, what are we working towards or are we maintaining?"
   contract my assumption: the question reaches the user's Inbox once per project, with a default: if they stay silent, the project is treated as maintained (fix what breaks, build nothing new)
+  contract my assumption: "Just maintaining it" writes `# kit:goal maintained` into the project's own file; words are left as a note the agent turns into a goal epic, and the browser remembers he answered so the card does not come straight back
 
 behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user toward their goal"
   in FEAT-NARRATIVE
