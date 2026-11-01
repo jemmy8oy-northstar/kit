@@ -2051,12 +2051,12 @@ behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is buil
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "Maybe kit needs another layer to its ux ui business logic spec state"
   contract my assumption: architecture is a stage between logic and development, used only when a feature needs a new part or a new platform choice; a feature that fits the existing design skips it
+  contract built 2026-11-01: the stage word is architecture, between logic and development; a feature that fits the existing design skips it
 
 behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the rest for them"
   in FEAT-ARCH

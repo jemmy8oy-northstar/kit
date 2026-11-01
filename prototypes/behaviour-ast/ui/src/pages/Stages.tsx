@@ -26,7 +26,7 @@ export default function Stages() {
       <h1>Board</h1>
       <BoardViews />
       <p className="muted">
-        Every feature by the stage it is at: problem statement, UX requirements, business logic,
+        Every feature by the stage it is at: problem statement, UX requirements, business logic, architecture (when it needs one),
         development, then UI requirements; once everything under it is built it moves to Done. A feature is staged once its block in the corpus has a
         <code> stage</code> line; until then it is Unstaged.
       </p>

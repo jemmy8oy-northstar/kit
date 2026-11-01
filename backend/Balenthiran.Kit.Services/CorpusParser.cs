@@ -31,9 +31,9 @@ public sealed class CorpusParser : ICorpusParser
     // BEH-ARCH-1: the parts of the system a decision can belong to, in the order the page shows them.
     internal static readonly string[] DecisionParts = ["frontend", "backend", "data", "deployment"];
 
-    // FEAT-STAGES (kit.notes.md 2026-10-19 08:23Z, BEH-STAGE-1 approved 13:39Z): the five
+    // FEAT-STAGES (kit.notes.md 2026-10-19 08:23Z, BEH-STAGE-1 approved 13:39Z): the stages
     // stages in his order. A list, not a set, because the order is the board's columns.
-    internal static readonly string[] Stages = ["problem", "ux", "logic", "development", "ui"];
+    internal static readonly string[] Stages = ["problem", "ux", "logic", "architecture", "development", "ui"];
 
     // ── Whitespace, which is NOT `\s` ───────────────────────────────────────
     //
