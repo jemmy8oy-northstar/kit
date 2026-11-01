@@ -59,6 +59,15 @@ public class GoalTests
     }
 
     [Fact]
+    public void BEH_NARR_2_the_project_page_body_carries_the_flag_too()
+    {
+        var (_, _, viewer) = Rig(false, ("app", Maintained), ("plain", Plain));
+
+        Assert.Equal("maintained", JsonNode.Parse(new EngineJsonSerialiser().Serialise(viewer.View("app")))!["goal"]!.GetValue<string>());
+        Assert.False(JsonNode.Parse(new EngineJsonSerialiser().Serialise(viewer.View("plain")))!.AsObject().ContainsKey("goal"));
+    }
+
+    [Fact]
     public void BEH_NARR_2_absent_means_no_key_at_all()
     {
         var (_, _, viewer) = Rig(false, ("app", Plain));

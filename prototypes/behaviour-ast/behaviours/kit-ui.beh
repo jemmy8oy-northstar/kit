@@ -2192,11 +2192,11 @@ behaviour BEH-NARR-2 "A project with no goal gets asked what it is working towar
   source defined kit.notes.md#2026-10-31-1041
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitInbox
   contract "And if there aren't any big goals the ai can probe to find out the direction, what are we working towards or are we maintaining?"
   contract my assumption: the question reaches the user's Inbox once per project, with a default: if they stay silent, the project is treated as maintained (fix what breaks, build nothing new)
+  contract my assumption: "Just maintaining it" writes `# kit:goal maintained` into the project's own file; words are left as a note the agent turns into a goal epic, and the browser remembers he answered so the card does not come straight back
 
 behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user toward their goal"
   in FEAT-NARRATIVE
