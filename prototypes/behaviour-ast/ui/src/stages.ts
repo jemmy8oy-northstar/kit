@@ -10,6 +10,7 @@ export const STAGES: { id: Stage; title: string }[] = [
   { id: 'problem', title: 'Problem statement' },
   { id: 'ux', title: 'UX requirements' },
   { id: 'logic', title: 'Business logic' },
+  { id: 'architecture', title: 'Architecture' },
   { id: 'development', title: 'Development' },
   { id: 'ui', title: 'UI requirements' },
 ]

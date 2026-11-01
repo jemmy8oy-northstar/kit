@@ -592,6 +592,12 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard" }
   ],
+  "BEH-ARCH-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs", "title": "BEH_ARCH_2_the_parser_accepts_stage_architecture_and_a_feature_may_skip_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs", "title": "BEH_ARCH_2_the_stage_error_lists_architecture_between_logic_and_development" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "BEH-ARCH-2: shows an Architecture column between Business logic and Development, holding a feature staged architecture" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Stages.test.tsx", "title": "BEH-ARCH-2: a feature may skip architecture, going from logic to development" }
+  ],
   "BEH-NARR-1": [
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: no epics gives null" },
     { "file": "prototypes/behaviour-ast/ui/src/goal.test.ts", "title": "BEH-NARR-1: picks the first open epic in corpus order" },
