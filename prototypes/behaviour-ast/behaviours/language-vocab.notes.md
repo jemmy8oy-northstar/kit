@@ -27,7 +27,3 @@ What sites this man
 ## 2026-10-29 13:32Z · BEH-UNLOCK-2
 
 What does this mean
-
-## 2026-11-01 17:08Z
-
-In lessons, when it moves onto test they should be shuffled rather than same order

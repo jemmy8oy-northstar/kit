@@ -295,6 +295,7 @@ behaviour BEH-LEARN-2 "After the five, the learner is quizzed on them: shown pin
   when fills field:Answer with ?english
   then sees region:Verdict
   contract only the five just shown are asked, so the round is learnable rather than a test of everything
+  contract the quiz asks the five in a shuffled order, never the order they were shown in (language-vocab.notes.md#2026-11-01-1708, "they should be shuffled rather than same order")
 
 behaviour BEH-LEARN-3 "The reverse quiz, English to pinyin, is a separate harder option"
   source defined language-vocab.notes.md#2026-10-15-2300
