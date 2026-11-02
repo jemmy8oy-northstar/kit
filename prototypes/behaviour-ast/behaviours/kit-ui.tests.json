@@ -675,18 +675,17 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_sends_the_chat_instructions_in_place_of_the_cards" }
   ],
   "BEH-CHAT-2": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows the top item and its question from the start, and opening sends nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "puts the top item and its question in the thread from the start, and opening sends nothing" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the item moves into the chat where he first replies about it, and the agent reads it there" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the item is in the thread before he replies, and the agent reads it there with his next message" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a project switch puts the new project item in the thread after the switch line" }
   ],
   "BEH-CHAT-3": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply posts as his answer, and the next item comes up" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "his own message can be posted as his answer" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, and the messages carry no post-as-answer buttons" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Approve and Skip mark the item off and bring up the next" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand, a reply is saved as a note on the project" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a reply is saved on the project it was about, after he has picked another" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "\"Ask Kit to note this chat\" sends the canned message as an ordinary turn, once there is something to note" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }
   ],
   "BEH-CHAT-6": [
@@ -698,7 +697,12 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Only_the_chat_offers_actions_and_its_answer_carries_the_one_asked_for" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_action_on_an_item_is_dropped_when_none_is_in_hand_but_an_undo_is_kept" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_tool_call_reads_as_an_action_and_one_without_its_words_is_dropped" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_offers_the_tools_only_when_asked" }
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_offers_the_tools_only_when_asked" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked to show the item again, puts it back in the thread even though it is the latest there" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked to show with nothing in hand, says so" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_note_needs_no_item_in_hand_but_showing_the_item_does" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Showing_and_noting_read_as_actions_and_a_note_with_no_words_is_dropped" }
   ],
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }
@@ -721,5 +725,15 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_sends_haiku_the_key_a_cached_card_and_the_turns_and_reads_the_text" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_API_refusal_is_a_failure_with_its_status_and_never_echoes_the_body" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_reply_with_no_text_block_is_a_failure_not_an_empty_answer" }
+  ],
+  "BEH-CHAT-7": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the header button and a typed help or /help add the help line and never call the agent" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" }
+  ],
+  "BEH-CHAT-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Both_chats_hand_the_model_a_reader_of_their_own_projects_spec" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Reading_the_spec_gives_whole_cards_of_any_kind_and_names_a_missing_one" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_reads_the_cards_asked_for_and_asks_again_with_them" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once" }
   ]
 }

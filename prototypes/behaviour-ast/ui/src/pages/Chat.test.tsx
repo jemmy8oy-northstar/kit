@@ -331,7 +331,7 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     expect(screen.getAllByText('Top of your stack in alpha')).toHaveLength(1)
   })
 
-  it('a project switch puts the new project\'s item in the thread after the switch line', async () => {
+  it('a project switch puts the new project item in the thread after the switch line', async () => {
     mockApi(undefined, undefined, { ...details, beta: [beh('B-ASK', { review: { state: 'requested', note: 'Which font?' } })] })
     await open()
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
