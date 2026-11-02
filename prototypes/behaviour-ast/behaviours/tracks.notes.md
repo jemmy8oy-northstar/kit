@@ -57,3 +57,7 @@ Would be more secure all in vault right or is that overkill?
 ## 2026-10-31 16:46Z · BEH-SHARE-2
 
 I thought we agreed yes add it
+
+## 2026-11-02 11:37Z
+
+Working towards: App to record and share what you listen to on a run
