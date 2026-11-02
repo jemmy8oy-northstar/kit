@@ -99,3 +99,7 @@ I just wrote something I want to take it backish. Only as an experimental featur
 ## 2026-10-31 01:08Z · BEH-EDITION-3
 
 Let’s pause for now I don’t have any footage to add yet. But when I do we can add it
+
+## 2026-11-02 18:50Z
+
+Snip it idea. I was saying about being blocked on filming. I am finding it difficult to film and release content. I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos! Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that. And if we can refine this pipeline we could pump out videos. I think first step is identifying some good candidates for this style of video. Let’s try produce something quality before we post anything. I think this can help well with our kit marketing as well. Thoughts?
