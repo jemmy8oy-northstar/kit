@@ -34,11 +34,11 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
     public string Model => model;
 
     /// <inheritdoc />
-    public async Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default)
+    public async Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, CancellationToken cancellationToken = default)
     {
         try
         {
-            using var request = Request(instructions ?? Instructions, context, turns);
+            using var request = Request(instructions ?? Instructions, context, turns, actions);
             using var response = await http.SendAsync(request, cancellationToken);
             var text = await response.Content.ReadAsStringAsync(cancellationToken);
             if (!response.IsSuccessStatusCode)
@@ -57,17 +57,68 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         }
     }
 
-    /// <summary>The text blocks of a Messages API answer, joined; none is a failure, not an empty reply.</summary>
+    /// <summary>
+    /// The text blocks of a Messages API answer, joined, and the first tool call it makes (BEH-CHAT-6) as an
+    /// action. A call alone is a reply with no words; neither is a failure, not an empty reply. A call to a
+    /// tool that is not one of <see cref="Tools"/>, or that lacks the words it needs, is dropped.
+    /// </summary>
     public static TriageReply Parse(string json)
     {
         var content = JsonNode.Parse(json)?["content"] as JsonArray;
         var text = string.Concat((content ?? [])
             .Where(b => (string?)b?["type"] == "text")
             .Select(b => (string?)b?["text"] ?? string.Empty)).Trim();
-        return text.Length > 0 ? new TriageReply(text) : new TriageReply(null, "the model answered with no text; try rewording");
+        var action = (content ?? [])
+            .Where(b => (string?)b?["type"] == "tool_use")
+            .Select(b => ActionOf((string?)b?["name"], b?["input"] as JsonObject))
+            .FirstOrDefault(a => a is not null);
+        return text.Length > 0 || action is not null
+            ? new TriageReply(text, null, action)
+            : new TriageReply(null, "the model answered with no text; try rewording");
     }
 
-    private HttpRequestMessage Request(string instructions, string context, IReadOnlyList<TriageTurn> turns)
+    private static TriageAction? ActionOf(string? name, JsonObject? input)
+    {
+        var words = input?["text"] is JsonValue v && v.TryGetValue<string>(out var s) ? s.Trim() : null;
+        return name switch
+        {
+            "approve_item" => new TriageAction("approve"),
+            "undo_last" => new TriageAction("undo"),
+            "deny_item" when words is { Length: > 0 } => new TriageAction("deny", words),
+            "answer_item" when words is { Length: > 0 } => new TriageAction("answer", words),
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// BEH-CHAT-6: what the Chat page's agent may ask to be done. The page carries each one out with the
+    /// owner's own writes and offers to undo it; the server writes nothing for them.
+    /// </summary>
+    public static JsonArray Tools() => new(
+        Tool("approve_item", "Approve the item in hand, when the owner has said it is right as it stands.", words: null),
+        Tool("deny_item", "Deny the item in hand, when the owner has said it is wrong; text is what is true instead, in their words.", words: "What is true instead."),
+        Tool("answer_item", "Post an answer to the item in hand's question, when the owner has given one; text is the answer, in their words.", words: "The answer."),
+        Tool("undo_last", "Undo the last thing done to an item in this chat, when the owner asks to.", words: null));
+
+    private static JsonObject Tool(string name, string description, string? words)
+    {
+        var properties = new JsonObject();
+        var required = new JsonArray();
+        if (words is not null)
+        {
+            properties["text"] = new JsonObject { ["type"] = "string", ["description"] = words };
+            required.Add("text");
+        }
+
+        return new JsonObject
+        {
+            ["name"] = name,
+            ["description"] = description,
+            ["input_schema"] = new JsonObject { ["type"] = "object", ["properties"] = properties, ["required"] = required },
+        };
+    }
+
+    private HttpRequestMessage Request(string instructions, string context, IReadOnlyList<TriageTurn> turns, bool actions)
     {
         var body = new JsonObject
         {
@@ -85,6 +136,10 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
                 .Select(t => (JsonNode)new JsonObject { ["role"] = t.FromUser ? "user" : "assistant", ["content"] = t.Text })
                 .ToArray()),
         };
+        if (actions)
+        {
+            body["tools"] = Tools();
+        }
 
         var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
         {

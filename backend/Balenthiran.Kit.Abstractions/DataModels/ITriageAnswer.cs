@@ -8,4 +8,7 @@ public interface ITriageAnswer
 
     /// <summary>Replies left today under the server's daily cap.</summary>
     int Remaining { get; }
+
+    /// <summary>What the Chat page's agent asked to be done with the item in hand (BEH-CHAT-6); null for none.</summary>
+    TriageAction? Action { get; }
 }
