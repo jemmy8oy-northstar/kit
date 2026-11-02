@@ -663,6 +663,8 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is not offered when the spec agent is off" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a project change says so, keeps the history, and tells the agent once" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a refused turn shows the reason and puts his message back to retry" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "keeps a long chat inside the server limits, starting and ending with his" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the project cannot change while a reply is awaited" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_sends_the_projects_outline_the_other_projects_and_the_chat_instructions" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_naming_an_unknown_or_malformed_item_is_refused_and_reaches_no_model" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_and_the_inbox_share_one_daily_allowance_and_keep_their_own_instructions" },
@@ -671,11 +673,13 @@
   ],
   "BEH-CHAT-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "suggests the next item, defining new spec and discussing the project, and a suggestion sends nothing" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves the item out when nothing is waiting, and names the other project when the picked one has none" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves the item out when nothing is waiting, and names the other project when the picked one has none" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a suggestion never overwrites what he has typed" }
   ],
   "BEH-CHAT-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply becomes his answer, and the next is suggested" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand, a reply is saved as a note on the project" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a reply is saved on the project it was about, after he has picked another" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }
   ],
   "BEH-CHAT-4": [

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import { chatTurn, fetchTriage, leaveNote, setReview } from '../api/client'
-import type { TriageMessage, TriageStatus } from '../api/types'
+import type { TriageStatus } from '../api/types'
+import { MAX_TEXT, toMessages, type Line } from '../chat'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
@@ -11,8 +12,6 @@ import { loadBoard, type Entry } from '../boardLoad'
 import { isIdea, isTrial, projectOf } from '../board'
 import { keyOf, mine, ordered, readSeen, type InboxCard } from '../inbox'
 
-/** A line in the chat: his, the agent's, or the note that he picked another project. */
-type Line = { from: 'user'; text: string; sent: string } | { from: 'agent'; text: string } | { from: 'switch'; app: string }
 
 /**
  * BEH-CHAT-1 to BEH-CHAT-4 (his 2026-11-02 12:56Z note): a chat with the spec agent about one project at
@@ -101,16 +100,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     if (text === '' || busy) return
     const before = lines
     const after: Line[] = [...lines, { from: 'user', text, sent: announce ? `[Now talking about ${app}] ${text}` : text }]
-    const messages: TriageMessage[] = after.flatMap((l): TriageMessage[] =>
-      l.from === 'user' ? [{ from: 'user', text: l.sent }] : l.from === 'agent' ? [{ from: 'agent', text: l.text }] : [],
-    )
     setLines(after)
     setDraft('')
     setBusy(true)
     setError(null)
+    // The project and item are fixed while a reply is awaited: the select box and suggestions are disabled.
     try {
-      const answer = await chatTurn(app, inHand?.b.id ?? null, messages)
-      setLines([...after, { from: 'agent', text: answer.reply }])
+      const answer = await chatTurn(app, inHand?.b.id ?? null, toMessages(after))
+      setLines([...after, { from: 'agent', text: answer.reply, app }])
       setAnnounce(false)
       setRemaining(answer.remaining)
     } catch (e) {
@@ -126,7 +123,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   return (
     <section aria-label="Chat" data-testid="chat">
       <label htmlFor="chat-project">Project</label>
-      <select id="chat-project" className="chat-project" value={app} onChange={(e) => pick(e.target.value)}>
+      <select id="chat-project" className="chat-project" value={app} onChange={(e) => pick(e.target.value)} disabled={busy}>
         {apps.map((a) => (
           <option key={a.app} value={a.app}>
             {label(a.app)}
@@ -143,7 +140,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           ) : (
             <li key={i} data-from={l.from}>
               <strong>{l.from === 'user' ? 'You' : 'Spec agent'}:</strong> {l.text}
-              {l.from === 'agent' && <ReplyAction text={l.text} app={app} inHand={inHand} onUse={setWords} />}
+              {l.from === 'agent' && <ReplyAction text={l.text} app={l.app} inHand={inHand} onUse={setWords} />}
             </li>
           ),
         )}
@@ -155,15 +152,16 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       ) : (
         <div className="badges chat-suggestions" role="group" aria-label="Suggestions" data-testid="chat-suggestions">
           {next && (
-            <Button type="button" variant="secondary" onClick={() => take(next)}>
+            <Button type="button" variant="secondary" onClick={() => take(next)} disabled={busy}>
               Answer: {next.b.title}
               {next.app !== app ? ` (${label(next.app)})` : ''}
             </Button>
           )}
-          <Button type="button" variant="ghost" onClick={() => setDraft(`I want to add to ${label(app)}: `)}>
+          {/* A start for his message, never over what he has already typed. */}
+          <Button type="button" variant="ghost" onClick={() => setDraft((d) => d.trim() || `I want to add to ${label(app)}: `)}>
             Define new spec for {label(app)}
           </Button>
-          <Button type="button" variant="ghost" onClick={() => setDraft(`Let's discuss ${label(app)}: `)}>
+          <Button type="button" variant="ghost" onClick={() => setDraft((d) => d.trim() || `Let's discuss ${label(app)}: `)}>
             Discuss {label(app)}
           </Button>
         </div>
@@ -172,6 +170,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       <label htmlFor="chat-draft">Message the spec agent</label>
       <Input
         id="chat-draft"
+        // Room for the "[Now talking about x]" a project change adds, under the server's 4000.
+        maxLength={MAX_TEXT - 100}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
