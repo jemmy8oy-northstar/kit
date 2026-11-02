@@ -14,15 +14,23 @@ public static class TriageContext
     public const int MaxOutline = 40_000;
 
     /// <summary>
-    /// What the Chat page's agent is told to be (BEH-CHAT-1 to BEH-CHAT-4). It writes nothing: the page's
-    /// own buttons answer an item or save a note, so the agent only talks and suggests.
+    /// What the Chat page's agent is told to be (BEH-CHAT-1 to BEH-CHAT-6). The server writes nothing for it:
+    /// what it asks to be done, the page does with his own writes. His 18:54Z note: it knows what it can do.
     /// </summary>
     public const string ChatInstructions =
-        "You are Kit's spec agent, in a chat with the owner about one of their projects at a time. You write no code. "
-        + "When the owner has clearly decided the item in hand, do it with a tool rather than asking them to press a button: "
-        + "approve_item, deny_item with what is true instead, or answer_item with their answer, in their words, and say in one "
-        + "sentence what you did; the page shows it with an Undo. Call undo_last when they ask to undo. Never act on a guess: "
-        + "if you are not sure they have decided, ask. When there is an item in hand, the page already shows it to the owner as the top of their stack, "
+        "You are Kit's spec agent, in a chat with the owner about one of their projects at a time. "
+        + "What Kit is: it keeps each project's spec, the behaviours the app should have. In this chat the owner discusses and defines "
+        + "that spec with you; a coding agent works in the background, builds what the spec says and keeps the app up to date with it. "
+        + "You write no code and change no spec yourself. What you can do, and only with your tools: approve_item, deny_item with what "
+        + "is true instead, or answer_item with their answer, for the item in hand; undo_last; show_item to show the item in hand again "
+        + "when they ask for it; save_note to leave what the chat settled as a note on the project, which the coding agent picks up and "
+        + "files into the spec; and read_spec to read whole cards when a title is not enough. Saying you did something is not doing it: "
+        + "only a tool call does it, so never say you approved, denied, answered or saved unless you called the tool in this reply, and call at most one of those tools in a reply. "
+        + "When the owner has clearly decided the item in hand, do it with a tool rather than asking them to press a button, in their "
+        + "words, and say in one sentence what you did; the page shows it with an Undo. Call undo_last when they ask to undo. Never act "
+        + "on a guess: if you are not sure they have decided, ask. When they have defined new spec and seem done with it, offer to save "
+        + "it as a note, and call save_note when they agree or ask. Asked what you can do, say the above plainly. "
+        + "When there is an item in hand, the page already shows it to the owner as the top of their stack, "
         + "so they may be answering it (approve it, deny it with what is true instead, or answer its question), or talking about other "
         + "work: defining new spec, or discussing the project. Infer which from what they say, and if they have moved on, do not press "
         + "them about the item. Be brief and plain: a few sentences, no headings. "
@@ -66,11 +74,38 @@ public static class TriageContext
         return text.Append($"The project's spec, by title:\n{Outline(lines)}").ToString();
     }
 
+    /// <summary>The longest answer to one read of the spec, in characters; past it the answer says it was cut.</summary>
+    public const int MaxRead = 20_000;
+
+    /// <summary>
+    /// His 18:55Z note: whole cards of <paramref name="corpus"/> by id, an epic, feature or behaviour each, for
+    /// the agent's <c>read_spec</c>. An id the spec does not have is said to be missing rather than skipped.
+    /// </summary>
+    public static string Read(string corpus, IReadOnlyList<string> ids)
+    {
+        var lines = Lines(corpus);
+        var text = new StringBuilder();
+        foreach (var id in ids.Distinct(StringComparer.Ordinal))
+        {
+            var card = new[] { "epic", "feature", "behaviour" }.Select(kind => Card(lines, id, kind)).FirstOrDefault(c => c is not null)
+                ?? $"{id}: no card with this id in the spec";
+            if (text.Length + card.Length + 2 > MaxRead)
+            {
+                text.Append("… (cut here: ask for fewer cards at a time)\n");
+                break;
+            }
+
+            text.Append(card).Append("\n\n");
+        }
+
+        return text.Length > 0 ? text.ToString().TrimEnd() : "no ids were given";
+    }
+
     private static string[] Lines(string corpus) => corpus.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 
-    private static string? Card(string[] lines, string id)
+    private static string? Card(string[] lines, string id, string kind = "behaviour")
     {
-        var head = $"behaviour {id}";
+        var head = $"{kind} {id}";
         var start = Array.FindIndex(lines, l => l == head || l.StartsWith(head + " ", StringComparison.Ordinal));
         if (start < 0)
         {
