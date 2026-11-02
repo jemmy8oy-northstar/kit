@@ -468,3 +468,30 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   contract my assumption, the first three candidates, all from 2026-11-02: (1) "I don't like the initial entry point for the chat… think chat gpt think Claude" (14:12Z), with Chat before and after, live by 17:39Z (kit#628); (2) "Kit chat needs the capability to approve answer deny… maybe an undo button" (17:53Z), with the agent approving on his word and an Undo, live by 18:41Z (kit#633); (3) "could we add a new chat feature" (12:56Z), a whole page live by 13:47Z the same day (kit#624)
   contract my assumption: I make the first one as a private draft he watches before anything is posted; posting, the new channel itself and anything public stay his
   contract my assumption: this is the format the first-video outline I offered on claude-code-bot#131 (default 2026-11-06) now takes, so that offer becomes candidate (2) drafted this way rather than a separate script
+  contract "this doesn't have to be one feature per video specifically, it could be a collection and then all grind implemented together" (snip-it.notes.md#2026-11-02-1913)
+  contract "You are also given (within reason) a bit of creative license to edit the messages to cut down fluff or improve wording etc. We will probably also need some disclaimer to show not actual kit use or not exact example or something but these could go in the description" (snip-it.notes.md#2026-11-02-1913)
+  contract my assumption: an edited message keeps its meaning and never gains a claim he did not make; every video whose messages were edited says so in its description
+
+behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, stored on snip-it's own volume, with its usage shown where he can see it"
+  in FEAT-BUILD-CHANNEL
+  layer technical
+  source defined snip-it.notes.md#2026-11-02-1913
+  review unreviewed
+  priority 3
+  pending
+  actor creator
+  contract "Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this"
+  contract my assumption: the drafts volume is snip-it's (as BEH-EDITION-3 has it: the volume is on snip-it, not Kit), small to start (5Gi), and separate from the 50Gi take store BEH-EDITION-3 waits on; adding it is a chart change, so it goes up as its own pull request for him to merge
+  contract my assumption: the place he looks is a Drafts page on snip-it listing each draft, its size, and the volume's used and free space, so a draft and the space it takes are seen together
+  contract my assumption: no video is committed to a repo, as renders would grow it for good; until the volume exists, the first draft is shown to him as its script and stills in a pull request
+
+behaviour BEH-BUILD-3 "Some videos are compilations: how an app grew from its start, or a milestone, told through many of his notes, chats and features"
+  in FEAT-BUILD-CHANNEL
+  layer ux
+  source defined snip-it.notes.md#2026-11-02-1913
+  review unreviewed
+  priority 4
+  pending
+  actor creator
+  contract "Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature"
+  contract my assumption: Kit's git history already dates every note and the pull request that built it, so a compilation is assembled from the record rather than filmed
