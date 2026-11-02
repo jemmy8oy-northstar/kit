@@ -504,3 +504,7 @@ I like talk it through on the inbox but it is getting quite cluttered. I don’t
 I don’t like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something.
 
 Then the user can just get on with chatting. The ai will then infer which route they are taking. Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn’t really look like a chat at the moment. Think chat gpt think Claude.
+
+## 2026-11-02 17:41Z
+
+Can you enable some features for testers. I guess we will need them working as well but I think the projects page the boards the inbox and settings is a good place to start right?
