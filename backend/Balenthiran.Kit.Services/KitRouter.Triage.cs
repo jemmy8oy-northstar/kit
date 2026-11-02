@@ -118,12 +118,13 @@ public sealed partial class KitRouter
             });
         }
 
-        if (TriageContext.Build(app, id, corpora.ReadText(app)) is not { } context)
+        var corpus = corpora.ReadText(app);
+        if (TriageContext.Build(app, id, corpus) is not { } context)
         {
             return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
         }
 
-        return Ask(context, turns, null);
+        return Ask(context, turns, null, read: ids => TriageContext.Read(corpus, ids));
     }
 
     /// <summary>
@@ -168,12 +169,13 @@ public sealed partial class KitRouter
             });
         }
 
-        if (TriageContext.BuildChat(app, id, corpora.ReadText(app), corpora.Corpora()) is not { } context)
+        var spec = corpora.ReadText(app);
+        if (TriageContext.BuildChat(app, id, spec, corpora.Corpora()) is not { } context)
         {
             return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
         }
 
-        return Ask(context, turns, TriageContext.ChatInstructions, chat: true, item: id);
+        return Ask(context, turns, TriageContext.ChatInstructions, chat: true, item: id, read: ids => TriageContext.Read(spec, ids));
     }
 
     /// <summary>
@@ -181,7 +183,7 @@ public sealed partial class KitRouter
     /// Chat page (<paramref name="chat"/>) the agent may also ask for an action (BEH-CHAT-6); one on an
     /// item is dropped when no <paramref name="item"/> is in hand, as there is nothing for it to act on.
     /// </summary>
-    private KitResponse Ask(string context, List<TriageTurn> turns, string? instructions, bool chat = false, string? item = null)
+    private KitResponse Ask(string context, List<TriageTurn> turns, string? instructions, bool chat = false, string? item = null, Func<IReadOnlyList<string>, string>? read = null)
     {
         if (!TakeTriageTurn())
         {
@@ -196,7 +198,7 @@ public sealed partial class KitRouter
         TriageReply reply;
         try
         {
-            reply = triage!.ReplyAsync(context, turns, instructions, chat).GetAwaiter().GetResult();
+            reply = triage!.ReplyAsync(context, turns, instructions, chat, read).GetAwaiter().GetResult();
         }
         catch (Exception e)
         {
