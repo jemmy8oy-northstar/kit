@@ -486,3 +486,7 @@ the feature board gets a done column, each column represents what spec needs to 
 ## 2026-10-31 23:53Z
 
 I have desk time tomorrow, if u need secrets or any desk work prepare it for me
+
+## 2026-11-02 12:04Z
+
+I have added a kit-anthropic secret with the key Anthropic__ApiKey to unblock the creation of the triage chat. Let’s use haiku for this
