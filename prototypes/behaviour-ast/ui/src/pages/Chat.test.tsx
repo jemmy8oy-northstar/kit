@@ -38,6 +38,8 @@ let notesNow: { at: string; kind: string; behaviour: string | null; resolves: nu
 
 /** Every POST the page made, as [path, body]. */
 let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string }][] = []
+// A POST to a path this matches is refused 403, as a write the server will not make.
+let refuse: RegExp | null = null
 
 function mockApi(
   triage: unknown = { configured: true, model: 'claude-haiku-5-5', remaining: 9 },
@@ -45,6 +47,7 @@ function mockApi(
   projects: Record<string, Behaviour[]> = details,
 ) {
   posts = []
+  refuse = null
   notesNow = []
   vi.stubGlobal(
     'fetch',
@@ -56,6 +59,7 @@ function mockApi(
           const r = (await chat?.()) ?? { ok: true, status: 200, body: { reply: `reply ${posts.filter(([p]) => p.endsWith('/chat')).length}`, remaining: 8 } }
           return { ok: r.ok, status: r.status, statusText: 'x', json: async () => r.body }
         }
+        if (refuse?.test(path)) return { ok: false, status: 403, statusText: 'Forbidden', json: async () => ({ error: 'forbidden', reason: 'not yours to write' }) }
         return { ...ok, json: async () => ({ ok: true }) }
       }
       if (path.endsWith('/api/triage')) return { ...ok, json: async () => triage }
@@ -419,6 +423,19 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
       expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'It should be green.' }]),
     )
     expect(await screen.findByText(/^Denied, with your correction: “title of A-ASK”\./)).toBeTruthy()
+  })
+
+  it('a refused write says so in the thread and tells the agent, so its words do not stand alone', async () => {
+    let turn = 0
+    mockApi(undefined, () => (++turn === 1 ? acting({ kind: 'approve' }, 'Approved it.')() : { ok: true, status: 200, body: { reply: 'reply 2', remaining: 7 } }))
+    await open()
+    refuse = /\/review$/
+    await say('yes, approve it', 'Approved it.')
+    expect(await screen.findByText(/^That did not go through, so nothing was done/)).toBeTruthy()
+    // The item is still in hand, and his next message tells the agent nothing was done.
+    expect(inHandId()).toBe('A-ASK')
+    await say('ok', 'reply 2')
+    expect(chats()[1][1].messages!.at(-1)!.text).toContain('[Nothing was done: the write was refused]')
   })
 
   it('asked to undo, the agent undoes the last thing done here, whoever did it', async () => {

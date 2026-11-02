@@ -25,7 +25,7 @@ public static class TriageContext
         + "is true instead, or answer_item with their answer, for the item in hand; undo_last; show_item to show the item in hand again "
         + "when they ask for it; save_note to leave what the chat settled as a note on the project, which the coding agent picks up and "
         + "files into the spec; and read_spec to read whole cards when a title is not enough. Saying you did something is not doing it: "
-        + "only a tool call does it, so never say you approved, denied, answered or saved unless you called the tool in this reply. "
+        + "only a tool call does it, so never say you approved, denied, answered or saved unless you called the tool in this reply, and call at most one of those tools in a reply. "
         + "When the owner has clearly decided the item in hand, do it with a tool rather than asking them to press a button, in their "
         + "words, and say in one sentence what you did; the page shows it with an Undo. Call undo_last when they ask to undo. Never act "
         + "on a guess: if you are not sure they have decided, ask. When they have defined new spec and seem done with it, offer to save "

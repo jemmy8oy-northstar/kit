@@ -162,6 +162,13 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * writes as the page's buttons, so it is his session acting on his word, and each comes with an Undo.
    */
   async function act(action: TriageAction, card: InboxCard | null, about: string) {
+    // A write that was refused is said in the thread and told to the agent, so its words claiming it never
+    // stand alone; the error line alone would be cleared by his next message.
+    const failed = (e: unknown) => {
+      const why = e instanceof Error ? e.message : String(e)
+      setError(`The agent could not do that: ${why}`)
+      setLines((ls) => [...ls, { from: 'kit', text: `That did not go through, so nothing was done: ${why}`, tell: '[Nothing was done: the write was refused]' }])
+    }
     if (action.kind === 'note') {
       // On the project the turn was about, not tied to the item, so it works with none in hand (his 19:04Z note).
       const text = action.text
@@ -173,7 +180,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           { from: 'kit', text: `Saved as a note on ${label(about)}: “${text}”`, tell: `[Kit saved a note: ${shown}]`, undo: () => dismissAnswer(about, null, text) },
         ])
       } catch (e) {
-        setError(`The agent could not do that: ${e instanceof Error ? e.message : String(e)}`)
+        failed(e)
       }
       return
     }
@@ -214,7 +221,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         done(card, 'answered', () => dismissAnswer(on, b.id, text))
       }
     } catch (e) {
-      setError(`The agent could not do that: ${e instanceof Error ? e.message : String(e)}`)
+      failed(e)
     }
   }
 

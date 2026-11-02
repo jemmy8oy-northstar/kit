@@ -702,7 +702,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked to show with nothing in hand, says so" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_note_needs_no_item_in_hand_but_showing_the_item_does" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Showing_and_noting_read_as_actions_and_a_note_with_no_words_is_dropped" }
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Showing_and_noting_read_as_actions_and_a_note_with_no_words_is_dropped" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_action_asked_for_and_not_done_is_said_so_the_words_never_claim_it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a refused write says so in the thread and tells the agent, so its words do not stand alone" }
   ],
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }

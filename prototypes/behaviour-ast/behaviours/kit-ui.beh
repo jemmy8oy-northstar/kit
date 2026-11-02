@@ -2419,6 +2419,7 @@ behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself 
   contract "Currently I don't see kit actioning approve for me" (kit.notes.md#2026-11-02-1904)
   contract my assumption: the likeliest cause is the agent saying it acted without calling the tool, as nothing is logged to tell; its instructions now say only a tool call does anything and never to claim an action it did not call, and it is told its whole toolset (BEH-CHAT-7). If it still happens, I would add a check that a reply claiming an action carries one
   contract built (19:04Z note): two more tools, show_item (the item in hand into the thread again) and save_note (a note on the project in his words, with no item needed); Undo on a saved note dismisses it
+  contract built: the agent's words never stand alone claiming what was not done. A write the server refuses gets Kit's line "That did not go through, so nothing was done", and the agent is told; an action asked for and not done (a second in one reply, or one without its words) is said under the reply
 
 behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explains it when asked"
   in FEAT-CHAT

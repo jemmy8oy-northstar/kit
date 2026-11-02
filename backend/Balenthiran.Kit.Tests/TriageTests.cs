@@ -350,6 +350,22 @@ public class TriageTests
     }
 
     [Fact]
+    public void An_action_asked_for_and_not_done_is_said_so_the_words_never_claim_it()
+    {
+        var two = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Approved, and noted."},{"type":"tool_use","id":"a","name":"approve_item","input":{}},{"type":"tool_use","id":"b","name":"save_note","input":{"text":"x"}}]}""");
+        Assert.Equal(new TriageAction("approve"), two.Action);
+        Assert.Equal($"Approved, and noted.\n\n{AnthropicTriageChat.Dropped(1)}", two.Text);
+
+        var wordless = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Denied."},{"type":"tool_use","id":"a","name":"deny_item","input":{}}]}""");
+        Assert.Null(wordless.Action);
+        Assert.EndsWith(AnthropicTriageChat.Dropped(1), wordless.Text, StringComparison.Ordinal);
+
+        // A tool that is not an action (read_spec, or one it was never offered) is not one dropped.
+        Assert.Equal("Hi.", AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Hi."},{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":[]}}]}""").Text);
+        Assert.Contains("2 actions asked for here were not done", AnthropicTriageChat.Dropped(2), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Both_chats_hand_the_model_a_reader_of_their_own_projects_spec()
     {
         var model = new FakeModel("ok");
@@ -432,6 +448,10 @@ public class TriageTests
         Assert.Equal(AnthropicTriageChat.MaxReads + 1, api.Sent.Count);
         Assert.Equal(AnthropicTriageChat.MaxReads, reads);
         Assert.Equal("Still reading.", reply.Text);
+
+        // The last round lets no tool be called, so the model answers in words rather than asking to read again.
+        var choices = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement.TryGetProperty("tool_choice", out var c) ? c.GetProperty("type").GetString() : null).ToList();
+        Assert.Equal([.. Enumerable.Repeat<string?>(null, AnthropicTriageChat.MaxReads), "none"], choices);
 
         // A read asked alongside an action is not done: the action is the answer, with no second request.
         var both = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":["BEH-A"]}},{"type":"tool_use","id":"a","name":"approve_item","input":{}}]}"""));

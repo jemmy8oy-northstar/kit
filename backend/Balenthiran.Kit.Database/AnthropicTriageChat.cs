@@ -52,7 +52,9 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
                 .ToArray());
             for (var round = 0; ; round++)
             {
-                using var request = Request(instructions ?? Instructions, context, messages, actions, reading: read is not null);
+                // The last round still defines the tools, as the history holds calls to them, but lets none be called,
+                // so it answers in words. Not where it may act: that would forbid the action it read up for.
+                using var request = Request(instructions ?? Instructions, context, messages, actions, reading: read is not null, last: read is not null && !actions && round >= MaxReads);
                 using var response = await http.SendAsync(request, cancellationToken);
                 var text = await response.Content.ReadAsStringAsync(cancellationToken);
                 if (!response.IsSuccessStatusCode)
@@ -97,14 +99,28 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         var text = string.Concat((content ?? [])
             .Where(b => (string?)b?["type"] == "text")
             .Select(b => (string?)b?["text"] ?? string.Empty)).Trim();
-        var action = (content ?? [])
-            .Where(b => (string?)b?["type"] == "tool_use")
+        var calls = (content ?? [])
+            .Where(b => (string?)b?["type"] == "tool_use" && ActionTools.Contains((string?)b?["name"] ?? string.Empty))
+            .ToList();
+        var action = calls
             .Select(b => ActionOf((string?)b?["name"], b?["input"] as JsonObject))
             .FirstOrDefault(a => a is not null);
-        return text.Length > 0 || action is not null
-            ? new TriageReply(text, null, action)
-            : new TriageReply(null, "the model answered with no text; try rewording");
+        if (text.Length == 0 && action is null)
+        {
+            return new TriageReply(null, "the model answered with no text; try rewording");
+        }
+
+        // An action asked for and not done (a second one, or one without its words) is said, so the agent's
+        // words never stand alone claiming it.
+        var dropped = calls.Count - (action is null ? 0 : 1);
+        return new TriageReply(dropped > 0 ? $"{text}\n\n{Dropped(dropped)}".TrimStart() : text, null, action);
     }
+
+    /// <summary>What Kit adds to a reply when <paramref name="count"/> of the actions it asked for were not done.</summary>
+    public static string Dropped(int count) =>
+        $"(Kit: {(count == 1 ? "one action" : $"{count} actions")} asked for here {(count == 1 ? "was" : "were")} not done: one is done per reply, and each needs its words.)";
+
+    private static readonly HashSet<string> ActionTools = Tools().Select(t => (string)t!["name"]!).ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
     /// The cards a reply asks to read, each call with its id; null when it reads nothing, or when it also
@@ -192,7 +208,7 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         };
     }
 
-    private HttpRequestMessage Request(string instructions, string context, JsonArray messages, bool actions, bool reading)
+    private HttpRequestMessage Request(string instructions, string context, JsonArray messages, bool actions, bool reading, bool last)
     {
         var body = new JsonObject
         {
@@ -217,6 +233,10 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         if (tools.Count > 0)
         {
             body["tools"] = tools;
+            if (last)
+            {
+                body["tool_choice"] = new JsonObject { ["type"] = "none" };
+            }
         }
 
         var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
