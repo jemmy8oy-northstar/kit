@@ -445,3 +445,26 @@ behaviour BEH-TELE-10 "When the creator stalls mid-sentence, the prompter offers
   contract a rephrase appears beside the current line, marked as a suggestion; Continue reads it, Cancel keeps the script, and the script itself is only changed if he keeps the suggestion
   contract "line break and punctuation frequency detection to identify if the user is actually using segmented text": a script with too few breaks to tell a stall from a breath turns this off and says why
   contract my assumption: it is a Studio feature (BEH-EDITION-1), and the rewrite runs on the phone, so it does not break BEH-EDITION-2
+
+# His 2026-11-02 18:50Z note: a second channel that posts more often, made from his work with Kit.
+# Ideas only, in his words: "Let's try produce something quality before we post anything".
+
+feature FEAT-BUILD-CHANNEL "A second channel whose videos are made from his Kit notes and chats: what he asked, the spec it became, and the feature built"
+  in EPIC-SNIP-CREATE
+  stage problem
+
+behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it became, and the feature being built, ending on the screen it made"
+  in FEAT-BUILD-CHANNEL
+  layer ux
+  source defined snip-it.notes.md#2026-11-02-1850
+  review unreviewed
+  priority 3
+  pending
+  actor creator
+  contract "I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos"
+  contract "Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that"
+  contract "I think first step is identifying some good candidates for this style of video. Let's try produce something quality before we post anything. I think this can help well with our kit marketing as well"
+  contract my view: yes. Each candidate already has every part on record, with nothing to film: his note's words with their time, the spec lines that quote it, the pull request's diff, the screenshots taken before merging, and the time it went live. A note-to-live time measured in minutes is the hook, and it is true
+  contract my assumption, the first three candidates, all from 2026-11-02: (1) "I don't like the initial entry point for the chat… think chat gpt think Claude" (14:12Z), with Chat before and after, live by 17:39Z (kit#628); (2) "Kit chat needs the capability to approve answer deny… maybe an undo button" (17:53Z), with the agent approving on his word and an Undo, live by 18:41Z (kit#633); (3) "could we add a new chat feature" (12:56Z), a whole page live by 13:47Z the same day (kit#624)
+  contract my assumption: I make the first one as a private draft he watches before anything is posted; posting, the new channel itself and anything public stay his
+  contract my assumption: this is the format the first-video outline I offered on claude-code-bot#131 (default 2026-11-06) now takes, so that offer becomes candidate (2) drafted this way rather than a separate script
