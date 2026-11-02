@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Chat from './Chat'
-import { toMessages, type Line } from '../chat'
+import { named, toMessages, type Line } from '../chat'
 import type { Behaviour } from '../api/types'
 
 function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
@@ -74,17 +74,20 @@ async function open() {
   await screen.findByTestId('chat')
 }
 
+const box = () => screen.getByLabelText('Message the spec agent') as HTMLTextAreaElement
+
 async function say(text: string, reply: string) {
-  fireEvent.change(screen.getByLabelText('Message the spec agent'), { target: { value: text } })
+  fireEvent.change(box(), { target: { value: text } })
   fireEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByText(reply)
 }
 
 const chats = () => posts.filter(([p]) => p.endsWith('/chat'))
+const inHandId = () => screen.getByTestId('chat-in-hand').querySelector('.id')!.textContent!
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe('BEH-CHAT-1: a Chat page talks about the project picked in a select box', () => {
+describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
   it('is not offered when the spec agent is off', async () => {
     mockApi({ configured: false, model: null, remaining: null })
     render(
@@ -96,14 +99,14 @@ describe('BEH-CHAT-1: a Chat page talks about the project picked in a select box
     expect(screen.queryByTestId('chat')).toBeNull()
   })
 
-  it('a project change says so, keeps the history, and tells the agent once', async () => {
+  it('opens on the project of the top item, and a project change says so, keeps the history, and tells the agent once', async () => {
     mockApi()
     await open()
-    expect(screen.getByText('Now talking about alpha.')).toBeTruthy()
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('alpha')
 
     await say('hello', 'reply 1')
     expect(chats()[0][0]).toBe('/api/projects/alpha/chat')
-    expect(chats()[0][1]).toEqual({ messages: [{ from: 'user', text: '[Now talking about alpha] hello' }] })
+    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: '[Now talking about alpha] hello' }])
 
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     expect(screen.getByText('Now talking about beta.')).toBeTruthy()
@@ -118,13 +121,65 @@ describe('BEH-CHAT-1: a Chat page talks about the project picked in a select box
       { from: 'agent', text: 'reply 2' },
       { from: 'user', text: 'more' },
     ])
-    expect(screen.getByText('8 replies left today')).toBeTruthy()
+    expect(screen.getByText(/8 replies left today/)).toBeTruthy()
+  })
+
+  it('naming another project in a message moves the chat there before it is sent', async () => {
+    mockApi()
+    await open()
+    await say('what does beta still need?', 'reply 1')
+
+    expect(screen.getByText('Now talking about beta, as you named it.')).toBeTruthy()
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('beta')
+    expect(chats()[0][0]).toBe('/api/projects/beta/chat')
+    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: '[Now talking about beta] what does beta still need?' }])
+    // beta has nothing waiting, so no alpha item goes with a message about beta.
+    expect(chats()[0][1].behaviour).toBeUndefined()
+
+    await say('ok', 'reply 2')
+    expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'ok' })
+  })
+
+  it('a message that moves the chat by naming a project is not the answer to the item waiting there', async () => {
+    mockApi(undefined, undefined, { ...details, beta: [beh('B-ASK', { review: { state: 'requested', note: 'Which font?' } })] })
+    await open()
+    expect(inHandId()).toBe('A-ASK')
+    await say('same as we did in beta', 'reply 1')
+
+    expect(inHandId()).toBe('B-ASK')
+    // He had not seen beta's item when he wrote it, so it neither went with the turn nor posts as its answer.
+    expect(chats()[0][1].behaviour).toBeUndefined()
+    expect(screen.queryByRole('button', { name: 'Post as my answer' })).toBeNull()
+
+    await say('serif', 'reply 2')
+    expect(chats()[1][1].behaviour).toBe('B-ASK')
+    expect(screen.getAllByRole('button', { name: 'Post as my answer' })).toHaveLength(2)
+  })
+
+  it('reads a project from a message only when it names one other project, and not the current one', () => {
+    const apps = [
+      { app: 'kit', project: 'kit' },
+      { app: 'kit-ui', project: 'kit' },
+      { app: 'tracks', project: 'tracks' },
+      { app: 'snip-it', project: 'snip-it' },
+    ]
+    expect(named('how is Tracks syncing?', apps, 'kit-ui')).toBe('tracks')
+    expect(named('add a page to snip-it', apps, 'tracks')).toBe('snip-it')
+    // "kit" in a kit-ui chat names its own project, so the chat stays where it is.
+    expect(named('kit should show costs', apps, 'kit-ui')).toBeNull()
+    expect(named('compare tracks with snip-it', apps, 'kit-ui')).toBeNull()
+    expect(named('tracks and kit-ui both', apps, 'kit-ui')).toBeNull()
+    // A name inside another word, or a hyphenated one, is not a mention.
+    expect(named('the kitchen sink', apps, 'tracks')).toBeNull()
+    expect(named('snip-it-two', apps, 'tracks')).toBeNull()
+    expect(named('nothing here', apps, 'tracks')).toBeNull()
   })
 
   it('keeps a long chat inside the server limits, starting and ending with his', () => {
     const lines: Line[] = [{ from: 'switch', app: 'alpha' }]
-    for (let i = 0; i < 30; i++) lines.push({ from: 'user', text: `q${i}`, sent: `q${i}` }, { from: 'agent', text: 'x'.repeat(5000), app: 'alpha' })
-    lines.push({ from: 'user', text: 'last', sent: 'last' })
+    for (let i = 0; i < 30; i++)
+      lines.push({ from: 'user', text: `q${i}`, sent: `q${i}`, app: 'alpha', item: null }, { from: 'agent', text: 'x'.repeat(5000), app: 'alpha', item: null })
+    lines.push({ from: 'user', text: 'last', sent: 'last', app: 'alpha', item: null })
 
     const sent = toMessages(lines)
     expect(sent).toHaveLength(39)
@@ -137,7 +192,7 @@ describe('BEH-CHAT-1: a Chat page talks about the project picked in a select box
     let answer: (r: { ok: boolean; status: number; body: unknown }) => void = () => {}
     mockApi(undefined, () => new Promise((r) => (answer = r)))
     await open()
-    fireEvent.change(screen.getByLabelText('Message the spec agent'), { target: { value: 'hello' } })
+    fireEvent.change(box(), { target: { value: 'hello' } })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     await waitFor(() => expect((screen.getByLabelText('Project') as HTMLSelectElement).disabled).toBe(true))
@@ -146,77 +201,106 @@ describe('BEH-CHAT-1: a Chat page talks about the project picked in a select box
     expect((screen.getByLabelText('Project') as HTMLSelectElement).disabled).toBe(false)
   })
 
+  it('Enter sends and Shift+Enter does not', async () => {
+    mockApi()
+    await open()
+    fireEvent.change(box(), { target: { value: 'line one' } })
+    fireEvent.keyDown(box(), { key: 'Enter', shiftKey: true })
+    expect(chats()).toEqual([])
+    fireEvent.keyDown(box(), { key: 'Enter' })
+    await screen.findByText('reply 1')
+  })
+
   it('a refused turn shows the reason and puts his message back to retry', async () => {
     mockApi(undefined, () => ({ ok: false, status: 429, body: { error: 'triage-cap-reached', reason: "today's replies are used up" } }))
     await open()
-    fireEvent.change(screen.getByLabelText('Message the spec agent'), { target: { value: 'hello' } })
+    fireEvent.change(box(), { target: { value: 'hello' } })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain("today's replies are used up")
-    expect((screen.getByLabelText('Message the spec agent') as HTMLInputElement).value).toBe('hello')
+    expect(box().value).toBe('hello')
     expect(screen.queryByText(/^You:/)).toBeNull()
   })
 })
 
-describe('BEH-CHAT-2: the chat opens with suggestions', () => {
-  it('suggests the next item, defining new spec and discussing the project, and a suggestion sends nothing', async () => {
+describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', () => {
+  it('shows the top item and its question from the start, and opening sends nothing', async () => {
     mockApi()
     await open()
-    const suggestions = screen.getByTestId('chat-suggestions')
-    expect(suggestions.textContent).toContain('Answer: title of A-')
-    expect(suggestions.textContent).toContain('Define new spec for alpha')
-    expect(suggestions.textContent).toContain('Discuss alpha')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Define new spec for alpha' }))
-    expect((screen.getByLabelText('Message the spec agent') as HTMLInputElement).value).toBe('I want to add to alpha: ')
+    const card = screen.getByTestId('chat-in-hand')
+    expect(card.textContent).toContain('Top of your stack')
+    expect(card.textContent).toMatch(/Which colour\?|Add the API key/)
+    expect(screen.queryByRole('button', { name: /^Answer: / })).toBeNull()
     expect(posts).toEqual([])
   })
 
-  it('leaves the item out when nothing is waiting, and names the other project when the picked one has none', async () => {
+  it('with nothing waiting in the project, says so and offers the next one elsewhere', async () => {
     mockApi()
     await open()
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
-    expect(screen.getByTestId('chat-suggestions').textContent).toContain('(alpha)')
+    expect(screen.queryByTestId('chat-in-hand')).toBeNull()
+    expect(screen.getByTestId('chat-nothing').textContent).toContain('Nothing is waiting on you in beta')
+    fireEvent.click(screen.getByRole('button', { name: /^Next waiting: .*\(alpha\)$/ }))
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('alpha')
+    expect(screen.getByTestId('chat-in-hand')).toBeTruthy()
     vi.unstubAllGlobals()
     document.body.innerHTML = ''
 
     mockApi(undefined, undefined, { beta: [beh('B-DONE')] })
     await open()
-    expect(screen.getByText('Now talking about beta.')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^Answer: / })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Discuss beta' })).toBeTruthy()
+    expect(screen.getByTestId('chat-nothing').textContent).not.toContain('Next waiting')
   })
 })
 
 describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', () => {
-  it('sends the item in hand with each turn, a reply becomes his answer, and the next is suggested', async () => {
+  it('sends the item in hand with each turn, a reply posts as his answer, and the next item comes up', async () => {
     mockApi()
     await open()
-    fireEvent.click(screen.getByRole('button', { name: /^Answer: / }))
-    const card = screen.getByTestId('chat-in-hand')
-    const id = card.querySelector('.id')!.textContent!
+    const id = inHandId()
 
     await say('what is it asking?', 'reply 1')
     expect(chats()[0][1].behaviour).toBe(id)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Use as my words' }))
-    expect((screen.getByLabelText('Your answer') as HTMLInputElement).value).toBe('reply 1')
-    fireEvent.click(screen.getByRole('button', { name: 'Answer' }))
-
-    await waitFor(() => expect(screen.queryByTestId('chat-in-hand')).toBeNull())
+    const agentLine = screen.getByText('reply 1').closest('li')!
+    fireEvent.click(agentLine.querySelector('button')!)
+    await waitFor(() => expect(inHandId()).not.toBe(id))
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'reply 1', behaviour: id }])
-    const nextSuggestion = screen.getByRole('button', { name: /^Answer: / }).textContent!
-    expect(nextSuggestion).not.toContain(`title of ${id}`)
+    // The old messages were about the answered item, so they are no answer for the next one.
+    expect(screen.queryAllByRole('button', { name: 'Post as my answer' })).toEqual([])
+  })
+
+  it('his own message can be posted as his answer', async () => {
+    mockApi()
+    await open()
+    const id = inHandId()
+    await say('blue', 'reply 1')
+    const mine = screen.getByText('blue').closest('li')!
+    fireEvent.click(mine.querySelector('button')!)
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'blue', behaviour: id }]))
+  })
+
+  it('Approve and Skip mark the item off and bring up the next', async () => {
+    mockApi()
+    await open()
+    const id = inHandId()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(inHandId()).not.toBe(id))
+    expect(posts.at(-1)?.[0]).toBe(`/api/projects/alpha/behaviours/${id}/review`)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(screen.queryByTestId('chat-in-hand')).toBeNull()
   })
 
   it('with nothing in hand, a reply is saved as a note on the project', async () => {
     mockApi()
     await open()
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     await say('the board needs a done column', 'reply 1')
-    fireEvent.click(screen.getByRole('button', { name: 'Save as a note on alpha' }))
+    expect(screen.queryByRole('button', { name: 'Post as my answer' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Save as a note on beta' }))
 
     await screen.findByRole('button', { name: 'Saved as a note' })
-    expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'reply 1' }])
+    expect(posts.at(-1)).toEqual(['/api/projects/beta/notes', { text: 'reply 1' }])
   })
 
   it('a reply is saved on the project it was about, after he has picked another', async () => {
@@ -228,13 +312,5 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
 
     await screen.findByRole('button', { name: 'Saved as a note' })
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'reply 1' }])
-  })
-
-  it('a suggestion never overwrites what he has typed', async () => {
-    mockApi()
-    await open()
-    fireEvent.change(screen.getByLabelText('Message the spec agent'), { target: { value: 'half a thought' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Discuss alpha' }))
-    expect((screen.getByLabelText('Message the spec agent') as HTMLInputElement).value).toBe('half a thought')
   })
 })
