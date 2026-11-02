@@ -13,6 +13,7 @@ export const FEATURE_PAGES: Record<string, { path: string; label: string }> = {
   'FEAT-STAGES': { path: '/stages', label: 'Stages' },
   'FEAT-EPICS': { path: '/epics', label: 'Epics' },
   'FEAT-INBOX': { path: '/inbox', label: 'Inbox' },
+  'FEAT-CHAT': { path: '/chat', label: 'Chat' },
   'FEAT-HEALTH': { path: '/health', label: 'Health' },
   'FEAT-ACTIVITY': { path: '/activity', label: 'Activity' },
   'FEAT-NOTIFICATIONS': { path: '/notifications', label: 'Notifications' },

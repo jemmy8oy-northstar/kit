@@ -34,11 +34,11 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
     public string Model => model;
 
     /// <inheritdoc />
-    public async Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, CancellationToken cancellationToken = default)
+    public async Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            using var request = Request(context, turns);
+            using var request = Request(instructions ?? Instructions, context, turns);
             using var response = await http.SendAsync(request, cancellationToken);
             var text = await response.Content.ReadAsStringAsync(cancellationToken);
             if (!response.IsSuccessStatusCode)
@@ -67,14 +67,14 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         return text.Length > 0 ? new TriageReply(text) : new TriageReply(null, "the model answered with no text; try rewording");
     }
 
-    private HttpRequestMessage Request(string context, IReadOnlyList<TriageTurn> turns)
+    private HttpRequestMessage Request(string instructions, string context, IReadOnlyList<TriageTurn> turns)
     {
         var body = new JsonObject
         {
             ["model"] = model,
             ["max_tokens"] = MaxTokens,
             ["system"] = new JsonArray(
-                new JsonObject { ["type"] = "text", ["text"] = Instructions },
+                new JsonObject { ["type"] = "text", ["text"] = instructions },
                 new JsonObject
                 {
                     ["type"] = "text",

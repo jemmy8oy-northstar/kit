@@ -14,6 +14,7 @@ public interface ITriageChat
     /// <summary>
     /// One reply to <paramref name="turns"/>, given <paramref name="context"/> (the card and its project).
     /// Never throws for the model's refusal or an unreachable API: that is a <see cref="TriageReply"/> with no text.
+    /// <paramref name="instructions"/> replaces the Inbox card's instructions, for the Chat page (BEH-CHAT-1).
     /// </summary>
-    Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, CancellationToken cancellationToken = default);
+    Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default);
 }
