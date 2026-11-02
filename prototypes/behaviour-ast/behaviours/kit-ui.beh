@@ -2325,6 +2325,9 @@ behaviour BEH-CHAT-1 "A Chat page talks with the spec agent about the project pi
   contract built: a Chat page in the navigation, with a Project select box. Picking a project puts "Now talking about <project>" in the chat; the history stays, and the first message after a change tells the agent which project it is now about
   contract my assumption: it runs on the same spec agent, key and daily allowance as the Inbox's Talk it through (BEH-SPECAGENT-4), and is shown only when that key is set; the chat lives in the page, so leaving it forgets it
   contract my assumption: each turn sends the picked project's outline, the item in hand if there is one, and the names of the other projects; the outline is cached, so a project change costs one uncached read
+  contract "Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn't really look like a chat at the moment. Think chat gpt think Claude"
+  contract built (14:12Z note): it opens on the project of the top item waiting on him, shown as "Talking about <project>" at the top, tap to change. His messages sit on the right, the agent's on the left, and the message box is docked at the foot; Enter sends, Shift+Enter is a new line
+  contract my assumption: a message that names exactly one other project (its app name, or its project's name when that project has one app) moves the chat there before it is sent; a message naming two, or naming the current one too, does not
 
 behaviour BEH-CHAT-2 "The chat opens with suggestions: the next item that needs him, defining new spec, or discussing the project"
   in FEAT-CHAT
@@ -2336,8 +2339,10 @@ behaviour BEH-CHAT-2 "The chat opens with suggestions: the next item that needs 
   when opens page:KitChat
   then sees region:KitMain
   contract "And the chat has some suggestions. You can either define new spec, discuss a project or answer inbox items. I think the way we do this is the chat by default suggests an item that needs answering as part of this suggestion it says or we can define new spec or discuss a project"
-  contract built: the suggestions are the first Inbox item waiting on him (the Inbox's own order, the picked project first), "Define new spec for <project>" and "Discuss <project>"; they come back whenever nothing is in hand. With nothing waiting, the item suggestion is left out
-  contract my assumption: a suggestion starts the topic and sends nothing, so it spends nothing until he types
+  contract "I don't like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something. Then the user can just get on with chatting. The ai will then infer which route they are taking"
+  contract built (14:12Z note, replacing the three suggestion buttons): the top item waiting on him in the project is on the page from the start, above the message box, with its question and "Top of your stack. Reply to answer it, or talk about other work." There is no click to start: he types, and the agent is told the item is in view and infers whether he is answering it or has moved on
+  contract built: with nothing waiting in the project, it says so and offers the next waiting item elsewhere, which switches project
+  contract my assumption: opening the chat sends nothing, so it spends nothing until he types
 
 behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, and new spec is left as a note"
   in FEAT-CHAT
@@ -2349,8 +2354,9 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   when opens page:KitChat
   then sees region:KitMain
   contract "Then you can get on with discussing or marking off items as we go"
-  contract built: an item in hand shows its question with Approve, Answer and Skip, the same writes as the Inbox; an agent reply can go into the answer with "Use as my words". After any of them the next item is suggested
-  contract built: when no item is in hand, an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
+  contract built (14:12Z note): the item in hand has Approve and Skip, the Inbox's own writes. Any message about it, his or the agent's, can be posted as his answer with "Post as my answer". After any of them the next item comes up
+  contract my assumption: "Post as my answer" is offered only on messages sent while that item was in hand, so words about one item never post as the answer to the next
+  contract built: an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2362,8 +2368,8 @@ behaviour BEH-CHAT-4 "When he seems to be talking about another project, the age
   when opens page:KitChat
   then sees region:KitMain
   contract "If the user seems off topic we can say are you talking about a different project and suggest some projects that seem appropriate maybe prompt them to select a different project or maybe define specific for a new project"
-  contract built: the agent's instructions say so, with the other projects' names in its context; it asks him to pick the project in the select box, or to leave a note if it is a new project
-  contract my assumption: the agent only suggests; changing the select box stays his move
+  contract built: the agent's instructions say so, with the other projects' names in its context; it asks him to name the project in his next message or pick it on the page, or to leave a note if it is a new project
+  contract my assumption: the agent only suggests; changing project stays his move
 
 behaviour BEH-CHAT-5 "To save cost, the chat can drop what came before a project change"
   in FEAT-CHAT

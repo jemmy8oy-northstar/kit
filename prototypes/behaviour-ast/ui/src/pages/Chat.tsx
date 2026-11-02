@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Input } from '@jemmy8oy-northstar/design-system'
+import { Button } from '@jemmy8oy-northstar/design-system'
 import { chatTurn, fetchTriage, leaveNote, setReview } from '../api/client'
 import type { TriageStatus } from '../api/types'
-import { MAX_TEXT, toMessages, type Line } from '../chat'
+import { MAX_TEXT, named, toMessages, type Line } from '../chat'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
@@ -14,10 +14,12 @@ import { keyOf, mine, ordered, readSeen, type InboxCard } from '../inbox'
 
 
 /**
- * BEH-CHAT-1 to BEH-CHAT-4 (his 2026-11-02 12:56Z note): a chat with the spec agent about one project at
- * a time, picked in a select box. The Inbox and its "Talk it through" stay as they are; this is the same
- * agent, key and daily allowance on a page of its own. The chat lives in the page; the history stays
- * across a project change, and the first message after one tells the agent which project it is now about.
+ * BEH-CHAT-1 to BEH-CHAT-4 (his 2026-11-02 12:56Z and 14:12Z notes): a chat with the spec agent about one
+ * project at a time. It opens on the project with the top item waiting on him, and that item is already
+ * on the page, so he can just start typing: the agent infers whether he is answering it or talking about
+ * other work. He changes project by tapping it, or by naming another project in a message. The Inbox and
+ * its "Talk it through" stay as they are; this is the same agent, key and daily allowance on a page of
+ * its own. The history stays across a project change, and the first message after one says which it is.
  */
 export default function Chat() {
   const entries = useResource(loadBoard, [])
@@ -32,16 +34,13 @@ export default function Chat() {
     }
   }, [])
 
-  return (
+  return status === undefined ? null : !status?.configured ? (
     <>
       <h1>Chat</h1>
-      <p className="muted">Talk with the spec agent about one project at a time: answer what is waiting on you, define new spec, or discuss the project.</p>
-      {status === undefined ? null : !status?.configured ? (
-        <p data-testid="chat-off">The spec agent is not switched on here, so there is no one to chat with yet.</p>
-      ) : (
-        <ResourceView resource={entries}>{(all) => <Conversation entries={all} status={status} />}</ResourceView>
-      )}
+      <p data-testid="chat-off">The spec agent is not switched on here, so there is no one to chat with yet.</p>
     </>
+  ) : (
+    <ResourceView resource={entries}>{(all) => <Conversation entries={all} status={status} />}</ResourceView>
   )
 }
 
@@ -55,16 +54,18 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
   const first = queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
-  const [lines, setLines] = useState<Line[]>(first ? [{ from: 'switch', app: first }] : [])
-  // The first message after a project change carries it, so the agent knows what the select box says.
+  const [lines, setLines] = useState<Line[]>([])
+  // The first message after a project change carries it, so the agent knows which project it is about.
   const [announce, setAnnounce] = useState(true)
-  const [inHand, setInHand] = useState<InboxCard | null>(null)
-  // His answer to the item in hand; an agent reply goes in with "Use as my words".
-  const [words, setWords] = useState('')
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [remaining, setRemaining] = useState(status.remaining)
+  const end = useRef<HTMLLIElement>(null)
+
+  useEffect(() => {
+    end.current?.scrollIntoView?.({ block: 'end' })
+  }, [lines.length, busy])
 
   if (apps.length === 0) return <p>There are no projects to talk about yet.</p>
 
@@ -73,47 +74,51 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     return p === a ? a : `${p} · ${a}`
   }
   const waiting = queue.filter((c) => !handled.has(keyOf(c)))
-  const next = waiting.find((c) => c.app === app) ?? waiting[0]
+  // The item in hand: the top one waiting in this project, on the page with no click (his 14:12Z note).
+  const focus = waiting.find((c) => c.app === app) ?? null
+  const elsewhere = focus ? null : (waiting[0] ?? null)
 
-  function pick(a: string) {
+  function pick(a: string, by: 'picked' | 'named' = 'picked') {
     if (a === app) return
     setApp(a)
-    setLines((ls) => [...ls, { from: 'switch', app: a }])
+    setLines((ls) => [...ls, by === 'named' ? { from: 'switch', app: a, named: true } : { from: 'switch', app: a }])
     setAnnounce(true)
-    if (inHand && inHand.app !== a) setInHand(null)
   }
 
-  function take(card: InboxCard) {
-    pick(card.app)
-    setInHand(card)
-    setWords('')
-  }
-
-  function done() {
-    if (inHand) setHandled((h) => new Set(h).add(keyOf(inHand)))
-    setInHand(null)
-    setWords('')
+  function done(card: InboxCard) {
+    setHandled((h) => new Set(h).add(keyOf(card)))
   }
 
   async function send() {
     const text = draft.trim()
     if (text === '' || busy) return
-    const before = lines
-    const after: Line[] = [...lines, { from: 'user', text, sent: announce ? `[Now talking about ${app}] ${text}` : text }]
+    // Naming another project moves the chat there before the message goes, so it goes with that project.
+    const to = named(text, apps, app)
+    const about = to ?? app
+    const tell = announce || to !== null
+    let before = lines
+    if (to !== null) {
+      before = [...lines, { from: 'switch', app: to, named: true }]
+      setApp(to)
+    }
+    const item = waiting.find((c) => c.app === about) ?? null
+    const after: Line[] = [...before, { from: 'user', text, sent: tell ? `[Now talking about ${about}] ${text}` : text, app: about, item: item?.b.id ?? null }]
     setLines(after)
     setDraft('')
     setBusy(true)
     setError(null)
-    // The project and item are fixed while a reply is awaited: the select box and suggestions are disabled.
+    // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
-      const answer = await chatTurn(app, inHand?.b.id ?? null, toMessages(after))
-      setLines([...after, { from: 'agent', text: answer.reply, app }])
+      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after))
+      setLines([...after, { from: 'agent', text: answer.reply, app: about, item: item?.b.id ?? null }])
       setAnnounce(false)
       setRemaining(answer.remaining)
     } catch (e) {
-      // His message goes back in the box, so a failed turn costs him nothing to retry.
+      // His message goes back in the box, so a failed turn costs him nothing to retry. A switch he made by
+      // naming a project stays: that was what he said, whether or not the agent answered.
       setLines(before)
       setDraft(text)
+      if (to !== null) setAnnounce(true)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
@@ -121,137 +126,167 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }
 
   return (
-    <section aria-label="Chat" data-testid="chat">
-      <label htmlFor="chat-project">Project</label>
-      <select id="chat-project" className="chat-project" value={app} onChange={(e) => pick(e.target.value)} disabled={busy}>
-        {apps.map((a) => (
-          <option key={a.app} value={a.app}>
-            {label(a.app)}
-          </option>
-        ))}
-      </select>
+    <section aria-label="Chat" data-testid="chat" className="chat">
+      <header className="chat-head">
+        <h1>Chat</h1>
+        <label className="chat-project">
+          <span className="muted">Talking about</span>
+          <select aria-label="Project" value={app} onChange={(e) => pick(e.target.value)} disabled={busy}>
+            {apps.map((a) => (
+              <option key={a.app} value={a.app}>
+                {label(a.app)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
 
-      <ol className="triage-messages">
+      <ol className="chat-thread" aria-label="Messages">
         {lines.map((l, i) =>
           l.from === 'switch' ? (
-            <li key={i} className="muted" data-from="switch">
-              Now talking about {label(l.app)}.
+            <li key={i} className="chat-switch muted" data-from="switch">
+              Now talking about {label(l.app)}
+              {l.named ? ', as you named it' : ''}.
             </li>
           ) : (
-            <li key={i} data-from={l.from}>
-              <strong>{l.from === 'user' ? 'You' : 'Spec agent'}:</strong> {l.text}
-              {l.from === 'agent' && <ReplyAction text={l.text} app={l.app} inHand={inHand} onUse={setWords} />}
+            <li key={i} className="chat-msg" data-from={l.from}>
+              <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
+              <div className="chat-bubble">{l.text}</div>
+              <MessageActions line={l} focus={focus} onAnswered={done} />
             </li>
           ),
         )}
-        {busy && <li className="muted">The spec agent is replying…</li>}
+        {busy && (
+          <li className="chat-msg muted" data-from="agent">
+            <div className="chat-bubble">The spec agent is replying…</div>
+          </li>
+        )}
+        <li ref={end} aria-hidden="true" className="chat-end" />
       </ol>
 
-      {inHand ? (
-        <InHand key={keyOf(inHand)} card={inHand} words={words} setWords={setWords} onDone={done} />
-      ) : (
-        <div className="badges chat-suggestions" role="group" aria-label="Suggestions" data-testid="chat-suggestions">
-          {next && (
-            <Button type="button" variant="secondary" onClick={() => take(next)} disabled={busy}>
-              Answer: {next.b.title}
-              {next.app !== app ? ` (${label(next.app)})` : ''}
-            </Button>
-          )}
-          {/* A start for his message, never over what he has already typed. */}
-          <Button type="button" variant="ghost" onClick={() => setDraft((d) => d.trim() || `I want to add to ${label(app)}: `)}>
-            Define new spec for {label(app)}
-          </Button>
-          <Button type="button" variant="ghost" onClick={() => setDraft((d) => d.trim() || `Let's discuss ${label(app)}: `)}>
-            Discuss {label(app)}
+      <div className="chat-dock">
+        {focus ? (
+          <Focus key={keyOf(focus)} card={focus} onDone={() => done(focus)} chatting={lines.some((l) => l.from === 'user')} />
+        ) : (
+          <div className="chat-focus muted" data-testid="chat-nothing">
+            Nothing is waiting on you in {label(app)}. Ask about it, or describe something new for it.
+            {elsewhere && (
+              <>
+                {' '}
+                <Button type="button" size="sm" variant="ghost" onClick={() => pick(elsewhere.app)} disabled={busy}>
+                  Next waiting: {elsewhere.b.title} ({label(elsewhere.app)})
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="chat-composer">
+          <textarea
+            aria-label="Message the spec agent"
+            rows={1}
+            placeholder={focus ? `Reply to answer it, or ask about anything in ${label(app)}` : `Message about ${label(app)}`}
+            // Room for the "[Now talking about x]" a project change adds, under the server's 4000.
+            maxLength={MAX_TEXT - 100}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                void send()
+              }
+            }}
+          />
+          <Button type="button" aria-label="Send" onClick={() => void send()} disabled={busy || draft.trim() === ''}>
+            ↑
           </Button>
         </div>
-      )}
-
-      <label htmlFor="chat-draft">Message the spec agent</label>
-      <Input
-        id="chat-draft"
-        // Room for the "[Now talking about x]" a project change adds, under the server's 4000.
-        maxLength={MAX_TEXT - 100}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') void send()
-        }}
-      />
-      <div className="badges">
-        <Button type="button" onClick={() => void send()} disabled={busy || draft.trim() === ''}>
-          Send
-        </Button>
-        {remaining !== null && <span className="muted">{remaining} replies left today</span>}
+        <p className="chat-foot muted">
+          Name another project in a message to talk about it instead.
+          {remaining !== null && ` ${remaining} replies left today.`}
+        </p>
+        {error && <p role="alert">{error}</p>}
       </div>
-      {error && <p role="alert">{error}</p>}
     </section>
   )
 }
 
 /**
- * BEH-CHAT-3: what an agent reply can become. With an item in hand it goes into his answer; with
- * none it can be saved as a note on the project, which is how new spec reaches the agent today.
+ * BEH-CHAT-3: what a message can become. Either side's message about the item in hand can be posted as
+ * his answer to it; an agent reply can also be saved as a note on the project it was about, which is how
+ * new spec reaches the agent today.
  */
-function ReplyAction({ text, app, inHand, onUse }: { text: string; app: string; inHand: InboxCard | null; onUse: (t: string) => void }) {
-  const { write, run } = useWrite(() => {})
-  if (inHand) {
-    return (
-      <>
-        {' '}
-        <Button type="button" size="sm" variant="ghost" onClick={() => onUse(text)}>
-          Use as my words
-        </Button>
-      </>
-    )
-  }
+function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'user' | 'agent' }; focus: InboxCard | null; onAnswered: (c: InboxCard) => void }) {
+  // Only for the item that was in hand when the message was sent: once it is answered, the next item's
+  // question is a different one, and these words were not about it.
+  const forItem = focus && focus.app === line.app && focus.b.id === line.item ? focus : null
+  const answer = useWrite(() => forItem && onAnswered(forItem))
+  const note = useWrite(() => {})
+  if (!forItem && line.from === 'user') return null
   return (
-    <>
-      {' '}
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        onClick={() => run(() => leaveNote(app, text))}
-        disabled={write.state === 'saving' || write.state === 'wrote'}
-      >
-        {write.state === 'wrote' ? 'Saved as a note' : `Save as a note on ${app}`}
-      </Button>
-      {write.state === 'refused' && <WriteFeedback write={write} />}
-    </>
+    <div className="chat-actions">
+      {forItem && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => answer.run(() => leaveNote(forItem.app, line.text, forItem.b.id))}
+          disabled={answer.write.state === 'saving'}
+        >
+          Post as my answer
+        </Button>
+      )}
+      {line.from === 'agent' && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => note.run(() => leaveNote(line.app, line.text))}
+          disabled={note.write.state === 'saving' || note.write.state === 'wrote'}
+        >
+          {note.write.state === 'wrote' ? 'Saved as a note' : `Save as a note on ${line.app}`}
+        </Button>
+      )}
+      {answer.write.state === 'refused' && <WriteFeedback write={answer.write} />}
+      {note.write.state === 'refused' && <WriteFeedback write={note.write} />}
+    </div>
   )
 }
 
-/** BEH-CHAT-3: the item in hand, with the Inbox's own writes. Any of them marks it off and the next is suggested. */
-function InHand({ card, words, setWords, onDone }: { card: InboxCard; words: string; setWords: (w: string) => void; onDone: () => void }) {
+/**
+ * BEH-CHAT-2/3: the item in hand, shown from the start rather than behind a click. It says what it is
+ * asking; Approve and Skip are the Inbox's own writes, and either brings up the next item.
+ */
+function Focus({ card, onDone, chatting }: { card: InboxCard; onDone: () => void; chatting: boolean }) {
   const { app, b } = card
   const { write, run } = useWrite(onDone)
   const saving = write.state === 'saving'
+  const ask =
+    b.review.note && b.review.state === 'requested'
+      ? b.review.note
+      : b.needsContext
+        ? `👤 ${b.needsContext}`
+        : b.review.state === 'unreviewed'
+          ? 'Proposed, and not reviewed yet: approve it, or say what is true instead.'
+          : null
 
   return (
-    <Card className="board-card" data-testid="chat-in-hand">
-      <h2>
+    <div className="chat-focus" data-testid="chat-in-hand">
+      {!chatting && <p className="muted chat-focus-lead">Top of your stack. Reply to answer it, or talk about other work.</p>}
+      <p className="chat-focus-title">
         <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.title}</Link>{' '}
         <span className="muted id">{b.id}</span>
-      </h2>
-      {b.review.note && b.review.state === 'requested' && <p>{b.review.note}</p>}
-      {b.needsContext && <p>👤 {b.needsContext}</p>}
-      {!b.review.note && !b.needsContext && b.review.state === 'unreviewed' && <p className="muted">Proposed, and not reviewed yet.</p>}
-
-      <label htmlFor="chat-words">Your answer</label>
-      <Input id="chat-words" value={words} onChange={(e) => setWords(e.target.value)} />
+      </p>
+      {ask && <p className="chat-focus-ask">{ask}</p>}
       <div className="badges">
-        <Button type="button" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving}>
+        <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving}>
           Approve
         </Button>
-        <Button type="button" onClick={() => run(() => leaveNote(app, words.trim(), b.id))} disabled={saving || words.trim() === ''}>
-          Answer
-        </Button>
-        <Button type="button" variant="ghost" onClick={onDone} disabled={saving}>
+        <Button type="button" size="sm" variant="ghost" onClick={onDone} disabled={saving}>
           Skip
         </Button>
       </div>
       <WriteFeedback write={write} />
-    </Card>
+    </div>
   )
 }
