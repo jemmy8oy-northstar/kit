@@ -615,9 +615,22 @@ export interface TriageMessage {
 
 /** A triage turn's answer: the spec agent's reply, and the replies left today. */
 export interface TriageAnswer {
+  /** May be empty when the agent only acted. */
   reply: string
   remaining: number
+  /**
+   * BEH-CHAT-6, the Chat page only: what the agent asked to be done with the item in hand, which the page
+   * carries out with his own writes and offers to undo. Absent for none.
+   */
+  action?: TriageAction
 }
+
+/** BEH-CHAT-6: approve, deny or answer the item in hand (deny and answer with his words), or undo the last. */
+export type TriageAction =
+  | { kind: 'approve'; text?: null }
+  | { kind: 'undo'; text?: null }
+  | { kind: 'deny'; text: string }
+  | { kind: 'answer'; text: string }
 
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
 export interface AgentSchedule {

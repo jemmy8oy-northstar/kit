@@ -11,4 +11,8 @@ public sealed class TriageAnswer : ITriageAnswer
 
     [JsonPropertyOrder(2)]
     public required int Remaining { get; init; }
+
+    [JsonPropertyOrder(3)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TriageAction? Action { get; init; }
 }
