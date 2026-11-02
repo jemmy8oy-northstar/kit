@@ -490,3 +490,7 @@ I have desk time tomorrow, if u need secrets or any desk work prepare it for me
 ## 2026-11-02 12:04Z
 
 I have added a kit-anthropic secret with the key Anthropic__ApiKey to unblock the creation of the triage chat. Let’s use haiku for this
+
+## 2026-11-02 12:12Z
+
+I have the kit Anthropic api $10 credit with no auto credit. Let’s see how long this lasts for personal use
