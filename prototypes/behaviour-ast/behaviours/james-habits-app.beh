@@ -15,6 +15,18 @@
 # folded into the spec.
 # ─────────────────────────────────────────────────────────────────────────────
 
+# His answer to "what is it working towards?" (BEH-NARR-2), james-habits-app.notes.md
+# 2026-11-02 11:35Z: "Currently initial poc, I am not using a habit app. I think it is useful for
+# treating building my own products. Not necessarily planning on distributing but will distribute
+# to help with YouTube and building brand"
+# The feature is the agent's cut (unreviewed): the day screen and the two pages the design names.
+# MANAGE-1 and HISTORY-1 stay paused; the goal does not resume them.
+epic EPIC-HABITS-OWN "A habit app of my own, to practise building products I use, shown on YouTube"
+
+feature FEAT-HABITS-DAY "Logging the day's habits, managing them, and seeing their history"
+  in EPIC-HABITS-OWN
+  stage development
+
 
 # ═══ DEFINED — the product as docs/DESIGN.md states it ═══
 #
@@ -25,6 +37,7 @@
 # "defined but not built" — nobody had to maintain a list.
 
 behaviour BEH-TODAY-1 "The day's habits are listed in order so the whole day can be logged from one screen"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#mvp-3
   priority 5
   actor owner
@@ -33,6 +46,7 @@ behaviour BEH-TODAY-1 "The day's habits are listed in order so the whole day can
   then sees control:DateStepper
 
 behaviour BEH-TODAY-2 "A checkbox habit is ticked inline"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#mvp-3
   priority 5
   actor owner
@@ -42,6 +56,7 @@ behaviour BEH-TODAY-2 "A checkbox habit is ticked inline"
   then sees badge:Streak
 
 behaviour BEH-TODAY-3 "A numeric habit takes a value in a number field"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#mvp-3
   priority 5
   actor owner
@@ -51,6 +66,7 @@ behaviour BEH-TODAY-3 "A numeric habit takes a value in a number field"
   then sees badge:Streak
 
 behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and back-filled"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#A2
   priority 5
   actor owner
@@ -62,6 +78,7 @@ behaviour BEH-TODAY-4 "Previous days can be reached with the date stepper and ba
 # no Manage or History page. Paused by the agent, since the app is not in the current focus
 # (claude-code-bot#49). Resume either one to queue it.
 behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#mvp-4
   review approved
   priority 5
@@ -73,6 +90,7 @@ behaviour BEH-MANAGE-1 "Habits can be added, renamed, reordered and archived"
   then sees region:HabitEditor
 
 behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current and longest streak"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#mvp-5
   priority 5
   pending
@@ -88,6 +106,7 @@ behaviour BEH-HISTORY-1 "Each habit shows a 30-day completion grid with current 
 # would flatter the coverage number by deleting the requirement most likely to be
 # missed. Something else must own this — today, nothing does.
 behaviour BEH-LOOP-1 "The full day is loggable from one screen in under ~20 seconds"
+  in FEAT-HABITS-DAY
   source defined docs/DESIGN.md#product-shape
   priority 5
   actor owner
