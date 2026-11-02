@@ -33,6 +33,9 @@ const details: Record<string, Behaviour[]> = {
   beta: [beh('B-DONE')],
 }
 
+/** What GET .../notes answers: the notes an undo looks through. */
+let notesNow: { at: string; kind: string; behaviour: string | null; resolves: null; text: string }[] = []
+
 /** Every POST the page made, as [path, body]. */
 let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string }][] = []
 
@@ -42,6 +45,7 @@ function mockApi(
   projects: Record<string, Behaviour[]> = details,
 ) {
   posts = []
+  notesNow = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string, init?: { method?: string; body?: string }) => {
@@ -58,7 +62,7 @@ function mockApi(
       const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
       if (path.endsWith('/api/session')) return { ...ok, json: async () => ({ required: false, signedIn: true }) }
       if (rest.endsWith('/history')) return { ...ok, json: async () => ({ history: 'none', reason: 'no git', completed: [], added: [] }) }
-      if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: [] }) }
+      if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: notesNow }) }
       if (rest.endsWith('/schedule')) return { ...ok, json: async () => ({ scheduled: [], backlog: [] }) }
       return { ...ok, json: async () => (rest ? { app: rest, behaviours: projects[rest] } : { projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained' })) }) }
     }),
@@ -354,5 +358,72 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
 
     await screen.findByRole('button', { name: 'Saved as a note' })
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'reply 1' }])
+  })
+})
+
+describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it', () => {
+  const acting = (action: unknown, reply = 'Done it.') => () => ({ ok: true, status: 200, body: { reply, remaining: 8, action } })
+
+  it('approves the item when the agent asks to, says so with an Undo, and the undo puts the review back', async () => {
+    mockApi(undefined, acting({ kind: 'approve', text: null }, 'Approved it.'))
+    await open()
+    expect(inHandId()).toBe('A-ASK')
+    await say('yes, approve it', 'Approved it.')
+
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'approved', note: null }]))
+    const kit = await screen.findByText(/^Approved “title of A-ASK”\./)
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+
+    fireEvent.click(kit.closest('li')!.querySelector('button')!)
+    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
+    expect(inHandId()).toBe('A-ASK')
+    expect(screen.getByRole('button', { name: 'Undone' })).toHaveProperty('disabled', true)
+  })
+
+  it('denies and answers with his words, and an undone answer is dismissed from the notes', async () => {
+    mockApi(undefined, acting({ kind: 'answer', text: 'Blue.' }))
+    await open()
+    await say('blue', 'Done it.')
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'Blue.', behaviour: 'A-ASK' }]))
+
+    notesNow = [
+      { at: '2026-11-02 18:00Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.' },
+      { at: '2026-11-02 18:01Z', kind: 'note', behaviour: null, resolves: null, text: 'Blue.' },
+    ]
+    const kit = await screen.findByText(/^Your answer is posted on “title of A-ASK”\./)
+    fireEvent.click(kit.closest('li')!.querySelector('button')!)
+    await screen.findByText(/^Undone: Your answer is posted on/)
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes/dismiss', { index: 0, at: '2026-11-02 18:00Z' }])
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+
+    mockApi(undefined, acting({ kind: 'deny', text: 'It should be green.' }))
+    await open()
+    await say('no, green', 'Done it.')
+    await waitFor(() =>
+      expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'It should be green.' }]),
+    )
+    expect(await screen.findByText(/^Denied, with your correction: “title of A-ASK”\./)).toBeTruthy()
+  })
+
+  it('asked to undo, the agent undoes the last thing done here, whoever did it', async () => {
+    mockApi(undefined, acting({ kind: 'undo', text: null }, 'Undoing that.'))
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+
+    await say('wait, undo that', 'Undoing that.')
+    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
+    expect(inHandId()).toBe('A-ASK')
+  })
+
+  it('says so when there is nothing to undo, and a reply that only acted still takes its turn', async () => {
+    mockApi(undefined, acting({ kind: 'undo', text: null }, ''))
+    await open()
+    await say('undo', 'Done.')
+    expect(screen.getByText('There is nothing here to undo.')).toBeTruthy()
+    expect(chats()[0][1].messages).toHaveLength(1)
   })
 })

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@jemmy8oy-northstar/design-system'
-import { chatTurn, fetchTriage, leaveNote, setReview } from '../api/client'
-import type { TriageStatus } from '../api/types'
+import { chatTurn, dismissNote, fetchNotes, fetchTriage, leaveNote, setReview } from '../api/client'
+import type { ReviewState, TriageAction, TriageStatus } from '../api/types'
 import { MAX_TEXT, named, toMessages, untold, type Line } from '../chat'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
@@ -54,6 +54,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
   // The same set, current inside a write's callback, which may run after other items were marked off.
   const handledNow = useRef<ReadonlySet<string>>(handled)
+  const undoing = useRef(new Set<Line>())
   const first = queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
   const [lines, setLines] = useState<Line[]>([])
@@ -91,11 +92,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * His 17:54Z note: once he has acted on an item, Kit says so in the chat and offers what comes next,
    * the next item or other work, so the conversation carries on rather than going quiet.
    */
-  function done(card: InboxCard, how: Acted) {
-    const now = new Set(handledNow.current).add(keyOf(card))
-    handledNow.current = now
-    setHandled(now)
-    const rest = queue.filter((c) => !now.has(keyOf(c)))
+  function done(card: InboxCard, how: Acted, undo?: () => Promise<unknown>) {
+    mark(card, true)
+    const rest = queue.filter((c) => !handledNow.current.has(keyOf(c)))
     const next = rest.find((c) => c.app === card.app) ?? null
     const other = next ? null : (rest[0] ?? null)
     const here = label(card.app)
@@ -104,7 +103,69 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       : other
         ? `Nothing else is waiting in ${here}. The next waiting item is in ${label(other.app)}, below. Or we can define new spec or discuss ${here}.`
         : `That was the last item waiting on you. We can define new spec or discuss ${here}.`
-    setLines((ls) => [...ls, { from: 'kit', text: `${ACTED[how].said} “${card.b.title}”. ${then}`, tell: `[He ${ACTED[how].told} ${card.b.id}]` }])
+    // Every action can be taken back (BEH-CHAT-6): the write is reversed, and the item comes back to the chat.
+    const back = async () => {
+      await undo?.()
+      mark(card, false)
+    }
+    setLines((ls) => [...ls, { from: 'kit', text: `${ACTED[how].said} “${card.b.title}”. ${then}`, tell: `[He ${ACTED[how].told} ${card.b.id}]`, undo: back }])
+  }
+
+  /** Marks an item off this chat, or brings it back after an undo. */
+  function mark(card: InboxCard, off: boolean) {
+    const now = new Set(handledNow.current)
+    if (off) now.add(keyOf(card))
+    else now.delete(keyOf(card))
+    handledNow.current = now
+    setHandled(now)
+  }
+
+  /** Runs a Kit line's undo, says so in the chat, and tells the agent. A refused undo says why. */
+  async function undoLine(line: Line & { from: 'kit' }) {
+    // A second tap while the first is still undoing would reverse it twice.
+    if (undoing.current.has(line)) return
+    undoing.current.add(line)
+    try {
+      await line.undo?.()
+      setLines((ls) => [
+        ...ls.map((l) => (l === line ? { ...line, undone: true } : l)),
+        { from: 'kit', text: `Undone: ${line.text.split('. ')[0]}.`, tell: `[He undid this: ${line.tell}]` },
+      ])
+    } catch (e) {
+      undoing.current.delete(line)
+      setError(`Could not undo it: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  /**
+   * BEH-CHAT-6 (his 17:53Z note): the agent asked for something to be done. It is done here with the same
+   * writes as the page's buttons, so it is his session acting on his word, and each comes with an Undo.
+   */
+  async function act(action: TriageAction, card: InboxCard | null, now: Line[]) {
+    if (action.kind === 'undo') {
+      const last = [...now].reverse().find((l): l is Line & { from: 'kit' } => l.from === 'kit' && !!l.undo && !l.undone)
+      if (last) await undoLine(last)
+      else setLines((ls) => [...ls, { from: 'kit', text: 'There is nothing here to undo.', tell: '[There was nothing to undo]' }])
+      return
+    }
+    if (!card) return
+    const { app: on, b } = card
+    const restore = () => setReview(on, b.id, b.review.state as ReviewState, b.review.note)
+    try {
+      if (action.kind === 'approve') {
+        await setReview(on, b.id, 'approved')
+        done(card, 'approved', restore)
+      } else if (action.kind === 'deny') {
+        await setReview(on, b.id, 'denied', action.text)
+        done(card, 'denied', restore)
+      } else {
+        const text = action.text
+        await leaveNote(on, text, b.id)
+        done(card, 'answered', () => dismissAnswer(on, b.id, text))
+      }
+    } catch (e) {
+      setError(`The agent could not do that: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   async function send() {
@@ -140,9 +201,12 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
       const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after))
-      setLines([...after, { from: 'agent', text: answer.reply, app: about, item: item?.b.id ?? null }])
+      // The chat takes turns, so a reply that only acted still has a line of its own.
+      const replied: Line[] = [...after, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }]
+      setLines(replied)
       setAnnounce(false)
       setRemaining(answer.remaining)
+      if (answer.action) await act(answer.action, item, replied)
     } catch (e) {
       // His message goes back in the box, so a failed turn costs him nothing to retry. A switch he made by
       // naming a project stays: that was what he said, whether or not the agent answered.
@@ -191,6 +255,13 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <li key={i} className="chat-msg" data-from="kit">
               <span className="sr-only">Kit: </span>
               <div className="chat-bubble">{l.text}</div>
+              {l.undo && (
+                <div className="chat-actions">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => void undoLine(l)} disabled={busy || l.undone}>
+                    {l.undone ? 'Undone' : 'Undo'}
+                  </Button>
+                </div>
+              )}
             </li>
           ) : (
             <li key={i} className="chat-msg" data-from={l.from}>
@@ -213,7 +284,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           <Focus
             key={keyOf(focus)}
             card={focus}
-            onDone={(how) => done(focus, how)}
+            onDone={(how, undo) => done(focus, how, undo)}
             inThread={lines.some((l) => l.from === 'item' && l.app === focus.app && l.id === focus.b.id)}
           />
         ) : (
@@ -270,11 +341,19 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
  * his answer to it; an agent reply can also be saved as a note on the project it was about, which is how
  * new spec reaches the agent today.
  */
-function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'user' | 'agent' }; focus: InboxCard | null; onAnswered: (c: InboxCard, how: Acted) => void }) {
+function MessageActions({
+  line,
+  focus,
+  onAnswered,
+}: {
+  line: Line & { from: 'user' | 'agent' }
+  focus: InboxCard | null
+  onAnswered: (c: InboxCard, how: Acted, undo: () => Promise<unknown>) => void
+}) {
   // Only for the item that was in hand when the message was sent: once it is answered, the next item's
   // question is a different one, and these words were not about it.
   const forItem = focus && focus.app === line.app && focus.b.id === line.item ? focus : null
-  const answer = useWrite(() => forItem && onAnswered(forItem, 'answered'))
+  const answer = useWrite(() => forItem && onAnswered(forItem, 'answered', () => dismissAnswer(forItem.app, forItem.b.id, line.text)))
   const note = useWrite(() => {})
   if (!forItem && line.from === 'user') return null
   return (
@@ -308,11 +387,23 @@ function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'use
 }
 
 /** How he acted on an item, and how Kit says it in the chat and to the agent (his 17:54Z note). */
-type Acted = 'approved' | 'skipped' | 'answered'
+type Acted = 'approved' | 'denied' | 'skipped' | 'answered'
 const ACTED: Record<Acted, { said: string; told: string }> = {
   approved: { said: 'Approved', told: 'approved' },
+  denied: { said: 'Denied, with your correction:', told: 'denied, with his correction,' },
   skipped: { said: 'Skipped for now:', told: 'skipped, for now,' },
   answered: { said: 'Your answer is posted on', told: 'posted his answer to' },
+}
+
+/**
+ * Undoes a posted answer (BEH-CHAT-6): dismisses the newest note on the item with exactly those words. Git
+ * history keeps it, as for any dismissed note. Refused when it is no longer there to dismiss.
+ */
+async function dismissAnswer(app: string, id: string, text: string): Promise<unknown> {
+  const { notes } = await fetchNotes(app)
+  const index = notes.map((n) => n.behaviour === id && n.text.trim() === text.trim()).lastIndexOf(true)
+  if (index < 0) throw new Error('the answer is no longer among the notes, so there is nothing to dismiss')
+  return dismissNote(app, index, notes[index].at)
 }
 
 /** The most of an item's question the agent is told inline; the whole card is in its context anyway. */
@@ -335,9 +426,10 @@ function askOf({ b }: InboxCard): string | null {
  * Once he has replied about it, the item itself is in the thread (his 17:52Z note), so here it shrinks to
  * its title and the two buttons.
  */
-function Focus({ card, onDone, inThread }: { card: InboxCard; onDone: (how: Acted) => void; inThread: boolean }) {
+function Focus({ card, onDone, inThread }: { card: InboxCard; onDone: (how: Acted, undo?: () => Promise<unknown>) => void; inThread: boolean }) {
   const { app, b } = card
-  const { write, run } = useWrite(() => onDone('approved'))
+  // The card as loaded is its state before this chat touched it, which is what an undo puts back.
+  const { write, run } = useWrite(() => onDone('approved', () => setReview(app, b.id, b.review.state as ReviewState, b.review.note)))
   const saving = write.state === 'saving'
   const ask = askOf(card)
 

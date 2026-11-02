@@ -2402,12 +2402,15 @@ behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself 
   source defined kit.notes.md#2026-11-02-1753
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon"
   contract my assumption: the agent acts only on the item in hand, and only when what he said decides it; each action shows in the chat as Kit's line with an Undo button, and asking the agent to undo does the same
+  contract built: on the Chat page only, the model is offered four tools, approve_item, deny_item and answer_item (each with his words) and undo_last; POST /api/projects/:app/chat answers { reply, remaining, action? }, the action dropped when no item is in hand (undo excepted) or the words are missing. The Inbox's Talk it through is offered none
+  contract built: the server writes nothing for an action; the page does it with the same operator-only writes as its buttons (the review write, or a note on the item), so it is his session acting on his word
+  contract built: every Kit line about an item has an Undo, the buttons' included: an approval or denial puts the item's review back as it was, an answer is dismissed from the notes (git keeps it), and the item comes back to the chat; "Undone: …" follows, and the agent is told
+  contract my assumption: an action the agent takes is reversible but not confirmed first, because he asked for it to act rather than suggest; "never act on a guess, ask if unsure" is in its instructions
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". Nothing here is built.

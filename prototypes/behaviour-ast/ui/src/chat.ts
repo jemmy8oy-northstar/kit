@@ -4,15 +4,16 @@ import type { TriageMessage } from './api/types'
  * A line on the Chat page (BEH-CHAT-1): his or the agent's, each with the project and the item in hand it
  * was about; the note that the chat moved to another project (`named` when he named it in a message
  * rather than picking it); the item itself, placed where he first replied about it (his 17:52Z note); or
- * Kit's own line after he acted on an item (his 17:54Z note). An item or Kit line carries `tell`, what the
- * agent is told about it, at the head of his next message, so it reads the chat in the order he saw it.
+ * Kit's own line after he acted on an item (his 17:54Z note), with the way to undo it while it can be
+ * (BEH-CHAT-6). An item or Kit line carries `tell`, what the agent is told about it, at the head of his next
+ * message, so it reads the chat in the order he saw it.
  */
 export type Line =
   | { from: 'user'; text: string; sent: string; app: string; item: string | null }
   | { from: 'agent'; text: string; app: string; item: string | null }
   | { from: 'switch'; app: string; named?: boolean }
   | { from: 'item'; app: string; id: string; title: string; ask: string | null; tell: string }
-  | { from: 'kit'; text: string; tell: string }
+  | { from: 'kit'; text: string; tell: string; undo?: () => Promise<unknown>; undone?: boolean }
 
 /** What the agent has not yet been told: the `tell` of every item or Kit line since his last message. */
 export function untold(lines: Line[]): string[] {
