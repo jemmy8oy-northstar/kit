@@ -2474,6 +2474,268 @@ behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is 
   contract "With smaller scale this is easier right the agent can identify compared to the top level readme or soemthing or a kit overview or something. But with scale this is harder, have to think of some way to index the spec well so that we can identify similar features quickly. Or maybe verb matching or semantic meaning checks. Maybe some vectorisation of the spec happens for each dev snapshot and it is stored in the repo so the agent can easily identify similar behaviour. Idk needs more design but you see the direction I am heading with this"
   contract my assumption: this needs design before it is built; verb matching on the existing parse comes before any vector index, since it costs nothing to run
 
+# His 2026-11-02 18:54Z to 20:27Z notes, filed as backlog. Every behaviour below is an
+# unreviewed suggestion in Proposed; none is built, and none is a priority over getting
+# ready for users.
+
+feature FEAT-CHAT-TRANSCRIPTS "His own chats are kept for his videos, away from the repo"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-TRANSCRIPT-1 "His Chat transcripts are saved to a dedicated volume, outside the repo, and never for other users"
+  in FEAT-CHAT-TRANSCRIPTS
+  layer technical
+  source defined kit.notes.md#2026-11-02-1854
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Does the chat get logged or saved at all when chatting with Kit? I am thinking this could have great value with the kit chat videos, however it could blow up the repo size."
+  contract "Do you think it would be good to dedicate a volume to this for personal chat saving. Probably no need to save chats for users"
+  contract my assumption: only his own session's chats are written, one file per conversation on the volume, readable only by him; nothing is committed to any repo and nothing is saved for a tester
+
+feature FEAT-SECURITY-AGENT "A security agent audits the code and files tickets"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SECAGENT-1 "A security agent is switched on or off in Settings, audits a project's code and files tickets for what it finds"
+  in FEAT-SECURITY-AGENT
+  layer ux
+  source defined kit.notes.md#2026-11-02-1857
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Kit backlog feature - a security agent. An agent that can be switched on and off in settings which can do an audit on the code base and flag any security issues and create tickets to address them."
+  contract my assumption: off by default, because an audit spends; each finding becomes an unreviewed item on the project's board rather than a change to the code
+
+feature FEAT-CUSTOM-AGENTS "Custom agents with objectives the user sets"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent, run with objectives and goals the user configures"
+  in FEAT-CUSTOM-AGENTS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1857
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "On this point a later backlog feature could be various custom agents. Kit health agent, QA agent with configurable objectives and goals."
+  contract my assumption: the security agent (BEH-SECAGENT-1) is the first of these, and the others reuse its switch in Settings and its way of filing tickets
+
+feature FEAT-HOOKS-OUT "Kit triggers external integrations"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-HOOKOUT-1 "Kit can trigger an external integration when something happens in a project"
+  in FEAT-HOOKS-OUT
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Another later backlog feature would be maybe hooks where kit can trigger external integrations"
+  contract "Anyway this is probably three different features please separate and file for me."
+  contract my assumption: this is the outbound half, Kit calling out on an event such as an item approved or a build finished; inbound (FEAT-HOOKS-IN) and reading external data (FEAT-EXTERNAL-DATA) are separate features
+
+feature FEAT-HOOKS-IN "External integrations trigger Kit"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-HOOKIN-1 "An external integration can trigger Kit"
+  in FEAT-HOOKS-IN
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "and even some way that external integrations can trigger kit"
+  contract my assumption: this is the inbound half, an outside system starting something in Kit with a credential the user issues in Settings; what it may start is for him to decide, and it is a public-facing surface so it needs his review before it is built
+
+feature FEAT-EXTERNAL-DATA "Kit reads external data sources"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a log trigger"
+  in FEAT-EXTERNAL-DATA
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers."
+  contract my assumption: a log trigger would raise an item on the project when a pattern appears, and it needs the project's integrations page (BEH-PROJCONF-1) to hold the credentials it reads with
+
+behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the coding agent files"
+  in FEAT-NOTES
+  layer ux
+  source defined kit.notes.md#2026-11-02-1905
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it."
+  contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
+
+feature FEAT-TOUR "An onboarding tour shows a new user around"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour before Kit goes to production"
+  in FEAT-TOUR
+  layer ux
+  source defined kit.notes.md#2026-11-02-1928
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now"
+  contract my assumption: the tour can be skipped and replayed from Settings, and the help in Chat explains the same ideas in words
+
+feature FEAT-SPLASH "A splash page for production Kit, with a register-interest page"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interest page, served from the preprod cluster for now"
+  in FEAT-SPLASH
+  layer ux
+  source defined kit.notes.md#2026-11-02-2015
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "We should probably have a splash page for the production kit, with a register interest page."
+  contract "We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit."
+  contract my assumption: this is public-facing, so its wording and design wait for his approval before anything is published
+
+feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-PROJCONF-1 "Each project has an integrations page where its user configures secrets and integrations such as a database or API keys"
+  in FEAT-PROJECT-CONFIG
+  layer ux
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit backlog: some integration page or config page for projects where users can configure secrets and integrations such as db or api keys."
+  contract my assumption: this builds on the per-user production secrets (FEAT-USER-SECRETS), and a secret is shown once and never read back
+
+behaviour BEH-PROJCONF-2 "Migrations against a user's production database are limited to preprod at first, or come with strong disclosure"
+  in FEAT-PROJECT-CONFIG
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "With this we will need to think about migration strategies when hooked up to users production databases, maybe at first we should only handle migrations on preprod servers."
+  contract "Or maybe we should have some strong disclosure or something where we heavily recommend that users manage their own production dbs and we take no responsibility if migrations cause data loss or db corruption or something."
+  contract my assumption: until he decides, Kit runs migrations on preprod only; a production database is never migrated by Kit without the disclosure having been shown and accepted
+
+feature FEAT-LITE-APPS "A lite hosted version of a user's app, with fake data"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no integrations, fake data of the right shape, and an in-memory database seeded with start data"
+  in FEAT-LITE-APPS
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "host some really light version of there app maybe call it a lite version where there are no integrations, external dependencies mostly return bogus faker data or something but of the correct shape, and maybe these pods spin up with an in memory db which is injected with some start data to enable basic use and testing."
+  contract "Here we wouldnt need a block volume or anything just a really cheap dotnet and react pod."
+  contract my assumption: this is the stage before a user sets up a database, and a restart loses whatever was entered
+
+behaviour BEH-LITE-2 "A lite version can optionally use a test database and test integrations, so data survives pod restarts"
+  in FEAT-LITE-APPS
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Maybe they can have the option to setup a test db and test integrations so that they get more accurate ux for testing and also data persistence between pod restarts."
+  contract my assumption: the test database and integrations are set up on the project's integrations page (BEH-PROJCONF-1), separate from anything production
+
+feature FEAT-PROJECT-SPACES "Everything in Kit is organised by project"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, board and config, beside global entry, inbox and settings"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "there might be value in restructuring kit such that everything is organised by project. I think maybe the inventory might be worth having globally maybe with a take to chat button to take you to the chat within that project."
+  contract "I kind of feel like each project should be quite isolated in kit. Kind of like in git how there is a entry page, there is an inbox, there is global settings and configuration and then there is a repo with the repo code, with the config, the gh actions etc."
+  contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
+
+behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item."
+  contract my assumption: the message appears only when the project has no item for him, and the jump goes to the project with his most recent item
+
+behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the user to the global board that shows everything"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
+  contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
+
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES
   layer ux
