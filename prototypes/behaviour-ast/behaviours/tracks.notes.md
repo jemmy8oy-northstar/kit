@@ -61,3 +61,7 @@ I thought we agreed yes add it
 ## 2026-11-02 11:37Z
 
 Working towards: App to record and share what you listen to on a run
+
+## 2026-11-02 11:40Z
+
+Oops accidentally posted a tracks note to kit
