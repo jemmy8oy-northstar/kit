@@ -2285,7 +2285,7 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   in FEAT-SPEC-AGENT
   layer ux
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 2
   needs-context "It is live (kit#620 merged, promoted in kit#622): open a card in the Inbox and tap Talk it through. If you leave it, nothing is spent."
   actor engineer

@@ -451,7 +451,7 @@ behaviour BEH-SYNC-8 "James's new Garmin runs arrive by themselves, read with hi
   in FEAT-SYNC
   layer technical
   source inferred tracks.notes.md#2026-11-02-1140
-  review unreviewed
+  review approved
   priority 1
   pending
   actor runner
