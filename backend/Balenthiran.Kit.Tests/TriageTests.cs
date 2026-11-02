@@ -174,7 +174,99 @@ public class TriageTests
         Assert.Throws<InvalidOperationException>(() => KitSettings.FromEnvironment(Env(("KIT_TRIAGE_DAILY_LIMIT", "lots")), RepoLayout.Root));
     }
 
+    // ---- the Chat page (BEH-CHAT-1 to BEH-CHAT-4) -------------------------------------------------
+
+    [Fact]
+    public void A_chat_turn_sends_the_projects_outline_the_other_projects_and_the_chat_instructions()
+    {
+        var model = new FakeModel("Shall we start with the gate?");
+        var r = Router(model).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "[Now talking about kit] what is left?")));
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal("Shall we start with the gate?", Assert.IsType<TriageAnswer>(r.Body).Reply);
+        var (context, turns) = Assert.Single(model.Calls);
+        Assert.StartsWith("Project: kit\n", context, StringComparison.Ordinal);
+        Assert.Contains("behaviour BEH-GATE-2 ", context, StringComparison.Ordinal);
+        Assert.DoesNotContain("item in hand", context, StringComparison.Ordinal);
+        Assert.Equal([new TriageTurn(true, "[Now talking about kit] what is left?")], turns);
+        Assert.Equal(TriageContext.ChatInstructions, Assert.Single(model.Instructions));
+    }
+
+    [Fact]
+    public void A_chat_turn_with_an_item_in_hand_sends_that_card_too()
+    {
+        var model = new FakeModel("Approve it.");
+        Assert.Equal(200, Router(model).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "and this one?"))).Status);
+
+        var (context, _) = Assert.Single(model.Calls);
+        Assert.Contains("The item in hand, waiting on the owner:\nbehaviour BEH-GATE-2 ", context, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_chat_context_names_the_other_projects_and_not_its_own()
+    {
+        var context = TriageContext.BuildChat("tracks", null, "behaviour BEH-A \"a\"\n", ["kit", "snip-it", "tracks"])!;
+
+        Assert.Contains("The other projects: kit, snip-it\n", context, StringComparison.Ordinal);
+        Assert.Contains("behaviour BEH-A \"a\"", context, StringComparison.Ordinal);
+        Assert.Contains("The other projects: none", TriageContext.BuildChat("solo", null, "", ["solo"]), StringComparison.Ordinal);
+        Assert.Null(TriageContext.BuildChat("tracks", "BEH-NONE", "behaviour BEH-A \"a\"\n", ["tracks"]));
+    }
+
+    [Fact]
+    public void A_chat_naming_an_unknown_or_malformed_item_is_refused_and_reaches_no_model()
+    {
+        var model = new FakeModel("unreachable");
+        var router = Router(model);
+
+        Assert.Equal(404, router.Route("POST", "/api/projects/kit/chat", body: Chat("BEH-NOPE-9", ("user", "hi"))).Status);
+        Assert.Equal(400, router.Route("POST", "/api/projects/kit/chat", body: Chat("", ("user", "hi"))).Status);
+        Assert.Equal(400, router.Route("POST", "/api/projects/kit/chat", body: JsonDocument.Parse("""{"behaviour":7,"messages":[{"from":"user","text":"hi"}]}""").RootElement).Status);
+        Assert.Equal(400, router.Route("POST", "/api/projects/kit/chat", body: JsonDocument.Parse("""{"messages":[]}""").RootElement).Status);
+        Assert.Equal(404, router.Route("POST", "/api/projects/no-such-app/chat", body: Chat(null, ("user", "hi"))).Status);
+        Assert.Empty(model.Calls);
+    }
+
+    [Fact]
+    public void The_chat_and_the_inbox_share_one_daily_allowance_and_keep_their_own_instructions()
+    {
+        var model = new FakeModel("ok");
+        var router = Router(model, limit: 2);
+
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/triage", body: Turn("BEH-GATE-2", ("user", "a"))).Status);
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "b"))).Status);
+        Assert.Equal(429, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "c"))).Status);
+        Assert.Equal(429, router.Route("POST", "/api/projects/kit/triage", body: Turn("BEH-GATE-2", ("user", "d"))).Status);
+        Assert.Equal([null, TriageContext.ChatInstructions], model.Instructions);
+    }
+
+    [Fact]
+    public void Without_the_key_a_chat_turn_is_503_and_a_failed_one_gives_its_allowance_back()
+    {
+        Assert.Equal(503, Router(null).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "hi"))).Status);
+
+        var router = Router(new FakeModel(null), limit: 1);
+        Assert.Equal(502, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "hi"))).Status);
+        Assert.Equal(1, Assert.IsType<TriageStatus>(router.Route("GET", "/api/triage").Body).Remaining);
+    }
+
     // ---- the real client, against a scripted API -------------------------------------------------
+
+    [Fact]
+    public async Task The_client_sends_the_chat_instructions_in_place_of_the_cards()
+    {
+        var api = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}]}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}]}"""));
+        var chat = new AnthropicTriageChat(new HttpClient(api), ApiKey);
+
+        await chat.ReplyAsync("THE PROJECT", [new TriageTurn(true, "hi")], "BE THE CHAT");
+        await chat.ReplyAsync("THE CARD", [new TriageTurn(true, "hi")]);
+
+        var systems = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement.GetProperty("system")[0].GetProperty("text").GetString()).ToList();
+        Assert.Equal("BE THE CHAT", systems[0]);
+        Assert.StartsWith("You are Kit's spec agent. You talk one card", systems[1], StringComparison.Ordinal);
+    }
 
     [Fact]
     public async Task The_client_sends_haiku_the_key_a_cached_card_and_the_turns_and_reads_the_text()
@@ -244,6 +336,11 @@ public class TriageTests
     private static JsonElement Turn(string behaviour, params (string From, string Text)[] messages) =>
         JsonSerializer.SerializeToElement(new { behaviour, messages = messages.Select(m => new { from = m.From, text = m.Text }) });
 
+    private static JsonElement Chat(string? behaviour, params (string From, string Text)[] messages) =>
+        behaviour is null
+            ? JsonSerializer.SerializeToElement(new { messages = messages.Select(m => new { from = m.From, text = m.Text }) })
+            : JsonSerializer.SerializeToElement(new { behaviour, messages = messages.Select(m => new { from = m.From, text = m.Text }) });
+
     private static Func<string, string?> Env(params (string Key, string Value)[] pairs)
     {
         var env = pairs.ToDictionary(p => p.Key, p => p.Value);
@@ -254,11 +351,15 @@ public class TriageTests
     {
         public List<(string Context, IReadOnlyList<TriageTurn> Turns)> Calls { get; } = [];
 
+        /// <summary>What each call was told to be: null is the Inbox card's own instructions.</summary>
+        public List<string?> Instructions { get; } = [];
+
         public string Model => "fake-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, CancellationToken cancellationToken = default)
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default)
         {
             Calls.Add((context, turns.ToList()));
+            Instructions.Add(instructions);
             return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply));
         }
     }
@@ -267,7 +368,7 @@ public class TriageTests
     {
         public string Model => "throwing-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, CancellationToken cancellationToken = default) =>
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("unforeseen");
     }
 

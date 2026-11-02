@@ -123,6 +123,62 @@ public sealed partial class KitRouter
             return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
         }
 
+        return Ask(context, turns, null);
+    }
+
+    /// <summary>
+    /// <c>POST /api/projects/:app/chat</c> with <c>{ behaviour?, messages }</c> (BEH-CHAT-1): the Chat page's
+    /// next reply, about <paramref name="app"/> and, when named, the item in hand. The same agent, key and
+    /// daily allowance as the Inbox's chat; its instructions say it may be about any project. It writes nothing.
+    /// </summary>
+    private KitResponse ChatTurn(string app, JsonElement? body)
+    {
+        if (triage is null)
+        {
+            return Json(503, new ApiError
+            {
+                Error = "triage-not-configured",
+                Reason = "the spec agent is not switched on on this server yet: the kit-anthropic secret (Anthropic__ApiKey) is not set",
+            });
+        }
+
+        if (body is not { ValueKind: JsonValueKind.Object } b)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the body must be a JSON object" });
+        }
+
+        // Absent is nothing in hand; present must name a card, so a typo is not silently a general chat.
+        string? id = null;
+        if (Field(b, "behaviour") is { } named && named.ValueKind != JsonValueKind.Null)
+        {
+            if (Str(b, "behaviour") is not { Length: > 0 } given)
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "behaviour, when given, must name the item in hand" });
+            }
+
+            id = given;
+        }
+
+        if (Turns(b) is not { } turns)
+        {
+            return Json(400, new ApiError
+            {
+                Error = "bad-request",
+                Reason = $"messages must be 1 to {MaxTriageTurns} turns of {{ from, text }}, starting and ending with the user's and taking turns, each text 1 to {MaxTriageText} characters",
+            });
+        }
+
+        if (TriageContext.BuildChat(app, id, corpora.ReadText(app), corpora.Corpora()) is not { } context)
+        {
+            return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
+        }
+
+        return Ask(context, turns, TriageContext.ChatInstructions);
+    }
+
+    /// <summary>One reply from the spec agent against today's allowance; a failed reply gives its turn back.</summary>
+    private KitResponse Ask(string context, List<TriageTurn> turns, string? instructions)
+    {
         if (!TakeTriageTurn())
         {
             return Json(429, new ApiError
@@ -136,7 +192,7 @@ public sealed partial class KitRouter
         TriageReply reply;
         try
         {
-            reply = triage.ReplyAsync(context, turns).GetAwaiter().GetResult();
+            reply = triage!.ReplyAsync(context, turns, instructions).GetAwaiter().GetResult();
         }
         catch (Exception e)
         {
