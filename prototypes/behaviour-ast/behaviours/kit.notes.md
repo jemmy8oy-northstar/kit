@@ -526,3 +526,7 @@ In chat, skip is not the clearest maybe it needs to be skip to next item. Skip m
 ## 2026-11-02 17:50Z
 
 In next waiting maybe it needs to show the project first and then preview: then the preview I was a bit confused what I was reading I thought it was about kit
+
+## 2026-11-02 17:52Z
+
+When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it
