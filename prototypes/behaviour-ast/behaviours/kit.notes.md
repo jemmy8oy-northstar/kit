@@ -552,3 +552,7 @@ Spec agent:
 The spec doesn't say what "save as a note" does, so I can't tell you whether it saves the whole chat or text I choose. I also don't write notes myself: my only actions are approving, denying, or answering an item in hand. To find out, try it on a throwaway chat and check what gets saved, or tell me what you want it to do and I'll add that to the spec
 
 Chat with chat
+
+## 2026-11-02 18:54Z
+
+Chat should be well aware of its own capabailities
