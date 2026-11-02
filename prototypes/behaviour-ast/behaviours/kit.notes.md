@@ -566,3 +566,9 @@ Maybe backlog of this is technically difficult but chat should be able to read t
 Kit backlog feature - a security agent. An agent that can be switched on and off in settings which can do an audit on the code base and flag any security issues and create tickets to address them.
 
 On this point a later backlog feature could be various custom agents. Kit health agent, QA agent with configurable objectives and goals.
+
+## 2026-11-02 18:59Z
+
+Another later backlog feature would be maybe hooks where kit can trigger external integrations and even some way that external integrations can trigger kit and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers.
+
+Anyway this is probably three different features please separate and file for me.
