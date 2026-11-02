@@ -419,6 +419,24 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     expect(inHandId()).toBe('A-ASK')
   })
 
+  it('while a reply is on its way his buttons on the item wait, so it is never acted on twice', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => (release = r))
+    mockApi(undefined, async () => {
+      await gate
+      return { ok: true, status: 200, body: { reply: 'Approved it.', remaining: 8, action: { kind: 'approve', text: null } } }
+    })
+    await open()
+    fireEvent.change(box(), { target: { value: 'yes' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    // While the reply is on its way, his buttons on the item wait.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toHaveProperty('disabled', true))
+    release()
+    await screen.findByText('Approved it.')
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+    expect(posts.filter(([p]) => p.endsWith('/review'))).toHaveLength(1)
+  })
+
   it('says so when there is nothing to undo, and a reply that only acted still takes its turn', async () => {
     mockApi(undefined, acting({ kind: 'undo', text: null }, ''))
     await open()

@@ -2410,6 +2410,8 @@ behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself 
   contract built: on the Chat page only, the model is offered four tools, approve_item, deny_item and answer_item (each with his words) and undo_last; POST /api/projects/:app/chat answers { reply, remaining, action? }, the action dropped when no item is in hand (undo excepted) or the words are missing. The Inbox's Talk it through is offered none
   contract built: the server writes nothing for an action; the page does it with the same operator-only writes as its buttons (the review write, or a note on the item), so it is his session acting on his word
   contract built: every Kit line about an item has an Undo, the buttons' included: an approval or denial puts the item's review back as it was, an answer is dismissed from the notes (git keeps it), and the item comes back to the chat; "Undone: …" follows, and the agent is told
+  contract built: while a reply is on its way the item's Approve and Skip wait, so the agent and he never act on it twice; an action that finds no item in hand does nothing and Kit says so
+  contract my assumption: an Undo puts back the review as the chat loaded it; a change made to the item elsewhere in the meantime would be overwritten, which I judged rare enough for now
   contract my assumption: an action the agent takes is reversible but not confirmed first, because he asked for it to act rather than suggest; "never act on a guess, ask if unsure" is in its instructions
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his

@@ -58,6 +58,11 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const first = queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
   const [lines, setLines] = useState<Line[]>([])
+  // The same lines, current inside an awaited reply, which may land after he has acted with a button.
+  const linesNow = useRef<Line[]>(lines)
+  useEffect(() => {
+    linesNow.current = lines
+  }, [lines])
   // The first message after a project change carries it, so the agent knows which project it is about.
   const [announce, setAnnounce] = useState(true)
   const [draft, setDraft] = useState('')
@@ -141,14 +146,23 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * BEH-CHAT-6 (his 17:53Z note): the agent asked for something to be done. It is done here with the same
    * writes as the page's buttons, so it is his session acting on his word, and each comes with an Undo.
    */
-  async function act(action: TriageAction, card: InboxCard | null, now: Line[]) {
+  async function act(action: TriageAction, card: InboxCard | null) {
     if (action.kind === 'undo') {
-      const last = [...now].reverse().find((l): l is Line & { from: 'kit' } => l.from === 'kit' && !!l.undo && !l.undone)
+      // The live lines, not the turn's: he may have acted with a button while the reply was on its way.
+      const last = [...linesNow.current].reverse().find((l): l is Line & { from: 'kit' } => l.from === 'kit' && !!l.undo && !l.undone)
       if (last) await undoLine(last)
       else setLines((ls) => [...ls, { from: 'kit', text: 'There is nothing here to undo.', tell: '[There was nothing to undo]' }])
       return
     }
-    if (!card) return
+    // Nothing in hand, or he already dealt with it while the reply was on its way: doing it again would write
+    // twice. Either way he is told, so the agent's words never claim something that did not happen.
+    if (!card || handledNow.current.has(keyOf(card))) {
+      setLines((ls) => [
+        ...ls,
+        { from: 'kit', text: 'The agent meant to act on an item, but none is in hand any more, so nothing was done.', tell: '[Nothing was done: no item was in hand]' },
+      ])
+      return
+    }
     const { app: on, b } = card
     const restore = () => setReview(on, b.id, b.review.state as ReviewState, b.review.note)
     try {
@@ -201,12 +215,12 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
       const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after))
-      // The chat takes turns, so a reply that only acted still has a line of its own.
-      const replied: Line[] = [...after, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }]
-      setLines(replied)
+      // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
+      // anything Kit said while the reply was on its way stays.
+      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
       setAnnounce(false)
       setRemaining(answer.remaining)
-      if (answer.action) await act(answer.action, item, replied)
+      if (answer.action) await act(answer.action, item)
     } catch (e) {
       // His message goes back in the box, so a failed turn costs him nothing to retry. A switch he made by
       // naming a project stays: that was what he said, whether or not the agent answered.
@@ -286,6 +300,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             card={focus}
             onDone={(how, undo) => done(focus, how, undo)}
             inThread={lines.some((l) => l.from === 'item' && l.app === focus.app && l.id === focus.b.id)}
+            busy={busy}
           />
         ) : (
           <div className="chat-focus muted" data-testid="chat-nothing">
@@ -401,7 +416,9 @@ const ACTED: Record<Acted, { said: string; told: string }> = {
  */
 async function dismissAnswer(app: string, id: string, text: string): Promise<unknown> {
   const { notes } = await fetchNotes(app)
-  const index = notes.map((n) => n.behaviour === id && n.text.trim() === text.trim()).lastIndexOf(true)
+  // Compared with spacing evened out, as the notes file may rewrap what was posted.
+  const flat = (s: string) => s.replace(/\s+/g, ' ').trim()
+  const index = notes.map((n) => n.behaviour === id && flat(n.text) === flat(text)).lastIndexOf(true)
   if (index < 0) throw new Error('the answer is no longer among the notes, so there is nothing to dismiss')
   return dismissNote(app, index, notes[index].at)
 }
@@ -426,7 +443,18 @@ function askOf({ b }: InboxCard): string | null {
  * Once he has replied about it, the item itself is in the thread (his 17:52Z note), so here it shrinks to
  * its title and the two buttons.
  */
-function Focus({ card, onDone, inThread }: { card: InboxCard; onDone: (how: Acted, undo?: () => Promise<unknown>) => void; inThread: boolean }) {
+function Focus({
+  card,
+  onDone,
+  inThread,
+  busy,
+}: {
+  card: InboxCard
+  onDone: (how: Acted, undo?: () => Promise<unknown>) => void
+  inThread: boolean
+  // While a reply is on its way the agent may act on this item itself, so its buttons wait (BEH-CHAT-6).
+  busy: boolean
+}) {
   const { app, b } = card
   // The card as loaded is its state before this chat touched it, which is what an undo puts back.
   const { write, run } = useWrite(() => onDone('approved', () => setReview(app, b.id, b.review.state as ReviewState, b.review.note)))
@@ -442,11 +470,11 @@ function Focus({ card, onDone, inThread }: { card: InboxCard; onDone: (how: Acte
       </p>
       {ask && !inThread && <p className="chat-focus-ask">{ask}</p>}
       <div className="badges">
-        <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving}>
+        <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving || busy}>
           Approve
         </Button>
         {/* His 17:48Z note: "Skip" alone read as dismissing it. It only moves on; the item stays waiting. */}
-        <Button type="button" size="sm" variant="ghost" onClick={() => onDone('skipped')} disabled={saving}>
+        <Button type="button" size="sm" variant="ghost" onClick={() => onDone('skipped')} disabled={saving || busy}>
           Skip to next item
         </Button>
       </div>

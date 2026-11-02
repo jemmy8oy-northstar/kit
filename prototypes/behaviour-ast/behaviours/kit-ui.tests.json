@@ -694,6 +694,7 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "denies and answers with his words, and an undone answer is dismissed from the notes" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked to undo, the agent undoes the last thing done here, whoever did it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "says so when there is nothing to undo, and a reply that only acted still takes its turn" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "while a reply is on its way his buttons on the item wait, so it is never acted on twice" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Only_the_chat_offers_actions_and_its_answer_carries_the_one_asked_for" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_action_on_an_item_is_dropped_when_none_is_in_hand_but_an_undo_is_kept" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_tool_call_reads_as_an_action_and_one_without_its_words_is_dropped" },
