@@ -11,7 +11,7 @@
 # kit:repo jemmy8oy-northstar/snip-it@dev
 #   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 
-# His answer to "what is it working towards?" (BEH-NARR-2), snip-it.notes.md 2026-11-02 11:37Z:
+# His answer to "what is it working towards?" (BEH-NARR-2), snip-it.notes.md#2026-11-02-1137:
 #   "Struggling with uploading and finding time to create. Snip it is me experimenting with ways
 #   to speed up this process"
 # Every feature below serves that goal, so all of them sit in it.
