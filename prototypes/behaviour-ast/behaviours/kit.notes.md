@@ -576,3 +576,7 @@ Anyway this is probably three different features please separate and file for me
 ## 2026-11-02 19:04Z
 
 Top of ur stack should appear in the messages order. Upon request kit can spit it out again. Currently I don’t see kit actioning approve for me. Also the buttons post as answer or post as note under it’s not clear what this is doing is this just that one chat bubble? Can we just delegate this responsibility straight to kit, maybe with a quick button which is something along the lines of ask kit to add the context of this chat as a note. Or maybe Kit can figure out when this appropriate and prompt the user.
+
+## 2026-11-02 19:05Z
+
+I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it.
