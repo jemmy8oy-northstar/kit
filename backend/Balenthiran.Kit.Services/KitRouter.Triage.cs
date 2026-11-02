@@ -173,11 +173,15 @@ public sealed partial class KitRouter
             return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
         }
 
-        return Ask(context, turns, TriageContext.ChatInstructions);
+        return Ask(context, turns, TriageContext.ChatInstructions, chat: true, item: id);
     }
 
-    /// <summary>One reply from the spec agent against today's allowance; a failed reply gives its turn back.</summary>
-    private KitResponse Ask(string context, List<TriageTurn> turns, string? instructions)
+    /// <summary>
+    /// One reply from the spec agent against today's allowance; a failed reply gives its turn back. On the
+    /// Chat page (<paramref name="chat"/>) the agent may also ask for an action (BEH-CHAT-6); one on an
+    /// item is dropped when no <paramref name="item"/> is in hand, as there is nothing for it to act on.
+    /// </summary>
+    private KitResponse Ask(string context, List<TriageTurn> turns, string? instructions, bool chat = false, string? item = null)
     {
         if (!TakeTriageTurn())
         {
@@ -192,7 +196,7 @@ public sealed partial class KitRouter
         TriageReply reply;
         try
         {
-            reply = triage!.ReplyAsync(context, turns, instructions).GetAwaiter().GetResult();
+            reply = triage!.ReplyAsync(context, turns, instructions, chat).GetAwaiter().GetResult();
         }
         catch (Exception e)
         {
@@ -201,13 +205,14 @@ public sealed partial class KitRouter
             reply = new TriageReply(null, "the model could not be asked, so there is no reply; try again in a minute");
         }
 
-        if (reply.Text is not { } text)
+        var action = chat && reply.Action is { } a && TriageAction.Kinds.Contains(a.Kind) && (item is not null || !a.ActsOnItem()) ? a : null;
+        if (reply.Text is not { } text || (text.Length == 0 && action is null))
         {
             ReturnTriageTurn();
             return Json(502, new ApiError { Error = "triage-failed", Reason = reply.Failure ?? "the model gave no reply" });
         }
 
-        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining() });
+        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action });
     }
 
     /// <summary>The chat, or null when it is not one: the Messages API wants the user first and last, taking turns.</summary>
