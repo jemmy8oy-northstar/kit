@@ -101,7 +101,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       before = [...lines, { from: 'switch', app: to, named: true }]
       setApp(to)
     }
-    const item = waiting.find((c) => c.app === about) ?? null
+    // A message that moves the chat by naming a project was not about the new project's item, which he has
+    // not seen yet, so it cannot be posted as the answer to it.
+    const item = to !== null ? null : (waiting.find((c) => c.app === about) ?? null)
     const after: Line[] = [...before, { from: 'user', text, sent: tell ? `[Now talking about ${about}] ${text}` : text, app: about, item: item?.b.id ?? null }]
     setLines(after)
     setDraft('')
@@ -152,7 +154,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
               <div className="chat-bubble">{l.text}</div>
-              <MessageActions line={l} focus={focus} onAnswered={done} />
+              {/* Not on the turn still awaiting a reply: a failed turn takes that line away again. */}
+              {!(busy && i === lines.length - 1) && <MessageActions line={l} focus={focus} onAnswered={done} />}
             </li>
           ),
         )}
@@ -191,7 +194,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              // Enter that finishes a phone keyboard's word or an IME composition is not a send.
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault()
                 void send()
               }

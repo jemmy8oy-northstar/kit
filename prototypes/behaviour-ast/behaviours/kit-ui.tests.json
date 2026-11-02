@@ -661,7 +661,10 @@
   ],
   "BEH-CHAT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is not offered when the spec agent is off" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a project change says so, keeps the history, and tells the agent once" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "opens on the project of the top item, and a project change says so, keeps the history, and tells the agent once" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "naming another project in a message moves the chat there before it is sent" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "reads a project from a message only when it names one other project, and not the current one" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Enter sends and Shift+Enter does not" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a refused turn shows the reason and puts his message back to retry" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "keeps a long chat inside the server limits, starting and ending with his" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the project cannot change while a reply is awaited" },
@@ -672,12 +675,14 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_sends_the_chat_instructions_in_place_of_the_cards" }
   ],
   "BEH-CHAT-2": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "suggests the next item, defining new spec and discussing the project, and a suggestion sends nothing" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves the item out when nothing is waiting, and names the other project when the picked one has none" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a suggestion never overwrites what he has typed" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows the top item and its question from the start, and opening sends nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
   ],
   "BEH-CHAT-3": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply becomes his answer, and the next is suggested" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply posts as his answer, and the next item comes up" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "his own message can be posted as his answer" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Approve and Skip mark the item off and bring up the next" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand, a reply is saved as a note on the project" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a reply is saved on the project it was about, after he has picked another" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }

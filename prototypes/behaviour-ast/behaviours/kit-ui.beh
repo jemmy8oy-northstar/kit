@@ -2329,7 +2329,7 @@ behaviour BEH-CHAT-1 "A Chat page talks with the spec agent about the project pi
   contract built (14:12Z note): it opens on the project of the top item waiting on him, shown as "Talking about <project>" at the top, tap to change. His messages sit on the right, the agent's on the left, and the message box is docked at the foot; Enter sends, Shift+Enter is a new line
   contract my assumption: a message that names exactly one other project (its app name, or its project's name when that project has one app) moves the chat there before it is sent; a message naming two, or naming the current one too, does not
 
-behaviour BEH-CHAT-2 "The chat opens with suggestions: the next item that needs him, defining new spec, or discussing the project"
+behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already in view, and he just starts typing"
   in FEAT-CHAT
   layer ux
   source defined kit.notes.md#2026-11-02-1256
@@ -2356,6 +2356,7 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract "Then you can get on with discussing or marking off items as we go"
   contract built (14:12Z note): the item in hand has Approve and Skip, the Inbox's own writes. Any message about it, his or the agent's, can be posted as his answer with "Post as my answer". After any of them the next item comes up
   contract my assumption: "Post as my answer" is offered only on messages sent while that item was in hand, so words about one item never post as the answer to the next
+  contract my assumption: a message that moves the chat by naming another project is not about that project's item, which he has not seen yet, so it neither goes with the turn nor posts as its answer
   contract built: an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"

@@ -34,7 +34,7 @@ export function toMessages(lines: Line[]): TriageMessage[] {
 export function named(text: string, apps: { app: string; project: string }[], current: string): string | null {
   const said = (name: string) => new RegExp(`(^|[^\\w-])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^\\w-])`, 'i').test(text)
   const alone = (project: string) => apps.filter((a) => a.project === project).length === 1
-  const hits = apps.filter((a) => said(a.app) || (alone(a.project) && said(a.project)))
+  const hits = apps.filter((a) => (a.app !== '' && said(a.app)) || (a.project !== '' && alone(a.project) && said(a.project)))
   const here = apps.find((a) => a.app === current)
   if (hits.some((a) => a.app === current || (here && a.project === here.project && said(a.project)))) return null
   return hits.length === 1 ? hits[0].app : null

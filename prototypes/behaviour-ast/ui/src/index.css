@@ -712,6 +712,13 @@ pre {
   font-size: var(--text-sm);
 }
 
+/* A long question scrolls inside its card, so on a phone the dock never crowds out the thread and
+   Approve and Skip stay in sight. */
+.chat-focus-ask {
+  max-height: 18dvh;
+  overflow-y: auto;
+}
+
 .chat-focus p {
   margin: 0 0 var(--space-1);
 }
@@ -767,7 +774,9 @@ pre {
 .chat-foot {
   font-size: var(--text-xs, var(--text-sm));
   margin: var(--space-1) 0 0;
-  text-align: center;
+  /* The floating Note button (BEH-NOTE-12) sits at the foot's right on every page; this leaves it room. */
+  max-width: calc(100% - var(--space-16) - var(--space-12));
+  min-height: 2.5rem;
 }
 
 .sr-only {

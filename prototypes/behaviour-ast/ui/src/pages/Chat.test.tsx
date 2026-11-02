@@ -140,6 +140,22 @@ describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
     expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'ok' })
   })
 
+  it('a message that moves the chat by naming a project is not the answer to the item waiting there', async () => {
+    mockApi(undefined, undefined, { ...details, beta: [beh('B-ASK', { review: { state: 'requested', note: 'Which font?' } })] })
+    await open()
+    expect(inHandId()).toBe('A-ASK')
+    await say('same as we did in beta', 'reply 1')
+
+    expect(inHandId()).toBe('B-ASK')
+    // He had not seen beta's item when he wrote it, so it neither went with the turn nor posts as its answer.
+    expect(chats()[0][1].behaviour).toBeUndefined()
+    expect(screen.queryByRole('button', { name: 'Post as my answer' })).toBeNull()
+
+    await say('serif', 'reply 2')
+    expect(chats()[1][1].behaviour).toBe('B-ASK')
+    expect(screen.getAllByRole('button', { name: 'Post as my answer' })).toHaveLength(2)
+  })
+
   it('reads a project from a message only when it names one other project, and not the current one', () => {
     const apps = [
       { app: 'kit', project: 'kit' },
