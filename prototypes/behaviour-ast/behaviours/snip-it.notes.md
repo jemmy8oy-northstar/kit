@@ -99,3 +99,7 @@ I just wrote something I want to take it backish. Only as an experimental featur
 ## 2026-10-31 01:08Z · BEH-EDITION-3
 
 Let’s pause for now I don’t have any footage to add yet. But when I do we can add it
+
+## 2026-11-02 11:37Z
+
+Working towards: Struggling with uploading and finding time to create. Snip it is me experimenting with ways to speed up this process
