@@ -522,3 +522,7 @@ The chat agent being able to identify conflicts is ideal, this is the least disr
 ## 2026-11-02 17:48Z
 
 In chat, skip is not the clearest maybe it needs to be skip to next item. Skip might get confused with a dismiss action as it currently is.
+
+## 2026-11-02 17:50Z
+
+In next waiting maybe it needs to show the project first and then preview: then the preview I was a bit confused what I was reading I thought it was about kit
