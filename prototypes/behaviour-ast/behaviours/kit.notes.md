@@ -612,3 +612,7 @@ Backlog kit: I am thinking more and more that there might be value in restructur
 But this feels like a natural way to do it.
 
 Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything. But I think starting to introduce some project isolation would be valuable for the user experience of kit.
+
+## 2026-11-02 23:50Z
+
+Kitstudio should currently show a splash page with a register interest flow, maybe this flow is powered by balenthiran backend
