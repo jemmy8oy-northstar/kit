@@ -63,7 +63,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [remaining, setRemaining] = useState(status.remaining)
-  const end = useRef<HTMLLIElement>(null)
+  const end = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: 'end' })
@@ -206,7 +206,6 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <div className="chat-bubble">The spec agent is replying…</div>
           </li>
         )}
-        <li ref={end} aria-hidden="true" className="chat-end" />
       </ol>
 
       <div className="chat-dock">
@@ -259,6 +258,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         </p>
         {error && <p role="alert">{error}</p>}
       </div>
+      {/* Below the dock, not in the thread: scrolled to the foot of the page, the newest line sits just
+          above the docked box rather than under it. */}
+      <div ref={end} aria-hidden="true" className="chat-end" />
     </section>
   )
 }
