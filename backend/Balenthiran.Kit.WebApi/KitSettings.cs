@@ -178,6 +178,32 @@ public sealed record KitSettings(
     /// <summary>True when both VAPID keys are set; <see cref="FromEnvironment"/> has already refused a half-set pair.</summary>
     public bool Push => PushPublicKey is not null;
 
+    /// <summary>
+    /// <c>KIT_ANTHROPIC_API_KEY</c> (BEH-SPECAGENT-4), from the optional <c>kit-anthropic</c> secret he
+    /// created on 2026-11-02. WRITE-ONLY for the same reason as <see cref="GitToken"/>. Unset means the Inbox offers no chat.
+    /// </summary>
+    public string? AnthropicApiKey
+    {
+        init => anthropicApiKey = value;
+    }
+
+    private readonly string? anthropicApiKey;
+
+    /// <summary>The key, for the triage chat only.</summary>
+    internal string? AnthropicKey() => anthropicApiKey;
+
+    /// <summary>True when the spec agent can be talked to.</summary>
+    public bool Triage => anthropicApiKey is not null;
+
+    /// <summary><c>KIT_TRIAGE_DAILY_LIMIT</c>: spec-agent replies a day, the spend cap. Unset is <see cref="KitRouter.DefaultTriageLimit"/>.</summary>
+    public int TriageLimit { get; init; } = KitRouter.DefaultTriageLimit;
+
+    /// <summary><c>KIT_TRIAGE_DAILY_LIMIT</c>: a whole number, 0 or more (0 switches replies off); unset is the default. Anything else THROWS.</summary>
+    public static int ParseTriageLimit(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? KitRouter.DefaultTriageLimit
+        : int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n
+        : throw new InvalidOperationException($"KIT_TRIAGE_DAILY_LIMIT is \"{value}\": set it to a whole number of replies a day, 0 or more");
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -258,6 +284,8 @@ public sealed record KitSettings(
             GitHubClientId = connect["KIT_GITHUB_CLIENT_ID"],
             GitHubClientSecret = connect["KIT_GITHUB_CLIENT_SECRET"],
             Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
+            AnthropicApiKey = env("KIT_ANTHROPIC_API_KEY") is { } k && !string.IsNullOrWhiteSpace(k) ? k.Trim() : null,
+            TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
         };
     }
 

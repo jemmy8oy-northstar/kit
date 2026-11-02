@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
-  PendingView, ProposeResult, PushStatus, ReviewState, ScheduleList, SessionState, SwitchGroup, WriteResult,
+  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -134,6 +134,16 @@ export function fetchPush(): Promise<PushStatus> {
 /** Hand the server this device's push subscription (BEH-NOTIFY-3); sending the same endpoint again is harmless. */
 export function subscribePush(subscription: PushSubscriptionJSON): Promise<PushStatus> {
   return post<PushStatus>('/api/push/subscriptions', subscription)
+}
+
+/** Can the Inbox talk a card through with the spec agent (BEH-SPECAGENT-4). */
+export function fetchTriage(): Promise<TriageStatus> {
+  return get<TriageStatus>('/api/triage')
+}
+
+/** The spec agent's next reply in a chat about one card (BEH-SPECAGENT-4). It writes nothing. */
+export function triageTurn(app: string, behaviour: string, messages: TriageMessage[]): Promise<TriageAnswer> {
+  return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/triage`, { behaviour, messages })
 }
 
 /** Ask the server to stop pushing to this device (BEH-NOTIFY-3). A POST: Kit serves GET and POST only. */

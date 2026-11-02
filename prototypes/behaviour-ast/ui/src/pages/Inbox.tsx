@@ -4,6 +4,7 @@ import { Badge, Button, Card, Input } from '@jemmy8oy-northstar/design-system'
 import { leaveNote, setMaintained, setPaused, setPriority, setReview } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
+import TriageChat from '../components/TriageChat'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 import { loadBoard, type Entry } from '../boardLoad'
@@ -196,6 +197,9 @@ function CardView({ card, onDone }: { card: InboxCard; onDone: () => void }) {
       {!b.review.note && !b.needsContext && b.review.state === 'unreviewed' && (
         <p className="muted">Proposed, and not reviewed yet.</p>
       )}
+
+      {/* BEH-SPECAGENT-4: talk it through first; a reply he agrees with becomes his words. */}
+      <TriageChat app={app} behaviour={b.id} onUse={setWords} />
 
       <label htmlFor="inbox-words">Your words</label>
       <Input id="inbox-words" value={words} onChange={(e) => setWords(e.target.value)} />

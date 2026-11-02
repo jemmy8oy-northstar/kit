@@ -112,6 +112,12 @@ public static class ServiceRegistration
             });
         }
 
+        // BEH-SPECAGENT-4: the Inbox chat only with the kit-anthropic key; without it nothing here exists.
+        if (settings.Triage)
+        {
+            services.TryAddSingleton<ITriageChat>(sp => new AnthropicTriageChat(ModelClient(sp), settings.AnthropicKey()!));
+        }
+
         services.AddSingleton<IGitStore>(sp => new GitStore(settings.Git, settings.GitRemote, settings.GitBranch, baseBranch: settings.GitBase, tokens: sp.GetRequiredService<IGitHubTokenSource>()));
 
         // A test registers a scripted HttpMessageHandler in front of GitHub, so it scores THIS wiring
@@ -154,7 +160,9 @@ public static class ServiceRegistration
             pushStore: sp.GetService<IPushStore>(),
             pushPublicKey: settings.PushPublicKey,
             userProjects: sp.GetService<IUserProjects>(),
-            userMemory: sp.GetRequiredService<IUserMemoryStore>()));
+            userMemory: sp.GetRequiredService<IUserMemoryStore>(),
+            triage: sp.GetService<ITriageChat>(),
+            triageLimit: settings.TriageLimit));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
@@ -168,6 +176,10 @@ public static class ServiceRegistration
     public static IGitHubTokenSource TokenSource(KitSettings settings, HttpClient http, TimeProvider clock) => settings.GitHubApp
         ? new GitHubAppTokenSource(http, settings.GitHubAppId!, settings.GitHubInstallationId!, settings.PrivateKey()!, clock)
         : new StaticGitHubTokenSource(settings.Token());
+
+    // A model reply takes longer than a GitHub read; a minute, then the page says to try again.
+    private static HttpClient ModelClient(IServiceProvider sp) =>
+        new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(60) };
 
     private static HttpClient GitHubClient(IServiceProvider sp) =>
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };
