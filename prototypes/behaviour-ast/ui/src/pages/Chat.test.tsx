@@ -350,7 +350,7 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
   })
 })
 
-describe('BEH-CHAT-2/3: help, with no model call', () => {
+describe('BEH-CHAT-7: help, with no model call', () => {
   it('the header button and a typed help or /help add the help line and never call the agent', async () => {
     mockApi()
     await open()

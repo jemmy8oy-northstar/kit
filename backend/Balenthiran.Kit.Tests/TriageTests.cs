@@ -327,7 +327,7 @@ public class TriageTests
         Assert.False(sent[1].TryGetProperty("tools", out _));
     }
 
-    // ---- his 18:54Z, 18:55Z and 19:04Z notes: it knows what it can do, reads the spec, notes the chat ---
+    // ---- it knows what it can do (BEH-CHAT-7), reads the spec (BEH-CHAT-8), shows and notes (BEH-CHAT-6) ---
 
     [Fact]
     public void A_note_needs_no_item_in_hand_but_showing_the_item_does()
