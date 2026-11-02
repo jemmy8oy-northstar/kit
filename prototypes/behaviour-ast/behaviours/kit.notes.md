@@ -572,3 +572,7 @@ On this point a later backlog feature could be various custom agents. Kit health
 Another later backlog feature would be maybe hooks where kit can trigger external integrations and even some way that external integrations can trigger kit and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers.
 
 Anyway this is probably three different features please separate and file for me.
+
+## 2026-11-02 19:04Z
+
+Top of ur stack should appear in the messages order. Upon request kit can spit it out again. Currently I don’t see kit actioning approve for me. Also the buttons post as answer or post as note under it’s not clear what this is doing is this just that one chat bubble? Can we just delegate this responsibility straight to kit, maybe with a quick button which is something along the lines of ask kit to add the context of this chat as a note. Or maybe Kit can figure out when this appropriate and prompt the user.
