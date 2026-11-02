@@ -33,22 +33,32 @@
 # kit:promote self
 # ─────────────────────────────────────────────────────────────────────────────
 
+# His answer to "what is it working towards?" (BEH-NARR-2), tracks.notes.md#2026-11-02-1137:
+#   "App to record and share what you listen to on a run"
+epic EPIC-TRACKS-RUNS "Record and share what you listen to on a run"
+
 feature FEAT-BRAND "Name and voice"
+  in EPIC-TRACKS-RUNS
   stage ui
 feature FEAT-SYNC "Noticing a finished run and the songs played during it"
+  in EPIC-TRACKS-RUNS
   stage ui
 feature FEAT-CONNECT "Connecting Strava and Spotify"
+  in EPIC-TRACKS-RUNS
   stage ui
 # FEAT-MAP and FEAT-SHARE read as built until 2026-10-26: their cards predate `pending`. The map's
 # UI is drafted in tracks#3 on demo data, unmerged; nothing of sharing exists yet. MAP-1/2/3 are
 # paused on his tracks#3 comment (2026-10-17): "Let's not worry about the track visuals for now".
 # Resumed on his note of 2026-10-27 12:56Z on BEH-MAP-2: "Let's do it, draft some visuals".
 feature FEAT-MAP "The music map of a workout"
+  in EPIC-TRACKS-RUNS
   stage ui
 feature FEAT-SHARE "Sharing a workout"
+  in EPIC-TRACKS-RUNS
   stage development
 # His questions of 2026-10-24 14:01-14:03Z, "trying to make posts more interesting".
 feature FEAT-HIGHLIGHTS "Highlights of a run, for a more interesting post"
+  in EPIC-TRACKS-RUNS
   stage development
 
 
@@ -191,6 +201,7 @@ behaviour BEH-SYNC-6 "A run kept before a feature existed is given it later"
 # to be used by other people"). Split into this feature when he approved the split on
 # 2026-10-22 11:23Z (BEH-EPIC-9). Its contracts moved into the five children, unchanged.
 feature FEAT-ACCOUNTS "Each runner has their own account"
+  in EPIC-TRACKS-RUNS
   in FEAT-CONNECT
   stage ui
 
@@ -432,6 +443,23 @@ behaviour BEH-COST-1 "Tracks keeps working for James without paying for more tha
   contract his answer (tracks.notes.md#2026-10-28-0740), "Tracks supports garmin": the FIT upload is built as BEH-SYNC-7, next to Strava rather than instead of it
   contract my assumption: Strava stays until he cancels it. Sign-in (BEH-ACCOUNT-1) is auth, so a Strava-free one is his call
   contract his question (tracks.notes.md#2026-10-29-0807): "Is there anyway we could do a similar Garmin oauth style sign in?" My answer, unreviewed: Garmin's OAuth is issued only to Garmin Connect Developer Program members, the same program that rejects personal-use apps, so no
+  contract his note (kit.notes.md#2026-11-02-1139, posted to Kit by mistake): "Cancelled Strava free trial - we have it until nov 18th, if this will cut off my personal api usage we need to find a different source for data". It will: Strava's API has needed a subscription since 2026-06, so the Strava sync (BEH-SYNC-1) stops after 2026-11-18
+  contract corrected 2026-11-02, from his note (tracks.notes.md#2026-11-02-1140) and Garmin's developer pages: since 2026-10 Garmin gives any Connect user a free, read-only Personal API key for their own data. The "no official Garmin route" above is out of date for James's own runs; it still holds for other runners and for sign-in, which the personal tier does not cover. The replacement is BEH-SYNC-8
+  contract his question, "My flatmate is using Garmin with his Claude. Does Claude have some Garmin plugin": not one of Anthropic's own. People connect Garmin to Claude through community MCP servers built on that same personal key
+
+behaviour BEH-SYNC-8 "James's new Garmin runs arrive by themselves, read with his Garmin personal API key"
+  in FEAT-SYNC
+  layer technical
+  source inferred tracks.notes.md#2026-11-02-1140
+  review unreviewed
+  priority 1
+  pending
+  actor runner
+  contract "Garmin now offers a free personal API for accessing your Connect data, though it's read-only"
+  contract my assumption: this replaces Strava for James when his Strava access ends on 2026-11-18; Strava stays in the code, unused, so it can return if Tracks gets paying runners (BEH-COST-1)
+  contract my assumption: Tracks asks Garmin for new running activities on a schedule, since the personal tier documents no webhook, and matches songs from Spotify's recent plays exactly as an uploaded FIT file does (BEH-SYNC-7)
+  contract the key is his secret: he creates it in Garmin Connect Web (it is shown once, and expires after at most a year) and it is stored as a cluster secret, never in the repo or a page. Until it exists, the FIT upload is the Garmin path
+  contract my assumption: one key reads one account, so this serves James only; other runners keep the FIT upload
 
 behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   in FEAT-SYNC

@@ -600,6 +600,25 @@ export interface PushStatus {
   publicKey: string | null
 }
 
+/** `GET /api/triage` (BEH-SPECAGENT-4): can the Inbox talk a card through, with which model, and how many replies are left today. */
+export interface TriageStatus {
+  configured: boolean
+  model: string | null
+  remaining: number | null
+}
+
+/** One message in a triage chat: his, or the spec agent's. */
+export interface TriageMessage {
+  from: 'user' | 'agent'
+  text: string
+}
+
+/** A triage turn's answer: the spec agent's reply, and the replies left today. */
+export interface TriageAnswer {
+  reply: string
+  remaining: number
+}
+
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
 export interface AgentSchedule {
   suspended: boolean

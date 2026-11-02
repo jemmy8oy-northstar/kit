@@ -39,6 +39,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="pushPublicKey">The VAPID public key from the optional <c>kit-push</c> secret, which the browser subscribes with.</param>
 /// <param name="userProjects">Reads a user's projects from their own GitHub (BEH-USERS-2). None means a user's list stays empty.</param>
 /// <param name="userMemory">What Kit remembers about each user (BEH-USERS-4). None means it is kept in memory only.</param>
+/// <param name="triage">The spec agent an Inbox card is talked through with (BEH-SPECAGENT-4). None means the optional <c>kit-anthropic</c> key is not set, and the Inbox offers no chat.</param>
+/// <param name="triageLimit">How many spec-agent replies this server makes a day, the spend cap (<c>KIT_TRIAGE_DAILY_LIMIT</c>).</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -67,7 +69,9 @@ public sealed partial class KitRouter(
     IPushStore? pushStore = null,
     string? pushPublicKey = null,
     IUserProjects? userProjects = null,
-    IUserMemoryStore? userMemory = null) : IKitRouter
+    IUserMemoryStore? userMemory = null,
+    ITriageChat? triage = null,
+    int triageLimit = KitRouter.DefaultTriageLimit) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -97,6 +101,7 @@ public sealed partial class KitRouter(
     private static readonly Regex NoteAction = new(@"^/api/projects/([^/]+)/notes/(reply|dismiss)\z", RegexOptions.Compiled);
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex PromoteRoute = new(@"^/api/projects/([^/]+)/promote\z", RegexOptions.Compiled);
+    private static readonly Regex TriageRoute = new(@"^/api/projects/([^/]+)/triage\z", RegexOptions.Compiled);
     private static readonly Regex GoalRoute = new(@"^/api/projects/([^/]+)/goal\z", RegexOptions.Compiled);
     // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
     private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
@@ -191,7 +196,7 @@ public sealed partial class KitRouter(
         // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
         // covers projects, which live in a public repo; the feed comes from a private one). Gated as
         // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
-        if (pathname is "/api/notifications" or "/api/push")
+        if (pathname is "/api/notifications" or "/api/push" or "/api/triage")
         {
             if (lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host))
             {
@@ -206,6 +211,12 @@ public sealed partial class KitRouter(
             if (pathname == "/api/push")
             {
                 return PushState(cookie);
+            }
+
+            // BEH-SPECAGENT-4: whether the Inbox can talk a card through, behind the same gate.
+            if (pathname == "/api/triage")
+            {
+                return TriageState(cookie);
             }
 
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
@@ -451,7 +462,8 @@ public sealed partial class KitRouter(
         var pm = PromoteRoute.Match(pathname);
         var dm = DecisionReview.Match(pathname);
         var gm = GoalRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : Behaviours.Match(pathname);
+        var tm = TriageRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : tm.Success ? tm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -476,6 +488,12 @@ public sealed partial class KitRouter(
         }
 
         var b = body.Value;
+
+        // BEH-SPECAGENT-4: a chat turn writes nothing, so it does not hold the edit lock while the model thinks.
+        if (tm.Success)
+        {
+            return TriageTurn(app, b);
+        }
 
         // ONE edit at a time: read the file, write it, commit, push. Kestrel serves requests in
         // parallel, where ui.js never could (one thread, synchronous git), so two edits at once

@@ -658,5 +658,24 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: says nothing either way while the citations are unknown" },
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "BEH-COMMENT-2: the project page still archives a cited note and shows no picked-up line" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/BehaviourPage.test.tsx", "title": "BEH-COMMENT-2: a comment a card cites says which card, and one nobody cites says so" }
+  ],
+  "BEH-SPECAGENT-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/TriageChat.test.tsx", "title": "offers nothing when the server has no model key, or the session cannot ask" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/TriageChat.test.tsx", "title": "sends the whole chat each turn, shows the reply, and a reply becomes his words" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/TriageChat.test.tsx", "title": "a refused turn shows the reason and puts his message back to retry" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_turn_sends_the_card_and_the_chat_to_the_model_and_answers_its_reply" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_card_block_stops_at_the_next_unindented_line" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_that_is_not_one_is_refused_400_and_reaches_no_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_too_long_or_a_message_too_long_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_unknown_card_is_404_and_reaches_no_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_daily_cap_refuses_429_and_a_new_day_starts_the_count_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_failed_reply_is_502_with_the_reason_and_gives_its_allowance_back" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_model_that_throws_is_502_and_gives_its_allowance_back" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Without_the_key_GET_says_off_and_a_turn_is_503_naming_the_secret" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "GET_triage_is_served_only_to_a_session_on_a_locked_Kit" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_key_switches_the_chat_on_never_prints_and_the_cap_is_read_or_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_sends_haiku_the_key_a_cached_card_and_the_turns_and_reads_the_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_API_refusal_is_a_failure_with_its_status_and_never_echoes_the_body" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_reply_with_no_text_block_is_a_failure_not_an_empty_answer" }
   ]
 }

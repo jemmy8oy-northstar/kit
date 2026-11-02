@@ -181,6 +181,16 @@ apps:
             name: kit-push
             key: private-key
             optional: true
+      # BEH-SPECAGENT-4: the Inbox's "Talk it through" chat, on Haiku. The `kit-anthropic` secret
+      # James created on 2026-11-02 (kit.notes.md#2026-11-02-1204: "a kit-anthropic secret with the
+      # key Anthropic__ApiKey"). OPTIONAL on purpose, like kit-push: unset, the Inbox offers no chat
+      # and nothing is spent. The daily reply cap is KIT_TRIAGE_DAILY_LIMIT, default 100.
+      - name: KIT_ANTHROPIC_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: kit-anthropic
+            key: Anthropic__ApiKey
+            optional: true
     resources: {}
     nodeSelector: {}
     tolerations: []
