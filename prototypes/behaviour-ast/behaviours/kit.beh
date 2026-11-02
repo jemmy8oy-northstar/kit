@@ -9,6 +9,13 @@
 #   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count
 #   coverage; no line, no number — and the page says why.
 # kit:promote self
+# kit:switch FEAT-PROJECTS testers on
+# kit:switch FEAT-PROJECT testers on
+# kit:switch FEAT-BOARD testers on
+# kit:switch FEAT-STAGES testers on
+# kit:switch FEAT-EPICS testers on
+# kit:switch FEAT-INBOX testers on
+# kit:switch FEAT-SETTINGS testers on
 #
 # kit:no-ui
 #   Read by saturation.js, which excludes this corpus from the binding-saturation
