@@ -11,6 +11,7 @@ import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
 import Inbox from './pages/Inbox'
+import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
 import Settings, { GitHubReturn } from './pages/Settings'
 import SignIn from './components/SignIn'
@@ -84,6 +85,7 @@ export default function App() {
               {/* The `# kit:idea` corpus (kit#284 slice 4): one well-known file, so one link. */}
               <NavLink to={`/projects/${IDEAS}`}>Ideas</NavLink>
               <FeatureNavLink feature="FEAT-INBOX" />
+              <FeatureNavLink feature="FEAT-CHAT" />
               <NavLink to="/principles">Principles</NavLink>
               <FeatureNavLink feature="FEAT-HEALTH" />
               <FeatureNavLink feature="FEAT-ACTIVITY" />
@@ -110,6 +112,7 @@ export default function App() {
               <Route path="/principles" element={<Principles />} />
               <Route path="/health" element={gated('FEAT-HEALTH', <Health />)} />
               <Route path="/inbox" element={gated('FEAT-INBOX', <Inbox />)} />
+              <Route path="/chat" element={gated('FEAT-CHAT', <Chat />)} />
               <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
               <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />

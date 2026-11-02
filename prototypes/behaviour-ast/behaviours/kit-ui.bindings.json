@@ -261,6 +261,9 @@
   "page:KitInbox": {
     "route": "/inbox"
   },
+  "page:KitChat": {
+    "route": "/chat"
+  },
   "page:KitNotifications": {
     "route": "/notifications"
   },

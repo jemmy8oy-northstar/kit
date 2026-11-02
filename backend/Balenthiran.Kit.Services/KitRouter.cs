@@ -102,6 +102,7 @@ public sealed partial class KitRouter(
     private static readonly Regex ScheduleRoute = new(@"^/api/projects/([^/]+)/schedule\z", RegexOptions.Compiled);
     private static readonly Regex PromoteRoute = new(@"^/api/projects/([^/]+)/promote\z", RegexOptions.Compiled);
     private static readonly Regex TriageRoute = new(@"^/api/projects/([^/]+)/triage\z", RegexOptions.Compiled);
+    private static readonly Regex ChatRoute = new(@"^/api/projects/([^/]+)/chat\z", RegexOptions.Compiled);
     private static readonly Regex GoalRoute = new(@"^/api/projects/([^/]+)/goal\z", RegexOptions.Compiled);
     // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
     private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
@@ -463,7 +464,8 @@ public sealed partial class KitRouter(
         var dm = DecisionReview.Match(pathname);
         var gm = GoalRoute.Match(pathname);
         var tm = TriageRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : tm.Success ? tm : Behaviours.Match(pathname);
+        var cm = ChatRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : tm.Success ? tm : cm.Success ? cm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -493,6 +495,12 @@ public sealed partial class KitRouter(
         if (tm.Success)
         {
             return TriageTurn(app, b);
+        }
+
+        // BEH-CHAT-1: the Chat page's turn, the same: it writes nothing.
+        if (cm.Success)
+        {
+            return ChatTurn(app, b);
         }
 
         // ONE edit at a time: read the file, write it, commit, push. Kestrel serves requests in
