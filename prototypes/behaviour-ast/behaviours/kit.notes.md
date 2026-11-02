@@ -538,3 +538,17 @@ Kit chat needs the capability to be able to approve answer deny respond etc rath
 ## 2026-11-02 17:54Z
 
 Once acted on an item a similar prompt should come up from kit, here’s the next item or we can discuss new spec blah balh
+
+## 2026-11-02 18:54Z
+
+Does the chat get logged or saved at all when chatting with Kit? I am thinking this could have great value with the kit chat videos, however it could blow up the repo size. What do you think? Good idea/ bad idea? Do you think it would be good to dedicate a volume to this for personal chat saving. Probably no need to save chats for users
+Spec agent:
+The spec doesn't say whether chats are logged or stored, so I can't tell you what happens today. The question is worth settling on its own, so it could become a note for the project.
+
+On the idea: saving transcripts for your own videos sounds useful. Keeping them out of the repo is the right instinct, since chat logs would grow it quickly. A separate volume or store that only you can read, with nothing saved for other users, fits what you describe. Whether it's worth building depends on how often you'd actually pull from it for videos.
+You:
+If I click save as a note will this save the whole chat as a note or some custom text that you decide?
+Spec agent:
+The spec doesn't say what "save as a note" does, so I can't tell you whether it saves the whole chat or text I choose. I also don't write notes myself: my only actions are approving, denying, or answering an item in hand. To find out, try it on a throwaway chat and check what gets saved, or tell me what you want it to do and I'll add that to the spec
+
+Chat with chat
