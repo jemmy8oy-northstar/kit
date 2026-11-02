@@ -580,3 +580,7 @@ Top of ur stack should appear in the messages order. Upon request kit can spit i
 ## 2026-11-02 19:05Z
 
 I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it.
+
+## 2026-11-02 19:28Z
+
+Might be good to give the chat a help function which explains what kit is explains that the chat does not make changes for you. You discuss and define specific with the chat and a coding agent works in the background to implement features and keep your app up to date with the spec you write.
