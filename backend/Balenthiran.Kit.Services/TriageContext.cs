@@ -28,7 +28,9 @@ public static class TriageContext
         + "what, and what they see. A line like [Now talking about x] means the chat moved to project x: the owner picked it on the page "
         + "or named it in their message. If what the owner says seems to be about a different project, ask whether it is, name the "
         + "projects from the list below that might fit, and ask them to name it in their next message or pick it on the page; if it "
-        + "fits none, suggest leaving it as a note for a new project.";
+        + "fits none, suggest leaving it as a note for a new project. A line like [In view now: id \"title\"] means that item came "
+        + "into the chat at that point, and a line like [He approved id] says what the owner did with an item on the page; "
+        + "do not ask them to do it again.";
 
     /// <summary>The card and its project's outline, or null when <paramref name="id"/> is not a behaviour in <paramref name="corpus"/>.</summary>
     public static string? Build(string app, string id, string corpus)

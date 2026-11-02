@@ -218,6 +218,10 @@ public class TriageTests
 
         // BEH-CHAT-2: the item is on the page from the start, so the agent infers his route rather than asking for a click.
         Assert.Contains("Infer which from what they say", TriageContext.ChatInstructions, StringComparison.Ordinal);
+
+        // His 17:52Z and 17:54Z notes: the page tells the agent, in order, when an item came into view and what he did with it.
+        Assert.Contains("[In view now: id \"title\"] means that item came into the chat at that point", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("[He approved id] says what the owner did with an item on the page", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@jemmy8oy-northstar/design-system'
 import { chatTurn, fetchTriage, leaveNote, setReview } from '../api/client'
 import type { TriageStatus } from '../api/types'
-import { MAX_TEXT, named, toMessages, type Line } from '../chat'
+import { MAX_TEXT, named, toMessages, untold, type Line } from '../chat'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
@@ -52,6 +52,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   // Frozen at open, in the Inbox's own order, so marking items off never reshuffles the rest.
   const [queue] = useState(() => ordered<InboxCard>(mine(entries), readSeen()))
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
+  // The same set, current inside a write's callback, which may run after other items were marked off.
+  const handledNow = useRef<ReadonlySet<string>>(handled)
   const first = queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
   const [lines, setLines] = useState<Line[]>([])
@@ -85,8 +87,24 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setAnnounce(true)
   }
 
-  function done(card: InboxCard) {
-    setHandled((h) => new Set(h).add(keyOf(card)))
+  /**
+   * His 17:54Z note: once he has acted on an item, Kit says so in the chat and offers what comes next,
+   * the next item or other work, so the conversation carries on rather than going quiet.
+   */
+  function done(card: InboxCard, how: Acted) {
+    const now = new Set(handledNow.current).add(keyOf(card))
+    handledNow.current = now
+    setHandled(now)
+    const rest = queue.filter((c) => !now.has(keyOf(c)))
+    const next = rest.find((c) => c.app === card.app) ?? null
+    const other = next ? null : (rest[0] ?? null)
+    const here = label(card.app)
+    const then = next
+      ? `Next up in ${here}: “${next.b.title}”. Reply to answer it, or we can define new spec or discuss ${here}.`
+      : other
+        ? `Nothing else is waiting in ${here}. The next waiting item is in ${label(other.app)}, below. Or we can define new spec or discuss ${here}.`
+        : `That was the last item waiting on you. We can define new spec or discuss ${here}.`
+    setLines((ls) => [...ls, { from: 'kit', text: `${ACTED[how].said} “${card.b.title}”. ${then}`, tell: `[He ${ACTED[how].told} ${card.b.id}]` }])
   }
 
   async function send() {
@@ -104,7 +122,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     // A message that moves the chat by naming a project was not about the new project's item, which he has
     // not seen yet, so it cannot be posted as the answer to it.
     const item = to !== null ? null : (waiting.find((c) => c.app === about) ?? null)
-    const after: Line[] = [...before, { from: 'user', text, sent: tell ? `[Now talking about ${about}] ${text}` : text, app: about, item: item?.b.id ?? null }]
+    // His 17:52Z note: the item moves into the chat where he first replies about it, so the thread reads in
+    // order, and the agent is told of it at that point too.
+    if (item && !before.some((l) => l.from === 'item' && l.app === item.app && l.id === item.b.id)) {
+      const ask = askOf(item)
+      const told = `[In view now: ${item.b.id} "${item.b.title}"${ask ? `, asking: ${ask.slice(0, MAX_TOLD)}` : ''}]`
+      before = [...before, { from: 'item', app: item.app, id: item.b.id, title: item.b.title, ask, tell: told }]
+    }
+    const heads = [...(tell ? [`[Now talking about ${about}]`] : []), ...untold(before)]
+    // His words always go whole; what goes ahead of them is cut to fit the server's limit.
+    const sent = heads.length > 0 ? `${heads.join(' ').slice(0, MAX_TEXT - text.length - 1)} ${text}` : text
+    const after: Line[] = [...before, { from: 'user', text, sent, app: about, item: item?.b.id ?? null }]
     setLines(after)
     setDraft('')
     setBusy(true)
@@ -150,6 +178,20 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
               Now talking about {label(l.app)}
               {l.named ? ', as you named it' : ''}.
             </li>
+          ) : l.from === 'item' ? (
+            <li key={i} className="chat-item" data-from="item">
+              <p className="muted chat-focus-lead">Top of your stack in {label(l.app)}</p>
+              <p className="chat-focus-title">
+                <Link to={`/projects/${encodeURIComponent(l.app)}/behaviours/${encodeURIComponent(l.id)}`}>{l.title}</Link>{' '}
+                <span className="muted id">{l.id}</span>
+              </p>
+              {l.ask && <p className="chat-focus-ask">{l.ask}</p>}
+            </li>
+          ) : l.from === 'kit' ? (
+            <li key={i} className="chat-msg" data-from="kit">
+              <span className="sr-only">Kit: </span>
+              <div className="chat-bubble">{l.text}</div>
+            </li>
           ) : (
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
@@ -169,15 +211,21 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
 
       <div className="chat-dock">
         {focus ? (
-          <Focus key={keyOf(focus)} card={focus} onDone={() => done(focus)} chatting={lines.some((l) => l.from === 'user')} />
+          <Focus
+            key={keyOf(focus)}
+            card={focus}
+            onDone={(how) => done(focus, how)}
+            inThread={lines.some((l) => l.from === 'item' && l.app === focus.app && l.id === focus.b.id)}
+          />
         ) : (
           <div className="chat-focus muted" data-testid="chat-nothing">
             Nothing is waiting on you in {label(app)}. Ask about it, or describe something new for it.
             {elsewhere && (
               <>
                 {' '}
+                {/* His 17:50Z note: the project first, so the preview is not read as being about this one. */}
                 <Button type="button" size="sm" variant="ghost" onClick={() => pick(elsewhere.app)} disabled={busy}>
-                  Next waiting: {elsewhere.b.title} ({label(elsewhere.app)})
+                  <strong>{label(elsewhere.app)}</strong>: next waiting is “{elsewhere.b.title}”
                 </Button>
               </>
             )}
@@ -189,8 +237,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             aria-label="Message the spec agent"
             rows={1}
             placeholder={focus ? `Reply to answer it, or ask about anything in ${label(app)}` : `Message about ${label(app)}`}
-            // Room for the "[Now talking about x]" a project change adds, under the server's 4000.
-            maxLength={MAX_TEXT - 100}
+            // Room for what goes ahead of his words (the project, the item in view, what he did), under the server's 4000.
+            maxLength={MAX_TEXT - 1000}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -220,11 +268,11 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
  * his answer to it; an agent reply can also be saved as a note on the project it was about, which is how
  * new spec reaches the agent today.
  */
-function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'user' | 'agent' }; focus: InboxCard | null; onAnswered: (c: InboxCard) => void }) {
+function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'user' | 'agent' }; focus: InboxCard | null; onAnswered: (c: InboxCard, how: Acted) => void }) {
   // Only for the item that was in hand when the message was sent: once it is answered, the next item's
   // question is a different one, and these words were not about it.
   const forItem = focus && focus.app === line.app && focus.b.id === line.item ? focus : null
-  const answer = useWrite(() => forItem && onAnswered(forItem))
+  const answer = useWrite(() => forItem && onAnswered(forItem, 'answered'))
   const note = useWrite(() => {})
   if (!forItem && line.from === 'user') return null
   return (
@@ -257,37 +305,55 @@ function MessageActions({ line, focus, onAnswered }: { line: Line & { from: 'use
   )
 }
 
+/** How he acted on an item, and how Kit says it in the chat and to the agent (his 17:54Z note). */
+type Acted = 'approved' | 'skipped' | 'answered'
+const ACTED: Record<Acted, { said: string; told: string }> = {
+  approved: { said: 'Approved', told: 'approved' },
+  skipped: { said: 'Skipped for now:', told: 'skipped, for now,' },
+  answered: { said: 'Your answer is posted on', told: 'posted his answer to' },
+}
+
+/** The most of an item's question the agent is told inline; the whole card is in its context anyway. */
+const MAX_TOLD = 500
+
+/** What an item is asking him, in words. */
+function askOf({ b }: InboxCard): string | null {
+  return b.review.note && b.review.state === 'requested'
+    ? b.review.note
+    : b.needsContext
+      ? `👤 ${b.needsContext}`
+      : b.review.state === 'unreviewed'
+        ? 'Proposed, and not reviewed yet: approve it, or say what is true instead.'
+        : null
+}
+
 /**
  * BEH-CHAT-2/3: the item in hand, shown from the start rather than behind a click. It says what it is
- * asking; Approve and Skip are the Inbox's own writes, and either brings up the next item.
+ * asking; Approve and "Skip to next item" are the Inbox's own writes, and either brings up the next item.
+ * Once he has replied about it, the item itself is in the thread (his 17:52Z note), so here it shrinks to
+ * its title and the two buttons.
  */
-function Focus({ card, onDone, chatting }: { card: InboxCard; onDone: () => void; chatting: boolean }) {
+function Focus({ card, onDone, inThread }: { card: InboxCard; onDone: (how: Acted) => void; inThread: boolean }) {
   const { app, b } = card
-  const { write, run } = useWrite(onDone)
+  const { write, run } = useWrite(() => onDone('approved'))
   const saving = write.state === 'saving'
-  const ask =
-    b.review.note && b.review.state === 'requested'
-      ? b.review.note
-      : b.needsContext
-        ? `👤 ${b.needsContext}`
-        : b.review.state === 'unreviewed'
-          ? 'Proposed, and not reviewed yet: approve it, or say what is true instead.'
-          : null
+  const ask = askOf(card)
 
   return (
     <div className="chat-focus" data-testid="chat-in-hand">
-      {!chatting && <p className="muted chat-focus-lead">Top of your stack. Reply to answer it, or talk about other work.</p>}
+      {!inThread && <p className="muted chat-focus-lead">Top of your stack. Reply to answer it, or talk about other work.</p>}
       <p className="chat-focus-title">
         <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.title}</Link>{' '}
         <span className="muted id">{b.id}</span>
       </p>
-      {ask && <p className="chat-focus-ask">{ask}</p>}
+      {ask && !inThread && <p className="chat-focus-ask">{ask}</p>}
       <div className="badges">
         <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving}>
           Approve
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onDone} disabled={saving}>
-          Skip
+        {/* His 17:48Z note: "Skip" alone read as dismissing it. It only moves on; the item stays waiting. */}
+        <Button type="button" size="sm" variant="ghost" onClick={() => onDone('skipped')} disabled={saving}>
+          Skip to next item
         </Button>
       </div>
       <WriteFeedback write={write} />

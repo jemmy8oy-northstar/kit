@@ -676,12 +676,14 @@
   ],
   "BEH-CHAT-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows the top item and its question from the start, and opening sends nothing" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the item moves into the chat where he first replies about it, and the agent reads it there" }
   ],
   "BEH-CHAT-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply posts as his answer, and the next item comes up" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "his own message can be posted as his answer" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Approve and Skip mark the item off and bring up the next" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand, a reply is saved as a note on the project" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a reply is saved on the project it was about, after he has picked another" },

@@ -2346,6 +2346,10 @@ behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already i
   contract "I don't like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something. Then the user can just get on with chatting. The ai will then infer which route they are taking" (kit.notes.md#2026-11-02-1412)
   contract built (14:12Z note, replacing the three suggestion buttons): the top item waiting on him in the project is on the page from the start, above the message box, with its question and "Top of your stack. Reply to answer it, or talk about other work." There is no click to start: he types, and the agent is told the item is in view and infers whether he is answering it or has moved on
   contract built: with nothing waiting in the project, it says so and offers the next waiting item elsewhere, which switches project
+  contract "In next waiting maybe it needs to show the project first and then preview: then the preview I was a bit confused what I was reading I thought it was about kit" (kit.notes.md#2026-11-02-1750)
+  contract built (17:50Z note): the offer reads "<project>: next waiting is “<title>”", project first
+  contract "When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it" (kit.notes.md#2026-11-02-1752)
+  contract built (17:52Z note): when he first sends a message while an item is in hand, the item goes into the thread just above it, and the agent's copy of that message starts with "[In view now: <id> "<title>", asking: …]"; the dock then keeps only the item's title and buttons
   contract my assumption: opening the chat sends nothing, so it spends nothing until he types
 
 behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, and new spec is left as a note"
@@ -2362,6 +2366,10 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract my assumption: "Post as my answer" is offered only on messages sent while that item was in hand, so words about one item never post as the answer to the next
   contract my assumption: a message that moves the chat by naming another project is not about that project's item, which he has not seen yet, so it neither goes with the turn nor posts as its answer
   contract built: an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
+  contract "In chat, skip is not the clearest maybe it needs to be skip to next item. Skip might get confused with a dismiss action as it currently is" (kit.notes.md#2026-11-02-1748)
+  contract built (17:48Z note): the button says "Skip to next item"; the item stays waiting in Kit and only leaves this chat
+  contract "Once acted on an item a similar prompt should come up from kit, here's the next item or we can discuss new spec blah balh" (kit.notes.md#2026-11-02-1754)
+  contract built (17:54Z note): after Approve, Skip or Post as my answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2387,6 +2395,19 @@ behaviour BEH-CHAT-5 "To save cost, the chat can drop what came before a project
   when opens page:KitChat
   then sees region:KitMain
   contract "We can think about discarding context let's put it on the backlog as a cost saver"
+
+behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself when he says so, and he can undo it"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-02-1753
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon"
+  contract my assumption: the agent acts only on the item in hand, and only when what he said decides it; each action shows in the chat as Kit's line with an Undo button, and asking the agent to undo does the same
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". Nothing here is built.
