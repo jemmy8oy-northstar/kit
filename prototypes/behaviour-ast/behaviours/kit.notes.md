@@ -584,3 +584,7 @@ I was thinking of getting rid of notes in favour of chat but I think notes still
 ## 2026-11-02 19:28Z
 
 Might be good to give the chat a help function which explains what kit is explains that the chat does not make changes for you. You discuss and define specific with the chat and a coding agent works in the background to implement features and keep your app up to date with the spec you write.
+
+## 2026-11-02 19:28Z
+
+Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now
