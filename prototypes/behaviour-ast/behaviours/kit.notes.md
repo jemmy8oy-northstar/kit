@@ -588,3 +588,11 @@ Might be good to give the chat a help function which explains what kit is explai
 ## 2026-11-02 19:28Z
 
 Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now
+
+## 2026-11-02 20:15Z
+
+We should probably have a splash page for the production kit, with a register interest page.
+
+Should I point the new domain to the same public ip as balenthiran.co.uk? Or will this have a different public ip from the cluster?
+
+We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit.
