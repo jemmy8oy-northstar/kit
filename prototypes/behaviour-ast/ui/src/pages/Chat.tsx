@@ -57,7 +57,11 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const undoing = useRef(new Set<Line>())
   const first = queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
-  const [lines, setLines] = useState<Line[]>([])
+  // The top item is in the thread from the first render rather than an effect later, so it never flashes in.
+  const [lines, setLines] = useState<Line[]>(() => {
+    const top = queue.find((c) => c.app === first)
+    return top ? [itemLine(top)] : []
+  })
   // The same lines, current inside an awaited reply, which may land after he has acted with a button.
   const linesNow = useRef<Line[]>(lines)
   useEffect(() => {
@@ -478,11 +482,11 @@ function Focus({
 
   return (
     <div className="chat-focus" data-testid="chat-in-hand">
-      <p className="chat-focus-title">
-        <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.title}</Link>{' '}
-        <span className="muted id">{b.id}</span>
-      </p>
       <div className="badges">
+        {/* The title and question are in the thread just above; here only which item the buttons act on. */}
+        <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`} className="muted id" title={b.title}>
+          {b.id}
+        </Link>
         <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving || busy}>
           Approve
         </Button>
