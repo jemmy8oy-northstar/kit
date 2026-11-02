@@ -211,6 +211,10 @@ public class TriageTests
         Assert.Contains("behaviour BEH-A \"a\"", context, StringComparison.Ordinal);
         Assert.Contains("The other projects: none", TriageContext.BuildChat("solo", null, "", ["solo"]), StringComparison.Ordinal);
         Assert.Null(TriageContext.BuildChat("tracks", "BEH-NONE", "behaviour BEH-A \"a\"\n", ["tracks"]));
+
+        // BEH-CHAT-4: what the names are for. The agent asks, names candidates, and leaves the select box to him.
+        Assert.Contains("seems to be about a different project, ask whether it is", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("pick it in the select box", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     [Fact]

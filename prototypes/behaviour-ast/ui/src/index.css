@@ -601,6 +601,33 @@ pre {
   margin: var(--space-3) 0;
 }
 
+/* BEH-SPECAGENT-4, BEH-CHAT-1: a chat is a conversation, not a numbered list. */
+.triage-messages {
+  list-style: none;
+  padding: 0;
+}
+
+.triage-messages li {
+  margin: var(--space-2) 0;
+}
+
+/* BEH-CHAT-1: the select box sits under its label, not flush against it. */
+.chat-project {
+  display: block;
+  margin: var(--space-1) 0 var(--space-3);
+}
+
+/* BEH-CHAT-2: a suggestion names a card by its title, which can be a sentence; it wraps on a phone. */
+.chat-suggestions button {
+  white-space: normal;
+  text-align: left;
+  height: auto;
+  min-height: 2.5rem;
+  padding-block: var(--space-2);
+  line-height: 1.3;
+  max-width: 100%;
+}
+
 /* BEH-SHEET-2: the question is what he reads; the card it is about is its caption. */
 .ask {
   font-weight: 600;

@@ -146,6 +146,11 @@ export function triageTurn(app: string, behaviour: string, messages: TriageMessa
   return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/triage`, { behaviour, messages })
 }
 
+/** The Chat page's next reply (BEH-CHAT-1): about `app`, and the item in hand when there is one. It writes nothing. */
+export function chatTurn(app: string, behaviour: string | null, messages: TriageMessage[]): Promise<TriageAnswer> {
+  return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/chat`, behaviour ? { behaviour, messages } : { messages })
+}
+
 /** Ask the server to stop pushing to this device (BEH-NOTIFY-3). A POST: Kit serves GET and POST only. */
 export function unsubscribePush(endpoint: string): Promise<PushStatus> {
   return post<PushStatus>('/api/push/subscriptions/remove', { endpoint })
