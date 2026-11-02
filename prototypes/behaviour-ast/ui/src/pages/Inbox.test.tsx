@@ -113,7 +113,8 @@ describe('Inbox', () => {
 
     // A-ASK is P1 but already opened, so B-PROP leads, and A-ASK comes after every unopened card.
     expect(current()).toBe('B-PROP')
-    expect(JSON.parse(window.localStorage.getItem('kit.inboxSeen')!)).toContain('beta/B-PROP')
+    // Opened is saved by an effect after the card renders, so it can land a tick after the card shows.
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem('kit.inboxSeen')!)).toContain('beta/B-PROP'))
   })
 
   it('puts an answer to his question before higher-priority cards, opened ones still last (BEH-INBOX-3)', async () => {
