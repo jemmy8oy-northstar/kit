@@ -530,3 +530,7 @@ In next waiting maybe it needs to show the project first and then preview: then 
 ## 2026-11-02 17:52Z
 
 When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it
+
+## 2026-11-02 17:53Z
+
+Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon
