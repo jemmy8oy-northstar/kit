@@ -21,6 +21,18 @@
 # so (DESIGN.md#delivery-plan: PR 1 ✅, PR 2 ✅, PR 3–5 outstanding).
 # ─────────────────────────────────────────────────────────────────────────────
 
+# His answer to "what is it working towards?" (BEH-NARR-2), language-vocab.notes.md
+# 2026-11-02 11:36Z: "I want my own personalised language learning app. I just want to experiment
+# and be able to tinker with different ways of learning. Similar to habits app I want to build
+# myself and own the product that I use"
+# The feature is the agent's cut (unreviewed): each way of learning he has asked for so far. All of
+# them are built, so the project page reads "Every goal is built" until he names the next one.
+epic EPIC-LV-OWN "My own language app, to tinker with different ways of learning"
+
+feature FEAT-LV-WAYS "Ways of learning: drills both directions, Learn mode with its quiz, and themed packs"
+  in EPIC-LV-OWN
+  stage development
+
 
 # ═══ DEFINED — the product as docs/DESIGN.md states it ═══
 #
@@ -29,6 +41,7 @@
 # That refusal IS the "defined but not built" report, and nobody maintains it.
 
 behaviour BEH-DRILL-ZHEN "Shown a Chinese word, the learner types the English meaning"
+  in FEAT-LV-WAYS
   source defined docs/DESIGN.md#product-shape
   priority 5
   actor learner
@@ -39,6 +52,7 @@ behaviour BEH-DRILL-ZHEN "Shown a Chinese word, the learner types the English me
   then sees region:Verdict
 
 behaviour BEH-DRILL-ENZH "Shown an English word, the learner types the pinyin"
+  in FEAT-LV-WAYS
   source defined docs/DESIGN.md#product-shape
   priority 5
   actor learner
@@ -276,6 +290,7 @@ behaviour BEH-DETERMINISM-1 "Selection is deterministic for a given seed"
 # "i would love to add a mahjong vocab pack". Pending: specified, not built.
 
 behaviour BEH-LEARN-1 "Learn mode shows five new words one at a time, hanzi, pinyin and English together"
+  in FEAT-LV-WAYS
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 1
   actor learner
@@ -287,6 +302,7 @@ behaviour BEH-LEARN-1 "Learn mode shows five new words one at a time, hanzi, pin
   contract five words a round; nothing is asked until all five have been shown
 
 behaviour BEH-LEARN-2 "After the five, the learner is quizzed on them: shown pinyin, recall the English"
+  in FEAT-LV-WAYS
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 1
   actor learner
@@ -298,6 +314,7 @@ behaviour BEH-LEARN-2 "After the five, the learner is quizzed on them: shown pin
   contract the quiz asks the five in a shuffled order, never the order they were shown in (language-vocab.notes.md#2026-11-01-1708, "they should be shuffled rather than same order")
 
 behaviour BEH-LEARN-3 "The reverse quiz, English to pinyin, is a separate harder option"
+  in FEAT-LV-WAYS
   source defined language-vocab.notes.md#2026-10-15-2300
   priority 3
   actor learner
@@ -307,6 +324,7 @@ behaviour BEH-LEARN-3 "The reverse quiz, English to pinyin, is a separate harder
   contract off by default; he called it "harder so maybe that is another option again"
 
 behaviour BEH-PACK-1 "Words can be learned in themed packs, starting with a mahjong pack"
+  in FEAT-LV-WAYS
   source defined language-vocab.notes.md#2026-10-15-2308
   priority 2
   actor learner

@@ -27,7 +27,3 @@ What sites this man
 ## 2026-10-29 13:32Z · BEH-UNLOCK-2
 
 What does this mean
-
-## 2026-11-02 11:36Z
-
-Working towards: I want my own personalised language learning app. I just want to experiment and be able to tinker with different ways of learning. Similar to habits app I want to build myself and own the product that I use

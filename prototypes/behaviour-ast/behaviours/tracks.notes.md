@@ -57,20 +57,3 @@ Would be more secure all in vault right or is that overkill?
 ## 2026-10-31 16:46Z · BEH-SHARE-2
 
 I thought we agreed yes add it
-
-## 2026-11-02 11:37Z
-
-Working towards: App to record and share what you listen to on a run
-
-## 2026-11-02 11:40Z
-
-Oops accidentally posted a tracks note to kit
-
-## 2026-11-02 11:40Z
-
-Garmin now offers a free personal API for accessing your Connect data, though it’s read-only and raises privacy and data-completeness concerns.
-Access and setup
-
-Personal access is now available: Reddit posts from October 2026 report that Garmin reopened its developer program with a free personal tier and lets users generate a key in Garmin Connect settings. "Yes, I saw them go live yesterday. Take a look in your settings menu in Garmin Connect."
-You can use it for custom tools: People have connected Garmin data to AI assistants, dashboards, and personal scripts; Garmin’s Python library is one route. "How did you get access to the API? I only find "documentation" with no API specification? Edit: Never mind, they have a python library, cool."
-It can replace fragile unofficial workarounds: Before personal access opened, some people relied on unofficial libraries that could require reauthentication or break when Garmin changed its systems. "It's not official so it could break if Garmin changes their auth flow, but it's been around long enough that bugs get patched quick when something shifts"

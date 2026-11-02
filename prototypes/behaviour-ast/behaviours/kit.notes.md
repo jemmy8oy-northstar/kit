@@ -486,9 +486,3 @@ the feature board gets a done column, each column represents what spec needs to 
 ## 2026-10-31 23:53Z
 
 I have desk time tomorrow, if u need secrets or any desk work prepare it for me
-
-## 2026-11-02 11:39Z
-
-Cancelled Strava free trial - we have it until nov 18th, if this will cut off my personal api usage we need to find a different source for data
-
-My flatmate is using Garmin with his Claude. Does Claude have some Garmin plugin or soemthing
