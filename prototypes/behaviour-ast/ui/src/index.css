@@ -691,6 +691,25 @@ pre {
   font-size: var(--text-sm);
 }
 
+/* Kit's own line after he acts on an item: the agent's side, set apart from the agent's words. */
+.chat-msg[data-from='kit'] .chat-bubble {
+  border: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+}
+
+/* The item, where he first replied about it: a card across the thread, as it was in the dock. */
+.chat-item {
+  align-self: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.chat-item p {
+  margin: 0 0 var(--space-1);
+}
+
 .chat-actions {
   display: flex;
   flex-wrap: wrap;
