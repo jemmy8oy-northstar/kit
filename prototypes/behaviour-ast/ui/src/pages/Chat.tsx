@@ -75,16 +75,31 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     end.current?.scrollIntoView?.({ block: 'end' })
   }, [lines.length, busy])
 
+  const waiting = queue.filter((c) => !handled.has(keyOf(c)))
+  // The item in hand: the top one waiting in this project, on the page with no click (his 14:12Z note).
+  const focus = waiting.find((c) => c.app === app) ?? null
+  const elsewhere = focus ? null : (waiting[0] ?? null)
+
+  // His 19:04Z note: the top of his stack is in the thread as soon as it is in hand (on open, after a project
+  // switch, after Kit's "Next up", after an undo), unless it is already the latest item there. Not while a
+  // reply is on its way, so a message that switched project by naming it is never followed mid-turn by the
+  // new project's item; it comes in when the reply lands.
+  const focusKey = focus ? keyOf(focus) : null
+  useEffect(() => {
+    if (busy || !focus) return
+    setLines((ls) => {
+      const last = [...ls].reverse().find((l) => l.from === 'item')
+      return last?.from === 'item' && last.app === focus.app && last.id === focus.b.id ? ls : [...ls, itemLine(focus)]
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey, busy])
+
   if (apps.length === 0) return <p>There are no projects to talk about yet.</p>
 
   const label = (a: string) => {
     const p = apps.find((x) => x.app === a)?.project ?? a
     return p === a ? a : `${p} · ${a}`
   }
-  const waiting = queue.filter((c) => !handled.has(keyOf(c)))
-  // The item in hand: the top one waiting in this project, on the page with no click (his 14:12Z note).
-  const focus = waiting.find((c) => c.app === app) ?? null
-  const elsewhere = focus ? null : (waiting[0] ?? null)
 
   function pick(a: string, by: 'picked' | 'named' = 'picked') {
     if (a === app) return
@@ -146,7 +161,28 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * BEH-CHAT-6 (his 17:53Z note): the agent asked for something to be done. It is done here with the same
    * writes as the page's buttons, so it is his session acting on his word, and each comes with an Undo.
    */
-  async function act(action: TriageAction, card: InboxCard | null) {
+  async function act(action: TriageAction, card: InboxCard | null, about: string) {
+    if (action.kind === 'note') {
+      // On the project the turn was about, not tied to the item, so it works with none in hand (his 19:04Z note).
+      const text = action.text
+      try {
+        await leaveNote(about, text)
+        const shown = text.length > 200 ? `${text.slice(0, 200)}…` : text
+        setLines((ls) => [
+          ...ls,
+          { from: 'kit', text: `Saved as a note on ${label(about)}: “${text}”`, tell: `[Kit saved a note: ${shown}]`, undo: () => dismissAnswer(about, null, text) },
+        ])
+      } catch (e) {
+        setError(`The agent could not do that: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      return
+    }
+    if (action.kind === 'show') {
+      // Again, even when it is already the latest item line: he asked to see it. None in hand, nothing to show.
+      if (card && !handledNow.current.has(keyOf(card))) setLines((ls) => [...ls, itemLine(card)])
+      else setLines((ls) => [...ls, { from: 'kit', text: 'Nothing is in hand to show.', tell: '[Nothing was in hand to show]' }])
+      return
+    }
     if (action.kind === 'undo') {
       // The live lines, not the turn's: he may have acted with a button while the reply was on its way.
       const last = [...linesNow.current].reverse().find((l): l is Line & { from: 'kit' } => l.from === 'kit' && !!l.undo && !l.undone)
@@ -182,9 +218,16 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     }
   }
 
-  async function send() {
-    const text = draft.trim()
+  /** `said` is a message Kit's own buttons send for him; his draft stays in the box. */
+  async function send(said?: string) {
+    const text = (said ?? draft).trim()
     if (text === '' || busy) return
+    // His 19:28Z note: help is answered here, with no model call and no reply spent.
+    if (asksHelp(text)) {
+      setLines((ls) => [...ls, { from: 'user', text, sent: text, app, item: null, local: true }, helpLine()])
+      if (said === undefined) setDraft('')
+      return
+    }
     // Naming another project moves the chat there before the message goes, so it goes with that project.
     const to = named(text, apps, app)
     const about = to ?? app
@@ -197,19 +240,12 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     // A message that moves the chat by naming a project was not about the new project's item, which he has
     // not seen yet, so it cannot be posted as the answer to it.
     const item = to !== null ? null : (waiting.find((c) => c.app === about) ?? null)
-    // His 17:52Z note: the item moves into the chat where he first replies about it, so the thread reads in
-    // order, and the agent is told of it at that point too.
-    if (item && !before.some((l) => l.from === 'item' && l.app === item.app && l.id === item.b.id)) {
-      const ask = askOf(item)
-      const told = `[In view now: ${item.b.id} "${item.b.title}"${ask ? `, asking: ${ask.slice(0, MAX_TOLD)}` : ''}]`
-      before = [...before, { from: 'item', app: item.app, id: item.b.id, title: item.b.title, ask, tell: told }]
-    }
     const heads = [...(tell ? [`[Now talking about ${about}]`] : []), ...untold(before)]
     // His words always go whole; what goes ahead of them is cut to fit the server's limit.
     const sent = heads.length > 0 ? `${heads.join(' ').slice(0, MAX_TEXT - text.length - 1)} ${text}` : text
     const after: Line[] = [...before, { from: 'user', text, sent, app: about, item: item?.b.id ?? null }]
     setLines(after)
-    setDraft('')
+    if (said === undefined) setDraft('')
     setBusy(true)
     setError(null)
     // The project is fixed while a reply is awaited: the project picker is disabled.
@@ -220,12 +256,12 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
       setAnnounce(false)
       setRemaining(answer.remaining)
-      if (answer.action) await act(answer.action, item)
+      if (answer.action) await act(answer.action, item, about)
     } catch (e) {
       // His message goes back in the box, so a failed turn costs him nothing to retry. A switch he made by
       // naming a project stays: that was what he said, whether or not the agent answered.
       setLines(before)
-      setDraft(text)
+      if (said === undefined) setDraft(text)
       if (to !== null) setAnnounce(true)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -247,6 +283,10 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             ))}
           </select>
         </label>
+        {/* His 19:28Z note: what Kit is, and that the chat changes nothing itself. No model call. */}
+        <Button type="button" size="sm" variant="ghost" onClick={() => setLines((ls) => [...ls, helpLine()])} disabled={busy}>
+          What can Kit do?
+        </Button>
       </header>
 
       <ol className="chat-thread" aria-label="Messages">
@@ -281,8 +321,6 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
               <div className="chat-bubble">{l.text}</div>
-              {/* Not on the turn still awaiting a reply: a failed turn takes that line away again. */}
-              {!(busy && i === lines.length - 1) && <MessageActions line={l} focus={focus} onAnswered={done} />}
             </li>
           ),
         )}
@@ -299,7 +337,6 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             key={keyOf(focus)}
             card={focus}
             onDone={(how, undo) => done(focus, how, undo)}
-            inThread={lines.some((l) => l.from === 'item' && l.app === focus.app && l.id === focus.b.id)}
             busy={busy}
           />
         ) : (
@@ -340,7 +377,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         </div>
         <p className="chat-foot muted">
           Name another project in a message to talk about it instead.
-          {remaining !== null && ` ${remaining} replies left today.`}
+          {remaining !== null && ` ${remaining} replies left today.`}{' '}
+          {/* His 19:04Z note: Kit decides what is worth noting; this only asks it to. */}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => void send(`Please add what we have agreed in this chat as a note on ${label(app)}.`)}
+            disabled={busy || !lines.some((l) => l.from === 'user' && !l.local)}
+          >
+            Ask Kit to note this chat
+          </Button>
         </p>
         {error && <p role="alert">{error}</p>}
       </div>
@@ -348,56 +395,6 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           above the docked box rather than under it. */}
       <div ref={end} aria-hidden="true" className="chat-end" />
     </section>
-  )
-}
-
-/**
- * BEH-CHAT-3: what a message can become. Either side's message about the item in hand can be posted as
- * his answer to it; an agent reply can also be saved as a note on the project it was about, which is how
- * new spec reaches the agent today.
- */
-function MessageActions({
-  line,
-  focus,
-  onAnswered,
-}: {
-  line: Line & { from: 'user' | 'agent' }
-  focus: InboxCard | null
-  onAnswered: (c: InboxCard, how: Acted, undo: () => Promise<unknown>) => void
-}) {
-  // Only for the item that was in hand when the message was sent: once it is answered, the next item's
-  // question is a different one, and these words were not about it.
-  const forItem = focus && focus.app === line.app && focus.b.id === line.item ? focus : null
-  const answer = useWrite(() => forItem && onAnswered(forItem, 'answered', () => dismissAnswer(forItem.app, forItem.b.id, line.text)))
-  const note = useWrite(() => {})
-  if (!forItem && line.from === 'user') return null
-  return (
-    <div className="chat-actions">
-      {forItem && (
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => answer.run(() => leaveNote(forItem.app, line.text, forItem.b.id))}
-          disabled={answer.write.state === 'saving'}
-        >
-          Post as my answer
-        </Button>
-      )}
-      {line.from === 'agent' && (
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => note.run(() => leaveNote(line.app, line.text))}
-          disabled={note.write.state === 'saving' || note.write.state === 'wrote'}
-        >
-          {note.write.state === 'wrote' ? 'Saved as a note' : `Save as a note on ${line.app}`}
-        </Button>
-      )}
-      {answer.write.state === 'refused' && <WriteFeedback write={answer.write} />}
-      {note.write.state === 'refused' && <WriteFeedback write={note.write} />}
-    </div>
   )
 }
 
@@ -411,20 +408,35 @@ const ACTED: Record<Acted, { said: string; told: string }> = {
 }
 
 /**
- * Undoes a posted answer (BEH-CHAT-6): dismisses the newest note on the item with exactly those words. Git
- * history keeps it, as for any dismissed note. Refused when it is no longer there to dismiss.
+ * Undoes a posted answer, or with no `id` a note on the project (BEH-CHAT-6): dismisses the newest note on
+ * the item (or the newest with no behaviour) with exactly those words. Git history keeps it, as for any
+ * dismissed note. Refused when it is no longer there to dismiss.
  */
-async function dismissAnswer(app: string, id: string, text: string): Promise<unknown> {
+async function dismissAnswer(app: string, id: string | null, text: string): Promise<unknown> {
   const { notes } = await fetchNotes(app)
   // Compared with spacing evened out, as the notes file may rewrap what was posted.
   const flat = (s: string) => s.replace(/\s+/g, ' ').trim()
-  const index = notes.map((n) => n.behaviour === id && flat(n.text) === flat(text)).lastIndexOf(true)
-  if (index < 0) throw new Error('the answer is no longer among the notes, so there is nothing to dismiss')
+  const on = (n: { behaviour?: string | null }) => (id === null ? !n.behaviour : n.behaviour === id)
+  const index = notes.map((n) => on(n) && flat(n.text) === flat(text)).lastIndexOf(true)
+  if (index < 0) throw new Error('the note is no longer among the notes, so there is nothing to dismiss')
   return dismissNote(app, index, notes[index].at)
 }
 
 /** The most of an item's question the agent is told inline; the whole card is in its context anyway. */
 const MAX_TOLD = 500
+
+/** The item in the thread, with what the agent is told of it (his 19:04Z note). */
+function itemLine(card: InboxCard): Line {
+  const ask = askOf(card)
+  const tell = `[In view now: ${card.b.id} "${card.b.title}"${ask ? `, asking: ${ask.slice(0, MAX_TOLD)}` : ''}]`
+  return { from: 'item', app: card.app, id: card.b.id, title: card.b.title, ask, tell }
+}
+
+/** His 19:28Z note: what Kit is, and that the chat changes nothing itself. */
+const HELP =
+  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, or save what you agree as a note. Notes are also a quick brain-dump."
+const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
+const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())
 
 /** What an item is asking him, in words. */
 function askOf({ b }: InboxCard): string | null {
@@ -438,20 +450,17 @@ function askOf({ b }: InboxCard): string | null {
 }
 
 /**
- * BEH-CHAT-2/3: the item in hand, shown from the start rather than behind a click. It says what it is
- * asking; Approve and "Skip to next item" are the Inbox's own writes, and either brings up the next item.
- * Once he has replied about it, the item itself is in the thread (his 17:52Z note), so here it shrinks to
- * its title and the two buttons.
+ * BEH-CHAT-2/3: the item in hand. The item itself, with what it asks, is in the thread from the moment it is
+ * in hand (his 19:04Z note), so here it is only its title and the two buttons: Approve and "Skip to next
+ * item" are the Inbox's own writes, and either brings up the next item.
  */
 function Focus({
   card,
   onDone,
-  inThread,
   busy,
 }: {
   card: InboxCard
   onDone: (how: Acted, undo?: () => Promise<unknown>) => void
-  inThread: boolean
   // While a reply is on its way the agent may act on this item itself, so its buttons wait (BEH-CHAT-6).
   busy: boolean
 }) {
@@ -459,16 +468,13 @@ function Focus({
   // The card as loaded is its state before this chat touched it, which is what an undo puts back.
   const { write, run } = useWrite(() => onDone('approved', () => setReview(app, b.id, b.review.state as ReviewState, b.review.note)))
   const saving = write.state === 'saving'
-  const ask = askOf(card)
 
   return (
     <div className="chat-focus" data-testid="chat-in-hand">
-      {!inThread && <p className="muted chat-focus-lead">Top of your stack. Reply to answer it, or talk about other work.</p>}
       <p className="chat-focus-title">
         <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`}>{b.title}</Link>{' '}
         <span className="muted id">{b.id}</span>
       </p>
-      {ask && !inThread && <p className="chat-focus-ask">{ask}</p>}
       <div className="badges">
         <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving || busy}>
           Approve
