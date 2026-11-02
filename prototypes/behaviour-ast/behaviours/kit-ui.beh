@@ -2351,6 +2351,9 @@ behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already i
   contract "When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it" (kit.notes.md#2026-11-02-1752)
   contract built (17:52Z note): when he first sends a message while an item is in hand, the item goes into the thread just above it, and the agent's copy of that message starts with "[In view now: <id> "<title>", asking: …]"; the dock then keeps only the item's title and buttons
   contract my assumption: opening the chat sends nothing, so it spends nothing until he types
+  contract "Top of ur stack should appear in the messages order. Upon request kit can spit it out again" (kit.notes.md#2026-11-02-1904)
+  contract built (19:04Z note, replacing the 17:52Z placing): the item in hand is in the thread as soon as it is in hand: on open, after a project change, after Kit's "Next up", and after an undo brings it back, unless it is already the latest item there. The dock keeps only its title, Approve and "Skip to next item". Asked to, the agent shows it again (show_item, BEH-CHAT-6)
+  contract my assumption: while a reply is on its way no item comes in, so after a message that names another project, that project's item follows the reply rather than landing mid-turn
 
 behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, and new spec is left as a note"
   in FEAT-CHAT
@@ -2362,14 +2365,14 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   when opens page:KitChat
   then sees region:KitMain
   contract "Then you can get on with discussing or marking off items as we go"
-  contract built (14:12Z note): the item in hand has Approve and Skip, the Inbox's own writes. Any message about it, his or the agent's, can be posted as his answer with "Post as my answer". After any of them the next item comes up
-  contract my assumption: "Post as my answer" is offered only on messages sent while that item was in hand, so words about one item never post as the answer to the next
-  contract my assumption: a message that moves the chat by naming another project is not about that project's item, which he has not seen yet, so it neither goes with the turn nor posts as its answer
-  contract built: an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
+  contract built (14:12Z note): the item in hand has Approve and Skip, the Inbox's own writes. After either the next item comes up
+  contract my assumption: a message that moves the chat by naming another project is not about that project's item, which he has not seen yet, so it does not go with the turn
+  contract "Also the buttons post as answer or post as note under it's not clear what this is doing is this just that one chat bubble? Can we just delegate this responsibility straight to kit, maybe with a quick button which is something along the lines of ask kit to add the context of this chat as a note. Or maybe Kit can figure out when this appropriate and prompt the user" (kit.notes.md#2026-11-02-1904)
+  contract built (19:04Z note): the per-message "Post as my answer" and "Save as a note" buttons are gone. One button by the message box, "Ask Kit to note this chat", asks the agent to save what the chat agreed as a note on the project, and the agent itself offers to when he has defined new spec; it saves with save_note (BEH-CHAT-6), and Kit's line shows the note with an Undo. Answers go through the agent's answer_item
   contract "In chat, skip is not the clearest maybe it needs to be skip to next item. Skip might get confused with a dismiss action as it currently is" (kit.notes.md#2026-11-02-1748)
   contract built (17:48Z note): the button says "Skip to next item"; the item stays waiting in Kit and only leaves this chat
   contract "Once acted on an item a similar prompt should come up from kit, here's the next item or we can discuss new spec blah balh" (kit.notes.md#2026-11-02-1754)
-  contract built (17:54Z note): after Approve, Skip or Post as my answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
+  contract built (17:54Z note): after Approve, Skip or an answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2413,6 +2416,38 @@ behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself 
   contract built: while a reply is on its way the item's Approve and Skip wait, so the agent and he never act on it twice; an action that finds no item in hand does nothing and Kit says so
   contract my assumption: an Undo puts back the review as the chat loaded it; a change made to the item elsewhere in the meantime would be overwritten, which I judged rare enough for now
   contract my assumption: an action the agent takes is reversible but not confirmed first, because he asked for it to act rather than suggest; "never act on a guess, ask if unsure" is in its instructions
+  contract "Currently I don't see kit actioning approve for me" (kit.notes.md#2026-11-02-1904)
+  contract my assumption: the likeliest cause is the agent saying it acted without calling the tool, as nothing is logged to tell; its instructions now say only a tool call does anything and never to claim an action it did not call, and it is told its whole toolset (BEH-CHAT-7). If it still happens, I would add a check that a reply claiming an action carries one
+  contract built (19:04Z note): two more tools, show_item (the item in hand into the thread again) and save_note (a note on the project in his words, with no item needed); Undo on a saved note dismisses it
+  contract built: the agent's words never stand alone claiming what was not done. A write the server refuses gets Kit's line "That did not go through, so nothing was done", and the agent is told; an action asked for and not done (a second in one reply, or one without its words) is said under the reply
+
+behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explains it when asked"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-02-1854
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Chat should be well aware of its own capabailities"
+  contract "Might be good to give the chat a help function which explains what kit is explains that the chat does not make changes for you. You discuss and define specific with the chat and a coding agent works in the background to implement features and keep your app up to date with the spec you write." (kit.notes.md#2026-11-02-1928)
+  contract built: the agent's instructions say what Kit is, that the chat changes no code, that a coding agent builds the spec in the background, and every tool it has; asked what it can do, it says so
+  contract built: a "What can Kit do?" button in the chat's header, or a message that is just "help" or "/help", puts Kit's own help line in the thread. It asks no model and spends no reply, and the agent is not told of it
+  contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
+
+behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
+  in FEAT-CHAT
+  layer technical
+  source defined kit.notes.md#2026-11-02-1855
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Maybe backlog of this is technically difficult but chat should be able to read the spec of the project that it is answering for"
+  contract built: both the Chat page and the Inbox's Talk it through offer the agent read_spec, which returns whole cards (an epic, feature or behaviour, every contract) by id from the outline it already has, at most ten a time and 20,000 characters; it may read twice in one reply, then must answer
+  contract my assumption: cards on demand rather than the whole spec in every turn, because kit-ui's spec alone is about 190,000 characters and each turn would pay for it; a read is one more request on the same reply, not another of his daily replies
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". Nothing here is built.
@@ -2473,6 +2508,268 @@ behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is 
   then sees region:KitMain
   contract "With smaller scale this is easier right the agent can identify compared to the top level readme or soemthing or a kit overview or something. But with scale this is harder, have to think of some way to index the spec well so that we can identify similar features quickly. Or maybe verb matching or semantic meaning checks. Maybe some vectorisation of the spec happens for each dev snapshot and it is stored in the repo so the agent can easily identify similar behaviour. Idk needs more design but you see the direction I am heading with this"
   contract my assumption: this needs design before it is built; verb matching on the existing parse comes before any vector index, since it costs nothing to run
+
+# His 2026-11-02 18:54Z to 20:27Z notes, filed as backlog. Every behaviour below is an
+# unreviewed suggestion in Proposed; none is built, and none is a priority over getting
+# ready for users.
+
+feature FEAT-CHAT-TRANSCRIPTS "His own chats are kept for his videos, away from the repo"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-TRANSCRIPT-1 "His Chat transcripts are saved to a dedicated volume, outside the repo, and never for other users"
+  in FEAT-CHAT-TRANSCRIPTS
+  layer technical
+  source defined kit.notes.md#2026-11-02-1854
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Does the chat get logged or saved at all when chatting with Kit? I am thinking this could have great value with the kit chat videos, however it could blow up the repo size."
+  contract "Do you think it would be good to dedicate a volume to this for personal chat saving. Probably no need to save chats for users"
+  contract my assumption: only his own session's chats are written, one file per conversation on the volume, readable only by him; nothing is committed to any repo and nothing is saved for a tester
+
+feature FEAT-SECURITY-AGENT "A security agent audits the code and files tickets"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SECAGENT-1 "A security agent is switched on or off in Settings, audits a project's code and files tickets for what it finds"
+  in FEAT-SECURITY-AGENT
+  layer ux
+  source defined kit.notes.md#2026-11-02-1857
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Kit backlog feature - a security agent. An agent that can be switched on and off in settings which can do an audit on the code base and flag any security issues and create tickets to address them."
+  contract my assumption: off by default, because an audit spends; each finding becomes an unreviewed item on the project's board rather than a change to the code
+
+feature FEAT-CUSTOM-AGENTS "Custom agents with objectives the user sets"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent, run with objectives and goals the user configures"
+  in FEAT-CUSTOM-AGENTS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1857
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "On this point a later backlog feature could be various custom agents. Kit health agent, QA agent with configurable objectives and goals."
+  contract my assumption: the security agent (BEH-SECAGENT-1) is the first of these, and the others reuse its switch in Settings and its way of filing tickets
+
+feature FEAT-HOOKS-OUT "Kit triggers external integrations"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-HOOKOUT-1 "Kit can trigger an external integration when something happens in a project"
+  in FEAT-HOOKS-OUT
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Another later backlog feature would be maybe hooks where kit can trigger external integrations"
+  contract "Anyway this is probably three different features please separate and file for me."
+  contract my assumption: this is the outbound half, Kit calling out on an event such as an item approved or a build finished; inbound (FEAT-HOOKS-IN) and reading external data (FEAT-EXTERNAL-DATA) are separate features
+
+feature FEAT-HOOKS-IN "External integrations trigger Kit"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-HOOKIN-1 "An external integration can trigger Kit"
+  in FEAT-HOOKS-IN
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "and even some way that external integrations can trigger kit"
+  contract my assumption: this is the inbound half, an outside system starting something in Kit with a credential the user issues in Settings; what it may start is for him to decide, and it is a public-facing surface so it needs his review before it is built
+
+feature FEAT-EXTERNAL-DATA "Kit reads external data sources"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a log trigger"
+  in FEAT-EXTERNAL-DATA
+  layer technical
+  source defined kit.notes.md#2026-11-02-1859
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers."
+  contract my assumption: a log trigger would raise an item on the project when a pattern appears, and it needs the project's integrations page (BEH-PROJCONF-1) to hold the credentials it reads with
+
+behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the coding agent files"
+  in FEAT-NOTES
+  layer ux
+  source defined kit.notes.md#2026-11-02-1905
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it."
+  contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
+
+feature FEAT-TOUR "An onboarding tour shows a new user around"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour before Kit goes to production"
+  in FEAT-TOUR
+  layer ux
+  source defined kit.notes.md#2026-11-02-1928
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now"
+  contract my assumption: the tour can be skipped and replayed from Settings, and the help in Chat explains the same ideas in words
+
+feature FEAT-SPLASH "A splash page for production Kit, with a register-interest page"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interest page, served from the preprod cluster for now"
+  in FEAT-SPLASH
+  layer ux
+  source defined kit.notes.md#2026-11-02-2015
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "We should probably have a splash page for the production kit, with a register interest page."
+  contract "We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit."
+  contract my assumption: this is public-facing, so its wording and design wait for his approval before anything is published
+
+feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-PROJCONF-1 "Each project has an integrations page where its user configures secrets and integrations such as a database or API keys"
+  in FEAT-PROJECT-CONFIG
+  layer ux
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit backlog: some integration page or config page for projects where users can configure secrets and integrations such as db or api keys."
+  contract my assumption: this builds on the per-user production secrets (FEAT-USER-SECRETS), and a secret is shown once and never read back
+
+behaviour BEH-PROJCONF-2 "Migrations against a user's production database are limited to preprod at first, or come with strong disclosure"
+  in FEAT-PROJECT-CONFIG
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "With this we will need to think about migration strategies when hooked up to users production databases, maybe at first we should only handle migrations on preprod servers."
+  contract "Or maybe we should have some strong disclosure or something where we heavily recommend that users manage their own production dbs and we take no responsibility if migrations cause data loss or db corruption or something."
+  contract my assumption: until he decides, Kit runs migrations on preprod only; a production database is never migrated by Kit without the disclosure having been shown and accepted
+
+feature FEAT-LITE-APPS "A lite hosted version of a user's app, with fake data"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no integrations, fake data of the right shape, and an in-memory database seeded with start data"
+  in FEAT-LITE-APPS
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "host some really light version of there app maybe call it a lite version where there are no integrations, external dependencies mostly return bogus faker data or something but of the correct shape, and maybe these pods spin up with an in memory db which is injected with some start data to enable basic use and testing."
+  contract "Here we wouldnt need a block volume or anything just a really cheap dotnet and react pod."
+  contract my assumption: this is the stage before a user sets up a database, and a restart loses whatever was entered
+
+behaviour BEH-LITE-2 "A lite version can optionally use a test database and test integrations, so data survives pod restarts"
+  in FEAT-LITE-APPS
+  layer technical
+  source defined kit.notes.md#2026-11-02-2022
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Maybe they can have the option to setup a test db and test integrations so that they get more accurate ux for testing and also data persistence between pod restarts."
+  contract my assumption: the test database and integrations are set up on the project's integrations page (BEH-PROJCONF-1), separate from anything production
+
+feature FEAT-PROJECT-SPACES "Everything in Kit is organised by project"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, board and config, beside global entry, inbox and settings"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "there might be value in restructuring kit such that everything is organised by project. I think maybe the inventory might be worth having globally maybe with a take to chat button to take you to the chat within that project."
+  contract "I kind of feel like each project should be quite isolated in kit. Kind of like in git how there is a entry page, there is an inbox, there is global settings and configuration and then there is a repo with the repo code, with the config, the gh actions etc."
+  contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
+
+behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item."
+  contract my assumption: the message appears only when the project has no item for him, and the jump goes to the project with his most recent item
+
+behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the user to the global board that shows everything"
+  in FEAT-PROJECT-SPACES
+  layer ux
+  source defined kit.notes.md#2026-11-02-2027
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
+  contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES

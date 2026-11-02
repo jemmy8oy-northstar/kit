@@ -3,13 +3,14 @@ import type { TriageMessage } from './api/types'
 /**
  * A line on the Chat page (BEH-CHAT-1): his or the agent's, each with the project and the item in hand it
  * was about; the note that the chat moved to another project (`named` when he named it in a message
- * rather than picking it); the item itself, placed where he first replied about it (his 17:52Z note); or
+ * rather than picking it); the item itself, in the thread as soon as it is in hand (his 19:04Z note); or
  * Kit's own line after he acted on an item (his 17:54Z note), with the way to undo it while it can be
  * (BEH-CHAT-6). An item or Kit line carries `tell`, what the agent is told about it, at the head of his next
- * message, so it reads the chat in the order he saw it.
+ * message, so it reads the chat in the order he saw it. A `local` user line (he typed "help", his 19:28Z
+ * note) is answered by the page alone: the agent never sees it, and it is not his last message to it.
  */
 export type Line =
-  | { from: 'user'; text: string; sent: string; app: string; item: string | null }
+  | { from: 'user'; text: string; sent: string; app: string; item: string | null; local?: boolean }
   | { from: 'agent'; text: string; app: string; item: string | null }
   | { from: 'switch'; app: string; named?: boolean }
   | { from: 'item'; app: string; id: string; title: string; ask: string | null; tell: string }
@@ -17,8 +18,9 @@ export type Line =
 
 /** What the agent has not yet been told: the `tell` of every item or Kit line since his last message. */
 export function untold(lines: Line[]): string[] {
-  const last = lines.map((l) => l.from).lastIndexOf('user')
-  return lines.slice(last + 1).flatMap((l) => (l.from === 'item' || l.from === 'kit' ? [l.tell] : []))
+  const last = lines.map((l) => (l.from === 'user' && l.local ? 'local' : l.from)).lastIndexOf('user')
+  // An empty tell is a line the agent need not hear of (the help text).
+  return lines.slice(last + 1).flatMap((l) => ((l.from === 'item' || l.from === 'kit') && l.tell !== '' ? [l.tell] : []))
 }
 
 /** The server's limits (KitRouter.Triage.cs): at most 40 turns, each at most 4000 characters. */
@@ -31,7 +33,7 @@ export const MAX_TEXT = 4000
  */
 export function toMessages(lines: Line[]): TriageMessage[] {
   const all = lines.flatMap((l): TriageMessage[] =>
-    l.from === 'user' ? [{ from: 'user', text: l.sent }] : l.from === 'agent' ? [{ from: 'agent', text: l.text.slice(0, MAX_TEXT) }] : [],
+    l.from === 'user' && !l.local ? [{ from: 'user', text: l.sent }] : l.from === 'agent' ? [{ from: 'agent', text: l.text.slice(0, MAX_TEXT) }] : [],
   )
   return all.slice(-(MAX_TURNS - 1))
 }

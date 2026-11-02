@@ -322,9 +322,142 @@ public class TriageTests
 
         var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
         Assert.Equal(
-            ["approve_item", "deny_item", "answer_item", "undo_last"],
+            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note"],
             sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.False(sent[1].TryGetProperty("tools", out _));
+    }
+
+    // ---- it knows what it can do (BEH-CHAT-7), reads the spec (BEH-CHAT-8), shows and notes (BEH-CHAT-6) ---
+
+    [Fact]
+    public void A_note_needs_no_item_in_hand_but_showing_the_item_does()
+    {
+        var note = Router(new FakeModel("Saved.", new TriageAction("note", "He sees a help line."))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "note that")));
+        Assert.Equal(new TriageAction("note", "He sees a help line."), Assert.IsType<TriageAnswer>(note.Body).Action);
+
+        var show = Router(new FakeModel("Here it is.", new TriageAction("show"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "show it again")));
+        Assert.Null(Assert.IsType<TriageAnswer>(show.Body).Action);
+        var shown = Router(new FakeModel("Here it is.", new TriageAction("show"))).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "show it again")));
+        Assert.Equal(new TriageAction("show"), Assert.IsType<TriageAnswer>(shown.Body).Action);
+    }
+
+    [Fact]
+    public void Showing_and_noting_read_as_actions_and_a_note_with_no_words_is_dropped()
+    {
+        Assert.Equal(new TriageAction("show"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"show_item","input":{}}]}""").Action);
+        Assert.Equal(new TriageAction("note", "a b"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"save_note","input":{"text":" a b "}}]}""").Action);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"save_note","input":{"text":"  "}}]}""").Text);
+    }
+
+    [Fact]
+    public void An_action_asked_for_and_not_done_is_said_so_the_words_never_claim_it()
+    {
+        var two = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Approved, and noted."},{"type":"tool_use","id":"a","name":"approve_item","input":{}},{"type":"tool_use","id":"b","name":"save_note","input":{"text":"x"}}]}""");
+        Assert.Equal(new TriageAction("approve"), two.Action);
+        Assert.Equal($"Approved, and noted.\n\n{AnthropicTriageChat.Dropped(1)}", two.Text);
+
+        var wordless = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Denied."},{"type":"tool_use","id":"a","name":"deny_item","input":{}}]}""");
+        Assert.Null(wordless.Action);
+        Assert.EndsWith(AnthropicTriageChat.Dropped(1), wordless.Text, StringComparison.Ordinal);
+
+        // A tool that is not an action (read_spec, or one it was never offered) is not one dropped.
+        Assert.Equal("Hi.", AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Hi."},{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":[]}}]}""").Text);
+        Assert.Contains("2 actions asked for here were not done", AnthropicTriageChat.Dropped(2), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Both_chats_hand_the_model_a_reader_of_their_own_projects_spec()
+    {
+        var model = new FakeModel("ok");
+        var router = Router(model);
+
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "a"))).Status);
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/triage", body: Turn("BEH-GATE-2", ("user", "b"))).Status);
+
+        Assert.All(model.Readers, r => Assert.StartsWith("behaviour BEH-GATE-2 ", r!(["BEH-GATE-2"]), StringComparison.Ordinal));
+        Assert.Equal(2, model.Readers.Count);
+    }
+
+    [Fact]
+    public void Reading_the_spec_gives_whole_cards_of_any_kind_and_names_a_missing_one()
+    {
+        const string corpus = "epic EPIC-A \"an epic\"\n  stage problem\n\nfeature FEAT-A \"a feature\"\n  in EPIC-A\n\nbehaviour BEH-A-1 \"one\"\n  in FEAT-A\n  contract \"his words\"\n\nbehaviour BEH-A-10 \"ten\"\n";
+
+        var read = TriageContext.Read(corpus, ["BEH-A-1", "FEAT-A", "EPIC-A", "BEH-NONE", "BEH-A-1"]);
+
+        Assert.Equal(
+            "behaviour BEH-A-1 \"one\"\n  in FEAT-A\n  contract \"his words\"\n\nfeature FEAT-A \"a feature\"\n  in EPIC-A\n\nepic EPIC-A \"an epic\"\n  stage problem\n\nBEH-NONE: no card with this id in the spec",
+            read);
+        Assert.DoesNotContain("ten", read, StringComparison.Ordinal);
+        Assert.Equal("no ids were given", TriageContext.Read(corpus, []));
+
+        var huge = $"behaviour BEH-B \"b\"\n  contract \"{new string('x', TriageContext.MaxRead)}\"\n";
+        Assert.EndsWith("ask for fewer cards at a time)", TriageContext.Read(corpus + huge, ["BEH-A-1", "BEH-B"]).TrimEnd(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything()
+    {
+        Assert.Contains("a coding agent works in the background", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("only a tool call does it", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("offer to save it as a note, and call save_note", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        foreach (var tool in AnthropicTriageChat.Tools().Select(t => (string)t!["name"]!).Append("read_spec"))
+        {
+            Assert.Contains(tool, TriageContext.ChatInstructions, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public async Task The_client_reads_the_cards_asked_for_and_asks_again_with_them()
+    {
+        var api = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"Let me look."},{"type":"tool_use","id":"r1","name":"read_spec","input":{"ids":["BEH-A"," "]}}]}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"It says blue."}]}"""));
+        var chat = new AnthropicTriageChat(new HttpClient(api), ApiKey);
+        var asked = new List<IReadOnlyList<string>>();
+
+        var reply = await chat.ReplyAsync("THE PROJECT", [new TriageTurn(true, "what does BEH-A say?")], read: ids =>
+        {
+            asked.Add(ids);
+            return "behaviour BEH-A \"blue\"";
+        });
+
+        Assert.Equal("It says blue.", reply.Text);
+        Assert.Equal([["BEH-A"]], asked);
+        var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
+        Assert.Equal(2, sent.Count);
+        Assert.Equal(["read_spec"], sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        var messages = sent[1].GetProperty("messages");
+        Assert.Equal(["user", "assistant", "user"], messages.EnumerateArray().Select(m => m.GetProperty("role").GetString()));
+        Assert.Equal("read_spec", messages[1].GetProperty("content")[1].GetProperty("name").GetString());
+        var result = messages[2].GetProperty("content")[0];
+        Assert.Equal("tool_result", result.GetProperty("type").GetString());
+        Assert.Equal("r1", result.GetProperty("tool_use_id").GetString());
+        Assert.Equal("behaviour BEH-A \"blue\"", result.GetProperty("content").GetString());
+    }
+
+    [Fact]
+    public async Task The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once()
+    {
+        const string reading = """{"content":[{"type":"text","text":"Still reading."},{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":["BEH-A"]}}]}""";
+        var api = new FakeGitHub(Enumerable.Range(0, AnthropicTriageChat.MaxReads + 2).Select(_ => FakeGitHub.Json(HttpStatusCode.OK, reading)).ToArray());
+        var reads = 0;
+
+        var reply = await new AnthropicTriageChat(new HttpClient(api), ApiKey).ReplyAsync("P", [new TriageTurn(true, "hi")], read: _ => $"card {++reads}");
+
+        Assert.Equal(AnthropicTriageChat.MaxReads + 1, api.Sent.Count);
+        Assert.Equal(AnthropicTriageChat.MaxReads, reads);
+        Assert.Equal("Still reading.", reply.Text);
+
+        // The last round lets no tool be called, so the model answers in words rather than asking to read again.
+        var choices = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement.TryGetProperty("tool_choice", out var c) ? c.GetProperty("type").GetString() : null).ToList();
+        Assert.Equal([.. Enumerable.Repeat<string?>(null, AnthropicTriageChat.MaxReads), "none"], choices);
+
+        // A read asked alongside an action is not done: the action is the answer, with no second request.
+        var both = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":["BEH-A"]}},{"type":"tool_use","id":"a","name":"approve_item","input":{}}]}"""));
+        var acted = await new AnthropicTriageChat(new HttpClient(both), ApiKey).ReplyAsync("P", [new TriageTurn(true, "approve")], actions: true, read: _ => throw new InvalidOperationException("not read"));
+        Assert.Equal(new TriageAction("approve"), acted.Action);
+        Assert.Single(both.Sent);
     }
 
     // ---- the real client, against a scripted API -------------------------------------------------
@@ -434,13 +567,17 @@ public class TriageTests
         /// <summary>Whether each call offered the model its actions (BEH-CHAT-6).</summary>
         public List<bool> Offered { get; } = [];
 
+        /// <summary>The spec reader each call was handed (his 18:55Z note).</summary>
+        public List<Func<IReadOnlyList<string>, string>?> Readers { get; } = [];
+
         public string Model => "fake-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, CancellationToken cancellationToken = default)
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, Func<IReadOnlyList<string>, string>? read = null, CancellationToken cancellationToken = default)
         {
             Calls.Add((context, turns.ToList()));
             Instructions.Add(instructions);
             Offered.Add(actions);
+            Readers.Add(read);
             return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action));
         }
     }
@@ -449,7 +586,7 @@ public class TriageTests
     {
         public string Model => "throwing-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, CancellationToken cancellationToken = default) =>
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, Func<IReadOnlyList<string>, string>? read = null, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("unforeseen");
     }
 

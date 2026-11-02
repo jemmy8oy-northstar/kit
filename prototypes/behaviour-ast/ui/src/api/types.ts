@@ -625,12 +625,17 @@ export interface TriageAnswer {
   action?: TriageAction
 }
 
-/** BEH-CHAT-6: approve, deny or answer the item in hand (deny and answer with his words), or undo the last. */
+/**
+ * BEH-CHAT-6: approve, deny or answer the item in hand (deny and answer with his words), undo the last, show
+ * the item in hand again, or save a note on the project (not tied to the item; his 19:04Z note).
+ */
 export type TriageAction =
   | { kind: 'approve'; text?: null }
   | { kind: 'undo'; text?: null }
   | { kind: 'deny'; text: string }
   | { kind: 'answer'; text: string }
+  | { kind: 'note'; text: string }
+  | { kind: 'show'; text?: null }
 
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
 export interface AgentSchedule {
