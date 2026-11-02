@@ -556,3 +556,7 @@ Chat with chat
 ## 2026-11-02 18:54Z
 
 Chat should be well aware of its own capabailities
+
+## 2026-11-02 18:55Z
+
+Maybe backlog of this is technically difficult but chat should be able to read the spec of the project that it is answering for
