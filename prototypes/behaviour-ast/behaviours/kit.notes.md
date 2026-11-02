@@ -508,3 +508,13 @@ Then the user can just get on with chatting. The ai will then infer which route 
 ## 2026-11-02 17:41Z
 
 Can you enable some features for testers. I guess we will need them working as well but I think the projects page the boards the inbox and settings is a good place to start right?
+
+## 2026-11-02 17:47Z
+
+We need to start improving the robustness of kit, flagging when features conflict and being able to resolve this. I think a good non blocking conflict is building the feature anyway when specs conflict and then letting the user confirm or deny when approving.
+
+Maybe the settings page needs some way of configuring conflicting behaviour. Whether it merges anyway asks for confirmation or doesn’t work until the conflict is resolved. The code agent can provide context to the triage/chat agent which can help resolve with the user. I think it is important to be able to configure it not to implement before resolution because that would obviously incur more spend which the user might not want.
+
+Backlog ideas, priority is still getting ready for users. The triage agent is able to identify conflicts. With smaller scale this is easier right the agent can identify compared to the top level readme or soemthing or a kit overview or something. But with scale this is harder, have to think of some way to index the spec well so that we can identify similar features quickly. Or maybe verb matching or semantic meaning checks. Maybe some vectorisation of the spec happens for each dev snapshot and it is stored in the repo so the agent can easily identify similar behaviour. Idk needs more design but you see the direction I am heading with this.
+
+The chat agent being able to identify conflicts is ideal, this is the least disruptive means the user can identify and unblock during proposal rather than having to do an entirely separate resolution round then potentially waiting again before it gets merged.
