@@ -2221,7 +2221,7 @@ behaviour BEH-NARR-3 "The agent's shared rules tell it how to steer a user towar
 
 feature FEAT-SPEC-AGENT "A spec agent that talks the project through with the user and writes no code"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit projects with test health, or is offered a new one"
   in FEAT-USER-SIGNUP
@@ -2287,7 +2287,7 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 2
-  pending
+  needs-context "Merge kit#620, the helm change that hands Kit the kit-anthropic key, then open a card in the Inbox and tap Talk it through. If you leave it, the chat stays switched off and nothing is spent."
   actor engineer
   when opens page:KitInbox
   then sees region:KitMain
@@ -2295,6 +2295,11 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   contract "Having a page where all of this spec work is triaged or consulted via a non coder agent… the user can discuss just like I can with gemini as a first step before the coder agent takes a look"
   contract my assumption: this is the next thing he named, so it is the first spec-agent card to build: a chat beside an Inbox item that knows the card, its project's spec and the question, and whose agreed answer is written back as the reply
   contract my assumption: it needs a model API key and a spend cap set by him first, the same gate as BEH-USERS-9, so the page is built switched off until both are set
+  contract "I have added a kit-anthropic secret with the key Anthropic__ApiKey to unblock the creation of the triage chat. Let's use haiku for this" (kit.notes.md#2026-11-02-1204)
+  contract built: every card in the Inbox has "Talk it through", which opens a chat with the spec agent on claude-haiku-5-5. It knows the card as the corpus writes it and every epic, feature and behaviour title in the project, and it writes nothing: "Use as my words" puts a reply in the card's own box, and his Answer, Comment or Deny posts it
+  contract my assumption: the chat lives in the page only and is sent whole each turn, so closing the card forgets it; keeping chats is for when the spec agent writes spec itself (BEH-SPECAGENT-1)
+  contract my assumption on the spend cap he has not set: 100 replies a day per server (KIT_TRIAGE_DAILY_LIMIT changes it, 0 switches it off), each at most 1024 tokens out, with the card cached. My estimate, not a measurement: about a cent a reply on Haiku, so at most about a dollar a day
+  contract my assumption: without the key the Inbox shows no chat at all, and a reply that fails costs nothing from the day's allowance
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES
