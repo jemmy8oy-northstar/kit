@@ -534,3 +534,7 @@ When replying to the default action or just when replying in general this item s
 ## 2026-11-02 17:53Z
 
 Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon
+
+## 2026-11-02 17:54Z
+
+Once acted on an item a similar prompt should come up from kit, here’s the next item or we can discuss new spec blah balh
