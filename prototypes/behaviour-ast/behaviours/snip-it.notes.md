@@ -103,3 +103,11 @@ Let’s pause for now I don’t have any footage to add yet. But when I do we ca
 ## 2026-11-02 18:50Z
 
 Snip it idea. I was saying about being blocked on filming. I am finding it difficult to film and release content. I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos! Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that. And if we can refine this pipeline we could pump out videos. I think first step is identifying some good candidates for this style of video. Let’s try produce something quality before we post anything. I think this can help well with our kit marketing as well. Thoughts?
+
+## 2026-11-02 19:13Z · FEAT-BUILD-CHANNEL
+
+Just some more context on here, this doesn’t have to be one feature per video specifically, it could be a collection and then all grind implemented together. You are also given (within reason) a bit of creative license to edit the messages to cut down fluff or improve wording etc. We will probably also need some disclaimer to show not actual kit use or not exact example or something but these could go in the description.
+
+Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature. 
+
+Yh u get the idea. Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this. I think this is a good plan
