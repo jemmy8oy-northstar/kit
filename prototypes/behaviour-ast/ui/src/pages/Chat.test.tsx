@@ -106,7 +106,8 @@ describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
 
     await say('hello', 'reply 1')
     expect(chats()[0][0]).toBe('/api/projects/alpha/chat')
-    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: '[Now talking about alpha] hello' }])
+    const first = '[Now talking about alpha] [In view now: A-ASK "title of A-ASK", asking: Which colour?] hello'
+    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: first }])
 
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     expect(screen.getByText('Now talking about beta.')).toBeTruthy()
@@ -115,7 +116,7 @@ describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
 
     expect(chats()[1][0]).toBe('/api/projects/beta/chat')
     expect(chats()[2][1].messages).toEqual([
-      { from: 'user', text: '[Now talking about alpha] hello' },
+      { from: 'user', text: first },
       { from: 'agent', text: 'reply 1' },
       { from: 'user', text: '[Now talking about beta] and here?' },
       { from: 'agent', text: 'reply 2' },
@@ -240,7 +241,10 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     expect(screen.queryByTestId('chat-in-hand')).toBeNull()
     expect(screen.getByTestId('chat-nothing').textContent).toContain('Nothing is waiting on you in beta')
-    fireEvent.click(screen.getByRole('button', { name: /^Next waiting: .*\(alpha\)$/ }))
+    // His 17:50Z note: the project comes first, so the preview is not read as being about this one.
+    const next = screen.getByRole('button', { name: /next waiting is/ })
+    expect(next.textContent).toBe('alpha: next waiting is “title of A-ASK”')
+    fireEvent.click(next)
     expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('alpha')
     expect(screen.getByTestId('chat-in-hand')).toBeTruthy()
     vi.unstubAllGlobals()
@@ -248,7 +252,7 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
 
     mockApi(undefined, undefined, { beta: [beh('B-DONE')] })
     await open()
-    expect(screen.getByTestId('chat-nothing').textContent).not.toContain('Next waiting')
+    expect(screen.getByTestId('chat-nothing').textContent).not.toContain('next waiting')
   })
 })
 
@@ -287,8 +291,46 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     await waitFor(() => expect(inHandId()).not.toBe(id))
     expect(posts.at(-1)?.[0]).toBe(`/api/projects/alpha/behaviours/${id}/review`)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    // His 17:48Z note: "Skip" alone read as dismissing it.
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     expect(screen.queryByTestId('chat-in-hand')).toBeNull()
+  })
+
+  it('after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told', async () => {
+    mockApi()
+    await open()
+    const first = inHandId()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    const kit = await screen.findByText(/^Approved “.*”\. Next up in alpha: “.*”\. Reply to answer it, or we can define new spec or discuss alpha\.$/)
+    expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
+    expect(screen.getByText(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)).toBeTruthy()
+
+    await say('ok, what next?', 'reply 1')
+    const second = chats()[0][1].messages!.at(-1)!.text
+    expect(second.startsWith(`[Now talking about alpha] [He approved ${first}] [He skipped, for now,`)).toBe(true)
+    expect(second.endsWith(' ok, what next?')).toBe(true)
+  })
+
+  it('the item moves into the chat where he first replies about it, and the agent reads it there', async () => {
+    mockApi()
+    await open()
+    const id = inHandId()
+    expect(screen.queryByText('Top of your stack in alpha')).toBeNull()
+
+    await say('which colours are there?', 'reply 1')
+    const order = [...screen.getByLabelText('Messages').querySelectorAll('li[data-from]')].map((li) => li.getAttribute('data-from'))
+    expect(order).toEqual(['item', 'user', 'agent'])
+    // The dock keeps the title and buttons; the question is in the thread now, once.
+    expect(screen.getAllByText('Which colour?')).toHaveLength(1)
+    expect(chats()[0][1].messages).toEqual([
+      { from: 'user', text: `[Now talking about alpha] [In view now: ${id} "title of ${id}", asking: Which colour?] which colours are there?` },
+    ])
+
+    await say('blue', 'reply 2')
+    expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'blue' })
+    expect(screen.getAllByText('Top of your stack in alpha')).toHaveLength(1)
   })
 
   it('with nothing in hand, a reply is saved as a note on the project', async () => {
