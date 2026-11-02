@@ -560,3 +560,9 @@ Chat should be well aware of its own capabailities
 ## 2026-11-02 18:55Z
 
 Maybe backlog of this is technically difficult but chat should be able to read the spec of the project that it is answering for
+
+## 2026-11-02 18:57Z
+
+Kit backlog feature - a security agent. An agent that can be switched on and off in settings which can do an audit on the code base and flag any security issues and create tickets to address them.
+
+On this point a later backlog feature could be various custom agents. Kit health agent, QA agent with configurable objectives and goals.
