@@ -218,6 +218,10 @@ public class TriageTests
 
         // BEH-CHAT-2: the item is on the page from the start, so the agent infers his route rather than asking for a click.
         Assert.Contains("Infer which from what they say", TriageContext.ChatInstructions, StringComparison.Ordinal);
+
+        // His 17:52Z and 17:54Z notes: the page tells the agent, in order, when an item came into view and what he did with it.
+        Assert.Contains("[In view now: id \"title\"] means that item came into the chat at that point", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("[He approved id] says what the owner did with an item on the page", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -255,6 +259,72 @@ public class TriageTests
         var router = Router(new FakeModel(null), limit: 1);
         Assert.Equal(502, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "hi"))).Status);
         Assert.Equal(1, Assert.IsType<TriageStatus>(router.Route("GET", "/api/triage").Body).Remaining);
+    }
+
+    // ---- the chat agent acting on the item (BEH-CHAT-6) -------------------------------------------
+
+    [Fact]
+    public void Only_the_chat_offers_actions_and_its_answer_carries_the_one_asked_for()
+    {
+        var model = new FakeModel("Approved it.", new TriageAction("approve"));
+        var router = Router(model);
+
+        var chat = router.Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "yes, approve it")));
+        Assert.Equal(new TriageAction("approve"), Assert.IsType<TriageAnswer>(chat.Body).Action);
+
+        // The Inbox's Talk it through stays as it was: no tools offered, and nothing acted on.
+        var inbox = router.Route("POST", "/api/projects/kit/triage", body: Turn("BEH-GATE-2", ("user", "yes")));
+        Assert.Null(Assert.IsType<TriageAnswer>(inbox.Body).Action);
+        Assert.Equal([true, false], model.Offered);
+    }
+
+    [Fact]
+    public void An_action_on_an_item_is_dropped_when_none_is_in_hand_but_an_undo_is_kept()
+    {
+        var approve = Router(new FakeModel("Done.", new TriageAction("approve"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "approve it")));
+        Assert.Null(Assert.IsType<TriageAnswer>(approve.Body).Action);
+
+        var undo = Router(new FakeModel("Undone.", new TriageAction("undo"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "undo that")));
+        Assert.Equal(new TriageAction("undo"), Assert.IsType<TriageAnswer>(undo.Body).Action);
+
+        // An action with no words and nothing it may do is no reply at all, and costs no allowance.
+        var router = Router(new FakeModel("", new TriageAction("approve")), limit: 1);
+        Assert.Equal(502, router.Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "approve it"))).Status);
+        Assert.Equal(1, Assert.IsType<TriageStatus>(router.Route("GET", "/api/triage").Body).Remaining);
+    }
+
+    [Fact]
+    public void A_tool_call_reads_as_an_action_and_one_without_its_words_is_dropped()
+    {
+        var both = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Posted."},{"type":"tool_use","id":"t","name":"answer_item","input":{"text":" blue "}}]}""");
+        Assert.Equal("Posted.", both.Text);
+        Assert.Equal(new TriageAction("answer", "blue"), both.Action);
+
+        var alone = AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"approve_item","input":{}}]}""");
+        Assert.Equal("", alone.Text);
+        Assert.Equal(new TriageAction("approve"), alone.Action);
+
+        Assert.Equal(new TriageAction("undo"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"undo_last","input":{}}]}""").Action);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"deny_item","input":{}}]}""").Text);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"delete_repo","input":{}}]}""").Text);
+    }
+
+    [Fact]
+    public async Task The_client_offers_the_tools_only_when_asked()
+    {
+        var api = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}]}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"content":[{"type":"text","text":"Hi."}]}"""));
+        var chat = new AnthropicTriageChat(new HttpClient(api), ApiKey);
+
+        await chat.ReplyAsync("THE PROJECT", [new TriageTurn(true, "hi")], "BE THE CHAT", actions: true);
+        await chat.ReplyAsync("THE CARD", [new TriageTurn(true, "hi")]);
+
+        var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
+        Assert.Equal(
+            ["approve_item", "deny_item", "answer_item", "undo_last"],
+            sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
+        Assert.False(sent[1].TryGetProperty("tools", out _));
     }
 
     // ---- the real client, against a scripted API -------------------------------------------------
@@ -354,20 +424,24 @@ public class TriageTests
         return k => env.GetValueOrDefault(k);
     }
 
-    private sealed class FakeModel(string? reply) : ITriageChat
+    private sealed class FakeModel(string? reply, TriageAction? action = null) : ITriageChat
     {
         public List<(string Context, IReadOnlyList<TriageTurn> Turns)> Calls { get; } = [];
 
         /// <summary>What each call was told to be: null is the Inbox card's own instructions.</summary>
         public List<string?> Instructions { get; } = [];
 
+        /// <summary>Whether each call offered the model its actions (BEH-CHAT-6).</summary>
+        public List<bool> Offered { get; } = [];
+
         public string Model => "fake-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default)
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, CancellationToken cancellationToken = default)
         {
             Calls.Add((context, turns.ToList()));
             Instructions.Add(instructions);
-            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply));
+            Offered.Add(actions);
+            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action));
         }
     }
 
@@ -375,7 +449,7 @@ public class TriageTests
     {
         public string Model => "throwing-model";
 
-        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, CancellationToken cancellationToken = default) =>
+        public Task<TriageReply> ReplyAsync(string context, IReadOnlyList<TriageTurn> turns, string? instructions = null, bool actions = false, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("unforeseen");
     }
 

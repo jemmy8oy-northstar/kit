@@ -2151,6 +2151,10 @@ behaviour BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and
   contract my assumption: the storage line is `# kit:switch FEAT-X operator|testers on|off` in kit.beh, one line per feature and group, because Kit's own features span kit.beh, kit-ui.beh and kit-hosted.beh and the promotion and idle settings already live in the primary file; the default is stored as no line, so a new feature needs no edit anywhere
   contract my assumption: the group names are "operator" in the file and "You" in the UI, since the file is read by agents and the page by him
   contract my assumption: the section shows only when accounts are on, as the promotion and idle sections do, because a Kit with no accounts has no testers to switch for
+  contract "Can you enable some features for testers. I guess we will need them working as well but I think the projects page the boards the inbox and settings is a good place to start right?" (kit.notes.md#2026-11-02-1741)
+  contract built (17:41Z note): on for testers: FEAT-PROJECTS, FEAT-PROJECT, FEAT-BOARD, FEAT-STAGES, FEAT-EPICS (the three board views), FEAT-INBOX and FEAT-SETTINGS. Of these, only the board views and the Inbox have a screen a switch hides today; Projects and Settings were already shown to everyone, and are switched on so the record says what he asked for
+  contract my assumption: "the projects page" includes a project's own page (FEAT-PROJECT), and not yet its behaviour pages, notes or schedule
+  contract my assumption: "working" for a tester means seeing their own projects, which is BEH-USERS-2 (not built yet); until then a tester on these pages sees the same projects he does, and every write stays operator-only
 
 behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that group's pages and navigation"
   in FEAT-FLAGS
@@ -2325,7 +2329,7 @@ behaviour BEH-CHAT-1 "A Chat page talks with the spec agent about the project pi
   contract built: a Chat page in the navigation, with a Project select box. Picking a project puts "Now talking about <project>" in the chat; the history stays, and the first message after a change tells the agent which project it is now about
   contract my assumption: it runs on the same spec agent, key and daily allowance as the Inbox's Talk it through (BEH-SPECAGENT-4), and is shown only when that key is set; the chat lives in the page, so leaving it forgets it
   contract my assumption: each turn sends the picked project's outline, the item in hand if there is one, and the names of the other projects; the outline is cached, so a project change costs one uncached read
-  contract "Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn't really look like a chat at the moment. Think chat gpt think Claude"
+  contract "Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn't really look like a chat at the moment. Think chat gpt think Claude" (kit.notes.md#2026-11-02-1412)
   contract built (14:12Z note): it opens on the project of the top item waiting on him, shown as "Talking about <project>" at the top, tap to change. His messages sit on the right, the agent's on the left, and the message box is docked at the foot; Enter sends, Shift+Enter is a new line
   contract my assumption: a message that names exactly one other project (its app name, or its project's name when that project has one app) moves the chat there before it is sent; a message naming two, or naming the current one too, does not
 
@@ -2339,9 +2343,13 @@ behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already i
   when opens page:KitChat
   then sees region:KitMain
   contract "And the chat has some suggestions. You can either define new spec, discuss a project or answer inbox items. I think the way we do this is the chat by default suggests an item that needs answering as part of this suggestion it says or we can define new spec or discuss a project"
-  contract "I don't like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something. Then the user can just get on with chatting. The ai will then infer which route they are taking"
+  contract "I don't like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something. Then the user can just get on with chatting. The ai will then infer which route they are taking" (kit.notes.md#2026-11-02-1412)
   contract built (14:12Z note, replacing the three suggestion buttons): the top item waiting on him in the project is on the page from the start, above the message box, with its question and "Top of your stack. Reply to answer it, or talk about other work." There is no click to start: he types, and the agent is told the item is in view and infers whether he is answering it or has moved on
   contract built: with nothing waiting in the project, it says so and offers the next waiting item elsewhere, which switches project
+  contract "In next waiting maybe it needs to show the project first and then preview: then the preview I was a bit confused what I was reading I thought it was about kit" (kit.notes.md#2026-11-02-1750)
+  contract built (17:50Z note): the offer reads "<project>: next waiting is “<title>”", project first
+  contract "When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it" (kit.notes.md#2026-11-02-1752)
+  contract built (17:52Z note): when he first sends a message while an item is in hand, the item goes into the thread just above it, and the agent's copy of that message starts with "[In view now: <id> "<title>", asking: …]"; the dock then keeps only the item's title and buttons
   contract my assumption: opening the chat sends nothing, so it spends nothing until he types
 
 behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, and new spec is left as a note"
@@ -2358,6 +2366,10 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract my assumption: "Post as my answer" is offered only on messages sent while that item was in hand, so words about one item never post as the answer to the next
   contract my assumption: a message that moves the chat by naming another project is not about that project's item, which he has not seen yet, so it neither goes with the turn nor posts as its answer
   contract built: an agent reply can be saved with "Save as a note on <project>", the note I turn into spec, so defining new spec goes the way his notes already go
+  contract "In chat, skip is not the clearest maybe it needs to be skip to next item. Skip might get confused with a dismiss action as it currently is" (kit.notes.md#2026-11-02-1748)
+  contract built (17:48Z note): the button says "Skip to next item"; the item stays waiting in Kit and only leaves this chat
+  contract "Once acted on an item a similar prompt should come up from kit, here's the next item or we can discuss new spec blah balh" (kit.notes.md#2026-11-02-1754)
+  contract built (17:54Z note): after Approve, Skip or Post as my answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2383,6 +2395,84 @@ behaviour BEH-CHAT-5 "To save cost, the chat can drop what came before a project
   when opens page:KitChat
   then sees region:KitMain
   contract "We can think about discarding context let's put it on the backlog as a cost saver"
+
+behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself when he says so, and he can undo it"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-02-1753
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon"
+  contract my assumption: the agent acts only on the item in hand, and only when what he said decides it; each action shows in the chat as Kit's line with an Undo button, and asking the agent to undo does the same
+  contract built: on the Chat page only, the model is offered four tools, approve_item, deny_item and answer_item (each with his words) and undo_last; POST /api/projects/:app/chat answers { reply, remaining, action? }, the action dropped when no item is in hand (undo excepted) or the words are missing. The Inbox's Talk it through is offered none
+  contract built: the server writes nothing for an action; the page does it with the same operator-only writes as its buttons (the review write, or a note on the item), so it is his session acting on his word
+  contract built: every Kit line about an item has an Undo, the buttons' included: an approval or denial puts the item's review back as it was, an answer is dismissed from the notes (git keeps it), and the item comes back to the chat; "Undone: …" follows, and the agent is told
+  contract built: while a reply is on its way the item's Approve and Skip wait, so the agent and he never act on it twice; an action that finds no item in hand does nothing and Kit says so
+  contract my assumption: an Undo puts back the review as the chat loaded it; a change made to the item elsewhere in the meantime would be overwritten, which I judged rare enough for now
+  contract my assumption: an action the agent takes is reversible but not confirmed first, because he asked for it to act rather than suggest; "never act on a guess, ask if unsure" is in its instructions
+
+# His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
+# words: "priority is still getting ready for users". Nothing here is built.
+
+feature FEAT-CONFLICTS "Conflicting specs are flagged, and resolved without holding work up"
+  in EPIC-KIT-USERS
+  stage problem
+
+behaviour BEH-CONFLICT-1 "When two specs conflict, the agent builds one reading anyway, and the user confirms or denies it when approving"
+  in FEAT-CONFLICTS
+  layer technical
+  source defined kit.notes.md#2026-11-02-1747
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "We need to start improving the robustness of kit, flagging when features conflict and being able to resolve this. I think a good non blocking conflict is building the feature anyway when specs conflict and then letting the user confirm or deny when approving"
+  contract my assumption: the card carries the conflict to his Inbox naming both specs and the reading the agent built, so approving it settles the conflict and denying it says which reading is true
+
+behaviour BEH-CONFLICT-2 "Settings says what the agent does when specs conflict: build anyway, ask first, or wait until it is resolved"
+  in FEAT-CONFLICTS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1747
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Maybe the settings page needs some way of configuring conflicting behaviour. Whether it merges anyway asks for confirmation or doesn't work until the conflict is resolved"
+  contract "I think it is important to be able to configure it not to implement before resolution because that would obviously incur more spend which the user might not want"
+  contract my assumption: the default is to build anyway (BEH-CONFLICT-1), and "wait until resolved" spends nothing on the conflicting card until he answers
+
+behaviour BEH-CONFLICT-3 "The chat agent spots a conflict while the user is proposing spec, so it is settled before anything is built"
+  in FEAT-CONFLICTS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1747
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "The chat agent being able to identify conflicts is ideal, this is the least disruptive means the user can identify and unblock during proposal rather than having to do an entirely separate resolution round then potentially waiting again before it gets merged"
+  contract "The code agent can provide context to the triage/chat agent which can help resolve with the user"
+
+behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is found quickly however large the spec grows"
+  in FEAT-CONFLICTS
+  layer technical
+  source defined kit.notes.md#2026-11-02-1747
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "With smaller scale this is easier right the agent can identify compared to the top level readme or soemthing or a kit overview or something. But with scale this is harder, have to think of some way to index the spec well so that we can identify similar features quickly. Or maybe verb matching or semantic meaning checks. Maybe some vectorisation of the spec happens for each dev snapshot and it is stored in the repo so the agent can easily identify similar behaviour. Idk needs more design but you see the direction I am heading with this"
+  contract my assumption: this needs design before it is built; verb matching on the existing parse comes before any vector index, since it costs nothing to run
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES

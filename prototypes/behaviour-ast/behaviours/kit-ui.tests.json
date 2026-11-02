@@ -676,16 +676,29 @@
   ],
   "BEH-CHAT-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows the top item and its question from the start, and opening sends nothing" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the item moves into the chat where he first replies about it, and the agent reads it there" }
   ],
   "BEH-CHAT-3": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "sends the item in hand with each turn, a reply posts as his answer, and the next item comes up" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "his own message can be posted as his answer" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Approve and Skip mark the item off and bring up the next" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand, a reply is saved as a note on the project" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a reply is saved on the project it was about, after he has picked another" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }
+  ],
+  "BEH-CHAT-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "approves the item when the agent asks to, says so with an Undo, and the undo puts the review back" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "denies and answers with his words, and an undone answer is dismissed from the notes" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked to undo, the agent undoes the last thing done here, whoever did it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "says so when there is nothing to undo, and a reply that only acted still takes its turn" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "while a reply is on its way his buttons on the item wait, so it is never acted on twice" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Only_the_chat_offers_actions_and_its_answer_carries_the_one_asked_for" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_action_on_an_item_is_dropped_when_none_is_in_hand_but_an_undo_is_kept" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_tool_call_reads_as_an_action_and_one_without_its_words_is_dropped" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_offers_the_tools_only_when_asked" }
   ],
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }

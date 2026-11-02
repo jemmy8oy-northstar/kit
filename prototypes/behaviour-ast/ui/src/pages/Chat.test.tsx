@@ -33,6 +33,9 @@ const details: Record<string, Behaviour[]> = {
   beta: [beh('B-DONE')],
 }
 
+/** What GET .../notes answers: the notes an undo looks through. */
+let notesNow: { at: string; kind: string; behaviour: string | null; resolves: null; text: string }[] = []
+
 /** Every POST the page made, as [path, body]. */
 let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string }][] = []
 
@@ -42,6 +45,7 @@ function mockApi(
   projects: Record<string, Behaviour[]> = details,
 ) {
   posts = []
+  notesNow = []
   vi.stubGlobal(
     'fetch',
     vi.fn(async (path: string, init?: { method?: string; body?: string }) => {
@@ -58,7 +62,7 @@ function mockApi(
       const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
       if (path.endsWith('/api/session')) return { ...ok, json: async () => ({ required: false, signedIn: true }) }
       if (rest.endsWith('/history')) return { ...ok, json: async () => ({ history: 'none', reason: 'no git', completed: [], added: [] }) }
-      if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: [] }) }
+      if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: notesNow }) }
       if (rest.endsWith('/schedule')) return { ...ok, json: async () => ({ scheduled: [], backlog: [] }) }
       return { ...ok, json: async () => (rest ? { app: rest, behaviours: projects[rest] } : { projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained' })) }) }
     }),
@@ -106,7 +110,8 @@ describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
 
     await say('hello', 'reply 1')
     expect(chats()[0][0]).toBe('/api/projects/alpha/chat')
-    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: '[Now talking about alpha] hello' }])
+    const first = '[Now talking about alpha] [In view now: A-ASK "title of A-ASK", asking: Which colour?] hello'
+    expect(chats()[0][1].messages).toEqual([{ from: 'user', text: first }])
 
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     expect(screen.getByText('Now talking about beta.')).toBeTruthy()
@@ -115,7 +120,7 @@ describe('BEH-CHAT-1: a Chat page talks about one project at a time', () => {
 
     expect(chats()[1][0]).toBe('/api/projects/beta/chat')
     expect(chats()[2][1].messages).toEqual([
-      { from: 'user', text: '[Now talking about alpha] hello' },
+      { from: 'user', text: first },
       { from: 'agent', text: 'reply 1' },
       { from: 'user', text: '[Now talking about beta] and here?' },
       { from: 'agent', text: 'reply 2' },
@@ -240,7 +245,10 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     expect(screen.queryByTestId('chat-in-hand')).toBeNull()
     expect(screen.getByTestId('chat-nothing').textContent).toContain('Nothing is waiting on you in beta')
-    fireEvent.click(screen.getByRole('button', { name: /^Next waiting: .*\(alpha\)$/ }))
+    // His 17:50Z note: the project comes first, so the preview is not read as being about this one.
+    const next = screen.getByRole('button', { name: /next waiting is/ })
+    expect(next.textContent).toBe('alpha: next waiting is “title of A-ASK”')
+    fireEvent.click(next)
     expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('alpha')
     expect(screen.getByTestId('chat-in-hand')).toBeTruthy()
     vi.unstubAllGlobals()
@@ -248,7 +256,7 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
 
     mockApi(undefined, undefined, { beta: [beh('B-DONE')] })
     await open()
-    expect(screen.getByTestId('chat-nothing').textContent).not.toContain('Next waiting')
+    expect(screen.getByTestId('chat-nothing').textContent).not.toContain('next waiting')
   })
 })
 
@@ -287,8 +295,46 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     await waitFor(() => expect(inHandId()).not.toBe(id))
     expect(posts.at(-1)?.[0]).toBe(`/api/projects/alpha/behaviours/${id}/review`)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    // His 17:48Z note: "Skip" alone read as dismissing it.
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     expect(screen.queryByTestId('chat-in-hand')).toBeNull()
+  })
+
+  it('after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told', async () => {
+    mockApi()
+    await open()
+    const first = inHandId()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    const kit = await screen.findByText(/^Approved “.*”\. Next up in alpha: “.*”\. Reply to answer it, or we can define new spec or discuss alpha\.$/)
+    expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
+    expect(screen.getByText(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)).toBeTruthy()
+
+    await say('ok, what next?', 'reply 1')
+    const second = chats()[0][1].messages!.at(-1)!.text
+    expect(second.startsWith(`[Now talking about alpha] [He approved ${first}] [He skipped, for now,`)).toBe(true)
+    expect(second.endsWith(' ok, what next?')).toBe(true)
+  })
+
+  it('the item moves into the chat where he first replies about it, and the agent reads it there', async () => {
+    mockApi()
+    await open()
+    const id = inHandId()
+    expect(screen.queryByText('Top of your stack in alpha')).toBeNull()
+
+    await say('which colours are there?', 'reply 1')
+    const order = [...screen.getByLabelText('Messages').querySelectorAll('li[data-from]')].map((li) => li.getAttribute('data-from'))
+    expect(order).toEqual(['item', 'user', 'agent'])
+    // The dock keeps the title and buttons; the question is in the thread now, once.
+    expect(screen.getAllByText('Which colour?')).toHaveLength(1)
+    expect(chats()[0][1].messages).toEqual([
+      { from: 'user', text: `[Now talking about alpha] [In view now: ${id} "title of ${id}", asking: Which colour?] which colours are there?` },
+    ])
+
+    await say('blue', 'reply 2')
+    expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'blue' })
+    expect(screen.getAllByText('Top of your stack in alpha')).toHaveLength(1)
   })
 
   it('with nothing in hand, a reply is saved as a note on the project', async () => {
@@ -312,5 +358,90 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
 
     await screen.findByRole('button', { name: 'Saved as a note' })
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'reply 1' }])
+  })
+})
+
+describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it', () => {
+  const acting = (action: unknown, reply = 'Done it.') => () => ({ ok: true, status: 200, body: { reply, remaining: 8, action } })
+
+  it('approves the item when the agent asks to, says so with an Undo, and the undo puts the review back', async () => {
+    mockApi(undefined, acting({ kind: 'approve', text: null }, 'Approved it.'))
+    await open()
+    expect(inHandId()).toBe('A-ASK')
+    await say('yes, approve it', 'Approved it.')
+
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'approved', note: null }]))
+    const kit = await screen.findByText(/^Approved “title of A-ASK”\./)
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+
+    fireEvent.click(kit.closest('li')!.querySelector('button')!)
+    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
+    expect(inHandId()).toBe('A-ASK')
+    expect(screen.getByRole('button', { name: 'Undone' })).toHaveProperty('disabled', true)
+  })
+
+  it('denies and answers with his words, and an undone answer is dismissed from the notes', async () => {
+    mockApi(undefined, acting({ kind: 'answer', text: 'Blue.' }))
+    await open()
+    await say('blue', 'Done it.')
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'Blue.', behaviour: 'A-ASK' }]))
+
+    notesNow = [
+      { at: '2026-11-02 18:00Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.' },
+      { at: '2026-11-02 18:01Z', kind: 'note', behaviour: null, resolves: null, text: 'Blue.' },
+    ]
+    const kit = await screen.findByText(/^Your answer is posted on “title of A-ASK”\./)
+    fireEvent.click(kit.closest('li')!.querySelector('button')!)
+    await screen.findByText(/^Undone: Your answer is posted on/)
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes/dismiss', { index: 0, at: '2026-11-02 18:00Z' }])
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+
+    mockApi(undefined, acting({ kind: 'deny', text: 'It should be green.' }))
+    await open()
+    await say('no, green', 'Done it.')
+    await waitFor(() =>
+      expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'It should be green.' }]),
+    )
+    expect(await screen.findByText(/^Denied, with your correction: “title of A-ASK”\./)).toBeTruthy()
+  })
+
+  it('asked to undo, the agent undoes the last thing done here, whoever did it', async () => {
+    mockApi(undefined, acting({ kind: 'undo', text: null }, 'Undoing that.'))
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+
+    await say('wait, undo that', 'Undoing that.')
+    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
+    expect(inHandId()).toBe('A-ASK')
+  })
+
+  it('while a reply is on its way his buttons on the item wait, so it is never acted on twice', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => (release = r))
+    mockApi(undefined, async () => {
+      await gate
+      return { ok: true, status: 200, body: { reply: 'Approved it.', remaining: 8, action: { kind: 'approve', text: null } } }
+    })
+    await open()
+    fireEvent.change(box(), { target: { value: 'yes' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    // While the reply is on its way, his buttons on the item wait.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toHaveProperty('disabled', true))
+    release()
+    await screen.findByText('Approved it.')
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+    expect(posts.filter(([p]) => p.endsWith('/review'))).toHaveLength(1)
+  })
+
+  it('says so when there is nothing to undo, and a reply that only acted still takes its turn', async () => {
+    mockApi(undefined, acting({ kind: 'undo', text: null }, ''))
+    await open()
+    await say('undo', 'Done.')
+    expect(screen.getByText('There is nothing here to undo.')).toBeTruthy()
+    expect(chats()[0][1].messages).toHaveLength(1)
   })
 })
