@@ -498,3 +498,9 @@ I have the kit Anthropic api $10 credit with no auto credit. Let’s see how lon
 ## 2026-11-02 12:56Z
 
 I like talk it through on the inbox but it is getting quite cluttered. I don’t want to mess with talk it through right now or inbox I want them to stay as they r so let’s try new ux with a new feature. Instead could we add a new chat feature. And the chat has some suggestions. You can either define new spec, discuss a project or answer inbox items. I think the way we do this is the chat by default suggests an item that needs answering as part of this suggestion it says or we can define new spec or discuss a project. Make sure to either name or select the project that you are talking about. I think there should be a select box to select the project. When you select it says. Now talking about x project. Do you think it keeps the history after a project change I think it does, we can leverage that cheap cache. We can think about discarding context let’s put it on the backlog as a cost saver. Then you can get on with discussing or marking off items as we go. If the user seems off topic we can say are you talking about a different project and suggest some projects that seem appropriate maybe prompt them to select a different project or maybe define specific for a new project
+
+## 2026-11-02 14:12Z
+
+I don’t like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something.
+
+Then the user can just get on with chatting. The ai will then infer which route they are taking. Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn’t really look like a chat at the moment. Think chat gpt think Claude.
