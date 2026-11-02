@@ -596,3 +596,11 @@ We should probably have a splash page for the production kit, with a register in
 Should I point the new domain to the same public ip as balenthiran.co.uk? Or will this have a different public ip from the cluster?
 
 We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit.
+
+## 2026-11-02 20:22Z
+
+Kit backlog: some integration page or config page for projects where users can configure secrets and integrations such as db or api keys.
+
+With this we will need to think about migration strategies when hooked up to users production databases, maybe at first we should only handle migrations on preprod servers. Or maybe we should have some strong disclosure or something where we heavily recommend that users manage their own production dbs and we take no responsibility if migrations cause data loss or db corruption or something.
+
+Also thinking about whether we could host some really light version of there app maybe call it a lite version where there are no integrations, external dependencies mostly return bogus faker data or something but of the correct shape, and maybe these pods spin up with an in memory db which is injected with some start data to enable basic use and testing. This would allow us to really cheaply host testable versions of the apps for users. Here we wouldnt need a block volume or anything just a really cheap dotnet and react pod. Maybe they can have the option to setup a test db and test integrations so that they get more accurate ux for testing and also data persistence between pod restarts. But this would be a good cheap and lite experience for them before they set up the db.
