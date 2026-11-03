@@ -511,3 +511,61 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     expect(chats()[0][1].messages).toHaveLength(1)
   })
 })
+
+describe('BEH-SPECAGENT-1: a user designs their project in a conversation with the spec agent', () => {
+  const designs = () => chats().map(([, b]) => (b as { design?: boolean }).design ?? false)
+
+  it('Design this project asks the agent to lead, and every turn on that project stays in design until he stops it', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Design this project' }))
+    await screen.findByText('reply 1')
+
+    expect(chats()[0][0]).toBe('/api/projects/alpha/chat')
+    expect(chats()[0][1].messages!.at(-1)!.text).toMatch(/Let's design alpha from the start\. Please lead, one topic at a time\.$/)
+    expect(screen.getByTestId('chat-designing').textContent).toMatch(/saves each topic you agree as a note/)
+
+    await say('a game for runners', 'reply 2')
+    fireEvent.click(screen.getByRole('button', { name: 'Stop designing' }))
+    await say('thanks', 'reply 3')
+    expect(designs()).toEqual([true, true, false])
+  })
+
+  it('design is for the project being designed: a turn about another project is the ordinary chat', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Design this project' }))
+    await screen.findByText('reply 1')
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    await say('and beta?', 'reply 2')
+
+    expect(designs()).toEqual([true, false])
+    expect(screen.queryByTestId('chat-designing')).toBeNull()
+  })
+
+  it('a link with ?project=x&design=1 opens on that project and starts designing it once', async () => {
+    mockApi()
+    render(
+      <MemoryRouter initialEntries={['/chat?project=beta&design=1']}>
+        <Chat />
+      </MemoryRouter>,
+    )
+    await screen.findByText('reply 1')
+
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('beta')
+    expect(chats()).toHaveLength(1)
+    expect(chats()[0][0]).toBe('/api/projects/beta/chat')
+    expect(designs()).toEqual([true])
+  })
+
+  it('what the agent saves while designing is a note on the project, which the coding agent files as spec', async () => {
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'Saved the vision.', remaining: 8, action: { kind: 'note', text: 'Vision: runners log a run and see their week.' } } }))
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Design this project' }))
+    await screen.findByText('Saved the vision.')
+
+    await waitFor(() => expect(posts.some(([p]) => p === '/api/projects/alpha/notes')).toBe(true))
+    const [, note] = posts.find(([p]) => p === '/api/projects/alpha/notes')!
+    expect(note.text).toBe('Vision: runners log a run and see their week.')
+  })
+})

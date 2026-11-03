@@ -224,6 +224,47 @@ public class TriageTests
         Assert.Contains("[He approved id] says what the owner did with an item on the page", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
+    // ---- designing a project with the spec agent (BEH-SPECAGENT-1) ------------------------------
+
+    [Fact]
+    public void A_design_turn_adds_the_design_instructions_to_the_chats_own()
+    {
+        var model = new FakeModel("What is it for?");
+        var router = Router(model);
+        var design = JsonSerializer.SerializeToElement(new { design = true, messages = new[] { new { from = "user", text = "Let's design it." } } });
+        var plain = JsonSerializer.SerializeToElement(new { design = false, messages = new[] { new { from = "user", text = "hi" } } });
+
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/chat", body: design).Status);
+        Assert.Equal(200, router.Route("POST", "/api/projects/kit/chat", body: plain).Status);
+
+        Assert.Equal([TriageContext.ChatInstructions + " " + TriageContext.DesignInstructions, TriageContext.ChatInstructions], model.Instructions);
+        Assert.All(model.Offered, Assert.True);
+    }
+
+    [Fact]
+    public void A_design_flag_that_is_not_a_boolean_is_refused_and_reaches_no_model()
+    {
+        var model = new FakeModel("unreachable");
+        var body = JsonDocument.Parse("""{"design":"yes","messages":[{"from":"user","text":"hi"}]}""").RootElement;
+
+        Assert.Equal(400, Router(model).Route("POST", "/api/projects/kit/chat", body: body).Status);
+        Assert.Empty(model.Calls);
+    }
+
+    [Fact]
+    public void The_design_instructions_cover_his_topics_and_save_each_as_a_note()
+    {
+        // His 2026-10-31 16:43Z note: vision, data dependencies, a database, a login, then classes of users and their workflows.
+        foreach (var topic in new[] { "overall vision", "classes of users", "main workflows", "data the app depends on", "needs a database", "must sign in" })
+        {
+            Assert.Contains(topic, TriageContext.DesignInstructions, StringComparison.Ordinal);
+        }
+
+        // What it learns becomes spec through the note the coding agent files, one topic at a time.
+        Assert.Contains("call save_note", TriageContext.DesignInstructions, StringComparison.Ordinal);
+        Assert.Contains("one topic per note", TriageContext.DesignInstructions, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void A_chat_naming_an_unknown_or_malformed_item_is_refused_and_reaches_no_model()
     {

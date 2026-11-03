@@ -709,6 +709,15 @@
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }
   ],
+  "BEH-SPECAGENT-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "design is for the project being designed: a turn about another project is the ordinary chat" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a link with ?project=x&design=1 opens on that project and starts designing it once" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "what the agent saves while designing is a note on the project, which the coding agent files as spec" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_design_turn_adds_the_design_instructions_to_the_chats_own" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_design_flag_that_is_not_a_boolean_is_refused_and_reaches_no_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_design_instructions_cover_his_topics_and_save_each_as_a_note" }
+  ],
   "BEH-SPECAGENT-4": [
     { "file": "prototypes/behaviour-ast/ui/src/components/TriageChat.test.tsx", "title": "offers nothing when the server has no model key, or the session cannot ask" },
     { "file": "prototypes/behaviour-ast/ui/src/components/TriageChat.test.tsx", "title": "sends the whole chat each turn, shows the reply, and a reply becomes his words" },
