@@ -2267,7 +2267,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   in FEAT-SPEC-AGENT
   layer technical
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It needs the agent Kit runs for a user (BEH-USERS-9), which waits on your API key and spend cap."
