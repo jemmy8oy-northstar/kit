@@ -383,6 +383,54 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-CONFLICT-2: sets the file's <c># kit:conflicts</c> line to <c>ask</c> or <c>wait</c>, replacing the
+    /// first and dropping the rest, else adding it after the leading directives. The default, <c>build</c>,
+    /// is stored as no line, so it removes every one. Asking for what the file already says rewrites nothing.
+    /// </summary>
+    public IWriteResult SetConflictMode(string text, string mode)
+    {
+        if (!ConflictsDirective.Modes.Contains(mode))
+        {
+            return WriteResult.Refuse("bad-mode", $"conflicts must be one of {string.Join(", ", ConflictsDirective.Modes)}");
+        }
+
+        var lines = text.Split('\n').ToList();
+        var existing = ConflictsDirective.Lines([.. lines]).ToList();
+        if (mode == ConflictsDirective.Build)
+        {
+            if (existing.Count == 0)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            foreach (var i in existing.AsEnumerable().Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else if (existing.Count > 0)
+        {
+            var wanted = ConflictsDirective.Line(mode);
+            if (existing.Count == 1 && lines[existing[0]].TrimEnd('\r') == wanted)
+            {
+                return new WriteResult { Ok = true, Text = text };
+            }
+
+            lines[existing[0]] = wanted;
+            foreach (var i in existing.Skip(1).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else
+        {
+            lines.Insert(HeaderAnchor(lines) + 1, ConflictsDirective.Line(mode));
+        }
+
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
+    /// <summary>
     /// BEH-NARR-2: adds the <c># kit:goal maintained</c> line after the file's last leading
     /// <c># kit:</c> directive (else at the very top), or removes every <c>kit:goal</c> line.
     /// Asking for the state the file is already in rewrites nothing.

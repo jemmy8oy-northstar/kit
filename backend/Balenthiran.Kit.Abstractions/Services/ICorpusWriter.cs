@@ -35,6 +35,12 @@ public interface ICorpusWriter
     /// </summary>
     IWriteResult SetPromote(string text, bool on);
 
+    /// <summary>
+    /// Sets the file's <c># kit:conflicts</c> line to <c>build</c>, <c>ask</c> or <c>wait</c> (BEH-CONFLICT-2);
+    /// <c>build</c> is the default and is stored as no line. Asking for what it already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetConflictMode(string text, string mode);
+
     /// <summary>Adds or removes the file's <c># kit:goal maintained</c> line (BEH-NARR-2); the state it is already in changes nothing.</summary>
     IWriteResult SetGoalMaintained(string text, bool on);
 

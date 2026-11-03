@@ -46,6 +46,21 @@ public class UserMemoryTests
     }
 
     [Fact]
+    public void BEH_CONFLICT_1_the_shared_process_says_what_to_do_when_two_specs_conflict()
+    {
+        var text = System.Text.Encoding.UTF8.GetString(Router().Route("GET", "/api/process").Raw!);
+
+        Assert.Contains("## When two specs conflict", text, StringComparison.Ordinal);
+        Assert.Contains("`# kit:conflicts`", text, StringComparison.Ordinal);
+        Assert.Contains("`build`", text, StringComparison.Ordinal);
+        Assert.Contains("`ask`", text, StringComparison.Ordinal);
+        Assert.Contains("`wait`", text, StringComparison.Ordinal);
+        Assert.Contains("review request", text, StringComparison.Ordinal);
+        Assert.Contains("Approving it settles", text, StringComparison.Ordinal);
+        Assert.Contains("spend nothing on it", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_users_memory_round_trips_and_is_empty_before_it_is_written()
     {
         var router = Router();

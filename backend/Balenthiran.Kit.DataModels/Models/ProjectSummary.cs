@@ -55,5 +55,12 @@ public sealed class ProjectSummary : IProjectSummary
 
     string? IProjectSummary.Goal => Goal;
 
+    // BEH-CONFLICT-2: "ask" or "wait" when this project's primary file carries `# kit:conflicts ask|wait`; absent for the default (build).
+    [JsonPropertyOrder(13)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OnConflict { get; init; }
+
+    string? IProjectSummary.OnConflict => OnConflict;
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }

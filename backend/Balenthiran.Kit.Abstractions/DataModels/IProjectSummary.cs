@@ -33,4 +33,7 @@ public interface IProjectSummary
 
     /// <summary><c>"maintained"</c> when the project is marked as kept going, not worked towards (BEH-NARR-2); <c>null</c> otherwise.</summary>
     string? Goal { get; }
+
+    /// <summary><c>"ask"</c> or <c>"wait"</c> when the project says what the agent does when specs conflict (BEH-CONFLICT-2); <c>null</c> for the default, build anyway.</summary>
+    string? OnConflict { get; }
 }
