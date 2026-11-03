@@ -686,7 +686,27 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "\"Ask Kit to note this chat\" sends the canned message as an ordinary turn, once there is something to note" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" }
+  ],
+  "BEH-CHAT-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "puts the item at the bottom with no model call, no write and no reply spent" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is told to the agent as the item in view, with his next message" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "has nothing to show when nothing is in hand" }
+  ],
+  "BEH-CHAT-11": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "lists the project once, and takes its apps’ items in turn with no project change, each turn going to the item’s app" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand it talks to the project’s home app, and naming another of its apps does not move it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "opens on the project of an app named in the link" }
+  ],
+  "BEH-CHAT-10": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows each option as a button under the question, and tapping one sends it as his message" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves typing free, and sending his own words retires the options" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows no buttons when the agent proposed none, and stays after the next item comes into the thread" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_options_a_reply_proposes_are_read_trimmed_deduplicated_and_capped" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Offering_options_is_not_an_action_and_is_not_reported_as_one_left_undone" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Only_the_chat_answers_with_options_and_a_reply_that_acts_shows_none" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_tell_the_agent_it_can_offer_options" }
   ],
   "BEH-CHAT-6": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "approves the item when the agent asks to, says so with an Undo, and the undo puts the review back" },

@@ -623,6 +623,11 @@ export interface TriageAnswer {
    * carries out with his own writes and offers to undo. Absent for none.
    */
   action?: TriageAction
+  /**
+   * BEH-CHAT-10, the Chat page only: short answers the agent proposes to the question it asked, which the page
+   * shows as buttons; tapping one sends it as his message. Absent for none.
+   */
+  options?: string[]
 }
 
 /**
