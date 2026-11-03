@@ -123,3 +123,9 @@ In the chat and on action cards, any item ID written in the text, such as BEH-US
 <!-- from: chat -->
 
 Vault decision for BEH-USERS-5 (user production secrets): the owner chose OCI Vault for now. Kit writes secrets to OCI Vault and the cluster reads them; Kit can write a value but never read it back. Migration to another vault (e.g. HashiCorp Vault) can be done later if needed, so keep the storage choice behind a seam. This unblocks BEH-USERS-5 and the work that waits on it, including BEH-PROJCONF-1 (integrations page) and the secrets part of BEH-USERS-9. Nothing else was decided here.
+
+## 2026-11-03 23:39Z
+
+<!-- from: chat -->
+
+Owner wants BEH-USERS-5 (production secrets per user) deprioritised, so that the agent Kit runs for users (BEH-USERS-9) gets built first. He feels getting users the coding agent matters more than secrets right now. Please lower BEH-USERS-5's priority and reorder the schedule so BEH-USERS-9 comes ahead of it. The vault decision (OCI Vault for now) still stands and should stay recorded against BEH-USERS-5.
