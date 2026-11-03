@@ -369,3 +369,21 @@ describe('note anchors (BEH-NOTE-10)', () => {
     expect(c.get('2026-10-16-0713')!.map((x) => x.id)).toEqual(['A'])
   })
 })
+
+describe('BEH-NOTE-15: a note says where it came from', () => {
+  it('shows a muted "from" tag for a note that carries an origin, and none for one that does not', async () => {
+    server([
+      note('2026-10-09 08:00Z', null, 'typed in chat', { from: 'chat' }),
+      note('2026-10-09 09:00Z', null, 'from the button', { from: 'note-button' }),
+      note('2026-10-09 10:00Z', null, 'from the agent', { from: 'agent' }),
+      note('2026-10-09 11:00Z', null, 'an old note with no origin'),
+    ])
+    render(<NotesPanel app="demo" />)
+
+    expect(await screen.findByText('an old note with no origin')).toBeInTheDocument()
+    expect(screen.getByText('from chat')).toBeInTheDocument()
+    expect(screen.getByText('from note button')).toBeInTheDocument()
+    expect(screen.getByText('from agent')).toBeInTheDocument()
+    expect(screen.getAllByText(/^from (chat|note button|agent)$/, { selector: 'span' })).toHaveLength(3)
+  })
+})

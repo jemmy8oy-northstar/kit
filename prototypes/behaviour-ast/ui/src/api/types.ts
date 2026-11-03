@@ -502,8 +502,13 @@ export interface BindResult extends GitOutcome {
  */
 export type AnyWriteResult = WriteResult | BindResult | NoteResult
 
+/** Where a note says it came from (BEH-NOTE-15). */
+export type NoteOrigin = 'chat' | 'note-button' | 'agent'
+
 /** One open note (kit#118): free text, not a behaviour, waiting to be folded into the spec. */
 export interface Note {
+  /** Where it came from (BEH-NOTE-15); absent or null when it did not say, which shows no tag. */
+  from?: NoteOrigin | null
   /** UTC, to the minute: `2026-10-10 20:41Z`. */
   at: string
   /**

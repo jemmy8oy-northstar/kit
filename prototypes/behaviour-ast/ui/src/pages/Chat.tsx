@@ -218,7 +218,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       // On the project the turn was about, not tied to the item, so it works with none in hand (his 19:04Z note).
       const text = action.text
       try {
-        await leaveNote(about, text)
+        await leaveNote(about, text, undefined, 'chat')
         const shown = text.length > 200 ? `${text.slice(0, 200)}…` : text
         setLines((ls) => [
           ...ls,
@@ -234,7 +234,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       // the question is about when it next works. Undone the way a note is.
       const text = `Question for the coding agent: ${action.text}`
       try {
-        await leaveNote(about, text)
+        await leaveNote(about, text, undefined, 'chat')
         setLines((ls) => [
           ...ls,
           {
@@ -282,7 +282,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         done(card, 'denied', restore)
       } else {
         const text = action.text
-        await leaveNote(on, text, b.id)
+        await leaveNote(on, text, b.id, 'chat')
         done(card, 'answered', () => dismissAnswer(on, b.id, text))
       }
     } catch (e) {

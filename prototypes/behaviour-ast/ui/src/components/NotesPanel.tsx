@@ -293,6 +293,8 @@ function NoteCard({
         {note.kind === 'resolution' && <Badge tone="warning">resolves {note.resolves}</Badge>}
         {note.kind === 'bell' && <Badge tone="warning">🔔 rung</Badge>}
         {note.behaviour && <Badge tone="primary">{note.behaviour}</Badge>}
+        {/* BEH-NOTE-15: where it came from; a note that did not say shows nothing. */}
+        {note.from && <span className="muted">from {note.from.replace('-', ' ')}</span>}
       </div>
       {note.text && <p className="note-body">{note.text}</p>}
       {folded.length > 0 && (
