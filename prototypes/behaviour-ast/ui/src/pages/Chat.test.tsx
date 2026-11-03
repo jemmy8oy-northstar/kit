@@ -512,6 +512,42 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
   })
 })
 
+describe('BEH-CHAT-9: Show again reposts the item in hand at the foot of the chat', () => {
+  it('puts the item at the bottom with no model call, no write and no reply spent', async () => {
+    mockApi()
+    await open()
+    await say('hello', 'reply 1')
+    expect(order()).toEqual(['item', 'user', 'agent'])
+    expect(chats()).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show again' }))
+    expect(order()).toEqual(['item', 'user', 'agent', 'item'])
+    expect(screen.getAllByText('Which colour?')).toHaveLength(2)
+    // Nothing was sent: not to the model, not as a write.
+    expect(posts).toHaveLength(1)
+    expect(screen.getByText(/8 replies left today/)).toBeTruthy()
+    // It is still the same item in hand, and it can be shown again.
+    expect(inHandId()).toBe('A-ASK')
+    fireEvent.click(screen.getByRole('button', { name: 'Show again' }))
+    expect(order()).toEqual(['item', 'user', 'agent', 'item', 'item'])
+  })
+
+  it('is told to the agent as the item in view, with his next message', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Show again' }))
+    await say('ok', 'reply 1')
+    expect(chats()[0][1].messages![0].text).toContain('[In view now: A-ASK "title of A-ASK", asking: Which colour?]')
+  })
+
+  it('has nothing to show when nothing is in hand', async () => {
+    mockApi()
+    await open()
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    expect(screen.queryByRole('button', { name: 'Show again' })).toBeNull()
+  })
+})
+
 describe('BEH-CHAT-5: the chat can drop what came before a project change', () => {
   it('after a project change, Forget leaves the earlier turns out of what is sent, and the project is named again', async () => {
     mockApi()

@@ -415,6 +415,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             key={keyOf(focus)}
             card={focus}
             onDone={(how, undo) => done(focus, how, undo)}
+            // His 13:49Z note: the item again at the foot of the chat, with no model call and no reply spent.
+            onShow={() => setLines((ls) => [...ls, itemLine(focus)])}
             busy={busy}
           />
         ) : (
@@ -542,10 +544,12 @@ function askOf({ b }: InboxCard): string | null {
 function Focus({
   card,
   onDone,
+  onShow,
   busy,
 }: {
   card: InboxCard
   onDone: (how: Acted, undo?: () => Promise<unknown>) => void
+  onShow: () => void
   // While a reply is on its way the agent may act on this item itself, so its buttons wait (BEH-CHAT-6).
   busy: boolean
 }) {
@@ -567,6 +571,10 @@ function Focus({
         {/* His 17:48Z note: "Skip" alone read as dismissing it. It only moves on; the item stays waiting. */}
         <Button type="button" size="sm" variant="ghost" onClick={() => onDone('skipped')} disabled={saving || busy}>
           Skip to next item
+        </Button>
+        {/* His 13:49Z note: when the item is far up the chat, post it again at the bottom. */}
+        <Button type="button" size="sm" variant="ghost" onClick={onShow} disabled={saving || busy}>
+          Show again
         </Button>
       </div>
       <WriteFeedback write={write} />

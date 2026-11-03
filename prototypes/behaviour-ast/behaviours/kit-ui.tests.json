@@ -686,7 +686,13 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that moves the chat by naming a project is not the answer to the item waiting there" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "\"Ask Kit to note this chat\" sends the canned message as an ordinary turn, once there is something to note" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" }
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_turn_with_an_item_in_hand_sends_that_card_too" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" }
+  ],
+  "BEH-CHAT-9": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "puts the item at the bottom with no model call, no write and no reply spent" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is told to the agent as the item in view, with his next message" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "has nothing to show when nothing is in hand" }
   ],
   "BEH-CHAT-6": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "approves the item when the agent asks to, says so with an Undo, and the undo puts the review back" },
