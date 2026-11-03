@@ -65,6 +65,20 @@
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/FitFileReaderTests.cs", "title": "a_ride_is_not_a_run" }
   ],
 
+  "BEH-SYNC-8": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "The_key_is_traded_for_a_token_that_is_reused_until_an_hour_from_its_expiry" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_token_with_no_expiry_is_a_failure" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_refused_token_is_dropped_so_the_next_call_trades_the_key_again" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "Without_a_key_and_a_user_nothing_is_called" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_new_garmin_run_is_downloaded_and_kept_for_the_configured_user_with_its_songs" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_run_already_kept_at_that_start_is_not_downloaded_again" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "Activities_that_are_not_running_are_not_downloaded" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_list_item_missing_a_field_is_skipped_without_losing_the_rest" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "One_bad_file_does_not_stop_the_next_run_being_kept" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/GarminSyncTests.cs", "title": "A_garmin_that_times_out_is_an_upstream_failure_not_a_cancellation" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunStoreTests.cs", "title": "A_run_is_found_by_its_start_for_that_user_only" }
+  ],
+
   "BEH-CONNECT-1": [
     { "file": "frontend/e2e/signin.spec.ts", "title": "BEH-AUTH-1: signed out shows a Strava sign-in link and never asks for runs" },
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Starting_sign_in_redirects_to_Strava_asking_for_activities_and_sets_a_state_cookie" },
