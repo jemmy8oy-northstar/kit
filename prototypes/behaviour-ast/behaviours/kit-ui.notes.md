@@ -111,3 +111,9 @@ Three changes to the chat and action cards, from the owner's review:
 2. When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away.
 
 3. Remove the "next up in Kit" section. The next item comes up in the chat anyway, so it is not needed.
+
+## 2026-11-03 23:35Z
+
+<!-- from: chat -->
+
+In the chat and on action cards, any item ID written in the text, such as BEH-USERS-5, is a link. Clicking it opens that item, so the owner can follow a reference like "It builds on a user's stored secrets (BEH-USERS-5)" without searching for it.
