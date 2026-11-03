@@ -271,3 +271,73 @@ describe('Projects', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('nothing is served at /api/projects')
   })
 })
+
+describe('BEH-WELCOME-1: a new user connects their GitHub, then sees their projects or is offered a new one', () => {
+  const ann = { required: true, signedIn: true, accounts: true, user: 'ann' } as SessionState
+
+  it('a user with no GitHub connected is welcomed with connecting it as the first step', async () => {
+    mockFetch({ projects: [] })
+    renderProjects({ ...ann, gitHubInstall: 'https://github.com/apps/kit/installations/new', gitHubAuthorize: 'https://github.com/login/oauth/authorize?s=1' })
+
+    const steps = await screen.findByTestId('welcome-steps')
+    expect(screen.getByRole('heading', { name: 'Welcome to Kit' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', 'https://github.com/apps/kit/installations/new')
+    expect(screen.getByRole('link', { name: 'Already installed? Connect it' })).toHaveAttribute('href', 'https://github.com/login/oauth/authorize?s=1')
+    expect([...steps.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      expect.stringMatching(/^Connect your GitHub/),
+      expect.stringMatching(/Kit projects appear here/),
+      expect.stringMatching(/offers to start a new one/),
+    ])
+    // The operator's wording about every corpus is not theirs.
+    expect(screen.queryByText(/Every behaviour corpus Kit can read/)).not.toBeInTheDocument()
+  })
+
+  it('once connected, the welcome is gone: their projects are listed, or with none a new one is offered', async () => {
+    mockFetch({ projects: [], gitHub: [] })
+    const { unmount } = renderProjects({ ...ann, gitHub: 'ann-gh' })
+    expect(await screen.findByRole('heading', { name: 'Start a new project' })).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-steps')).not.toBeInTheDocument()
+    unmount()
+
+    mockFetch({ projects: [], gitHub: [{ name: 'app', fullName: 'ann-gh/app', url: 'https://github.com/ann-gh/app', corpus: ['behaviours/app.beh'] }] })
+    renderProjects({ ...ann, gitHub: 'ann-gh' })
+    expect(await screen.findByRole('link', { name: 'ann-gh/app' })).toBeInTheDocument()
+    expect(screen.getByText(/Your Kit projects/)).toBeInTheDocument()
+  })
+
+  it('each of their projects shows its test health, and one that could not be read says why, never zero', async () => {
+    const asked: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) => {
+        asked.push(path)
+        const body = path.endsWith('/ann-gh/app/health')
+          ? { available: true, covered: 3, uncovered: 1 }
+          : path.endsWith('/ann-gh/new/health')
+            ? { available: false, covered: null, uncovered: null, reason: 'no behaviours/new.tests.json mapping' }
+            : {
+                projects: [],
+                gitHub: [
+                  { name: 'app', fullName: 'ann-gh/app', url: 'https://github.com/ann-gh/app', corpus: ['behaviours/app.beh'] },
+                  { name: 'new', fullName: 'ann-gh/new', url: 'https://github.com/ann-gh/new', corpus: ['behaviours/new.beh'] },
+                ],
+              }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => body }
+      }),
+    )
+    renderProjects({ ...ann, gitHub: 'ann-gh' })
+
+    expect(await screen.findByText('3/4 covered')).toBeInTheDocument()
+    expect(await screen.findByTitle('no behaviours/new.tests.json mapping')).toHaveTextContent('not measured')
+    expect(asked).toContain('/api/github/ann-gh/app/health')
+    expect(asked).toContain('/api/github/ann-gh/new/health')
+  })
+
+  it('the operator is never shown the welcome, connected or not', async () => {
+    mockFetch(projectsFixture)
+    renderProjects({ ...ann, operator: true })
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-steps')).not.toBeInTheDocument()
+    expect(screen.getByText(/Every behaviour corpus Kit can read/)).toBeInTheDocument()
+  })
+})

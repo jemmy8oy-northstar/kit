@@ -202,6 +202,42 @@ public sealed partial class KitRouter
         }
     }
 
+    /// <summary>
+    /// <c>GET /api/github/:owner/:repo/health</c> (BEH-WELCOME-1): the share of the repo's behaviours a test
+    /// names, read with the caller's own installation, so only a repo it reaches can be read, and only by
+    /// them. Asked per row by the Projects page, so a slow repo never holds up the list.
+    /// </summary>
+    private KitResponse UserProjectHealthOf(string? who, string owner, string repo)
+    {
+        if (owner is "." or ".." || repo is "." or "..")
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "owner and repo must name a GitHub repository" });
+        }
+
+        if (userProjects is null || who is null || users is null || LinkOf(who) is not { } link)
+        {
+            return Json(404, new ApiError { Error = "no-github", Reason = "no GitHub is connected for this session, so there is no repo of yours to read" });
+        }
+
+        var counter = new CoverageCounter(new TestTitleReader());
+        try
+        {
+            // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
+            var files = userProjects.FilesAsync(link.Installation, $"{owner}/{repo}", p => UserProjectHealth.Wanted(p, counter)).GetAwaiter().GetResult();
+            return Json(200, UserProjectHealth.Count(files, new CorpusParser(), new BehaviourResolver(), counter));
+        }
+        catch (GitHubReadException e)
+        {
+            return Json(200, UserProjectHealth.Unavailable(e.Message));
+        }
+        catch (Exception e)
+        {
+            // Whatever the reader or counter did not foresee is a badge that says so, not a 500 on the page.
+            Console.Error.WriteLine($"kit: a project's health threw {e.GetType().Name}");
+            return Json(200, UserProjectHealth.Unavailable("Kit could not count this project's tests"));
+        }
+    }
+
     private DateTimeOffset Now() => (clock ?? TimeProvider.System).GetUtcNow();
 
     /// <summary><c>expires.signature</c>: names no one, but only verifies for the user it was made for.</summary>
