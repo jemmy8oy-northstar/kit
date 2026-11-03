@@ -453,13 +453,15 @@ behaviour BEH-SYNC-8 "James's new Garmin runs arrive by themselves, read with hi
   source inferred tracks.notes.md#2026-11-02-1140
   review approved
   priority 1
-  pending
+  needs-context "Built and merged (tracks#35), and off until you set it up: create a key in Garmin Connect (Settings, Personal API), add Garmin__ApiKey to oke-fleet secrets/tracks.json, and add Garmin__ApiKey (secretKeyRef) and Garmin__UserId (your Tracks user id) to the backend env in helm/values.yaml."
   actor runner
   contract "Garmin now offers a free personal API for accessing your Connect data, though it's read-only"
   contract my assumption: this replaces Strava for James when his Strava access ends on 2026-11-18; Strava stays in the code, unused, so it can return if Tracks gets paying runners (BEH-COST-1)
   contract my assumption: Tracks asks Garmin for new running activities on a schedule, since the personal tier documents no webhook, and matches songs from Spotify's recent plays exactly as an uploaded FIT file does (BEH-SYNC-7)
   contract the key is his secret: he creates it in Garmin Connect Web (it is shown once, and expires after at most a year) and it is stored as a cluster secret, never in the repo or a page. Until it exists, the FIT upload is the Garmin path
   contract my assumption: one key reads one account, so this serves James only; other runners keep the FIT upload
+  contract built in tracks#35: every 15 minutes Tracks trades the key for Garmin's day-long token, lists the last two days' running activities, and keeps each new one through the FIT upload's own path, so its songs, route and highlights are read as an upload's are; a start time already kept, from Strava or an upload, is not fetched again
+  contract my assumption: Garmin's activity list carries activityId, startTimeGMT and activityType.typeKey, as Garmin Connect's always has; it is unconfirmed until the first run with his key
 
 behaviour BEH-SYNC-7 "A runner adds a Garmin run by uploading its FIT file"
   in FEAT-SYNC
