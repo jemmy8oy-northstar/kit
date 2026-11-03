@@ -73,3 +73,7 @@ Merged to main
 ## 2026-11-03 10:58Z · BEH-SPLASH-1
 
 This is complete right? Also why are you not cracking on with the kit backlog. Got to work towards being ready for users
+
+## 2026-11-03 13:36Z
+
+The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-hosted are all related and should share a single chat. Today each is a separate project with its own chat, so he has to talk to three places about one thing. Please group them so kit's chat covers all three.
