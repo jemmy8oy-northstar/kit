@@ -2664,7 +2664,7 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour before Kit goes to production"
   in FEAT-TOUR
@@ -2672,12 +2672,13 @@ behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour befor
   source defined kit.notes.md#2026-11-02-1928
   review unreviewed
   priority 5
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract "Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now"
   contract my assumption: the tour can be skipped and replayed from Settings, and the help in Chat explains the same ideas in words
+  contract built: on a signed-in person's first visit to Projects a six-step tour opens over the page (Projects, the Board and Queue, the Inbox, Chat, Notes, Settings), one step at a time with Next, Back and Skip tour; Skip, Done or Escape marks it seen in this browser, and Settings has "Replay the tour"
+  contract my assumption: it shows for him too, once, and "seen" is kept per browser rather than per account, so a new phone shows it again; keeping it per account waits until there is a reason to store it
 
 feature FEAT-SPLASH "A splash page for production Kit, with a register-interest page"
   in EPIC-KIT-USERS

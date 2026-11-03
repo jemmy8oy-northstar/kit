@@ -8,6 +8,8 @@ import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
 import { useSession } from '../components/session'
+import Tour from '../components/Tour'
+import { tourSeen } from '../components/tourStore'
 import { byProject } from '../features'
 import { isIdea } from '../board'
 
@@ -18,9 +20,13 @@ export default function Projects() {
   // BEH-WELCOME-1: a user, not the operator, whose GitHub is not connected yet has nothing to list,
   // so the page is their first step: connecting it.
   const welcome = !!session?.accounts && !session.operator && !session.gitHub
+  // BEH-TOUR-1: once, on a signed-in user's first visit; never without accounts info.
+  const [tourDone, setTourDone] = useState(false)
+  const showTour = !!session?.accounts && session.signedIn && !tourDone && !tourSeen()
 
   return (
     <>
+      {showTour && <Tour onClose={() => setTourDone(true)} />}
       <h1>Projects</h1>
       {welcome ? (
         <Welcome session={session!} />
