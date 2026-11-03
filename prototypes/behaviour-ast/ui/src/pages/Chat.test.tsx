@@ -512,6 +512,54 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
   })
 })
 
+describe('BEH-CHAT-5: the chat can drop what came before a project change', () => {
+  it('after a project change, Forget leaves the earlier turns out of what is sent, and the project is named again', async () => {
+    mockApi()
+    await open()
+    expect(screen.queryByRole('button', { name: /Forget the chat before/ })).toBeNull()
+    await say('hello', 'reply 1')
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    // Nothing to forget before the switch had a message behind it; now there is.
+    fireEvent.click(screen.getByRole('button', { name: 'Forget the chat before beta' }))
+    expect(screen.getByText('The agent no longer sees the chat before this project, so each reply costs less.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Forget the chat before/ })).toBeNull()
+
+    await say('and here?', 'reply 2')
+    expect(chats()[1][1].messages).toEqual([{ from: 'user', text: '[Now talking about beta] and here?' }])
+    // The earlier lines are still on the page.
+    expect(screen.getByText('hello')).toBeTruthy()
+  })
+})
+
+describe('BEH-SPECAGENT-3: a technical question goes to the coding agent', () => {
+  it('leaves the question as a note marked for the coding agent, says so, and can be undone', async () => {
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'I have asked it.', remaining: 8, action: { kind: 'question', text: 'How is the board sorted?' } } }))
+    await open()
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    await say('ask the coding agent how the board is sorted', 'I have asked it.')
+
+    await waitFor(() => expect(posts.some(([p]) => p === '/api/projects/beta/notes')).toBe(true))
+    const [, note] = posts.find(([p]) => p === '/api/projects/beta/notes')!
+    expect(note.text).toBe('Question for the coding agent: How is the board sorted?')
+    expect(screen.getByText(/Asked the coding agent on beta: “How is the board sorted\?” It answers when it next works/)).toBeTruthy()
+
+    notesNow = [{ at: '2026-11-03T12:00:00Z', kind: 'note', behaviour: null, resolves: null, text: 'Question for the coding agent: How is the board sorted?' }]
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    await waitFor(() => expect(posts.some(([p]) => p === '/api/projects/beta/notes/dismiss')).toBe(true))
+  })
+})
+
+describe('BEH-NOTE-14: notes stay alongside the Chat', () => {
+  it("links to the project's notes, and follows the project the chat is about", async () => {
+    mockApi()
+    await open()
+    expect(screen.getByRole('link', { name: 'Notes on alpha' })).toHaveAttribute('href', '/projects/alpha?tab=notes')
+
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    expect(screen.getByRole('link', { name: 'Notes on beta' })).toHaveAttribute('href', '/projects/beta?tab=notes')
+  })
+})
+
 describe('BEH-SPECAGENT-1: a user designs their project in a conversation with the spec agent', () => {
   const designs = () => chats().map(([, b]) => (b as { design?: boolean }).design ?? false)
 

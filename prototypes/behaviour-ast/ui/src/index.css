@@ -408,6 +408,29 @@ pre {
   width: min(24rem, calc(100vw - 2 * var(--space-4)));
 }
 
+/* The onboarding tour (BEH-TOUR-1): a dialog over a dimmed page, full width on a phone. */
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgb(0 0 0 / 0.5);
+}
+
+.tour {
+  width: min(28rem, 100%);
+}
+
+.tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .note-body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

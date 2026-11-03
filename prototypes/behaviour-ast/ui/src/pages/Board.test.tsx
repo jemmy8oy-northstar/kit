@@ -946,3 +946,25 @@ describe('navbar', () => {
     expect(within(nav).getByRole('link', { name: 'Ideas' })).toHaveAttribute('href', '/projects/ideas')
   })
 })
+
+describe('BEH-SPACE-3: each project has its own board, a tap from the global one', () => {
+  beforeEach(() => {
+    histories = {}
+    bells = {}
+  })
+
+  it('a board filtered to one project is named for it, and See every project clears the filter', async () => {
+    mockApi()
+    renderBoard('/board?project=alpha')
+    await loaded()
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Board · alpha' })).toBeInTheDocument()
+    expect(column('Done').queryByText('B-DONE')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'See every project' }))
+
+    expect(screen.getByTestId('search').textContent).toBe('')
+    expect(screen.getByRole('heading', { level: 1, name: 'Board' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'See every project' })).not.toBeInTheDocument()
+    expect(await column('Done').findByText('B-DONE')).toBeInTheDocument()
+  })
+})

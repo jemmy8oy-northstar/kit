@@ -363,7 +363,7 @@ public class TriageTests
 
         var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
         Assert.Equal(
-            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note"],
+            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note", "ask_coding_agent"],
             sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.False(sent[1].TryGetProperty("tools", out _));
     }
@@ -388,6 +388,43 @@ public class TriageTests
         Assert.Equal(new TriageAction("show"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"show_item","input":{}}]}""").Action);
         Assert.Equal(new TriageAction("note", "a b"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"save_note","input":{"text":" a b "}}]}""").Action);
         Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"save_note","input":{"text":"  "}}]}""").Text);
+    }
+
+    // ---- a technical question goes to the coding agent (BEH-SPECAGENT-3) ------------------------
+
+    [Fact]
+    public void A_question_for_the_coding_agent_reads_as_an_action_that_needs_no_item_in_hand()
+    {
+        Assert.Equal(
+            new TriageAction("question", "How is the board sorted?"),
+            AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"ask_coding_agent","input":{"text":" How is the board sorted? "}}]}""").Action);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"ask_coding_agent","input":{"text":"  "}}]}""").Action);
+
+        var asked = Router(new FakeModel("Asked.", new TriageAction("question", "How is the board sorted?"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "ask it")));
+        Assert.Equal(new TriageAction("question", "How is the board sorted?"), Assert.IsType<TriageAnswer>(asked.Body).Action);
+        Assert.False(new TriageAction("question", "x").ActsOnItem());
+    }
+
+    // ---- BEH-CONFLICT-3: a conflict is settled while the spec is proposed ------------------------
+
+    [Fact]
+    public void Before_saving_new_spec_the_chat_looks_for_a_card_it_conflicts_with_and_asks_which_holds()
+    {
+        Assert.Contains("look in the spec below for a behaviour the new spec overlaps or contradicts", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("name it by id and title, say how they differ, and ask which holds", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("the note says which card it changes", TriageContext.ChatInstructions, StringComparison.Ordinal);
+
+        // The order matters: the check comes before the offer to save, not after the note is written.
+        Assert.True(
+            TriageContext.ChatInstructions.IndexOf("Before you offer, look in the spec", StringComparison.Ordinal)
+            < TriageContext.ChatInstructions.IndexOf("then the note says which card it changes", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_chat_offers_to_ask_the_coding_agent_what_the_spec_cannot_answer()
+    {
+        Assert.Contains("offer to ask the coding agent, and call ask_coding_agent when they agree", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("which answers it when it next works", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     [Fact]

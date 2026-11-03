@@ -437,3 +437,24 @@ describe('the question sheet', () => {
     expect(screen.queryByRole('heading', { name: 'Problems in the spec' })).not.toBeInTheDocument()
   })
 })
+
+describe('BEH-SPACE-1: each project is its own space', () => {
+  it("has its own navigation to its chat, board and notes, and the notes link opens the project's Notes tab", async () => {
+    renderApp(snipIt, 'snip-it')
+
+    const nav = await screen.findByRole('navigation', { name: 'This project' })
+    expect(within(nav).getByRole('link', { name: 'Its chat' })).toHaveAttribute('href', '/chat?project=snip-it')
+    expect(within(nav).getByRole('link', { name: 'Its board' })).toHaveAttribute('href', '/board?project=snip-it')
+    fireEvent.click(within(nav).getByRole('link', { name: 'Its notes' }))
+    expect(await screen.findByRole('tab', { name: /Notes/, selected: true })).toBeInTheDocument()
+  })
+})
+
+describe('BEH-SPACE-3: a project links to its own board', () => {
+  it('links to the board filtered to this project, and to designing it in the Chat', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    expect(await screen.findByRole('link', { name: 'Its board' })).toHaveAttribute('href', '/board?project=snip-it')
+    expect(screen.getByRole('link', { name: 'Design it with the spec agent' })).toHaveAttribute('href', '/chat?project=snip-it&design=1')
+  })
+})

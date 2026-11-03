@@ -75,6 +75,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }, [lines])
   // The first message after a project change carries it, so the agent knows which project it is about.
   const [announce, setAnnounce] = useState(true)
+  // BEH-CHAT-5: the first line the agent is sent; what came before it stays on the page but costs nothing.
+  const [forgotten, setForgotten] = useState(0)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,6 +115,16 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }, [])
 
   if (apps.length === 0) return <p>There are no projects to talk about yet.</p>
+
+  // BEH-CHAT-5: after a project change, what was said before it can be left out of every later turn.
+  const lastSwitch = lines.map((l) => l.from).lastIndexOf('switch')
+  const canForget = lastSwitch > forgotten && lines.slice(forgotten, lastSwitch).some((l) => l.from === 'user' && !l.local)
+  function forget() {
+    setForgotten(lastSwitch)
+    // The next message says the project again, as the agent no longer sees where it was named.
+    setAnnounce(true)
+    setLines((ls) => [...ls, { from: 'kit', text: 'The agent no longer sees the chat before this project, so each reply costs less.', tell: '' }])
+  }
 
   const label = (a: string) => {
     const p = apps.find((x) => x.app === a)?.project ?? a
@@ -202,6 +214,26 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       }
       return
     }
+    if (action.kind === 'question') {
+      // BEH-SPECAGENT-3: on the project's notes, marked for the coding agent, which answers it on the card
+      // the question is about when it next works. Undone the way a note is.
+      const text = `Question for the coding agent: ${action.text}`
+      try {
+        await leaveNote(about, text)
+        setLines((ls) => [
+          ...ls,
+          {
+            from: 'kit',
+            text: `Asked the coding agent on ${label(about)}: “${action.text}” It answers when it next works, on the card the question is about.`,
+            tell: `[Kit asked the coding agent: ${action.text.slice(0, 200)}]`,
+            undo: () => dismissAnswer(about, null, text),
+          },
+        ])
+      } catch (e) {
+        failed(e)
+      }
+      return
+    }
     if (action.kind === 'show') {
       // Again, even when it is already the latest item line: he asked to see it. None in hand, nothing to show.
       if (card && !handledNow.current.has(keyOf(card))) setLines((ls) => [...ls, itemLine(card)])
@@ -284,7 +316,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setError(null)
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
-      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after), about === (designed ?? designing))
+      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), about === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
       setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
@@ -433,7 +465,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             disabled={busy || !lines.some((l) => l.from === 'user' && !l.local)}
           >
             Ask Kit to note this chat
-          </Button>
+          </Button>{' '}
+          {canForget && (
+            <Button type="button" size="sm" variant="ghost" onClick={forget} disabled={busy}>
+              Forget the chat before {label(app)}
+            </Button>
+          )}{' '}
+          {/* BEH-NOTE-14 (his 2026-11-02 19:05Z note): notes stay, as the quick brain dump, one tap from here. */}
+          <Link to={`/projects/${encodeURIComponent(app)}?tab=notes`}>Notes on {label(app)}</Link>
         </p>
         {error && <p role="alert">{error}</p>}
       </div>
@@ -480,7 +519,7 @@ function itemLine(card: InboxCard): Line {
 
 /** His 19:28Z note: what Kit is, and that the chat changes nothing itself. */
 const HELP =
-  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, or save what you agree as a note. Notes are also a quick brain-dump."
+  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, save what you agree as a note, or ask the coding agent a technical question, which it answers when it next works. Notes are also a quick brain-dump."
 const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
 const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())
 

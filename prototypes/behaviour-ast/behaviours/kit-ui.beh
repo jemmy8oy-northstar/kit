@@ -1647,6 +1647,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
+  needs-context "It is built, in claude-code-bot (the wake five minutes after your last action), and it stays pending only because its test lives there. Approve it to close it."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1847,6 +1848,7 @@ behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share
 behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the project with the worst test health"
   in FEAT-HEALTH
   source defined kit.notes.md#2026-10-27-2133
+  source defined kit.notes.md#2026-11-03-1117
   review unreviewed
   pending
   priority 3
@@ -1861,6 +1863,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
   contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22); balenthiran 6 → 7/7 (balenthiran.co.uk#31, 2026-10-29). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
   contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
+  contract his question, does reading the Queue need to be built into CLAUDE.md (kit.notes.md#2026-11-03-1117): no, it says so already, and the prose has lost three times (kit#388, kit#401, 2026-11-03). Instead a hook refuses my idle suspend while the Queue holds a card that is not built, paused or marked needs-context; registering it is his (claude-code-bot#132)
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
@@ -2267,6 +2270,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   review unreviewed
   priority 4
   pending
+  needs-context "It needs the agent Kit runs for a user (BEH-USERS-9), which waits on your API key and spend cap."
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardQueue
@@ -2281,12 +2285,13 @@ behaviour BEH-SPECAGENT-3 "A technical question to the spec agent goes on an ope
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "When I have technical questions I am able to ask the non coder agent and it is able to delegate to a coder agent to answer - i think to start with this just gets posted to an open questions board"
   contract my assumption: the board is the project's Questions tab (BEH-SHEET-2), with the asker shown; an answer arrives when the coding agent next wakes, and answering at once comes later, as he said
+  contract built: in the Chat the spec agent offers to ask the coding agent what the spec cannot answer, and with his yes calls ask_coding_agent; the page leaves "Question for the coding agent: …" as a note on the project, says so with an Undo, and the coding agent answers it when it next works
+  contract my assumption, replacing the Questions tab for now: the answer goes on the card the question is about, as "his question, …: answer", the way his questions in notes are already answered; the Questions tab holds what Kit asks him, so his questions to it are not mixed in
 
 behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and the spec agent talks each one through with the user"
   in FEAT-SPEC-AGENT
@@ -2313,6 +2318,7 @@ behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent res
   review unreviewed
   priority 5
   pending
+  needs-context "It needs web search, which costs per query on top of the model; say if it may spend, and how much a design session may cost."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2410,11 +2416,12 @@ behaviour BEH-CHAT-5 "To save cost, the chat can drop what came before a project
   source defined kit.notes.md#2026-11-02-1256
   review unreviewed
   priority 5
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "We can think about discarding context let's put it on the backlog as a cost saver"
+  contract built: after a project change the Chat offers "Forget the chat before x"; once pressed, the turns before that change stay on the page but are no longer sent, and the next message names the project again
+  contract my assumption: it is his choice each time, not automatic, because the chat keeps history across a project change on purpose (BEH-CHAT-1), so a question about two projects still works
 
 behaviour BEH-CHAT-6 "The chat agent approves, denies or answers an item itself when he says so, and he can undo it"
   in FEAT-CHAT
@@ -2467,11 +2474,11 @@ behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title
   contract my assumption: cards on demand rather than the whole spec in every turn, because kit-ui's spec alone is about 190,000 characters and each turn would pay for it; a read is one more request on the same reply, not another of his daily replies
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
-# words: "priority is still getting ready for users". Nothing here is built.
+# words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
 
 feature FEAT-CONFLICTS "Conflicting specs are flagged, and resolved without holding work up"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-CONFLICT-1 "When two specs conflict, the agent builds one reading anyway, and the user confirms or denies it when approving"
   in FEAT-CONFLICTS
@@ -2506,12 +2513,13 @@ behaviour BEH-CONFLICT-3 "The chat agent spots a conflict while the user is prop
   source defined kit.notes.md#2026-11-02-1747
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "The chat agent being able to identify conflicts is ideal, this is the least disruptive means the user can identify and unblock during proposal rather than having to do an entirely separate resolution round then potentially waiting again before it gets merged"
   contract "The code agent can provide context to the triage/chat agent which can help resolve with the user"
+  contract built: before it offers to save new spec, the Chat's agent looks through the project's spec for a behaviour it overlaps or contradicts, reading whole cards when a title is not enough; if one does, it names it by id and title, says how they differ and asks which holds, and the note then says which card it changes
+  contract my assumption: the coding agent's context comes through the same chat, as a technical question it answers (BEH-SPECAGENT-3); the spec agent reading the code itself waits for the agent Kit runs (BEH-USERS-9)
 
 behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is found quickly however large the spec grows"
   in FEAT-CONFLICTS
@@ -2520,6 +2528,7 @@ behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is 
   review unreviewed
   priority 5
   pending
+  needs-context "It needs a design first: where the index lives and what it costs to keep. Say go and I will propose one here as a review request."
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
@@ -2541,6 +2550,7 @@ behaviour BEH-TRANSCRIPT-1 "His Chat transcripts are saved to a dedicated volume
   review unreviewed
   priority 5
   pending
+  needs-context "It needs a volume in the cluster, which is yours to add (claude-code-bot#58): a PVC mounted into the kit pod, and its path."
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
@@ -2559,6 +2569,7 @@ behaviour BEH-SECAGENT-1 "A security agent is switched on or off in Settings, au
   review unreviewed
   priority 5
   pending
+  needs-context "An audit spends model tokens on every run; it waits on your spend cap, as BEH-USERS-9 does."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2576,6 +2587,7 @@ behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent,
   review unreviewed
   priority 5
   pending
+  needs-context "Custom agents spend on every run and start from the security agent (BEH-SECAGENT-1); both wait on your spend cap."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2593,6 +2605,7 @@ behaviour BEH-HOOKOUT-1 "Kit can trigger an external integration when something 
   review unreviewed
   priority 5
   pending
+  needs-context "Which integrations Kit calls out to is a platform choice (claude-code-bot#58); name the first one you want."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2611,6 +2624,7 @@ behaviour BEH-HOOKIN-1 "An external integration can trigger Kit"
   review unreviewed
   priority 5
   pending
+  needs-context "It is a public endpoint that takes a credential, so it is auth and public-facing (claude-code-bot#58); it needs your go before it is built."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2628,6 +2642,7 @@ behaviour BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a
   review unreviewed
   priority 5
   pending
+  needs-context "It reads with a user's credentials, so it builds on their stored secrets (BEH-USERS-5), which wait on your vault choice."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2640,16 +2655,16 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
   source defined kit.notes.md#2026-11-02-1905
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it."
   contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
+  contract built: the Chat's foot links to "Notes on x", the project's Notes tab, following whichever project the chat is about
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour before Kit goes to production"
   in FEAT-TOUR
@@ -2657,12 +2672,13 @@ behaviour BEH-TOUR-1 "A new user is shown around Kit by an onboarding tour befor
   source defined kit.notes.md#2026-11-02-1928
   review unreviewed
   priority 5
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
   contract "Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now"
   contract my assumption: the tour can be skipped and replayed from Settings, and the help in Chat explains the same ideas in words
+  contract built: on a signed-in person's first visit to Projects a six-step tour opens over the page (Projects, the Board and Queue, the Inbox, Chat, Notes, Settings), one step at a time with Next, Back and Skip tour; Skip, Done or Escape marks it seen in this browser, and Settings has "Replay the tour"
+  contract my assumption: it shows for him too, once, and "seen" is kept per browser rather than per account, so a new phone shows it again; keeping it per account waits until there is a reason to store it
 
 feature FEAT-SPLASH "A splash page for production Kit, with a register-interest page"
   in EPIC-KIT-USERS
@@ -2680,6 +2696,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   review unreviewed
   priority 2
   pending
+  needs-context "It is built and live: kitstudio.dev serves the splash and its register-interest flow. Approve it to close it; it cannot leave pending on its own because its test lives in balenthiran.co.uk."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2705,6 +2722,7 @@ behaviour BEH-PROJCONF-1 "Each project has an integrations page where its user c
   review unreviewed
   priority 4
   pending
+  needs-context "It builds on a user's stored secrets (BEH-USERS-5), which wait on your vault choice."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2718,6 +2736,7 @@ behaviour BEH-PROJCONF-2 "Migrations against a user's production database are li
   review unreviewed
   priority 4
   pending
+  needs-context "It is your rule to set: whether migrations against a user's production database may run at all, or preprod only."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2736,6 +2755,7 @@ behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no 
   review unreviewed
   priority 4
   pending
+  needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58)."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2750,6 +2770,7 @@ behaviour BEH-LITE-2 "A lite version can optionally use a test database and test
   review unreviewed
   priority 5
   pending
+  needs-context "It builds on the lite version (BEH-LITE-1) and the integrations page (BEH-PROJCONF-1), both waiting on you."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2758,7 +2779,7 @@ behaviour BEH-LITE-2 "A lite version can optionally use a test database and test
 
 feature FEAT-PROJECT-SPACES "Everything in Kit is organised by project"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, board and config, beside global entry, inbox and settings"
   in FEAT-PROJECT-SPACES
@@ -2766,13 +2787,14 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "there might be value in restructuring kit such that everything is organised by project. I think maybe the inventory might be worth having globally maybe with a take to chat button to take you to the chat within that project."
   contract "I kind of feel like each project should be quite isolated in kit. Kind of like in git how there is a entry page, there is an inbox, there is global settings and configuration and then there is a repo with the repo code, with the config, the gh actions etc."
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
+  contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
+  contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
@@ -2780,12 +2802,13 @@ behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so an
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item."
   contract my assumption: the message appears only when the project has no item for him, and the jump goes to the project with his most recent item
+  contract built already, in BEH-CHAT-2: with nothing waiting in the project the Chat says "Nothing is waiting on you in x", and offers the next waiting item elsewhere as a button that moves the chat there
+  contract my assumption: "most recent" is the top of his stack in the Inbox's own order (unseen first, then by priority), not the newest by date, so the Chat and the Inbox never disagree about what is next
 
 behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the user to the global board that shows everything"
   in FEAT-PROJECT-SPACES
@@ -2793,12 +2816,12 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
+  contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES
@@ -2807,6 +2830,7 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   review unreviewed
   priority 4
   pending
+  needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58); it waits on that, as BEH-LITE-1 does."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
