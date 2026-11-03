@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@jemmy8oy-northstar/design-system'
 import { chatTurn, dismissNote, fetchNotes, fetchTriage, leaveNote, setReview } from '../api/client'
 import type { ReviewState, TriageAction, TriageStatus } from '../api/types'
@@ -55,8 +55,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   // The same set, current inside a write's callback, which may run after other items were marked off.
   const handledNow = useRef<ReadonlySet<string>>(handled)
   const undoing = useRef(new Set<Line>())
-  const first = queue[0]?.app ?? apps[0]?.app ?? ''
+  // ?project=x opens on that project, and with &design=1 starts designing it (BEH-SPECAGENT-1).
+  const [params] = useSearchParams()
+  const asked = apps.find((a) => a.app === params.get('project'))?.app
+  const first = asked ?? queue[0]?.app ?? apps[0]?.app ?? ''
   const [app, setApp] = useState(first)
+  // The project being designed: while the chat is about it, every turn asks the agent to lead its design.
+  const [designing, setDesigning] = useState<string | null>(null)
+  const started = useRef(false)
   // The top item is in the thread from the first render rather than an effect later, so it never flashes in.
   const [lines, setLines] = useState<Line[]>(() => {
     const top = queue.find((c) => c.app === first)
@@ -97,6 +103,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusKey, busy])
+
+  // A link with &design=1 is a deliberate ask, so the first turn goes once, with no further tap.
+  useEffect(() => {
+    if (started.current || !asked || params.get('design') !== '1') return
+    started.current = true
+    design(asked)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (apps.length === 0) return <p>There are no projects to talk about yet.</p>
 
@@ -229,8 +243,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     }
   }
 
-  /** `said` is a message Kit's own buttons send for him; his draft stays in the box. */
-  async function send(said?: string) {
+  /**
+   * BEH-SPECAGENT-1 (kit.notes.md#2026-10-31-1643): the agent takes him through the project's first design,
+   * topic by topic, and saves each agreed topic as a note for the coding agent to file as unreviewed spec.
+   */
+  function design(a: string) {
+    setDesigning(a)
+    void send(`Let's design ${label(a)} from the start. Please lead, one topic at a time.`, a)
+  }
+
+  /** `said` is a message Kit's own buttons send for him; his draft stays in the box. `designed` starts design mode. */
+  async function send(said?: string, designed?: string) {
     const text = (said ?? draft).trim()
     if (text === '' || busy) return
     // His 19:28Z note: help is answered here, with no model call and no reply spent.
@@ -261,7 +284,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setError(null)
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
-      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after))
+      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after), about === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
       setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
@@ -298,6 +321,18 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         <Button type="button" size="sm" variant="ghost" onClick={() => setLines((ls) => [...ls, helpLine()])} disabled={busy}>
           What can Kit do?
         </Button>
+        {designing === app ? (
+          <p className="muted" data-testid="chat-designing">
+            Designing {label(app)}: the agent leads, and saves each topic you agree as a note.{' '}
+            <Button type="button" size="sm" variant="ghost" onClick={() => setDesigning(null)} disabled={busy}>
+              Stop designing
+            </Button>
+          </p>
+        ) : (
+          <Button type="button" size="sm" variant="ghost" onClick={() => design(app)} disabled={busy}>
+            Design this project
+          </Button>
+        )}
       </header>
 
       <ol className="chat-thread" aria-label="Messages">

@@ -2248,14 +2248,15 @@ behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "Kit takes me through the initial spec design of my project with a real time non code agent, we discuss what is the overrall vision for the project, together we determine what the data dependencies of the project are, whether there is a database dependency, whether there is a login requirement"
   contract "The kit agent starts to ask me about specific user workflows and determines whether there are different classes of users so that it can group workflows by user classes"
-  contract my assumption: the agent writes what it learns as unreviewed behaviours, features and epics, the same as I do from his notes, so the user approves or denies them on the board; a class of user is the `actor` a behaviour already names
+  contract my assumption: what the agent learns becomes unreviewed behaviours, features and epics, the same as I write from his notes, so the user approves or denies them on the board; a class of user is the `actor` a behaviour already names
   contract his question, is a non-coding agent much cheaper: yes. It reads the spec and the conversation, not the repo, and runs no build or CI loop, so it can run on Sonnet. My estimate, not a measurement: a few cents a reply, under a dollar for a long design session, against $3 to $8 for one card built (BEH-USERS-9)
+  contract built: a project's page has "Design it with the spec agent", and the Chat has "Design this project"; either asks the same Haiku spec agent to lead, one topic at a time, through the vision, the classes of users, each class's workflows, the data, a database and sign-in, until he presses "Stop designing"
+  contract my assumption: each agreed topic is saved as a note on the project, one topic per note, and the coding agent files it as unreviewed spec, as it does his own notes; the agent writing behaviours itself waits for conflict checks (BEH-CONFLICT-3)
 
 behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding agent builds it into dev and the user is told"
   in FEAT-SPEC-AGENT
