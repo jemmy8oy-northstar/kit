@@ -128,7 +128,7 @@ public sealed partial class KitRouter
     }
 
     /// <summary>
-    /// <c>POST /api/projects/:app/chat</c> with <c>{ behaviour?, messages }</c> (BEH-CHAT-1): the Chat page's
+    /// <c>POST /api/projects/:app/chat</c> with <c>{ behaviour?, design?, messages }</c> (BEH-CHAT-1): the Chat page's
     /// next reply, about <paramref name="app"/> and, when named, the item in hand. The same agent, key and
     /// daily allowance as the Inbox's chat; its instructions say it may be about any project. It writes nothing.
     /// </summary>
@@ -169,13 +169,27 @@ public sealed partial class KitRouter
             });
         }
 
+        // BEH-SPECAGENT-1: "design": true asks the agent to lead the project's first design. Anything but a
+        // boolean is refused, so a typo is not silently the ordinary chat.
+        var design = false;
+        if (Field(b, "design") is { } d && d.ValueKind != JsonValueKind.Null)
+        {
+            if (d.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+            {
+                return Json(400, new ApiError { Error = "bad-request", Reason = "design, when given, must be true or false" });
+            }
+
+            design = d.ValueKind == JsonValueKind.True;
+        }
+
         var spec = corpora.ReadText(app);
         if (TriageContext.BuildChat(app, id, spec, corpora.Corpora()) is not { } context)
         {
             return Json(404, new ApiError { Error = "no-such-behaviour", Reason = $"'{app}' has no behaviour {id}" });
         }
 
-        return Ask(context, turns, TriageContext.ChatInstructions, chat: true, item: id, read: ids => TriageContext.Read(spec, ids));
+        var instructions = design ? TriageContext.ChatInstructions + " " + TriageContext.DesignInstructions : TriageContext.ChatInstructions;
+        return Ask(context, turns, instructions, chat: true, item: id, read: ids => TriageContext.Read(spec, ids));
     }
 
     /// <summary>
