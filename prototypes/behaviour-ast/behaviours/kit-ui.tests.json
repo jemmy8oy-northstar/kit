@@ -726,6 +726,9 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_question_for_the_coding_agent_reads_as_an_action_that_needs_no_item_in_hand" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_offers_to_ask_the_coding_agent_what_the_spec_cannot_answer" }
   ],
+  "BEH-SPACE-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "has its own navigation to its chat, board and notes, and the notes link opens the project's Notes tab" }
+  ],
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
   ],

@@ -2784,13 +2784,14 @@ behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, 
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "there might be value in restructuring kit such that everything is organised by project. I think maybe the inventory might be worth having globally maybe with a take to chat button to take you to the chat within that project."
   contract "I kind of feel like each project should be quite isolated in kit. Kind of like in git how there is a entry page, there is an inbox, there is global settings and configuration and then there is a repo with the repo code, with the config, the gh actions etc."
   contract my assumption: the global level keeps the entry page, the Inbox and Settings; the project level holds its Chat, board and configuration
+  contract built: a project's page has its own navigation, "This project": its chat (the Chat on that project), its board (the board filtered to it) and its notes, beside designing it with the spec agent; the main navigation keeps Projects, the Inbox and Settings
+  contract my assumption: a project's configuration is, for now, the tabs its page already has (schedule, principles, architecture); its integrations and secrets join it with the integrations page (BEH-PROJCONF-1)
 
 behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so and offers a jump to the project that has the most recent item"
   in FEAT-PROJECT-SPACES
