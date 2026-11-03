@@ -69,3 +69,7 @@ Merged
 ## 2026-11-03 09:17Z · BEH-SPLASH-1
 
 Merged to main
+
+## 2026-11-03 10:58Z · BEH-SPLASH-1
+
+This is complete right? Also why are you not cracking on with the kit backlog. Got to work towards being ready for users
