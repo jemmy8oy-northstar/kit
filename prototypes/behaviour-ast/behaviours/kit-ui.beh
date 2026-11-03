@@ -2396,8 +2396,7 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract built (17:48Z note): the button says "Skip to next item"; the item stays waiting in Kit and only leaves this chat
   contract "Once acted on an item a similar prompt should come up from kit, here's the next item or we can discuss new spec blah balh" (kit.notes.md#2026-11-02-1754)
   contract built (17:54Z note): after Approve, Skip or an answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
-  source defined kit-ui.notes.md#2026-11-03-1354
-  contract "When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it."
+  contract "When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it." (kit-ui.notes.md#2026-11-03-1354)
   contract built already (BEH-CHAT-6): a note saved from the chat puts Kit's bubble in the thread, "Saved as a note on <project>: “<the note, in full>”", with an Undo; Undo dismisses exactly that note and Kit says "Undone: …"
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
