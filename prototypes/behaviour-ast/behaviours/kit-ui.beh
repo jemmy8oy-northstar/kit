@@ -1647,6 +1647,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   source defined kit.notes.md#2026-10-24-1400
   priority 4
   pending
+  needs-context "It is built, in claude-code-bot (the wake five minutes after your last action), and it stays pending only because its test lives there. Approve it to close it."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2269,6 +2270,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   review unreviewed
   priority 4
   pending
+  needs-context "It needs the agent Kit runs for a user (BEH-USERS-9), which waits on your API key and spend cap."
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardQueue
@@ -2316,6 +2318,7 @@ behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent res
   review unreviewed
   priority 5
   pending
+  needs-context "It needs web search, which costs per query on top of the model; say if it may spend, and how much a design session may cost."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2523,6 +2526,7 @@ behaviour BEH-CONFLICT-4 "The spec is indexed, so a behaviour like a new one is 
   review unreviewed
   priority 5
   pending
+  needs-context "It needs a design first: where the index lives and what it costs to keep. Say go and I will propose one here as a review request."
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
@@ -2544,6 +2548,7 @@ behaviour BEH-TRANSCRIPT-1 "His Chat transcripts are saved to a dedicated volume
   review unreviewed
   priority 5
   pending
+  needs-context "It needs a volume in the cluster, which is yours to add (claude-code-bot#58): a PVC mounted into the kit pod, and its path."
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
@@ -2562,6 +2567,7 @@ behaviour BEH-SECAGENT-1 "A security agent is switched on or off in Settings, au
   review unreviewed
   priority 5
   pending
+  needs-context "An audit spends model tokens on every run; it waits on your spend cap, as BEH-USERS-9 does."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2579,6 +2585,7 @@ behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent,
   review unreviewed
   priority 5
   pending
+  needs-context "Custom agents spend on every run and start from the security agent (BEH-SECAGENT-1); both wait on your spend cap."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2596,6 +2603,7 @@ behaviour BEH-HOOKOUT-1 "Kit can trigger an external integration when something 
   review unreviewed
   priority 5
   pending
+  needs-context "Which integrations Kit calls out to is a platform choice (claude-code-bot#58); name the first one you want."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2614,6 +2622,7 @@ behaviour BEH-HOOKIN-1 "An external integration can trigger Kit"
   review unreviewed
   priority 5
   pending
+  needs-context "It is a public endpoint that takes a credential, so it is auth and public-facing (claude-code-bot#58); it needs your go before it is built."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2631,6 +2640,7 @@ behaviour BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a
   review unreviewed
   priority 5
   pending
+  needs-context "It reads with a user's credentials, so it builds on their stored secrets (BEH-USERS-5), which wait on your vault choice."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -2709,6 +2719,7 @@ behaviour BEH-PROJCONF-1 "Each project has an integrations page where its user c
   review unreviewed
   priority 4
   pending
+  needs-context "It builds on a user's stored secrets (BEH-USERS-5), which wait on your vault choice."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2722,6 +2733,7 @@ behaviour BEH-PROJCONF-2 "Migrations against a user's production database are li
   review unreviewed
   priority 4
   pending
+  needs-context "It is your rule to set: whether migrations against a user's production database may run at all, or preprod only."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2740,6 +2752,7 @@ behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no 
   review unreviewed
   priority 4
   pending
+  needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58)."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2754,6 +2767,7 @@ behaviour BEH-LITE-2 "A lite version can optionally use a test database and test
   review unreviewed
   priority 5
   pending
+  needs-context "It builds on the lite version (BEH-LITE-1) and the integrations page (BEH-PROJCONF-1), both waiting on you."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
@@ -2812,6 +2826,7 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   review unreviewed
   priority 4
   pending
+  needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58); it waits on that, as BEH-LITE-1 does."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
