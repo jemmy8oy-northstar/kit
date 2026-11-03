@@ -2690,7 +2690,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   source defined kit-ui.notes.md#2026-11-03-0857
   source defined kit-ui.notes.md#2026-11-03-0917
   source defined kit-ui.notes.md#2026-11-03-1058
-  review unreviewed
+  review approved
   priority 2
   pending
   needs-context "It is built and live: kitstudio.dev serves the splash and its register-interest flow. Approve it to close it; it cannot leave pending on its own because its test lives in balenthiran.co.uk."
