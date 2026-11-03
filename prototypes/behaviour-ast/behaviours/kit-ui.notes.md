@@ -135,3 +135,15 @@ Owner wants BEH-USERS-5 (production secrets per user) deprioritised, so that the
 <!-- from: chat -->
 
 Owner wants the chat to know what Kit can and cannot do (BEH-CHAT-7), so it can explain this when asked and act within it. Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change.
+
+## 2026-11-03 23:44Z
+
+<!-- from: chat -->
+
+Spec and tests must stay coupled going forward, not only when a test is written. The aim is that the spec is always enforced in the project, and that we can deterministically verify its tests still enforce it.
+
+When a behaviour has a test that enforces it, record a hash of the source code that test exercises against that behaviour on the spec. If that source later changes, flag the behaviour and its test link as possibly broken, so it can be re-checked quickly. The hash must be deterministic: the same code always gives the same hash, and the spec records which hash each link was last verified against.
+
+He sees the flagged links. The coding agent computes and records the hashes and does the re-check.
+
+Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. They do not detect when a test has stopped enforcing it after the code changes, so this is an addition to that feature.
