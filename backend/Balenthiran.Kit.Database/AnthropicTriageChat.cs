@@ -158,6 +158,7 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
             "deny_item" when words is { Length: > 0 } => new TriageAction("deny", words),
             "answer_item" when words is { Length: > 0 } => new TriageAction("answer", words),
             "save_note" when words is { Length: > 0 } => new TriageAction("note", words),
+            "ask_coding_agent" when words is { Length: > 0 } => new TriageAction("question", words),
             _ => null,
         };
     }
@@ -172,7 +173,8 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         Tool("answer_item", "Post an answer to the item in hand's question, when the owner has given one; text is the answer, in their words.", words: "The answer."),
         Tool("undo_last", "Undo the last thing done to an item in this chat, when the owner asks to.", words: null),
         Tool("show_item", "Show the item in hand in the chat again, when the owner asks to see it.", words: null),
-        Tool("save_note", "Leave a note on the project for the coding agent, when the owner agrees to save what this chat settled; text is the note: who does what and what they see, in their words, without the chat's back and forth.", words: "The note."));
+        Tool("save_note", "Leave a note on the project for the coding agent, when the owner agrees to save what this chat settled; text is the note: who does what and what they see, in their words, without the chat's back and forth.", words: "The note."),
+        Tool("ask_coding_agent", "Ask the coding agent a technical question the spec cannot answer, such as how something is built or what a change would take, when the owner wants it asked; text is the question, in their words. It answers when it next works.", words: "The question."));
 
     /// <summary>His 18:55Z note: the tool that reads whole cards of the project's spec, by id.</summary>
     public static JsonObject ReadSpecTool() => new()

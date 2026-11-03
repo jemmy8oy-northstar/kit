@@ -635,6 +635,8 @@ export type TriageAction =
   | { kind: 'deny'; text: string }
   | { kind: 'answer'; text: string }
   | { kind: 'note'; text: string }
+  /** BEH-SPECAGENT-3: a technical question for the coding agent, left as a note it answers. */
+  | { kind: 'question'; text: string }
   | { kind: 'show'; text?: null }
 
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
