@@ -2696,7 +2696,6 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   review approved
   priority 2
   pending
-  needs-context "It is built and live: kitstudio.dev serves the splash and its register-interest flow. Approve it to close it; it cannot leave pending on its own because its test lives in balenthiran.co.uk."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2710,6 +2709,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract built in balenthiran.co.uk#33 and balenthiran.co.uk#34, which he merged and promoted to main (balenthiran.co.uk#37) on 2026-11-03; kitstudio.dev serves it with its own certificate, and its test is balenthiran.co.uk's frontend/e2e/kitstudio.spec.ts
   contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
   contract his question, is it complete: yes. kitstudio.dev serves the splash and its register-interest flow, and the live check reads it green on 2026-11-03
+  contract he approved it on 2026-11-03, so it is closed: it stays marked pending only for the reason above, and nothing on it is left for him or the agent
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS
