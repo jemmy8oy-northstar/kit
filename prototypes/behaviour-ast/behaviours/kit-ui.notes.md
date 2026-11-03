@@ -129,3 +129,9 @@ Vault decision for BEH-USERS-5 (user production secrets): the owner chose OCI Va
 <!-- from: chat -->
 
 Owner wants BEH-USERS-5 (production secrets per user) deprioritised, so that the agent Kit runs for users (BEH-USERS-9) gets built first. He feels getting users the coding agent matters more than secrets right now. Please lower BEH-USERS-5's priority and reorder the schedule so BEH-USERS-9 comes ahead of it. The vault decision (OCI Vault for now) still stands and should stay recorded against BEH-USERS-5.
+
+## 2026-11-03 23:40Z
+
+<!-- from: chat -->
+
+Owner wants the chat to know what Kit can and cannot do (BEH-CHAT-7), so it can explain this when asked and act within it. Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change.
