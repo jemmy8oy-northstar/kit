@@ -2655,8 +2655,9 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   in FEAT-SPLASH
   layer ux
   source defined kit.notes.md#2026-11-02-2015
+  source defined kit.notes.md#2026-11-02-2350
   review unreviewed
-  priority 4
+  priority 2
   pending
   actor engineer
   when opens page:KitProjects
@@ -2664,6 +2665,10 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract "We should probably have a splash page for the production kit, with a register interest page."
   contract "We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit."
   contract my assumption: this is public-facing, so its wording and design wait for his approval before anything is published
+  contract "Kitstudio should currently show a splash page with a register interest flow, maybe this flow is powered by balenthiran backend"
+  contract my assumption: kitstudio.dev is served by the balenthiran.co.uk pods, whose frontend renders the Kit splash for that hostname, so no new app or database is needed
+  contract my assumption: interest is stored by balenthiran's existing register-interest API under a hidden "kit" project, so Kit is not added to the portfolio's project grid
+  contract my assumption: the splash also shows at balenthiran.co.uk/kitstudio, so he can preview it before the domain points anywhere
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS
