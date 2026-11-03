@@ -405,6 +405,21 @@ public class TriageTests
         Assert.False(new TriageAction("question", "x").ActsOnItem());
     }
 
+    // ---- BEH-CONFLICT-3: a conflict is settled while the spec is proposed ------------------------
+
+    [Fact]
+    public void Before_saving_new_spec_the_chat_looks_for_a_card_it_conflicts_with_and_asks_which_holds()
+    {
+        Assert.Contains("look in the spec below for a behaviour the new spec overlaps or contradicts", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("name it by id and title, say how they differ, and ask which holds", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("the note says which card it changes", TriageContext.ChatInstructions, StringComparison.Ordinal);
+
+        // The order matters: the check comes before the offer to save, not after the note is written.
+        Assert.True(
+            TriageContext.ChatInstructions.IndexOf("Before you offer, look in the spec", StringComparison.Ordinal)
+            < TriageContext.ChatInstructions.IndexOf("then the note says which card it changes", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void The_chat_offers_to_ask_the_coding_agent_what_the_spec_cannot_answer()
     {
