@@ -2781,7 +2781,7 @@ behaviour BEH-PROJCONF-1 "Each project has an integrations page where its user c
   in FEAT-PROJECT-CONFIG
   layer ux
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It builds on a user's stored secrets (BEH-USERS-5), which wait on your vault choice."
