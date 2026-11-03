@@ -152,6 +152,12 @@ public class UserProjectsTests
         Assert.True(UserProjectHealth.Wanted("src/app.test.ts", counter));
         Assert.False(UserProjectHealth.Wanted("src/app.ts", counter));
         Assert.False(UserProjectHealth.Wanted("node_modules/x/x.test.ts", counter));
+        Assert.False(UserProjectHealth.Wanted("node_modules/x/behaviours/x.beh", counter));
+
+        // A reason is its first line, cut short: a parse error may quote the file.
+        var reason = UserProjectHealth.Unavailable(new string('x', 500) + "\nsecond line").Reason!;
+        Assert.Equal(UserProjectHealth.MaxReason, reason.Length);
+        Assert.EndsWith("…", reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -228,6 +234,20 @@ public class UserProjectsTests
         Assert.Contains("only part of ann-gh/app", cut.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_file_read_that_times_out_or_a_repo_with_too_many_files_is_a_read_failure_not_a_crash()
+    {
+        var slow = new Blobs { BlobsTimeOut = true };
+        var reader = new UserProjects(new HttpClient(slow), _ => new StaticGitHubTokenSource("t"), new Uri("https://api.github.example/"));
+        var late = await Assert.ThrowsAsync<GitHubReadException>(() => reader.FilesAsync(42, "ann-gh/app", _ => true));
+        Assert.Contains("did not answer in time", late.Message, StringComparison.Ordinal);
+
+        var big = new Blobs { Extra = 501 };
+        var many = await Assert.ThrowsAsync<GitHubReadException>(() => new UserProjects(new HttpClient(big), _ => new StaticGitHubTokenSource("t"), new Uri("https://api.github.example/")).FilesAsync(42, "ann-gh/app", _ => true));
+        Assert.Contains("more than the 500 Kit reads", many.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(big.Sent, u => u.Contains("/git/blobs/", StringComparison.Ordinal));
+    }
+
     /// <summary>One repo, <c>ann-gh/app</c> on <c>main</c>, with a corpus and a README, each blob answering its own sha.</summary>
     private sealed class Blobs : HttpMessageHandler
     {
@@ -235,11 +255,26 @@ public class UserProjectsTests
 
         public bool Truncated { get; set; }
 
+        /// <summary>Every blob read times out, as HttpClient's own timeout does.</summary>
+        public bool BlobsTimeOut { get; init; }
+
+        /// <summary>This many more test files in the tree.</summary>
+        public int Extra { get; init; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri!.AbsolutePath;
-            Sent.Add(path);
+            lock (Sent)
+            {
+                Sent.Add(path);
+            }
+
             Assert.Equal("Bearer t", request.Headers.Authorization?.ToString());
+            if (BlobsTimeOut && path.Contains("/git/blobs/", StringComparison.Ordinal))
+            {
+                throw new TaskCanceledException("the request timed out");
+            }
+
             var body = path switch
             {
                 "/repos/ann-gh/app" => """{ "default_branch": "main" }""",
@@ -251,7 +286,7 @@ public class UserProjectsTests
                         new { path = "behaviours/app.beh", type = "blob", sha = "sha-beh" },
                         new { path = "README.md", type = "blob", sha = "sha-readme" },
                         new { path = "behaviours", type = "tree", sha = "sha-dir" },
-                    },
+                    }.Concat(Enumerable.Range(0, Extra).Select(i => new { path = $"src/t{i}.test.ts", type = "blob", sha = $"sha-t{i}" })),
                 }),
                 _ when path.StartsWith("/repos/ann-gh/app/git/blobs/", StringComparison.Ordinal) => "text of " + path.Split('/')[^1],
                 _ => null,

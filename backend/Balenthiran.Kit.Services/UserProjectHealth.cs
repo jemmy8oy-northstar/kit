@@ -13,11 +13,18 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 public static class UserProjectHealth
 {
-    /// <summary>The files a count reads: the corpus, its mappings and the repo's tests.</summary>
+    /// <summary>
+    /// The files a count reads: the corpus, its mappings and the repo's tests, none of them under a directory
+    /// the counter skips, so a vendored copy of someone else's corpus is not taken for the project's.
+    /// </summary>
     public static bool Wanted(string path, ICoverageCounter counter) =>
-        path.EndsWith(".beh", StringComparison.Ordinal)
-        || path.EndsWith(".tests.json", StringComparison.Ordinal)
-        || counter.IsTestPath(path);
+        !path.Split('/')[..^1].Any(counter.SkipsDirectory)
+        && (path.EndsWith(".beh", StringComparison.Ordinal)
+            || path.EndsWith(".tests.json", StringComparison.Ordinal)
+            || counter.IsTestPath(path));
+
+    /// <summary>The longest reason sent: a parse error may quote the file, and one line says enough.</summary>
+    public const int MaxReason = 200;
 
     /// <summary>The share of <paramref name="files"/>' behaviours a test names, pending ones left out as kit#155 does.</summary>
     public static CoverageSummary Count(IReadOnlyDictionary<string, string> files, ICorpusParser parser, IBehaviourResolver resolver, ICoverageCounter counter)
@@ -76,5 +83,10 @@ public static class UserProjectHealth
         return new CoverageSummary { Available = true, Covered = covered, Uncovered = uncovered, Reason = null };
     }
 
-    private static CoverageSummary Unavailable(string reason) => new() { Available = false, Covered = null, Uncovered = null, Reason = reason };
+    /// <summary>Not counted, with why: its first line, cut to <see cref="MaxReason"/>.</summary>
+    public static CoverageSummary Unavailable(string reason)
+    {
+        var line = reason.Split('\n')[0].TrimEnd();
+        return new() { Available = false, Covered = null, Uncovered = null, Reason = line.Length > MaxReason ? line[..(MaxReason - 1)] + "…" : line };
+    }
 }

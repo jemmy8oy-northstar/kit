@@ -228,7 +228,13 @@ public sealed partial class KitRouter
         }
         catch (GitHubReadException e)
         {
-            return Json(200, new CoverageSummary { Available = false, Covered = null, Uncovered = null, Reason = e.Message });
+            return Json(200, UserProjectHealth.Unavailable(e.Message));
+        }
+        catch (Exception e)
+        {
+            // Whatever the reader or counter did not foresee is a badge that says so, not a 500 on the page.
+            Console.Error.WriteLine($"kit: a project's health threw {e.GetType().Name}");
+            return Json(200, UserProjectHealth.Unavailable("Kit could not count this project's tests"));
         }
     }
 

@@ -718,7 +718,8 @@
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_users_repo_health_that_cannot_be_counted_says_why_and_is_never_zero" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Health_is_read_with_the_callers_own_installation_and_refused_without_a_connected_GitHub" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Health_that_GitHub_would_not_give_is_unavailable_with_its_reason" },
-    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once" }
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_file_read_that_times_out_or_a_repo_with_too_many_files_is_a_read_failure_not_a_crash" }
   ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },

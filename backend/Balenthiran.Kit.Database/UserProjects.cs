@@ -85,7 +85,7 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
             throw new GitHubReadException($"GitHub listed only part of {fullName}, so Kit cannot count every test");
         }
 
-        var files = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        var listed = new List<(string Path, string Sha)>();
         foreach (var e in tree.EnumerateArray())
         {
             if (Str(e, "type") != "blob" || Str(e, "path") is not { } path || !wanted(path))
@@ -93,11 +93,35 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
                 continue;
             }
 
-            var sha = Str(e, "sha") ?? throw new GitHubReadException($"GitHub listed {path} in {fullName} with no sha");
-            files[path] = blobs.TryGetValue(sha, out var kept) ? kept : await BlobAsync(token, fullName, sha, cancellationToken);
+            listed.Add((path, Str(e, "sha") ?? throw new GitHubReadException($"GitHub listed {path} in {fullName} with no sha")));
         }
 
-        return files;
+        // Past this a read costs more of the installation's hourly allowance than one badge is worth.
+        if (listed.Count > MaxFiles)
+        {
+            throw new GitHubReadException($"{fullName} has {listed.Count} files to read, more than the {MaxFiles} Kit reads for one project's health");
+        }
+
+        using var gate = new SemaphoreSlim(TreeReads);
+        var read = await Task.WhenAll(listed.Select(async f =>
+        {
+            if (blobs.TryGetValue(f.Sha, out var kept))
+            {
+                return (f.Path, Text: kept);
+            }
+
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                return (f.Path, Text: await BlobAsync(token, fullName, f.Sha, cancellationToken));
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }));
+
+        return new SortedDictionary<string, string>(read.ToDictionary(f => f.Path, f => f.Text), StringComparer.Ordinal);
     }
 
     // Blob text by sha, across reads: a sha names one text for ever, so a second look at an unchanged
@@ -106,37 +130,40 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
 
     private const int MaxBlobs = 5_000;
 
+    private const int MaxFiles = 500;
+
     private async Task<string> BlobAsync(string token, string fullName, string sha, CancellationToken cancellationToken)
     {
         using var request = Request(token, $"repos/{fullName}/git/blobs/{sha}");
         request.Headers.Accept.Clear();
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.raw+json"));
-        HttpResponseMessage response;
+        string text;
         try
         {
-            response = await http.SendAsync(request, cancellationToken);
-        }
-        catch (HttpRequestException e)
-        {
-            throw new GitHubReadException($"GitHub could not be reached when reading {fullName} ({e.Message})", e);
-        }
-
-        using (response)
-        {
+            using var response = await http.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 throw new GitHubReadException($"GitHub answered {(int)response.StatusCode} when reading a file of {fullName}");
             }
 
-            var text = new System.Text.UTF8Encoding(false).GetString(await response.Content.ReadAsByteArrayAsync(cancellationToken));
-            if (blobs.Count >= MaxBlobs)
-            {
-                blobs.Clear();
-            }
-
-            blobs[sha] = text;
-            return text;
+            text = new System.Text.UTF8Encoding(false).GetString(await response.Content.ReadAsByteArrayAsync(cancellationToken));
         }
+        catch (HttpRequestException e)
+        {
+            throw new GitHubReadException($"GitHub could not be reached when reading {fullName} ({e.Message})", e);
+        }
+        catch (TaskCanceledException e) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new GitHubReadException($"GitHub did not answer in time when reading {fullName}", e);
+        }
+
+        if (blobs.Count >= MaxBlobs)
+        {
+            blobs.Clear();
+        }
+
+        blobs[sha] = text;
+        return text;
     }
 
     private async Task<string> TokenAsync(long installation, CancellationToken cancellationToken)
