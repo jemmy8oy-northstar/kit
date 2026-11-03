@@ -11,7 +11,7 @@ import type { TriageMessage } from './api/types'
  */
 export type Line =
   | { from: 'user'; text: string; sent: string; app: string; item: string | null; local?: boolean }
-  | { from: 'agent'; text: string; app: string; item: string | null }
+  | { from: 'agent'; text: string; app: string; item: string | null; options?: string[] }
   | { from: 'switch'; app: string; named?: boolean }
   | { from: 'item'; app: string; id: string; title: string; ask: string | null; tell: string }
   | { from: 'kit'; text: string; tell: string; undo?: () => Promise<unknown>; undone?: boolean }

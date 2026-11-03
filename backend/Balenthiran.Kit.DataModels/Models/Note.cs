@@ -27,6 +27,9 @@ public sealed class Note : INote
     [JsonPropertyOrder(7)]
     public List<string> Questions { get; init; } = [];
 
+    [JsonPropertyOrder(8)]
+    public string? From { get; init; }
+
     IReadOnlyList<INoteEntry> INote.Thread => Thread;
 
     IReadOnlyList<string> INote.Questions => Questions;

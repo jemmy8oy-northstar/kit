@@ -456,4 +456,61 @@ public class NotesTests
         Assert.Equal(400, rig.Post("/api/projects/demo/notes", body).Status);
         Assert.False(File.Exists(rig.NotesFile));
     }
+
+    // ---- BEH-NOTE-15: where a note came from ----------------------------------------------------
+
+    [Theory]
+    [InlineData("chat")]
+    [InlineData("note-button")]
+    [InlineData("agent")]
+    public void BEH_NOTE_15_an_origin_is_one_comment_under_an_unchanged_heading_and_reads_back(string from)
+    {
+        var written = Notes.Append(null, "demo", "x\ny", "BEH-B2", At, from);
+
+        Assert.Contains("\n## 2026-10-10 20:41Z · BEH-B2\n\n<!-- from: " + from + " -->\n\nx\ny\n", written);
+        var note = Assert.Single(Notes.Parse(written));
+        Assert.Equal((from, "x\ny", "2026-10-10 20:41Z", "BEH-B2"), (note.From, note.Text, note.At, note.Behaviour));
+    }
+
+    [Fact]
+    public void BEH_NOTE_15_a_note_with_no_origin_line_parses_untagged_and_is_written_as_before()
+    {
+        const string old = "# Notes on demo\n\n## 2026-10-10 20:41Z\n\nan old note\n";
+        var note = Assert.Single(Notes.Parse(old));
+        Assert.Null(note.From);
+        Assert.Equal("an old note", note.Text);
+        Assert.Equal(Notes.Append(null, "demo", "an old note", null, At), Notes.Append(null, "demo", "an old note", null, At, null));
+    }
+
+    [Fact]
+    public void BEH_NOTE_15_an_origin_line_the_list_does_not_know_is_left_in_the_text()
+    {
+        var note = Assert.Single(Notes.Parse("## 2026-10-10 20:41Z\n\n<!-- from: robot -->\n\nhi\n"));
+        Assert.Null(note.From);
+        Assert.Equal("<!-- from: robot -->\n\nhi", note.Text);
+    }
+
+    [Fact]
+    public void BEH_NOTE_15_the_route_stores_a_known_origin_and_lists_it_back_and_ignores_an_unknown_one()
+    {
+        using var rig = new Rig();
+
+        Assert.Equal(200, rig.Post("/api/projects/demo/notes", """{"text":"one","from":"chat"}""").Status);
+        Assert.Equal(200, rig.Post("/api/projects/demo/notes", """{"text":"two","from":"carrier-pigeon"}""").Status);
+        Assert.Equal(200, rig.Post("/api/projects/demo/notes", """{"text":"three"}""").Status);
+
+        var notes = rig.Get("/api/projects/demo/notes").GetProperty("notes").EnumerateArray().ToList();
+        Assert.Equal("chat", notes[0].GetProperty("from").GetString());
+        Assert.Equal(JsonValueKind.Null, notes[1].GetProperty("from").ValueKind);
+        Assert.Equal(JsonValueKind.Null, notes[2].GetProperty("from").ValueKind);
+        Assert.DoesNotContain("carrier-pigeon", File.ReadAllText(rig.NotesFile));
+    }
+
+    [Fact]
+    public void BEH_NOTE_15_a_from_that_is_not_text_is_a_400()
+    {
+        using var rig = new Rig();
+        Assert.Equal(400, rig.Post("/api/projects/demo/notes", """{"text":"x","from":5}""").Status);
+        Assert.False(File.Exists(rig.NotesFile));
+    }
 }

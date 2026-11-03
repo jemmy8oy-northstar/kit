@@ -363,7 +363,7 @@ public class TriageTests
 
         var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
         Assert.Equal(
-            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note", "ask_coding_agent"],
+            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note", "ask_coding_agent", "offer_options"],
             sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.False(sent[1].TryGetProperty("tools", out _));
     }
@@ -403,6 +403,57 @@ public class TriageTests
         var asked = Router(new FakeModel("Asked.", new TriageAction("question", "How is the board sorted?"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "ask it")));
         Assert.Equal(new TriageAction("question", "How is the board sorted?"), Assert.IsType<TriageAnswer>(asked.Body).Action);
         Assert.False(new TriageAction("question", "x").ActsOnItem());
+    }
+
+    // ---- BEH-CHAT-10: a yes/no or multiple-choice question comes with tappable answers ------------
+
+    [Fact]
+    public void The_options_a_reply_proposes_are_read_trimmed_deduplicated_and_capped()
+    {
+        var reply = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Keep the old board?"},{"type":"tool_use","id":"t","name":"offer_options","input":{"options":[" Yes ","No","yes","No","",5,"Ask me later","a","b","c"]}}]}""");
+        Assert.Equal("Keep the old board?", reply.Text);
+        Assert.Null(reply.Action);
+        Assert.Equal(["Yes", "No", "yes", "Ask me later", "a"], reply.Options);
+
+        // Over-long answers are dropped, and a call with none left is no options at all.
+        var tooLong = new string('x', AnthropicTriageChat.MaxOptionLength + 1);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Which?"},{"type":"tool_use","id":"t","name":"offer_options","input":{"options":["TOOLONG"]}}]}""".Replace("TOOLONG", tooLong, StringComparison.Ordinal)).Options);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Which?"},{"type":"tool_use","id":"t","name":"offer_options","input":{}}]}""").Options);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Plain."}]}""").Options);
+    }
+
+    [Fact]
+    public void Offering_options_is_not_an_action_and_is_not_reported_as_one_left_undone()
+    {
+        var reply = AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Approve it?"},{"type":"tool_use","id":"a","name":"offer_options","input":{"options":["Yes","No"]}}]}""");
+        Assert.Equal("Approve it?", reply.Text);
+        Assert.DoesNotContain("not done", reply.Text, StringComparison.Ordinal);
+
+        // Options with no words are still a reply with nothing to say.
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"a","name":"offer_options","input":{"options":["Yes"]}}]}""").Text);
+    }
+
+    [Fact]
+    public void Only_the_chat_answers_with_options_and_a_reply_that_acts_shows_none()
+    {
+        var model = new FakeModel("Approve it?", options: ["Yes", "No"]);
+        var router = Router(model);
+
+        var chat = router.Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "hm")));
+        Assert.Equal(["Yes", "No"], Assert.IsType<TriageAnswer>(chat.Body).Options);
+
+        var inbox = router.Route("POST", "/api/projects/kit/triage", body: Turn("BEH-GATE-2", ("user", "hm")));
+        Assert.Null(Assert.IsType<TriageAnswer>(inbox.Body).Options);
+
+        var acts = Router(new FakeModel("Approved.", new TriageAction("approve"), ["Yes"])).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "yes")));
+        Assert.Null(Assert.IsType<TriageAnswer>(acts.Body).Options);
+    }
+
+    [Fact]
+    public void The_chat_instructions_tell_the_agent_it_can_offer_options()
+    {
+        Assert.Contains("offer_options", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("yes/no or multiple-choice", TriageContext.ChatInstructions, StringComparison.Ordinal);
     }
 
     // ---- BEH-CONFLICT-3: a conflict is settled while the spec is proposed ------------------------
@@ -635,7 +686,7 @@ public class TriageTests
         return k => env.GetValueOrDefault(k);
     }
 
-    private sealed class FakeModel(string? reply, TriageAction? action = null) : ITriageChat
+    private sealed class FakeModel(string? reply, TriageAction? action = null, IReadOnlyList<string>? options = null) : ITriageChat
     {
         public List<(string Context, IReadOnlyList<TriageTurn> Turns)> Calls { get; } = [];
 
@@ -656,7 +707,7 @@ public class TriageTests
             Instructions.Add(instructions);
             Offered.Add(actions);
             Readers.Add(read);
-            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action));
+            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action, options));
         }
     }
 

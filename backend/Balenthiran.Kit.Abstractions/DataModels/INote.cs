@@ -18,6 +18,9 @@ public interface INote
     /// <summary>The question-sheet key a <c>resolution</c> answers; null for every other kind.</summary>
     string? Resolves { get; }
 
+    /// <summary>Where it came from (BEH-NOTE-15): <c>chat</c>, <c>note-button</c> or <c>agent</c>; null when it did not say.</summary>
+    string? From { get; }
+
     /// <summary>What was typed, without anything written under it since.</summary>
     string Text { get; }
 

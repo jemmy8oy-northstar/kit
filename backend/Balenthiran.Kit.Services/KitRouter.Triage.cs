@@ -228,7 +228,9 @@ public sealed partial class KitRouter
             return Json(502, new ApiError { Error = "triage-failed", Reason = reply.Failure ?? "the model gave no reply" });
         }
 
-        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action });
+        // BEH-CHAT-10: options only on the Chat page, and not on a reply that also acts.
+        var options = chat && action is null && reply.Options is { Count: > 0 } o ? o : null;
+        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action, Options = options });
     }
 
     /// <summary>The chat, or null when it is not one: the Messages API wants the user first and last, taking turns.</summary>

@@ -2267,7 +2267,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   in FEAT-SPEC-AGENT
   layer technical
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It needs the agent Kit runs for a user (BEH-USERS-9), which waits on your API key and spend cap."
@@ -2396,6 +2396,8 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract built (17:48Z note): the button says "Skip to next item"; the item stays waiting in Kit and only leaves this chat
   contract "Once acted on an item a similar prompt should come up from kit, here's the next item or we can discuss new spec blah balh" (kit.notes.md#2026-11-02-1754)
   contract built (17:54Z note): after Approve, Skip or an answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
+  contract "When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it." (kit-ui.notes.md#2026-11-03-1354)
+  contract built already (BEH-CHAT-6): a note saved from the chat puts Kit's bubble in the thread, "Saved as a note on <project>: “<the note, in full>”", with an Undo; Undo dismisses exactly that note and Kit says "Undone: …"
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2472,6 +2474,48 @@ behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title
   contract "Maybe backlog of this is technically difficult but chat should be able to read the spec of the project that it is answering for"
   contract built: both the Chat page and the Inbox's Talk it through offer the agent read_spec, which returns whole cards (an epic, feature or behaviour, every contract) by id from the outline it already has, at most ten a time and 20,000 characters; it may read twice in one reply, then must answer
   contract my assumption: cards on demand rather than the whole spec in every turn, because kit-ui's spec alone is about 190,000 characters and each turn would pay for it; a read is one more request on the same reply, not another of his daily replies
+
+behaviour BEH-CHAT-9 "A Show again button reposts the item in hand at the foot of the chat"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-1349
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "The owner wants a button next to Approve and Skip in the chat's floating widget that reposts the current item at the bottom of the chat, so he doesn't have to scroll up to find it. Label: Show again"
+  contract built: "Show again" sits beside Approve and "Skip to next item" in the dock. It puts the item in hand into the thread again, at the foot, with its question
+  contract built: it sends nothing to the model and spends no reply. It is the same as asking the agent to show_item (BEH-CHAT-6), without the agent; the agent is told of the item as it is of any item in the thread
+  contract my assumption: the label is "Show again", the first of the three he offered, and it waits while a reply is on its way, as the other buttons do
+
+behaviour BEH-CHAT-10 "When the agent asks a yes/no or multiple-choice question, it offers the answers as tappable options"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-1350
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "When the chat agent asks a yes/no or multiple-choice question, it proposes the answers as tappable options. He can tap one, or type a free-form response instead."
+  contract built: on the Chat page only, the model is offered one more tool, offer_options, with up to five short answers; the reply carries them as options and the page shows each as a button under that message
+  contract built: tapping one sends its words as his message, as if he had typed them; the buttons go once he sends anything, and typing freely is always open
+  contract my assumption: the Inbox's Talk it through is offered no such tool, as with the CHAT-6 tools; an option that is empty, repeated or over 80 characters is dropped, and a reply that also acts shows none
+
+behaviour BEH-CHAT-11 "One chat covers every app of a project, rather than one chat per app"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-1336
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-hosted are all related and should share a single chat."
+  contract built: the Chat page's picker lists projects, not apps: apps sharing a `# kit:project` line are one entry, and the item in hand is the top one waiting in any of them, so the next app's item comes up with no project change
+  contract built: each turn goes to the spec agent of the item in hand's app, with the whole chat; with nothing in hand it goes to the project's home app, which is also where the chat's notes go. Naming another app of the same project does not move the chat, and ?project= takes an app's name or its project's
+  contract my assumption: the home app is the app named like the project (kit, for kit), else its first app; the agent still reads one app's spec per turn, rather than all three, so a turn costs what it did
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
@@ -2662,6 +2706,22 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
   contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
   contract built: the Chat's foot links to "Notes on x", the project's Notes tab, following whichever project the chat is about
 
+behaviour BEH-NOTE-15 "A note carries a tag saying where it came from, shown on the Notes page"
+  in FEAT-NOTES
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-1355
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitNotes
+  then sees region:KitMain
+  contract "The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now."
+  contract my assumption: three origins, chat, note-button and agent; a note that does not say (every existing one) shows no tag at all rather than "unknown"
+  contract my assumption: the origin is one line under the heading, an HTML comment `<!-- from: chat -->`, so the heading, and the anchor derived from it, are unchanged and older readers see only an invisible comment
+  contract my assumption: an origin outside that list is ignored, not refused; the note still lands, untagged
+  contract my assumption: the agent origin is for a note posted through the API with from set to agent; nothing in the UI sends it
+  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date; the Chat page sends chat and the floating button sends note-button; the Chat does not show the tag
+
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
   stage development
@@ -2693,10 +2753,9 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   source defined kit-ui.notes.md#2026-11-03-0857
   source defined kit-ui.notes.md#2026-11-03-0917
   source defined kit-ui.notes.md#2026-11-03-1058
-  review unreviewed
+  review approved
   priority 2
   pending
-  needs-context "It is built and live: kitstudio.dev serves the splash and its register-interest flow. Approve it to close it; it cannot leave pending on its own because its test lives in balenthiran.co.uk."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2710,6 +2769,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract built in balenthiran.co.uk#33 and balenthiran.co.uk#34, which he merged and promoted to main (balenthiran.co.uk#37) on 2026-11-03; kitstudio.dev serves it with its own certificate, and its test is balenthiran.co.uk's frontend/e2e/kitstudio.spec.ts
   contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
   contract his question, is it complete: yes. kitstudio.dev serves the splash and its register-interest flow, and the live check reads it green on 2026-11-03
+  contract he approved it on 2026-11-03, so it is closed: it stays marked pending only for the reason above, and nothing on it is left for him or the agent
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS

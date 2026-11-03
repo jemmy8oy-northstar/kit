@@ -57,3 +57,39 @@ For all of these would it be better to let the user integrate their own account 
 ## 2026-10-31 16:45Z · BEH-USERS-9
 
 Do you have an estimation of cost for how much a feature will take to execute or anything like that using anthropic api with opus 5.5? I am imagining that it will be quite expensive.
+
+## 2026-11-03 08:23Z · BEH-SPLASH-1
+
+Merge it when it ready
+
+## 2026-11-03 08:57Z · BEH-SPLASH-1
+
+Merged
+
+## 2026-11-03 09:17Z · BEH-SPLASH-1
+
+Merged to main
+
+## 2026-11-03 10:58Z · BEH-SPLASH-1
+
+This is complete right? Also why are you not cracking on with the kit backlog. Got to work towards being ready for users
+
+## 2026-11-03 13:36Z
+
+The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-hosted are all related and should share a single chat. Today each is a separate project with its own chat, so he has to talk to three places about one thing. Please group them so kit's chat covers all three.
+
+## 2026-11-03 13:49Z
+
+The owner wants a button next to Approve and Skip in the chat's floating widget that reposts the current item at the bottom of the chat, so he doesn't have to scroll up to find it. Label: "Show again" (alternatives he may prefer: "Bring to bottom" or "Recap"). Motivation: when an item ends up far up the chat he wants it posted again at the bottom.
+
+## 2026-11-03 13:50Z
+
+When the chat agent asks a yes/no or multiple-choice question, it proposes the answers as tappable options. He can tap one, or type a free-form response instead.
+
+## 2026-11-03 13:54Z
+
+The owner likes the current flow for creating notes from the chat. When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept and made concrete in the spec: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it.
+
+## 2026-11-03 13:55Z
+
+The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now.

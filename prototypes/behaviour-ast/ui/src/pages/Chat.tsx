@@ -55,17 +55,26 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   // The same set, current inside a write's callback, which may run after other items were marked off.
   const handledNow = useRef<ReadonlySet<string>>(handled)
   const undoing = useRef(new Set<Line>())
-  // ?project=x opens on that project, and with &design=1 starts designing it (BEH-SPECAGENT-1).
+  // BEH-CHAT-11 (his 2026-11-03 13:36Z note): one chat per project, so apps sharing a `# kit:project` line
+  // (kit, kit-ui, kit-hosted) are talked about in the one chat. Each turn still goes to one app's spec agent:
+  // the app of the item in hand, else the project's home app.
+  const projectOfApp = (a: string) => apps.find((x) => x.app === a)?.project ?? a
+  const projects = [...new Set(apps.map((a) => a.project))]
+  const home = (p: string) => (apps.some((a) => a.app === p) ? p : (apps.find((a) => a.project === p)?.app ?? p))
+  // ?project=x opens on that project (an app's name opens its project), and with &design=1 starts designing it (BEH-SPECAGENT-1).
   const [params] = useSearchParams()
-  const asked = apps.find((a) => a.app === params.get('project'))?.app
-  const first = asked ?? queue[0]?.app ?? apps[0]?.app ?? ''
-  const [app, setApp] = useState(first)
+  const askedApp = apps.find((a) => a.app === params.get('project') || a.project === params.get('project'))
+  const asked = askedApp?.project
+  const first = asked ?? (queue[0] ? projectOfApp(queue[0].app) : undefined) ?? apps[0]?.project ?? ''
+  const [project, setProject] = useState(first)
+  // The app the chat speaks to when no item is in hand, and where its notes go.
+  const app = home(project)
   // The project being designed: while the chat is about it, every turn asks the agent to lead its design.
   const [designing, setDesigning] = useState<string | null>(null)
   const started = useRef(false)
   // The top item is in the thread from the first render rather than an effect later, so it never flashes in.
   const [lines, setLines] = useState<Line[]>(() => {
-    const top = queue.find((c) => c.app === first)
+    const top = queue.find((c) => projectOfApp(c.app) === first)
     return top ? [itemLine(top)] : []
   })
   // The same lines, current inside an awaited reply, which may land after he has acted with a button.
@@ -88,8 +97,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }, [lines.length, busy])
 
   const waiting = queue.filter((c) => !handled.has(keyOf(c)))
-  // The item in hand: the top one waiting in this project, on the page with no click (his 14:12Z note).
-  const focus = waiting.find((c) => c.app === app) ?? null
+  // The item in hand: the top one waiting in any app of this project, on the page with no click (his 14:12Z note).
+  const focus = waiting.find((c) => projectOfApp(c.app) === project) ?? null
   const elsewhere = focus ? null : (waiting[0] ?? null)
 
   // His 19:04Z note: the top of his stack is in the thread as soon as it is in hand (on open, after a project
@@ -126,15 +135,21 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setLines((ls) => [...ls, { from: 'kit', text: 'The agent no longer sees the chat before this project, so each reply costs less.', tell: '' }])
   }
 
+  // BEH-CHAT-10: the agent's options are live only on its latest line, until he sends anything after it.
+  // Kit's own lines and the item coming into the thread do not retire them.
+  const lastAgent = lines.map((l) => l.from).lastIndexOf('agent')
+  const optionsAt = lines.slice(lastAgent + 1).some((l) => l.from === 'user' || l.from === 'switch') ? -1 : lastAgent
+
   const label = (a: string) => {
     const p = apps.find((x) => x.app === a)?.project ?? a
     return p === a ? a : `${p} · ${a}`
   }
 
-  function pick(a: string, by: 'picked' | 'named' = 'picked') {
-    if (a === app) return
-    setApp(a)
-    setLines((ls) => [...ls, by === 'named' ? { from: 'switch', app: a, named: true } : { from: 'switch', app: a }])
+  /** Moves the chat to project `p`; a switch line carries the project's name. */
+  function pick(p: string) {
+    if (p === project) return
+    setProject(p)
+    setLines((ls) => [...ls, { from: 'switch', app: p }])
     setAnnounce(true)
   }
 
@@ -145,13 +160,13 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   function done(card: InboxCard, how: Acted, undo?: () => Promise<unknown>) {
     mark(card, true)
     const rest = queue.filter((c) => !handledNow.current.has(keyOf(c)))
-    const next = rest.find((c) => c.app === card.app) ?? null
+    const next = rest.find((c) => projectOfApp(c.app) === projectOfApp(card.app)) ?? null
     const other = next ? null : (rest[0] ?? null)
-    const here = label(card.app)
+    const here = label(projectOfApp(card.app))
     const then = next
       ? `Next up in ${here}: “${next.b.title}”. Reply to answer it, or we can define new spec or discuss ${here}.`
       : other
-        ? `Nothing else is waiting in ${here}. The next waiting item is in ${label(other.app)}, below. Or we can define new spec or discuss ${here}.`
+        ? `Nothing else is waiting in ${here}. The next waiting item is in ${label(projectOfApp(other.app))}, below. Or we can define new spec or discuss ${here}.`
         : `That was the last item waiting on you. We can define new spec or discuss ${here}.`
     // Every action can be taken back (BEH-CHAT-6): the write is reversed, and the item comes back to the chat.
     const back = async () => {
@@ -203,7 +218,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       // On the project the turn was about, not tied to the item, so it works with none in hand (his 19:04Z note).
       const text = action.text
       try {
-        await leaveNote(about, text)
+        await leaveNote(about, text, undefined, 'chat')
         const shown = text.length > 200 ? `${text.slice(0, 200)}…` : text
         setLines((ls) => [
           ...ls,
@@ -219,7 +234,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       // the question is about when it next works. Undone the way a note is.
       const text = `Question for the coding agent: ${action.text}`
       try {
-        await leaveNote(about, text)
+        await leaveNote(about, text, undefined, 'chat')
         setLines((ls) => [
           ...ls,
           {
@@ -267,7 +282,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         done(card, 'denied', restore)
       } else {
         const text = action.text
-        await leaveNote(on, text, b.id)
+        await leaveNote(on, text, b.id, 'chat')
         done(card, 'answered', () => dismissAnswer(on, b.id, text))
       }
     } catch (e) {
@@ -279,9 +294,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * BEH-SPECAGENT-1 (kit.notes.md#2026-10-31-1643): the agent takes him through the project's first design,
    * topic by topic, and saves each agreed topic as a note for the coding agent to file as unreviewed spec.
    */
-  function design(a: string) {
-    setDesigning(a)
-    void send(`Let's design ${label(a)} from the start. Please lead, one topic at a time.`, a)
+  function design(p: string) {
+    setDesigning(p)
+    void send(`Let's design ${label(p)} from the start. Please lead, one topic at a time.`, p)
   }
 
   /** `said` is a message Kit's own buttons send for him; his draft stays in the box. `designed` starts design mode. */
@@ -295,18 +310,21 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       return
     }
     // Naming another project moves the chat there before the message goes, so it goes with that project.
-    const to = named(text, apps, app)
-    const about = to ?? app
+    // Naming another app of this project is not a move (BEH-CHAT-11).
+    const hit = named(text, apps, app)
+    const to = hit !== null && projectOfApp(hit) !== project ? projectOfApp(hit) : null
     const tell = announce || to !== null
     let before = lines
     if (to !== null) {
       before = [...lines, { from: 'switch', app: to, named: true }]
-      setApp(to)
+      setProject(to)
     }
     // A message that moves the chat by naming a project was not about the new project's item, which he has
     // not seen yet, so it cannot be posted as the answer to it.
-    const item = to !== null ? null : (waiting.find((c) => c.app === about) ?? null)
-    const heads = [...(tell ? [`[Now talking about ${about}]`] : []), ...untold(before)]
+    const item = to !== null ? null : focus
+    // The turn goes to the app of the item in hand, else the project's home app (BEH-CHAT-11).
+    const about = item?.app ?? home(to ?? project)
+    const heads = [...(tell ? [`[Now talking about ${to ?? project}]`] : []), ...untold(before)]
     // His words always go whole; what goes ahead of them is cut to fit the server's limit.
     const sent = heads.length > 0 ? `${heads.join(' ').slice(0, MAX_TEXT - text.length - 1)} ${text}` : text
     const after: Line[] = [...before, { from: 'user', text, sent, app: about, item: item?.b.id ?? null }]
@@ -316,10 +334,10 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setError(null)
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
-      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), about === (designed ?? designing))
+      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), (to ?? project) === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
-      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
+      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null, options: answer.options }])
       setAnnounce(false)
       setRemaining(answer.remaining)
       if (answer.action) await act(answer.action, item, about)
@@ -341,10 +359,10 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         <h1>Chat</h1>
         <label className="chat-project">
           <span className="muted">Talking about</span>
-          <select aria-label="Project" value={app} onChange={(e) => pick(e.target.value)} disabled={busy}>
-            {apps.map((a) => (
-              <option key={a.app} value={a.app}>
-                {label(a.app)}
+          <select aria-label="Project" value={project} onChange={(e) => pick(e.target.value)} disabled={busy}>
+            {projects.map((p) => (
+              <option key={p} value={p}>
+                {p}
               </option>
             ))}
           </select>
@@ -353,15 +371,15 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
         <Button type="button" size="sm" variant="ghost" onClick={() => setLines((ls) => [...ls, helpLine()])} disabled={busy}>
           What can Kit do?
         </Button>
-        {designing === app ? (
+        {designing === project ? (
           <p className="muted" data-testid="chat-designing">
-            Designing {label(app)}: the agent leads, and saves each topic you agree as a note.{' '}
+            Designing {label(project)}: the agent leads, and saves each topic you agree as a note.{' '}
             <Button type="button" size="sm" variant="ghost" onClick={() => setDesigning(null)} disabled={busy}>
               Stop designing
             </Button>
           </p>
         ) : (
-          <Button type="button" size="sm" variant="ghost" onClick={() => design(app)} disabled={busy}>
+          <Button type="button" size="sm" variant="ghost" onClick={() => design(project)} disabled={busy}>
             Design this project
           </Button>
         )}
@@ -399,6 +417,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
               <div className="chat-bubble">{l.text}</div>
+              {/* His 13:50Z note: the answers it proposes, one tap each. Only under the newest line, and gone once
+                  anything follows it; he can always type his own. */}
+              {l.from === 'agent' && l.options && i === optionsAt && (
+                <div className="chat-actions chat-options" role="group" aria-label="Suggested answers">
+                  {l.options.map((o) => (
+                    <Button key={o} type="button" size="sm" variant="ghost" onClick={() => void send(o)} disabled={busy}>
+                      {o}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </li>
           ),
         )}
@@ -415,16 +444,18 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             key={keyOf(focus)}
             card={focus}
             onDone={(how, undo) => done(focus, how, undo)}
+            // His 13:49Z note: the item again at the foot of the chat, with no model call and no reply spent.
+            onShow={() => setLines((ls) => [...ls, itemLine(focus)])}
             busy={busy}
           />
         ) : (
           <div className="chat-focus muted" data-testid="chat-nothing">
-            Nothing is waiting on you in {label(app)}. Ask about it, or describe something new for it.
+            Nothing is waiting on you in {label(project)}. Ask about it, or describe something new for it.
             {elsewhere && (
               <>
                 {' '}
                 {/* His 17:50Z note: the project first, so the preview is not read as being about this one. */}
-                <Button type="button" size="sm" variant="ghost" onClick={() => pick(elsewhere.app)} disabled={busy}>
+                <Button type="button" size="sm" variant="ghost" onClick={() => pick(projectOfApp(elsewhere.app))} disabled={busy}>
                   <strong>{label(elsewhere.app)}</strong>: next waiting is “{elsewhere.b.title}”
                 </Button>
               </>
@@ -436,7 +467,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           <textarea
             aria-label="Message the spec agent"
             rows={1}
-            placeholder={focus ? `Reply to answer it, or ask about anything in ${label(app)}` : `Message about ${label(app)}`}
+            placeholder={focus ? `Reply to answer it, or ask about anything in ${label(project)}` : `Message about ${label(project)}`}
             // Room for what goes ahead of his words (the project, the item in view, what he did), under the server's 4000.
             maxLength={MAX_TEXT - 1000}
             value={draft}
@@ -461,14 +492,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() => void send(`Please add what we have agreed in this chat as a note on ${label(app)}.`)}
+            onClick={() => void send(`Please add what we have agreed in this chat as a note on ${label(project)}.`)}
             disabled={busy || !lines.some((l) => l.from === 'user' && !l.local)}
           >
             Ask Kit to note this chat
           </Button>{' '}
           {canForget && (
             <Button type="button" size="sm" variant="ghost" onClick={forget} disabled={busy}>
-              Forget the chat before {label(app)}
+              Forget the chat before {label(project)}
             </Button>
           )}{' '}
           {/* BEH-NOTE-14 (his 2026-11-02 19:05Z note): notes stay, as the quick brain dump, one tap from here. */}
@@ -542,10 +573,12 @@ function askOf({ b }: InboxCard): string | null {
 function Focus({
   card,
   onDone,
+  onShow,
   busy,
 }: {
   card: InboxCard
   onDone: (how: Acted, undo?: () => Promise<unknown>) => void
+  onShow: () => void
   // While a reply is on its way the agent may act on this item itself, so its buttons wait (BEH-CHAT-6).
   busy: boolean
 }) {
@@ -567,6 +600,10 @@ function Focus({
         {/* His 17:48Z note: "Skip" alone read as dismissing it. It only moves on; the item stays waiting. */}
         <Button type="button" size="sm" variant="ghost" onClick={() => onDone('skipped')} disabled={saving || busy}>
           Skip to next item
+        </Button>
+        {/* His 13:49Z note: when the item is far up the chat, post it again at the bottom. */}
+        <Button type="button" size="sm" variant="ghost" onClick={onShow} disabled={saving || busy}>
+          Show again
         </Button>
       </div>
       <WriteFeedback write={write} />

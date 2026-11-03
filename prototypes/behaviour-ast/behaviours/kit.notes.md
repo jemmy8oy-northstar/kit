@@ -498,3 +498,129 @@ I have the kit Anthropic api $10 credit with no auto credit. Let’s see how lon
 ## 2026-11-02 12:56Z
 
 I like talk it through on the inbox but it is getting quite cluttered. I don’t want to mess with talk it through right now or inbox I want them to stay as they r so let’s try new ux with a new feature. Instead could we add a new chat feature. And the chat has some suggestions. You can either define new spec, discuss a project or answer inbox items. I think the way we do this is the chat by default suggests an item that needs answering as part of this suggestion it says or we can define new spec or discuss a project. Make sure to either name or select the project that you are talking about. I think there should be a select box to select the project. When you select it says. Now talking about x project. Do you think it keeps the history after a project change I think it does, we can leverage that cheap cache. We can think about discarding context let’s put it on the backlog as a cost saver. Then you can get on with discussing or marking off items as we go. If the user seems off topic we can say are you talking about a different project and suggest some projects that seem appropriate maybe prompt them to select a different project or maybe define specific for a new project
+
+## 2026-11-02 14:12Z
+
+I don’t like the initial entry point for the chat. Acting is behind an initial click. I think the context should be available showing the default item to be addressed. Maybe with some context of address the top item off the stack or discuss other work or something.
+
+Then the user can just get on with chatting. The ai will then infer which route they are taking. Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn’t really look like a chat at the moment. Think chat gpt think Claude.
+
+## 2026-11-02 17:41Z
+
+Can you enable some features for testers. I guess we will need them working as well but I think the projects page the boards the inbox and settings is a good place to start right?
+
+## 2026-11-02 17:47Z
+
+We need to start improving the robustness of kit, flagging when features conflict and being able to resolve this. I think a good non blocking conflict is building the feature anyway when specs conflict and then letting the user confirm or deny when approving.
+
+Maybe the settings page needs some way of configuring conflicting behaviour. Whether it merges anyway asks for confirmation or doesn’t work until the conflict is resolved. The code agent can provide context to the triage/chat agent which can help resolve with the user. I think it is important to be able to configure it not to implement before resolution because that would obviously incur more spend which the user might not want.
+
+Backlog ideas, priority is still getting ready for users. The triage agent is able to identify conflicts. With smaller scale this is easier right the agent can identify compared to the top level readme or soemthing or a kit overview or something. But with scale this is harder, have to think of some way to index the spec well so that we can identify similar features quickly. Or maybe verb matching or semantic meaning checks. Maybe some vectorisation of the spec happens for each dev snapshot and it is stored in the repo so the agent can easily identify similar behaviour. Idk needs more design but you see the direction I am heading with this.
+
+The chat agent being able to identify conflicts is ideal, this is the least disruptive means the user can identify and unblock during proposal rather than having to do an entirely separate resolution round then potentially waiting again before it gets merged.
+
+## 2026-11-02 17:48Z
+
+In chat, skip is not the clearest maybe it needs to be skip to next item. Skip might get confused with a dismiss action as it currently is.
+
+## 2026-11-02 17:50Z
+
+In next waiting maybe it needs to show the project first and then preview: then the preview I was a bit confused what I was reading I thought it was about kit
+
+## 2026-11-02 17:52Z
+
+When replying to the default action or just when replying in general this item should move up in the chat since this is chronological context. This should also be reflected in the way that it sees it
+
+## 2026-11-02 17:53Z
+
+Kit chat needs the capability to be able to approve answer deny respond etc rather than just suggest the user buttons I feel this is more useful. Maybe there should then be an undo button or you can ask chat to undo the last actuon
+
+## 2026-11-02 17:54Z
+
+Once acted on an item a similar prompt should come up from kit, here’s the next item or we can discuss new spec blah balh
+
+## 2026-11-02 18:54Z
+
+Does the chat get logged or saved at all when chatting with Kit? I am thinking this could have great value with the kit chat videos, however it could blow up the repo size. What do you think? Good idea/ bad idea? Do you think it would be good to dedicate a volume to this for personal chat saving. Probably no need to save chats for users
+Spec agent:
+The spec doesn't say whether chats are logged or stored, so I can't tell you what happens today. The question is worth settling on its own, so it could become a note for the project.
+
+On the idea: saving transcripts for your own videos sounds useful. Keeping them out of the repo is the right instinct, since chat logs would grow it quickly. A separate volume or store that only you can read, with nothing saved for other users, fits what you describe. Whether it's worth building depends on how often you'd actually pull from it for videos.
+You:
+If I click save as a note will this save the whole chat as a note or some custom text that you decide?
+Spec agent:
+The spec doesn't say what "save as a note" does, so I can't tell you whether it saves the whole chat or text I choose. I also don't write notes myself: my only actions are approving, denying, or answering an item in hand. To find out, try it on a throwaway chat and check what gets saved, or tell me what you want it to do and I'll add that to the spec
+
+Chat with chat
+
+## 2026-11-02 18:54Z
+
+Chat should be well aware of its own capabailities
+
+## 2026-11-02 18:55Z
+
+Maybe backlog of this is technically difficult but chat should be able to read the spec of the project that it is answering for
+
+## 2026-11-02 18:57Z
+
+Kit backlog feature - a security agent. An agent that can be switched on and off in settings which can do an audit on the code base and flag any security issues and create tickets to address them.
+
+On this point a later backlog feature could be various custom agents. Kit health agent, QA agent with configurable objectives and goals.
+
+## 2026-11-02 18:59Z
+
+Another later backlog feature would be maybe hooks where kit can trigger external integrations and even some way that external integrations can trigger kit and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers.
+
+Anyway this is probably three different features please separate and file for me.
+
+## 2026-11-02 19:04Z
+
+Top of ur stack should appear in the messages order. Upon request kit can spit it out again. Currently I don’t see kit actioning approve for me. Also the buttons post as answer or post as note under it’s not clear what this is doing is this just that one chat bubble? Can we just delegate this responsibility straight to kit, maybe with a quick button which is something along the lines of ask kit to add the context of this chat as a note. Or maybe Kit can figure out when this appropriate and prompt the user.
+
+## 2026-11-02 19:05Z
+
+I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it.
+
+## 2026-11-02 19:28Z
+
+Might be good to give the chat a help function which explains what kit is explains that the chat does not make changes for you. You discuss and define specific with the chat and a coding agent works in the background to implement features and keep your app up to date with the spec you write.
+
+## 2026-11-02 19:28Z
+
+Before we go to production we should think about an onboarding experience as well that shows you around but let’s backlog this for now
+
+## 2026-11-02 20:15Z
+
+We should probably have a splash page for the production kit, with a register interest page.
+
+Should I point the new domain to the same public ip as balenthiran.co.uk? Or will this have a different public ip from the cluster?
+
+We can just use the preprod cluster for now then later decide whether we want a separate cluster for production kit.
+
+## 2026-11-02 20:22Z
+
+Kit backlog: some integration page or config page for projects where users can configure secrets and integrations such as db or api keys.
+
+With this we will need to think about migration strategies when hooked up to users production databases, maybe at first we should only handle migrations on preprod servers. Or maybe we should have some strong disclosure or something where we heavily recommend that users manage their own production dbs and we take no responsibility if migrations cause data loss or db corruption or something.
+
+Also thinking about whether we could host some really light version of there app maybe call it a lite version where there are no integrations, external dependencies mostly return bogus faker data or something but of the correct shape, and maybe these pods spin up with an in memory db which is injected with some start data to enable basic use and testing. This would allow us to really cheaply host testable versions of the apps for users. Here we wouldnt need a block volume or anything just a really cheap dotnet and react pod. Maybe they can have the option to setup a test db and test integrations so that they get more accurate ux for testing and also data persistence between pod restarts. But this would be a good cheap and lite experience for them before they set up the db.
+
+## 2026-11-02 20:27Z
+
+Backlog kit: I am thinking more and more that there might be value in restructuring kit such that everything is organised by project. I think maybe the inventory might be worth having globally maybe with a take to chat button to take you to the chat within that project. But I kind of feel like each project should be quite isolated in kit. Kind of like in git how there is a entry page, there is an inbox, there is global settings and configuration and then there is a repo with the repo code, with the config, the gh actions etc. I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item.
+
+But this feels like a natural way to do it.
+
+Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything. But I think starting to introduce some project isolation would be valuable for the user experience of kit.
+
+## 2026-11-02 23:50Z
+
+Kitstudio should currently show a splash page with a register interest flow, maybe this flow is powered by balenthiran backend
+
+## 2026-11-03 10:19Z
+
+Kit Kit as part of initial analysis kit helps you with market research and assessing what the competitors do
+
+## 2026-11-03 11:17Z
+
+Does reading the queue need to built into claudemd?

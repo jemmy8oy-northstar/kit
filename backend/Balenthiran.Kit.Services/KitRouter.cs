@@ -766,6 +766,8 @@ public sealed partial class KitRouter(
         var kind = Str(body, "kind") ?? Notes.NoteKind;
         var behaviour = Str(body, "behaviour");
         var resolves = Str(body, "resolves");
+        // BEH-NOTE-15: an origin outside the fixed list is ignored, not refused — the note still lands, untagged.
+        var from = Str(body, "from") is { } f && Notes.IsOrigin(f) ? f : null;
         if (kind is not (Notes.NoteKind or Notes.RequestKind or Notes.ResolutionKind or Notes.BellKind))
         {
             return Json(400, new ApiError { Error = "bad-request", Reason = "kind must be note, request, resolution or bell" });
@@ -817,9 +819,9 @@ public sealed partial class KitRouter(
         var (written, summary) = kind switch
         {
             Notes.BellKind => (Notes.AppendBell(existing, app, behaviour!, text, now), $"ring {behaviour}'s bell"),
-            Notes.RequestKind => (Notes.AppendRequest(existing, app, text, now), "ask for a behaviour"),
-            Notes.ResolutionKind => (Notes.AppendResolution(existing, app, text, resolves!, now), $"resolve {resolves}"),
-            _ => (Notes.Append(existing, app, text, behaviour, now), behaviour is null ? "leave a note" : $"leave a note on {behaviour}"),
+            Notes.RequestKind => (Notes.AppendRequest(existing, app, text, now, from), "ask for a behaviour"),
+            Notes.ResolutionKind => (Notes.AppendResolution(existing, app, text, resolves!, now, from), $"resolve {resolves}"),
+            _ => (Notes.Append(existing, app, text, behaviour, now, from), behaviour is null ? "leave a note" : $"leave a note on {behaviour}"),
         };
 
         corpora.WriteNotesText(app, written);
@@ -1254,7 +1256,7 @@ public sealed partial class KitRouter(
     private static readonly (string Field, string Type)[] ReviewFields = [("state", "string"), ("note", "string?")];
     private static readonly (string Field, string Type)[] TitleFields = [("title", "string")];
     private static readonly (string Field, string Type)[] BindFields = [("noun", "string")];
-    private static readonly (string Field, string Type)[] NoteFields = [("text", "string?"),("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?")];
+    private static readonly (string Field, string Type)[] NoteFields = [("text", "string?"),("behaviour", "string?"), ("kind", "string?"), ("resolves", "string?"), ("from", "string?")];
     private static readonly (string Field, string Type)[] ReplyFields = [("index", "int"), ("at", "string"), ("text", "string")];
     private static readonly (string Field, string Type)[] DismissFields = [("index", "int"), ("at", "string")];
     private static readonly (string Field, string Type)[] ScheduleFields = [("action", "string"), ("id", "string")];
