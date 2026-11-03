@@ -75,12 +75,16 @@ function Detail({ project }: { project: ProjectDetail }) {
         ) : null}
       </div>
 
-      {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
-      <p className="badges">
-        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>}
+      {/* BEH-SPACE-1: the project is a space of its own, with its own chat, board and notes; the Inbox and
+          Settings stay global, in the main navigation. */}
+      <nav className="badges" aria-label="This project">
+        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}`}>Its chat</Link>}
         {/* BEH-SPACE-3: the project's own board, the global board filtered to it. */}
         {board && <Link to={`/board?project=${encodeURIComponent(project.app)}`}>Its board</Link>}
-      </p>
+        <Link to={`/projects/${encodeURIComponent(project.app)}?tab=notes`}>Its notes</Link>
+        {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
+        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>}
+      </nav>
 
       {/* Above the tabs on purpose (kit#118, BEH-FEAT-7): a thought is caught before it is lost, not after picking a tab. */}
       <AskForBehaviour app={project.app} onAsked={() => (bump(), select('notes'))} />
