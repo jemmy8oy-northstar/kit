@@ -1847,6 +1847,7 @@ behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share
 behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the project with the worst test health"
   in FEAT-HEALTH
   source defined kit.notes.md#2026-10-27-2133
+  source defined kit.notes.md#2026-11-03-1117
   review unreviewed
   pending
   priority 3
@@ -1861,6 +1862,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract my assumption: Kit reads Swift XCTest methods (`func test…`, in `*Tests.swift`) as tests, so an iOS app's tests count; Swift Testing's `@Test` is refused, not skipped, until a project uses it
   contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22); balenthiran 6 → 7/7 (balenthiran.co.uk#31, 2026-10-29). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
   contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
+  contract his question, does reading the Queue need to be built into CLAUDE.md (kit.notes.md#2026-11-03-1117): no, it says so already, and the prose has lost three times (kit#388, kit#401, 2026-11-03). Instead a hook refuses my idle suspend while the Queue holds a card that is not built, paused or marked needs-context; registering it is his (claude-code-bot#132)
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
@@ -2640,12 +2642,12 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
   source defined kit.notes.md#2026-11-02-1905
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it."
   contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
+  contract built: the Chat's foot links to "Notes on x", the project's Notes tab, following whichever project the chat is about
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
@@ -2680,6 +2682,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   review unreviewed
   priority 2
   pending
+  needs-context "It is built and live: kitstudio.dev serves the splash and its register-interest flow. Approve it to close it; it cannot leave pending on its own because its test lives in balenthiran.co.uk."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2758,7 +2761,7 @@ behaviour BEH-LITE-2 "A lite version can optionally use a test database and test
 
 feature FEAT-PROJECT-SPACES "Everything in Kit is organised by project"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, board and config, beside global entry, inbox and settings"
   in FEAT-PROJECT-SPACES
@@ -2780,12 +2783,13 @@ behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so an
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item."
   contract my assumption: the message appears only when the project has no item for him, and the jump goes to the project with his most recent item
+  contract built already, in BEH-CHAT-2: with nothing waiting in the project the Chat says "Nothing is waiting on you in x", and offers the next waiting item elsewhere as a button that moves the chat there
+  contract my assumption: "most recent" is the top of his stack in the Inbox's own order (unseen first, then by priority), not the newest by date, so the Chat and the Inbox never disagree about what is next
 
 behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the user to the global board that shows everything"
   in FEAT-PROJECT-SPACES
@@ -2793,12 +2797,12 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
+  contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES

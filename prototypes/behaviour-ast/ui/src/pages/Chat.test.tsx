@@ -512,6 +512,17 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
   })
 })
 
+describe('BEH-NOTE-14: notes stay alongside the Chat', () => {
+  it("links to the project's notes, and follows the project the chat is about", async () => {
+    mockApi()
+    await open()
+    expect(screen.getByRole('link', { name: 'Notes on alpha' })).toHaveAttribute('href', '/projects/alpha?tab=notes')
+
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
+    expect(screen.getByRole('link', { name: 'Notes on beta' })).toHaveAttribute('href', '/projects/beta?tab=notes')
+  })
+})
+
 describe('BEH-SPECAGENT-1: a user designs their project in a conversation with the spec agent', () => {
   const designs = () => chats().map(([, b]) => (b as { design?: boolean }).design ?? false)
 
