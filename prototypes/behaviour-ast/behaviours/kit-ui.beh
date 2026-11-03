@@ -2530,12 +2530,13 @@ behaviour BEH-CONFLICT-1 "When two specs conflict, the agent builds one reading 
   source defined kit.notes.md#2026-11-02-1747
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitInbox
   then sees region:KitMain
   contract "We need to start improving the robustness of kit, flagging when features conflict and being able to resolve this. I think a good non blocking conflict is building the feature anyway when specs conflict and then letting the user confirm or deny when approving"
+  contract built: the dev process every user's agent follows (GET /api/process) has a "When two specs conflict" section: the agent reads the project's # kit:conflicts line (BEH-CONFLICT-2); on build, or no line, it builds one reading anyway and raises a review request on the card naming both specs by id and the reading it built; on ask it raises that request first and builds nothing on the card until answered; on wait it does the same and does no work on the card at all
   contract my assumption: the card carries the conflict to his Inbox naming both specs and the reading the agent built, so approving it settles the conflict and denying it says which reading is true
+  contract my assumption: this is a rule in the agent's instructions, not a check Kit runs; Kit does not detect the conflict itself, the agent does as it reads the spec
 
 behaviour BEH-CONFLICT-2 "Settings says what the agent does when specs conflict: build anyway, ask first, or wait until it is resolved"
   in FEAT-CONFLICTS
@@ -2543,13 +2544,14 @@ behaviour BEH-CONFLICT-2 "Settings says what the agent does when specs conflict:
   source defined kit.notes.md#2026-11-02-1747
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
   contract "Maybe the settings page needs some way of configuring conflicting behaviour. Whether it merges anyway asks for confirmation or doesn't work until the conflict is resolved"
   contract "I think it is important to be able to configure it not to implement before resolution because that would obviously incur more spend which the user might not want"
+  contract built: a "When specs conflict" section on Settings, for the operator only, lists each project (not ideas or trials, one row per project) with a choice of "Build anyway, I confirm when approving", "Ask me first" or "Wait until I resolve it"; POST /api/projects/<project>/conflicts with { mode: "build"|"ask"|"wait" } writes or removes a # kit:conflicts ask|wait line in the project's own file (the one named for the project) behind the same operator-only gate as every write, and GET /api/projects serves onConflict: "ask"|"wait" on that row, absent for build
   contract my assumption: the default is to build anyway (BEH-CONFLICT-1), and "wait until resolved" spends nothing on the conflicting card until he answers
+  contract my assumption: build anyway is stored as no line, as the promotion switch is when off (BEH-SETTINGS-4), so a project that never chose behaves as it did
 
 behaviour BEH-CONFLICT-3 "The chat agent spots a conflict while the user is proposing spec, so it is settled before anything is built"
   in FEAT-CONFLICTS
