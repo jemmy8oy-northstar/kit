@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
@@ -372,10 +372,12 @@ export function fetchNotes(app: string): Promise<NoteList> {
  * behaviour, and nothing generates from it. `behaviour` is omitted, not sent
  * null, when the note is about the project.
  */
-export function leaveNote(app: string, text: string, behaviour?: string): Promise<NoteResult> {
+export function leaveNote(app: string, text: string, behaviour?: string, from?: NoteOrigin): Promise<NoteResult> {
   return post<NoteResult>(`/api/projects/${encodeURIComponent(app)}/notes`, {
     text,
     ...(behaviour ? { behaviour } : {}),
+    // BEH-NOTE-15: where the note came from; omitted when the caller does not say.
+    ...(from ? { from } : {}),
   })
 }
 

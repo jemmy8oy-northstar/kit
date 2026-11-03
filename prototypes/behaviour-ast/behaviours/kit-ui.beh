@@ -2706,6 +2706,22 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
   contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
   contract built: the Chat's foot links to "Notes on x", the project's Notes tab, following whichever project the chat is about
 
+behaviour BEH-NOTE-15 "A note carries a tag saying where it came from, shown on the Notes page"
+  in FEAT-NOTES
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-1355
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitNotes
+  then sees region:KitMain
+  contract "The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now."
+  contract my assumption: three origins, chat, note-button and agent; a note that does not say (every existing one) shows no tag at all rather than "unknown"
+  contract my assumption: the origin is one line under the heading, an HTML comment `<!-- from: chat -->`, so the heading, and the anchor derived from it, are unchanged and older readers see only an invisible comment
+  contract my assumption: an origin outside that list is ignored, not refused; the note still lands, untagged
+  contract my assumption: the agent origin is for a note posted through the API with from set to agent; nothing in the UI sends it
+  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date; the Chat page sends chat and the floating button sends note-button; the Chat does not show the tag
+
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
   stage development

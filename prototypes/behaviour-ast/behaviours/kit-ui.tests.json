@@ -774,6 +774,9 @@
   "BEH-NOTE-14": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links to the project's notes, and follows the project the chat is about" }
   ],
+  "BEH-NOTE-15": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows a muted \"from\" tag for a note that carries an origin, and none for one that does not" }
+  ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "design is for the project being designed: a turn about another project is the ordinary chat" },

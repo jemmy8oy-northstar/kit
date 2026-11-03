@@ -49,7 +49,7 @@ export default function NoteFab() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     await run(async () => {
-      const result = await leaveNote(app, text, here.behaviour)
+      const result = await leaveNote(app, text, here.behaviour, 'note-button')
       setText('')
       return result
     })

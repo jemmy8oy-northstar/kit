@@ -52,16 +52,16 @@ public static partial class Notes
     /// note that would read as a heading is escaped with <c>\</c>, so a note can never split itself
     /// in two or forge another note's date.
     /// </summary>
-    public static string Append(string? existing, string app, string text, string? behaviour, DateTimeOffset at) =>
-        Tagged(existing, app, text, behaviour is null ? null : " · " + behaviour, at);
+    public static string Append(string? existing, string app, string text, string? behaviour, DateTimeOffset at, string? from = null) =>
+        Tagged(existing, app, text, behaviour is null ? null : " · " + behaviour, at, from);
 
     /// <summary>A behaviour asked for in prose (BEH-NOTE-4): no id, title or actor — the fold writes those.</summary>
-    public static string AppendRequest(string? existing, string app, string text, DateTimeOffset at) =>
-        Tagged(existing, app, text, " · " + RequestTag, at);
+    public static string AppendRequest(string? existing, string app, string text, DateTimeOffset at, string? from = null) =>
+        Tagged(existing, app, text, " · " + RequestTag, at, from);
 
     /// <summary>How a decision on the question sheet should go (BEH-NOTE-8), tagged with its key.</summary>
-    public static string AppendResolution(string? existing, string app, string text, string key, DateTimeOffset at) =>
-        Tagged(existing, app, text, " · " + ResolveTag + key, at);
+    public static string AppendResolution(string? existing, string app, string text, string key, DateTimeOffset at, string? from = null) =>
+        Tagged(existing, app, text, " · " + ResolveTag + key, at, from);
 
     /// <summary>
     /// A rung bell (BEH-BELL-1): <paramref name="item"/> wants the agent's attention again. It stays in
@@ -75,10 +75,18 @@ public static partial class Notes
     public static bool IsRung(string? existing, string item) =>
         Parse(existing).Any(n => n.Kind == BellKind && n.Behaviour == item);
 
-    private static string Tagged(string? existing, string app, string text, string? tag, DateTimeOffset at)
+    private static string Tagged(string? existing, string app, string text, string? tag, DateTimeOffset at, string? from = null)
     {
         var sb = new StringBuilder(existing is null ? Header(app) : existing.TrimEnd('\n') + "\n");
         sb.Append('\n').Append("## ").Append(Stamp(at)).Append(tag).Append("\n\n");
+        // BEH-NOTE-15: where it came from, on its own line under the heading. An HTML comment, so it
+        // renders as nothing and the heading (and the anchor derived from it) is untouched. Only a
+        // known origin is ever written.
+        if (from is not null && IsOrigin(from))
+        {
+            sb.Append("<!-- from: ").Append(from).Append(" -->\n\n");
+        }
+
         AppendTyped(sb, text);
         return sb.ToString();
     }
@@ -153,6 +161,12 @@ public static partial class Notes
         return notes;
     }
 
+    /// <summary>Where a note may say it came from (BEH-NOTE-15): the chat, the floating note button, or the agent's own work.</summary>
+    public static readonly string[] Origins = ["chat", "note-button", "agent"];
+
+    /// <summary>Whether <paramref name="from"/> is one of <see cref="Origins"/>.</summary>
+    public static bool IsOrigin(string from) => Origins.Contains(from);
+
     /// <summary>A behaviour id as a note may name one: no spaces, nothing that would break the heading.</summary>
     public static bool IsBehaviourId(string id) => BehaviourId().IsMatch(id);
 
@@ -183,8 +197,16 @@ public static partial class Notes
         }
 
         Close();
+        string? from = null;
+        if (opening.Length > 0 && Origin().Match(opening.Split('\n')[0]) is { Success: true } o && IsOrigin(o.Groups[1].Value))
+        {
+            from = o.Groups[1].Value;
+            opening = opening.Contains('\n') ? opening[(opening.IndexOf('\n') + 1)..].Trim('\n') : "";
+        }
+
         return new Note
         {
+            From = from,
             At = h.Groups[1].Value,
             Kind = kind,
             // A bell names its item in the same field a note on a behaviour does.
@@ -281,6 +303,9 @@ public static partial class Notes
 
     [GeneratedRegex(@"^## (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z)(?: · (?:(new behaviour)|resolve (\S{1,200})|bell ([A-Za-z0-9._-]{1,100})|([A-Za-z0-9._-]+)))?$")]
     private static partial Regex Heading();
+
+    [GeneratedRegex(@"^<!-- from: ([a-z-]{1,20}) -->$")]
+    private static partial Regex Origin();
 
     [GeneratedRegex(@"^### (Questions|Answer)(?: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z))?$")]
     private static partial Regex Section();

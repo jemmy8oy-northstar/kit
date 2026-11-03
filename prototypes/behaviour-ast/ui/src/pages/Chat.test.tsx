@@ -37,7 +37,7 @@ const details: Record<string, Behaviour[]> = {
 let notesNow: { at: string; kind: string; behaviour: string | null; resolves: null; text: string }[] = []
 
 /** Every POST the page made, as [path, body]. */
-let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string }][] = []
+let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string; from?: string }][] = []
 // A POST to a path this matches is refused 403, as a write the server will not make.
 let refuse: RegExp | null = null
 
@@ -405,7 +405,7 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     mockApi(undefined, acting({ kind: 'answer', text: 'Blue.' }))
     await open()
     await say('blue', 'Done it.')
-    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'Blue.', behaviour: 'A-ASK' }]))
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes', { text: 'Blue.', behaviour: 'A-ASK', from: 'chat' }]))
 
     notesNow = [
       { at: '2026-11-02 18:00Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.' },
@@ -492,7 +492,7 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     await open()
     fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'beta' } })
     await say('please note that', 'Noted.')
-    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/beta/notes', { text: 'The board needs a done column.' }]))
+    await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/beta/notes', { text: 'The board needs a done column.', from: 'chat' }]))
     const kit = await screen.findByText('Saved as a note on beta: “The board needs a done column.”')
 
     notesNow = [
@@ -692,6 +692,7 @@ describe('BEH-SPECAGENT-3: a technical question goes to the coding agent', () =>
     await waitFor(() => expect(posts.some(([p]) => p === '/api/projects/beta/notes')).toBe(true))
     const [, note] = posts.find(([p]) => p === '/api/projects/beta/notes')!
     expect(note.text).toBe('Question for the coding agent: How is the board sorted?')
+    expect(note.from).toBe('chat') // BEH-NOTE-15
     expect(screen.getByText(/Asked the coding agent on beta: “How is the board sorted\?” It answers when it next works/)).toBeTruthy()
 
     notesNow = [{ at: '2026-11-03T12:00:00Z', kind: 'note', behaviour: null, resolves: null, text: 'Question for the coding agent: How is the board sorted?' }]

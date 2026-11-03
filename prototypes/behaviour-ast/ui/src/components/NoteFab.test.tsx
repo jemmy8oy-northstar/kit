@@ -50,7 +50,7 @@ describe('NoteFab (BEH-NOTE-12)', () => {
     expect(screen.getByLabelText('Note on demo')).toBeInTheDocument()
     await leave('the header is too tall')
 
-    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/demo\/notes$/), body: { text: 'the header is too tall' } }])
+    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/demo\/notes$/), body: { text: 'the header is too tall', from: 'note-button' } }])
     expect(heard).toHaveBeenCalledTimes(1)
     window.removeEventListener(NOTE_WRITTEN, heard)
   })
@@ -62,7 +62,7 @@ describe('NoteFab (BEH-NOTE-12)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Note/ }))
     await leave('wrong word')
 
-    expect(posts[0].body).toEqual({ text: 'wrong word', behaviour: 'BEH-1' })
+    expect(posts[0].body).toEqual({ text: 'wrong word', behaviour: 'BEH-1', from: 'note-button' })
   })
 
   it('asks which project on a page that has none, and sends nothing until one is chosen', async () => {
@@ -80,7 +80,7 @@ describe('NoteFab (BEH-NOTE-12)', () => {
     fireEvent.change(picker, { target: { value: 'other' } })
     fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
     expect(await screen.findByText(/Committed|committed/)).toBeInTheDocument()
-    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'an idea' } }])
+    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'an idea', from: 'note-button' } }])
   })
 
   it('offers a project the note names, and one tap picks it (BEH-NOTE-13)', async () => {
@@ -100,7 +100,7 @@ describe('NoteFab (BEH-NOTE-12)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
     expect(await screen.findByText(/Committed|committed/)).toBeInTheDocument()
-    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'In Other, the header is too tall' } }])
+    expect(posts).toEqual([{ url: expect.stringMatching(/\/api\/projects\/other\/notes$/), body: { text: 'In Other, the header is too tall', from: 'note-button' } }])
   })
 
   it('CONTROL: a name nobody lists, or one that does not parse, is never offered (BEH-NOTE-13)', async () => {
