@@ -89,3 +89,7 @@ When the chat agent asks a yes/no or multiple-choice question, it proposes the a
 ## 2026-11-03 13:54Z
 
 The owner likes the current flow for creating notes from the chat. When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept and made concrete in the spec: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it.
+
+## 2026-11-03 13:55Z
+
+The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now.
