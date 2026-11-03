@@ -11,4 +11,7 @@ public interface ITriageAnswer
 
     /// <summary>What the Chat page's agent asked to be done with the item in hand (BEH-CHAT-6); null for none.</summary>
     TriageAction? Action { get; }
+
+    /// <summary>The short answers the Chat page's agent proposes to the question it asked (BEH-CHAT-10); null for none.</summary>
+    IReadOnlyList<string>? Options { get; }
 }

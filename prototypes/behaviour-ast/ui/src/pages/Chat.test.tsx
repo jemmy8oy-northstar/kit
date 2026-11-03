@@ -548,6 +548,53 @@ describe('BEH-CHAT-9: Show again reposts the item in hand at the foot of the cha
   })
 })
 
+describe('BEH-CHAT-10: the agent proposes answers to a question as tappable options', () => {
+  const asking = (options?: string[]) => () => ({ ok: true, status: 200, body: { reply: 'Is that right?', remaining: 8, options } })
+  const suggested = () => [...screen.getByLabelText('Suggested answers').querySelectorAll('button')].map((b) => b.textContent)
+
+  it('shows each option as a button under the question, and tapping one sends it as his message', async () => {
+    mockApi(undefined, asking(['Yes', 'No, green']))
+    await open()
+    await say('hello', 'Is that right?')
+    expect(suggested()).toEqual(['Yes', 'No, green'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'No, green' }))
+    await waitFor(() => expect(chats()).toHaveLength(2))
+    expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'No, green' })
+    // His tap is a message like any other: it shows as his, and the buttons are gone once it is sent.
+    expect(screen.getAllByText('No, green').length).toBeGreaterThan(0)
+    await waitFor(() => expect(screen.getAllByText('Is that right?')).toHaveLength(2))
+    expect(screen.queryAllByLabelText('Suggested answers')).toHaveLength(1)
+  })
+
+  it('leaves typing free, and sending his own words retires the options', async () => {
+    mockApi(undefined, asking(['Yes', 'No']))
+    await open()
+    await say('hello', 'Is that right?')
+    expect(box().disabled).toBe(false)
+    fireEvent.change(box(), { target: { value: 'not really' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(chats()).toHaveLength(2))
+    expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'not really' })
+    expect(screen.queryByRole('button', { name: 'Yes' })).toBeNull()
+  })
+
+  it('shows no buttons when the agent proposed none, and stays after the next item comes into the thread', async () => {
+    mockApi(undefined, asking(undefined))
+    await open()
+    await say('hello', 'Is that right?')
+    expect(screen.queryByLabelText('Suggested answers')).toBeNull()
+
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+    mockApi(undefined, asking(['Yes']))
+    await open()
+    await say('hello', 'Is that right?')
+    fireEvent.click(screen.getByRole('button', { name: 'Show again' }))
+    expect(suggested()).toEqual(['Yes'])
+  })
+})
+
 describe('BEH-CHAT-5: the chat can drop what came before a project change', () => {
   it('after a project change, Forget leaves the earlier turns out of what is sent, and the project is named again', async () => {
     mockApi()

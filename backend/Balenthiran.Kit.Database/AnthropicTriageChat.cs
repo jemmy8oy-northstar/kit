@@ -113,14 +113,39 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         // An action asked for and not done (a second one, or one without its words) is said, so the agent's
         // words never stand alone claiming it.
         var dropped = calls.Count - (action is null ? 0 : 1);
-        return new TriageReply(dropped > 0 ? $"{text}\n\n{Dropped(dropped)}".TrimStart() : text, null, action);
+        return new TriageReply(dropped > 0 ? $"{text}\n\n{Dropped(dropped)}".TrimStart() : text, null, action, OptionsOf(content));
+    }
+
+    /// <summary>The most answers one question offers, and the longest one, in characters (BEH-CHAT-10).</summary>
+    public const int MaxOptions = 5;
+
+    /// <summary>See <see cref="MaxOptions"/>.</summary>
+    public const int MaxOptionLength = 80;
+
+    private const string OptionsTool = "offer_options";
+
+    /// <summary>
+    /// The answers the first <c>offer_options</c> call proposes: trimmed, with the empty, the repeated and the
+    /// over-long dropped, and no more than <see cref="MaxOptions"/>. Null for none (BEH-CHAT-10).
+    /// </summary>
+    private static IReadOnlyList<string>? OptionsOf(JsonArray? content)
+    {
+        var call = (content ?? []).FirstOrDefault(b => (string?)b?["type"] == "tool_use" && (string?)b?["name"] == OptionsTool);
+        var options = ((call?["input"]?["options"] as JsonArray) ?? [])
+            .Select(o => o is JsonValue v && v.TryGetValue<string>(out var s) ? s.Trim() : string.Empty)
+            .Where(s => s.Length is > 0 and <= MaxOptionLength)
+            .Distinct(StringComparer.Ordinal)
+            .Take(MaxOptions)
+            .ToList();
+        return options.Count > 0 ? options : null;
     }
 
     /// <summary>What Kit adds to a reply when <paramref name="count"/> of the actions it asked for were not done.</summary>
     public static string Dropped(int count) =>
         $"(Kit: {(count == 1 ? "one action" : $"{count} actions")} asked for here {(count == 1 ? "was" : "were")} not done: one is done per reply, and each needs its words.)";
 
-    private static readonly HashSet<string> ActionTools = Tools().Select(t => (string)t!["name"]!).ToHashSet(StringComparer.Ordinal);
+    // The options tool decorates a reply rather than asking for anything to be done, so it is not an action.
+    private static readonly HashSet<string> ActionTools = Tools().Select(t => (string)t!["name"]!).Where(n => n != OptionsTool).ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
     /// The cards a reply asks to read, each call with its id; null when it reads nothing, or when it also
@@ -174,7 +199,27 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         Tool("undo_last", "Undo the last thing done to an item in this chat, when the owner asks to.", words: null),
         Tool("show_item", "Show the item in hand in the chat again, when the owner asks to see it.", words: null),
         Tool("save_note", "Leave a note on the project for the coding agent, when the owner agrees to save what this chat settled; text is the note: who does what and what they see, in their words, without the chat's back and forth.", words: "The note."),
-        Tool("ask_coding_agent", "Ask the coding agent a technical question the spec cannot answer, such as how something is built or what a change would take, when the owner wants it asked; text is the question, in their words. It answers when it next works.", words: "The question."));
+        Tool("ask_coding_agent", "Ask the coding agent a technical question the spec cannot answer, such as how something is built or what a change would take, when the owner wants it asked; text is the question, in their words. It answers when it next works.", words: "The question."),
+        OptionsToolDef());
+
+    /// <summary>
+    /// BEH-CHAT-10: when the reply asks a yes/no or multiple-choice question, the answers it proposes, which the
+    /// page shows as buttons; tapping one sends it as the owner's message. Nothing is done by it.
+    /// </summary>
+    private static JsonObject OptionsToolDef() => new()
+    {
+        ["name"] = OptionsTool,
+        ["description"] = $"When your reply asks the owner a yes/no or multiple-choice question, offer the answers as tappable options (up to {MaxOptions}, each a few words, written as the owner would say it). They may still type their own. Do not use it for open questions.",
+        ["input_schema"] = new JsonObject
+        {
+            ["type"] = "object",
+            ["properties"] = new JsonObject
+            {
+                ["options"] = new JsonObject { ["type"] = "array", ["items"] = new JsonObject { ["type"] = "string" }, ["description"] = $"Up to {MaxOptions} short answers." },
+            },
+            ["required"] = new JsonArray("options"),
+        },
+    };
 
     /// <summary>His 18:55Z note: the tool that reads whole cards of the project's spec, by id.</summary>
     public static JsonObject ReadSpecTool() => new()

@@ -126,6 +126,11 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setLines((ls) => [...ls, { from: 'kit', text: 'The agent no longer sees the chat before this project, so each reply costs less.', tell: '' }])
   }
 
+  // BEH-CHAT-10: the agent's options are live only on its latest line, until he sends anything after it.
+  // Kit's own lines and the item coming into the thread do not retire them.
+  const lastAgent = lines.map((l) => l.from).lastIndexOf('agent')
+  const optionsAt = lines.slice(lastAgent + 1).some((l) => l.from === 'user' || l.from === 'switch') ? -1 : lastAgent
+
   const label = (a: string) => {
     const p = apps.find((x) => x.app === a)?.project ?? a
     return p === a ? a : `${p} · ${a}`
@@ -319,7 +324,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), about === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
-      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
+      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null, options: answer.options }])
       setAnnounce(false)
       setRemaining(answer.remaining)
       if (answer.action) await act(answer.action, item, about)
@@ -399,6 +404,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
               <div className="chat-bubble">{l.text}</div>
+              {/* His 13:50Z note: the answers it proposes, one tap each. Only under the newest line, and gone once
+                  anything follows it; he can always type his own. */}
+              {l.from === 'agent' && l.options && i === optionsAt && (
+                <div className="chat-actions chat-options" role="group" aria-label="Suggested answers">
+                  {l.options.map((o) => (
+                    <Button key={o} type="button" size="sm" variant="ghost" onClick={() => void send(o)} disabled={busy}>
+                      {o}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </li>
           ),
         )}
