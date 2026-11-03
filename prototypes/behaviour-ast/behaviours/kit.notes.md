@@ -616,3 +616,7 @@ Just thinking about whether it is still worth having a global board, maybe we ca
 ## 2026-11-02 23:50Z
 
 Kitstudio should currently show a splash page with a register interest flow, maybe this flow is powered by balenthiran backend
+
+## 2026-11-03 10:19Z
+
+Kit Kit as part of initial analysis kit helps you with market research and assessing what the competitors do
