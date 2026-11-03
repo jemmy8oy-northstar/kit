@@ -620,3 +620,7 @@ Kitstudio should currently show a splash page with a register interest flow, may
 ## 2026-11-03 10:19Z
 
 Kit Kit as part of initial analysis kit helps you with market research and assessing what the competitors do
+
+## 2026-11-03 11:17Z
+
+Does reading the queue need to built into claudemd?
