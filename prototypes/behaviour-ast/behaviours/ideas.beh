@@ -15,6 +15,7 @@ feature FEAT-IDEA-MAHJONG "Mahjong: a polished app that prompts the tile names i
 feature FEAT-IDEA-SHENGJI "Sheng ji: a polished, playable app"
 feature FEAT-IDEA-PHLOG "Phlog: a photo blog, where the words lead and the photos sit in tiles"
 feature FEAT-IDEA-COACH "A personal training monitor: records activities and gives feedback on training"
+feature FEAT-IDEA-POKER "A poker trainer: when you play a hand wrong, an AI explains why"
 
 behaviour BEH-IDEA-MAHJONG-1 "Each tile can be named in English or in pinyin, the player's choice"
   in FEAT-IDEA-MAHJONG
@@ -100,3 +101,23 @@ behaviour BEH-IDEA-COACH-3 "The athlete can chat with the AI about their trainin
   pending
   actor athlete
   contract "A chat feature where the human can chat with the ai about training"
+
+behaviour BEH-IDEA-POKER-1 "A player is told when a play differs from the solver's, and an AI explains why"
+  in FEAT-IDEA-POKER
+  source defined ideas.notes.md#2026-11-03-1016
+  priority 5
+  pending
+  needs-context "Should the poker trainer become a project? If yes, create a repo and tell me its name; I cannot create one. Until then it stays an idea."
+  actor player
+  contract "Poker solver game where when you do something wrong an ai can explain why."
+  contract my assumption: "wrong" means the play differs from what the solver recommends for that spot; the explanation is in words, built from the solver's numbers for the alternatives
+
+behaviour BEH-IDEA-POKER-2 "The solver and the explaining AI run open source and on the device, so a hand costs nothing to play"
+  in FEAT-IDEA-POKER
+  source defined ideas.notes.md#2026-11-03-1016
+  priority 5
+  review unreviewed
+  pending
+  actor player
+  contract "Using open source solves to begin with and on device ai to begin with to keep costs low."
+  contract my assumption: solving a whole hand is too slow for a phone, so common spots are solved ahead of time and the device looks them up; the on-device model only writes the explanation

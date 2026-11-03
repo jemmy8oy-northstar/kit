@@ -2302,6 +2302,20 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   contract "I have added a kit-anthropic secret with the key Anthropic__ApiKey to unblock the creation of the triage chat. Let's use haiku for this" (kit.notes.md#2026-11-02-1204)
   contract built: every card in the Inbox has "Talk it through", which opens a chat with the spec agent on claude-haiku-5-5. It knows the card as the corpus writes it and every epic, feature and behaviour title in the project, and it writes nothing: "Use as my words" puts a reply in the card's own box, and his Answer, Comment or Deny posts it
   contract my assumption: the chat lives in the page only and is sent whole each turn, so closing the card forgets it; keeping chats is for when the spec agent writes spec itself (BEH-SPECAGENT-1)
+
+behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent researches the market and what competitors already do"
+  in FEAT-SPEC-AGENT
+  layer ux
+  source defined kit.notes.md#2026-11-03-1019
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit as part of initial analysis kit helps you with market research and assessing what the competitors do"
+  contract my assumption: it is one step of the design conversation in BEH-SPECAGENT-1, not a page of its own: the agent names the closest existing products, what each does and charges, and where the user's idea differs, and writes that as a note on the project for the user to keep or discard
+  contract my assumption: it needs web search, which costs per query on top of the model, so it runs once when the project starts and again only when asked
   contract my assumption on the spend cap he has not set: 100 replies a day per server (KIT_TRIAGE_DAILY_LIMIT changes it, 0 switches it off), each at most 1024 tokens out, with the card cached. My estimate, not a measurement: about a cent a reply on Haiku, so at most about a dollar a day
   contract "I have the kit Anthropic api $10 credit with no auto credit. Let's see how long this lasts for personal use" (kit.notes.md#2026-11-02-1212)
   contract my assumption: the daily cap stays at 100 replies, since his $10 with no top-up is the hard stop; when the credit runs out a reply fails, costs nothing from the allowance, and the chat says it could not answer
