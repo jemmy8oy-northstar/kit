@@ -437,3 +437,12 @@ describe('the question sheet', () => {
     expect(screen.queryByRole('heading', { name: 'Problems in the spec' })).not.toBeInTheDocument()
   })
 })
+
+describe('BEH-SPACE-3: a project links to its own board', () => {
+  it('links to the board filtered to this project, and to designing it in the Chat', async () => {
+    renderApp(snipIt, 'snip-it')
+
+    expect(await screen.findByRole('link', { name: 'Its board' })).toHaveAttribute('href', '/board?project=snip-it')
+    expect(screen.getByRole('link', { name: 'Design it with the spec agent' })).toHaveAttribute('href', '/chat?project=snip-it&design=1')
+  })
+})

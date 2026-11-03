@@ -433,7 +433,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             disabled={busy || !lines.some((l) => l.from === 'user' && !l.local)}
           >
             Ask Kit to note this chat
-          </Button>
+          </Button>{' '}
+          {/* BEH-NOTE-14 (his 2026-11-02 19:05Z note): notes stay, as the quick brain dump, one tap from here. */}
+          <Link to={`/projects/${encodeURIComponent(app)}?tab=notes`}>Notes on {label(app)}</Link>
         </p>
         {error && <p role="alert">{error}</p>}
       </div>

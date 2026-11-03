@@ -57,7 +57,9 @@ function Detail({ project }: { project: ProjectDetail }) {
   const [notes, bump] = useNotesVersion()
   const [tab, select] = useTab()
   const [open, setOpen] = useState<number | null>(null)
-  const chat = useFlags().isOn('FEAT-CHAT')
+  const flags = useFlags()
+  const chat = flags.isOn('FEAT-CHAT')
+  const board = flags.isOn('FEAT-BOARD')
 
   return (
     <>
@@ -74,11 +76,11 @@ function Detail({ project }: { project: ProjectDetail }) {
       </div>
 
       {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
-      {chat && (
-        <p>
-          <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>
-        </p>
-      )}
+      <p className="badges">
+        {chat && <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>}
+        {/* BEH-SPACE-3: the project's own board, the global board filtered to it. */}
+        {board && <Link to={`/board?project=${encodeURIComponent(project.app)}`}>Its board</Link>}
+      </p>
 
       {/* Above the tabs on purpose (kit#118, BEH-FEAT-7): a thought is caught before it is lost, not after picking a tab. */}
       <AskForBehaviour app={project.app} onAsked={() => (bump(), select('notes'))} />
