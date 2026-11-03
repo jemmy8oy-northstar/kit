@@ -2656,6 +2656,9 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   layer ux
   source defined kit.notes.md#2026-11-02-2015
   source defined kit.notes.md#2026-11-02-2350
+  source defined kit-ui.notes.md#2026-11-03-0823
+  source defined kit-ui.notes.md#2026-11-03-0857
+  source defined kit-ui.notes.md#2026-11-03-0917
   review unreviewed
   priority 2
   pending
@@ -2669,6 +2672,8 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract my assumption: kitstudio.dev is served by the balenthiran.co.uk pods, whose frontend renders the Kit splash for that hostname, so no new app or database is needed
   contract my assumption: interest is stored by balenthiran's existing register-interest API under a hidden "kit" project, so Kit is not added to the portfolio's project grid
   contract my assumption: the splash also shows at balenthiran.co.uk/kitstudio, so he can preview it before the domain points anywhere
+  contract built in balenthiran.co.uk#33 and balenthiran.co.uk#34, which he merged and promoted to main (balenthiran.co.uk#37) on 2026-11-03; kitstudio.dev serves it with its own certificate, and its test is balenthiran.co.uk's frontend/e2e/kitstudio.spec.ts
+  contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS
