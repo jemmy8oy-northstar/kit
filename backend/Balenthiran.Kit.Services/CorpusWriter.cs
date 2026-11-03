@@ -394,9 +394,32 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
             return WriteResult.Refuse("bad-mode", $"conflicts must be one of {string.Join(", ", ConflictsDirective.Modes)}");
         }
 
+        return SetChoiceLine(text, mode == ConflictsDirective.Build, ConflictsDirective.Lines, ConflictsDirective.Line(mode));
+    }
+
+    /// <summary>
+    /// BEH-ARCH-3: sets the file's <c># kit:depth</c> line to <c>goals</c> or <c>architecture</c>, as
+    /// <see cref="SetConflictMode"/> does for conflicts; the default, <c>behaviours</c>, is no line.
+    /// </summary>
+    public IWriteResult SetDepth(string text, string mode)
+    {
+        if (!DepthDirective.Modes.Contains(mode))
+        {
+            return WriteResult.Refuse("bad-mode", $"depth must be one of {string.Join(", ", DepthDirective.Modes)}");
+        }
+
+        return SetChoiceLine(text, mode == DepthDirective.Behaviours, DepthDirective.Lines, DepthDirective.Line(mode));
+    }
+
+    /// <summary>
+    /// A per-project choice stored as one <c># kit:</c> line: the default removes every such line, any other
+    /// replaces the first and drops the rest, else adds it after the leading directives. No change rewrites nothing.
+    /// </summary>
+    private IWriteResult SetChoiceLine(string text, bool isDefault, Func<string[], IEnumerable<int>> find, string wanted)
+    {
         var lines = text.Split('\n').ToList();
-        var existing = ConflictsDirective.Lines([.. lines]).ToList();
-        if (mode == ConflictsDirective.Build)
+        var existing = find([.. lines]).ToList();
+        if (isDefault)
         {
             if (existing.Count == 0)
             {
@@ -410,7 +433,6 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         }
         else if (existing.Count > 0)
         {
-            var wanted = ConflictsDirective.Line(mode);
             if (existing.Count == 1 && lines[existing[0]].TrimEnd('\r') == wanted)
             {
                 return new WriteResult { Ok = true, Text = text };
@@ -424,7 +446,7 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
         }
         else
         {
-            lines.Insert(HeaderAnchor(lines) + 1, ConflictsDirective.Line(mode));
+            lines.Insert(HeaderAnchor(lines) + 1, wanted);
         }
 
         return ValidatedEdit(text, string.Join('\n', lines));

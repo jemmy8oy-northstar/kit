@@ -41,6 +41,12 @@ public interface ICorpusWriter
     /// </summary>
     IWriteResult SetConflictMode(string text, string mode);
 
+    /// <summary>
+    /// Sets the file's <c># kit:depth</c> line to <c>goals</c>, <c>behaviours</c> or <c>architecture</c> (BEH-ARCH-3);
+    /// <c>behaviours</c> is the default and is stored as no line. Asking for what it already says rewrites nothing.
+    /// </summary>
+    IWriteResult SetDepth(string text, string mode);
+
     /// <summary>Adds or removes the file's <c># kit:goal maintained</c> line (BEH-NARR-2); the state it is already in changes nothing.</summary>
     IWriteResult SetGoalMaintained(string text, bool on);
 

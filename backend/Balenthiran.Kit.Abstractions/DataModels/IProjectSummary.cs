@@ -36,4 +36,7 @@ public interface IProjectSummary
 
     /// <summary><c>"ask"</c> or <c>"wait"</c> when the project says what the agent does when specs conflict (BEH-CONFLICT-2); <c>null</c> for the default, build anyway.</summary>
     string? OnConflict { get; }
+
+    /// <summary><c>"goals"</c> or <c>"architecture"</c> when the project says how involved its user is (BEH-ARCH-3); <c>null</c> for the default, behaviours.</summary>
+    string? Depth { get; }
 }

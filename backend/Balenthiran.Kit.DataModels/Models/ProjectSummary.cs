@@ -62,5 +62,12 @@ public sealed class ProjectSummary : IProjectSummary
 
     string? IProjectSummary.OnConflict => OnConflict;
 
+    // BEH-ARCH-3: "goals" or "architecture" when this project's primary file carries `# kit:depth goals|architecture`; absent for the default (behaviours).
+    [JsonPropertyOrder(14)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Depth { get; init; }
+
+    string? IProjectSummary.Depth => Depth;
+
     ICoverageSummary IProjectSummary.Coverage => Coverage;
 }
