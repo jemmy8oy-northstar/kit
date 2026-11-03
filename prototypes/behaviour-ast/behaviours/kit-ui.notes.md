@@ -93,3 +93,9 @@ The owner likes the current flow for creating notes from the chat. When a note i
 ## 2026-11-03 13:55Z
 
 The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now.
+
+## 2026-11-03 23:30Z · BEH-SPECAGENT-2
+
+<!-- from: chat -->
+
+The API key is added and in use for chat. Spend cap: the user can use as much money as they have credited in their account, and can also set a money allowance per day, week or month for their Kit agent to spend, drawn from that credit.
