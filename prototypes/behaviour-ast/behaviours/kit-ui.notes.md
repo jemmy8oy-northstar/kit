@@ -99,3 +99,15 @@ The owner wants notes to carry a tag or label showing where they came from (for 
 <!-- from: chat -->
 
 The API key is added and in use for chat. Spend cap: the user can use as much money as they have credited in their account, and can also set a money allowance per day, week or month for their Kit agent to spend, drawn from that credit.
+
+## 2026-11-03 23:32Z
+
+<!-- from: chat -->
+
+Three changes to the chat and action cards, from the owner's review:
+
+1. The chat can show an answer that was already posted to an item, on request, so he can see what he wrote. It can also show a note's attributes (its text, its answer, its tag) the same way, without him having to open the note.
+
+2. When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away.
+
+3. Remove the "next up in Kit" section. The next item comes up in the chat anyway, so it is not needed.
