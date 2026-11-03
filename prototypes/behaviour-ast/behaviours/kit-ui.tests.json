@@ -709,6 +709,15 @@
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }
   ],
+  "BEH-TOUR-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "opens on the first signed-in visit to Projects, and not again after Skip tour" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "walks the steps with Next and Back, and Done marks it seen" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "moves focus into the dialog when it opens" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "is not shown without a session, or when the Kit has no accounts" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "is opened again by Settings' Replay the tour, even when already seen" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "treats Escape as skipping the tour" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/Tour.test.tsx", "title": "still opens, and does not throw, when the browser refuses storage" }
+  ],
   "BEH-WELCOME-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "a user with no GitHub connected is welcomed with connecting it as the first step" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "once connected, the welcome is gone: their projects are listed, or with none a new one is offered" },
