@@ -57,3 +57,7 @@ For all of these would it be better to let the user integrate their own account 
 ## 2026-10-31 16:45Z · BEH-USERS-9
 
 Do you have an estimation of cost for how much a feature will take to execute or anything like that using anthropic api with opus 5.5? I am imagining that it will be quite expensive.
+
+## 2026-11-03 08:23Z · BEH-SPLASH-1
+
+Merge it when it ready
