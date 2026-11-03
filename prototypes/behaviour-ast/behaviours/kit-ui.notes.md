@@ -81,3 +81,7 @@ The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-ho
 ## 2026-11-03 13:49Z
 
 The owner wants a button next to Approve and Skip in the chat's floating widget that reposts the current item at the bottom of the chat, so he doesn't have to scroll up to find it. Label: "Show again" (alternatives he may prefer: "Bring to bottom" or "Recap"). Motivation: when an item ends up far up the chat he wants it posted again at the bottom.
+
+## 2026-11-03 13:50Z
+
+When the chat agent asks a yes/no or multiple-choice question, it proposes the answers as tappable options. He can tap one, or type a free-form response instead.
