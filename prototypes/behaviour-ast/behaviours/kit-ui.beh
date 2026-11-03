@@ -2513,8 +2513,10 @@ behaviour BEH-CHAT-11 "One chat covers every app of a project, rather than one c
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
-  pending
   contract "The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-hosted are all related and should share a single chat."
+  contract built: the Chat page's picker lists projects, not apps: apps sharing a `# kit:project` line are one entry, and the item in hand is the top one waiting in any of them, so the next app's item comes up with no project change
+  contract built: each turn goes to the spec agent of the item in hand's app, with the whole chat; with nothing in hand it goes to the project's home app, which is also where the chat's notes go. Naming another app of the same project does not move the chat, and ?project= takes an app's name or its project's
+  contract my assumption: the home app is the app named like the project (kit, for kit), else its first app; the agent still reads one app's spec per turn, rather than all three, so a turn costs what it did
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).

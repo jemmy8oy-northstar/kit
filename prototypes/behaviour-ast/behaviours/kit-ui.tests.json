@@ -694,6 +694,11 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is told to the agent as the item in view, with his next message" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "has nothing to show when nothing is in hand" }
   ],
+  "BEH-CHAT-11": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "lists the project once, and takes its apps’ items in turn with no project change, each turn going to the item’s app" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing in hand it talks to the project’s home app, and naming another of its apps does not move it" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "opens on the project of an app named in the link" }
+  ],
   "BEH-CHAT-10": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows each option as a button under the question, and tapping one sends it as his message" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves typing free, and sending his own words retires the options" },

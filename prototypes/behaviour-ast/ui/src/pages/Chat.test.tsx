@@ -45,6 +45,8 @@ function mockApi(
   triage: unknown = { configured: true, model: 'claude-haiku-5-5', remaining: 9 },
   chat?: () => { ok: boolean; status: number; body: unknown } | Promise<{ ok: boolean; status: number; body: unknown }>,
   projects: Record<string, Behaviour[]> = details,
+  // An app's `# kit:project` line, for apps grouped into one project (BEH-CHAT-11).
+  groups: Record<string, string> = {},
 ) {
   posts = []
   refuse = null
@@ -68,7 +70,7 @@ function mockApi(
       if (rest.endsWith('/history')) return { ...ok, json: async () => ({ history: 'none', reason: 'no git', completed: [], added: [] }) }
       if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: notesNow }) }
       if (rest.endsWith('/schedule')) return { ...ok, json: async () => ({ scheduled: [], backlog: [] }) }
-      return { ...ok, json: async () => (rest ? { app: rest, behaviours: projects[rest] } : { projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained' })) }) }
+      return { ...ok, json: async () => (rest ? { app: rest, behaviours: projects[rest] } : { projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained', ...(groups[app] ? { project: groups[app] } : {}) })) }) }
     }),
   )
 }
@@ -574,9 +576,13 @@ describe('BEH-CHAT-10: the agent proposes answers to a question as tappable opti
     expect(box().disabled).toBe(false)
     fireEvent.change(box(), { target: { value: 'not really' } })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    // Gone as soon as his message is in the thread, before the next reply lands.
+    expect(screen.queryByRole('button', { name: 'Yes' })).toBeNull()
     await waitFor(() => expect(chats()).toHaveLength(2))
     expect(chats()[1][1].messages!.at(-1)).toEqual({ from: 'user', text: 'not really' })
-    expect(screen.queryByRole('button', { name: 'Yes' })).toBeNull()
+    // The next reply offers its own, under it alone.
+    await waitFor(() => expect(screen.getAllByText('Is that right?')).toHaveLength(2))
+    expect(screen.getAllByLabelText('Suggested answers')).toHaveLength(1)
   })
 
   it('shows no buttons when the agent proposed none, and stays after the next item comes into the thread', async () => {
@@ -592,6 +598,68 @@ describe('BEH-CHAT-10: the agent proposes answers to a question as tappable opti
     await say('hello', 'Is that right?')
     fireEvent.click(screen.getByRole('button', { name: 'Show again' }))
     expect(suggested()).toEqual(['Yes'])
+  })
+})
+
+describe('BEH-CHAT-11: one chat covers every app of a project', () => {
+  const grouped = {
+    kit: [beh('K-ASK', { review: { state: 'requested', note: 'Which font?' }, priority: 2 })],
+    'kit-ui': [beh('U-ASK', { review: { state: 'requested', note: 'Which colour?' }, priority: 1 })],
+    beta: [beh('B-DONE')],
+  }
+  const kitGroup = { kit: 'kit', 'kit-ui': 'kit' }
+  const choices = () => [...(screen.getByLabelText('Project') as HTMLSelectElement).options].map((o) => o.value)
+
+  it('lists the project once, and takes its apps’ items in turn with no project change, each turn going to the item’s app', async () => {
+    mockApi(undefined, undefined, grouped, kitGroup)
+    await open()
+    expect(choices()).toEqual(['kit', 'beta'])
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('kit')
+
+    const first = inHandId()
+    const appOf = (id: string) => (id === 'U-ASK' ? 'kit-ui' : 'kit')
+    await say('yes', 'reply 1')
+    expect(chats()[0][0]).toBe(`/api/projects/${appOf(first)}/chat`)
+    expect(chats()[0][1].behaviour).toBe(first)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(inHandId()).not.toBe(first))
+    const second = inHandId()
+    expect(appOf(second)).not.toBe(appOf(first))
+    // Still the one chat: the other app's item came up with no project change.
+    expect(order()).not.toContain('switch')
+    expect(screen.getByText(/Next up in kit: /)).toBeTruthy()
+
+    await say('serif', 'reply 2')
+    expect(chats()[1][0]).toBe(`/api/projects/${appOf(second)}/chat`)
+    expect(chats()[1][1].behaviour).toBe(second)
+    // The whole chat goes with it, whichever app the turn is for.
+    expect(chats()[1][1].messages).toHaveLength(3)
+  })
+
+  it('with nothing in hand it talks to the project’s home app, and naming another of its apps does not move it', async () => {
+    mockApi(undefined, undefined, { kit: [beh('K-DONE')], 'kit-ui': [beh('U-DONE')], beta: [beh('B-ASK', { review: { state: 'requested', note: 'Which?' } })] }, kitGroup)
+    await open()
+    fireEvent.change(screen.getByLabelText('Project'), { target: { value: 'kit' } })
+    expect(screen.getByText('Now talking about kit.')).toBeTruthy()
+    await say('how is the board built?', 'reply 1')
+    expect(chats()[0][0]).toBe('/api/projects/kit/chat')
+
+    await say('and the kit-ui chat page?', 'reply 2')
+    expect(screen.queryByText(/as you named it/)).toBeNull()
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('kit')
+    expect(chats()[1][0]).toBe('/api/projects/kit/chat')
+  })
+
+  it('opens on the project of an app named in the link', async () => {
+    mockApi(undefined, undefined, grouped, kitGroup)
+    render(
+      <MemoryRouter initialEntries={['/chat?project=kit-ui']}>
+        <Chat />
+      </MemoryRouter>,
+    )
+    await screen.findByTestId('chat')
+    expect((screen.getByLabelText('Project') as HTMLSelectElement).value).toBe('kit')
   })
 })
 
