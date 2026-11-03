@@ -721,6 +721,11 @@
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_file_read_that_times_out_or_a_repo_with_too_many_files_is_a_read_failure_not_a_crash" }
   ],
+  "BEH-SPECAGENT-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves the question as a note marked for the coding agent, says so, and can be undone" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_question_for_the_coding_agent_reads_as_an_action_that_needs_no_item_in_hand" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_offers_to_ask_the_coding_agent_what_the_spec_cannot_answer" }
+  ],
   "BEH-SPACE-2": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
   ],

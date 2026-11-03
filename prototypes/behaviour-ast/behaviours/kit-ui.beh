@@ -2283,12 +2283,13 @@ behaviour BEH-SPECAGENT-3 "A technical question to the spec agent goes on an ope
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "When I have technical questions I am able to ask the non coder agent and it is able to delegate to a coder agent to answer - i think to start with this just gets posted to an open questions board"
   contract my assumption: the board is the project's Questions tab (BEH-SHEET-2), with the asker shown; an answer arrives when the coding agent next wakes, and answering at once comes later, as he said
+  contract built: in the Chat the spec agent offers to ask the coding agent what the spec cannot answer, and with his yes calls ask_coding_agent; the page leaves "Question for the coding agent: …" as a note on the project, says so with an Undo, and the coding agent answers it when it next works
+  contract my assumption, replacing the Questions tab for now: the answer goes on the card the question is about, as "his question, …: answer", the way his questions in notes are already answered; the Questions tab holds what Kit asks him, so his questions to it are not mixed in
 
 behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and the spec agent talks each one through with the user"
   in FEAT-SPEC-AGENT

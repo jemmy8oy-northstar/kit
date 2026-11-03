@@ -202,6 +202,26 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       }
       return
     }
+    if (action.kind === 'question') {
+      // BEH-SPECAGENT-3: on the project's notes, marked for the coding agent, which answers it on the card
+      // the question is about when it next works. Undone the way a note is.
+      const text = `Question for the coding agent: ${action.text}`
+      try {
+        await leaveNote(about, text)
+        setLines((ls) => [
+          ...ls,
+          {
+            from: 'kit',
+            text: `Asked the coding agent on ${label(about)}: “${action.text}” It answers when it next works, on the card the question is about.`,
+            tell: `[Kit asked the coding agent: ${action.text.slice(0, 200)}]`,
+            undo: () => dismissAnswer(about, null, text),
+          },
+        ])
+      } catch (e) {
+        failed(e)
+      }
+      return
+    }
     if (action.kind === 'show') {
       // Again, even when it is already the latest item line: he asked to see it. None in hand, nothing to show.
       if (card && !handledNow.current.has(keyOf(card))) setLines((ls) => [...ls, itemLine(card)])
@@ -482,7 +502,7 @@ function itemLine(card: InboxCard): Line {
 
 /** His 19:28Z note: what Kit is, and that the chat changes nothing itself. */
 const HELP =
-  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, or save what you agree as a note. Notes are also a quick brain-dump."
+  "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, save what you agree as a note, or ask the coding agent a technical question, which it answers when it next works. Notes are also a quick brain-dump."
 const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
 const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())
 
