@@ -77,3 +77,7 @@ This is complete right? Also why are you not cracking on with the kit backlog. G
 ## 2026-11-03 13:36Z
 
 The owner wants one chat for the whole of kit, not three. kit, kit-ui and kit-hosted are all related and should share a single chat. Today each is a separate project with its own chat, so he has to talk to three places about one thing. Please group them so kit's chat covers all three.
+
+## 2026-11-03 13:49Z
+
+The owner wants a button next to Approve and Skip in the chat's floating widget that reposts the current item at the bottom of the chat, so he doesn't have to scroll up to find it. Label: "Show again" (alternatives he may prefer: "Bring to bottom" or "Recap"). Motivation: when an item ends up far up the chat he wants it posted again at the bottom.
