@@ -75,6 +75,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }, [lines])
   // The first message after a project change carries it, so the agent knows which project it is about.
   const [announce, setAnnounce] = useState(true)
+  // BEH-CHAT-5: the first line the agent is sent; what came before it stays on the page but costs nothing.
+  const [forgotten, setForgotten] = useState(0)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,6 +115,16 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   }, [])
 
   if (apps.length === 0) return <p>There are no projects to talk about yet.</p>
+
+  // BEH-CHAT-5: after a project change, what was said before it can be left out of every later turn.
+  const lastSwitch = lines.map((l) => l.from).lastIndexOf('switch')
+  const canForget = lastSwitch > forgotten && lines.slice(forgotten, lastSwitch).some((l) => l.from === 'user' && !l.local)
+  function forget() {
+    setForgotten(lastSwitch)
+    // The next message says the project again, as the agent no longer sees where it was named.
+    setAnnounce(true)
+    setLines((ls) => [...ls, { from: 'kit', text: 'The agent no longer sees the chat before this project, so each reply costs less.', tell: '' }])
+  }
 
   const label = (a: string) => {
     const p = apps.find((x) => x.app === a)?.project ?? a
@@ -304,7 +316,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     setError(null)
     // The project is fixed while a reply is awaited: the project picker is disabled.
     try {
-      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after), about === (designed ?? designing))
+      const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), about === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
       setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null }])
@@ -454,6 +466,11 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           >
             Ask Kit to note this chat
           </Button>{' '}
+          {canForget && (
+            <Button type="button" size="sm" variant="ghost" onClick={forget} disabled={busy}>
+              Forget the chat before {label(app)}
+            </Button>
+          )}{' '}
           {/* BEH-NOTE-14 (his 2026-11-02 19:05Z note): notes stay, as the quick brain dump, one tap from here. */}
           <Link to={`/projects/${encodeURIComponent(app)}?tab=notes`}>Notes on {label(app)}</Link>
         </p>
