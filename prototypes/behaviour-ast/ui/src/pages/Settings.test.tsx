@@ -271,6 +271,51 @@ describe('Promotion to main (BEH-SETTINGS-4)', () => {
   })
 })
 
+describe('When specs conflict (BEH-CONFLICT-2)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const projects = [
+    { app: 'kit', project: 'kit', onConflict: 'wait' },
+    { app: 'kit-ui', project: 'kit' },
+    { app: 'snip-it', project: 'snip-it' },
+    { app: 'ideas', project: 'ideas', idea: true },
+  ]
+
+  it('shows the operator one choice per project, build anyway unless the project says otherwise', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'When specs conflict' })).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'kit: when specs conflict' })).toHaveValue('wait')
+    expect(screen.getByRole('combobox', { name: 'snip-it: when specs conflict' })).toHaveValue('build')
+    expect(screen.queryByRole('combobox', { name: 'kit-ui: when specs conflict' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'ideas: when specs conflict' })).not.toBeInTheDocument()
+    const options = within(screen.getByRole('combobox', { name: 'snip-it: when specs conflict' })).getAllByRole('option').map((o) => o.textContent)
+    expect(options).toEqual(['Build anyway, I confirm when approving', 'Ask me first', 'Wait until I resolve it'])
+  })
+
+  it('posts the named mode when a choice is made, and says so', async () => {
+    const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: when specs conflict' }), { target: { value: 'ask' } })
+    expect(await screen.findByText(/snip-it's specs conflict, the agent will now ask you first/)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/projects/snip-it/conflicts', body: { mode: 'ask' } }])
+  })
+
+  it('shows the server reason when the conflict choice is refused', async () => {
+    vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: when specs conflict' }), { target: { value: 'wait' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
+  })
+
+  it('does not show the conflict section to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'When specs conflict' })).not.toBeInTheDocument()
+  })
+})
+
 describe('Idle work order (BEH-SETTINGS-6)', () => {
   const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
   const items = async () => (await screen.findAllByRole('listitem')).map((li) => within(li).getByRole('checkbox').closest('label')!.textContent!.trim())

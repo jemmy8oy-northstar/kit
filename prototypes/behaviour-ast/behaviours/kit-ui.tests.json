@@ -753,6 +753,25 @@
   "BEH-CHAT-5": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after a project change, Forget leaves the earlier turns out of what is sent, and the project is named again" }
   ],
+  "BEH-CONFLICT-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "BEH_CONFLICT_1_the_shared_process_says_what_to_do_when_two_specs_conflict" }
+  ],
+  "BEH-CONFLICT-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_ask_and_wait_are_read_into_the_summary_and_build_is_no_key" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_only_an_exact_choice_counts_and_anything_else_is_build" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_only_the_primary_file_of_a_project_can_choose" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_the_writer_adds_replaces_and_removes_the_line_and_build_restores_the_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_choosing_what_the_file_already_says_changes_nothing" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_mode_that_is_not_build_ask_or_wait_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_the_operator_chooses_over_the_route_and_it_is_a_commit_shaped_edit" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_a_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/ConflictModeTests.cs", "title": "BEH_CONFLICT_2_the_body_must_name_build_ask_or_wait" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one choice per project, build anyway unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named mode when a choice is made, and says so" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the conflict choice is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the conflict section to anyone but the operator" }
+  ],
   "BEH-CONFLICT-3": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Before_saving_new_spec_the_chat_looks_for_a_card_it_conflicts_with_and_asks_which_holds" }
   ],

@@ -121,7 +121,16 @@ export interface ProjectSummary {
    * file carries `# kit:goal maintained`. Absent, never false or null, otherwise.
    */
   goal?: 'maintained'
+  /**
+   * `"ask"` or `"wait"` when the project says what the agent does when specs conflict
+   * (BEH-CONFLICT-2): its primary file carries `# kit:conflicts ask|wait`. Absent, never null,
+   * for the default, build anyway.
+   */
+  onConflict?: 'ask' | 'wait'
 }
+
+/** What the agent does when two specs conflict (BEH-CONFLICT-2). `build` is the default and is no line. */
+export type ConflictMode = 'build' | 'ask' | 'wait'
 
 /** The agent's kinds of idle work (BEH-SETTINGS-6). One not in the order is switched off. */
 export type IdleItem = 'health' | 'ideas'

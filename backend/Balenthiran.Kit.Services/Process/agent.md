@@ -41,6 +41,21 @@ Every user's agent follows this one process. It is written once and served by Ki
 - **End every session by naming the next step toward the goal**, in one sentence, in the pull
   request or the message you leave.
 
+## When two specs conflict
+
+Two behaviours conflict when they cannot both hold. Read the project's `# kit:conflicts` line
+(in the file named for the project) and do what it says; no line means `build`.
+
+- **`build`**: build one reading anyway, so the work is not held up. Then raise a review request
+  on the card naming both specs by id and the reading you built. Approving it settles the
+  conflict; denying it says which reading is true, and you rebuild to that.
+- **`ask`**: raise the same review request first, naming both specs and the reading you would
+  build, and build nothing on that card until he answers.
+- **`wait`**: as `ask`, and spend nothing on it: do no work on that card at all until he
+  resolves the conflict. Take the next item in the Queue.
+
+Never pick a winner silently, and never edit either spec to make the conflict go away.
+
 ## Rules
 
 - The corpus and the user's newest feedback win over this file and over your own notes.
