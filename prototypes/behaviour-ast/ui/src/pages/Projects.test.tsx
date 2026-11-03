@@ -271,3 +271,45 @@ describe('Projects', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('nothing is served at /api/projects')
   })
 })
+
+describe('BEH-WELCOME-1: a new user connects their GitHub, then sees their projects or is offered a new one', () => {
+  const ann = { required: true, signedIn: true, accounts: true, user: 'ann' } as SessionState
+
+  it('a user with no GitHub connected is welcomed with connecting it as the first step', async () => {
+    mockFetch({ projects: [] })
+    renderProjects({ ...ann, gitHubInstall: 'https://github.com/apps/kit/installations/new', gitHubAuthorize: 'https://github.com/login/oauth/authorize?s=1' })
+
+    const steps = await screen.findByTestId('welcome-steps')
+    expect(screen.getByRole('heading', { name: 'Welcome to Kit' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', 'https://github.com/apps/kit/installations/new')
+    expect(screen.getByRole('link', { name: 'Already installed? Connect it' })).toHaveAttribute('href', 'https://github.com/login/oauth/authorize?s=1')
+    expect([...steps.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      expect.stringMatching(/^Connect your GitHub/),
+      expect.stringMatching(/Kit projects appear here/),
+      expect.stringMatching(/offers to start a new one/),
+    ])
+    // The operator's wording about every corpus is not theirs.
+    expect(screen.queryByText(/Every behaviour corpus Kit can read/)).not.toBeInTheDocument()
+  })
+
+  it('once connected, the welcome is gone: their projects are listed, or with none a new one is offered', async () => {
+    mockFetch({ projects: [], gitHub: [] })
+    const { unmount } = renderProjects({ ...ann, gitHub: 'ann-gh' })
+    expect(await screen.findByRole('heading', { name: 'Start a new project' })).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-steps')).not.toBeInTheDocument()
+    unmount()
+
+    mockFetch({ projects: [], gitHub: [{ name: 'app', fullName: 'ann-gh/app', url: 'https://github.com/ann-gh/app', corpus: ['behaviours/app.beh'] }] })
+    renderProjects({ ...ann, gitHub: 'ann-gh' })
+    expect(await screen.findByRole('link', { name: 'ann-gh/app' })).toBeInTheDocument()
+    expect(screen.getByText(/Your Kit projects/)).toBeInTheDocument()
+  })
+
+  it('the operator is never shown the welcome, connected or not', async () => {
+    mockFetch(projectsFixture)
+    renderProjects({ ...ann, operator: true })
+    expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.queryByTestId('welcome-steps')).not.toBeInTheDocument()
+    expect(screen.getByText(/Every behaviour corpus Kit can read/)).toBeInTheDocument()
+  })
+})

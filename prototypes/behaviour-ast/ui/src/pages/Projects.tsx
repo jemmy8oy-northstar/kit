@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
 import { fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
-import type { GitHubProject, ProjectSummary } from '../api/types'
+import type { GitHubProject, ProjectSummary, SessionState } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import Count from '../components/Count'
 import ResourceView from '../components/Resource'
@@ -14,15 +14,25 @@ import { isIdea } from '../board'
 /** Step 1 of his loop: see the projects Kit knows about. */
 export default function Projects() {
   const projects = useResource(fetchProjects, [])
+  const session = useSession()
+  // BEH-WELCOME-1: a user, not the operator, whose GitHub is not connected yet has nothing to list,
+  // so the page is their first step: connecting it.
+  const welcome = !!session?.accounts && !session.operator && !session.gitHub
 
   return (
     <>
       <h1>Projects</h1>
-      <p className="muted">
-        Every behaviour corpus Kit can read. Counts come from the corpus itself;
-        coverage needs the app's repository, which the read API is not given by
-        default.
-      </p>
+      {welcome ? (
+        <Welcome session={session!} />
+      ) : session?.accounts && !session.operator ? (
+        <p className="muted">Your Kit projects: the repos in your GitHub that carry a <code>.beh</code> file.</p>
+      ) : (
+        <p className="muted">
+          Every behaviour corpus Kit can read. Counts come from the corpus itself;
+          coverage needs the app's repository, which the read API is not given by
+          default.
+        </p>
+      )}
 
       <ResourceView resource={projects}>
         {({ projects: rows, gitHub, gitHubError }) => (
@@ -47,6 +57,35 @@ export default function Projects() {
         )}
       </ResourceView>
     </>
+  )
+}
+
+/**
+ * BEH-WELCOME-1 (kit.notes.md#2026-10-31-1643): the first visit's order. Connect GitHub first; then the
+ * user's Kit projects are listed here, or, when there are none, they are offered a new one.
+ */
+function Welcome({ session }: { session: SessionState }) {
+  return (
+    <Card>
+      <h2>Welcome to Kit</h2>
+      <ol data-testid="welcome-steps">
+        <li>
+          {session.gitHubInstall ? (
+            <a href={session.gitHubInstall}>Connect your GitHub</a>
+          ) : (
+            <>Connect your GitHub (this Kit cannot connect one yet)</>
+          )}
+          {session.gitHubAuthorize ? (
+            <>
+              {' '}· <a href={session.gitHubAuthorize}>Already installed? Connect it</a>
+            </>
+          ) : null}
+          , so Kit can see your repos.
+        </li>
+        <li>Your Kit projects appear here, the repos with a <code>.beh</code> file.</li>
+        <li>If you have none yet, Kit offers to start a new one.</li>
+      </ol>
+    </Card>
   )
 }
 
