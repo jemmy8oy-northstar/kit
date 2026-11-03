@@ -694,6 +694,15 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "is told to the agent as the item in view, with his next message" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "has nothing to show when nothing is in hand" }
   ],
+  "BEH-CHAT-10": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows each option as a button under the question, and tapping one sends it as his message" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "leaves typing free, and sending his own words retires the options" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows no buttons when the agent proposed none, and stays after the next item comes into the thread" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_options_a_reply_proposes_are_read_trimmed_deduplicated_and_capped" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Offering_options_is_not_an_action_and_is_not_reported_as_one_left_undone" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Only_the_chat_answers_with_options_and_a_reply_that_acts_shows_none" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_tell_the_agent_it_can_offer_options" }
+  ],
   "BEH-CHAT-6": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "approves the item when the agent asks to, says so with an Undo, and the undo puts the review back" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "denies and answers with his words, and an undone answer is dismissed from the notes" },
