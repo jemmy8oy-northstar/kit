@@ -2642,12 +2642,12 @@ behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the co
   source defined kit.notes.md#2026-11-02-1905
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I was thinking of getting rid of notes in favour of chat but I think notes still olds great value. It allows a user to quickly just brain dump and let the coding agent pick it up and file it."
   contract my assumption: notes are kept as they are, not folded into Chat, and are still reachable from the Chat page
+  contract built: the Chat's foot links to "Notes on x", the project's Notes tab, following whichever project the chat is about
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
@@ -2761,7 +2761,7 @@ behaviour BEH-LITE-2 "A lite version can optionally use a test database and test
 
 feature FEAT-PROJECT-SPACES "Everything in Kit is organised by project"
   in EPIC-KIT-USERS
-  stage problem
+  stage development
 
 behaviour BEH-SPACE-1 "Each project is its own space in Kit, with its own chat, board and config, beside global entry, inbox and settings"
   in FEAT-PROJECT-SPACES
@@ -2783,12 +2783,13 @@ behaviour BEH-SPACE-2 "Entering a project's chat with nothing waiting says so an
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "I feel like it would be good if the chat was organise by space, maybe we can still have a message when you enter which says no new actions need your attention on this project jump to x project to respond to most recent item."
   contract my assumption: the message appears only when the project has no item for him, and the jump goes to the project with his most recent item
+  contract built already, in BEH-CHAT-2: with nothing waiting in the project the Chat says "Nothing is waiting on you in x", and offers the next waiting item elsewhere as a button that moves the chat there
+  contract my assumption: "most recent" is the top of his stack in the Inbox's own order (unseen first, then by priority), not the newest by date, so the Chat and the Inbox never disagree about what is next
 
 behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the user to the global board that shows everything"
   in FEAT-PROJECT-SPACES
@@ -2796,12 +2797,12 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   source defined kit.notes.md#2026-11-02-2027
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
   contract "Just thinking about whether it is still worth having a global board, maybe we can have project boards and have some button to take you to the global board, still feel like it is somewhat useful to see everything."
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
+  contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES

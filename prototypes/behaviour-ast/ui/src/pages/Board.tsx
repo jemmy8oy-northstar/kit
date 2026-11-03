@@ -87,7 +87,15 @@ export default function Board() {
 
   return (
     <>
-      <h1>Board</h1>
+      <h1>{selected.length === 1 ? `Board · ${selected[0]}` : 'Board'}</h1>
+      {/* BEH-SPACE-3: a project's own board is this board filtered to it, one tap from everything. */}
+      {selected.length === 1 && (
+        <p>
+          <Button type="button" size="sm" variant="ghost" onClick={() => update({ project: [] })}>
+            See every project
+          </Button>
+        </p>
+      )}
       <BoardViews />
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a

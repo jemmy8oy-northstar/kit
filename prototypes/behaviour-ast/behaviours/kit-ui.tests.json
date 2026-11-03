@@ -721,6 +721,16 @@
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once" },
     { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_file_read_that_times_out_or_a_repo_with_too_many_files_is_a_read_failure_not_a_crash" }
   ],
+  "BEH-SPACE-2": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "with nothing waiting in the project, says so and offers the next one elsewhere" }
+  ],
+  "BEH-SPACE-3": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "a board filtered to one project is named for it, and See every project clears the filter" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Project.test.tsx", "title": "links to the board filtered to this project, and to designing it in the Chat" }
+  ],
+  "BEH-NOTE-14": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links to the project's notes, and follows the project the chat is about" }
+  ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "design is for the project being designed: a turn about another project is the ordinary chat" },
