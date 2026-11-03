@@ -117,3 +117,9 @@ Three changes to the chat and action cards, from the owner's review:
 <!-- from: chat -->
 
 In the chat and on action cards, any item ID written in the text, such as BEH-USERS-5, is a link. Clicking it opens that item, so the owner can follow a reference like "It builds on a user's stored secrets (BEH-USERS-5)" without searching for it.
+
+## 2026-11-03 23:37Z
+
+<!-- from: chat -->
+
+Vault decision for BEH-USERS-5 (user production secrets): the owner chose OCI Vault for now. Kit writes secrets to OCI Vault and the cluster reads them; Kit can write a value but never read it back. Migration to another vault (e.g. HashiCorp Vault) can be done later if needed, so keep the storage choice behind a seam. This unblocks BEH-USERS-5 and the work that waits on it, including BEH-PROJCONF-1 (integrations page) and the secrets part of BEH-USERS-9. Nothing else was decided here.
