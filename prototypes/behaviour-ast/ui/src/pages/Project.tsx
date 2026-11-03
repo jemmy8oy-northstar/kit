@@ -22,6 +22,7 @@ import ResourceView from '../components/Resource'
 import SchedulePanel from '../components/SchedulePanel'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
+import { useFlags } from '../components/flags'
 
 /** Step 1 of his loop, one level down: the corpus, what conflicts, what nobody reviewed. */
 export default function Project() {
@@ -56,6 +57,7 @@ function Detail({ project }: { project: ProjectDetail }) {
   const [notes, bump] = useNotesVersion()
   const [tab, select] = useTab()
   const [open, setOpen] = useState<number | null>(null)
+  const chat = useFlags().isOn('FEAT-CHAT')
 
   return (
     <>
@@ -70,6 +72,13 @@ function Detail({ project }: { project: ProjectDetail }) {
           <Badge tone="warning">{project.adjudication.inferred} inferred</Badge>
         ) : null}
       </div>
+
+      {/* BEH-SPECAGENT-1: the spec agent leads the project's design in the Chat, saving each agreed topic as a note. */}
+      {chat && (
+        <p>
+          <Link to={`/chat?project=${encodeURIComponent(project.app)}&design=1`}>Design it with the spec agent</Link>
+        </p>
+      )}
 
       {/* Above the tabs on purpose (kit#118, BEH-FEAT-7): a thought is caught before it is lost, not after picking a tab. */}
       <AskForBehaviour app={project.app} onAsked={() => (bump(), select('notes'))} />

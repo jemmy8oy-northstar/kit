@@ -42,6 +42,26 @@ public static class TriageContext
         + "into the chat at that point, and a line like [He approved id] says what the owner did with an item on the page; "
         + "do not ask them to do it again.";
 
+    /// <summary>
+    /// BEH-SPECAGENT-1 (kit.notes.md#2026-10-31-1643): added to <see cref="ChatInstructions"/> when the owner
+    /// asks to design the project. The agent leads, one topic at a time, and saves each agreed topic as a note,
+    /// which the coding agent files as unreviewed spec, so the owner approves or denies it on the board.
+    /// </summary>
+    public const string DesignInstructions =
+        "Design mode: the owner wants to design this project from the start, and you lead the conversation. "
+        + "Take them through it one topic at a time, with one or two short questions in each reply, in this order: "
+        + "1. the overall vision: what the app is for and who it is for; "
+        + "2. the classes of users, so workflows can be grouped by who does them; "
+        + "3. each class's main workflows, step by step; "
+        + "4. the data the app depends on and where it comes from; "
+        + "5. whether it needs a database, and what it keeps; "
+        + "6. whether users must sign in, and who may see what. "
+        + "If the spec below already settles a topic, say so in a sentence and move on. "
+        + "When a topic is agreed, offer to save it, and when they agree call save_note with it written as spec: "
+        + "a short heading naming the topic, then one line per behaviour saying who does what and what they see. "
+        + "Save as you go, one topic per note, rather than everything at the end. "
+        + "When all six are covered, list what was saved and ask whether anything is missing.";
+
     /// <summary>The card and its project's outline, or null when <paramref name="id"/> is not a behaviour in <paramref name="corpus"/>.</summary>
     public static string? Build(string app, string id, string corpus)
     {

@@ -1,8 +1,8 @@
 {
-  "lastImprovedBy": { "pr": "kit#522", "url": "https://github.com/jemmy8oy-northstar/kit/pull/522", "on": "2026-10-28" },
+  "lastImprovedBy": { "pr": "tracks#33", "url": "https://github.com/jemmy8oy-northstar/tracks/pull/33", "on": "2026-11-03" },
   "_":"behaviour -> the test(s) that name it, in jemmy8oy-northstar/tracks. Keyed on file + title (a C# test's title is its method name; a Playwright test's is its title string, describe blocks are not part of it).",
   "_authored": "2026-10-28, by reading tracks.beh against tracks@dev backend/Balenthiran.Tracks.Tests and frontend/e2e. A test is mapped only where it checks what the behaviour's contracts say; the e2e titles still carry the older BEH-AUTH-n ids, which are mapped by what they assert, not by that prefix.",
-  "_incomplete": "BEH-SHARE-2, BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them.",
+  "_incomplete": "BEH-HIGH-5 and BEH-COST-1 are DELIBERATELY absent: they are pending and nothing is built, so no test checks them. BEH-SHARE-2 was built in tracks#33 and mapped 2026-11-03.",
 
   "BEH-BRAND-1": [
     { "file": "frontend/e2e/home.spec.ts", "title": "BEH-BRAND-1: home page renders the Tracks hero" }
@@ -169,5 +169,29 @@
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "A_song_covering_under_thirty_seconds_of_the_run_is_skipped" },
     { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunHighlightsTests.cs", "title": "A_song_partly_outside_the_run_is_judged_only_on_the_part_inside" },
     { "file": "frontend/e2e/home.spec.ts", "title": "BEH-HIGH-3 / BEH-HIGH-4: the top-speed and fastest-pace songs are labelled, others are not" }
+  ],
+
+  "BEH-SHARE-2": [
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "With_the_setting_on_and_the_grant_the_songs_are_written_as_a_delimited_block" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "With_the_setting_off_nothing_is_written" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "Without_the_write_grant_nothing_is_written_even_if_the_setting_is_on" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "What_the_runner_wrote_is_kept_and_the_block_goes_after_it" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "An_existing_Tracks_block_is_replaced_and_the_text_around_it_is_untouched" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "Processing_the_same_songs_again_writes_nothing_more" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "A_run_with_no_songs_writes_nothing" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/StravaDescriptionWriterTests.cs", "title": "A_Strava_error_is_swallowed_so_the_pipeline_carries_on" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_runner_who_opted_in_and_granted_write_has_the_songs_written_into_the_description_after_the_run_is_kept" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_Strava_error_writing_the_description_still_keeps_the_run_and_does_not_throw" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/RunSyncProcessorTests.cs", "title": "A_runner_who_did_not_opt_in_has_nothing_written_to_Strava" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "A_runner_who_declined_the_write_permission_still_signs_in_and_me_says_to_reconnect" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Reconnecting_with_the_write_permission_replaces_the_stored_scope_and_me_reports_the_grant" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "The_setting_needs_a_session" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "Turning_the_setting_on_without_the_write_permission_is_refused_and_stays_off" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/AuthApiTests.cs", "title": "With_the_write_permission_the_setting_can_be_turned_on_and_off_and_me_reflects_it" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/ClientTests.cs", "title": "Strava_client_reads_the_description_and_treats_a_missing_or_null_one_as_none" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/ClientTests.cs", "title": "Strava_client_puts_the_description_to_the_activity_with_a_bearer_token" },
+    { "file": "backend/Balenthiran.Tracks.Tests/Sync/ClientTests.cs", "title": "Strava_client_maps_a_refused_description_update_to_upstream" },
+    { "file": "frontend/e2e/strava-description.spec.ts", "title": "BEH-SHARE-2: the setting is off by default and turning it on tells the API" },
+    { "file": "frontend/e2e/strava-description.spec.ts", "title": "BEH-SHARE-2: without the Strava write grant the setting is disabled and offers Reconnect Strava" }
   ]
 }

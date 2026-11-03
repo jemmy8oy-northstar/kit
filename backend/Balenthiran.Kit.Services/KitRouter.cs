@@ -93,6 +93,8 @@ public sealed partial class KitRouter(
     private readonly IUserMemoryStore userMemory = userMemory ?? new MemoryUserMemoryStore();
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
+    // Owner and repo as GitHub spells them, so nothing else reaches the API path it is put into.
+    private static readonly Regex GitHubHealthRoute = new(@"^/api/github/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/health\z", RegexOptions.Compiled);
     private static readonly Regex OneProject = new(@"^/api/projects/([^/]+)\z", RegexOptions.Compiled);
     private static readonly Regex Bindings = new(@"^/api/projects/([^/]+)/bindings\z", RegexOptions.Compiled);
     private static readonly Regex NotesRoute = new(@"^/api/projects/([^/]+)/notes\z", RegexOptions.Compiled);
@@ -221,6 +223,13 @@ public sealed partial class KitRouter(
             }
 
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
+        }
+
+        // BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub.
+        var health = GitHubHealthRoute.Match(pathname);
+        if (health.Success)
+        {
+            return UserProjectHealthOf(UserOf(cookie), health.Groups[1].Value, health.Groups[2].Value);
         }
 
         var match = OneProject.Match(pathname);

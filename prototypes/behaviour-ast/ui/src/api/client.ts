@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
-  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SwitchGroup, WriteResult,
+  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -146,9 +146,22 @@ export function triageTurn(app: string, behaviour: string, messages: TriageMessa
   return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/triage`, { behaviour, messages })
 }
 
-/** The Chat page's next reply (BEH-CHAT-1): about `app`, and the item in hand when there is one. It writes nothing. */
-export function chatTurn(app: string, behaviour: string | null, messages: TriageMessage[]): Promise<TriageAnswer> {
-  return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/chat`, behaviour ? { behaviour, messages } : { messages })
+/**
+ * The Chat page's next reply (BEH-CHAT-1): about `app`, and the item in hand when there is one. It writes nothing.
+ * With `design` the agent leads the project's first design (BEH-SPECAGENT-1).
+ */
+export function chatTurn(app: string, behaviour: string | null, messages: TriageMessage[], design = false): Promise<TriageAnswer> {
+  return post<TriageAnswer>(`/api/projects/${encodeURIComponent(app)}/chat`, {
+    ...(behaviour ? { behaviour } : {}),
+    ...(design ? { design: true } : {}),
+    messages,
+  })
+}
+
+/** BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub, `owner/repo`. */
+export function fetchGitHubHealth(fullName: string): Promise<SummaryCoverage> {
+  const [owner, repo] = fullName.split('/')
+  return get<SummaryCoverage>(`/api/github/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/health`)
 }
 
 /** Ask the server to stop pushing to this device (BEH-NOTIFY-3). A POST: Kit serves GET and POST only. */

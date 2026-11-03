@@ -2233,7 +2233,6 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2241,6 +2240,9 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   contract my assumption: it joins what is built: connecting GitHub (BEH-USERS-1, BEH-USERS-10), the user's own projects (BEH-USERS-2), test health (BEH-HEALTH-1) and a new repo (BEH-USERS-3); the new part is the first-visit order and the empty state
   contract his question, a new web template for Kit users or the existing one: my default is web-template as it is, and a Kit-specific template only once the first tester's project shows what it lacks
   contract my assumption: setting up branches, branch rules and CI on the new repo stays as BEH-USERS-3 specifies; rules need the user to grant the App administration rights, so they are offered, not assumed
+  contract built: a user whose GitHub is not connected opens Projects on "Welcome to Kit", whose first step is "Connect your GitHub"; once connected, their projects are listed, or with none Kit offers a new one. The operator never sees it
+  contract built: each of their projects shows its test health, read from the repo with their own installation (GET /api/github/:owner/:repo/health) and counted as BEH-HEALTH-1 counts: each x.beh by the x.tests.json beside it, against the repo's own tests. One that cannot be counted is "not measured", with why
+  contract my assumption: a user's tests live in the same repo as their corpus, so their project needs no `# kit:repo` line
 
 behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a spec agent, and the answers become spec"
   in FEAT-SPEC-AGENT
@@ -2248,14 +2250,15 @@ behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract "Kit takes me through the initial spec design of my project with a real time non code agent, we discuss what is the overrall vision for the project, together we determine what the data dependencies of the project are, whether there is a database dependency, whether there is a login requirement"
   contract "The kit agent starts to ask me about specific user workflows and determines whether there are different classes of users so that it can group workflows by user classes"
-  contract my assumption: the agent writes what it learns as unreviewed behaviours, features and epics, the same as I do from his notes, so the user approves or denies them on the board; a class of user is the `actor` a behaviour already names
+  contract my assumption: what the agent learns becomes unreviewed behaviours, features and epics, the same as I write from his notes, so the user approves or denies them on the board; a class of user is the `actor` a behaviour already names
   contract his question, is a non-coding agent much cheaper: yes. It reads the spec and the conversation, not the repo, and runs no build or CI loop, so it can run on Sonnet. My estimate, not a measurement: a few cents a reply, under a dollar for a long design session, against $3 to $8 for one card built (BEH-USERS-9)
+  contract built: a project's page has "Design it with the spec agent", and the Chat has "Design this project"; either asks the same Haiku spec agent to lead, one topic at a time, through the vision, the classes of users, each class's workflows, the data, a database and sign-in, until he presses "Stop designing"
+  contract my assumption: each agreed topic is saved as a note on the project, one topic per note, and the coding agent files it as unreviewed spec, as it does his own notes; the agent writing behaviours itself waits for conflict checks (BEH-CONFLICT-3)
 
 behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding agent builds it into dev and the user is told"
   in FEAT-SPEC-AGENT
@@ -2302,6 +2305,20 @@ behaviour BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and
   contract "I have added a kit-anthropic secret with the key Anthropic__ApiKey to unblock the creation of the triage chat. Let's use haiku for this" (kit.notes.md#2026-11-02-1204)
   contract built: every card in the Inbox has "Talk it through", which opens a chat with the spec agent on claude-haiku-5-5. It knows the card as the corpus writes it and every epic, feature and behaviour title in the project, and it writes nothing: "Use as my words" puts a reply in the card's own box, and his Answer, Comment or Deny posts it
   contract my assumption: the chat lives in the page only and is sent whole each turn, so closing the card forgets it; keeping chats is for when the spec agent writes spec itself (BEH-SPECAGENT-1)
+
+behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent researches the market and what competitors already do"
+  in FEAT-SPEC-AGENT
+  layer ux
+  source defined kit.notes.md#2026-11-03-1019
+  review unreviewed
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit as part of initial analysis kit helps you with market research and assessing what the competitors do"
+  contract my assumption: it is one step of the design conversation in BEH-SPECAGENT-1, not a page of its own: the agent names the closest existing products, what each does and charges, and where the user's idea differs, and writes that as a note on the project for the user to keep or discard
+  contract my assumption: it needs web search, which costs per query on top of the model, so it runs once when the project starts and again only when asked
   contract my assumption on the spend cap he has not set: 100 replies a day per server (KIT_TRIAGE_DAILY_LIMIT changes it, 0 switches it off), each at most 1024 tokens out, with the card cached. My estimate, not a measurement: about a cent a reply on Haiku, so at most about a dollar a day
   contract "I have the kit Anthropic api $10 credit with no auto credit. Let's see how long this lasts for personal use" (kit.notes.md#2026-11-02-1212)
   contract my assumption: the daily cap stays at 100 replies, since his $10 with no top-up is the hard stop; when the credit runs out a reply fails, costs nothing from the allowance, and the chat says it could not answer
@@ -2656,6 +2673,10 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   layer ux
   source defined kit.notes.md#2026-11-02-2015
   source defined kit.notes.md#2026-11-02-2350
+  source defined kit-ui.notes.md#2026-11-03-0823
+  source defined kit-ui.notes.md#2026-11-03-0857
+  source defined kit-ui.notes.md#2026-11-03-0917
+  source defined kit-ui.notes.md#2026-11-03-1058
   review unreviewed
   priority 2
   pending
@@ -2669,6 +2690,9 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract my assumption: kitstudio.dev is served by the balenthiran.co.uk pods, whose frontend renders the Kit splash for that hostname, so no new app or database is needed
   contract my assumption: interest is stored by balenthiran's existing register-interest API under a hidden "kit" project, so Kit is not added to the portfolio's project grid
   contract my assumption: the splash also shows at balenthiran.co.uk/kitstudio, so he can preview it before the domain points anywhere
+  contract built in balenthiran.co.uk#33 and balenthiran.co.uk#34, which he merged and promoted to main (balenthiran.co.uk#37) on 2026-11-03; kitstudio.dev serves it with its own certificate, and its test is balenthiran.co.uk's frontend/e2e/kitstudio.spec.ts
+  contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
+  contract his question, is it complete: yes. kitstudio.dev serves the splash and its register-interest flow, and the live check reads it green on 2026-11-03
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS

@@ -34,21 +34,7 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
     /// <inheritdoc />
     public async Task<IReadOnlyList<IUserProject>> ProjectsAsync(long installation, CancellationToken cancellationToken = default)
     {
-        string? token;
-        try
-        {
-            token = await sources.GetOrAdd(installation, tokens).TokenAsync(cancellationToken);
-        }
-        catch (GitHubTokenException e)
-        {
-            throw new GitHubReadException(e.Message, e);
-        }
-
-        if (token is not { Length: > 0 })
-        {
-            throw new GitHubReadException("Kit has no GitHub App credential to read your repositories with");
-        }
-
+        var token = await TokenAsync(installation, cancellationToken);
         var repos = await ReposAsync(token, cancellationToken);
         using var gate = new SemaphoreSlim(TreeReads);
         var found = await Task.WhenAll(repos.Select(async r =>
@@ -68,6 +54,141 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
             .Where(f => f.Corpus.Count > 0)
             .Select(f => (IUserProject)new Project(f.Repo.Name, f.Repo.FullName, f.Repo.Url, f.Corpus))
             .ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyDictionary<string, string>> FilesAsync(long installation, string fullName, Func<string, bool> wanted, CancellationToken cancellationToken = default)
+    {
+        var token = await TokenAsync(installation, cancellationToken);
+        using var repo = await GetAsync(token, $"repos/{fullName}", $"reading {fullName}", cancellationToken)
+            ?? throw new GitHubReadException($"GitHub answered 404 when reading {fullName}");
+        if (Str(repo.RootElement, "default_branch") is not { } branch)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        using var json = await GetAsync(token, $"repos/{fullName}/git/trees/{Uri.EscapeDataString(branch)}?recursive=1", $"reading {fullName}", cancellationToken);
+        if (json is null)
+        {
+            return new Dictionary<string, string>();
+        }
+
+        if (json.RootElement is not { ValueKind: JsonValueKind.Object } o
+            || !o.TryGetProperty("tree", out var tree) || tree.ValueKind != JsonValueKind.Array)
+        {
+            throw new GitHubReadException($"GitHub's tree of {fullName} was not in the shape Kit reads");
+        }
+
+        // A part of the tree would count part of the tests: a share that is quietly too low.
+        if (o.TryGetProperty("truncated", out var cut) && cut.ValueKind == JsonValueKind.True)
+        {
+            throw new GitHubReadException($"GitHub listed only part of {fullName}, so Kit cannot count every test");
+        }
+
+        var listed = new List<(string Path, string Sha)>();
+        foreach (var e in tree.EnumerateArray())
+        {
+            if (Str(e, "type") != "blob" || Str(e, "path") is not { } path || !wanted(path))
+            {
+                continue;
+            }
+
+            listed.Add((path, Str(e, "sha") ?? throw new GitHubReadException($"GitHub listed {path} in {fullName} with no sha")));
+        }
+
+        // Past this a read costs more of the installation's hourly allowance than one badge is worth.
+        if (listed.Count > MaxFiles)
+        {
+            throw new GitHubReadException($"{fullName} has {listed.Count} files to read, more than the {MaxFiles} Kit reads for one project's health");
+        }
+
+        using var gate = new SemaphoreSlim(TreeReads);
+        var read = await Task.WhenAll(listed.Select(async f =>
+        {
+            if (blobs.TryGetValue(f.Sha, out var kept))
+            {
+                return (f.Path, Text: kept);
+            }
+
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                return (f.Path, Text: await BlobAsync(token, fullName, f.Sha, cancellationToken));
+            }
+            finally
+            {
+                gate.Release();
+            }
+        }));
+
+        return new SortedDictionary<string, string>(read.ToDictionary(f => f.Path, f => f.Text), StringComparer.Ordinal);
+    }
+
+    // Blob text by sha, across reads: a sha names one text for ever, so a second look at an unchanged
+    // repo costs only its tree. Emptied past a bound, so a server up for months does not grow without one.
+    private readonly ConcurrentDictionary<string, string> blobs = new(StringComparer.Ordinal);
+
+    private const int MaxBlobs = 5_000;
+
+    private const int MaxFiles = 500;
+
+    private async Task<string> BlobAsync(string token, string fullName, string sha, CancellationToken cancellationToken)
+    {
+        using var request = Request(token, $"repos/{fullName}/git/blobs/{sha}");
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.raw+json"));
+        string text;
+        try
+        {
+            using var response = await http.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new GitHubReadException($"GitHub answered {(int)response.StatusCode} when reading a file of {fullName}");
+            }
+
+            text = new System.Text.UTF8Encoding(false).GetString(await response.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+        catch (HttpRequestException e)
+        {
+            throw new GitHubReadException($"GitHub could not be reached when reading {fullName} ({e.Message})", e);
+        }
+        catch (TaskCanceledException e) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new GitHubReadException($"GitHub did not answer in time when reading {fullName}", e);
+        }
+
+        if (blobs.Count >= MaxBlobs)
+        {
+            blobs.Clear();
+        }
+
+        blobs[sha] = text;
+        return text;
+    }
+
+    private async Task<string> TokenAsync(long installation, CancellationToken cancellationToken)
+    {
+        string? token;
+        try
+        {
+            token = await sources.GetOrAdd(installation, tokens).TokenAsync(cancellationToken);
+        }
+        catch (GitHubTokenException e)
+        {
+            throw new GitHubReadException(e.Message, e);
+        }
+
+        return token is { Length: > 0 } ? token : throw new GitHubReadException("Kit has no GitHub App credential to read your repositories with");
+    }
+
+    private HttpRequestMessage Request(string token, string path)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, new Uri(api, path));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
+        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        return request;
     }
 
     private async Task<List<Repo>> ReposAsync(string token, CancellationToken cancellationToken)
@@ -143,12 +264,7 @@ public sealed class UserProjects(HttpClient http, Func<long, IGitHubTokenSource>
     /// <summary>The parsed answer, or null for the 409 GitHub gives an empty repository.</summary>
     private async Task<JsonDocument?> GetAsync(string token, string path, string doing, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(api, path));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
-        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
-
+        using var request = Request(token, path);
         HttpResponseMessage response;
         try
         {
