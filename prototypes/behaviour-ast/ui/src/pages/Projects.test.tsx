@@ -305,6 +305,34 @@ describe('BEH-WELCOME-1: a new user connects their GitHub, then sees their proje
     expect(screen.getByText(/Your Kit projects/)).toBeInTheDocument()
   })
 
+  it('each of their projects shows its test health, and one that could not be read says why, never zero', async () => {
+    const asked: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) => {
+        asked.push(path)
+        const body = path.endsWith('/ann-gh/app/health')
+          ? { available: true, covered: 3, uncovered: 1 }
+          : path.endsWith('/ann-gh/new/health')
+            ? { available: false, covered: null, uncovered: null, reason: 'no behaviours/new.tests.json mapping' }
+            : {
+                projects: [],
+                gitHub: [
+                  { name: 'app', fullName: 'ann-gh/app', url: 'https://github.com/ann-gh/app', corpus: ['behaviours/app.beh'] },
+                  { name: 'new', fullName: 'ann-gh/new', url: 'https://github.com/ann-gh/new', corpus: ['behaviours/new.beh'] },
+                ],
+              }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => body }
+      }),
+    )
+    renderProjects({ ...ann, gitHub: 'ann-gh' })
+
+    expect(await screen.findByText('3/4 covered')).toBeInTheDocument()
+    expect(await screen.findByTitle('no behaviours/new.tests.json mapping')).toHaveTextContent('not measured')
+    expect(asked).toContain('/api/github/ann-gh/app/health')
+    expect(asked).toContain('/api/github/ann-gh/new/health')
+  })
+
   it('the operator is never shown the welcome, connected or not', async () => {
     mockFetch(projectsFixture)
     renderProjects({ ...ann, operator: true })

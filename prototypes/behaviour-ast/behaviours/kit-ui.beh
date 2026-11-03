@@ -2233,7 +2233,6 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   source defined kit.notes.md#2026-10-31-1643
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -2241,7 +2240,9 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   contract my assumption: it joins what is built: connecting GitHub (BEH-USERS-1, BEH-USERS-10), the user's own projects (BEH-USERS-2), test health (BEH-HEALTH-1) and a new repo (BEH-USERS-3); the new part is the first-visit order and the empty state
   contract his question, a new web template for Kit users or the existing one: my default is web-template as it is, and a Kit-specific template only once the first tester's project shows what it lacks
   contract my assumption: setting up branches, branch rules and CI on the new repo stays as BEH-USERS-3 specifies; rules need the user to grant the App administration rights, so they are offered, not assumed
-  contract built so far: a user whose GitHub is not connected opens Projects on "Welcome to Kit", whose first step is "Connect your GitHub"; once connected, their projects are listed, or with none Kit offers a new one. The operator never sees it. Test health on each of their projects is next, so this stays pending
+  contract built: a user whose GitHub is not connected opens Projects on "Welcome to Kit", whose first step is "Connect your GitHub"; once connected, their projects are listed, or with none Kit offers a new one. The operator never sees it
+  contract built: each of their projects shows its test health, read from the repo with their own installation (GET /api/github/:owner/:repo/health) and counted as BEH-HEALTH-1 counts: each x.beh by the x.tests.json beside it, against the repo's own tests. One that cannot be counted is "not measured", with why
+  contract my assumption: a user's tests live in the same repo as their corpus, so their project needs no `# kit:repo` line
 
 behaviour BEH-SPECAGENT-1 "A user designs their project in a conversation with a spec agent, and the answers become spec"
   in FEAT-SPEC-AGENT

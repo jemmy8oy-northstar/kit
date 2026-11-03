@@ -120,6 +120,148 @@ public class UserProjectsTests
         Assert.Null(his.GitHubError);
     }
 
+    // ---- kit-ui.beh BEH-WELCOME-1: a user's projects with their test health ------------------------
+
+    private const string Corpus =
+        "behaviour BEH-A-1 \"one\"\n  actor user\n  when opens page:Home\n  then sees region:Main\n\n"
+        + "behaviour BEH-A-2 \"two\"\n  actor user\n  when opens page:Home\n  then sees region:Main\n\n"
+        + "behaviour BEH-A-3 \"three\"\n  pending\n  actor user\n  when opens page:Home\n  then sees region:Main\n";
+
+    private static Dictionary<string, string> AppFiles() => new()
+    {
+        ["behaviours/app.beh"] = Corpus,
+        ["behaviours/app.tests.json"] = """{ "BEH-A-1": [{ "file": "src/app.test.ts", "title": "opens one" }] }""",
+        ["src/app.test.ts"] = "it('opens one', () => {})\nit('does something else', () => {})\n",
+    };
+
+    private static CoverageSummary Health(IReadOnlyDictionary<string, string> files) =>
+        UserProjectHealth.Count(files, new CorpusParser(), new BehaviourResolver(), new CoverageCounter(new TestTitleReader()));
+
+    [Fact]
+    public void A_users_repo_health_counts_its_own_tests_against_the_mapping_beside_each_corpus()
+    {
+        var health = Health(AppFiles());
+
+        // BEH-A-1 is named by a test that exists, BEH-A-2 by none, and the pending BEH-A-3 is not counted.
+        Assert.True(health.Available);
+        Assert.Equal((1, 1), (health.Covered, health.Uncovered));
+
+        var counter = new CoverageCounter(new TestTitleReader());
+        Assert.True(UserProjectHealth.Wanted("behaviours/app.beh", counter));
+        Assert.True(UserProjectHealth.Wanted("behaviours/app.tests.json", counter));
+        Assert.True(UserProjectHealth.Wanted("src/app.test.ts", counter));
+        Assert.False(UserProjectHealth.Wanted("src/app.ts", counter));
+        Assert.False(UserProjectHealth.Wanted("node_modules/x/x.test.ts", counter));
+    }
+
+    [Fact]
+    public void A_users_repo_health_that_cannot_be_counted_says_why_and_is_never_zero()
+    {
+        var noMap = AppFiles();
+        noMap.Remove("behaviours/app.tests.json");
+        var badMap = AppFiles();
+        badMap["behaviours/app.tests.json"] = "[]";
+
+        foreach (var (files, why) in new[]
+        {
+            (noMap, "no behaviours/app.tests.json mapping"),
+            (badMap, "behaviours/app.tests.json is not a JSON object"),
+            (new Dictionary<string, string>(), "no .beh file on the default branch"),
+        })
+        {
+            var health = Health(files);
+            Assert.False(health.Available);
+            Assert.Null(health.Covered);
+            Assert.Equal(why, health.Reason);
+        }
+    }
+
+    [Fact]
+    public void Health_is_read_with_the_callers_own_installation_and_refused_without_a_connected_GitHub()
+    {
+        var users = Linked();
+        var gh = new Canned([]) { Files = { ["ann-gh/app"] = AppFiles() } };
+        var router = Router(users, gh);
+
+        var ann = SignIn(router, "ann");
+        var r = router.Route("GET", "/api/github/ann-gh/app/health", ann);
+        Assert.Equal(200, r.Status);
+        var health = Assert.IsType<CoverageSummary>(r.Body);
+        Assert.Equal((true, 1, 1), (health.Available, health.Covered, health.Uncovered));
+        Assert.Equal([(42L, "ann-gh/app")], gh.Read);
+
+        // Signed out, or the operator with no personal GitHub: no installation, so nothing is read.
+        Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/app/health").Status);
+        Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/app/health", SignIn(router, null, Operator)).Status);
+        Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/a%2Fb/health", ann).Status);
+        Assert.Equal(400, router.Route("GET", "/api/github/ann-gh/../health", ann).Status);
+        Assert.Single(gh.Read);
+    }
+
+    [Fact]
+    public void Health_that_GitHub_would_not_give_is_unavailable_with_its_reason()
+    {
+        var router = Router(Linked(), new Canned([]) { Fails = "GitHub answered 404 when reading ann-gh/gone" });
+
+        var health = Assert.IsType<CoverageSummary>(router.Route("GET", "/api/github/ann-gh/gone/health", SignIn(router, "ann")).Body);
+        Assert.False(health.Available);
+        Assert.Equal("GitHub answered 404 when reading ann-gh/gone", health.Reason);
+    }
+
+    [Fact]
+    public async Task Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once()
+    {
+        var gh = new Blobs();
+        var reader = new UserProjects(new HttpClient(gh), _ => new StaticGitHubTokenSource("t"), new Uri("https://api.github.example/"));
+
+        var files = await reader.FilesAsync(42, "ann-gh/app", p => p.EndsWith(".beh", StringComparison.Ordinal));
+        Assert.Equal(new Dictionary<string, string> { ["behaviours/app.beh"] = "text of sha-beh" }, files);
+        await reader.FilesAsync(42, "ann-gh/app", p => p.EndsWith(".beh", StringComparison.Ordinal));
+
+        // The repo and its tree each read twice; the one wanted blob once, and the other never.
+        Assert.Equal(1, gh.Sent.Count(u => u.EndsWith("/git/blobs/sha-beh", StringComparison.Ordinal)));
+        Assert.DoesNotContain(gh.Sent, u => u.EndsWith("/git/blobs/sha-readme", StringComparison.Ordinal));
+        Assert.Equal(2, gh.Sent.Count(u => u.Contains("/git/trees/main", StringComparison.Ordinal)));
+
+        gh.Truncated = true;
+        var cut = await Assert.ThrowsAsync<GitHubReadException>(() => reader.FilesAsync(42, "ann-gh/app", _ => true));
+        Assert.Contains("only part of ann-gh/app", cut.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>One repo, <c>ann-gh/app</c> on <c>main</c>, with a corpus and a README, each blob answering its own sha.</summary>
+    private sealed class Blobs : HttpMessageHandler
+    {
+        public List<string> Sent { get; } = [];
+
+        public bool Truncated { get; set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            Sent.Add(path);
+            Assert.Equal("Bearer t", request.Headers.Authorization?.ToString());
+            var body = path switch
+            {
+                "/repos/ann-gh/app" => """{ "default_branch": "main" }""",
+                "/repos/ann-gh/app/git/trees/main" => JsonSerializer.Serialize(new
+                {
+                    truncated = Truncated,
+                    tree = new[]
+                    {
+                        new { path = "behaviours/app.beh", type = "blob", sha = "sha-beh" },
+                        new { path = "README.md", type = "blob", sha = "sha-readme" },
+                        new { path = "behaviours", type = "tree", sha = "sha-dir" },
+                    },
+                }),
+                _ when path.StartsWith("/repos/ann-gh/app/git/blobs/", StringComparison.Ordinal) => "text of " + path.Split('/')[^1],
+                _ => null,
+            };
+            return Task.FromResult(body is null
+                ? new HttpResponseMessage(HttpStatusCode.NotFound)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) });
+        }
+    }
+
     // kit-ui.beh BEH-SETTINGS-3: his personal GitHub's repos sit beside the board's, never instead of them.
     [Fact]
     public void The_operator_with_a_connected_GitHub_keeps_the_boards_projects_and_gains_his_repos()
@@ -296,6 +438,23 @@ public class UserProjectsTests
             Asked++;
             Assert.Equal(42, installation);
             return Fails is { } why ? throw new GitHubReadException(why) : Task.FromResult<IReadOnlyList<IUserProject>>([.. projects]);
+        }
+
+        /// <summary>BEH-WELCOME-1: each repo's files, by full name; a repo not here has none.</summary>
+        public Dictionary<string, Dictionary<string, string>> Files { get; init; } = [];
+
+        public List<(long Installation, string FullName)> Read { get; } = [];
+
+        public Task<IReadOnlyDictionary<string, string>> FilesAsync(long installation, string fullName, Func<string, bool> wanted, CancellationToken cancellationToken = default)
+        {
+            Read.Add((installation, fullName));
+            if (Fails is { } why)
+            {
+                throw new GitHubReadException(why);
+            }
+
+            var all = Files.GetValueOrDefault(fullName) ?? [];
+            return Task.FromResult<IReadOnlyDictionary<string, string>>(all.Where(f => wanted(f.Key)).ToDictionary());
         }
     }
 

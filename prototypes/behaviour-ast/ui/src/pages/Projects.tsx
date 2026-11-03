@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
-import { fetchProjects } from '../api/client'
+import { fetchGitHubHealth, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
 import type { GitHubProject, ProjectSummary, SessionState } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
@@ -122,12 +122,27 @@ function GitHubProjects({ projects, error }: { projects?: GitHubProject[]; error
                 </a>
               </h3>
               <p className="muted">{p.corpus.join(', ')}</p>
+              <GitHubHealth fullName={p.fullName} />
             </Card>
           </li>
         ))}
       </ul>
       <NewProject />
     </>
+  )
+}
+
+/**
+ * BEH-WELCOME-1: the repo's test health, asked per row so a slow repo never holds up the list. A read
+ * that failed is "not measured" with its reason, as every coverage badge is: never a zero.
+ */
+function GitHubHealth({ fullName }: { fullName: string }) {
+  const health = useResource(() => fetchGitHubHealth(fullName), [fullName])
+  if (health.state === 'loading') return <p className="muted">Reading its test health…</p>
+  return (
+    <div className="badges" data-testid="github-health">
+      <CoverageBadge coverage={health.state === 'ready' ? health.value : { available: false, reason: health.message }} />
+    </div>
   )
 }
 

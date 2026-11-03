@@ -14,4 +14,12 @@ public interface IUserProjects
     /// not be read — could-not-look, never an empty list.
     /// </summary>
     Task<IReadOnlyList<IUserProject>> ProjectsAsync(long installation, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// BEH-WELCOME-1: the text of each file on <paramref name="fullName"/>'s default branch whose path
+    /// <paramref name="wanted"/> accepts, by path, read with <paramref name="installation"/>'s token, so a
+    /// repo the installation does not reach cannot be read. Throws <see cref="Exceptions.GitHubReadException"/>
+    /// when GitHub could not be read, or listed only part of the tree.
+    /// </summary>
+    Task<IReadOnlyDictionary<string, string>> FilesAsync(long installation, string fullName, Func<string, bool> wanted, CancellationToken cancellationToken = default);
 }

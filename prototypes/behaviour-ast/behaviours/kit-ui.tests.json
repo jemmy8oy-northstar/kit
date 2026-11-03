@@ -709,6 +709,17 @@
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }
   ],
+  "BEH-WELCOME-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "a user with no GitHub connected is welcomed with connecting it as the first step" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "once connected, the welcome is gone: their projects are listed, or with none a new one is offered" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "each of their projects shows its test health, and one that could not be read says why, never zero" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Projects.test.tsx", "title": "the operator is never shown the welcome, connected or not" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_users_repo_health_counts_its_own_tests_against_the_mapping_beside_each_corpus" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_users_repo_health_that_cannot_be_counted_says_why_and_is_never_zero" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Health_is_read_with_the_callers_own_installation_and_refused_without_a_connected_GitHub" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Health_that_GitHub_would_not_give_is_unavailable_with_its_reason" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "Reading_a_users_files_fetches_only_the_wanted_blobs_and_each_sha_once" }
+  ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "design is for the project being designed: a turn about another project is the ordinary chat" },
