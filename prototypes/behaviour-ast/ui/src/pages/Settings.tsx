@@ -5,7 +5,9 @@ import type { IdleItem, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { FEATURE_PAGES, useFlags } from '../components/flags'
 import { githubNavigation } from '../components/githubNavigation'
+import { Button } from '@jemmy8oy-northstar/design-system'
 import { OpeningPageSetting } from '../components/OpeningPage'
+import Tour from '../components/Tour'
 import ResourceView from '../components/Resource'
 import { useSession } from '../components/session'
 import { useReloadableResource } from '../hooks/useResource'
@@ -395,6 +397,7 @@ export function GitHubReturn() {
 export default function Settings() {
   const session = useSession()
   const accounts = Boolean(session?.accounts && session.signedIn)
+  const [tour, setTour] = useState(false)
 
   async function leave() {
     await signOut().catch(() => {})
@@ -418,6 +421,12 @@ export default function Settings() {
       {session?.operator && accounts ? <IdleSettingSection /> : null}
       {session?.operator && accounts ? <FeatureSwitchesSection /> : null}
       <OpeningPageSetting />
+      <section aria-labelledby="replay-tour">
+        <h2 id="replay-tour">Tour</h2>
+        <p>A short walk round Kit.</p>
+        <Button type="button" variant="secondary" onClick={() => setTour(true)}>Replay the tour</Button>
+        {tour && <Tour onClose={() => setTour(false)} />}
+      </section>
     </>
   )
 }
