@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
-  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SwitchGroup, WriteResult,
+  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -156,6 +156,12 @@ export function chatTurn(app: string, behaviour: string | null, messages: Triage
     ...(design ? { design: true } : {}),
     messages,
   })
+}
+
+/** BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub, `owner/repo`. */
+export function fetchGitHubHealth(fullName: string): Promise<SummaryCoverage> {
+  const [owner, repo] = fullName.split('/')
+  return get<SummaryCoverage>(`/api/github/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/health`)
 }
 
 /** Ask the server to stop pushing to this device (BEH-NOTIFY-3). A POST: Kit serves GET and POST only. */
