@@ -1333,6 +1333,24 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   contract his note (kit-ui.notes.md#2026-10-26-2250): "I added client id and client secret idk whether this was for this ticket feel free to move it if it wasn't"
   contract my assumption: a client id and secret are what a user token needs, so they serve the half above that is his call (Kit creating the repo itself). Reading them is auth, so they stay unused until he approves that half; the link-based first build stands
   contract my assumption: a name is normalised by turning whitespace runs into - and dropping anything outside letters, digits, . _ -, and the links are withheld while the result is empty
+  contract his note (kit-ui.notes.md#2026-11-04-1808): "all spec currently lives centrally in the kit repo, not in each project's repo. So the card's 'no spec held centrally' describes the target, not today's state"
+  contract my assumption: the title stays the target, and today's state is this line: James's own projects' specs still live in kit's prototypes/behaviour-ast/behaviours, while a user's project is read from their own repo. BEH-USERS-12 moves his there too
+  contract my assumption: a repo is a Kit project when its default branch has a .kit/ directory holding a .beh file, or, until BEH-USERS-12 lands, a .beh file anywhere, so no project drops off the list mid-migration
+
+behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in its own repo, Kit's own included"
+  in FEAT-USER-REPOS
+  layer technical
+  source defined kit-ui.notes.md#2026-11-04-1807
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Migrate the spec out of the kit repo into each project's repo, under a hidden .kit/ directory. Each project's spec lives in .kit/ in its own repo, the same way for every project, including kit: kit's own spec moves out of the kit repo into kit's .kit/. Consistent with BEH-USERS-2 (no spec held centrally)."
+  contract my assumption: a project's .kit/ holds its .beh, .notes.md and .schedule files under the names they have today, and Kit reads and writes them through the project's own repo, as it already does for a user's project
+  contract my assumption: one project moves per PR, the smallest first, and its tests' behaviour links move with it, so test health never reads a project as unspecified mid-move
+  contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS

@@ -153,3 +153,15 @@ Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. Th
 <!-- from: chat -->
 
 Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line.
+
+## 2026-11-04 18:07Z
+
+<!-- from: chat -->
+
+Migrate the spec out of the kit repo into each project's repo, under a hidden .kit/ directory. Each project's spec lives in .kit/ in its own repo, the same way for every project, including kit: kit's own spec moves out of the kit repo into kit's .kit/. Consistent with BEH-USERS-2 (no spec held centrally).
+
+## 2026-11-04 18:08Z
+
+<!-- from: chat -->
+
+Under BEH-USERS-2 ("Kit lists a user's projects from their own GitHub, with no spec held centrally"): the owner says all spec currently lives centrally in the kit repo, not in each project's repo. So the card's "no spec held centrally" describes the target, not today's state. Please note this against BEH-USERS-2. The card also detects a project by a .beh file on the default branch, so once the migration to .kit/ lands, detection needs to find .kit/ too. Settle which the card should say, current or target, and what detection checks.
