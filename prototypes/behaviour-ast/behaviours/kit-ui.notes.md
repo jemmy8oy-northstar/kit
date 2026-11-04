@@ -147,3 +147,9 @@ When a behaviour has a test that enforces it, record a hash of the source code t
 He sees the flagged links. The coding agent computes and records the hashes and does the re-check.
 
 Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. They do not detect when a test has stopped enforcing it after the code changes, so this is an addition to that feature.
+
+## 2026-11-04 11:00Z
+
+<!-- from: chat -->
+
+Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line.
