@@ -93,3 +93,63 @@ The owner likes the current flow for creating notes from the chat. When a note i
 ## 2026-11-03 13:55Z
 
 The owner wants notes to carry a tag or label showing where they came from (for example, the chat, the floating note button, or the agent's own background work). The tag shows on the Notes page. It does not need to show in the chat for now.
+
+## 2026-11-03 23:30Z · BEH-SPECAGENT-2
+
+<!-- from: chat -->
+
+The API key is added and in use for chat. Spend cap: the user can use as much money as they have credited in their account, and can also set a money allowance per day, week or month for their Kit agent to spend, drawn from that credit.
+
+## 2026-11-03 23:32Z
+
+<!-- from: chat -->
+
+Three changes to the chat and action cards, from the owner's review:
+
+1. The chat can show an answer that was already posted to an item, on request, so he can see what he wrote. It can also show a note's attributes (its text, its answer, its tag) the same way, without him having to open the note.
+
+2. When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away.
+
+3. Remove the "next up in Kit" section. The next item comes up in the chat anyway, so it is not needed.
+
+## 2026-11-03 23:35Z
+
+<!-- from: chat -->
+
+In the chat and on action cards, any item ID written in the text, such as BEH-USERS-5, is a link. Clicking it opens that item, so the owner can follow a reference like "It builds on a user's stored secrets (BEH-USERS-5)" without searching for it.
+
+## 2026-11-03 23:37Z
+
+<!-- from: chat -->
+
+Vault decision for BEH-USERS-5 (user production secrets): the owner chose OCI Vault for now. Kit writes secrets to OCI Vault and the cluster reads them; Kit can write a value but never read it back. Migration to another vault (e.g. HashiCorp Vault) can be done later if needed, so keep the storage choice behind a seam. This unblocks BEH-USERS-5 and the work that waits on it, including BEH-PROJCONF-1 (integrations page) and the secrets part of BEH-USERS-9. Nothing else was decided here.
+
+## 2026-11-03 23:39Z
+
+<!-- from: chat -->
+
+Owner wants BEH-USERS-5 (production secrets per user) deprioritised, so that the agent Kit runs for users (BEH-USERS-9) gets built first. He feels getting users the coding agent matters more than secrets right now. Please lower BEH-USERS-5's priority and reorder the schedule so BEH-USERS-9 comes ahead of it. The vault decision (OCI Vault for now) still stands and should stay recorded against BEH-USERS-5.
+
+## 2026-11-03 23:40Z
+
+<!-- from: chat -->
+
+Owner wants the chat to know what Kit can and cannot do (BEH-CHAT-7), so it can explain this when asked and act within it. Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change.
+
+## 2026-11-03 23:44Z
+
+<!-- from: chat -->
+
+Spec and tests must stay coupled going forward, not only when a test is written. The aim is that the spec is always enforced in the project, and that we can deterministically verify its tests still enforce it.
+
+When a behaviour has a test that enforces it, record a hash of the source code that test exercises against that behaviour on the spec. If that source later changes, flag the behaviour and its test link as possibly broken, so it can be re-checked quickly. The hash must be deterministic: the same code always gives the same hash, and the spec records which hash each link was last verified against.
+
+He sees the flagged links. The coding agent computes and records the hashes and does the re-check.
+
+Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. They do not detect when a test has stopped enforcing it after the code changes, so this is an addition to that feature.
+
+## 2026-11-04 11:00Z
+
+<!-- from: chat -->
+
+Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line.
