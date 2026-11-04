@@ -76,3 +76,9 @@ Are you trying to estimate costs for an API project, or are you deciding which m
 End
 
 Can we use these rules in the app to identify sentence grammar mistakes and identify them for example if we notice the correct words out of order or if specifically if is missing or then or the wrong time particle
+
+## 2026-11-04 18:27Z
+
+<!-- from: note-button -->
+
+Another idea for language vocab once we have the full path which I proposed early we should be able to setup this flash card style game that we already have including vocab and or sentences  from (maybe even toggling whether it includes words sentences or both) each lesson. Maybe we can pull individual lessons in by searching or can select certain groups of lessons. I think this flash card should show at the end how many you got right or wrong and then give you the option to go through the failed ones again until you get them right or review them when you finish through the failed ones it g gives you that breakdown but with how many times you got it wrong. Maybe we keep track of these to keep track what the worse vocab is.
