@@ -350,3 +350,19 @@ behaviour BEH-PATH-1 "Words are learned along a path of themed sections, in orde
   contract my assumption: every section can be opened at any time and a search finds any word or section; a "Next in order" button returns to the first section not yet passed
   contract my assumption: each section ends with a test of its words and sentences, using the Learn quiz (BEH-LEARN-2); passing it marks the section done and moves "next in order" on; failing changes nothing and it can be retaken
   contract my assumption: progress is kept in the browser, as there are no accounts, so it is per device
+
+behaviour BEH-PATH-2 "A flash-card round drills the lessons he picks, then re-drills the ones he got wrong until he gets them right"
+  in FEAT-LV-WAYS
+  source defined language-vocab.notes.md#2026-11-04-1827
+  review unreviewed
+  priority 3
+  pending
+  actor learner
+  when opens page:Path
+  then sees region:PathSections
+  contract "once we have the full path which I proposed early we should be able to setup this flash card style game that we already have including vocab and or sentences from (maybe even toggling whether it includes words sentences or both) each lesson"
+  contract "Maybe we can pull individual lessons in by searching or can select certain groups of lessons."
+  contract "this flash card should show at the end how many you got right or wrong and then give you the option to go through the failed ones again until you get them right or review them"
+  contract "when you finish through the failed ones it gives you that breakdown but with how many times you got it wrong. Maybe we keep track of these to keep track what the worse vocab is."
+  contract my assumption: built after BEH-PATH-1, as its lessons are the path's sections; the round reuses the existing Learn quiz card (BEH-LEARN-2)
+  contract my assumption: a word's wrong count is kept in the browser with the path's progress (per device), and a "Worst words" list shows the highest counts first
