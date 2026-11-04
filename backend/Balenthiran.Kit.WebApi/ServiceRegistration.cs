@@ -77,7 +77,7 @@ public static class ServiceRegistration
         // No runner exists yet, so a run stays queued; the model proxy is the one way a run reaches the model.
         services.TryAddSingleton<IAgentRunStore>(_ => settings.Accounts ? new PostgresAgentRunStore(settings.ConnectionString()!) : new MemoryAgentRunStore());
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
-        services.TryAddSingleton(sp => new AgentProxy(sp.GetRequiredService<IAgentRunStore>(), AgentClient(sp), settings.AnthropicKey(), settings.AgentRunCapUsd));
+        services.TryAddSingleton(sp => new AgentProxy(sp.GetRequiredService<IAgentRunStore>(), AgentClient(sp), settings.AnthropicKey(), settings.AgentRunCapUsd, sp.GetService<TimeProvider>(), settings.AgentRunMaxAge));
 
         // BEH-NOTIFY-3: web push only with the VAPID key pair (the optional kit-push secret). Without
         // it nothing here exists: no store, no sender, no poller, and the routes answer "not switched on".

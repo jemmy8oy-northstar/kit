@@ -110,28 +110,34 @@ public static class KitServer
             return;
         }
 
+        Stream Begin(int status, string contentType)
+        {
+            ctx.Response.StatusCode = status;
+            ctx.Response.ContentType = contentType;
+            if (contentType.StartsWith("text/event-stream", StringComparison.OrdinalIgnoreCase))
+            {
+                ctx.Response.Headers.CacheControl = "no-cache";
+                ctx.Response.Headers["X-Accel-Buffering"] = "no";
+            }
+
+            return ctx.Response.Body;
+        }
+
+        // The token is checked BEFORE the body is read, so a caller Kit does not know cannot make it buffer 32 MB.
+        var token = Header(ctx.Request.Headers["x-api-key"]);
+        if (await proxy.RefuseEarlyAsync(token, countTokens, Begin, ctx.RequestAborted))
+        {
+            return;
+        }
+
         var body = await ReadBody(ctx.Request.Body, AgentProxy.MaxBody);
         var call = new AgentCall(
-            Header(ctx.Request.Headers["x-api-key"]),
+            token,
             Header(ctx.Request.Headers["anthropic-version"]),
             Header(ctx.Request.Headers["anthropic-beta"]),
             countTokens,
             body);
-        await proxy.ServeAsync(
-            call,
-            (status, contentType) =>
-            {
-                ctx.Response.StatusCode = status;
-                ctx.Response.ContentType = contentType;
-                if (contentType.StartsWith("text/event-stream", StringComparison.OrdinalIgnoreCase))
-                {
-                    ctx.Response.Headers.CacheControl = "no-cache";
-                    ctx.Response.Headers["X-Accel-Buffering"] = "no";
-                }
-
-                return ctx.Response.Body;
-            },
-            ctx.RequestAborted);
+        await proxy.ServeAsync(call, Begin, ctx.RequestAborted);
     }
 
     private static string? Header(Microsoft.Extensions.Primitives.StringValues values) =>

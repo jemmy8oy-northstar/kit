@@ -17,10 +17,18 @@ namespace Balenthiran.Kit.Services;
 /// <param name="http">The client to Anthropic; a test hands it a scripted handler so nothing touches the network.</param>
 /// <param name="apiKey"><c>KIT_ANTHROPIC_API_KEY</c>, or null: the proxy then answers 503.</param>
 /// <param name="capUsd">What one run may spend (<c>KIT_AGENT_RUN_CAP_USD</c>).</param>
-public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? apiKey, decimal capUsd = AgentProxy.DefaultCapUsd)
+/// <param name="clock">Reads the time a run's age is measured against; null is the system clock.</param>
+/// <param name="maxAge">How long after its creation a run's token reaches the model (<c>KIT_AGENT_RUN_MAX_HOURS</c>); null is <see cref="DefaultMaxAge"/>.</param>
+public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? apiKey, decimal capUsd = AgentProxy.DefaultCapUsd, TimeProvider? clock = null, TimeSpan? maxAge = null)
 {
     /// <summary>What one run may spend when <c>KIT_AGENT_RUN_CAP_USD</c> is unset: my assumption, his to change.</summary>
     public const decimal DefaultCapUsd = 5m;
+
+    /// <summary>How long a run's token works when <c>KIT_AGENT_RUN_MAX_HOURS</c> is unset: my assumption, his to change.</summary>
+    public static readonly TimeSpan DefaultMaxAge = TimeSpan.FromHours(6);
+
+    private readonly TimeSpan ageLimit = maxAge ?? DefaultMaxAge;
+    private readonly TimeProvider time = clock ?? TimeProvider.System;
 
     /// <summary>The largest request body relayed, in bytes: an agent's whole context goes in each call.</summary>
     public const int MaxBody = 32 * 1024 * 1024;
@@ -36,31 +44,13 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
     /// </summary>
     public async Task ServeAsync(AgentCall call, Func<int, string, Stream> begin, CancellationToken cancellationToken = default)
     {
-        var run = call.RunToken is { Length: > 0 } token ? runs.ByTokenHash(AgentTokens.Hash(token)) : null;
-        if (run is null)
+        if (Check(call.RunToken, call.CountTokens, out var found) is { } refused)
         {
-            await RefuseAsync(begin, 401, "authentication_error", "this is not a run token Kit knows", cancellationToken);
+            await RefuseAsync(begin, refused.Status, refused.Type, refused.Message, cancellationToken);
             return;
         }
 
-        if (AgentRunStatus.IsOver(run.Status))
-        {
-            await RefuseAsync(begin, 403, "permission_error", $"this run is {run.Status}, so its token no longer reaches the model", cancellationToken);
-            return;
-        }
-
-        if (apiKey is null)
-        {
-            await RefuseAsync(begin, 503, "api_error", "Kit has no Anthropic key (KIT_ANTHROPIC_API_KEY), so it cannot reach the model", cancellationToken);
-            return;
-        }
-
-        // The cap is on what the run HAS spent: calls already in flight can carry it a little past.
-        if (!call.CountTokens && run.CostUsd >= capUsd)
-        {
-            await RefuseAsync(begin, 402, "billing_error", $"this run has spent ${run.CostUsd:0.####} and its cap is ${capUsd:0.####}", cancellationToken);
-            return;
-        }
+        var run = found!;
 
         if (call.Body is null)
         {
@@ -154,6 +144,57 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Writes the refusal a token earns, if any, and says whether it did. The host calls this BEFORE it reads
+    /// the body, so a caller with no good token can never make Kit buffer 32 MB.
+    /// </summary>
+    public async Task<bool> RefuseEarlyAsync(string? runToken, bool countTokens, Func<int, string, Stream> begin, CancellationToken cancellationToken = default)
+    {
+        if (Check(runToken, countTokens, out _) is not { } refused)
+        {
+            return false;
+        }
+
+        await RefuseAsync(begin, refused.Status, refused.Type, refused.Message, cancellationToken);
+        return true;
+    }
+
+    /// <summary>What a call is refused with: its status and Anthropic's error type and message.</summary>
+    private sealed record Refusal(int Status, string Type, string Message);
+
+    /// <summary>The checks that need no body, in order: unknown 401, over or expired 403, no key 503, at the cap 402.</summary>
+    private Refusal? Check(string? runToken, bool countTokens, out IAgentRun? run)
+    {
+        run = runToken is { Length: > 0 } token ? runs.ByTokenHash(AgentTokens.Hash(token)) : null;
+        if (run is null)
+        {
+            return new Refusal(401, "authentication_error", "this is not a run token Kit knows");
+        }
+
+        if (AgentRunStatus.IsOver(run.Status))
+        {
+            return new Refusal(403, "permission_error", $"this run is {run.Status}, so its token no longer reaches the model");
+        }
+
+        if (time.GetUtcNow() - run.Started > ageLimit)
+        {
+            return new Refusal(403, "permission_error", $"this run is more than {ageLimit.TotalHours:0.##} hours old, so its token no longer reaches the model");
+        }
+
+        if (apiKey is null)
+        {
+            return new Refusal(503, "api_error", "Kit has no Anthropic key (KIT_ANTHROPIC_API_KEY), so it cannot reach the model");
+        }
+
+        // The cap is on what the run HAS spent: calls already in flight can carry it a little past.
+        if (!countTokens && run.CostUsd >= capUsd)
+        {
+            return new Refusal(402, "billing_error", $"this run has spent ${run.CostUsd:0.####} and its cap is ${capUsd:0.####}");
+        }
+
+        return null;
     }
 
     /// <summary>Copies the stream to the caller one chunk at a time, flushing each, so events arrive when Anthropic sends them.</summary>
