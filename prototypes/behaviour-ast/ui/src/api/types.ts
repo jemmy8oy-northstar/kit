@@ -650,6 +650,8 @@ export interface TriageAnswer {
    * shows as buttons; tapping one sends it as his message. Absent for none.
    */
   options?: string[]
+  /** BEH-CHAT-16: the model stopped for length, so the reply ends where the limit cut it. Absent otherwise. */
+  truncated?: boolean
 }
 
 /**
@@ -665,6 +667,8 @@ export type TriageAction =
   /** BEH-SPECAGENT-3: a technical question for the coding agent, left as a note it answers. */
   | { kind: 'question'; text: string }
   | { kind: 'show'; text?: null }
+  /** BEH-CHAT-12: a note, found by the item id it is on or its time, into the thread; read-only. */
+  | { kind: 'shownote'; text: string }
 
 /** The agent's pause file as its gate reads it (BEH-NOTIFY-5). */
 export interface AgentSchedule {

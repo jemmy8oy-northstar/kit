@@ -2557,12 +2557,13 @@ behaviour BEH-CHAT-12 "The chat shows, on request, an answer he already posted t
   source defined kit-ui.notes.md#2026-11-03-2332
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "The chat can show an answer that was already posted to an item, on request, so he can see what he wrote. It can also show a note's attributes (its text, its answer, its tag) the same way, without him having to open the note."
   contract my assumption: the agent gets one more read-only tool, show_note, that puts a note (by item id or note time) into the thread as a card with its text, answer and origin tag (BEH-NOTE-15); it acts on nothing, so it needs no Undo
+  contract built: on the Chat page only, the model is offered show_note with the item id or the note's time; the reply carries it as an action of kind shownote, which needs no item in hand, and the server writes nothing for it
+  contract built: the page reads the notes of the project's apps and puts each note found into the thread as a card: its time, the item it is on, "from chat" or its other origin, its text, and each answer written under it; the newest three when an item has more. It carries no Undo, and the agent is told which note was shown. A note not found is said in Kit's line
 
 behaviour BEH-CHAT-13 "When an answer is added to a note in an action card, the card shows the text that was added"
   in FEAT-CHAT
@@ -2570,12 +2571,12 @@ behaviour BEH-CHAT-13 "When an answer is added to a note in an action card, the 
   source defined kit-ui.notes.md#2026-11-03-2332
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away."
   contract my assumption: the "Answered" line under the action card quotes the answer's words in full, rather than only saying an answer was saved
+  contract built: Kit's line after an answer is posted reads "Your answer is posted on “title”: “the answer, in full”." followed by what comes next, whether he or the agent posted it
 
 behaviour BEH-CHAT-14 "The chat has no next-up-in-Kit section, because the next item comes up in the chat"
   in FEAT-CHAT
@@ -2583,11 +2584,12 @@ behaviour BEH-CHAT-14 "The chat has no next-up-in-Kit section, because the next 
   source defined kit-ui.notes.md#2026-11-03-2332
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "Remove the 'next up in Kit' section. The next item comes up in the chat anyway, so it is not needed."
+  contract my assumption: "next up in Kit" is Kit's line after an item is dealt with, which read "Next up in kit: “title”. Reply to answer it…" and repeated the item that then comes into the thread by itself; the dock's button to jump to another project's waiting item (BEH-SPACE-2) is a different thing and stays
+  contract built: that line no longer names the next item or says "Next up": it reads "Approved “title”. Reply to answer the next item, or we can define new spec or discuss x." The item itself still comes up in the thread as before
 
 behaviour BEH-CHAT-15 "An item id written in the chat or on an action card is a link to that item"
   in FEAT-CHAT
@@ -2595,12 +2597,12 @@ behaviour BEH-CHAT-15 "An item id written in the chat or on an action card is a 
   source defined kit-ui.notes.md#2026-11-03-2335
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "In the chat and on action cards, any item ID written in the text, such as BEH-USERS-5, is a link. Clicking it opens that item, so the owner can follow a reference like 'It builds on a user's stored secrets (BEH-USERS-5)' without searching for it."
   contract my assumption: an id is linked only when Kit knows it (an epic, feature or behaviour in any project), so a made-up id stays plain text; the link opens the item's own page in the same tab
+  contract built: in every message (his, the agent's, Kit's), the question on an item card and a shown note, an id of an epic, feature or behaviour of any project the board loaded is a link to /projects/<app>/<epics|features|behaviours>/<id>; an id in more than one project goes to the first, and one Kit does not know stays text
 
 behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished, or the chat says it stopped"
   in FEAT-CHAT
@@ -2608,13 +2610,13 @@ behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished
   source defined kit.notes.md#2026-11-04-0052
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "Sometimes the chat gets cut off, see above." Both of the agent's answers to his long question stopped mid-sentence ("and per-user mem", "That costs only compute for the")
   contract the cause: each reply may be at most 1024 tokens (AnthropicTriageChat.MaxTokens), and a reply that hits it is shown as if it were whole
   contract my assumption: the limit rises to 4096, which a chat answer should rarely reach; a reply the model stops for length gets Kit's line "That reply was cut short. Ask me to go on." under it, so a cut is never silent
+  contract built: AnthropicTriageChat.MaxTokens is 4096; when the Messages API answers stop_reason max_tokens the server's answer carries truncated: true (absent otherwise), and the Chat page puts Kit's line under that reply. It sends nothing to the model and the agent is not told of it
 
 behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends"
   in FEAT-CHAT
@@ -2622,12 +2624,12 @@ behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sen
   source defined kit-ui.notes.md#2026-11-04-1100
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitChat
   then sees region:KitMain
   contract "Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line."
   contract my assumption: "a phone" is a device whose main pointer is coarse (a touch screen), read with the `(pointer: coarse)` media query, so a tablet with a keyboard attached counts as a desktop
+  contract built: the box reads matchMedia('(pointer: coarse)') at each key press; when it matches, Enter is a new line and only the Send button sends. Otherwise Enter sends and Shift+Enter is a new line, as before. A browser with no matchMedia counts as a desktop
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).

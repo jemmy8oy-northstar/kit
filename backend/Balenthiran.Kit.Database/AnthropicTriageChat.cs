@@ -17,8 +17,8 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
     /// <summary>His choice: "Let's use haiku for this".</summary>
     public const string DefaultModel = "claude-haiku-5-5";
 
-    /// <summary>The longest reply, in tokens: a chat answer, not an essay, and the cap on what one turn costs.</summary>
-    public const int MaxTokens = 1024;
+    /// <summary>The longest reply, in tokens: a chat answer, not an essay, and the cap on what one turn costs. A reply that hits it says so (BEH-CHAT-16).</summary>
+    public const int MaxTokens = 4096;
 
     /// <summary>The most rounds of reading the spec one reply may take before it must answer: each is a request paid for.</summary>
     public const int MaxReads = 2;
@@ -113,7 +113,7 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         // An action asked for and not done (a second one, or one without its words) is said, so the agent's
         // words never stand alone claiming it.
         var dropped = calls.Count - (action is null ? 0 : 1);
-        return new TriageReply(dropped > 0 ? $"{text}\n\n{Dropped(dropped)}".TrimStart() : text, null, action, OptionsOf(content));
+        return new TriageReply(dropped > 0 ? $"{text}\n\n{Dropped(dropped)}".TrimStart() : text, null, action, OptionsOf(content), (string?)JsonNode.Parse(json)?["stop_reason"] == "max_tokens");
     }
 
     /// <summary>The most answers one question offers, and the longest one, in characters (BEH-CHAT-10).</summary>
@@ -184,6 +184,7 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
             "answer_item" when words is { Length: > 0 } => new TriageAction("answer", words),
             "save_note" when words is { Length: > 0 } => new TriageAction("note", words),
             "ask_coding_agent" when words is { Length: > 0 } => new TriageAction("question", words),
+            "show_note" when words is { Length: > 0 } => new TriageAction("shownote", words),
             _ => null,
         };
     }
@@ -200,6 +201,7 @@ public sealed class AnthropicTriageChat(HttpClient http, string apiKey, string m
         Tool("show_item", "Show the item in hand in the chat again, when the owner asks to see it.", words: null),
         Tool("save_note", "Leave a note on the project for the coding agent, when the owner agrees to save what this chat settled; text is the note: who does what and what they see, in their words, without the chat's back and forth.", words: "The note."),
         Tool("ask_coding_agent", "Ask the coding agent a technical question the spec cannot answer, such as how something is built or what a change would take, when the owner wants it asked; text is the question, in their words. It answers when it next works.", words: "The question."),
+        Tool("show_note", "Show a note, with its text, its answer and where it came from, in the chat, when the owner asks to see an answer already posted to an item or a note; text is the item id the note is on, or the note's time such as 2026-11-03 13:49Z. It changes nothing.", words: "The item id, or the note's time."),
         OptionsToolDef());
 
     /// <summary>

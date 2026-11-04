@@ -744,6 +744,36 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "An_action_asked_for_and_not_done_is_said_so_the_words_never_claim_it" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a refused write says so in the thread and tells the agent, so its words do not stand alone" }
   ],
+  "BEH-CHAT-12": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "puts the note found by its item id into the thread with its text, its answer and its origin, and writes nothing" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "finds a note by its time, and says so when there is none" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Showing_a_note_reads_as_an_action_that_needs_no_item_and_no_words_drops_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_tell_the_agent_it_can_show_a_note" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_offers_the_tools_only_when_asked" }
+  ],
+  "BEH-CHAT-13": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "quotes every word of the answer that was posted" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "denies and answers with his words, and an undone answer is dismissed from the notes" }
+  ],
+  "BEH-CHAT-14": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after an item is dealt with the next one only comes up in the thread, with no Next up line" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told" }
+  ],
+  "BEH-CHAT-15": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links a known id in the agent’s words, and in an action card, and leaves an unknown id as text" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links the ids in the question on the item card" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links the id in a card the agent shows with show_note" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "splits text around the known ids only" }
+  ],
+  "BEH-CHAT-16": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "shows Kit’s line under a reply that stopped for length, and none under a whole one" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_reply_the_model_stopped_for_length_is_marked_truncated_and_a_whole_one_is_not" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_chat_reply_may_run_to_4096_tokens" }
+  ],
+  "BEH-CHAT-17": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "on a coarse pointer Enter does not send and the Send button does" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "on a fine pointer Enter sends and Shift+Enter does not" }
+  ],
   "BEH-CHAT-4": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_context_names_the_other_projects_and_not_its_own" }
   ],

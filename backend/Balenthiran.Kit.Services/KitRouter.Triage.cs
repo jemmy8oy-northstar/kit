@@ -251,7 +251,7 @@ public sealed partial class KitRouter
 
         // BEH-CHAT-10: options only on the Chat page, and not on a reply that also acts.
         var options = chat && action is null && reply.Options is { Count: > 0 } o ? o : null;
-        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action, Options = options });
+        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action, Options = options, Truncated = reply.Truncated });
     }
 
     /// <summary>The chat, or null when it is not one: the Messages API wants the user first and last, taking turns.</summary>

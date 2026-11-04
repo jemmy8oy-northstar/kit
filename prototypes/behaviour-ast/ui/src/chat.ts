@@ -1,4 +1,4 @@
-import type { TriageMessage } from './api/types'
+import type { Note, TriageMessage } from './api/types'
 
 /**
  * A line on the Chat page (BEH-CHAT-1): his or the agent's, each with the project and the item in hand it
@@ -15,12 +15,30 @@ export type Line =
   | { from: 'switch'; app: string; named?: boolean }
   | { from: 'item'; app: string; id: string; title: string; ask: string | null; tell: string }
   | { from: 'kit'; text: string; tell: string; undo?: () => Promise<unknown>; undone?: boolean }
+  // BEH-CHAT-12: a note put into the thread on request, with its text, answer and origin; read-only, so no undo.
+  | { from: 'note'; app: string; note: Note; tell: string }
 
-/** What the agent has not yet been told: the `tell` of every item or Kit line since his last message. */
+/** What the agent has not yet been told: the `tell` of every item, note or Kit line since his last message. */
 export function untold(lines: Line[]): string[] {
   const last = lines.map((l) => (l.from === 'user' && l.local ? 'local' : l.from)).lastIndexOf('user')
   // An empty tell is a line the agent need not hear of (the help text).
-  return lines.slice(last + 1).flatMap((l) => ((l.from === 'item' || l.from === 'kit') && l.tell !== '' ? [l.tell] : []))
+  return lines.slice(last + 1).flatMap((l) => ((l.from === 'item' || l.from === 'kit' || l.from === 'note') && l.tell !== '' ? [l.tell] : []))
+}
+
+/**
+ * BEH-CHAT-15: `text` cut into plain strings and the item ids `known` says Kit has (an epic, feature or
+ * behaviour in any project). An id Kit does not know stays plain text.
+ */
+export function splitIds(text: string, known: (id: string) => boolean): (string | { id: string })[] {
+  const out: (string | { id: string })[] = []
+  let at = 0
+  for (const m of text.matchAll(/(?<![\w-])[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+(?![\w-])/g)) {
+    if (!known(m[0])) continue
+    if (m.index > at) out.push(text.slice(at, m.index))
+    out.push({ id: m[0] })
+    at = m.index + m[0].length
+  }
+  return at === 0 ? [text] : [...out, ...(at < text.length ? [text.slice(at)] : [])]
 }
 
 /** The server's limits (KitRouter.Triage.cs): at most 40 turns, each at most 4000 characters. */
