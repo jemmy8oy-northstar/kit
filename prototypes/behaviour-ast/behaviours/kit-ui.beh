@@ -1362,7 +1362,6 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   review approved
   priority 2
   pending
-  needs-context "Shall I build it on the Anthropic API, Opus 5.5 leading and Sonnet doing surveys, as I run? And what monthly cap? If you're silent by 2026-11-07, I build it switched off: it runs only once you add an API key and a cap, and its first run is on one of your projects to measure the real cost."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1379,6 +1378,13 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract his note (kit.notes.md#2026-10-29-0809): his first test user starts on a repo shared with him (holiday-planning), which his own agent works; "Will have to implement a different mechanism for the testers own projects. Ai api most likely". So this agent is for the tester's own repos, and is most likely driven through an AI API
   contract my assumption: before the first user, the agent runs on one of James's own projects, so its cost per task is measured before anyone else relies on it
   contract my assumption: it runs the shared process of BEH-USERS-4, and nothing it does is carried by the agent that maintains Kit
+  contract his answer (kit-ui.notes.md#2026-11-03-2330), on the API key and cap: "The API key is added and in use for chat. Spend cap: the user can use as much money as they have credited in their account, and can also set a money allowance per day, week or month for their Kit agent to spend, drawn from that credit." So this card is unblocked, and the cap is the user's credit plus their own allowance (BEH-USERS-7)
+  contract his ask (claude-code-bot#131, 2026-11-03): "ensure that we can hook up the Claude api with Claude code and be able to spin up instances for users on the fly. Will this be requiring volumes? Or can this be done in memory?"
+  contract my answer, unreviewed: no volume. Each run is a short-lived Kubernetes Job running Claude Code headless with Kit's process and tools; it clones the user's repo into scratch disk deleted when the run ends, pushes, and exits. The repo is the user's storage, so nothing survives between runs but what was pushed
+  contract my assumption: the API key never enters a user's run. Runs reach the model through Kit, which holds the key and counts each run's tokens against that user's credit, and stops a run that would pass it
+  contract my assumption: each run reports its token usage before it exits, because its transcript dies with it, and that report is what billing (BEH-USERS-7) and the cost per card are read from
+  contract measured (2026-11-04, from my own sessions at API list prices, tools/session-cost.js in claude-code-bot): $1,829 over 6 weeks, about $305 a week, against 498 kit PRs merged in the same window, so about $3 to $4 a merged PR with Opus leading. 70% of it is cache reads, the agent re-reading its own context, so short focused runs matter more than the model
+  contract my assumption: a user's agent runs Sonnet by default, half Opus's price per token, with Opus by choice
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
@@ -1388,7 +1394,7 @@ behaviour BEH-USERS-5 "A user's production secrets are stored for them, and neve
   in FEAT-USER-SECRETS
   source inferred kit.notes.md#2026-10-19-1721
   review approved
-  priority 2
+  priority 3
   pending
   actor engineer
   when opens page:KitProjects
@@ -1404,7 +1410,9 @@ behaviour BEH-USERS-5 "A user's production secrets are stored for them, and neve
   contract the four, briefly: OpenBao is the open-source fork of HashiCorp Vault, made when HashiCorp moved Vault to a source-available licence in 2023, with the same API; Infisical is an open-source secrets manager with a hosted plan
   contract my answer, unreviewed: OCI Vault is my pick. It is in the same Oracle account as the cluster, so there is no new provider and nothing for us to run, and its software-protected tier costs little or nothing (to confirm on your account). Oracle's access rules can let Kit add a new version of a secret without being allowed to read secret contents, and the cluster reads them through External Secrets
   contract my answer, unreviewed: HashiCorp Vault means either running it ourselves on the cluster (unsealing, backups, upgrades: the admin you wanted to avoid for databases) or paying for HashiCorp's hosted Vault. Pick it if you want to stay portable off Oracle; OpenBao is the same thing without the licence question
-  needs-context "OCI Vault (my pick: same account as the cluster, nothing to run) or HashiCorp Vault (portable, but we run it or pay for it)? If you're silent by 2026-11-07, I take OCI Vault and write Kit's side against it, with nothing created in your Oracle account; creating the vault and its access rules stays yours."
+  contract his answer (kit-ui.notes.md#2026-11-03-2337): OCI Vault for now. Kit writes secrets to OCI Vault and the cluster reads them; Kit can write a value but never read it back. The storage choice stays behind a seam, so moving to another vault (HashiCorp, say) later is one implementation
+  contract his priority (kit-ui.notes.md#2026-11-03-2339): "deprioritised, so that the agent Kit runs for users (BEH-USERS-9) gets built first". So 2 to 3, and it is built after BEH-USERS-9; the vault decision stands
+  contract my assumption: creating the vault and its access rules in his Oracle account stays his, as it touches his cloud account and keys
   paused until 2026-11-14
 
 feature FEAT-USER-DATABASES "A database per user, in two tiers"
@@ -1449,6 +1457,10 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
   contract his list: "usage, cost and payment, charging for compute and AI tokens"
   contract his answer (kit.notes.md#2026-10-23-0641): test users will not want to pay, so during testing Kit covers the AI cost and users bring no key of their own
   contract in later testing, usage is tracked and billed before anyone is charged, so a user sees a bill coming before payment exists
+  contract his thoughts as we start to design this (kit.notes.md#2026-11-04-0052, kit.notes.md#2026-11-04-0057): a base subscription, say £15 a month, covering some number of projects, which gives £15 of monthly token credit priced with a premium, so about £10 is spent on tokens and £5 funds the pod and running costs; monthly credit expires unused, though that may push idle users to cancel; extra credit can be bought, does not expire, and needs an active subscription; refunds have to be supported
+  contract his ask (kit.notes.md#2026-11-04-1058): "we should start recording the cost that Claude code bot incurs from kit sessions… figure out weekly cost historically? And compare to subscription cost?" Done 2026-11-04: tools/session-cost.js in claude-code-bot prices every session at API list prices, per week; the figures are on BEH-USERS-9
+  contract my reading, unreviewed: at the measured $3 to $4 a merged PR with Opus (about half with Sonnet), £10 of tokens is roughly 3 to 6 PRs a month, so the £15 tier fits a light user; a busy one buys credit, which is where the premium earns
+  contract my assumption: no volume is priced, because a run needs none (BEH-USERS-9); the £5 pays for compute while a run is live
 
 feature FEAT-USER-ISOLATION "One user never reaches another's work"
   in EPIC-KIT-USERS
@@ -1876,6 +1888,23 @@ behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviour
   contract my assumption: split from BEH-HEALTH-1, which shows the numbers; the list endpoint only carries counts, so this reads each project's own view for the ids, and each id links to its behaviour page
   contract built 2026-10-29: under each measured project with unnamed behaviours the Health page reads that project's own /api/projects/<app> view and lists each uncovered id (linked to its behaviour page) with its title; a project with none says nothing extra, and a failed read says why in words
 
+behaviour BEH-HEALTH-4 "A test's link to its behaviour records a hash of the code it exercises, and a change to that code flags the link"
+  in FEAT-HEALTH
+  layer technical
+  source defined kit-ui.notes.md#2026-11-03-2344
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitHealth
+  then sees region:KitMain
+  contract "Spec and tests must stay coupled going forward, not only when a test is written. The aim is that the spec is always enforced in the project, and that we can deterministically verify its tests still enforce it."
+  contract "When a behaviour has a test that enforces it, record a hash of the source code that test exercises against that behaviour on the spec. If that source later changes, flag the behaviour and its test link as possibly broken, so it can be re-checked quickly. The hash must be deterministic: the same code always gives the same hash, and the spec records which hash each link was last verified against."
+  contract "He sees the flagged links. The coding agent computes and records the hashes and does the re-check."
+  contract my assumption: "the code a test exercises" is the set of source files the test's run touches, taken from a coverage run, not guessed from imports; the hash is SHA-256 over those files' paths and contents in sorted order, with line endings normalised, so it does not depend on the machine
+  contract my assumption: the hash sits beside each test in <app>.tests.json as "verified": { "hash", "on" }; a link whose files now hash differently is "possibly broken" on the Health page, and the agent re-checks it and records the new hash in the same PR
+  contract my assumption: this is design-first. The coverage-per-test step differs per stack (.NET, Vitest, Swift), so the first slice is Kit's own .NET tests, measured before any other stack
+
 feature FEAT-SETTINGS "Settings"
   stage ui
 
@@ -2270,7 +2299,6 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   review approved
   priority 4
   pending
-  needs-context "It needs the agent Kit runs for a user (BEH-USERS-9), which waits on your API key and spend cap."
   actor engineer
   when opens page:KitBoard
   then sees region:KitBoardQueue
@@ -2278,6 +2306,7 @@ behaviour BEH-SPECAGENT-2 "When the spec agent marks a feature ready, a coding a
   contract my assumption: "ready" is the move from the Backlog to the Queue that exists today; the coding agent is BEH-USERS-9, and "I get notified when a feature is implemented" is a notification (BEH-NOTIFY-1, BEH-NOTIFY-3)
   contract his question, is a coding harness such as Claude Code sufficient or necessary: sufficient. My default is the Claude Agent SDK (Claude Code's own engine, run without a terminal), given Kit's dev process as its instructions (BEH-USERS-4) and Kit's commands as tools
   contract his question, is a separate Kit agent needed beside it: my default is no. Kit's process and tools go into the one coding agent, and the only second agent is the spec agent, which writes no code
+  contract his note (kit-ui.notes.md#2026-11-03-2330): the API key is in and the spend cap is the user's credit plus their own daily, weekly or monthly allowance, so this waits only on BEH-USERS-9 being built, and is built straight after it
 
 behaviour BEH-SPECAGENT-3 "A technical question to the spec agent goes on an open-questions board, and the coding agent answers it there"
   in FEAT-SPEC-AGENT
@@ -2461,6 +2490,8 @@ behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explain
   contract built: the agent's instructions say what Kit is, that the chat changes no code, that a coding agent builds the spec in the background, and every tool it has; asked what it can do, it says so
   contract built: a "What can Kit do?" button in the chat's header, or a message that is just "help" or "/help", puts Kit's own help line in the thread. It asks no model and spends no reply, and the agent is not told of it
   contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
+  contract his list (kit-ui.notes.md#2026-11-03-2340): "Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change."
+  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and offers to leave the note, rather than claiming it did it
 
 behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
   in FEAT-CHAT
@@ -2516,6 +2547,84 @@ behaviour BEH-CHAT-11 "One chat covers every app of a project, rather than one c
   contract built: the Chat page's picker lists projects, not apps: apps sharing a `# kit:project` line are one entry, and the item in hand is the top one waiting in any of them, so the next app's item comes up with no project change
   contract built: each turn goes to the spec agent of the item in hand's app, with the whole chat; with nothing in hand it goes to the project's home app, which is also where the chat's notes go. Naming another app of the same project does not move the chat, and ?project= takes an app's name or its project's
   contract my assumption: the home app is the app named like the project (kit, for kit), else its first app; the agent still reads one app's spec per turn, rather than all three, so a turn costs what it did
+
+behaviour BEH-CHAT-12 "The chat shows, on request, an answer he already posted to an item, or a note's text, answer and tag"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-2332
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "The chat can show an answer that was already posted to an item, on request, so he can see what he wrote. It can also show a note's attributes (its text, its answer, its tag) the same way, without him having to open the note."
+  contract my assumption: the agent gets one more read-only tool, show_note, that puts a note (by item id or note time) into the thread as a card with its text, answer and origin tag (BEH-NOTE-15); it acts on nothing, so it needs no Undo
+
+behaviour BEH-CHAT-13 "When an answer is added to a note in an action card, the card shows the text that was added"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-2332
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away."
+  contract my assumption: the "Answered" line under the action card quotes the answer's words in full, rather than only saying an answer was saved
+
+behaviour BEH-CHAT-14 "The chat has no next-up-in-Kit section, because the next item comes up in the chat"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-2332
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Remove the 'next up in Kit' section. The next item comes up in the chat anyway, so it is not needed."
+
+behaviour BEH-CHAT-15 "An item id written in the chat or on an action card is a link to that item"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-03-2335
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "In the chat and on action cards, any item ID written in the text, such as BEH-USERS-5, is a link. Clicking it opens that item, so the owner can follow a reference like 'It builds on a user's stored secrets (BEH-USERS-5)' without searching for it."
+  contract my assumption: an id is linked only when Kit knows it (an epic, feature or behaviour in any project), so a made-up id stays plain text; the link opens the item's own page in the same tab
+
+behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished, or the chat says it stopped"
+  in FEAT-CHAT
+  layer technical
+  source defined kit.notes.md#2026-11-04-0052
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Sometimes the chat gets cut off, see above." Both of the agent's answers to his long question stopped mid-sentence ("and per-user mem", "That costs only compute for the")
+  contract the cause: each reply may be at most 1024 tokens (AnthropicTriageChat.MaxTokens), and a reply that hits it is shown as if it were whole
+  contract my assumption: the limit rises to 4096, which a chat answer should rarely reach; a reply the model stops for length gets Kit's line "That reply was cut short. Ask me to go on." under it, so a cut is never silent
+
+behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-04-1100
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line."
+  contract my assumption: "a phone" is a device whose main pointer is coarse (a touch screen), read with the `(pointer: coarse)` media query, so a tablet with a keyboard attached counts as a desktop
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
