@@ -41,6 +41,9 @@ namespace Balenthiran.Kit.Services;
 /// <param name="userMemory">What Kit remembers about each user (BEH-USERS-4). None means it is kept in memory only.</param>
 /// <param name="triage">The spec agent an Inbox card is talked through with (BEH-SPECAGENT-4). None means the optional <c>kit-anthropic</c> key is not set, and the Inbox offers no chat.</param>
 /// <param name="triageLimit">How many spec-agent replies this server makes a day, the spend cap (<c>KIT_TRIAGE_DAILY_LIMIT</c>).</param>
+/// <param name="runStore">Where a user's agent runs are recorded (BEH-USERS-9). None means they are kept in memory only.</param>
+/// <param name="runLauncher">What starts a run (BEH-USERS-9). None means no runner is configured and a run stays queued.</param>
+/// <param name="agentRunCap">What one run may spend, USD (<c>KIT_AGENT_RUN_CAP_USD</c>); the model proxy enforces it, the list shows it.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -71,7 +74,10 @@ public sealed partial class KitRouter(
     IUserProjects? userProjects = null,
     IUserMemoryStore? userMemory = null,
     ITriageChat? triage = null,
-    int triageLimit = KitRouter.DefaultTriageLimit) : IKitRouter
+    int triageLimit = KitRouter.DefaultTriageLimit,
+    IAgentRunStore? runStore = null,
+    IAgentRunLauncher? runLauncher = null,
+    decimal agentRunCap = AgentProxy.DefaultCapUsd) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -91,6 +97,10 @@ public sealed partial class KitRouter(
     private readonly INotificationReader notifications = notifications ?? new NotificationReader(null, null);
 
     private readonly IUserMemoryStore userMemory = userMemory ?? new MemoryUserMemoryStore();
+
+    private readonly IAgentRunStore agentRuns = runStore ?? new MemoryAgentRunStore();
+
+    private readonly IAgentRunLauncher agentLauncher = runLauncher ?? new NoRunnerLauncher();
 
     private static readonly Regex Api = new(@"^/api(/|\z)", RegexOptions.Compiled);
     // Owner and repo as GitHub spells them, so nothing else reaches the API path it is put into.
@@ -165,6 +175,12 @@ public sealed partial class KitRouter(
         if (pathname == "/api/me/memory")
         {
             return MemoryRead(cookie);
+        }
+
+        // BEH-USERS-9: the operator's runs, with what each has cost.
+        if (pathname == "/api/runs")
+        {
+            return RunsList(cookie);
         }
 
         if (pathname == "/api/projects")
@@ -438,6 +454,12 @@ public sealed partial class KitRouter(
         if (pathname == "/api/me/memory")
         {
             return MemoryWrite(ISessionStore.Operator, body);
+        }
+
+        // BEH-USERS-9: starting a run, behind the gate above (so the operator's alone); it writes no corpus.
+        if (RunsRoute.Match(pathname) is { Success: true } runs)
+        {
+            return StartRun(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, runs.Groups[1].Value, body);
         }
 
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.

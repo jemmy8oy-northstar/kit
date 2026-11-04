@@ -204,6 +204,15 @@ public sealed record KitSettings(
         : int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n
         : throw new InvalidOperationException($"KIT_TRIAGE_DAILY_LIMIT is \"{value}\": set it to a whole number of replies a day, 0 or more");
 
+    /// <summary><c>KIT_AGENT_RUN_CAP_USD</c> (BEH-USERS-9): what one agent run may spend through the model proxy, USD. Unset is <see cref="AgentProxy.DefaultCapUsd"/>.</summary>
+    public decimal AgentRunCapUsd { get; init; } = AgentProxy.DefaultCapUsd;
+
+    /// <summary><c>KIT_AGENT_RUN_CAP_USD</c>: a decimal number of dollars, 0 or more (0 stops every run's first call); unset is the default. Anything else THROWS.</summary>
+    public static decimal ParseAgentRunCap(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? AgentProxy.DefaultCapUsd
+        : decimal.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n
+        : throw new InvalidOperationException($"KIT_AGENT_RUN_CAP_USD is \"{value}\": set it to a number of dollars a run may spend, 0 or more, such as 5 or 2.50");
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -286,6 +295,7 @@ public sealed record KitSettings(
             Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
             AnthropicApiKey = env("KIT_ANTHROPIC_API_KEY") is { } k && !string.IsNullOrWhiteSpace(k) ? k.Trim() : null,
             TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
+            AgentRunCapUsd = ParseAgentRunCap(env("KIT_AGENT_RUN_CAP_USD")),
         };
     }
 
