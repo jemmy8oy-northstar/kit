@@ -1403,6 +1403,8 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract my assumption: each run reports its token usage before it exits, because its transcript dies with it, and that report is what billing (BEH-USERS-7) and the cost per card are read from
   contract measured (2026-11-04, from my own sessions at API list prices, tools/session-cost.js in claude-code-bot): $1,829 over 6 weeks, about $305 a week, against 498 kit PRs merged in the same window, so about $3 to $4 a merged PR with Opus leading. 70% of it is cache reads, the agent re-reading its own context, so short focused runs matter more than the model
   contract my assumption: a user's agent runs Sonnet by default, half Opus's price per token, with Opus by choice
+  contract my assumption: a run's token stops reaching the model 6 hours after the run was created, whatever its status or spend, so a leaked or forgotten token cannot spend for ever. Kit answers 403 like a run that is over, and the operator can change the limit (KIT_AGENT_RUN_MAX_HOURS)
+  contract my assumption: a run may have at most 4 model calls in flight at once, because the cap counts only what a run has already spent and parallel calls could otherwise carry it past without bound; a fifth is refused 429 (rate_limit_error) until one finishes
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
