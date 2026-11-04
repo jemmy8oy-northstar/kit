@@ -39,8 +39,11 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
     /// </summary>
     public const int MaxInFlight = 4;
 
-    /// <summary>How long Kit waits on the model for one call, however long the caller stays: a disconnect does not cancel it.</summary>
-    public static readonly TimeSpan UpstreamTimeout = TimeSpan.FromMinutes(10);
+    /// <summary>
+    /// How long Kit waits on the model for one call, however long the caller stays: a disconnect does not cancel it.
+    /// Generous on purpose: a long answer streamed at a few dozen tokens a second can run past ten minutes.
+    /// </summary>
+    public static readonly TimeSpan UpstreamTimeout = TimeSpan.FromMinutes(30);
 
     private readonly Dictionary<string, int> inFlight = new(StringComparer.Ordinal);
 
