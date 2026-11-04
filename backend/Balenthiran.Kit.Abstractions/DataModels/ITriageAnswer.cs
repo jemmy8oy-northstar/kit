@@ -14,4 +14,7 @@ public interface ITriageAnswer
 
     /// <summary>The short answers the Chat page's agent proposes to the question it asked (BEH-CHAT-10); null for none.</summary>
     IReadOnlyList<string>? Options { get; }
+
+    /// <summary>True when the model stopped for length and the reply is cut short (BEH-CHAT-16); false otherwise.</summary>
+    bool Truncated { get; }
 }

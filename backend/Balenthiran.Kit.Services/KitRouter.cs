@@ -106,6 +106,8 @@ public sealed partial class KitRouter(
     private static readonly Regex TriageRoute = new(@"^/api/projects/([^/]+)/triage\z", RegexOptions.Compiled);
     private static readonly Regex ChatRoute = new(@"^/api/projects/([^/]+)/chat\z", RegexOptions.Compiled);
     private static readonly Regex GoalRoute = new(@"^/api/projects/([^/]+)/goal\z", RegexOptions.Compiled);
+    private static readonly Regex ConflictsRoute = new(@"^/api/projects/([^/]+)/conflicts\z", RegexOptions.Compiled);
+    private static readonly Regex DepthRoute = new(@"^/api/projects/([^/]+)/depth\z", RegexOptions.Compiled);
     // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
     private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours =new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
@@ -474,7 +476,9 @@ public sealed partial class KitRouter(
         var gm = GoalRoute.Match(pathname);
         var tm = TriageRoute.Match(pathname);
         var cm = ChatRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : dm.Success ? dm : tm.Success ? tm : cm.Success ? cm : Behaviours.Match(pathname);
+        var km = ConflictsRoute.Match(pathname);
+        var xm = DepthRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : km.Success ? km : xm.Success ? xm : dm.Success ? dm : tm.Success ? tm : cm.Success ? cm : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -523,6 +527,8 @@ public sealed partial class KitRouter(
                 : sm.Success ? Reschedule(app, b)
                 : pm.Success ? SetPromote(app, b)
                 : gm.Success ? SetGoal(app, b)
+                : km.Success ? SetConflictMode(app, b)
+                : xm.Success ? SetDepth(app, b)
                 : dm.Success ? ReviewDecision(app, dm.Groups[2].Value, b)
                 : Edit(app, m, b);
         }
@@ -987,6 +993,82 @@ public sealed partial class KitRouter(
 
         corpora.WriteText(app, result.Text!);
         return Json(200, GitOutcome(corpora.FullPath(app), on ? $"mark {app} as maintained" : $"stop treating {app} as maintained", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>
+    /// BEH-CONFLICT-2: choose what the agent does when this project's specs conflict — the
+    /// <c># kit:conflicts</c> line in the project's primary file, committed like any edit; build, the
+    /// default, is no line. Same shape and refusals as <see cref="SetPromote"/>.
+    /// </summary>
+    private KitResponse SetConflictMode(string app, JsonElement body)
+    {
+        if (Field(body, "mode") is not { ValueKind: JsonValueKind.String } mode || !ConflictsDirective.Modes.Contains(mode.GetString()!))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"mode must be one of {string.Join(", ", ConflictsDirective.Modes)}" });
+        }
+
+        string project;
+        try
+        {
+            project = viewer.View(app).Project;
+        }
+        catch (ProjectionFailedException e)
+        {
+            return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+        }
+
+        if (project != app)
+        {
+            return Json(409, new ApiError { Error = "not-primary", Reason = $"{app} is part of project {project}; the choice lives in {project}'s own file, so set it there" });
+        }
+
+        var chosen = mode.GetString()!;
+        var result = writer.SetConflictMode(corpora.ReadText(app), chosen);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), $"set what the agent does when {app}'s specs conflict to {chosen}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>
+    /// BEH-ARCH-3: choose how involved the user is in this project — the <c># kit:depth</c> line in the
+    /// project's primary file, committed like any edit; behaviours, the default, is no line. Same shape and
+    /// refusals as <see cref="SetConflictMode"/>.
+    /// </summary>
+    private KitResponse SetDepth(string app, JsonElement body)
+    {
+        if (Field(body, "mode") is not { ValueKind: JsonValueKind.String } mode || !DepthDirective.Modes.Contains(mode.GetString()!))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"mode must be one of {string.Join(", ", DepthDirective.Modes)}" });
+        }
+
+        string project;
+        try
+        {
+            project = viewer.View(app).Project;
+        }
+        catch (ProjectionFailedException e)
+        {
+            return Json(500, new ApiError { Error = "projection-failed", Reason = e.Message });
+        }
+
+        if (project != app)
+        {
+            return Json(409, new ApiError { Error = "not-primary", Reason = $"{app} is part of project {project}; the choice lives in {project}'s own file, so set it there" });
+        }
+
+        var chosen = mode.GetString()!;
+        var result = writer.SetDepth(corpora.ReadText(app), chosen);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), $"set how involved the user is in {app} to {chosen}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>

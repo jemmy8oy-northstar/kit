@@ -27,3 +27,9 @@ What sites this man
 ## 2026-10-29 13:32Z · BEH-UNLOCK-2
 
 What does this mean
+
+## 2026-11-04 11:44Z
+
+<!-- from: note-button -->
+
+Can we add a path style to show progression on different types of words. I think this would be useful rather than just random hsk. Might be good to group them. I think greeting is a good start like ni hao and nin hao. Maybe we can do sentences and individual word meanings. We can iterate if it doesn’t go well. You can skip ahead and you can search. Maybe 1-10 numbers is one and mahjong is a later one. No need to block them off like in duo lingo or candy crush this is not paid. Maybe a button to go back to next in order. Maybe sections where if you can do the word and sentence test at the end of a section this section and this moves the next in order section to here. We can refine and add more features later.

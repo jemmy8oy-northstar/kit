@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@jemmy8oy-northstar/design-system'
 import { chatTurn, dismissNote, fetchNotes, fetchTriage, leaveNote, setReview } from '../api/client'
 import type { ReviewState, TriageAction, TriageStatus } from '../api/types'
-import { MAX_TEXT, named, toMessages, untold, type Line } from '../chat'
+import { MAX_TEXT, named, splitIds, toMessages, untold, type Line } from '../chat'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
@@ -61,6 +61,17 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   const projectOfApp = (a: string) => apps.find((x) => x.app === a)?.project ?? a
   const projects = [...new Set(apps.map((a) => a.project))]
   const home = (p: string) => (apps.some((a) => a.app === p) ? p : (apps.find((a) => a.project === p)?.app ?? p))
+  // BEH-CHAT-15: the ids Kit knows (an epic, feature or behaviour in any project), each to its own page.
+  // An id in more than one project goes to the first; one Kit does not know stays plain text.
+  const pages = new Map<string, string>()
+  for (const e of entries) {
+    const at = `/projects/${encodeURIComponent(e.summary.app)}`
+    for (const [kind, ids] of [['epics', e.detail?.epics ?? []], ['features', e.detail?.features ?? []], ['behaviours', e.behaviours]] as const) {
+      for (const { id } of ids) if (!pages.has(id)) pages.set(id, `${at}/${kind}/${encodeURIComponent(id)}`)
+    }
+  }
+  const linked = (text: string) =>
+    splitIds(text, (id) => pages.has(id)).map((p, i) => (typeof p === 'string' ? p : <Link key={i} to={pages.get(p.id)!}>{p.id}</Link>))
   // ?project=x opens on that project (an app's name opens its project), and with &design=1 starts designing it (BEH-SPECAGENT-1).
   const [params] = useSearchParams()
   const askedApp = apps.find((a) => a.app === params.get('project') || a.project === params.get('project'))
@@ -157,14 +168,14 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
    * His 17:54Z note: once he has acted on an item, Kit says so in the chat and offers what comes next,
    * the next item or other work, so the conversation carries on rather than going quiet.
    */
-  function done(card: InboxCard, how: Acted, undo?: () => Promise<unknown>) {
+  function done(card: InboxCard, how: Acted, undo?: () => Promise<unknown>, words?: string) {
     mark(card, true)
     const rest = queue.filter((c) => !handledNow.current.has(keyOf(c)))
     const next = rest.find((c) => projectOfApp(c.app) === projectOfApp(card.app)) ?? null
     const other = next ? null : (rest[0] ?? null)
     const here = label(projectOfApp(card.app))
     const then = next
-      ? `Next up in ${here}: “${next.b.title}”. Reply to answer it, or we can define new spec or discuss ${here}.`
+      ? `Reply to answer the next item, or we can define new spec or discuss ${here}.`
       : other
         ? `Nothing else is waiting in ${here}. The next waiting item is in ${label(projectOfApp(other.app))}, below. Or we can define new spec or discuss ${here}.`
         : `That was the last item waiting on you. We can define new spec or discuss ${here}.`
@@ -173,7 +184,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       await undo?.()
       mark(card, false)
     }
-    setLines((ls) => [...ls, { from: 'kit', text: `${ACTED[how].said} “${card.b.title}”. ${then}`, tell: `[He ${ACTED[how].told} ${card.b.id}]`, undo: back }])
+    setLines((ls) => [...ls, { from: 'kit', text: `${ACTED[how].said} “${card.b.title}”${words ? `: “${words}”` : ''}. ${then}`, tell: `[He ${ACTED[how].told} ${card.b.id}]`, undo: back }])
   }
 
   /** Marks an item off this chat, or brings it back after an undo. */
@@ -255,6 +266,24 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       else setLines((ls) => [...ls, { from: 'kit', text: 'Nothing is in hand to show.', tell: '[Nothing was in hand to show]' }])
       return
     }
+    if (action.kind === 'shownote') {
+      // BEH-CHAT-12: read-only, so no Undo. Found by the item id it is on or its time, among the notes of the
+      // project's apps (the newest three when an item has more).
+      const want = action.text.trim()
+      const sibling = apps.filter((a) => a.project === projectOfApp(about)).map((a) => a.app)
+      const found = (
+        await Promise.all((sibling.includes(about) ? sibling : [about]).map((a) => fetchNotes(a).then(({ notes }) => notes.filter((n) => n.behaviour === want || n.at === want).map((note) => ({ app: a, note })), () => [])))
+      ).flat()
+      if (found.length === 0) {
+        setLines((ls) => [...ls, { from: 'kit', text: `There is no note on ${want}, and none at that time.`, tell: `[No note was found for ${want}]` }])
+        return
+      }
+      setLines((ls) => [
+        ...ls,
+        ...found.slice(-3).map(({ app: a, note }): Line => ({ from: 'note', app: a, note, tell: `[Kit showed the note from ${note.at}${note.behaviour ? ` on ${note.behaviour}` : ''}]` })),
+      ])
+      return
+    }
     if (action.kind === 'undo') {
       // The live lines, not the turn's: he may have acted with a button while the reply was on its way.
       const last = [...linesNow.current].reverse().find((l): l is Line & { from: 'kit' } => l.from === 'kit' && !!l.undo && !l.undone)
@@ -283,7 +312,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       } else {
         const text = action.text
         await leaveNote(on, text, b.id, 'chat')
-        done(card, 'answered', () => dismissAnswer(on, b.id, text))
+        // BEH-CHAT-13: the line quotes what was posted, in full.
+        done(card, 'answered', () => dismissAnswer(on, b.id, text), text)
       }
     } catch (e) {
       failed(e)
@@ -337,7 +367,12 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
       const answer = await chatTurn(about, item?.b.id ?? null, toMessages(after.slice(forgotten)), (to ?? project) === (designed ?? designing))
       // The chat takes turns, so a reply that only acted still has a line of its own. Appended, not set:
       // anything Kit said while the reply was on its way stays.
-      setLines((ls) => [...ls, { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null, options: answer.options }])
+      setLines((ls) => [
+        ...ls,
+        { from: 'agent', text: answer.reply || 'Done.', app: about, item: item?.b.id ?? null, options: answer.options },
+        // BEH-CHAT-16: a reply the model stopped for length is never shown as if it were whole.
+        ...(answer.truncated ? [{ from: 'kit', text: CUT_SHORT, tell: '' } satisfies Line] : []),
+      ])
       setAnnounce(false)
       setRemaining(answer.remaining)
       if (answer.action) await act(answer.action, item, about)
@@ -399,12 +434,27 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
                 <Link to={`/projects/${encodeURIComponent(l.app)}/behaviours/${encodeURIComponent(l.id)}`}>{l.title}</Link>{' '}
                 <span className="muted id">{l.id}</span>
               </p>
-              {l.ask && <p className="chat-focus-ask">{l.ask}</p>}
+              {l.ask && <p className="chat-focus-ask">{linked(l.ask)}</p>}
+            </li>
+          ) : l.from === 'note' ? (
+            // BEH-CHAT-12: a note on request, read-only: its text, its answer and where it came from.
+            <li key={i} className="chat-item" data-from="note">
+              <p className="muted chat-focus-lead">
+                Note in {label(l.app)}, {l.note.at}
+                {l.note.behaviour && <> on <span className="id">{linked(l.note.behaviour)}</span></>}
+                {l.note.from && `, from ${l.note.from.replace('-', ' ')}`}
+              </p>
+              {l.note.text && <p className="chat-focus-ask">{linked(l.note.text)}</p>}
+              {l.note.thread.filter((t) => t.kind === 'answer').map((t, j) => (
+                <p key={j} className="chat-focus-ask">
+                  Answer: {linked(t.text)}
+                </p>
+              ))}
             </li>
           ) : l.from === 'kit' ? (
             <li key={i} className="chat-msg" data-from="kit">
               <span className="sr-only">Kit: </span>
-              <div className="chat-bubble">{l.text}</div>
+              <div className="chat-bubble">{linked(l.text)}</div>
               {l.undo && (
                 <div className="chat-actions">
                   <Button type="button" size="sm" variant="ghost" onClick={() => void undoLine(l)} disabled={busy || l.undone}>
@@ -416,7 +466,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           ) : (
             <li key={i} className="chat-msg" data-from={l.from}>
               <span className="sr-only">{l.from === 'user' ? 'You: ' : 'Spec agent: '}</span>
-              <div className="chat-bubble">{l.text}</div>
+              <div className="chat-bubble">{linked(l.text)}</div>
               {/* His 13:50Z note: the answers it proposes, one tap each. Only under the newest line, and gone once
                   anything follows it; he can always type his own. */}
               {l.from === 'agent' && l.options && i === optionsAt && (
@@ -473,8 +523,9 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
-              // Enter that finishes a phone keyboard's word or an IME composition is not a send.
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+              // Enter that finishes a phone keyboard's word or an IME composition is not a send. BEH-CHAT-17: on a
+              // touch screen (a coarse main pointer) Enter is a new line and only Send sends.
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !window.matchMedia?.('(pointer: coarse)')?.matches) {
                 e.preventDefault()
                 void send()
               }
@@ -551,6 +602,7 @@ function itemLine(card: InboxCard): Line {
 /** His 19:28Z note: what Kit is, and that the chat changes nothing itself. */
 const HELP =
   "Kit keeps your project's spec. Here you discuss and define it with the spec agent; this chat changes no code. A coding agent works in the background to build what the spec says and keep your app up to date. When you ask, the agent can approve, deny or answer the top item (each with Undo), show it again, save what you agree as a note, or ask the coding agent a technical question, which it answers when it next works. Notes are also a quick brain-dump."
+const CUT_SHORT = 'That reply was cut short. Ask me to go on.'
 const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
 const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())
 

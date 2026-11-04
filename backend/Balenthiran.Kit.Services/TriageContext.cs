@@ -25,6 +25,8 @@ public static class TriageContext
         + "is true instead, or answer_item with their answer, for the item in hand; undo_last; show_item to show the item in hand again "
         + "when they ask for it; save_note to leave what the chat settled as a note on the project, which the coding agent picks up and "
         + "files into the spec; ask_coding_agent to put a technical question to the coding agent, which answers it when it next works; "
+        + "show_note to show a note, with its text, its answer and where it came from, when they ask to see an answer already posted to an item "
+        + "or a note (text is the item id, or the note's time); "
         + "read_spec to read whole cards when a title is not enough; and offer_options, when your reply asks a yes/no or multiple-choice question, "
         + "to show the answers as tappable buttons under it (a few words each, as they would say it; they can still type their own, and it changes nothing). Saying you did something is not doing it: "
         + "only a tool call does it, so never say you approved, denied, answered or saved unless you called the tool in this reply, and call at most one of those tools in a reply. "

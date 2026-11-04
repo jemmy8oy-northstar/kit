@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
@@ -302,6 +302,24 @@ export function setPaused(app: string, id: string, paused: boolean): Promise<Wri
  */
 export function setPromote(project: string, promote: boolean): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/promote`, { promote })
+}
+
+/**
+ * Choose what the agent does when this project's specs conflict (BEH-CONFLICT-2): named, not
+ * toggled. `ask` and `wait` write the `# kit:conflicts` line in the project's own corpus; `build`,
+ * the default, removes it. Operator only.
+ */
+export function setConflictMode(project: string, mode: ConflictMode): Promise<WriteResult> {
+  return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/conflicts`, { mode })
+}
+
+/**
+ * Choose how involved the user is in this project (BEH-ARCH-3): named, not toggled. `goals` and
+ * `architecture` write the `# kit:depth` line in the project's own corpus; `behaviours`, the default,
+ * removes it. Operator only.
+ */
+export function setDepth(project: string, mode: DepthMode): Promise<WriteResult> {
+  return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/depth`, { mode })
 }
 
 /**

@@ -363,7 +363,7 @@ public class TriageTests
 
         var sent = api.Sent.Select(s => JsonDocument.Parse(s.Body!).RootElement).ToList();
         Assert.Equal(
-            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note", "ask_coding_agent", "offer_options"],
+            ["approve_item", "deny_item", "answer_item", "undo_last", "show_item", "save_note", "ask_coding_agent", "show_note", "offer_options"],
             sent[0].GetProperty("tools").EnumerateArray().Select(t => t.GetProperty("name").GetString()));
         Assert.False(sent[1].TryGetProperty("tools", out _));
     }
@@ -403,6 +403,48 @@ public class TriageTests
         var asked = Router(new FakeModel("Asked.", new TriageAction("question", "How is the board sorted?"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "ask it")));
         Assert.Equal(new TriageAction("question", "How is the board sorted?"), Assert.IsType<TriageAnswer>(asked.Body).Action);
         Assert.False(new TriageAction("question", "x").ActsOnItem());
+    }
+
+    // ---- BEH-CHAT-12: a note is shown in the thread, read-only -----------------------------------
+
+    [Fact]
+    public void Showing_a_note_reads_as_an_action_that_needs_no_item_and_no_words_drops_it()
+    {
+        Assert.Equal(
+            new TriageAction("shownote", "BEH-GATE-2"),
+            AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"show_note","input":{"text":" BEH-GATE-2 "}}]}""").Action);
+        Assert.Null(AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"show_note","input":{"text":"  "}}]}""").Action);
+
+        var shown = Router(new FakeModel("Here it is.", new TriageAction("shownote", "2026-11-03 13:49Z"))).Route("POST", "/api/projects/kit/chat", body: Chat(null, ("user", "show that note")));
+        Assert.Equal(new TriageAction("shownote", "2026-11-03 13:49Z"), Assert.IsType<TriageAnswer>(shown.Body).Action);
+        Assert.False(new TriageAction("shownote", "x").ActsOnItem());
+    }
+
+    [Fact]
+    public void The_chat_instructions_tell_the_agent_it_can_show_a_note()
+    {
+        Assert.Contains("show_note", TriageContext.ChatInstructions, StringComparison.Ordinal);
+    }
+
+    // ---- BEH-CHAT-16: a reply cut short for length says so ----------------------------------------
+
+    [Fact]
+    public void A_reply_the_model_stopped_for_length_is_marked_truncated_and_a_whole_one_is_not()
+    {
+        Assert.True(AnthropicTriageChat.Parse("""{"stop_reason":"max_tokens","content":[{"type":"text","text":"and per-user mem"}]}""").Truncated);
+        Assert.False(AnthropicTriageChat.Parse("""{"stop_reason":"end_turn","content":[{"type":"text","text":"Done."}]}""").Truncated);
+        Assert.False(AnthropicTriageChat.Parse("""{"content":[{"type":"text","text":"Done."}]}""").Truncated);
+
+        var cut = Router(new FakeModel("and per-user mem", truncated: true)).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "go on")));
+        Assert.True(Assert.IsType<TriageAnswer>(cut.Body).Truncated);
+        var whole = Router(new FakeModel("Done.")).Route("POST", "/api/projects/kit/chat", body: Chat("BEH-GATE-2", ("user", "go on")));
+        Assert.False(Assert.IsType<TriageAnswer>(whole.Body).Truncated);
+    }
+
+    [Fact]
+    public void A_chat_reply_may_run_to_4096_tokens()
+    {
+        Assert.Equal(4096, AnthropicTriageChat.MaxTokens);
     }
 
     // ---- BEH-CHAT-10: a yes/no or multiple-choice question comes with tappable answers ------------
@@ -686,7 +728,7 @@ public class TriageTests
         return k => env.GetValueOrDefault(k);
     }
 
-    private sealed class FakeModel(string? reply, TriageAction? action = null, IReadOnlyList<string>? options = null) : ITriageChat
+    private sealed class FakeModel(string? reply, TriageAction? action = null, IReadOnlyList<string>? options = null, bool truncated = false) : ITriageChat
     {
         public List<(string Context, IReadOnlyList<TriageTurn> Turns)> Calls { get; } = [];
 
@@ -707,7 +749,7 @@ public class TriageTests
             Instructions.Add(instructions);
             Offered.Add(actions);
             Readers.Add(read);
-            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action, options));
+            return Task.FromResult(reply is null ? new TriageReply(null, "the fake has nothing to say") : new TriageReply(reply, null, action, options, truncated));
         }
     }
 

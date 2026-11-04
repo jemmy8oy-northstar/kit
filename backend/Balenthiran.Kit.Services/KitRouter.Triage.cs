@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Exceptions;
 using Balenthiran.Kit.DataModels.Models;
 
 namespace Balenthiran.Kit.Services;
@@ -189,7 +190,27 @@ public sealed partial class KitRouter
         }
 
         var instructions = design ? TriageContext.ChatInstructions + " " + TriageContext.DesignInstructions : TriageContext.ChatInstructions;
+
+        // BEH-ARCH-3: how involved the user chose to be, from the project's primary file (group members share it).
+        if (DepthDirective.Instruction(DepthOf(app)) is { Length: > 0 } depth)
+        {
+            instructions += " " + depth;
+        }
+
         return Ask(context, turns, instructions, chat: true, item: id, read: ids => TriageContext.Read(spec, ids));
+    }
+
+    /// <summary>The depth chosen by the primary file of <paramref name="app"/>'s project; the default when it cannot be read.</summary>
+    private string DepthOf(string app)
+    {
+        try
+        {
+            return DepthDirective.Read(corpora.ReadText(viewer.View(app).Project));
+        }
+        catch (Exception e) when (e is ProjectionFailedException or IOException or KeyNotFoundException)
+        {
+            return DepthDirective.Behaviours;
+        }
     }
 
     /// <summary>
@@ -230,7 +251,7 @@ public sealed partial class KitRouter
 
         // BEH-CHAT-10: options only on the Chat page, and not on a reply that also acts.
         var options = chat && action is null && reply.Options is { Count: > 0 } o ? o : null;
-        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action, Options = options });
+        return Json(200, new TriageAnswer { Reply = text, Remaining = TriageRemaining(), Action = action, Options = options, Truncated = reply.Truncated });
     }
 
     /// <summary>The chat, or null when it is not one: the Messages API wants the user first and last, taking turns.</summary>

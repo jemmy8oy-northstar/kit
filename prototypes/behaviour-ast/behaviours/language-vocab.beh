@@ -333,3 +333,20 @@ behaviour BEH-PACK-1 "Words can be learned in themed packs, starting with a mahj
   then sees region:HanziLarge
   contract the mahjong pack holds the tile vocabulary: the numbers, the three suits, winds and dragons
   contract a pack is a seed file naming its words by hanzi, so a word can sit in a list and in any number of packs (language-vocab#19)
+
+behaviour BEH-PATH-1 "Words are learned along a path of themed sections, in order, with nothing locked"
+  in FEAT-LV-WAYS
+  source defined language-vocab.notes.md#2026-11-04-1144
+  review unreviewed
+  priority 2
+  pending
+  actor learner
+  when opens page:Path
+  then sees region:PathSections
+  contract "Can we add a path style to show progression on different types of words. I think this would be useful rather than just random hsk. Might be good to group them. I think greeting is a good start like ni hao and nin hao. Maybe we can do sentences and individual word meanings."
+  contract "You can skip ahead and you can search. Maybe 1-10 numbers is one and mahjong is a later one. No need to block them off like in duo lingo or candy crush this is not paid. Maybe a button to go back to next in order."
+  contract "Maybe sections where if you can do the word and sentence test at the end of a section this section and this moves the next in order section to here."
+  contract my assumption: the path is an ordered list of sections, each a pack (BEH-PACK-1) of words and short sentences, starting with greetings (你好, 您好), then the numbers 1 to 10, with mahjong later; a section is a seed file like a pack, so the order is data, not code
+  contract my assumption: every section can be opened at any time and a search finds any word or section; a "Next in order" button returns to the first section not yet passed
+  contract my assumption: each section ends with a test of its words and sentences, using the Learn quiz (BEH-LEARN-2); passing it marks the section done and moves "next in order" on; failing changes nothing and it can be retaken
+  contract my assumption: progress is kept in the browser, as there are no accounts, so it is per device

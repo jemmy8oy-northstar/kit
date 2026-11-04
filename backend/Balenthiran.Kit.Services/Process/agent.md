@@ -41,6 +41,35 @@ Every user's agent follows this one process. It is written once and served by Ki
 - **End every session by naming the next step toward the goal**, in one sentence, in the pull
   request or the message you leave.
 
+## When two specs conflict
+
+Two behaviours conflict when they cannot both hold. Read the project's `# kit:conflicts` line
+(in the file named for the project) and do what it says; no line means `build`.
+
+- **`build`**: build one reading anyway, so the work is not held up. Then raise a review request
+  on the card naming both specs by id and the reading you built. Approving it settles the
+  conflict; denying it says which reading is true, and you rebuild to that.
+- **`ask`**: raise the same review request first, naming both specs and the reading you would
+  build, and build nothing on that card until he answers.
+- **`wait`**: as `ask`, and spend nothing on it: do no work on that card at all until he
+  resolves the conflict. Take the next item in the Queue.
+
+Never pick a winner silently, and never edit either spec to make the conflict go away.
+
+## How involved the user is
+
+Read the project's `# kit:depth` line (in the file named for the project); no line means
+`behaviours`. It says how much the user chooses to decide, and you decide the rest and record it
+as an unreviewed suggestion, so they can open it later.
+
+- **`goals`**: the user leaves the behaviours to you. Write the behaviours that serve the goal as
+  unreviewed suggestions, and build them; do not hold work up to ask which behaviour they want.
+- **`behaviours`**: the user decides what the app does. Build what the spec says, and write what it
+  leaves open as unreviewed assumptions.
+- **`architecture`**: as `behaviours`, and the user also decides how it is built. Raise each
+  architecture decision (stack, data store, how parts talk) as a review request before you build
+  anything that depends on it.
+
 ## Rules
 
 - The corpus and the user's newest feedback win over this file and over your own notes.

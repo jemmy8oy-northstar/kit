@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
-import type { IdleItem, SessionState, SwitchGroup } from '../api/types'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
+import type { ConflictMode, DepthMode, IdleItem, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { FEATURE_PAGES, useFlags } from '../components/flags'
 import { githubNavigation } from '../components/githubNavigation'
@@ -234,6 +234,134 @@ function PromotionSetting() {
   )
 }
 
+const CONFLICT_MODES: { mode: ConflictMode; label: string; said: string }[] = [
+  { mode: 'build', label: 'Build anyway, I confirm when approving', said: 'build one reading anyway and ask you to confirm it when you approve' },
+  { mode: 'ask', label: 'Ask me first', said: 'ask you first, and build the conflicting card only once you answer' },
+  { mode: 'wait', label: 'Wait until I resolve it', said: 'do no work on the conflicting card until you resolve it' },
+]
+
+/**
+ * BEH-CONFLICT-2: what the agent does when two of a project's specs conflict. Each choice is the
+ * `# kit:conflicts` line in that project's own corpus, so a change is a commit he can see; building
+ * anyway, the default, is no line. One row per project (its primary file), ideas and trials left out.
+ */
+function ConflictSetting() {
+  const { resource, reload } = useReloadableResource(async () => {
+    const { projects } = await fetchProjects()
+    return projects
+      .filter((p) => !p.error && !isIdea(p) && !isTrial(p) && projectOf(p) === p.app)
+      .map((p) => ({ app: p.app, mode: (p.onConflict ?? 'build') as ConflictMode }))
+      .sort((a, b) => a.app.localeCompare(b.app))
+  }, [])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function change(app: string, mode: ConflictMode) {
+    setBusy(app)
+    setOutcome(null)
+    setConflictMode(app, mode)
+      .then(() => {
+        setOutcome({ ok: true, text: `When ${app}'s specs conflict, the agent will now ${CONFLICT_MODES.find((m) => m.mode === mode)!.said}.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(null))
+  }
+
+  return (
+    <section aria-labelledby="when-specs-conflict">
+      <h2 id="when-specs-conflict">When specs conflict</h2>
+      <p>
+        When two specs can't both hold, the agent can build one reading anyway and ask you to confirm it when you
+        approve, ask you first, or do nothing on that card until you resolve it. Waiting spends nothing on it.
+      </p>
+      <p className="muted">New projects build anyway.</p>
+      <ResourceView resource={resource}>
+        {(rows) => (
+          <div>
+            {rows.map((r) => (
+              <p key={r.app}>
+                <label>
+                  {r.app}{' '}
+                  <select aria-label={`${r.app}: when specs conflict`} value={r.mode} disabled={busy === r.app}
+                    onChange={(e) => change(r.app, e.target.value as ConflictMode)}>
+                    {CONFLICT_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.label}</option>)}
+                  </select>
+                </label>
+              </p>
+            ))}
+          </div>
+        )}
+      </ResourceView>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
+const DEPTH_MODES: { mode: DepthMode; label: string; said: string }[] = [
+  { mode: 'goals', label: 'Goals only: Kit decides the behaviours', said: 'leave the behaviours to Kit, which writes them as suggestions you can open later' },
+  { mode: 'behaviours', label: 'Behaviours: you decide what it does (default)', said: 'ask you what the app does, and decide how it is built' },
+  { mode: 'architecture', label: 'Behaviours and architecture: you also decide how it is built', said: 'ask you about how the app is built as well as what it does' },
+]
+
+/**
+ * BEH-ARCH-3: how involved the user chooses to be. Each choice is the `# kit:depth` line in that
+ * project's own corpus, so a change is a commit he can see; behaviours, the default, is no line. One row
+ * per project (its primary file), ideas and trials left out.
+ */
+function DepthSetting() {
+  const { resource, reload } = useReloadableResource(async () => {
+    const { projects } = await fetchProjects()
+    return projects
+      .filter((p) => !p.error && !isIdea(p) && !isTrial(p) && projectOf(p) === p.app)
+      .map((p) => ({ app: p.app, mode: (p.depth ?? 'behaviours') as DepthMode }))
+      .sort((a, b) => a.app.localeCompare(b.app))
+  }, [])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function change(app: string, mode: DepthMode) {
+    setBusy(app)
+    setOutcome(null)
+    setDepth(app, mode)
+      .then(() => {
+        setOutcome({ ok: true, text: `For ${app}, Kit will now ${DEPTH_MODES.find((m) => m.mode === mode)!.said}.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(null))
+  }
+
+  return (
+    <section aria-labelledby="how-involved">
+      <h2 id="how-involved">How involved you are</h2>
+      <p>
+        Everything is opt in: go as high level or as involved as you like. What you leave out, Kit decides and
+        records as a suggestion you can open later.
+      </p>
+      <p className="muted">New projects ask you about behaviours.</p>
+      <ResourceView resource={resource}>
+        {(rows) => (
+          <div>
+            {rows.map((r) => (
+              <p key={r.app}>
+                <label>
+                  {r.app}{' '}
+                  <select aria-label={`${r.app}: how involved you are`} value={r.mode} disabled={busy === r.app}
+                    onChange={(e) => change(r.app, e.target.value as DepthMode)}>
+                    {DEPTH_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.label}</option>)}
+                  </select>
+                </label>
+              </p>
+            ))}
+          </div>
+        )}
+      </ResourceView>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
 const IDLE_ITEMS: { item: IdleItem; label: string }[] = [
   { item: 'health', label: 'Work on test health' },
   { item: 'ideas', label: 'Suggest ideas' },
@@ -418,6 +546,8 @@ export default function Settings() {
         </div>
       )}
       {session?.operator && accounts ? <PromotionSetting /> : null}
+      {session?.operator && accounts ? <ConflictSetting /> : null}
+      {session?.operator && accounts ? <DepthSetting /> : null}
       {session?.operator && accounts ? <IdleSettingSection /> : null}
       {session?.operator && accounts ? <FeatureSwitchesSection /> : null}
       <OpeningPageSetting />
