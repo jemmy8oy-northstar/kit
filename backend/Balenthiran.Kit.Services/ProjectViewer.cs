@@ -321,6 +321,8 @@ public sealed class ProjectViewer(
             Goal = p.Project == app && GoalDirective.IsMaintained(corpora.Read(app)) ? "maintained" : null,
             // And for what to do when specs conflict; build, the default, is no key.
             OnConflict = p.Project == app && ConflictsDirective.Read(corpora.Read(app)) is var onConflict && onConflict != ConflictsDirective.Build ? onConflict : null,
+            // And for how involved he is; behaviours, the default, is no key.
+            Depth = p.Project == app && DepthDirective.Read(corpora.Read(app)) is var depth && depth != DepthDirective.Behaviours ? depth : null,
         };
     }
 

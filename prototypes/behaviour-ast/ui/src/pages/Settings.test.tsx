@@ -316,6 +316,55 @@ describe('When specs conflict (BEH-CONFLICT-2)', () => {
   })
 })
 
+describe('How involved you are (BEH-ARCH-3)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const projects = [
+    { app: 'kit', project: 'kit', depth: 'goals' },
+    { app: 'kit-ui', project: 'kit' },
+    { app: 'snip-it', project: 'snip-it' },
+    { app: 'ideas', project: 'ideas', idea: true },
+  ]
+
+  it('shows the operator one depth choice per project, behaviours unless the project says otherwise', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'How involved you are' })).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'kit: how involved you are' })).toHaveValue('goals')
+    expect(screen.getByRole('combobox', { name: 'snip-it: how involved you are' })).toHaveValue('behaviours')
+    expect(screen.queryByRole('combobox', { name: 'kit-ui: how involved you are' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'ideas: how involved you are' })).not.toBeInTheDocument()
+    const options = within(screen.getByRole('combobox', { name: 'snip-it: how involved you are' })).getAllByRole('option').map((o) => o.textContent)
+    expect(options).toEqual([
+      'Goals only: Kit decides the behaviours',
+      'Behaviours: you decide what it does (default)',
+      'Behaviours and architecture: you also decide how it is built',
+    ])
+  })
+
+  it('posts the named depth when a choice is made, and says so', async () => {
+    const s = server([james], { status: 200, body: { app: 'snip-it' } }, projects)
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: how involved you are' }), { target: { value: 'architecture' } })
+    expect(await screen.findByText(/For snip-it, Kit will now ask you about how the app is built as well as what it does/)).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/projects/snip-it/depth', body: { mode: 'architecture' } }])
+  })
+
+  it('shows the server reason when the depth choice is refused', async () => {
+    vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: how involved you are' }), { target: { value: 'goals' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
+  })
+
+  it('does not show the depth section to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'How involved you are' })).not.toBeInTheDocument()
+  })
+})
+
 describe('Idle work order (BEH-SETTINGS-6)', () => {
   const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
   const items = async () => (await screen.findAllByRole('listitem')).map((li) => within(li).getByRole('checkbox').closest('label')!.textContent!.trim())
@@ -356,7 +405,7 @@ describe('Idle work order (BEH-SETTINGS-6)', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Suggest ideas' }))
     expect(await screen.findByText(/the agent will now: work on test health, then suggest ideas\./)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: ['health', 'ideas'] } }])
-    expect(await screen.findByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked()
+    await waitFor(async () => expect(await screen.findByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked())
   })
 
   it('posts the reordered list when an item is moved down, and shows it moved', async () => {
@@ -376,7 +425,7 @@ describe('Idle work order (BEH-SETTINGS-6)', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Work on test health' }))
     expect(await screen.findByText(/the agent will now: sleep until asked\./)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: [] } }])
-    expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked()
+    await waitFor(async () => expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked())
   })
 
   it('shows the server reason when the idle order is refused', async () => {

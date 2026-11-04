@@ -2067,13 +2067,16 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   source defined kit.notes.md#2026-10-31-1039
   review unreviewed
   priority 4
-  pending
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
   contract "Or maybe this is abstracted away from the user? Idk I kind of feel that everything is opt in for a user they should be able to go as high level or as involved as they like"
-  contract my assumption: a per-user depth setting (goals only, behaviours, or behaviours and architecture); what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later
-  contract my assumption: not built before the spec agent (BEH-SPECAGENT-1) and per-user sign-in (BEH-USERS-1), because the spec agent is what decides what a user leaves out, and a per-user setting needs users; a switch built now would change nothing anyone does
+  contract built: a "How involved you are" section on Settings, for the operator only, lists each project (not ideas or trials, one row per project) with a choice of "Goals only: Kit decides the behaviours", "Behaviours: you decide what it does (default)" or "Behaviours and architecture: you also decide how it is built"; POST /api/projects/<project>/depth with { mode: "goals"|"behaviours"|"architecture" } writes or removes a # kit:depth goals|architecture line in the project's own file (the one named for the project) behind the same operator-only gate as every write, and GET /api/projects serves depth: "goals"|"architecture" on that row, absent for behaviours
+  contract built: the spec agent in the Chat is told the project's depth on every turn: on goals not to ask the user to decide individual behaviours but to propose them itself as notes the coding agent files as unreviewed suggestions, and to ask only about goals and priorities; on architecture to raise stack and design choices with the user rather than deciding them; on behaviours, or no line, nothing is added
+  contract built: the dev process every user's agent follows (GET /api/process) has a "How involved the user is" section: on goals the agent writes the behaviours as unreviewed suggestions and builds them; on behaviours it builds what the spec says and records what is open as unreviewed assumptions; on architecture it also raises each architecture decision as a review request before building on it
+  contract my assumption: what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later; the depth levels are goals only, behaviours, or behaviours and architecture
+  contract my assumption: the depth is per project, a `# kit:depth` line like the conflicts and promote switches, rather than per user, because a project has one user today and a per-user store would be a data-model change that is his to make
+  contract my assumption: behaviours is the default and is stored as no line, as it is today, so a project that never chose behaves as it did
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
