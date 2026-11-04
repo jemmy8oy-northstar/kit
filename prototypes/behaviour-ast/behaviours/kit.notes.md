@@ -624,3 +624,20 @@ Kit Kit as part of initial analysis kit helps you with market research and asses
 ## 2026-11-03 11:17Z
 
 Does reading the queue need to built into claudemd?
+
+## 2026-11-04 00:52Z
+
+<!-- from: note-button -->
+
+Just thinking about housing the users coding and pricing models. What would the coding agent actually require to be able to run. Would it need its own volume in order to clone the repo. Should we instead be pricing the user with a volume so that an agent can clone a repo. Maybe we can have some base subscription which supports x number of projects or something. Let’s say £15pm subscription. Then some of this can go towards the volume. Maybe we can give them £15 worth of token credits. But we somehow add a premium on the token cost into the credits such that of the £15 credit we only end up spending £10 on tokens meaning £5 is ours to fund the volume and pod and floating costs. Maybe this £15 can be the base subscription and it gives them monthly credits which expire every month if they don’t use them. Hm I guess the only issue would be this would encourage them to cancel if they aren’t using it. Anyway I am thinking they could also purchase additional credits which don’t expire. But they need to be paying the subscription to use them still. I guess we would have to support some refund system as well.
+Spec agent:
+The coding agent needs a runtime, a checkout of the user's repo, the dev process as its instructions, Kit's commands as tools, and per-user mem
+You:
+Please continue I think you got cut off
+Spec agent:
+Sorry, I cut off there. Here is the rest.
+
+On the volume question, the repo doesn't need a permanent volume. The agent can clone it into a temporary workspace when a job starts, work there, push the result, and throw the clone away. That costs only compute for the
+
+
+Sometimes the chat gets cut off, see above.
