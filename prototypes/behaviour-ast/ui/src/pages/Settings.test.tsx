@@ -405,7 +405,7 @@ describe('Idle work order (BEH-SETTINGS-6)', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Suggest ideas' }))
     expect(await screen.findByText(/the agent will now: work on test health, then suggest ideas\./)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: ['health', 'ideas'] } }])
-    expect(await screen.findByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked()
+    await waitFor(async () => expect(await screen.findByRole('checkbox', { name: 'Suggest ideas' })).toBeChecked())
   })
 
   it('posts the reordered list when an item is moved down, and shows it moved', async () => {
@@ -425,7 +425,7 @@ describe('Idle work order (BEH-SETTINGS-6)', () => {
     fireEvent.click(await screen.findByRole('checkbox', { name: 'Work on test health' }))
     expect(await screen.findByText(/the agent will now: sleep until asked\./)).toBeInTheDocument()
     expect(s.posted).toEqual([{ path: '/api/settings/idle', body: { order: [] } }])
-    expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked()
+    await waitFor(async () => expect(await screen.findByRole('checkbox', { name: 'Work on test health' })).not.toBeChecked())
   })
 
   it('shows the server reason when the idle order is refused', async () => {
