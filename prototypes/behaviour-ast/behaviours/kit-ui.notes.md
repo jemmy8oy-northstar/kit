@@ -153,3 +153,9 @@ Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. Th
 <!-- from: chat -->
 
 Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line.
+
+## 2026-11-04 18:07Z
+
+<!-- from: chat -->
+
+Migrate the spec out of the kit repo into each project's repo, under a hidden .kit/ directory. Each project's spec lives in .kit/ in its own repo, the same way for every project, including kit: kit's own spec moves out of the kit repo into kit's .kit/. Consistent with BEH-USERS-2 (no spec held centrally).
