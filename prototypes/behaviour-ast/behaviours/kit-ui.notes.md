@@ -147,3 +147,9 @@ When a behaviour has a test that enforces it, record a hash of the source code t
 He sees the flagged links. The coding agent computes and records the hashes and does the re-check.
 
 Related: FEAT-HEALTH and BEH-HEALTH-1 count whether a test names a behaviour. They do not detect when a test has stopped enforcing it after the code changes, so this is an addition to that feature.
+
+## 2026-11-04 10:56Z
+
+<!-- from: chat -->
+
+New behaviour (separate from BEH-USERS-7): the operator can see what each coding-agent session costs, for pricing analysis. Each Kit coding-agent session's token cost is recorded, from the session logs in ~/.claude/, so past sessions can be looked at and totalled per project, feature and behaviour. This is for James only, not shown to users. Open question for the coding agent: whether Kit's sessions run on this machine, so their logs land in ~/.claude/, or on a server whose logs must be copied back.
