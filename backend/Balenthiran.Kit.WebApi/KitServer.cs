@@ -106,6 +106,7 @@ public static class KitServer
         {
             ctx.Response.StatusCode = 405;
             ctx.Response.Headers.Allow = "POST";
+            ctx.Response.Headers.CacheControl = "no-store";
             await ctx.Response.WriteAsync("""{"type":"error","error":{"type":"invalid_request_error","message":"the model proxy takes POST"}}""");
             return;
         }
@@ -119,6 +120,10 @@ public static class KitServer
                 ctx.Response.Headers.CacheControl = "no-cache";
                 ctx.Response.Headers["X-Accel-Buffering"] = "no";
             }
+            else
+            {
+                ctx.Response.Headers.CacheControl = "no-store";
+            }
 
             return ctx.Response.Body;
         }
@@ -130,7 +135,24 @@ public static class KitServer
             return;
         }
 
-        var body = await ReadBody(ctx.Request.Body, AgentProxy.MaxBody);
+        // Kestrel's own limit (30,000,000) is below the proxy's, so raise it for this endpoint only, by one
+        // byte, and the proxy's own 413 answers in Anthropic's error shape rather than Kestrel's bare one.
+        if (ctx.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+        {
+            limit.MaxRequestBodySize = AgentProxy.MaxBody + 1L;
+        }
+
+        byte[]? body;
+        try
+        {
+            body = await ReadBody(ctx.Request.Body, AgentProxy.MaxBody, ctx.RequestAborted);
+        }
+        catch (OperationCanceledException) when (ctx.RequestAborted.IsCancellationRequested)
+        {
+            // The caller hung up before a call existed: nothing was sent upstream, so nothing was spent.
+            return;
+        }
+
         var call = new AgentCall(
             token,
             Header(ctx.Request.Headers["anthropic-version"]),
@@ -150,13 +172,13 @@ public static class KitServer
     /// </summary>
     private static Task<byte[]?> ReadBody(Stream body) => ReadBody(body, KitHost.MaxBody);
 
-    private static async Task<byte[]?> ReadBody(Stream body, int limit)
+    private static async Task<byte[]?> ReadBody(Stream body, int limit, CancellationToken cancellationToken = default)
     {
         using var kept = new MemoryStream();
         var buffer = new byte[16 * 1024];
         long size = 0;
         int n;
-        while ((n = await body.ReadAsync(buffer)) > 0)
+        while ((n = await body.ReadAsync(buffer, cancellationToken)) > 0)
         {
             size += n;
             if (size <= limit)

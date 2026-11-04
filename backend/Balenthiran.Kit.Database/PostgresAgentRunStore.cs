@@ -80,6 +80,15 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
     }
 
     /// <inheritdoc />
+    public bool StartIfQueued(string id)
+    {
+        using var cmd = Command(
+            "UPDATE agent_runs SET status = $2 WHERE id = $1 AND status = 'queued'",
+            id, AgentRunStatus.Running);
+        return cmd.ExecuteNonQuery() > 0;
+    }
+
+    /// <inheritdoc />
     public void Dispose() => source.Dispose();
 
     private static List<IAgentRun> Read(NpgsqlCommand cmd)

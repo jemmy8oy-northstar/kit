@@ -97,6 +97,13 @@ public sealed partial class KitRouter
             launch = new AgentLaunch(false, "the runner failed to start the run");
         }
 
-        return Json(201, new AgentRunStarted { Run = agentRuns.ByTokenHash(AgentTokens.Hash(token)) ?? run, Token = token, Launch = launch.Note });
+        // The answer carries the run token once, so nothing may keep a copy of it.
+        return new KitResponse
+        {
+            Status = 201,
+            ContentType = "application/json",
+            CacheControl = "no-store",
+            Body = new AgentRunStarted { Run = agentRuns.ByTokenHash(AgentTokens.Hash(token)) ?? run, Token = token, Launch = launch.Note },
+        };
     }
 }

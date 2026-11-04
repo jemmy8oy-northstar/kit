@@ -191,8 +191,12 @@ public static class ServiceRegistration
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(60) };
 
     // An agent's call can think for minutes before its first byte; the timeout covers the wait for headers, not a stream.
+    // Redirects are never followed: Kit's key rides every request, and a redirect could carry it to another host.
     private static HttpClient AgentClient(IServiceProvider sp) =>
-        new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromMinutes(10) };
+        new(sp.GetService<HttpMessageHandler>() ?? AgentHandler()) { Timeout = TimeSpan.FromMinutes(10) };
+
+    /// <summary>The handler the model proxy talks to Anthropic through: it never follows a redirect.</summary>
+    public static SocketsHttpHandler AgentHandler() => new() { AllowAutoRedirect = false };
 
     private static HttpClient GitHubClient(IServiceProvider sp) =>
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };

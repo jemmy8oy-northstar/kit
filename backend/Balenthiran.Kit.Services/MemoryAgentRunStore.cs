@@ -82,6 +82,22 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
         }
     }
 
+    /// <inheritdoc />
+    public bool StartIfQueued(string id)
+    {
+        lock (gate)
+        {
+            var at = runs.FindIndex(r => r.Id == id);
+            if (at < 0 || runs[at].Status != AgentRunStatus.Queued)
+            {
+                return false;
+            }
+
+            runs[at] = With(runs[at], AgentRunStatus.Running, null, default, 0m);
+            return true;
+        }
+    }
+
     private static AgentRun With(AgentRun r, string status, DateTimeOffset? ended, AgentUsage add, decimal cost) => new()
     {
         Id = r.Id,

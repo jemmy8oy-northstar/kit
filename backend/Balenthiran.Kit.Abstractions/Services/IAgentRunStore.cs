@@ -22,4 +22,10 @@ public interface IAgentRunStore
 
     /// <summary>Moves the run to <paramref name="status"/>; an over status stamps <paramref name="ended"/>.</summary>
     void SetStatus(string id, string status, DateTimeOffset? ended = null);
+
+    /// <summary>
+    /// Moves the run from queued to running, atomically, and only if it is still queued, so a run that became
+    /// finished, failed or refused meanwhile is never brought back. True when it moved.
+    /// </summary>
+    bool StartIfQueued(string id);
 }

@@ -4,8 +4,9 @@ namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// The token counts of one Messages API call, read from a <c>usage</c> object. Each field is set only when
-/// the object carries it and OVERWRITES, because the API reports cumulative counts: <c>message_start</c>
-/// brings the input and cache tokens, and <c>message_delta</c> brings the output's running total.
+/// the object carries it and takes the LARGER of what it had and what it is told, because the API reports
+/// cumulative counts: <c>message_start</c> brings the input and cache tokens, and <c>message_delta</c> brings
+/// the output's running total, so a later object can never lower what an earlier one recorded.
 /// </summary>
 public sealed class UsageTally
 {
@@ -38,29 +39,29 @@ public sealed class UsageTally
         Any = true;
         if (Count(usage, "input_tokens") is { } i)
         {
-            Input = i;
+            Input = Math.Max(Input, i);
         }
 
         if (Count(usage, "output_tokens") is { } o)
         {
-            Output = o;
+            Output = Math.Max(Output, o);
         }
 
         if (Count(usage, "cache_read_input_tokens") is { } r)
         {
-            Read = r;
+            Read = Math.Max(Read, r);
         }
 
         if (usage.TryGetProperty("cache_creation", out var split) && split.ValueKind == JsonValueKind.Object
             && (Count(split, "ephemeral_5m_input_tokens") is not null || Count(split, "ephemeral_1h_input_tokens") is not null))
         {
-            Write5m = Count(split, "ephemeral_5m_input_tokens") ?? 0;
-            Write1h = Count(split, "ephemeral_1h_input_tokens") ?? 0;
+            Write5m = Math.Max(Write5m, Count(split, "ephemeral_5m_input_tokens") ?? 0);
+            Write1h = Math.Max(Write1h, Count(split, "ephemeral_1h_input_tokens") ?? 0);
         }
-        else if (Count(usage, "cache_creation_input_tokens") is { } total)
+        else if (Count(usage, "cache_creation_input_tokens") is { } total && total > Write5m + Write1h)
         {
-            Write5m = 0;
-            Write1h = total;
+            // Only the part not already split is new, and it is priced as the dearer 1 hour kind.
+            Write1h += total - Write5m - Write1h;
         }
     }
 

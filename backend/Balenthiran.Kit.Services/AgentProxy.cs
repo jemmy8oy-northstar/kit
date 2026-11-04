@@ -33,6 +33,17 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
     /// <summary>The largest request body relayed, in bytes: an agent's whole context goes in each call.</summary>
     public const int MaxBody = 32 * 1024 * 1024;
 
+    /// <summary>
+    /// How many calls one run may have in flight at once: my assumption, his to change. The cap is on what a run
+    /// HAS spent, so calls already under way can carry it past; this bounds how far.
+    /// </summary>
+    public const int MaxInFlight = 4;
+
+    /// <summary>How long Kit waits on the model for one call, however long the caller stays: a disconnect does not cancel it.</summary>
+    public static readonly TimeSpan UpstreamTimeout = TimeSpan.FromMinutes(10);
+
+    private readonly Dictionary<string, int> inFlight = new(StringComparer.Ordinal);
+
     private const string DefaultVersion = "2023-06-01";
 
     private static readonly Uri Messages = new("https://api.anthropic.com/v1/messages");
@@ -77,10 +88,67 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
             return;
         }
 
-        if (run.Status == AgentRunStatus.Queued && !call.CountTokens)
+        if (!TryEnter(run.Id))
         {
-            runs.SetStatus(run.Id, AgentRunStatus.Running);
+            await RefuseAsync(begin, 429, "rate_limit_error", $"this run already has {MaxInFlight} calls in flight; wait for one to finish", cancellationToken);
+            return;
         }
+
+        try
+        {
+            await RelayAsync(call, run, model, stream, begin, cancellationToken);
+        }
+        finally
+        {
+            Leave(run.Id);
+        }
+    }
+
+    /// <summary>Counts one more call in flight for the run; false when it already has <see cref="MaxInFlight"/>.</summary>
+    private bool TryEnter(string runId)
+    {
+        lock (inFlight)
+        {
+            var now = inFlight.GetValueOrDefault(runId);
+            if (now >= MaxInFlight)
+            {
+                return false;
+            }
+
+            inFlight[runId] = now + 1;
+            return true;
+        }
+    }
+
+    private void Leave(string runId)
+    {
+        lock (inFlight)
+        {
+            if (inFlight.TryGetValue(runId, out var now) && now > 1)
+            {
+                inFlight[runId] = now - 1;
+            }
+            else
+            {
+                inFlight.Remove(runId);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sends the call upstream and relays the answer. The upstream send and the reading of its usage answer to
+    /// <see cref="UpstreamTimeout"/>, never to the caller's hang-up: a caller who disconnects has still been charged
+    /// for what the model did, so the answer is drained, its usage read and recorded, and only the writes stop.
+    /// </summary>
+    private async Task RelayAsync(AgentCall call, IAgentRun run, string? model, bool stream, Func<int, string, Stream> begin, CancellationToken cancellationToken)
+    {
+        if (!call.CountTokens)
+        {
+            runs.StartIfQueued(run.Id);
+        }
+
+        using var upstreamLimit = new CancellationTokenSource(UpstreamTimeout);
+        var upstream = upstreamLimit.Token;
 
         using var request = new HttpRequestMessage(HttpMethod.Post, call.CountTokens ? CountTokens : Messages)
         {
@@ -99,13 +167,21 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
         HttpResponseMessage response;
         try
         {
-            response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, upstream);
         }
-        catch (Exception e) when (e is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        catch (Exception e) when (e is HttpRequestException or OperationCanceledException)
         {
             // The type only: nothing from the request goes in a log line.
             await Console.Error.WriteLineAsync($"kit: an agent run's model call failed — {e.GetType().Name}");
-            await RefuseAsync(begin, 502, "api_error", "the model could not be reached", cancellationToken);
+            try
+            {
+                await RefuseAsync(begin, 502, "api_error", "the model could not be reached", cancellationToken);
+            }
+            catch (Exception w) when (w is IOException or OperationCanceledException or ObjectDisposedException)
+            {
+                // The caller has gone, so there is nobody to tell.
+            }
+
             return;
         }
 
@@ -114,33 +190,61 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
             var tally = new UsageTally();
             var ok = response.IsSuccessStatusCode;
             var output = begin((int)response.StatusCode, response.Content.Headers.ContentType?.ToString() ?? "application/json");
+            var gone = false;
+
+            // Writes stop once the caller is gone, but never end the drain that reads what the call cost.
+            async Task Send(ReadOnlyMemory<byte> bytes)
+            {
+                if (gone)
+                {
+                    return;
+                }
+
+                try
+                {
+                    await output.WriteAsync(bytes, cancellationToken);
+                    await output.FlushAsync(cancellationToken);
+                }
+                catch (Exception w) when (w is IOException or OperationCanceledException or ObjectDisposedException or InvalidOperationException)
+                {
+                    gone = true;
+                }
+            }
+
             try
             {
                 if (ok && stream && !call.CountTokens)
                 {
-                    await RelayStreamAsync(response, output, new SseUsageReader(tally), cancellationToken);
+                    await RelayStreamAsync(response, Send, new SseUsageReader(tally), upstream);
                 }
                 else
                 {
-                    var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                    var bytes = await response.Content.ReadAsByteArrayAsync(upstream);
                     if (ok && !call.CountTokens)
                     {
                         ReadUsage(bytes, tally);
                     }
 
-                    await output.WriteAsync(bytes, cancellationToken);
-                    await output.FlushAsync(cancellationToken);
+                    await Send(bytes);
                 }
             }
             catch (Exception e) when (e is IOException or HttpRequestException or OperationCanceledException)
             {
-                // The stream broke or the caller hung up part-way: it was still paid for, up to what was seen.
+                // The upstream stream broke or timed out part-way: it was still paid for, up to what was seen.
             }
             finally
             {
                 if (!call.CountTokens && tally.Any)
                 {
-                    Record(run, model, tally);
+                    try
+                    {
+                        Record(run, model, tally);
+                    }
+                    catch (Exception e)
+                    {
+                        // The type only: neither the token nor Kit's key may reach a log line.
+                        await Console.Error.WriteLineAsync($"kit: recording an agent run's spend failed — {e.GetType().Name}");
+                    }
                 }
             }
         }
@@ -198,7 +302,7 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
     }
 
     /// <summary>Copies the stream to the caller one chunk at a time, flushing each, so events arrive when Anthropic sends them.</summary>
-    private static async Task RelayStreamAsync(HttpResponseMessage response, Stream output, SseUsageReader reader, CancellationToken cancellationToken)
+    private static async Task RelayStreamAsync(HttpResponseMessage response, Func<ReadOnlyMemory<byte>, Task> send, SseUsageReader reader, CancellationToken cancellationToken)
     {
         await using var upstream = await response.Content.ReadAsStreamAsync(cancellationToken);
         var buffer = new byte[16 * 1024];
@@ -206,8 +310,7 @@ public sealed class AgentProxy(IAgentRunStore runs, HttpClient http, string? api
         while ((n = await upstream.ReadAsync(buffer, cancellationToken)) > 0)
         {
             reader.Feed(buffer.AsSpan(0, n));
-            await output.WriteAsync(buffer.AsMemory(0, n), cancellationToken);
-            await output.FlushAsync(cancellationToken);
+            await send(buffer.AsMemory(0, n));
         }
     }
 

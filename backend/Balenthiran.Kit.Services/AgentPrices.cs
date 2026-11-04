@@ -5,7 +5,7 @@ namespace Balenthiran.Kit.Services;
 /// <summary>
 /// BEH-USERS-9's price list: USD per million tokens at Anthropic's list price, as the card states them.
 /// Cache writes cost 1.25x input for a 5 minute entry and 2x for a 1 hour one; a cache read costs 0.1x.
-/// A model not in the list is priced as Opus, the dearest, so a model name cannot dodge a cap.
+/// A model not in the list is priced at the dearest input and the dearest output in the list, so a model name cannot dodge a cap.
 /// </summary>
 public static class AgentPrices
 {
@@ -14,13 +14,14 @@ public static class AgentPrices
     /// <summary>Input and output USD per million tokens, by a substring of the model id; the first match wins.</summary>
     private static readonly (string Match, decimal Input, decimal Output)[] Table =
     [
+        ("fable-5-1", 10m, 50m),
         ("opus-5-5", 4m, 20m),
         ("sonnet-5-5", 2m, 10m),
         ("haiku", 1m, 5m),
     ];
 
-    /// <summary>The dearest row, for a model the table does not name.</summary>
-    private static readonly (decimal Input, decimal Output) Dearest = (4m, 20m);
+    /// <summary>The dearest input price and the dearest output price in the table, for a model it does not name.</summary>
+    private static readonly (decimal Input, decimal Output) Dearest = (Table.Max(r => r.Input), Table.Max(r => r.Output));
 
     /// <summary>Input and output price per million tokens of <paramref name="model"/>.</summary>
     public static (decimal Input, decimal Output) Of(string? model)

@@ -86,10 +86,11 @@ public class AgentRunTests
     [InlineData("mystery-9")]
     [InlineData("")]
     [InlineData(null)]
-    public void An_unknown_model_is_priced_as_the_dearest_so_a_name_cannot_dodge_the_cap(string? model)
+    public void An_unknown_model_is_priced_at_the_dearest_input_and_output_in_the_list_so_a_name_cannot_dodge_the_cap(string? model)
     {
-        Assert.Equal(AgentPrices.Of("claude-opus-5-5"), AgentPrices.Of(model));
-        Assert.Equal(24m, AgentPrices.Cost(model, 1_000_000, 1_000_000, 0, 0, 0));
+        Assert.Equal((10m, 50m), AgentPrices.Of("claude-fable-5-1"));
+        Assert.Equal(AgentPrices.Of("claude-fable-5-1"), AgentPrices.Of(model));
+        Assert.Equal(60m, AgentPrices.Cost(model, 1_000_000, 1_000_000, 0, 0, 0));
     }
 
     // ---- reading usage ---------------------------------------------------------------------------
@@ -449,7 +450,127 @@ public class AgentRunTests
 
         await Call(rig.Proxy, rig.Token, Msg("mystery-9"));
 
-        Assert.Equal(4m, rig.Current.CostUsd);
+        Assert.Equal(10m, rig.Current.CostUsd);
+    }
+
+    [Fact]
+    public async Task A_caller_who_disconnects_before_a_non_stream_answer_is_read_is_still_charged()
+    {
+        var rig = new Rig(_ => Ok("""{"usage":{"input_tokens":1000000,"output_tokens":0}}"""));
+        using var gone = new CancellationTokenSource();
+        await gone.CancelAsync();
+
+        await Call(rig.Proxy, rig.Token, Msg(), cancellationToken: gone.Token);
+
+        Assert.Equal(1000000, rig.Current.InputTokens);
+        Assert.Equal(2m, rig.Current.CostUsd);
+    }
+
+    [Fact]
+    public async Task A_caller_who_disconnects_before_any_stream_usage_is_seen_is_still_charged_for_the_whole_stream()
+    {
+        var rig = new Rig(_ => Stream(Encoding.UTF8.GetBytes(Sse), 64));
+        using var gone = new CancellationTokenSource();
+        await gone.CancelAsync();
+
+        var r = await Call(rig.Proxy, rig.Token, Msg(stream: true), cancellationToken: gone.Token);
+
+        Assert.Empty(r.Body);
+        Assert.Equal(100, rig.Current.InputTokens);
+        Assert.Equal(200, rig.Current.OutputTokens);
+        Assert.Equal(1000, rig.Current.CacheReadTokens);
+        Assert.Equal(0.00254m, rig.Current.CostUsd);
+    }
+
+    [Fact]
+    public async Task A_fifth_call_in_flight_is_429_rate_limit_error_reaches_no_model_and_a_slot_frees_when_one_ends()
+    {
+        var started = 0;
+        using var release = new ManualResetEventSlim();
+        var rig = new Rig(_ =>
+        {
+            Interlocked.Increment(ref started);
+            release.Wait(TimeSpan.FromSeconds(30));
+            return Ok("""{"usage":{"input_tokens":1,"output_tokens":1}}""");
+        });
+
+        var held = Enumerable.Range(0, AgentProxy.MaxInFlight).Select(_ => Task.Run(() => Call(rig.Proxy, rig.Token, Msg()))).ToList();
+        for (var waited = 0; Volatile.Read(ref started) < AgentProxy.MaxInFlight && waited < 3000; waited++)
+        {
+            await Task.Delay(10);
+        }
+
+        var fifth = await Call(rig.Proxy, rig.Token, Msg());
+
+        Assert.Equal(AgentProxy.MaxInFlight, started);
+        Assert.Equal(429, fifth.Status);
+        Assert.Equal("rate_limit_error", ErrorType(fifth));
+        release.Set();
+        Assert.All(await Task.WhenAll(held), r => Assert.Equal(200, r.Status));
+        Assert.Equal(200, (await Call(rig.Proxy, rig.Token, Msg())).Status);
+    }
+
+    [Fact]
+    public async Task A_call_that_fails_upstream_frees_its_slot_so_failures_never_lock_a_run_out()
+    {
+        var rig = new Rig(_ => throw new HttpRequestException("down"));
+
+        for (var i = 0; i < AgentProxy.MaxInFlight + 2; i++)
+        {
+            Assert.Equal(502, (await Call(rig.Proxy, rig.Token, Msg())).Status);
+        }
+    }
+
+    [Fact]
+    public async Task A_store_that_fails_to_record_spend_does_not_break_the_answer()
+    {
+        var inner = new MemoryAgentRunStore();
+        var token = AgentTokens.Mint();
+        inner.Create("james", "kit", Sonnet, AgentTokens.Hash(token), Noon);
+        var proxy = new AgentProxy(new FailingStore(inner), new HttpClient(new ScriptedModel(_ => Ok("""{"usage":{"input_tokens":1,"output_tokens":1}}"""))), Key, clock: new Clock(Noon));
+
+        var r = await Call(proxy, token, Msg());
+
+        Assert.Equal(200, r.Status);
+    }
+
+    [Fact]
+    public void A_message_delta_with_only_cache_totals_never_lowers_what_message_start_recorded()
+    {
+        var tally = new UsageTally();
+        tally.Apply(JsonDocument.Parse("""{"input_tokens":100,"cache_read_input_tokens":1000,"cache_creation_input_tokens":50,"cache_creation":{"ephemeral_5m_input_tokens":40,"ephemeral_1h_input_tokens":10}}""").RootElement);
+
+        tally.Apply(JsonDocument.Parse("""{"input_tokens":0,"output_tokens":200,"cache_read_input_tokens":0,"cache_creation_input_tokens":50}""").RootElement);
+
+        Assert.Equal((100, 200, 1000), (tally.Input, tally.Output, tally.Read));
+        Assert.Equal((40, 10), (tally.Write5m, tally.Write1h));
+
+        // A total that grew past the split adds only the difference, as the dearer kind.
+        tally.Apply(JsonDocument.Parse("""{"cache_creation_input_tokens":70}""").RootElement);
+        Assert.Equal((40, 30), (tally.Write5m, tally.Write1h));
+    }
+
+    [Fact]
+    public void The_conditional_move_to_running_happens_only_from_queued_and_never_revives_a_finished_run()
+    {
+        var store = new MemoryAgentRunStore();
+        var run = store.Create("james", "kit", Sonnet, AgentTokens.Hash("a"), Noon);
+
+        Assert.True(store.StartIfQueued(run.Id));
+        Assert.Equal(AgentRunStatus.Running, store.ByTokenHash(AgentTokens.Hash("a"))!.Status);
+        Assert.False(store.StartIfQueued(run.Id));
+
+        var over = store.Create("james", "kit", Sonnet, AgentTokens.Hash("b"), Noon);
+        store.SetStatus(over.Id, AgentRunStatus.Failed, Noon);
+        Assert.False(store.StartIfQueued(over.Id));
+        Assert.Equal(AgentRunStatus.Failed, store.ByTokenHash(AgentTokens.Hash("b"))!.Status);
+        Assert.False(store.StartIfQueued("no-such-run"));
+    }
+
+    [Fact]
+    public void The_model_client_never_follows_a_redirect_so_Kits_key_cannot_be_carried_to_another_host()
+    {
+        Assert.False(ServiceRegistration.AgentHandler().AllowAutoRedirect);
     }
 
     [Fact]
@@ -716,6 +837,78 @@ public class AgentRunTests
         Assert.Equal(run.Id, store.List()[0].Id);
     }
 
+    [Fact]
+    public async Task The_host_relays_a_31_MB_body_past_Kestrels_own_limit_and_answers_a_33_MB_one_with_the_proxys_413()
+    {
+        var store = new MemoryAgentRunStore();
+        var token = AgentTokens.Mint();
+        store.Create("james", "kit", Sonnet, AgentTokens.Hash(token), DateTimeOffset.UtcNow);
+        var model = new ScriptedModel(_ => Ok("""{"usage":{"input_tokens":1,"output_tokens":1}}"""));
+        await using var app = Host(store, model);
+        await app.StartAsync();
+        using var http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{Port(app)}"), Timeout = TimeSpan.FromMinutes(2) };
+
+        async Task<HttpResponseMessage> Post(int bytes)
+        {
+            var head = $$"""{"model":"{{Sonnet}}","pad":""";
+            var json = head + "\"" + new string('a', bytes - head.Length - 3) + "\"}";
+            var q = new HttpRequestMessage(HttpMethod.Post, "/api/agent/v1/messages") { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+            q.Headers.TryAddWithoutValidation("x-api-key", token);
+            return await http.SendAsync(q);
+        }
+
+        var big = await Post(31 * 1024 * 1024);
+        Assert.Equal(HttpStatusCode.OK, big.StatusCode);
+        Assert.Single(model.Sent);
+
+        // One byte over the proxy's limit is the most Kestrel lets in, so the proxy's own sentence answers it.
+        var tooBig = await Post(AgentProxy.MaxBody + 1);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, tooBig.StatusCode);
+        Assert.Contains("request_too_large", await tooBig.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Single(model.Sent);
+    }
+
+    [Fact]
+    public async Task The_host_marks_the_proxys_json_answers_and_refusals_no_store()
+    {
+        var store = new MemoryAgentRunStore();
+        var token = AgentTokens.Mint();
+        store.Create("james", "kit", Sonnet, AgentTokens.Hash(token), DateTimeOffset.UtcNow);
+        await using var app = Host(store, new ScriptedModel(_ => Ok("""{"usage":{"input_tokens":1,"output_tokens":1}}""")));
+        await app.StartAsync();
+        using var http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{Port(app)}") };
+
+        HttpRequestMessage Post(string? key)
+        {
+            var q = new HttpRequestMessage(HttpMethod.Post, "/api/agent/v1/messages") { Content = new StringContent(Encoding.UTF8.GetString(Msg()), Encoding.UTF8, "application/json") };
+            if (key is not null)
+            {
+                q.Headers.TryAddWithoutValidation("x-api-key", key);
+            }
+
+            return q;
+        }
+
+        var answered = await http.SendAsync(Post(token));
+        var refused = await http.SendAsync(Post("kitrun_unknown"));
+        var wrongMethod = await http.GetAsync("/api/agent/v1/messages");
+
+        Assert.Equal(HttpStatusCode.OK, answered.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        Assert.All([answered, refused, wrongMethod], r => Assert.True(r.Headers.CacheControl?.NoStore));
+    }
+
+    [Fact]
+    public void The_answer_that_carries_a_run_token_is_no_store()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+
+        var r = router.Route("POST", "/api/projects/kit/runs", cookie);
+
+        Assert.Equal(201, r.Status);
+        Assert.Equal("no-store", r.CacheControl);
+    }
+
     // ---- the database store ----------------------------------------------------------------------
 
     [Fact]
@@ -780,7 +973,7 @@ public class AgentRunTests
         }
     }
 
-    private static async Task<Reply> Call(AgentProxy proxy, string? token, byte[]? body, bool countTokens = false, string? version = null, string? beta = null)
+    private static async Task<Reply> Call(AgentProxy proxy, string? token, byte[]? body, bool countTokens = false, string? version = null, string? beta = null, CancellationToken cancellationToken = default)
     {
         var status = 0;
         var contentType = "";
@@ -792,7 +985,8 @@ public class AgentRunTests
                 status = s;
                 contentType = c;
                 return output;
-            });
+            },
+            cancellationToken);
         return new Reply(status, contentType, output.ToArray());
     }
 
@@ -949,6 +1143,22 @@ public class AgentRunTests
             chunk.CopyTo(into);
             return chunk.Length;
         }
+    }
+
+    /// <summary>A store whose spend cannot be written, as a database that has gone away.</summary>
+    private sealed class FailingStore(MemoryAgentRunStore inner) : IAgentRunStore
+    {
+        public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started) => inner.Create(owner, project, model, tokenHash, started);
+
+        public IReadOnlyList<IAgentRun> List() => inner.List();
+
+        public IAgentRun? ByTokenHash(string tokenHash) => inner.ByTokenHash(tokenHash);
+
+        public IAgentRun? AddUsage(string id, AgentUsage usage, decimal costUsd) => throw new InvalidOperationException($"database down for {Key}");
+
+        public void SetStatus(string id, string status, DateTimeOffset? ended = null) => inner.SetStatus(id, status, ended);
+
+        public bool StartIfQueued(string id) => inner.StartIfQueued(id);
     }
 
     private sealed class RecordingLauncher : IAgentRunLauncher
