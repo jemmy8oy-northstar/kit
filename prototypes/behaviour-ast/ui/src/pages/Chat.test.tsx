@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Chat from './Chat'
-import { named, toMessages, type Line } from '../chat'
+import { named, splitIds, toMessages, type Line } from '../chat'
 import type { Behaviour } from '../api/types'
 
 function beh(id: string, over: Partial<Behaviour> = {}): Behaviour {
@@ -34,7 +34,7 @@ const details: Record<string, Behaviour[]> = {
 }
 
 /** What GET .../notes answers: the notes an undo looks through. */
-let notesNow: { at: string; kind: string; behaviour: string | null; resolves: null; text: string }[] = []
+let notesNow: { at: string; kind: string; behaviour: string | null; resolves: null; text: string; from?: string; thread?: { kind: string; at: string | null; text: string }[] }[] = []
 
 /** Every POST the page made, as [path, body]. */
 let posts: [string, { behaviour?: string; messages?: { from: string; text: string }[]; text?: string; from?: string }][] = []
@@ -86,11 +86,19 @@ async function open() {
 
 const box = () => screen.getByLabelText('Message the spec agent') as HTMLTextAreaElement
 
-async function say(text: string, reply: string) {
+async function say(text: string, reply: string | RegExp) {
   fireEvent.change(box(), { target: { value: text } })
   fireEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByText(reply)
 }
+
+/** Kit's line whose whole text matches: an item id inside it is a link (BEH-CHAT-15), so its text is in pieces. */
+const kitLine = (re: RegExp) =>
+  waitFor(() => {
+    const line = [...document.querySelectorAll<HTMLElement>('li[data-from="kit"] .chat-bubble')].find((b) => re.test(b.textContent ?? ''))
+    if (!line) throw new Error(`no Kit line matches ${re}`)
+    return line
+  })
 
 const chats = () => posts.filter(([p]) => p.endsWith('/chat'))
 const order = () => [...screen.getByLabelText('Messages').querySelectorAll('li[data-from]')].map((li) => li.getAttribute('data-from'))
@@ -302,12 +310,12 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     await open()
     const first = inHandId()
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
-    const kit = await screen.findByText(/^Approved “.*”\. Next up in alpha: “.*”\. Reply to answer it, or we can define new spec or discuss alpha\.$/)
+    const kit = await kitLine(/^Approved “.*”\. Reply to answer the next item, or we can define new spec or discuss alpha\.$/)
     expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
-    expect(screen.getByText(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)).toBeTruthy()
-    // The item that came up after Approve is in the thread right after Kit's "Next up" line.
+    await kitLine(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)
+    // The item that came up after Approve is in the thread right after Kit's line.
     expect(order()).toEqual(['item', 'kit', 'item', 'kit'])
 
     await say('ok, what next?', 'reply 1')
@@ -391,11 +399,11 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     await say('yes, approve it', 'Approved it.')
 
     await waitFor(() => expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'approved', note: null }]))
-    const kit = await screen.findByText(/^Approved “title of A-ASK”\./)
+    const kit = await kitLine(/^Approved “title of A-ASK”\./)
     await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
 
     fireEvent.click(kit.closest('li')!.querySelector('button')!)
-    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    await kitLine(/^Undone: Approved “title of A-ASK”\.$/)
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
     expect(inHandId()).toBe('A-ASK')
     expect(screen.getByRole('button', { name: 'Undone' })).toHaveProperty('disabled', true)
@@ -411,9 +419,9 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
       { at: '2026-11-02 18:00Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.' },
       { at: '2026-11-02 18:01Z', kind: 'note', behaviour: null, resolves: null, text: 'Blue.' },
     ]
-    const kit = await screen.findByText(/^Your answer is posted on “title of A-ASK”\./)
+    const kit = await kitLine(/^Your answer is posted on “title of A-ASK”: “Blue\.”\./)
     fireEvent.click(kit.closest('li')!.querySelector('button')!)
-    await screen.findByText(/^Undone: Your answer is posted on/)
+    await kitLine(/^Undone: Your answer is posted on/)
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/notes/dismiss', { index: 0, at: '2026-11-02 18:00Z' }])
     vi.unstubAllGlobals()
     document.body.innerHTML = ''
@@ -424,7 +432,7 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     await waitFor(() =>
       expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'denied', note: 'It should be green.' }]),
     )
-    expect(await screen.findByText(/^Denied, with your correction: “title of A-ASK”\./)).toBeTruthy()
+    await kitLine(/^Denied, with your correction: “title of A-ASK”\./)
   })
 
   it('a refused write says so in the thread and tells the agent, so its words do not stand alone', async () => {
@@ -447,7 +455,7 @@ describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it
     await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
 
     await say('wait, undo that', 'Undoing that.')
-    await screen.findByText('Undone: Approved “title of A-ASK”.')
+    await kitLine(/^Undone: Approved “title of A-ASK”\.$/)
     expect(posts.at(-1)).toEqual(['/api/projects/alpha/behaviours/A-ASK/review', { state: 'requested', note: 'Which colour?' }])
     expect(inHandId()).toBe('A-ASK')
   })
@@ -628,7 +636,7 @@ describe('BEH-CHAT-11: one chat covers every app of a project', () => {
     expect(appOf(second)).not.toBe(appOf(first))
     // Still the one chat: the other app's item came up with no project change.
     expect(order()).not.toContain('switch')
-    expect(screen.getByText(/Next up in kit: /)).toBeTruthy()
+    expect(screen.queryByText(/Next up in/)).toBeNull()
 
     await say('serif', 'reply 2')
     expect(chats()[1][0]).toBe(`/api/projects/${appOf(second)}/chat`)
@@ -767,5 +775,152 @@ describe('BEH-SPECAGENT-1: a user designs their project in a conversation with t
     await waitFor(() => expect(posts.some(([p]) => p === '/api/projects/alpha/notes')).toBe(true))
     const [, note] = posts.find(([p]) => p === '/api/projects/alpha/notes')!
     expect(note.text).toBe('Vision: runners log a run and see their week.')
+  })
+})
+
+describe('BEH-CHAT-12: the agent shows a note in the thread, read-only', () => {
+  const showing = (text: string) => () => ({ ok: true, status: 200, body: { reply: 'Here it is.', remaining: 8, action: { kind: 'shownote', text } } })
+
+  it('puts the note found by its item id into the thread with its text, its answer and its origin, and writes nothing', async () => {
+    mockApi(undefined, showing('A-ASK'))
+    await open()
+    notesNow = [
+      { at: '2026-11-03 13:49Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.', from: 'chat', thread: [{ kind: 'answer', at: null, text: 'Green, in the end.' }] },
+      { at: '2026-11-03 13:50Z', kind: 'note', behaviour: 'B-DONE', resolves: null, text: 'Not this one.', thread: [] },
+    ]
+    await say('what did I answer?', 'Here it is.')
+
+    const card = await waitFor(() => {
+      const li = screen.getByLabelText('Messages').querySelector('li[data-from="note"]')
+      expect(li).not.toBeNull()
+      return li!
+    })
+    expect(card.textContent).toContain('2026-11-03 13:49Z')
+    expect(card.textContent).toContain('Blue.')
+    expect(card.textContent).toContain('Answer: Green, in the end.')
+    expect(card.textContent).toContain('from chat')
+    expect(screen.queryByText(/Not this one/)).toBeNull()
+    // Read-only: no Undo, and nothing posted but the chat turn.
+    expect(card.querySelector('button')).toBeNull()
+    expect(posts.filter(([p]) => !p.endsWith('/chat'))).toEqual([])
+  })
+
+  it('finds a note by its time, and says so when there is none', async () => {
+    mockApi(undefined, showing('2026-11-03 13:50Z'))
+    await open()
+    notesNow = [{ at: '2026-11-03 13:50Z', kind: 'note', behaviour: null, resolves: null, text: 'Loose thought.', thread: [] }]
+    await say('show that note', 'Here it is.')
+    await waitFor(() => expect(screen.getByText('Loose thought.')).toBeTruthy())
+    expect(screen.queryByText(/from /)).toBeNull()
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+
+    mockApi(undefined, showing('B-NOPE'))
+    await open()
+    await say('show it', 'Here it is.')
+    expect(await screen.findByText('There is no note on B-NOPE, and none at that time.')).toBeTruthy()
+  })
+})
+
+describe('BEH-CHAT-13: the line under an answered card quotes the answer in full', () => {
+  it('quotes every word of the answer that was posted', async () => {
+    const words = 'Blue for the header, green for the buttons, and keep the old logo until the new one is approved.'
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'Posted.', remaining: 8, action: { kind: 'answer', text: words } } }))
+    await open()
+    await say('post that', 'Posted.')
+    await kitLine(new RegExp(`^Your answer is posted on “title of A-ASK”: “${words.replace('.', '\\.')}”\\.`))
+  })
+})
+
+describe('BEH-CHAT-14: the chat has no next-up-in-Kit section', () => {
+  it('after an item is dealt with the next one only comes up in the thread, with no Next up line', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+    expect(screen.queryByText(/Next up in/i)).toBeNull()
+    expect(screen.getByLabelText('Messages').textContent).not.toContain('Next up')
+    expect(order()).toEqual(['item', 'kit', 'item'])
+  })
+})
+
+describe('BEH-CHAT-15: an item id Kit knows is a link to that item', () => {
+  const href = (name: string) => screen.getByRole('link', { name }).getAttribute('href')
+
+  it('links a known id in the agent’s words, and in an action card, and leaves an unknown id as text', async () => {
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'It builds on A-NEEDS (and B-DONE), not on Z-MADEUP-9.', remaining: 8 } }))
+    await open()
+    await say('what does it build on?', /not on Z-MADEUP-9\./)
+
+    expect(href('A-NEEDS')).toBe('/projects/alpha/behaviours/A-NEEDS')
+    expect(href('B-DONE')).toBe('/projects/beta/behaviours/B-DONE')
+    expect(screen.queryByRole('link', { name: 'Z-MADEUP-9' })).toBeNull()
+    expect(screen.getByText(/not on Z-MADEUP-9\./)).toBeTruthy()
+  })
+
+  it('links the id in a card the agent shows with show_note', async () => {
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'Here.', remaining: 8, action: { kind: 'shownote', text: 'A-ASK' } } }))
+    await open()
+    notesNow = [{ at: '2026-11-03 13:49Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Same as B-DONE.', thread: [] }]
+    await say('show it', 'Here.')
+    await waitFor(() => expect(href('B-DONE')).toBe('/projects/beta/behaviours/B-DONE'))
+  })
+
+  it('links the ids in the question on the item card', async () => {
+    mockApi(undefined, undefined, { alpha: [beh('A-ASK', { review: { state: 'requested', note: 'Is this like B-DONE?' } })], beta: [beh('B-DONE')] })
+    await open()
+    expect(href('B-DONE')).toBe('/projects/beta/behaviours/B-DONE')
+  })
+
+  it('splits text around the known ids only', () => {
+    const known = (id: string) => id === 'BEH-USERS-5' || id === 'FEAT-CHAT'
+    expect(splitIds('See BEH-USERS-5, FEAT-CHAT and BEH-NOPE-1.', known)).toEqual(['See ', { id: 'BEH-USERS-5' }, ', ', { id: 'FEAT-CHAT' }, ' and BEH-NOPE-1.'])
+    expect(splitIds('nothing here', known)).toEqual(['nothing here'])
+    expect(splitIds('XBEH-USERS-5', known)).toEqual(['XBEH-USERS-5'])
+  })
+})
+
+describe('BEH-CHAT-16: a reply the model cut short says so', () => {
+  it('shows Kit’s line under a reply that stopped for length, and none under a whole one', async () => {
+    mockApi(undefined, () => ({ ok: true, status: 200, body: { reply: 'and per-user mem', remaining: 8, truncated: true } }))
+    await open()
+    await say('explain', 'and per-user mem')
+    const line = await screen.findByText('That reply was cut short. Ask me to go on.')
+    expect(line.closest('li')!.getAttribute('data-from')).toBe('kit')
+    expect(order()).toEqual(['item', 'user', 'agent', 'kit'])
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+
+    mockApi()
+    await open()
+    await say('explain', 'reply 1')
+    expect(screen.queryByText(/cut short/)).toBeNull()
+  })
+})
+
+describe('BEH-CHAT-17: Enter sends on a desktop and adds a new line on a phone', () => {
+  const pointer = (coarse: boolean) =>
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: coarse && q === '(pointer: coarse)', media: q, addEventListener() {}, removeEventListener() {} }))
+
+  it('on a coarse pointer Enter does not send and the Send button does', async () => {
+    mockApi()
+    pointer(true)
+    await open()
+    fireEvent.change(box(), { target: { value: 'line one' } })
+    fireEvent.keyDown(box(), { key: 'Enter' })
+    expect(chats()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByText('reply 1')
+  })
+
+  it('on a fine pointer Enter sends and Shift+Enter does not', async () => {
+    mockApi()
+    pointer(false)
+    await open()
+    fireEvent.change(box(), { target: { value: 'line one' } })
+    fireEvent.keyDown(box(), { key: 'Enter', shiftKey: true })
+    expect(chats()).toEqual([])
+    fireEvent.keyDown(box(), { key: 'Enter' })
+    await screen.findByText('reply 1')
   })
 })
