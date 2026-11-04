@@ -127,7 +127,15 @@ export interface ProjectSummary {
    * for the default, build anyway.
    */
   onConflict?: 'ask' | 'wait'
+  /**
+   * `"goals"` or `"architecture"` when the project says how involved its user is (BEH-ARCH-3): its
+   * primary file carries `# kit:depth goals|architecture`. Absent, never null, for the default, behaviours.
+   */
+  depth?: 'goals' | 'architecture'
 }
+
+/** How involved the user chooses to be (BEH-ARCH-3). `behaviours` is the default and is no line. */
+export type DepthMode = 'goals' | 'behaviours' | 'architecture'
 
 /** What the agent does when two specs conflict (BEH-CONFLICT-2). `build` is the default and is no line. */
 export type ConflictMode = 'build' | 'ask' | 'wait'

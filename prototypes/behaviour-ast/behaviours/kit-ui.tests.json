@@ -592,6 +592,24 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 hides a board view that is off and points the Board link at one that is on" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows everything when the switches cannot be read: it hides screens, it is not a guard" }
   ],
+  "BEH-ARCH-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_goals_and_architecture_are_read_into_the_summary_and_behaviours_is_no_key" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_only_an_exact_choice_counts_and_anything_else_is_behaviours" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_only_the_primary_file_of_a_project_can_choose" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_writer_adds_replaces_and_removes_the_line_and_behaviours_restores_the_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_depth_that_is_not_goals_behaviours_or_architecture_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_operator_chooses_over_the_route_and_it_is_a_commit_shaped_edit" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_signed_in_user_who_is_not_the_operator_is_refused_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_secondary_file_of_a_project_is_refused_saying_where_to_set_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_body_must_name_goals_behaviours_or_architecture" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_spec_agent_is_told_the_depth_a_project_chose_and_nothing_for_the_default" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_a_secondary_app_of_a_project_is_told_the_depth_its_primary_file_chose" },
+    { "file": "backend/Balenthiran.Kit.Tests/DepthModeTests.cs", "title": "BEH_ARCH_3_the_shared_process_tells_the_coding_agent_how_to_honour_the_depth" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator one depth choice per project, behaviours unless the project says otherwise" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the named depth when a choice is made, and says so" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the depth choice is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the depth section to anyone but the operator" }
+  ],
   "BEH-ARCH-2": [
     { "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs", "title": "BEH_ARCH_2_the_parser_accepts_stage_architecture_and_a_feature_may_skip_it" },
     { "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs", "title": "BEH_ARCH_2_the_stage_error_lists_architecture_between_logic_and_development" },
