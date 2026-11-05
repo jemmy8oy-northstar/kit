@@ -200,6 +200,15 @@ apps:
             name: kit-runner-pool
             key: token
             optional: true
+      # BEH-ORCH-3: a note or behaviour request queues a triage run on the runner pool. Switched on by
+      # James once runs used his subscription (kit#708). Kit REFUSES TO START with this on and no
+      # KIT_RUNNER_POOL_TOKEN, so the `kit-runner-pool` secret above must exist. Remove to switch off.
+      - name: KIT_PIPELINE
+        value: "on"
+      # Only these projects' notes are triaged: a triage pushes bundles quoting his notes to the
+      # project's repo, and every project repo but kit's is public (kit#714). Remove to triage all.
+      - name: KIT_PIPELINE_PROJECTS
+        value: "kit,kit-ui"
     resources: {}
     nodeSelector: {}
     tolerations: []
@@ -223,14 +232,14 @@ apps:
 #   kubectl create secret generic kit-runner-pool -n balenthiran --from-literal=token=$t
 #   kubectl create secret generic kit-runner-pool -n kit-runs --from-literal=token=$t
 #
-# replicas is 0 until slice D (Kit's claim route and the runner's loop) lands, so until then
-# this starts nothing.
+# Runs use James's subscription when the `kit-claude-subscription` secret exists in kit-runs
+# (kit#709); without it they go through Kit's proxy and its key.
 runner:
   enabled: true
   namespace: kit-runs
   # How many runs can happen at once. Fixed, not autoscaled: scaling on queue length needs
-  # KEDA, a new component, and the cluster is a fixed free tier.
-  replicas: 0
+  # KEDA, a new component, and the cluster is a fixed free tier. One, to start (kit#708).
+  replicas: 1
   image: lhr.ocir.io/lr7uc6l49odc/kit-runner:latest
   # The runner's container exits after this many runs and is started fresh, so anything a
   # run leaves outside its scratch directories reaches only a few later runs.
