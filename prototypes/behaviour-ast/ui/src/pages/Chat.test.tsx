@@ -837,10 +837,13 @@ describe('BEH-CHAT-14: the chat has no next-up-in-Kit section', () => {
     mockApi()
     await open()
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
-    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+    // The in-hand id can change a render before the new item card lands, so wait for both.
+    await waitFor(() => {
+      expect(inHandId()).toBe('A-NEEDS')
+      expect(order()).toEqual(['item', 'kit', 'item'])
+    })
     expect(screen.queryByText(/Next up in/i)).toBeNull()
     expect(screen.getByLabelText('Messages').textContent).not.toContain('Next up')
-    expect(order()).toEqual(['item', 'kit', 'item'])
   })
 })
 
