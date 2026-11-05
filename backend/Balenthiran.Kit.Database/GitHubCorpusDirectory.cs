@@ -297,6 +297,12 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         return commit is null ? null : (commit, e.Source.Branch);
     }
 
+    /// <inheritdoc />
+    public (string Repository, string Branch)? OwnRepo(string app) =>
+        !InClone(app) && served is { } s && s.Apps.TryGetValue(app, out var e)
+            ? ($"{e.Source.Owner}/{e.Source.Repository}", e.Source.Branch)
+            : null;
+
     // An app the clone holds is written there, and its push is the caller's git write-back. Any other
     // app is held as a pending override for CommitToOwnRepo. Writing it into the clone instead would
     // create a corpus in the WRONG repository and push it there.

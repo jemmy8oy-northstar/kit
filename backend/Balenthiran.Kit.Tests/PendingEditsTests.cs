@@ -202,6 +202,22 @@ public class PendingEditsTests
         Assert.Equal(JsonValueKind.Null, body.GetProperty("pullNumber").ValueKind);
     }
 
+    /// <summary>BEH-USERS-12: a project in its own repo lists what waits on its edits branch there, even with the clone's write-back off.</summary>
+    [Fact]
+    public async Task A_project_in_its_own_repo_lists_its_own_edits_branch_there()
+    {
+        var reader = new ScriptedReader(new PendingEdits { Edits = [new PendingEdit { Sha = "ddddddd", Summary = "add BEH-N", App = "beta" }] });
+        var corpora = await OwnRepoCorpora.BuildAsync();
+        var router = new KitRouter(corpora, new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter()), new UiBundle(Path.Combine(RepoLayout.Root, "no-bundle-here")), null, git: new GitStore(enabled: false), head: "kit/hosted", pending: reader);
+
+        var body = Body(router.Route("GET", "/api/projects/beta/pending"));
+
+        Assert.Single(body.GetProperty("edits").EnumerateArray());
+        Assert.Equal("kit/edits", body.GetProperty("head").GetString());
+        Assert.Equal(("kit/edits", "dev"), Assert.Single(reader.Calls));
+        Assert.Equal("o/beta", Assert.Single(reader.Repositories));
+    }
+
     [Fact]
     public void With_write_back_off_it_lists_nothing_and_GitHub_is_not_asked()
     {
@@ -280,9 +296,12 @@ public class PendingEditsTests
     {
         public List<(string Head, string Base)> Calls { get; } = [];
 
-        public Task<IPendingEdits> PendingAsync(string head, string baseBranch, CancellationToken cancellationToken = default)
+        public List<string?> Repositories { get; } = [];
+
+        public Task<IPendingEdits> PendingAsync(string head, string baseBranch, string? repository = null, CancellationToken cancellationToken = default)
         {
             Calls.Add((head, baseBranch));
+            Repositories.Add(repository);
             return Task.FromResult(answers[Calls.Count - 1]);
         }
     }

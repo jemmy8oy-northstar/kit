@@ -13,6 +13,8 @@ public interface IPullRequestOpener
     /// Open a pull request from <paramref name="head"/> into <paramref name="baseBranch"/>, or
     /// return the one already open between them. Never throws for a GitHub or network
     /// failure: every outcome without a pull request carries a reason naming the layer.
+    /// <paramref name="repository"/> (<c>owner/name</c>) is a project's own repository
+    /// (BEH-USERS-12); null is the clone's.
     /// </summary>
-    Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default);
+    Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default);
 }

@@ -463,11 +463,11 @@ export function addBinding(app: string, noun: string, binding: Binding): Promise
 
 /**
  * Propose every pushed edit for merging, as one pull request from the edits
- * branch (kit#155). There is nothing to choose, so the body is empty: the server
- * knows the one edits branch and the one base.
+ * branch (kit#155). The body names the project: one whose spec lives in its own
+ * repo has its edits proposed there instead (BEH-USERS-12).
  */
-export function proposeEdits(): Promise<ProposeResult> {
-  return post<ProposeResult>('/api/commit', {})
+export function proposeEdits(app?: string): Promise<ProposeResult> {
+  return post<ProposeResult>('/api/commit', app ? { app } : {})
 }
 
 /** This project's edits on the edits branch that have not reached the base, and their pull request (BEH-COMMIT-5). */

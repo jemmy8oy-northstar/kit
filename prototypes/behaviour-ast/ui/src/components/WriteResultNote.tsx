@@ -93,7 +93,7 @@ export default function WriteResultNote({
       )}
 
       {/* Only a pushed edit is on the edits branch, so only then is there anything to propose (kit#155). */}
-      {result.pushed && <ProposeEdits />}
+      {result.pushed && <ProposeEdits app={result.app} />}
 
       {/* Deployed, the working tree is inside a pod he cannot reach (kit#117): the
           warning above says where the edit is, and this instruction would be false. */}

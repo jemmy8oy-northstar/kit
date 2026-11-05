@@ -61,6 +61,33 @@ public class CommitRouteTests
         Assert.Equal("GitHub answered 422: Validation Failed — No commits between dev and kit/hosted", Body(r).GetProperty("reason").GetString());
     }
 
+    /// <summary>BEH-USERS-12: a project in its own repo has its edits proposed there, from its edits branch, even with the clone's write-back off.</summary>
+    [Fact]
+    public async Task A_project_in_its_own_repo_is_proposed_there_from_its_own_edits_branch()
+    {
+        var pulls = new ScriptedOpener(new PullRequestResult { Opened = true, Number = 4, Url = "https://github.com/o/beta/pull/4" });
+        var corpora = await OwnRepoCorpora.BuildAsync();
+        var router = new KitRouter(corpora, new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter()), new UiBundle(Path.Combine(RepoLayout.Root, "no-bundle-here")), null, git: new GitStore(enabled: false), pulls: pulls, head: "kit/hosted");
+
+        var r = router.Route("POST", "/api/commit", body: JsonDocument.Parse("""{"app":"beta"}""").RootElement);
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal(4, Body(r).GetProperty("number").GetInt32());
+        Assert.Equal(("kit/edits", "dev"), Assert.Single(pulls.Calls));
+        Assert.Equal("o/beta", Assert.Single(pulls.Repositories));
+    }
+
+    [Fact]
+    public void A_press_naming_a_project_the_clone_holds_proposes_the_clones_edits_branch()
+    {
+        var pulls = new ScriptedOpener(new PullRequestResult { Opened = true, Number = 13 });
+
+        Router(pulls).Route("POST", "/api/commit", body: JsonDocument.Parse("""{"app":"snip-it"}""").RootElement);
+
+        Assert.Equal(("kit/hosted", "dev"), Assert.Single(pulls.Calls));
+        Assert.Null(Assert.Single(pulls.Repositories));
+    }
+
     [Fact]
     public void With_write_back_off_there_is_nothing_to_propose_and_GitHub_is_not_asked()
     {
@@ -212,7 +239,7 @@ public class CommitRouteTests
 
         public int Created { get; private set; }
 
-        public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default)
+        public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default)
         {
             if (open is { } n)
             {
@@ -231,9 +258,12 @@ public class CommitRouteTests
     {
         public List<(string Head, string Base)> Calls { get; } = [];
 
-        public Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default)
+        public List<string?> Repositories { get; } = [];
+
+        public Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default)
         {
             Calls.Add((head, baseBranch));
+            Repositories.Add(repository);
             return Task.FromResult(answers[Calls.Count - 1]);
         }
     }

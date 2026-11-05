@@ -26,13 +26,13 @@ type State =
  * and kit/hosted"), and it reaches the screen whole, the same way a corpus
  * refusal does in `useWrite`.
  */
-export default function ProposeEdits() {
+export default function ProposeEdits({ app }: { app?: string }) {
   const [s, setS] = useState<State>({ state: 'idle' })
 
   async function send() {
     setS({ state: 'sending' })
     try {
-      setS({ state: 'done', result: await proposeEdits() })
+      setS({ state: 'done', result: await proposeEdits(app) })
     } catch (e: unknown) {
       setS({ state: 'refused', message: e instanceof Error ? e.message : String(e) })
     }
