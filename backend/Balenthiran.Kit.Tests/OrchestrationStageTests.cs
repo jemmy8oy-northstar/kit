@@ -156,7 +156,7 @@ public class OrchestrationStageTests
     [Fact]
     public void BEH_ORCH_1_The_task_names_the_branch_and_the_bundle_path_and_the_project()
     {
-        var task = TriageStage.BuildTask("kit", Notes, Cards);
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
 
         Assert.Contains("\"kit\"", task);
         Assert.Contains("kit/work/<work-item-slug>", task);
@@ -168,7 +168,7 @@ public class OrchestrationStageTests
     [Fact]
     public void BEH_ORCH_1_The_task_carries_every_note_ref_and_text_and_every_card()
     {
-        var task = TriageStage.BuildTask("kit", Notes, Cards);
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
 
         foreach (var (reference, text) in Notes)
         {
@@ -184,7 +184,7 @@ public class OrchestrationStageTests
     [Fact]
     public void BEH_ORCH_1_The_task_tells_the_run_to_stop_after_pushing_and_not_to_write_specs()
     {
-        var task = TriageStage.BuildTask("kit", Notes, Cards);
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
 
         Assert.Contains("push", task);
         Assert.Contains("STOP", task);
@@ -196,7 +196,7 @@ public class OrchestrationStageTests
     {
         var long_ = new string('x', TriageStage.MaxNoteChars + 500);
 
-        var task = TriageStage.BuildTask("kit", [("kit-ui.notes.md#big", long_)], Cards);
+        var task = TriageStage.BuildTask("kit", [("kit-ui.notes.md#big", long_)], Cards).Text;
 
         Assert.DoesNotContain(long_, task);
         Assert.Contains(new string('x', TriageStage.MaxNoteChars), task);
@@ -205,25 +205,65 @@ public class OrchestrationStageTests
     }
 
     [Fact]
-    public void BEH_ORCH_1_Many_notes_stay_within_the_total_cap_and_every_ref_is_still_listed()
+    public void BEH_ORCH_1_Many_notes_stay_within_the_total_cap_and_every_taken_ref_is_listed()
     {
         var notes = Enumerable.Range(0, 20).Select(i => ($"n.md#{i:D2}", new string('§', TriageStage.MaxNoteChars))).ToArray();
 
-        var task = TriageStage.BuildTask("kit", notes, Cards);
+        var built = TriageStage.BuildTask("kit", notes, Cards);
 
-        Assert.Equal(TriageStage.MaxTotalNoteChars, task.Count(c => c == '§'));
-        foreach (var (reference, _) in notes)
+        Assert.Equal(TriageStage.MaxTotalNoteChars, built.Text.Count(c => c == '§'));
+        Assert.InRange(built.NotesTaken, 3, notes.Length);
+        foreach (var (reference, _) in notes.Take(built.NotesTaken))
         {
-            Assert.Contains($"### {reference}", task);
+            Assert.Contains($"### {reference}\n", built.Text);
         }
 
-        Assert.Contains("TRUNCATED", task);
+        Assert.Contains($"## New notes ({built.NotesTaken})", built.Text);
+        Assert.Contains("TRUNCATED", built.Text);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_triage_task_for_a_corpus_the_size_of_kits_fits_a_run_and_leaves_the_rest_for_later()
+    {
+        var notes = Enumerable.Range(0, 60).Select(i => ($"kit-ui.notes.md#2026-11-05-{i:D4}", new string('n', 3000))).ToArray();
+        var cards = Enumerable.Range(0, 300).Select(i => ($"BEH-CARD-{i}", new string('t', 100))).ToArray();
+
+        var built = TriageStage.BuildTask("kit", notes, cards);
+
+        Assert.InRange(built.Text.Length, KitRouter.MaxTask - 400, KitRouter.MaxTask);
+        Assert.InRange(built.NotesTaken, 1, 59);
+        Assert.Contains($"### {notes[built.NotesTaken - 1].Item1}\n", built.Text);
+        Assert.DoesNotContain($"### {notes[built.NotesTaken].Item1}\n", built.Text);
+        Assert.Contains("## Existing cards (300)", built.Text);
+        Assert.Contains("- BEH-CARD-0: ", built.Text);
+        Assert.DoesNotContain("- BEH-CARD-299: ", built.Text);
+        Assert.Matches(@"\[\d+ more cards not listed: read the project's spec files for them\]\n\z", built.Text);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_Every_card_is_listed_when_they_fit_and_no_more_cards_line_is_added()
+    {
+        var built = TriageStage.BuildTask("kit", Notes, Cards);
+
+        Assert.Equal(Notes.Length, built.NotesTaken);
+        Assert.Contains("- BEH-USERS-9: Agent runs\n", built.Text);
+        Assert.DoesNotContain("more cards not listed", built.Text);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_note_whose_ref_alone_cannot_fit_a_run_is_refused()
+    {
+        var huge = new string('r', KitRouter.MaxTask);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => TriageStage.BuildTask("kit", [(huge, "x")], Cards));
+
+        Assert.Contains($"does not fit a triage task of {KitRouter.MaxTask} characters", ex.Message);
     }
 
     [Fact]
     public void BEH_ORCH_1_The_format_the_task_describes_is_one_the_parser_accepts()
     {
-        var task = TriageStage.BuildTask("kit", Notes, Cards);
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
         var start = task.IndexOf("```\n", StringComparison.Ordinal) + 4;
         var shape = task[start..task.IndexOf("```\n", start, StringComparison.Ordinal)];
 
@@ -338,6 +378,18 @@ public class OrchestrationStageTests
         Assert.Contains("Keep the Flag line", task);
         Assert.Contains("STOP", task);
         Assert.Contains("do not open a pull request", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_A_bundle_too_long_to_carry_is_read_from_its_branch_and_the_task_still_fits_a_run()
+    {
+        var bundle = Sample("x") with { Context = new string('c', KitRouter.MaxTask) };
+
+        var task = ReviewStage.BuildTask("kit", bundle);
+
+        Assert.InRange(task.Length, 1, KitRouter.MaxTask);
+        Assert.DoesNotContain(new string('c', 100), task);
+        Assert.Contains("too long to carry here: read it at .kit/bundles/run-stage-badge.md on that branch first", task);
     }
 
     [Fact]

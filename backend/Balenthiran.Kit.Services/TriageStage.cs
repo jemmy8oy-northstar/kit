@@ -7,14 +7,19 @@ namespace Balenthiran.Kit.Services;
 /// notes against the existing cards, writes a <see cref="ContextBundle"/> per work item on its own branch,
 /// pushes, and ends. Pure: nothing here starts a run. The task embeds a capped amount of input so it stays small
 /// enough for the cheap model's price tier; what is cut is said in the task, so the run knows to read the source.
+/// The whole task always fits a run's <see cref="KitRouter.MaxTask"/>: notes that would not fit are left for a
+/// later run (<see cref="TriageTask.NotesTaken"/>), and cards past the room left are counted, not listed.
 /// </summary>
 public static class TriageStage
 {
     /// <summary>Most characters of one note's text the task carries.</summary>
-    public const int MaxNoteChars = 2000;
+    public const int MaxNoteChars = 1500;
 
     /// <summary>Most characters of note text, across all notes, the task carries.</summary>
-    public const int MaxTotalNoteChars = 12000;
+    public const int MaxTotalNoteChars = 4000;
+
+    /// <summary>Room kept back for the closing lines (the truncation note, the cards heading and the "more cards" line).</summary>
+    private const int Reserve = 400;
 
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
@@ -22,8 +27,12 @@ public static class TriageStage
     /// <summary>Where a work item's bundle lives on its branch.</summary>
     public static string BundlePath(string slug) => $".kit/bundles/{slug}.md";
 
-    /// <summary>The task text for a triage run of <paramref name="project"/>: notes are (source ref, text), cards are (id, title).</summary>
-    public static string BuildTask(
+    /// <summary>
+    /// The task for a triage run of <paramref name="project"/>: notes are (source ref, text) in the order to triage
+    /// them, cards are (id, title). The first <see cref="TriageTask.NotesTaken"/> notes are in it; the rest wait for
+    /// the next run. THROWS when not even the first note fits.
+    /// </summary>
+    public static TriageTask BuildTask(
         string project,
         IReadOnlyList<(string Ref, string Text)> notes,
         IReadOnlyList<(string Id, string Title)> cards)
@@ -43,24 +52,37 @@ public static class TriageStage
         sb.Append("```\n");
         sb.Append("If you are unsure of your assessment, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. Every note must appear in exactly one bundle.\n\n");
 
-        sb.Append("## New notes (").Append(notes.Count).Append(")\n");
+        var noteParts = new List<string>();
         var budget = MaxTotalNoteChars;
         var cut = false;
+        var used = 0;
         foreach (var (reference, text) in notes)
         {
             var allowed = Math.Min(MaxNoteChars, budget);
             var shown = text.Length <= allowed ? text : text[..allowed];
+            var part = $"\n### {reference}\n" + (shown.Length < text.Length
+                ? $"{shown}\n[truncated: {text.Length - shown.Length} more characters, read {reference} for the rest]\n"
+                : $"{shown}\n");
+            if (sb.Length + 40 + used + part.Length > KitRouter.MaxTask - Reserve)
+            {
+                break;
+            }
+
+            cut |= shown.Length < text.Length;
             budget -= shown.Length;
-            sb.Append("\n### ").Append(reference).Append('\n');
-            if (shown.Length < text.Length)
-            {
-                cut = true;
-                sb.Append(shown).Append("\n[truncated: ").Append(text.Length - shown.Length).Append(" more characters, read ").Append(reference).Append(" for the rest]\n");
-            }
-            else
-            {
-                sb.Append(shown).Append('\n');
-            }
+            used += part.Length;
+            noteParts.Add(part);
+        }
+
+        if (noteParts.Count == 0 && notes.Count > 0)
+        {
+            throw new InvalidOperationException($"note {notes[0].Ref} does not fit a triage task of {KitRouter.MaxTask} characters");
+        }
+
+        sb.Append("## New notes (").Append(noteParts.Count).Append(")\n");
+        foreach (var part in noteParts)
+        {
+            sb.Append(part);
         }
 
         if (cut)
@@ -70,11 +92,24 @@ public static class TriageStage
         }
 
         sb.Append("\n## Existing cards (").Append(cards.Count).Append(")\n");
+        var listed = 0;
         foreach (var (id, title) in cards)
         {
-            sb.Append("- ").Append(id).Append(": ").Append(title).Append('\n');
+            var line = $"- {id}: {title}\n";
+            if (sb.Length + line.Length > KitRouter.MaxTask - 120)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
         }
 
-        return sb.ToString();
+        if (listed < cards.Count)
+        {
+            sb.Append("[").Append(cards.Count - listed).Append(" more cards not listed: read the project's spec files for them]\n");
+        }
+
+        return new TriageTask(sb.ToString(), noteParts.Count);
     }
 }
