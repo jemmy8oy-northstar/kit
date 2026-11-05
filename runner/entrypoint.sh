@@ -66,11 +66,14 @@ process="$work/process.md"
 curl --fail --silent --show-error --location "${KIT_URL%/}/api/process" -o "$process"
 
 echo "kit-run[$KIT_RUN_ID]: working"
+# bypassPermissions, so the agent can run the repo's tests: acceptEdits refuses every command.
+# The Job is the sandbox (scratch disk, no Kubernetes token, a capped run token, a GitHub token
+# for one repo), which is the default proposed on kit#684 and met with silence.
 claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
-  --permission-mode acceptEdits \
+  --permission-mode bypassPermissions \
   --output-format text
 
 # Push only if the agent left something behind; an empty run is a success with nothing to push.

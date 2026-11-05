@@ -1,0 +1,68 @@
+{{- /*
+BEH-USERS-9, slice C: where a user's agent run is allowed to happen.
+
+A run is a short-lived Job in its own namespace, built from the runner image (slice B). Kit
+creates it through the Kubernetes API (the launcher, slice D), so Kit's pod gets a service
+account that may create Jobs and Secrets in THAT namespace and nowhere else. A run's tokens
+go in a Secret Kit makes per run, never in the Job's spec, which anyone who can list Jobs
+can read. The runs get their own namespace so that Kit's right to create and delete Secrets
+does not reach the secrets of the apps sharing this one.
+
+The Job itself is in values.yaml (runner.job), handed to Kit as JSON in a ConfigMap. Kit
+names the Job, labels it, and adds an envFrom for the run's Secret; it changes nothing else.
+*/}}
+{{- if .Values.runner.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.runner.namespace }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "app.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "app.fullname" . }}-launcher
+  namespace: {{ .Values.runner.namespace }}
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "patch", "delete"]
+  # Status and logs of a run, for the run's page.
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["{{ include "app.fullname" . }}-runner-job"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "app.fullname" . }}-launcher
+  namespace: {{ .Values.runner.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "app.fullname" . }}-launcher
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "app.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-runner-job
+  namespace: {{ .Values.runner.namespace }}
+data:
+  job.json: {{ .Values.runner.job | toJson | quote }}
+{{- end }}

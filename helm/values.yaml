@@ -201,3 +201,70 @@ apps:
 # token or the `kit-github` App (see above). Without either, every edit is answered "on this server's disk
 # only" (kit#142), which is true. Write-back with no credential would mean commits
 # nobody can push, in a container that is wiped on restart.
+
+# BEH-USERS-9, slice C: a user's agent run, one short-lived Job each (templates/runner.yaml).
+# Kit's launcher (slice D) reads runner.job as JSON, gives it a name and a label, and adds
+# an envFrom for the run's own Secret, which holds KIT_RUN_ID, KIT_RUN_TOKEN, KIT_REPO,
+# KIT_TASK, GITHUB_TOKEN and the optional KIT_BASE_BRANCH and KIT_MODEL. Everything else
+# about a run is here, so changing what a run may use is a change to this file.
+# Until slice D lands nothing reads it, and Kit keeps runs queued.
+runner:
+  enabled: true
+  # Runs get their own namespace, so Kit's right to create and delete Secrets (a run's
+  # tokens) does not reach the secrets of the apps in `balenthiran`.
+  namespace: kit-runs
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      backoffLimit: 0 # a failed run is reported, not retried with the same token
+      # The run token stops reaching the model after 6 hours (KIT_AGENT_RUN_MAX_HOURS), so a
+      # run still going then could only fail. Stop it at the same time.
+      activeDeadlineSeconds: 21600
+      ttlSecondsAfterFinished: 3600 # the Job, its pod and (owned by it) its Secret go an hour after
+      template:
+        spec:
+          restartPolicy: Never
+          # A run needs no Kubernetes API, and this namespace's default account has no rights
+          # anyway: mount no token, so there is nothing to find.
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001 # `runner` in runner/Dockerfile
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: run
+              image: lhr.ocir.io/lr7uc6l49odc/kit-runner:latest
+              imagePullPolicy: Always
+              env:
+                - name: KIT_URL
+                  value: "https://balenthiran.co.uk/kit"
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                  ephemeral-storage: 1Gi
+                limits:
+                  memory: 2Gi
+                  ephemeral-storage: 4Gi
+              volumeMounts:
+                - name: work
+                  mountPath: /work
+                - name: home
+                  mountPath: /home/runner
+          volumes:
+            # Scratch only: the clone and Claude Code's own files die with the pod. The
+            # user's repo is the run's storage, so nothing survives but what was pushed.
+            - name: work
+              emptyDir:
+                sizeLimit: 3Gi
+            - name: home
+              emptyDir:
+                sizeLimit: 512Mi

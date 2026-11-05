@@ -17,6 +17,9 @@ spec:
         app: {{ .name }}
         release: {{ include "app.fullname" $ }}
     spec:
+      {{- if $.Values.runner.enabled }}
+      serviceAccountName: {{ include "app.fullname" $ }}
+      {{- end }}
       containers:
         - name: {{ .name }}
           image: "{{ .image.repository }}:{{ .image.tag }}"
@@ -42,6 +45,13 @@ spec:
             {{- if .ingress }}
             - name: KIT_BASE_PATH
               value: {{ .ingress.path | quote }}
+            {{- end }}
+            {{- /* BEH-USERS-9: where the launcher creates a run, and the Job it starts from. */}}
+            {{- if $.Values.runner.enabled }}
+            - name: KIT_RUNNER_NAMESPACE
+              value: {{ $.Values.runner.namespace | quote }}
+            - name: KIT_RUNNER_JOB_CONFIGMAP
+              value: "{{ include "app.fullname" $ }}-runner-job"
             {{- end }}
             {{- range .env }}
             - name: {{ .name }}
