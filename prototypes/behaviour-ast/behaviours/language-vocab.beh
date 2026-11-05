@@ -357,7 +357,6 @@ behaviour BEH-PATH-2 "A flash-card round drills the lessons he picks, then re-dr
   source defined language-vocab.notes.md#2026-11-04-1827
   review unreviewed
   priority 3
-  pending
   actor learner
   when opens page:Path
   then sees region:PathSections
@@ -367,3 +366,6 @@ behaviour BEH-PATH-2 "A flash-card round drills the lessons he picks, then re-dr
   contract "when you finish through the failed ones it gives you that breakdown but with how many times you got it wrong. Maybe we keep track of these to keep track what the worse vocab is."
   contract my assumption: built after BEH-PATH-1, as its lessons are the path's sections; the round reuses the existing Learn quiz card (BEH-LEARN-2)
   contract my assumption: a word's wrong count is kept in the browser with the path's progress (per device), and a "Worst words" list shows the highest counts first
+  contract my assumption: there is no sentence data or flag yet, so the Sentences toggle reads an item as a sentence by its shape (four or more characters, or punctuation) until one exists
+  contract my assumption: "Almost" counts as a miss, as in Learn, and a section over 20 words drills its 20 least-seen, the API's cap on a round
+  contract built 2026-11-05 (language-vocab#31)
