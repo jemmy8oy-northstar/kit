@@ -50,12 +50,13 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     }
 
     /// <summary>
-    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage? }</c>, authenticated by
-    /// the run token. <c>usage</c> is Claude Code's own count, with its field names (<c>input_tokens</c>,
+    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, bundles? }</c>,
+    /// authenticated by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed
+    /// to the pipeline. <c>usage</c> is Claude Code's own count, with its field names (<c>input_tokens</c>,
     /// <c>output_tokens</c>, <c>cache_creation_input_tokens</c>, <c>cache_read_input_tokens</c>). A run on James's
     /// subscription reaches Anthropic directly, so the model proxy never counts it, and this is the only count Kit gets.
     /// It is priced at list price for the run's model, as the proxy prices a call, and it is ignored when the proxy has
-    /// already counted the run, so no run is counted twice.
+    /// already counted the run, so no run is counted twice. Everything is checked before anything is recorded.
     /// </summary>
     public KitResponse Finished(string? runToken, JsonElement? body)
     {
@@ -89,6 +90,13 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(409, "already-over", $"this run is already {run.Status}");
         }
 
+        // A failed run's bundles are never used, so they are not read: a bad list must not keep a failed run from ending.
+        IReadOnlyList<ReportedBundle>? bundles = null;
+        if (s.GetString() == AgentRunStatus.Finished && ReadBundles(b, out bundles) is { } badBundles)
+        {
+            return badBundles;
+        }
+
         var proxyCounted = run.InputTokens + run.OutputTokens + run.CacheWriteTokens + run.CacheReadTokens > 0;
         if (usage is { } x && !proxyCounted)
         {
@@ -98,7 +106,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
 
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow());
         pool.Signal();
-        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished);
+        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
         return new KitResponse
         {
             Status = 200,
@@ -177,6 +185,51 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
 
         var (input, output, write, read) = (Count("input_tokens"), Count("output_tokens"), Count("cache_creation_input_tokens"), Count("cache_read_input_tokens"));
         return input < 0 || output < 0 || write < 0 || read < 0 ? null : new AgentUsage(input, output, write, read);
+    }
+
+    /// <summary>Most bundles one report may carry.</summary>
+    public const int MaxBundles = 50;
+
+    /// <summary>
+    /// The optional <c>bundles</c> of a finished report (BEH-ORCH-3): <c>[{ slug, text }]</c>, the bundles a triage
+    /// run pushed, <c>text</c> null for one too large to send. A 400 when they are malformed, else null.
+    /// </summary>
+    private static KitResponse? ReadBundles(JsonElement body, out IReadOnlyList<ReportedBundle>? bundles)
+    {
+        bundles = null;
+        if (!body.TryGetProperty("bundles", out var list) || list.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var bad = Error(400, "bad-bundles", $"bundles must be at most {MaxBundles} of {{ \"slug\": <a work-item slug>, \"text\": <string or null> }}, each slug once");
+        if (list.ValueKind != JsonValueKind.Array || list.GetArrayLength() > MaxBundles)
+        {
+            return bad;
+        }
+
+        var read = new List<ReportedBundle>();
+        foreach (var e in list.EnumerateArray())
+        {
+            if (e.ValueKind != JsonValueKind.Object
+                || !e.TryGetProperty("slug", out var slug) || slug.ValueKind != JsonValueKind.String
+                || slug.GetString() is not { Length: > 0 and <= ContextBundle.MaxSlug } s || !ContextBundle.SlugPattern.IsMatch(s)
+                || read.Any(r => r.Slug == s))
+            {
+                return bad;
+            }
+
+            var text = e.TryGetProperty("text", out var t) ? t : default;
+            if (text.ValueKind is not (JsonValueKind.String or JsonValueKind.Null or JsonValueKind.Undefined))
+            {
+                return bad;
+            }
+
+            read.Add(new ReportedBundle(s, text.ValueKind == JsonValueKind.String ? text.GetString() : null));
+        }
+
+        bundles = read;
+        return null;
     }
 
     private static KitResponse Error(int status, string error, string reason) =>
