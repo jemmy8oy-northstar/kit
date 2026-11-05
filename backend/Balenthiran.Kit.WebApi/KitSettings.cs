@@ -222,6 +222,29 @@ public sealed record KitSettings(
         : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var h) && h > 0 && h <= 24 * 365 ? TimeSpan.FromHours(h)
         : throw new InvalidOperationException($"KIT_AGENT_RUN_MAX_HOURS is \"{value}\": set it to the hours a run's token works for, above 0, such as 6 or 0.5");
 
+    /// <summary><c>KIT_RUNNER_POOL_TOKEN</c> (BEH-USERS-9): what runner pods claim queued runs with. Null or blank means there is no pool.</summary>
+    public string? RunnerPoolToken
+    {
+        init => runnerPoolToken = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private readonly string? runnerPoolToken;
+
+    /// <summary>The pool token, for the claim route and nothing else: never logged or echoed.</summary>
+    internal string? RunnerPoolSecret() => runnerPoolToken;
+
+    /// <summary>True when runner pods may claim runs.</summary>
+    public bool RunnerPool => runnerPoolToken is not null;
+
+    /// <summary><c>KIT_RUNNER_CLAIM_WAIT_SECONDS</c>: how long a claim waits for work before answering 204. Unset is <see cref="RunnerPoolRoutes.DefaultClaimWait"/>.</summary>
+    public TimeSpan RunnerClaimWait { get; init; } = RunnerPoolRoutes.DefaultClaimWait;
+
+    /// <summary><c>KIT_RUNNER_CLAIM_WAIT_SECONDS</c>: seconds, 0 to 120; unset is the default. Anything else THROWS.</summary>
+    public static TimeSpan ParseRunnerClaimWait(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? RunnerPoolRoutes.DefaultClaimWait
+        : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var s) && s >= 0 && s <= 120 ? TimeSpan.FromSeconds(s)
+        : throw new InvalidOperationException($"KIT_RUNNER_CLAIM_WAIT_SECONDS is \"{value}\": set it to a number of seconds from 0 to 120, such as 25");
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -306,6 +329,8 @@ public sealed record KitSettings(
             TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
             AgentRunCapUsd = ParseAgentRunCap(env("KIT_AGENT_RUN_CAP_USD")),
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
+            RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
+            RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
         };
     }
 

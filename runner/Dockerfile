@@ -21,4 +21,8 @@ ENV HOME=/home/runner
 COPY --chown=runner:runner entrypoint.sh /usr/local/bin/kit-run
 RUN chmod 0555 /usr/local/bin/kit-run
 
+# The runner pool's loop (BEH-USERS-9): claims a queued run from Kit, runs kit-run, reports, repeats.
+COPY --chown=runner:runner pool.sh /usr/local/bin/kit-pool
+RUN chmod 0555 /usr/local/bin/kit-pool
+
 ENTRYPOINT ["/usr/local/bin/kit-run"]

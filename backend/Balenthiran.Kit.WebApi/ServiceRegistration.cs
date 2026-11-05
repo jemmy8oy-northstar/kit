@@ -77,6 +77,14 @@ public static class ServiceRegistration
         // BEH-USERS-9: runs are recorded in the accounts' database when there is one; without, they die with the pod.
         // No runner exists yet, so a run stays queued; the model proxy is the one way a run reaches the model.
         services.TryAddSingleton<IAgentRunStore>(_ => settings.Accounts ? new PostgresAgentRunStore(settings.ConnectionString()!) : new MemoryAgentRunStore());
+        // BEH-USERS-9: with KIT_RUNNER_POOL_TOKEN set, runner pods claim queued runs from Kit; the pool is the launcher.
+        if (settings.RunnerPool)
+        {
+            services.TryAddSingleton(sp => new RunnerPool(sp.GetRequiredService<IAgentRunStore>()));
+            services.TryAddSingleton<IAgentRunLauncher>(sp => sp.GetRequiredService<RunnerPool>());
+            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>()));
+        }
+
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
         services.TryAddSingleton(sp => new AgentProxy(sp.GetRequiredService<IAgentRunStore>(), AgentClient(sp), settings.AnthropicKey(), settings.AgentRunCapUsd, sp.GetService<TimeProvider>(), settings.AgentRunMaxAge));
 
@@ -172,7 +180,8 @@ public static class ServiceRegistration
             triageLimit: settings.TriageLimit,
             runStore: sp.GetRequiredService<IAgentRunStore>(),
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
-            agentRunCap: settings.AgentRunCapUsd));
+            agentRunCap: settings.AgentRunCapUsd,
+            runnerPool: sp.GetService<RunnerPool>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
