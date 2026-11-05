@@ -30,6 +30,9 @@ public sealed partial class GitHubPullRequestOpener(
 {
     private static readonly Uri DefaultApi = new("https://api.github.com/");
 
+    // A request may name a project's own repository instead, so the clone's is kept apart from the parameter that names it.
+    private readonly string? clones = repository;
+
     /// <summary>
     /// <c>owner/name</c> from a GitHub remote URL in any of the forms <c>git remote get-url</c>
     /// prints (https, with or without credentials or <c>.git</c>; scp-style and <c>ssh://</c>),
@@ -43,8 +46,10 @@ public sealed partial class GitHubPullRequestOpener(
     }
 
     /// <inheritdoc />
-    public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, CancellationToken cancellationToken = default)
+    public async Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default)
     {
+        repository ??= clones;
+
         // The repository first: minting an App token is itself a request to GitHub, and wasted on a
         // pod that could not use it.
         if (string.IsNullOrEmpty(repository) || repository.Split('/') is not [{ Length: > 0 } owner, { Length: > 0 }])
@@ -108,8 +113,9 @@ public sealed partial class GitHubPullRequestOpener(
     /// between them. A head GitHub answers 404 for is an edits branch nobody has pushed to yet —
     /// nothing pending, not a failure, because that is every Kit before its first edit.
     /// </remarks>
-    public async Task<IPendingEdits> PendingAsync(string head, string baseBranch, CancellationToken cancellationToken = default)
+    public async Task<IPendingEdits> PendingAsync(string head, string baseBranch, string? repository = null, CancellationToken cancellationToken = default)
     {
+        repository ??= clones;
         if (string.IsNullOrEmpty(repository) || repository.Split('/') is not [{ Length: > 0 } owner, { Length: > 0 }])
         {
             return new PendingEdits { Reason = "Kit does not know which GitHub repository its clone came from, so it cannot list pending edits" };

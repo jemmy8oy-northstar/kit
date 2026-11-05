@@ -1357,6 +1357,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: Kit writes to the branch the project's KIT_PROJECTS entry names, and reads from that same branch, so it always sees its own writes. Like Kit's own KIT_GIT_BRANCH, that is an edits branch and never the base branch; Commit proposes it into the project's base as today
   contract my assumption: the slices are: first the remote writer, proved on a project whose spec already lives in its own repo; then one project at a time moves into its .kit/, the smallest first; kit moves last, with the CI path change as his own PR
   contract my assumption: while a project moves, its spec is in two places for a while: the new .kit/ in its own repo and the old copy in kit. Kit reads and writes the .kit/ one and ignores the old copy until it is deleted, so the project stays on the list throughout. Any other spec found in two places still stops Kit re-reading, as today
+  contract my assumption: "Propose edits for merging" after an edit to a project in its own repo opens the pull request in that repo, from its edits branch into the same base Kit's own edits go to (dev), and the project's pending list reads that branch too
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS

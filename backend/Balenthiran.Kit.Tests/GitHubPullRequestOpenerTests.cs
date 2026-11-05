@@ -38,6 +38,22 @@ public class GitHubPullRequestOpenerTests
         Assert.Equal($"Bearer {Token}", only.Authorization);
     }
 
+    /// <summary>BEH-USERS-12: a project's own repository, when named, is the one asked; its owner is the head's owner too.</summary>
+    [Fact]
+    public async Task A_named_repository_is_asked_instead_of_the_clones()
+    {
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, "[]"),
+            FakeGitHub.Json(HttpStatusCode.Created, """{"number":4,"html_url":"https://github.com/someone/beta/pull/4"}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"commits":[]}"""));
+
+        Assert.Equal(4, (await Opener(gh).OpenAsync("kit/edits", "dev", "t", "b", "someone/beta")).Number);
+        await Opener(gh).PendingAsync("kit/edits", "dev", "someone/beta");
+
+        Assert.Equal("https://api.github.com/repos/someone/beta/pulls?state=open&head=someone%3Akit%2Fedits&base=dev", gh.Sent[0].Uri.AbsoluteUri);
+        Assert.Equal("https://api.github.com/repos/someone/beta/compare/dev...kit/edits?per_page=100", gh.Sent[^1].Uri.AbsoluteUri);
+    }
+
     [Fact]
     public async Task None_open_creates_one_from_the_head_into_the_base()
     {

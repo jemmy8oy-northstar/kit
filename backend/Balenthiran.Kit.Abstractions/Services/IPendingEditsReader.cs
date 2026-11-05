@@ -11,7 +11,8 @@ public interface IPendingEditsReader
     /// <summary>
     /// The commits on <paramref name="head"/> that <paramref name="baseBranch"/> lacks, newest
     /// first, and the open pull request between them. Never throws for a GitHub or network
-    /// failure: the result carries a reason instead.
+    /// failure: the result carries a reason instead. <paramref name="repository"/> as
+    /// <see cref="IPullRequestOpener.OpenAsync"/> takes it.
     /// </summary>
-    Task<IPendingEdits> PendingAsync(string head, string baseBranch, CancellationToken cancellationToken = default);
+    Task<IPendingEdits> PendingAsync(string head, string baseBranch, string? repository = null, CancellationToken cancellationToken = default);
 }
