@@ -1378,6 +1378,7 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
   contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
   contract my assumption, slice 1 (built switched off): the triage task text, the bundle's format at .kit/bundles/<slug>.md on branch kit/work/<slug>, and the stage-model settings (KIT_STAGE_MODEL_TRIAGE, default Haiku; KIT_STAGE_MODEL_REVIEW, default Opus) exist but start nothing. A task carries at most 1500 characters a note and 4000 in all, and says what it cut. The whole task fits a run's 8000-character task: notes that do not fit wait for the next triage run, and cards past the room left are counted and the run told to read the spec files. Starting the triage run waits on runs taking a repo and a task (kit#701)
+  needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
@@ -1393,6 +1394,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
   contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
+  needs-context "Built and wired to the orchestrator (BEH-ORCH-3) on dev, not yet promoted. No real review has run: production Kit has not deployed since kit went private (kit#714 has the one secret ArgoCD needs). Once a triage is seen live, I promote this and watch a flagged item."
 
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
