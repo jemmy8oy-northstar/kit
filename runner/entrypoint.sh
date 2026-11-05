@@ -16,6 +16,7 @@
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
+#   KIT_BUNDLES_FILE  optional  where to write the bundles of the kit/work/* branches the run pushed (BEH-ORCH-3)
 #
 # Two ways to reach the model. Without CLAUDE_CODE_OAUTH_TOKEN, only through Kit: ANTHROPIC_BASE_URL
 # is <KIT_URL>/api/agent and the run token stands in for the API key, so Kit counts and caps every
@@ -135,6 +136,34 @@ node -e '
 if [ "$status" -ne 0 ]; then
   echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
   exit "$status"
+fi
+
+# BEH-ORCH-3: the bundles a triage pushed go back to Kit with the pool's finished report. A work branch counts only
+# when origin has exactly what the run has, i.e. it was pushed. Each bundle is sent whole or not at all (text null),
+# so the report stays inside Kit's 64KB body limit; Kit stops an item whose text is null and says why.
+if [ -n "${KIT_BUNDLES_FILE:-}" ]; then
+  node -e '
+    const { execFileSync } = require("child_process");
+    const git = (...a) => execFileSync("git", a, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const tryGit = (...a) => { try { return git(...a); } catch { return null; } };
+    const [file, maxEach, maxAll, maxCount] = [process.argv[1], 8000, 48000, 50];
+    const prefix = "refs/heads/kit/work/";
+    const out = [];
+    let room = maxAll;
+    for (const ref of (tryGit("for-each-ref", "--format=%(refname)", prefix) || "").split("\n").filter(Boolean)) {
+      const slug = ref.slice(prefix.length);
+      if (out.length >= maxCount || slug.length > 60 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) continue;
+      const local = tryGit("rev-parse", ref);
+      if (!local || local !== tryGit("rev-parse", "refs/remotes/origin/kit/work/" + slug)) continue;
+      let text = tryGit("show", ref + ":.kit/bundles/" + slug + ".md") ?? "";
+      // Measured as it will be sent: JSON-escaped UTF-8 bytes.
+      const size = Buffer.byteLength(JSON.stringify(text)) + slug.length + 24;
+      if (size > maxEach || size > room) text = null;
+      else room -= size;
+      out.push({ slug, text });
+    }
+    require("fs").writeFileSync(file, JSON.stringify(out));
+  ' "$KIT_BUNDLES_FILE"
 fi
 
 # Push only if the agent left something behind; an empty run is a success with nothing to push.
