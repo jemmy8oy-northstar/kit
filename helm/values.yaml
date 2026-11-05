@@ -207,6 +207,10 @@ apps:
       # KIT_RUNNER_POOL_TOKEN, so the `kit-runner-pool` secret above must exist. Remove to switch off.
       - name: KIT_PIPELINE
         value: "on"
+      # Only these projects' notes are triaged: a triage pushes bundles quoting his notes to the
+      # project's repo, and every project repo but kit's is public (kit#714). Remove to triage all.
+      - name: KIT_PIPELINE_PROJECTS
+        value: "kit,kit-ui"
     resources: {}
     nodeSelector: {}
     tolerations: []
