@@ -332,5 +332,27 @@
       "file": "frontend/src/pages/Practice.test.tsx",
       "title": "keeps the hanzi off an English-to-pinyin card until it is answered, then shows it; the answer box asks for pinyin, never hanzi"
     }
+  ],
+  "BEH-PATH-1": [
+    {
+      "file": "backend/Balenthiran.LanguageVocab.Tests/PackTests.cs",
+      "title": "The_shipped_path_runs_greetings_then_numbers_then_mahjong"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-1: lists the path's sections in order, all open, skipping packs off the path"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-1: search narrows the sections by title or word"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-1: Next in order goes to the first section not yet done"
+    },
+    {
+      "file": "frontend/src/pages/Learn.test.tsx",
+      "title": "BEH-PATH-1: a pack quiz answered all right credits its words to the section, a miss does not"
+    }
   ]
 }
