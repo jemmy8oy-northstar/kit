@@ -5,8 +5,9 @@ namespace Balenthiran.Kit.Services;
 /// <summary>
 /// kit-ui.beh <c>BEH-ORCH-3</c>, wiring slice 1: a note left in Kit queues a triage run of its project's notes
 /// (BEH-ORCH-1) on the runner pool, and the run's end lets the next one start. A triage run reports the bundles
-/// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Only triage is
-/// wired: nothing starts spec, review or build yet, so those items wait. Exists
+/// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Spec and review
+/// runs start from that bundle and report it back changed, which moves the item on. Build is not wired yet, so an
+/// item that reaches it waits. Exists
 /// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
 /// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again.
 /// </summary>
@@ -19,8 +20,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
-    // A started run's item, and the note refs its task carries.
-    private readonly Dictionary<string, (int Index, IReadOnlyList<string> Notes)> started = new(StringComparer.Ordinal);
+    // A started run's item, the note keys a triage's task carries, and the bundle a later stage's run was given.
+    private readonly Dictionary<string, (int Index, IReadOnlyList<string> Notes, ContextBundle? Given)> started = new(StringComparer.Ordinal);
 
     // Notes a finished triage run has already sorted into bundles: a later triage leaves them out.
     private readonly HashSet<string> triaged = new(StringComparer.Ordinal);
@@ -83,7 +84,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             var item = items[run.Index];
-            if (!succeeded)
+            if (item.Stage != PipelineStage.Triage)
+            {
+                items[run.Index] = Ended(item, run.Given!, succeeded, reported);
+            }
+            else if (!succeeded)
             {
                 items[run.Index] = Stop(item, "the triage run failed");
             }
@@ -115,6 +120,56 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
+    /// <summary>
+    /// A spec or review run of <paramref name="item"/> ended: it must report its own bundle back, changed, and that
+    /// bundle moves the item on. Bundles it reports for other work items are not its business.
+    /// </summary>
+    private WorkItem Ended(WorkItem item, ContextBundle given, bool succeeded, IReadOnlyList<ReportedBundle>? reported)
+    {
+        var stage = item.Stage.ToString().ToLowerInvariant();
+        if (!succeeded)
+        {
+            return Stop(item, $"the {stage} run failed");
+        }
+
+        var own = reported?.FirstOrDefault(b => b.Slug == item.Slug);
+        if (own is null)
+        {
+            return Stop(item, $"the {stage} run reported no bundle for its work item");
+        }
+
+        var parsed = own.Text is null ? null : ContextBundle.Parse(own.Text);
+        if (parsed is null)
+        {
+            return Stop(item, "its bundle was too large for the runner to report");
+        }
+
+        if (parsed.Bundle is not { } bundle)
+        {
+            return Stop(item, $"its bundle is malformed: {parsed.Error}");
+        }
+
+        if (bundle.Slug != item.Slug)
+        {
+            return Stop(item, $"its bundle names work item \"{bundle.Slug}\"");
+        }
+
+        // A branch the run checked out and left alone is reported as it was: a stage that changed nothing did nothing.
+        if (bundle.Render() == given.Render())
+        {
+            return Stop(item, $"the {stage} run left the bundle unchanged");
+        }
+
+        // A spec that only flagged itself would reach build after its review with nothing planned.
+        if (item.Stage == PipelineStage.Spec && !bundle.Context.Contains(SpecStage.TestPlanHeading, StringComparison.Ordinal))
+        {
+            return Stop(item, "the spec run wrote no test plan");
+        }
+
+        bundles[(item.Project, item.Slug)] = bundle;
+        return Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null));
+    }
+
     private void QueueTriage(string app)
     {
         if (!items.Any(i => i.Project == app && i.Stage == PipelineStage.Triage && i.Status == WorkItemStatus.Queued))
@@ -126,7 +181,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     /// <summary>
     /// A bundle a triage of <paramref name="app"/> reported, as its work item. A later triage that updates a bundle
-    /// replaces the item, unless that item is running (a stage after triage, once one is wired). True when the bundle was usable.
+    /// replaces the item, unless that item is running a later stage. True when the bundle was usable.
     /// </summary>
     private bool Took(string app, ReportedBundle reported)
     {
@@ -181,23 +236,36 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private void StartReady()
     {
-        // Only triage is wired: an item waiting for spec, review or build must not hold its project's next triage.
-        foreach (var next in Orchestrator.Startable(items.Where(i => i.Stage == PipelineStage.Triage || i.Status == WorkItemStatus.Running)))
+        // Build is not wired yet: an item waiting for it must not hold its project's next stage. An item that ends at
+        // once (a triage with nothing to read, or one that cannot start) frees its project, so look again. A queued
+        // triage goes first: its new notes may update a bundle that would otherwise be specced twice.
+        bool again;
+        do
         {
-            var index = items.IndexOf(next);
-            try
+            again = false;
+            var ready = items
+                .Where(i => i.Stage != PipelineStage.Build || i.Status == WorkItemStatus.Running)
+                .OrderBy(i => i.Stage == PipelineStage.Triage ? 0 : 1);
+            foreach (var next in Orchestrator.Startable(ready))
             {
-                items[index] = Begin(index, next);
-            }
-            catch (Exception e)
-            {
-                // A spec or notes file that cannot be read stops this item; it must not fail the note or the run's report.
-                items[index] = Stop(next, $"the project could not be read ({e.GetType().Name})");
+                var index = items.IndexOf(next);
+                try
+                {
+                    items[index] = Begin(index, next);
+                }
+                catch (Exception e)
+                {
+                    // A spec or notes file that cannot be read stops this item; it must not fail the note or the run's report.
+                    items[index] = Stop(next, $"the project could not be read ({e.GetType().Name})");
+                }
+
+                again |= items[index].Status != WorkItemStatus.Running;
             }
         }
+        while (again);
     }
 
-    /// <summary>The item once its triage run is handed to the pool; Done when there is nothing to triage; Stopped when it cannot start.</summary>
+    /// <summary>The item once its run is handed to the pool; Done when a triage has nothing to read; Stopped when it cannot start.</summary>
     private WorkItem Begin(int index, WorkItem item)
     {
         var corpus = corpora.ReadText(item.Project);
@@ -205,6 +273,28 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         if (repoAt is null)
         {
             return Stop(item, problem ?? $"{item.Project} names no repo: its spec wants a `# kit:repo owner/repo@branch` line");
+        }
+
+        if (item.Stage != PipelineStage.Triage)
+        {
+            if (bundles.GetValueOrDefault((item.Project, item.Slug)) is not { } bundle)
+            {
+                return Stop(item, "its bundle is gone");
+            }
+
+            string text;
+            try
+            {
+                text = item.Stage == PipelineStage.Spec
+                    ? SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle)
+                    : ReviewStage.BuildTask(item.Project, bundle);
+            }
+            catch (InvalidOperationException e)
+            {
+                return Stop(item, e.Message);
+            }
+
+            return Enqueue(index, item, repoAt, text, [], bundle);
         }
 
         var notes = Untriaged(item.Project);
@@ -225,23 +315,30 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         // Worked out before the run is queued, so nothing can throw between queuing it and recording it.
         var taken = notes.Take(task.NotesTaken).Select(n => n.Key).ToList();
+        return Enqueue(index, item, repoAt, task.Text, taken, null);
+    }
+
+    /// <summary>Hands a run of <paramref name="item"/>'s stage to the pool and records it; Stopped when the pool will not take it.</summary>
+    private WorkItem Enqueue(int index, WorkItem item, string repoAt, string task, IReadOnlyList<string> notes, ContextBundle? given)
+    {
+        var stage = item.Stage.ToString().ToLowerInvariant();
         var at = repoAt.LastIndexOf('@');
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();
-        var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(PipelineStage.Triage, models), AgentTokens.Hash(token), now);
+        var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models), AgentTokens.Hash(token), now);
         try
         {
-            pool.Enqueue(run, token, repoAt[..at], task.Text, repoAt[(at + 1)..]);
+            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..]);
         }
         catch (Exception e)
         {
             // The type only, as StartRun logs it: the exception may carry what the pool was told, and the token is in it.
-            Console.Error.WriteLine($"kit: queuing a triage run threw {e.GetType().Name}");
+            Console.Error.WriteLine($"kit: queuing a {stage} run threw {e.GetType().Name}");
             runs.SetStatus(run.Id, AgentRunStatus.Failed, now);
-            return Stop(item, "the runner pool would not take the triage run");
+            return Stop(item, $"the runner pool would not take the {stage} run");
         }
 
-        started[run.Id] = (index, taken);
+        started[run.Id] = (index, notes, given);
         return Orchestrator.Start(item);
     }
 
