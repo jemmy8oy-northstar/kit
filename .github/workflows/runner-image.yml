@@ -1,0 +1,61 @@
+name: Build and Push the agent runner image to OCIR
+
+# BEH-USERS-9, slice B. The image a user's agent run starts from (runner/Dockerfile).
+# Conventions copied from docker-build-push.yml: native ARM64 runner, OCIR login from the
+# org-level variables and secrets, GitVersion semVer plus latest. It deliberately does NOT
+# commit a tag into helm/values.yaml: nothing deploys this image until slice C's Job names it.
+# Image: <OCIR_REGISTRY>/<OCIR_NAMESPACE>/kit-runner
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "runner/**"
+      - ".github/workflows/runner-image.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE: kit-runner
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm # Native ARM64 runner — no QEMU emulation overhead
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for GitVersion to read full git history
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v1
+        with:
+          versionSpec: "5.x"
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Oracle Container Image Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.OCIR_REGISTRY }}
+          username: ${{ secrets.OCIR_USERNAME }}
+          password: ${{ secrets.OCIR_AUTH_TOKEN }}
+
+      - name: Build and push the runner
+        uses: docker/build-push-action@v5
+        with:
+          context: runner
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.IMAGE }}:latest
+            ${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ env.IMAGE }}:${{ steps.gitversion.outputs.semVer }}
+          cache-from: type=gha,scope=kit-runner
+          cache-to: type=gha,mode=max,scope=kit-runner
