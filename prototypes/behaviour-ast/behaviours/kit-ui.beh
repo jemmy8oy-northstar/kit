@@ -1545,6 +1545,19 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
   contract my reading, unreviewed: at the measured $3 to $4 a merged PR with Opus (about half with Sonnet), £10 of tokens is roughly 3 to 6 PRs a month, so the £15 tier fits a light user; a busy one buys credit, which is where the premium earns
   contract my assumption: no volume is priced, because a run needs none (BEH-USERS-9); the £5 pays for compute while a run is live
 
+behaviour BEH-USERS-13 "A user can bring their own AI subscription by signing in with its provider, instead of paying Kit for tokens"
+  in FEAT-USER-BILLING
+  source defined kit#669
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#669, 2026-11-04 23:52Z): "open ai has announced a sign in with chat gpt. Meaning users can bring there open ai subscription to my app… We can offer different tiers api, bring your own. Tbh I think that Claude will follow suit later… later this is definitely a feature worth integrating."
+  contract my assumption: it sits beside the two tiers already planned, Kit's key metered (BEH-USERS-9) and the user's own API key, and is built after them; the cost work comes first, as he said
+  contract my assumption: the provider's sign-in terms are read before anything is built, since a subscription token used on Kit's server must be something that provider allows (kit#669)
+
 feature FEAT-USER-ISOLATION "One user never reaches another's work"
   in EPIC-KIT-USERS
   stage ui
