@@ -39,7 +39,16 @@ public static class ReviewStage
         sb.Append("4. Edit ").Append(path).Append(" on branch ").Append(TriageStage.Branch(bundle.Slug))
             .Append(". Change nothing but that bundle.\n");
         sb.Append("5. Commit and push the branch to origin, then STOP. Do not start any other work and do not open a pull request.\n\n");
-        sb.Append("## Bundle (").Append(path).Append(")\n\n```\n").Append(bundle.Render()).Append("```\n");
+        var rendered = bundle.Render();
+        if (sb.Length + path.Length + rendered.Length + 40 <= KitRouter.MaxTask)
+        {
+            sb.Append("## Bundle (").Append(path).Append(")\n\n```\n").Append(rendered).Append("```\n");
+        }
+        else
+        {
+            sb.Append("## Bundle\n\nThe bundle is too long to carry here: read it at ").Append(path).Append(" on that branch first.\n");
+        }
+
         return sb.ToString();
     }
 
