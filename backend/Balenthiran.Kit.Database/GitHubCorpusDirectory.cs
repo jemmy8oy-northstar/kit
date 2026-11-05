@@ -37,6 +37,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     private readonly ICorpusSnapshot?[] last = new ICorpusSnapshot?[sources.Count];
     private readonly ConcurrentDictionary<string, Override> overrides = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim refreshing = new(1, 1);
+    private readonly ThreadLocal<Dictionary<string, string?>> reads = new(() => new(StringComparer.Ordinal));
     private volatile Served? served;
 
     /// <summary>True once a refresh has succeeded; until then every read is the clone's.</summary>
@@ -140,7 +141,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     {
         if (overrides.TryGetValue(app + Suffix, out var o))
         {
-            return o.Text;
+            return Read(app + Suffix, o.Blob, o.Text)!;
         }
 
         if (served is not { } s)
@@ -149,7 +150,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         }
 
         return s.Apps.TryGetValue(app, out var e)
-            ? e.Corpus.Text
+            ? Read(app + Suffix, e.Corpus.Sha, e.Corpus.Text)!
             : throw new KeyNotFoundException($"no corpus named {app}");
     }
 
@@ -158,11 +159,11 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     {
         if (overrides.TryGetValue(app + BindingsSuffix, out var o))
         {
-            return o.Text;
+            return Read(app + BindingsSuffix, o.Blob, o.Text);
         }
 
         return served is { } s
-            ? s.Apps.TryGetValue(app, out var e) ? e.Bindings?.Text : null
+            ? s.Apps.TryGetValue(app, out var e) ? Read(app + BindingsSuffix, e.Bindings?.Sha, e.Bindings?.Text) : null
             : clone.ReadBindingsText(app);
     }
 
@@ -177,11 +178,11 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     {
         if (overrides.TryGetValue(app + NotesSuffix, out var o))
         {
-            return o.Text;
+            return Read(app + NotesSuffix, o.Blob, o.Text);
         }
 
         return served is { } s
-            ? s.Apps.TryGetValue(app, out var e) ? e.Notes?.Text : null
+            ? s.Apps.TryGetValue(app, out var e) ? Read(app + NotesSuffix, e.Notes?.Sha, e.Notes?.Text) : null
             : clone.ReadNotesText(app);
     }
 
@@ -201,11 +202,11 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     {
         if (overrides.TryGetValue(app + ScheduleSuffix, out var o))
         {
-            return o.Text;
+            return Read(app + ScheduleSuffix, o.Blob, o.Text);
         }
 
         return served is { } s
-            ? s.Apps.TryGetValue(app, out var e) ? e.Schedule?.Text : null
+            ? s.Apps.TryGetValue(app, out var e) ? Read(app + ScheduleSuffix, e.Schedule?.Sha, e.Schedule?.Text) : null
             : clone.ReadScheduleText(app);
     }
 
@@ -228,15 +229,28 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     /// <inheritdoc />
     public (string Commit, string Branch)? CommitToOwnRepo(string app, string message)
     {
-        if (writer is null || clone.Corpora().Contains(app, StringComparer.Ordinal) || served is not { } s || !s.Apps.TryGetValue(app, out var e))
+        if (writer is null || clone.Corpora().Contains(app, StringComparer.Ordinal))
         {
             return null;
         }
 
-        string? commit = null;
-        foreach (var suffix in new[] { Suffix, BindingsSuffix, NotesSuffix, ScheduleSuffix })
+        var files = new[] { Suffix, BindingsSuffix, NotesSuffix, ScheduleSuffix }.Select(x => app + x).ToList();
+        if (served is not { } s || !s.Apps.TryGetValue(app, out var e))
         {
-            var file = app + suffix;
+            // A re-read dropped the app between the write and its commit: the held edit has nowhere to go.
+            var orphaned = files.Where(f => overrides.TryGetValue(f, out var p) && p.Pending).ToList();
+            if (orphaned.Count == 0)
+            {
+                return null;
+            }
+
+            orphaned.ForEach(Undo);
+            throw new NotWritableException($"{app} is no longer on GitHub, so the edit was not saved");
+        }
+
+        string? commit = null;
+        foreach (var file in files)
+        {
             if (!overrides.TryGetValue(file, out var o) || !o.Pending)
             {
                 continue;
@@ -246,17 +260,16 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             {
                 // Synchronous like the clone's git push: the caller holds the write lock until the edit is saved or refused.
                 var (blob, made) = writer.PutAsync(e.Source, file, o.Text, o.Blob, message).GetAwaiter().GetResult();
-                overrides[file] = o with { Blob = blob, Pending = false };
+                overrides[file] = o with { Blob = blob, Pending = false, Replaced = null };
                 commit = made;
             }
             catch (Exception ex)
             {
-                // Nothing was saved, so the page must stop showing the edit, whatever the failure was.
-                overrides.TryRemove(new KeyValuePair<string, Override>(file, o));
-                if (ex is GitHubWriteException { Stale: true })
-                {
-                    ReReadSoon();
-                }
+                // The page goes back to what it showed before this edit, whatever the failure was: a stale
+                // refusal, a refusal, or an answer Kit could not read, which may hide a commit that landed.
+                // So it re-reads GitHub after every one.
+                Undo(file);
+                ReReadSoon();
 
                 if (ex is GitHubWriteException or GitHubReadException)
                 {
@@ -289,9 +302,37 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             throw new NotWritableException($"{app} is read from {(source is null ? "GitHub" : Key(source))}, which this Kit has no clone of, so it cannot be edited here");
         }
 
-        // A second write before the next re-read replaces the blob the first one committed, not the one first read.
+        // The commit names the blob this request's text was read from (a re-read since then would make
+        // the commit refuse, not overwrite), or the one a previous commit made, or failing both the snapshot's.
         var before = overrides.TryGetValue(file, out var o) ? o : null;
-        overrides[file] = new Override(text, before is null ? Sha(file) : before.Over, before is null ? Sha(file) : before.Blob, Pending: true);
+        var read = reads.Value!.TryGetValue(file, out var r) ? r : before?.Blob ?? Sha(file);
+        overrides[file] = new Override(text, before?.Over ?? read, read, Pending: true, Replaced: before);
+    }
+
+    // Put back what the file showed before a pending edit: the earlier committed override, or GitHub's text.
+    private void Undo(string file)
+    {
+        if (overrides.TryGetValue(file, out var o) && o.Pending)
+        {
+            if (o.Replaced is { } back)
+            {
+                overrides[file] = back;
+            }
+            else
+            {
+                overrides.TryRemove(new KeyValuePair<string, Override>(file, o));
+            }
+        }
+    }
+
+    // A write route reads, splices, then writes on one thread under the router's lock, so the blob each
+    // read served is kept per thread: the poller swapping the snapshot between the read and the write
+    // cannot change which blob the commit names. A stale entry from an earlier request can only make a
+    // commit refuse, never overwrite.
+    private string? Read(string file, string? blob, string? text)
+    {
+        reads.Value![file] = blob;
+        return text;
     }
 
     // After a stale refusal the newer text is on GitHub; reading it now, not at the next poll, means trying again applies to it.
@@ -338,5 +379,6 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 
     // Over: the sha GitHub served when the override began, so a re-read that has moved past it ends it.
     // Blob: the file's blob as Kit last knew it, which the next commit names. Pending: not yet committed.
-    private sealed record Override(string Text, string? Over, string? Blob = null, bool Pending = false);
+    // Replaced: the override a pending one replaced, put back if its commit fails.
+    private sealed record Override(string Text, string? Over, string? Blob = null, bool Pending = false, Override? Replaced = null);
 }

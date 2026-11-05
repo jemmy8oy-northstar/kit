@@ -300,6 +300,56 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal(Beta, d.ReadText("beta"));
     }
 
+    /// <summary>
+    /// The poller swaps in someone else's change between a route's read and its write: the commit names the
+    /// blob the text was read from, so GitHub refuses it rather than lose their change. Synchronous on purpose,
+    /// as a route is: the read and the write happen on one thread.
+    /// </summary>
+    [Fact]
+    public void A_re_read_between_the_read_and_the_write_cannot_change_the_blob_the_commit_names()
+    {
+        var writer = new Writer();
+        var d = new GitHubCorpusDirectory(clone, [Kit, Other], new Scripted(Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", Beta)), Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b2", "theirs"))), writer);
+        d.RefreshAsync().GetAwaiter().GetResult();
+
+        var text = d.ReadText("beta") + "  then sees region:Main\n";
+        d.RefreshAsync().GetAwaiter().GetResult();
+        d.WriteText("beta", text);
+        d.CommitToOwnRepo("beta", "kit: x");
+
+        Assert.Equal("b1", Assert.Single(writer.Puts).Sha);
+    }
+
+    /// <summary>A failed commit puts back the edit before it, which is on GitHub, rather than show text older than both.</summary>
+    [Fact]
+    public async Task A_failed_commit_puts_back_the_committed_edit_before_it()
+    {
+        var writer = new Writer();
+        var (d, router) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", Beta)));
+        AddBehaviour(router, "BEH-N");
+        var committed = d.ReadText("beta");
+        writer.Refuse = new GitHubWriteException("GitHub answered 502");
+
+        Assert.Equal(409, AddBehaviour(router, "BEH-M").Status);
+
+        Assert.Equal(committed, d.ReadText("beta"));
+    }
+
+    /// <summary>An edit whose app a re-read dropped before its commit is refused, not left showing as if saved.</summary>
+    [Fact]
+    public async Task An_edit_whose_app_left_GitHub_before_its_commit_is_refused_and_not_shown()
+    {
+        var writer = new Writer();
+        var (d, _) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other));
+
+        d.WriteText("beta", "edited");
+        await d.RefreshAsync();
+
+        Assert.Throws<NotWritableException>(() => d.CommitToOwnRepo("beta", "kit: x"));
+        Assert.Throws<KeyNotFoundException>(() => d.ReadText("beta"));
+        Assert.Empty(writer.Puts);
+    }
+
     /// <summary>The clone's apps are untouched: they are written to the clone and committed by its git write-back, never through the Contents API.</summary>
     [Fact]
     public async Task An_app_the_clone_holds_never_goes_through_the_writer()
@@ -485,7 +535,7 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
     {
         public List<(IProjectSource Source, string File, string Text, string? Sha, string Message)> Puts { get; } = [];
 
-        public GitHubWriteException? Refuse { get; init; }
+        public GitHubWriteException? Refuse { get; set; }
 
         public Task<(string Blob, string Commit)> PutAsync(IProjectSource source, string fileName, string text, string? sha, string message, CancellationToken cancellationToken = default)
         {
