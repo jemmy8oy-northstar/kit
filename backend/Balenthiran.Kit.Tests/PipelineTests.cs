@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.Database;
+using Balenthiran.Kit.DataModels.Models;
 using Balenthiran.Kit.Services;
 using Balenthiran.Kit.WebApi;
 
@@ -64,8 +65,18 @@ public class PipelineTests
             return r.Status == 204 ? null : Assert.IsType<PoolClaim>(r.Body);
         }
 
-        public void Finish(PoolClaim claim, string status = "finished") =>
-            Assert.Equal(200, Routes.Finished(claim.Token, Json(new { status })).Status);
+        private int finished;
+
+        // A finished triage reports one bundle, as every triage of at least one note does.
+        public void Finish(PoolClaim claim, string status = "finished")
+        {
+            var slug = $"work-{++finished}";
+            var body = status == "finished" ? Json(new { status, bundles = new[] { new { slug, text = BundleText(slug) } } }) : Json(new { status });
+            Assert.Equal(200, Routes.Finished(claim.Token, body).Status);
+        }
+
+        public KitResponse FinishWith(PoolClaim claim, params object[] bundles) =>
+            Routes.Finished(claim.Token, Json(new { status = "finished", bundles }));
 
         public void Dispose() => Directory.Delete(root, recursive: true);
     }
@@ -211,6 +222,159 @@ public class PipelineTests
         rig.Pipeline!.RunEnded("run-nobody-started", succeeded: true);
 
         Assert.Empty(rig.Pipeline.Items());
+    }
+
+    private static string BundleText(string slug, string? flag = null) =>
+        $"# Sort the list\nWork-item: {slug}\n" + (flag is null ? "" : $"Flag: {flag}\n")
+        + "Cards:\n- BEH-A\nNotes:\n- demo.notes.md#x\nFiles:\n- src/List.cs\nContext:\nsort by date\n";
+
+    [Fact]
+    public void A_triage_reporting_a_bundle_queues_its_work_item_for_spec_and_keeps_the_bundle()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        Assert.Equal(200, rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }).Status);
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Queued), (item.Stage, item.Status));
+        Assert.Equal(["BEH-A"], rig.Pipeline.Bundle("demo", "list-sorting")!.Cards);
+    }
+
+    [Fact]
+    public void A_flagged_bundle_queues_its_item_for_review_of_the_triage()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Review, WorkItemStatus.Queued, PipelineStage.Triage), (item.Stage, item.Status, item.ReviewedStage));
+    }
+
+    [Fact]
+    public void A_bundle_that_is_malformed_too_large_or_for_another_slug_stops_its_item_with_the_reason()
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+
+        rig.FinishWith(
+            rig.Claim()!,
+            new { slug = "broken", text = "not a bundle" },
+            new { slug = "huge", text = (string?)null },
+            new { slug = "named-wrong", text = BundleText("something-else") });
+
+        string? Why(string slug) => Assert.Single(rig.Pipeline!.Items(), i => i.Slug == slug).StoppedBecause;
+        Assert.StartsWith("its bundle is malformed: line 1", Why("broken"));
+        Assert.Equal("its bundle was too large for the runner to report", Why("huge"));
+        Assert.Equal("its bundle names work item \"something-else\"", Why("named-wrong"));
+        Assert.Null(rig.Pipeline!.Bundle("demo", "broken"));
+    }
+
+    [Fact]
+    public void Items_waiting_for_a_stage_not_yet_wired_do_not_hold_the_projects_next_triage()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        // The spec item is now ahead of any triage in the queue.
+        rig.Note("second note");
+
+        Assert.Contains("second note", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+        Assert.Equal(WorkItemStatus.Queued, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").Status);
+    }
+
+    [Fact]
+    public void A_later_triage_updating_a_bundle_replaces_its_item_and_a_bad_update_drops_the_old_bundle()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+        var first = rig.Claim()!;
+        rig.Note("second note");
+        rig.FinishWith(first, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = "# broken" });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal(WorkItemStatus.Stopped, item.Status);
+        Assert.Null(rig.Pipeline.Bundle("demo", "list-sorting"));
+    }
+
+    [Fact]
+    public void A_failed_triage_takes_no_bundles()
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+
+        Assert.Equal(200, rig.Routes.Finished(rig.Claim()!.Token, Json(new { status = "failed", bundles = new[] { new { slug = "x", text = BundleText("x") } } })).Status);
+
+        Assert.DoesNotContain(rig.Pipeline!.Items(), i => i.Slug == "x");
+    }
+
+    [Fact]
+    public void A_finished_triage_with_no_usable_bundle_stops_and_its_notes_are_read_again()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+
+        Assert.Equal(200, rig.Routes.Finished(rig.Claim()!.Token, Json(new { status = "finished" })).Status);
+
+        var stopped = Assert.Single(rig.Pipeline!.Items());
+        Assert.Equal("the triage reported no usable bundle", stopped.StoppedBecause);
+        Assert.Null(rig.Claim());
+
+        rig.Note("second note");
+        var next = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("first note", next.Task);
+
+        rig.FinishWith(next, new { slug = "broken", text = "not a bundle" });
+        rig.Note("third note");
+        Assert.Contains("first note", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void A_failed_report_with_malformed_bundles_still_ends_the_run()
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+
+        var r = rig.Routes.Finished(rig.Claim()!.Token, JsonDocument.Parse("""{"status":"failed","bundles":"x"}""").RootElement);
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal(AgentRunStatus.Failed, rig.Store.List()[0].Status);
+    }
+
+    [Theory]
+    [InlineData("""{"status":"finished","bundles":"x"}""")]
+    [InlineData("""{"status":"finished","bundles":[{"text":"t"}]}""")]
+    [InlineData("""{"status":"finished","bundles":[{"slug":"Bad Slug","text":"t"}]}""")]
+    [InlineData("""{"status":"finished","bundles":[{"slug":"a","text":7}]}""")]
+    [InlineData("""{"status":"finished","bundles":[{"slug":"a","text":"t"},{"slug":"a","text":"t"}]}""")]
+    [InlineData("""{"status":"finished","bundles":[{"slug":"triage #1","text":"t"}]}""")]
+    public void Malformed_bundles_are_400_and_the_run_is_not_ended(string body)
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+        var claim = rig.Claim()!;
+
+        var r = rig.Routes.Finished(claim.Token, JsonDocument.Parse(body).RootElement);
+
+        Assert.Equal(400, r.Status);
+        Assert.Equal("bad-bundles", Assert.IsType<ApiError>(r.Body).Error);
+        Assert.Equal(AgentRunStatus.Running, rig.Store.List()[0].Status);
+    }
+
+    [Fact]
+    public void More_than_the_most_bundles_is_400()
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+
+        var r = rig.FinishWith(rig.Claim()!, Enumerable.Range(0, RunnerPoolRoutes.MaxBundles + 1).Select(i => (object)new { slug = $"b{i}", text = "t" }).ToArray());
+
+        Assert.Equal(400, r.Status);
     }
 
     [Fact]
