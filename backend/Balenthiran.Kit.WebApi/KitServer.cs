@@ -43,6 +43,14 @@ public static class KitServer
         var proxy = app.Services.GetRequiredService<AgentProxy>();
         var proxyPath = api + "agent/v1/messages";
 
+        // BEH-USERS-9: the runner pool's two machine routes. No session, Origin or cookie applies to them: a
+        // pod proves itself with the pool token (claim) or its own run token (finished). Mounted only when
+        // KIT_RUNNER_POOL_TOKEN is set; without it these paths fall through to the router's 404.
+        var poolRoutes = app.Services.GetService<RunnerPoolRoutes>();
+        var claimPath = api + "runs/claim";
+        var finishedPath = api + "runs/finished";
+        var poolJson = app.Services.GetRequiredService<IEngineJsonSerialiser>().Options;
+
         app.Run(async ctx =>
         {
             // The RAW target, still percent-encoded and with its dot segments: Request.Path
@@ -58,6 +66,12 @@ public static class KitServer
             if (path == proxyPath || path == proxyPath + "/count_tokens")
             {
                 await ServeAgent(ctx, proxy, countTokens: path != proxyPath);
+                return;
+            }
+
+            if (poolRoutes is not null && (path == claimPath || path == finishedPath))
+            {
+                await ServePool(ctx, poolRoutes, path == claimPath, poolJson);
                 return;
             }
 
@@ -94,6 +108,52 @@ public static class KitServer
         });
 
         return app;
+    }
+
+    private static async Task ServePool(HttpContext ctx, RunnerPoolRoutes routes, bool claim, System.Text.Json.JsonSerializerOptions options)
+    {
+        if (!HttpMethods.IsPost(ctx.Request.Method))
+        {
+            ctx.Response.StatusCode = 405;
+            ctx.Response.Headers.Allow = "POST";
+            ctx.Response.Headers.CacheControl = "no-store";
+            return;
+        }
+
+        Balenthiran.Kit.DataModels.Models.KitResponse answer;
+        if (claim)
+        {
+            answer = await routes.ClaimAsync(Header(ctx.Request.Headers[RunnerPoolRoutes.PoolHeader]), ctx.RequestAborted);
+        }
+        else
+        {
+            System.Text.Json.JsonElement? body = null;
+            if (await ReadBody(ctx.Request.Body) is { } bytes && bytes.Length > 0)
+            {
+                try
+                {
+                    body = System.Text.Json.JsonDocument.Parse(bytes).RootElement.Clone();
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    // Left null: the route answers 400 for a body it cannot read.
+                }
+            }
+
+            answer = routes.Finished(Header(ctx.Request.Headers["x-api-key"]), body);
+        }
+
+        ctx.Response.StatusCode = answer.Status;
+        ctx.Response.ContentType = answer.ContentType;
+        if (answer.CacheControl is not null)
+        {
+            ctx.Response.Headers.CacheControl = answer.CacheControl;
+        }
+
+        if (answer.Body is not null)
+        {
+            await ctx.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(answer.Body, answer.Body.GetType(), options));
+        }
     }
 
     /// <summary>

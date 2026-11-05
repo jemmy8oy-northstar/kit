@@ -44,6 +44,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="runStore">Where a user's agent runs are recorded (BEH-USERS-9). None means they are kept in memory only.</param>
 /// <param name="runLauncher">What starts a run (BEH-USERS-9). None means no runner is configured and a run stays queued.</param>
 /// <param name="agentRunCap">What one run may spend, USD (<c>KIT_AGENT_RUN_CAP_USD</c>); the model proxy enforces it, the list shows it.</param>
+/// <param name="runnerPool">The runner pool (BEH-USERS-9), when <c>KIT_RUNNER_POOL_TOKEN</c> is set: a run started with a repo and a task is queued here for a pod to claim. None means the launcher alone starts runs.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -77,7 +78,8 @@ public sealed partial class KitRouter(
     int triageLimit = KitRouter.DefaultTriageLimit,
     IAgentRunStore? runStore = null,
     IAgentRunLauncher? runLauncher = null,
-    decimal agentRunCap = AgentProxy.DefaultCapUsd) : IKitRouter
+    decimal agentRunCap = AgentProxy.DefaultCapUsd,
+    RunnerPool? runnerPool = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 

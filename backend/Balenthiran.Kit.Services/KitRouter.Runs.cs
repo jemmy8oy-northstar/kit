@@ -17,6 +17,12 @@ public sealed partial class KitRouter
     public const string DefaultRunModel = "claude-sonnet-5-5";
 
     private static readonly Regex RunsRoute = new(@"^/api/projects/([^/]+)/runs\z", RegexOptions.Compiled);
+    private static readonly Regex RepoName = new(@"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+\z", RegexOptions.Compiled);
+    private static readonly Regex BranchName = new(@"^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._/-]{0,99}\z", RegexOptions.Compiled);
+
+    /// <summary>The longest task a run may be given.</summary>
+    public const int MaxTask = 8000;
+
     private static readonly Regex ModelName = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.Compiled);
 
     /// <summary><c>GET /api/runs</c>: every run newest first, with tokens and cost. Operator only: 401 with no session, 403 for another user.</summary>
@@ -80,6 +86,42 @@ public sealed partial class KitRouter
             return Json(400, new ApiError { Error = "bad-request", Reason = "the body must be a JSON object, or empty" });
         }
 
+        string? repo = null;
+        string? task = null;
+        string? baseBranch = null;
+        if (body is { ValueKind: JsonValueKind.Object } rb)
+        {
+            if (Field(rb, "repo") is { } r && r.ValueKind != JsonValueKind.Null)
+            {
+                if (r.ValueKind != JsonValueKind.String || !RepoName.IsMatch(r.GetString()!))
+                {
+                    return Json(400, new ApiError { Error = "bad-request", Reason = "repo, when given, must be owner/name" });
+                }
+
+                repo = r.GetString();
+            }
+
+            if (Field(rb, "task") is { } t && t.ValueKind != JsonValueKind.Null)
+            {
+                if (t.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(t.GetString()) || t.GetString()!.Length > MaxTask)
+                {
+                    return Json(400, new ApiError { Error = "bad-request", Reason = $"task, when given, must be non-empty text of at most {MaxTask} characters" });
+                }
+
+                task = t.GetString();
+            }
+
+            if (Field(rb, "baseBranch") is { } bb && bb.ValueKind != JsonValueKind.Null)
+            {
+                if (bb.ValueKind != JsonValueKind.String || !BranchName.IsMatch(bb.GetString()!))
+                {
+                    return Json(400, new ApiError { Error = "bad-request", Reason = "baseBranch, when given, must be a branch name" });
+                }
+
+                baseBranch = bb.GetString();
+            }
+        }
+
         var token = AgentTokens.Mint();
         var run = agentRuns.Create(owner, project, model, AgentTokens.Hash(token), (clock ?? TimeProvider.System).GetUtcNow());
 
@@ -87,7 +129,15 @@ public sealed partial class KitRouter
         AgentLaunch launch;
         try
         {
-            launch = agentLauncher.LaunchAsync(run, token).GetAwaiter().GetResult();
+            if (runnerPool is not null && repo is not null && task is not null)
+            {
+                runnerPool.Enqueue(run, token, repo, task, baseBranch);
+                launch = new AgentLaunch(true, RunnerPool.QueuedNote);
+            }
+            else
+            {
+                launch = agentLauncher.LaunchAsync(run, token).GetAwaiter().GetResult();
+            }
         }
         catch (Exception e)
         {
