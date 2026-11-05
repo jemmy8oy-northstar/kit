@@ -310,7 +310,12 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             return;
         }
 
-        var source = served is { } s && s.Apps.TryGetValue(app, out var e) ? e.Source : null;
+        if (served is null)
+        {
+            throw new NotWritableException($"Kit has not read GitHub yet, so it cannot tell whether {app} has moved to its own repo; try again in a moment");
+        }
+
+        var source = served.Apps.TryGetValue(app, out var e) ? e.Source : null;
         if (source is null || writer is null)
         {
             throw new NotWritableException($"{app} is read from {(source is null ? "GitHub" : Key(source))}, which this Kit has no clone of, so it cannot be edited here");
@@ -387,8 +392,10 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
 
     // The clone's copy of a project that has moved to its own repo is left behind: the read and every
     // write are the own repo's, or an edit would land in a copy the page no longer shows.
+    // Before the first re-read Kit cannot tell which projects have moved, so with any .kit/ source it writes nothing.
     private bool InClone(string app) =>
-        clone.Corpora().Contains(app, StringComparer.Ordinal) && served?.Moved.Contains(app) != true;
+        clone.Corpora().Contains(app, StringComparer.Ordinal)
+        && (served is { } s ? !s.Moved.Contains(app) : !sources.Any(x => x.Path == KitDir));
 
     /// <summary>True when <paramref name="incoming"/> is a project's .kit/ in its own repo and <paramref name="held"/> the copy it left in another; false the other way round; null for any other pair.</summary>
     private static bool? MovedTo(IProjectSource incoming, IProjectSource held)

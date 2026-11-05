@@ -120,6 +120,18 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Equal("behaviour BEH-A \"on disk\"\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.beh")));
     }
 
+    /// <summary>A pod starts with a move in KIT_PROJECTS: until GitHub is read, an edit would land in the copy about to be ignored, so it is refused.</summary>
+    [Fact]
+    public void Before_the_first_refresh_with_a_kit_dir_source_nothing_is_written_to_the_clone()
+    {
+        var d = new GitHubCorpusDirectory(clone, [Kit, Moved], new Scripted(), new Writer());
+
+        var e = Assert.Throws<NotWritableException>(() => d.WriteText("alpha", "edited"));
+
+        Assert.StartsWith("Kit has not read GitHub yet", e.Message);
+        Assert.Equal("behaviour BEH-A \"on disk\"\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.beh")));
+    }
+
     /// <summary>Only a .kit/ in ANOTHER repo is a move: two .kit/ copies, or one in the same repo, are still refused.</summary>
     [Theory]
     [InlineData("o/kit@kit/hosted:.kit")]
