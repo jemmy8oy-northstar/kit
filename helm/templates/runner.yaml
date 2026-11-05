@@ -1,0 +1,123 @@
+{{- /*
+BEH-USERS-9, slice C: where a user's agent run is allowed to happen.
+
+A fixed pool of runner pods (James's choice, kit#672), built from the runner image (slice B).
+Each one asks Kit's public URL for the next queued run, does it in scratch disk, and asks again.
+Kit starts nothing in the cluster, so Kit has no service account and no Kubernetes rights, and
+nothing here can create a pod or read a secret.
+
+"Before we go live we need ensure that the run pods do not have control plane access" (kit#686):
+a runner mounts no Kubernetes token, and the namespace's default account it runs as is bound to
+no Role, so even a run that reaches the API server has no credential to show it.
+*/}}
+{{- if .Values.runner.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.runner.namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-runner
+  namespace: {{ .Values.runner.namespace }}
+spec:
+  replicas: {{ .Values.runner.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "app.fullname" . }}-runner
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.fullname" . }}-runner
+    spec:
+      # A run needs no Kubernetes API: mount no token, so there is nothing to find.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.runner.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001 # `runner` in runner/Dockerfile
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: runner
+          image: {{ .Values.runner.image | quote }}
+          imagePullPolicy: Always
+          # The pool loop (slice D); the image's own entrypoint is one run.
+          command: ["/usr/local/bin/kit-pool"]
+          env:
+            - name: KIT_URL
+              value: "https://balenthiran.co.uk/kit"
+            - name: KIT_RUNNER_POOL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kit-runner-pool
+                  key: token
+            # James's subscription token (kit#708), from `claude setup-token`. OPTIONAL: unset, runs
+            # reach the model through Kit's proxy and its key, as before. Created by hand, by him:
+            #   kubectl create secret generic kit-claude-subscription -n kit-runs --from-literal=token=<token>
+            - name: CLAUDE_CODE_OAUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kit-claude-subscription
+                  key: token
+                  optional: true
+            - name: KIT_RUNS_PER_CONTAINER
+              value: {{ .Values.runner.runsPerContainer | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.runner.resources | nindent 12 }}
+          volumeMounts:
+            - name: work
+              mountPath: /work
+            - name: home
+              mountPath: /home/runner
+      volumes:
+        # Scratch only, and the loop empties both after every run. The user's repo is the
+        # run's storage, so nothing survives a run but what it pushed.
+        - name: work
+          emptyDir:
+            sizeLimit: 3Gi
+        - name: home
+          emptyDir:
+            sizeLimit: 512Mi
+---
+# A run executes whatever the agent decides, so it gets the internet (GitHub, Kit's public
+# URL, npm) and nothing private: no in-cluster service, no node, and not the cloud metadata
+# address, which can hand out the node's own credentials. Nothing may connect in.
+# ⚠️ Enforced only if the cluster's network plugin enforces NetworkPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runs-egress-public-only
+  namespace: {{ .Values.runner.namespace }}
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 100.64.0.0/10
+{{- end }}

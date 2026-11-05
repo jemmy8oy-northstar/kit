@@ -44,6 +44,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="runStore">Where a user's agent runs are recorded (BEH-USERS-9). None means they are kept in memory only.</param>
 /// <param name="runLauncher">What starts a run (BEH-USERS-9). None means no runner is configured and a run stays queued.</param>
 /// <param name="agentRunCap">What one run may spend, USD (<c>KIT_AGENT_RUN_CAP_USD</c>); the model proxy enforces it, the list shows it.</param>
+/// <param name="runnerPool">The runner pool (BEH-USERS-9), when <c>KIT_RUNNER_POOL_TOKEN</c> is set: a run started with a repo and a task is queued here for a pod to claim. None means the launcher alone starts runs.</param>
+/// <param name="pipeline">The agent pipeline (BEH-ORCH-3), when <c>KIT_PIPELINE</c> is on: a note or a behaviour request queues a triage run. None means a note starts nothing.</param>
 public sealed partial class KitRouter(
     ICorpusDirectory corpora,
     IProjectViewer viewer,
@@ -77,7 +79,9 @@ public sealed partial class KitRouter(
     int triageLimit = KitRouter.DefaultTriageLimit,
     IAgentRunStore? runStore = null,
     IAgentRunLauncher? runLauncher = null,
-    decimal agentRunCap = AgentProxy.DefaultCapUsd) : IKitRouter
+    decimal agentRunCap = AgentProxy.DefaultCapUsd,
+    RunnerPool? runnerPool = null,
+    Pipeline? pipeline = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -867,6 +871,13 @@ public sealed partial class KitRouter(
         };
 
         corpora.WriteNotesText(app, written);
+
+        // BEH-ORCH-3: his action is what queues the next stage; a bell or a resolution is for the agent, not triage.
+        if (kind is Notes.NoteKind or Notes.RequestKind)
+        {
+            pipeline?.NoteLeft(app);
+        }
+
         return Json(200, GitOutcome(corpora.FullNotesPath(app), summary, app, new WriteOutcome
         {
             App = app,

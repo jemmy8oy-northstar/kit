@@ -8,18 +8,28 @@
 #   KIT_RUN_TOKEN     required  the per-run token; sent as x-api-key to Kit's model proxy
 #   KIT_REPO          required  owner/repo to work on
 #   KIT_TASK          required  what the user asked for
-#   GITHUB_TOKEN      required  short-lived token that can push to KIT_REPO
+#   GITHUB_TOKEN      optional  a fixed token that can push to KIT_REPO; when absent (the pool case) git
+#                               asks Kit's POST /api/runs/github-token each time it needs one
+#                               (this script itself uses no gh CLI)
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
+#   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
+#   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
+#   KIT_BUNDLES_FILE  optional  where to write the bundles of the kit/work/* branches the run pushed (BEH-ORCH-3)
 #
-# The model is reached only through Kit: ANTHROPIC_BASE_URL is <KIT_URL>/api/agent and the
-# run token stands in for the API key. No real Anthropic key ever enters this container.
+# Two ways to reach the model. Without CLAUDE_CODE_OAUTH_TOKEN, only through Kit: ANTHROPIC_BASE_URL
+# is <KIT_URL>/api/agent and the run token stands in for the API key, so Kit counts and caps every
+# call. With it, the run uses James's subscription and goes straight to Anthropic (his kit#708: no
+# pipeline until it can use his subscription). Kit's proxy then counts nothing, so the run's usage is
+# written to KIT_USAGE_FILE for the pool to report with `finished`. The token is readable inside the
+# run, which James accepted on kit#708; Kit's per-run dollar cap does not apply to it, the
+# subscription's own limits and --max-turns do.
 # Tokens are never echoed; git gets the GitHub token through a credential helper reading env.
 set -euo pipefail
 
 missing=()
-for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK GITHUB_TOKEN; do
+for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK; do
   [ -n "${!v:-}" ] || missing+=("$v")
 done
 if [ "${#missing[@]}" -gt 0 ]; then
@@ -35,19 +45,50 @@ case "$KIT_RUN_ID" in
   *[!A-Za-z0-9._-]*) echo "kit-run: KIT_RUN_ID has characters a branch name cannot" >&2; exit 64 ;;
 esac
 
-export ANTHROPIC_BASE_URL="${KIT_URL%/}/api/agent"
-export ANTHROPIC_API_KEY="$KIT_RUN_TOKEN"
 unset ANTHROPIC_AUTH_TOKEN
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  # An API key would win over the OAuth token, so none may be set.
+  unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
+  echo "kit-run[$KIT_RUN_ID]: on the subscription"
+else
+  unset CLAUDE_CODE_OAUTH_TOKEN
+  export ANTHROPIC_BASE_URL="${KIT_URL%/}/api/agent"
+  export ANTHROPIC_API_KEY="$KIT_RUN_TOKEN"
+fi
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
-# git authenticates from the env at call time, so the token is in no URL, config or log.
+# git authenticates at call time, so the token is in no URL, config or log.
+# Without GITHUB_TOKEN (the normal case: a run carries no GitHub token) the credential helper asks Kit
+# each time git needs one, with the run token; Kit mints a token for this ONE repo (contents and
+# pull_requests write only) and refuses it once the run is over. The run token goes to curl in a
+# config on stdin, so it is never in argv (visible in ps).
 export GIT_TERMINAL_PROMPT=0
+export KIT_URL KIT_RUN_TOKEN
+scratch="${KIT_WORK_DIR:-/work}" # overridable only so a test can run this script outside the image
+helper="$(mktemp "$scratch/credential.XXXXXX")"
+cat > "$helper" <<'HELPER'
+#!/usr/bin/env bash
+# git credential helper: `get` prints a fresh repo-scoped token from Kit; anything else is a no-op.
+[ "${1:-}" = get ] || exit 0
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  echo username=x-access-token
+  echo "password=$GITHUB_TOKEN"
+  exit 0
+fi
+body="$(printf 'header = "x-api-key: %s"\n' "$KIT_RUN_TOKEN" \
+  | curl --fail --silent --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")" || exit 1
+token="$(printf '%s' "$body" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
+[ -n "$token" ] || exit 1
+echo username=x-access-token
+echo "password=$token"
+HELPER
+chmod 700 "$helper"
 export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="credential.helper"
-export GIT_CONFIG_VALUE_0='!f() { echo username=x-access-token; echo "password=$GITHUB_TOKEN"; }; f'
+export GIT_CONFIG_VALUE_0="!$helper"
 
-work="$(mktemp -d /work/run.XXXXXX)"
-trap 'rm -rf "$work"' EXIT
+work="$(mktemp -d "$scratch/run.XXXXXX")"
+trap 'rm -rf "$work" "$helper"' EXIT
 
 echo "kit-run[$KIT_RUN_ID]: cloning $KIT_REPO"
 git clone --quiet "https://github.com/${KIT_REPO}.git" "$work/repo"
@@ -66,12 +107,64 @@ process="$work/process.md"
 curl --fail --silent --show-error --location "${KIT_URL%/}/api/process" -o "$process"
 
 echo "kit-run[$KIT_RUN_ID]: working"
+# bypassPermissions, so the agent can run the repo's tests: acceptEdits refuses every command.
+# The Job is the sandbox (scratch disk, no Kubernetes token, a capped run token, a GitHub token
+# for one repo), which is the default proposed on kit#684 and met with silence.
+# JSON, so the usage can be read; the agent's final message is still printed for the log.
+result="$work/result.json"
+status=0
 claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
-  --permission-mode acceptEdits \
-  --output-format text
+  --permission-mode bypassPermissions \
+  --output-format json > "$result" || status=$?
+# A failed run spent tokens too, so its usage is written before the exit status is acted on.
+node -e '
+  const [file, usageFile] = process.argv.slice(1);
+  let r;
+  try { r = JSON.parse(require("fs").readFileSync(file, "utf8")); } catch { process.exit(0); }
+  if (typeof r.result === "string") console.log(r.result);
+  if (usageFile && r.usage && typeof r.usage === "object") {
+    const u = {};
+    for (const k of ["input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"]) {
+      u[k] = Number.isSafeInteger(r.usage[k]) && r.usage[k] >= 0 ? r.usage[k] : 0;
+    }
+    require("fs").writeFileSync(usageFile, JSON.stringify(u));
+  }
+' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}"
+if [ "$status" -ne 0 ]; then
+  echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
+  exit "$status"
+fi
+
+# BEH-ORCH-3: the bundles a triage pushed go back to Kit with the pool's finished report. A work branch counts only
+# when origin has exactly what the run has, i.e. it was pushed. Each bundle is sent whole or not at all (text null),
+# so the report stays inside Kit's 64KB body limit; Kit stops an item whose text is null and says why.
+if [ -n "${KIT_BUNDLES_FILE:-}" ]; then
+  node -e '
+    const { execFileSync } = require("child_process");
+    const git = (...a) => execFileSync("git", a, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const tryGit = (...a) => { try { return git(...a); } catch { return null; } };
+    const [file, maxEach, maxAll, maxCount] = [process.argv[1], 8000, 48000, 50];
+    const prefix = "refs/heads/kit/work/";
+    const out = [];
+    let room = maxAll;
+    for (const ref of (tryGit("for-each-ref", "--format=%(refname)", prefix) || "").split("\n").filter(Boolean)) {
+      const slug = ref.slice(prefix.length);
+      if (out.length >= maxCount || slug.length > 60 || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) continue;
+      const local = tryGit("rev-parse", ref);
+      if (!local || local !== tryGit("rev-parse", "refs/remotes/origin/kit/work/" + slug)) continue;
+      let text = tryGit("show", ref + ":.kit/bundles/" + slug + ".md") ?? "";
+      // Measured as it will be sent: JSON-escaped UTF-8 bytes.
+      const size = Buffer.byteLength(JSON.stringify(text)) + slug.length + 24;
+      if (size > maxEach || size > room) text = null;
+      else room -= size;
+      out.push({ slug, text });
+    }
+    require("fs").writeFileSync(file, JSON.stringify(out));
+  ' "$KIT_BUNDLES_FILE"
+fi
 
 # Push only if the agent left something behind; an empty run is a success with nothing to push.
 if [ "$(git rev-list --count "HEAD" --not --remotes)" -eq 0 ] && git diff --quiet && [ -z "$(git status --porcelain)" ]; then

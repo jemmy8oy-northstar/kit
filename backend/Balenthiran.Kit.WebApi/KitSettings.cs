@@ -222,6 +222,67 @@ public sealed record KitSettings(
         : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var h) && h > 0 && h <= 24 * 365 ? TimeSpan.FromHours(h)
         : throw new InvalidOperationException($"KIT_AGENT_RUN_MAX_HOURS is \"{value}\": set it to the hours a run's token works for, above 0, such as 6 or 0.5");
 
+    /// <summary><c>KIT_RUNNER_POOL_TOKEN</c> (BEH-USERS-9): what runner pods claim queued runs with. Null or blank means there is no pool.</summary>
+    public string? RunnerPoolToken
+    {
+        init => runnerPoolToken = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private readonly string? runnerPoolToken;
+
+    /// <summary>The pool token, for the claim route and nothing else: never logged or echoed.</summary>
+    internal string? RunnerPoolSecret() => runnerPoolToken;
+
+    /// <summary>True when runner pods may claim runs.</summary>
+    public bool RunnerPool => runnerPoolToken is not null;
+
+    /// <summary><c>KIT_RUNNER_CLAIM_WAIT_SECONDS</c>: how long a claim waits for work before answering 204. Unset is <see cref="RunnerPoolRoutes.DefaultClaimWait"/>.</summary>
+    public TimeSpan RunnerClaimWait { get; init; } = RunnerPoolRoutes.DefaultClaimWait;
+
+    /// <summary><c>KIT_RUNNER_CLAIM_WAIT_SECONDS</c>: seconds, 0 to 120; unset is the default. Anything else THROWS.</summary>
+    public static TimeSpan ParseRunnerClaimWait(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? RunnerPoolRoutes.DefaultClaimWait
+        : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var s) && s >= 0 && s <= 120 ? TimeSpan.FromSeconds(s)
+        : throw new InvalidOperationException($"KIT_RUNNER_CLAIM_WAIT_SECONDS is \"{value}\": set it to a number of seconds from 0 to 120, such as 25");
+
+    /// <summary><c>KIT_STAGE_MODEL_TRIAGE</c> (BEH-ORCH-2): the model the triage stage runs on. Unset is <see cref="StageModels.DefaultTriage"/>.</summary>
+    public string StageModelTriage { get; init; } = StageModels.DefaultTriage;
+
+    /// <summary><c>KIT_STAGE_MODEL_TRIAGE</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelTriage(string? value) => StageModels.Parse("KIT_STAGE_MODEL_TRIAGE", value, StageModels.DefaultTriage);
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW</c> (BEH-ORCH-2): the model that reviews a flagged stage. Unset is <see cref="StageModels.DefaultReview"/>.</summary>
+    public string StageModelReview { get; init; } = StageModels.DefaultReview;
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelReview(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW", value, StageModels.DefaultReview);
+
+    /// <summary><c>KIT_STAGE_MODEL_SPEC</c> (BEH-ORCH-3): the model the spec stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
+    public string StageModelSpec { get; init; } = StageModels.DefaultWork;
+
+    /// <summary><c>KIT_STAGE_MODEL_SPEC</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelSpec(string? value) => StageModels.Parse("KIT_STAGE_MODEL_SPEC", value, StageModels.DefaultWork);
+
+    /// <summary><c>KIT_STAGE_MODEL_BUILD</c> (BEH-ORCH-3): the model the build stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
+    public string StageModelBuild { get; init; } = StageModels.DefaultWork;
+
+    /// <summary><c>KIT_STAGE_MODEL_BUILD</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelBuild(string? value) => StageModels.Parse("KIT_STAGE_MODEL_BUILD", value, StageModels.DefaultWork);
+
+    /// <summary>
+    /// <c>KIT_PIPELINE</c> (BEH-ORCH-3): <c>on</c> makes a note left in Kit queue a triage run on the runner pool,
+    /// which spends Kit's own Anthropic credit. Unset or <c>off</c> is off: nothing runs.
+    /// </summary>
+    public bool Pipeline { get; init; }
+
+    /// <summary><c>KIT_PIPELINE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipeline(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE is \"{value}\": set it to on or off"),
+    };
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -306,6 +367,13 @@ public sealed record KitSettings(
             TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
             AgentRunCapUsd = ParseAgentRunCap(env("KIT_AGENT_RUN_CAP_USD")),
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
+            StageModelTriage = ParseStageModelTriage(env("KIT_STAGE_MODEL_TRIAGE")),
+            StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
+            StageModelSpec = ParseStageModelSpec(env("KIT_STAGE_MODEL_SPEC")),
+            StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
+            RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
+            RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
+            Pipeline = ParsePipeline(env("KIT_PIPELINE")),
         };
     }
 

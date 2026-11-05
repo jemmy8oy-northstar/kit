@@ -191,6 +191,15 @@ apps:
             name: kit-anthropic
             key: Anthropic__ApiKey
             optional: true
+      # BEH-USERS-9: the pool credential a runner (runner.yaml) claims runs with. The same token
+      # as the `kit-runner-pool` secret in kit-runs (see `runner:` below). OPTIONAL on purpose:
+      # unset, Kit answers every claim 401 and runs stay queued, as today.
+      - name: KIT_RUNNER_POOL_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: kit-runner-pool
+            key: token
+            optional: true
     resources: {}
     nodeSelector: {}
     tolerations: []
@@ -199,3 +208,40 @@ apps:
 # token or the `kit-github` App (see above). Without either, every edit is answered "on this server's disk
 # only" (kit#142), which is true. Write-back with no credential would mean commits
 # nobody can push, in a container that is wiped on restart.
+
+# BEH-USERS-9, slice C: where a user's agent run happens (templates/runner.yaml). James chose
+# a pool over a Job per run (kit#672: "I feel like the pool makes more sense"): a fixed
+# Deployment of runner pods in their own namespace. Each asks Kit's public URL for the next
+# queued run with the pool credential, does it, wipes its scratch disk and asks again. Kit
+# creates nothing in the cluster, so it needs no service account and no Kubernetes rights,
+# and a run's details (KIT_RUN_ID, KIT_RUN_TOKEN, KIT_REPO, KIT_TASK, and the optional
+# KIT_BASE_BRANCH and KIT_MODEL) reach the runner over HTTPS, never through the cluster.
+#
+# The pool credential is one random token in a `kit-runner-pool` secret (key `token`),
+# created by hand in BOTH namespaces, because a pod reads secrets only from its own:
+#   t=$(openssl rand -hex 32)
+#   kubectl create secret generic kit-runner-pool -n balenthiran --from-literal=token=$t
+#   kubectl create secret generic kit-runner-pool -n kit-runs --from-literal=token=$t
+#
+# replicas is 0 until slice D (Kit's claim route and the runner's loop) lands, so until then
+# this starts nothing.
+runner:
+  enabled: true
+  namespace: kit-runs
+  # How many runs can happen at once. Fixed, not autoscaled: scaling on queue length needs
+  # KEDA, a new component, and the cluster is a fixed free tier.
+  replicas: 0
+  image: lhr.ocir.io/lr7uc6l49odc/kit-runner:latest
+  # The runner's container exits after this many runs and is started fresh, so anything a
+  # run leaves outside its scratch directories reaches only a few later runs.
+  runsPerContainer: 20
+  # A run cut off by a rollout fails and is reported; it is not resumed.
+  terminationGracePeriodSeconds: 60
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+      ephemeral-storage: 1Gi
+    limits:
+      memory: 2Gi
+      ephemeral-storage: 4Gi
