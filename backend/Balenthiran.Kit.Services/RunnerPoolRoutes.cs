@@ -49,7 +49,10 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         return new KitResponse { Status = 200, ContentType = "application/json", CacheControl = "no-store", Body = claim };
     }
 
-    /// <summary>Answers a runner's report that its run ended: <c>{ status: "finished" | "failed" }</c>, authenticated by the run token.</summary>
+    /// <summary>
+    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", bundles? }</c>, authenticated
+    /// by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed to the pipeline.
+    /// </summary>
     public KitResponse Finished(string? runToken, JsonElement? body)
     {
         var run = runToken is { Length: > 0 } ? store.ByTokenHash(AgentTokens.Hash(runToken)) : null;
@@ -71,9 +74,14 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(409, "already-over", $"this run is already {run.Status}");
         }
 
+        if (ReadBundles(b, out var bundles) is { } badBundles)
+        {
+            return badBundles;
+        }
+
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow());
         pool.Signal();
-        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished);
+        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
         return new KitResponse
         {
             Status = 200,
@@ -137,6 +145,51 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         {
             return Error(502, "github-token", e.Message);
         }
+    }
+
+    /// <summary>Most bundles one report may carry.</summary>
+    public const int MaxBundles = 50;
+
+    /// <summary>
+    /// The optional <c>bundles</c> of a finished report (BEH-ORCH-3): <c>[{ slug, text }]</c>, the bundles a triage
+    /// run pushed, <c>text</c> null for one too large to send. A 400 when they are malformed, else null.
+    /// </summary>
+    private static KitResponse? ReadBundles(JsonElement body, out IReadOnlyList<ReportedBundle>? bundles)
+    {
+        bundles = null;
+        if (!body.TryGetProperty("bundles", out var list) || list.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        var bad = Error(400, "bad-bundles", $"bundles must be at most {MaxBundles} of {{ \"slug\": <a work-item slug>, \"text\": <string or null> }}, each slug once");
+        if (list.ValueKind != JsonValueKind.Array || list.GetArrayLength() > MaxBundles)
+        {
+            return bad;
+        }
+
+        var read = new List<ReportedBundle>();
+        foreach (var e in list.EnumerateArray())
+        {
+            if (e.ValueKind != JsonValueKind.Object
+                || !e.TryGetProperty("slug", out var slug) || slug.ValueKind != JsonValueKind.String
+                || slug.GetString() is not { Length: > 0 and <= ContextBundle.MaxSlug } s || !ContextBundle.SlugPattern.IsMatch(s)
+                || read.Any(r => r.Slug == s))
+            {
+                return bad;
+            }
+
+            var text = e.TryGetProperty("text", out var t) ? t : default;
+            if (text.ValueKind is not (JsonValueKind.String or JsonValueKind.Null or JsonValueKind.Undefined))
+            {
+                return bad;
+            }
+
+            read.Add(new ReportedBundle(s, text.ValueKind == JsonValueKind.String ? text.GetString() : null));
+        }
+
+        bundles = read;
+        return null;
     }
 
     private static KitResponse Error(int status, string error, string reason) =>

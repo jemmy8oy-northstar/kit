@@ -4,8 +4,9 @@ namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// kit-ui.beh <c>BEH-ORCH-3</c>, wiring slice 1: a note left in Kit queues a triage run of its project's notes
-/// (BEH-ORCH-1) on the runner pool, and the run's end lets the next one start. Only triage is wired: the work
-/// items a triage run writes to its branches are not read back yet, so nothing goes on to spec or build. Exists
+/// (BEH-ORCH-1) on the runner pool, and the run's end lets the next one start. A triage run reports the bundles
+/// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Only triage is
+/// wired: nothing starts spec, review or build yet, so those items wait. Exists
 /// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
 /// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again.
 /// </summary>
@@ -22,6 +23,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     // Notes a finished triage run has already sorted into bundles: a later triage leaves them out.
     private readonly HashSet<string> triaged = new(StringComparer.Ordinal);
+
+    // Each work item's bundle, as its triage reported it: what the stages after triage start from.
+    private readonly Dictionary<(string App, string Slug), ContextBundle> bundles = [];
 
     private int count;
 
@@ -47,12 +51,23 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
+    /// <summary>The bundle work item <paramref name="slug"/> of <paramref name="app"/> was last given by a triage; null when none.</summary>
+    public ContextBundle? Bundle(string app, string slug)
+    {
+        lock (gate)
+        {
+            return bundles.GetValueOrDefault((app, slug));
+        }
+    }
+
     /// <summary>
     /// Run <paramref name="runId"/> ended. A triage that worked marks its notes triaged and queues another, which
     /// reads any notes left for a later run; one that failed stops its item. A run the pipeline did not start is
     /// ignored. A run that never reports holds its project, as it holds the pool's, until Kit restarts.
+    /// <paramref name="reported"/> are the bundles a triage run says it pushed: each becomes a work item queued for
+    /// the stage after triage (review when it is flagged), or a stopped one saying why it could not be used.
     /// </summary>
-    public void RunEnded(string runId, bool succeeded)
+    public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null)
     {
         lock (gate)
         {
@@ -70,6 +85,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 items[run.Index] = item with { Status = WorkItemStatus.Done };
                 triaged.UnionWith(run.Notes);
+                foreach (var b in reported ?? [])
+                {
+                    Took(item.Project, b);
+                }
 
                 // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
                 QueueTriage(item.Project);
@@ -83,13 +102,68 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     {
         if (!items.Any(i => i.Project == app && i.Stage == PipelineStage.Triage && i.Status == WorkItemStatus.Queued))
         {
-            items.Add(new WorkItem(app, $"triage-{++count}", PipelineStage.Triage, WorkItemStatus.Queued));
+            // "#" is never in a bundle slug, so a triage item can never be mistaken for a bundle's.
+            items.Add(new WorkItem(app, $"triage #{++count}", PipelineStage.Triage, WorkItemStatus.Queued));
+        }
+    }
+
+    /// <summary>
+    /// A bundle a triage of <paramref name="app"/> reported, as its work item. A later triage that updates a bundle
+    /// replaces the item, unless that item is running.
+    /// </summary>
+    private void Took(string app, ReportedBundle reported)
+    {
+        var triage = new WorkItem(app, reported.Slug, PipelineStage.Triage, WorkItemStatus.Running);
+        var parsed = reported.Text is null ? null : ContextBundle.Parse(reported.Text);
+        ContextBundle? usable = null;
+        WorkItem item;
+        if (parsed is null)
+        {
+            item = Stop(triage, "its bundle was too large for the runner to report");
+        }
+        else if (parsed.Bundle is not { } bundle)
+        {
+            item = Stop(triage, $"its bundle is malformed: {parsed.Error}");
+        }
+        else if (bundle.Slug != reported.Slug)
+        {
+            item = Stop(triage, $"its bundle names work item \"{bundle.Slug}\"");
+        }
+        else
+        {
+            item = Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null));
+            usable = bundle;
+        }
+
+        var at = items.FindIndex(i => i.Project == app && i.Slug == reported.Slug);
+        if (at >= 0 && items[at].Status == WorkItemStatus.Running)
+        {
+            return;
+        }
+
+        if (at < 0)
+        {
+            items.Add(item);
+        }
+        else
+        {
+            items[at] = item;
+        }
+
+        if (usable is null)
+        {
+            bundles.Remove((app, reported.Slug));
+        }
+        else
+        {
+            bundles[(app, reported.Slug)] = usable;
         }
     }
 
     private void StartReady()
     {
-        foreach (var next in Orchestrator.Startable(items))
+        // Only triage is wired: an item waiting for spec, review or build must not hold its project's next triage.
+        foreach (var next in Orchestrator.Startable(items.Where(i => i.Stage == PipelineStage.Triage || i.Status == WorkItemStatus.Running)))
         {
             var index = items.IndexOf(next);
             try
