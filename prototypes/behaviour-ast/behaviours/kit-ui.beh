@@ -1392,6 +1392,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract his note (kit#672): "over time we can figure out what type of work requires a review from an advanced model. And we can always keep this flexible as models change"
   contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
+  contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
 
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE

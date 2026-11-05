@@ -233,6 +233,131 @@ public class OrchestrationStageTests
         }
     }
 
+    // ---- BEH-ORCH-2: the review ------------------------------------------------------------------
+
+    private static ContextBundle Reviewed(ReviewOutcome outcome, string note = "checked the files") =>
+        Sample("two cards disagree") with { Review = new BundleReview(outcome, note) };
+
+    [Theory]
+    [InlineData(ReviewOutcome.Agreed, "agreed")]
+    [InlineData(ReviewOutcome.Revised, "revised")]
+    [InlineData(ReviewOutcome.Escalated, "escalated")]
+    public void BEH_ORCH_2_A_review_survives_the_round_trip_straight_after_the_flag(ReviewOutcome outcome, string word)
+    {
+        var text = Reviewed(outcome, "who may start a run? — needs a person").Render();
+
+        Assert.Contains($"Flag: two cards disagree\nReview: {word} — who may start a run? — needs a person\nCards:", text);
+        var parsed = ContextBundle.Parse(text);
+        Assert.True(parsed.Ok, parsed.Error);
+        Assert.Equal("two cards disagree", parsed.Bundle!.Flag);
+        Assert.Equal(new BundleReview(outcome, "who may start a run? — needs a person"), parsed.Bundle.Review);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_A_review_without_the_flag_it_answers_is_refused()
+    {
+        var bundle = Sample() with { Review = new BundleReview(ReviewOutcome.Agreed, "fine") };
+
+        Assert.Equal("a review needs the flag it answers", bundle.Check());
+        Assert.Throws<InvalidOperationException>(() => bundle.Render());
+        var parsed = ContextBundle.Parse(Reviewed(ReviewOutcome.Agreed).Render().Replace("Flag: two cards disagree\n", ""));
+        Assert.False(parsed.Ok);
+        Assert.Contains("needs the flag", parsed.Error);
+    }
+
+    [Theory]
+    [InlineData("approved")]
+    [InlineData("Agreed")]
+    [InlineData("1")]
+    [InlineData("")]
+    public void BEH_ORCH_2_A_review_with_an_unknown_outcome_word_is_refused(string word)
+    {
+        var text = Reviewed(ReviewOutcome.Agreed).Render().Replace("Review: agreed", $"Review: {word}");
+
+        var parsed = ContextBundle.Parse(text);
+
+        Assert.False(parsed.Ok);
+        Assert.Contains($"outcome \"{word}\"", parsed.Error);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_A_review_outside_the_enum_is_refused()
+    {
+        var bundle = Sample("x") with { Review = new BundleReview((ReviewOutcome)99, "fine") };
+
+        Assert.Contains("agreed, revised or escalated", bundle.Check());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("one\ntwo")]
+    [InlineData("one\r\ntwo")]
+    public void BEH_ORCH_2_A_review_note_that_is_empty_or_spans_lines_is_refused(string note)
+    {
+        var bundle = Reviewed(ReviewOutcome.Revised, note);
+
+        Assert.Equal("the review needs a one-line note", bundle.Check());
+        Assert.Throws<InvalidOperationException>(() => bundle.Render());
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_A_review_line_with_no_note_is_refused_when_read_back()
+    {
+        var parsed = ContextBundle.Parse(Reviewed(ReviewOutcome.Agreed).Render().Replace("Review: agreed — checked the files", "Review: agreed"));
+
+        Assert.False(parsed.Ok);
+        Assert.Contains("one-line note", parsed.Error);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_A_review_task_needs_a_flagged_bundle_nobody_has_reviewed()
+    {
+        var unflagged = Assert.Throws<InvalidOperationException>(() => ReviewStage.BuildTask("kit", Sample()));
+        var done = Assert.Throws<InvalidOperationException>(() => ReviewStage.BuildTask("kit", Reviewed(ReviewOutcome.Agreed)));
+
+        Assert.Contains("flagged", unflagged.Message);
+        Assert.Contains("already", done.Message);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_The_review_task_carries_the_flag_the_branch_the_path_and_the_bundle()
+    {
+        var bundle = Sample("two cards disagree about who may start a run");
+
+        var task = ReviewStage.BuildTask("kit", bundle);
+
+        Assert.Contains("\"kit\"", task);
+        Assert.Contains("reason \"two cards disagree about who may start a run\"", task);
+        Assert.Contains("branch kit/work/run-stage-badge", task);
+        Assert.Contains("Edit .kit/bundles/run-stage-badge.md", task);
+        Assert.Contains("```\n" + bundle.Render() + "```", task);
+        Assert.Contains("ONLY the files it lists under Files", task);
+        Assert.Contains("Do NOT search the repo", task);
+        Assert.Contains("Review: agreed|revised|escalated — <one-line note>", task);
+        Assert.Contains("Keep the Flag line", task);
+        Assert.Contains("STOP", task);
+        Assert.Contains("do not open a pull request", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_The_tally_counts_flagged_bundles_by_outcome_and_ignores_unflagged_ones()
+    {
+        var tally = ReviewStage.Tally(
+        [
+            Sample(),
+            Sample() with { Slug = "other" },
+            Reviewed(ReviewOutcome.Agreed),
+            Reviewed(ReviewOutcome.Agreed),
+            Reviewed(ReviewOutcome.Revised),
+            Reviewed(ReviewOutcome.Escalated),
+            Sample("still waiting"),
+        ]);
+
+        Assert.Equal(new ReviewTally(Flagged: 5, Awaiting: 1, Agreed: 2, Revised: 1, Escalated: 1), tally);
+        Assert.Equal(new ReviewTally(0, 0, 0, 0, 0), ReviewStage.Tally([Sample()]));
+    }
+
     // ---- BEH-ORCH-2: the model per stage ---------------------------------------------------------
 
     [Fact]
