@@ -229,7 +229,7 @@ public class PipelineTests
         + "Cards:\n- BEH-A\nNotes:\n- demo.notes.md#x\nFiles:\n- src/List.cs\nContext:\nsort by date\n";
 
     [Fact]
-    public void A_triage_reporting_a_bundle_queues_its_work_item_for_spec_and_keeps_the_bundle()
+    public void A_triage_reporting_a_bundle_starts_its_work_items_spec_and_keeps_the_bundle()
     {
         using var rig = new Rig();
         rig.Note("the list should sort by date");
@@ -237,12 +237,12 @@ public class PipelineTests
         Assert.Equal(200, rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") }).Status);
 
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Queued), (item.Stage, item.Status));
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
         Assert.Equal(["BEH-A"], rig.Pipeline.Bundle("demo", "list-sorting")!.Cards);
     }
 
     [Fact]
-    public void A_flagged_bundle_queues_its_item_for_review_of_the_triage()
+    public void A_flagged_bundle_starts_a_review_of_the_triage()
     {
         using var rig = new Rig();
         rig.Note("the list should sort by date");
@@ -250,7 +250,7 @@ public class PipelineTests
         rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card") });
 
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((PipelineStage.Review, WorkItemStatus.Queued, PipelineStage.Triage), (item.Stage, item.Status, item.ReviewedStage));
+        Assert.Equal((PipelineStage.Review, WorkItemStatus.Running, PipelineStage.Triage), (item.Stage, item.Status, item.ReviewedStage));
     }
 
     [Fact]
@@ -273,17 +273,190 @@ public class PipelineTests
     }
 
     [Fact]
-    public void Items_waiting_for_a_stage_not_yet_wired_do_not_hold_the_projects_next_triage()
+    public void Items_waiting_for_build_do_not_hold_the_projects_next_triage()
     {
         using var rig = new Rig();
         rig.Note("first note");
         rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Specced("list-sorting") });
 
-        // The spec item is now ahead of any triage in the queue.
+        // The build item is now ahead of any triage in the queue.
         rig.Note("second note");
 
         Assert.Contains("second note", Assert.IsType<PoolClaim>(rig.Claim()).Task);
-        Assert.Equal(WorkItemStatus.Queued, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").Status);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (item.Stage, item.Status));
+    }
+
+    // The bundle as a spec run leaves it: a test plan added to the end of its Context.
+    private static string Specced(string slug, string? flag = null) =>
+        BundleText(slug, flag) + "Test plan:\n- BEH-A: the list is sorted by date\n";
+
+    // Triage reports one bundle for list-sorting; the spec run of it is what is claimed next.
+    private static PoolClaim Triaged(Rig rig, string? flag = null)
+    {
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag) });
+        return Assert.IsType<PoolClaim>(rig.Claim());
+    }
+
+    [Fact]
+    public void A_bundle_queued_for_spec_starts_a_spec_run_on_its_branch_with_the_bundle_and_the_spec_path()
+    {
+        using var rig = new Rig();
+
+        var spec = Triaged(rig);
+
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5"), (spec.Repo, spec.BaseBranch, spec.Model));
+        Assert.Contains("You are the spec stage for project \"demo\"", spec.Task);
+        Assert.Contains("Check out branch kit/work/list-sorting", spec.Task);
+        Assert.Contains("Edit the spec at demo.beh", spec.Task);
+        Assert.Contains("Work-item: list-sorting", spec.Task);
+        Assert.Contains("Write no tests and no code", spec.Task);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
+    }
+
+    [Fact]
+    public void A_spec_run_reporting_its_bundle_changed_queues_the_item_for_build_and_keeps_the_new_bundle()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (item.Stage, item.Status));
+        Assert.Contains("Test plan:", rig.Pipeline.Bundle("demo", "list-sorting")!.Context);
+    }
+
+    [Theory]
+    [InlineData("unchanged", "the spec run left the bundle unchanged")]
+    [InlineData("none", "the spec run reported no bundle for its work item")]
+    [InlineData("other", "the spec run reported no bundle for its work item")]
+    [InlineData("malformed", "its bundle is malformed: line 1 must be the title, \"# <title>\"")]
+    [InlineData("huge", "its bundle was too large for the runner to report")]
+    [InlineData("failed", "the spec run failed")]
+    [InlineData("flag only", "the spec run wrote no test plan")]
+    public void A_spec_run_that_did_not_change_its_own_bundle_stops_the_item_with_the_reason(string report, string why)
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+
+        var body = report switch
+        {
+            "unchanged" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = (string?)BundleText("list-sorting") } } }),
+            "none" => Json(new { status = "finished" }),
+            "other" => Json(new { status = "finished", bundles = new[] { new { slug = "another", text = (string?)Specced("another") } } }),
+            "malformed" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = (string?)"not a bundle" } } }),
+            "huge" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = (string?)null } } }),
+            "flag only" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = (string?)BundleText("list-sorting", flag: "unsure") } } }),
+            _ => Json(new { status = "failed" }),
+        };
+        Assert.Equal(200, rig.Routes.Finished(spec.Token, body).Status);
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Stopped, why), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Slug == "another");
+    }
+
+    [Fact]
+    public void A_flagged_triage_is_reviewed_first_and_an_agreed_review_starts_the_spec()
+    {
+        using var rig = new Rig();
+
+        var review = Triaged(rig, flag: "unsure which card");
+        Assert.Equal("claude-opus-5-5", review.Model);
+        Assert.Contains("You are the review stage for project \"demo\"", review.Task);
+        Assert.Contains("unsure which card", review.Task);
+
+        rig.FinishWith(review, new { slug = "list-sorting", text = BundleText("list-sorting", "unsure which card").Replace("Cards:", "Review: agreed — BEH-A is right\nCards:") });
+
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", spec.Task);
+        Assert.Contains("Review: agreed — BEH-A is right", spec.Task);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running, (PipelineStage?)null), (item.Stage, item.Status, item.ReviewedStage));
+    }
+
+    [Fact]
+    public void A_spec_that_flags_itself_is_reviewed_and_an_escalated_review_stops_the_item_for_a_person()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting", flag: "two cards may conflict") });
+        var flagged = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Review, PipelineStage.Spec), (flagged.Stage, flagged.ReviewedStage));
+
+        var review = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.FinishWith(review, new { slug = "list-sorting", text = Specced("list-sorting", "two cards may conflict").Replace("Cards:", "Review: escalated — which sort order does he want?\nCards:") });
+
+        var item = Assert.Single(rig.Pipeline.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "which sort order does he want?"), (item.Status, item.StoppedBecause));
+    }
+
+    [Fact]
+    public void A_review_run_that_failed_or_changed_nothing_stops_the_item()
+    {
+        using var failed = new Rig();
+        failed.Routes.Finished(Triaged(failed, flag: "unsure").Token, Json(new { status = "failed" }));
+        Assert.Equal("the review run failed", Assert.Single(failed.Pipeline!.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+
+        using var unchanged = new Rig();
+        unchanged.FinishWith(Triaged(unchanged, flag: "unsure"), new { slug = "list-sorting", text = BundleText("list-sorting", "unsure") });
+        Assert.Equal("the review run left the bundle unchanged", Assert.Single(unchanged.Pipeline!.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+    }
+
+    [Fact]
+    public void A_triage_that_updates_a_bundle_waiting_for_spec_hands_the_spec_the_new_bundle()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+        var first = rig.Claim()!;
+        rig.Note("second note");
+        rig.FinishWith(first, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        // The second triage goes first, and reports the same work item with more context.
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
+
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("newest first", spec.Task);
+        Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+    }
+
+    [Fact]
+    public void A_review_that_left_no_review_line_stops_the_item()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Triaged(rig, flag: "unsure"), new { slug = "list-sorting", text = BundleText("list-sorting", "unsure").Replace("sort by date", "sort by date, newest first") });
+
+        Assert.Equal("the review left no Review line", Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+    }
+
+    [Fact]
+    public void Notes_waiting_are_triaged_before_any_bundle_is_specced_and_bundles_are_specced_one_at_a_time()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+        var triage = rig.Claim()!;
+        rig.Note("second note");
+        rig.FinishWith(triage, new { slug = "one", text = BundleText("one") }, new { slug = "two", text = BundleText("two") });
+
+        var next = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("second note", next.Task);
+        Assert.Null(rig.Claim());
+        rig.FinishWith(next, new { slug = "three", text = BundleText("three") });
+
+        var first = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("Work-item: one", first.Task);
+        Assert.Null(rig.Claim());
+        rig.FinishWith(first, new { slug = "one", text = Specced("one") });
+
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("Work-item: two", second.Task);
+        rig.FinishWith(second, new { slug = "two", text = Specced("two") });
+
+        Assert.Contains("Work-item: three", Assert.IsType<PoolClaim>(rig.Claim()).Task);
     }
 
     [Fact]
