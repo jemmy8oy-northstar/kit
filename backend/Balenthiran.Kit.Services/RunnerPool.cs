@@ -20,6 +20,9 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
     private readonly object gate = new();
     private readonly List<Item> queue = [];
     private readonly Dictionary<string, string> handedOut = new(StringComparer.Ordinal);
+    // Run id -> repo for runs handed out and not yet over, so Kit knows which ONE repo a run's GitHub token may
+    // reach. Memory only, like the queue: a restart forgets it and the run's next token request is refused.
+    private readonly Dictionary<string, string> repoByRun = new(StringComparer.Ordinal);
     private TaskCompletionSource signal = NewSignal();
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -103,6 +106,14 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
                 }
             }
 
+            foreach (var runId in repoByRun.Keys.ToList())
+            {
+                if (OverOrGone(runId))
+                {
+                    repoByRun.Remove(runId);
+                }
+            }
+
             for (var i = 0; i < queue.Count; i++)
             {
                 var item = queue[i];
@@ -125,10 +136,31 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
                 }
 
                 handedOut[run.Project] = run.Id;
+                repoByRun[run.Id] = item.Repo;
                 return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model);
             }
 
             return null;
+        }
+    }
+
+    /// <summary>The repo of a run this pool handed out that is not over, else null (never handed out, over, or forgotten at a restart).</summary>
+    public string? RepoOf(string runId)
+    {
+        lock (gate)
+        {
+            if (!repoByRun.TryGetValue(runId, out var repo))
+            {
+                return null;
+            }
+
+            if (OverOrGone(runId))
+            {
+                repoByRun.Remove(runId);
+                return null;
+            }
+
+            return repo;
         }
     }
 
