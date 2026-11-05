@@ -1472,6 +1472,10 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract my assumption: a user's agent runs Sonnet by default, half Opus's price per token, with Opus by choice
   contract my assumption: a run's token stops reaching the model 6 hours after the run was created, whatever its status or spend, so a leaked or forgotten token cannot spend for ever. Kit answers 403 like a run that is over, and the operator can change the limit (KIT_AGENT_RUN_MAX_HOURS)
   contract my assumption: a run may have at most 4 model calls in flight at once, because the cap counts only what a run has already spent and parallel calls could otherwise carry it past without bound; a fifth is refused 429 (rate_limit_error) until one finishes
+  contract my assumption, slice C (kit#686, yours to review): runs are Jobs in their own namespace, kit-runs, so Kit's right to create and delete a run's Secret reaches no other app's secrets. The Job spec lives in the chart's values, mounts no Kubernetes token, and stops at 6 hours, the run token's limit. A run may reach only public addresses
+  contract my assumption, slice D: a run is started with a task and a repo (owner/name) as well as the model. The task is handed to the launcher and not stored, and the repo must be one Kit's GitHub App installation reaches, or the run fails to launch and says so
+  contract found 2026-11-05: a GitHub installation token lasts one hour, and a run may last six, so a token handed to a run when it starts can have expired by the time it pushes
+  contract my assumption: so the runner carries no GitHub token. Each time git needs one, it asks Kit with its run token, and Kit mints a token for that one repo with contents and pull-request write only. A run that is over gets 403. Kit minting tokens for a run is auth, and the runner is a platform change, so slice D goes to you for review and I do not self-merge it
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
