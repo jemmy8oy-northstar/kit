@@ -17,6 +17,7 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
 {
     private static readonly ProjectSource Kit = ProjectSource.Parse("o/kit@kit/hosted:prototypes/corpora")!;
     private static readonly ProjectSource Other = ProjectSource.Parse("o/snip-it@dev:behaviours")!;
+    private static readonly ProjectSource Moved = ProjectSource.Parse("o/alpha@kit/edits:.kit")!;
 
     private readonly string root = Directory.CreateTempSubdirectory("kit-pull-").FullName;
     private readonly CorpusDirectory clone;
@@ -83,6 +84,65 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
 
         Assert.Equal("alpha.beh is in both o/kit@kit/hosted:prototypes/corpora and o/snip-it@dev:behaviours; Kit will not choose one", e.Message);
         Assert.Equal("kept", d.Read("alpha"));
+    }
+
+    /// <summary>BEH-USERS-12, mid-move: alpha's .kit/ in its own repo wins over the copy still in kit, whichever is listed first.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_project_moved_into_its_own_repos_kit_dir_is_read_from_there_not_twice(bool kitFirst)
+    {
+        var kit = Snap(Kit, ("alpha.beh", "a1", "left in kit"), ("alpha.notes.md", "n1", "kit's notes"));
+        var own = Snap(Moved, ("alpha.beh", "m1", "in its own repo"));
+        var d = new GitHubCorpusDirectory(clone, kitFirst ? [Kit, Moved] : [Moved, Kit], new Scripted(kitFirst ? [kit, own] : [own, kit]));
+
+        await d.RefreshAsync();
+
+        Assert.Equal(["alpha"], d.Corpora());
+        Assert.Equal("in its own repo", d.Read("alpha"));
+        Assert.Equal(".kit/alpha.beh", d.RelativePath("alpha"));
+        Assert.Null(d.ReadNotesText("alpha")); // nothing of the copy left behind is mixed in
+    }
+
+    /// <summary>The clone still holds alpha, but alpha has moved: an edit is committed to its own repo, and the clone's copy is not touched.</summary>
+    [Fact]
+    public async Task A_write_to_a_moved_project_goes_to_its_own_repo_not_the_clone()
+    {
+        var writer = new Writer();
+        var d = new GitHubCorpusDirectory(clone, [Kit, Moved], new Scripted(Snap(Kit, ("alpha.beh", "a1", "left in kit")), Snap(Moved, ("alpha.beh", "m1", "in its own repo"))), writer);
+        await d.RefreshAsync();
+
+        d.WriteText("alpha", "edited");
+        var made = d.CommitToOwnRepo("alpha", "kit: x");
+
+        Assert.Equal((Moved, "alpha.beh", "m1"), (writer.Puts.Single().Source, writer.Puts.Single().File, writer.Puts.Single().Sha));
+        Assert.Equal(("c1", "kit/edits"), made);
+        Assert.Equal("behaviour BEH-A \"on disk\"\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.beh")));
+    }
+
+    /// <summary>A pod starts with a move in KIT_PROJECTS: until GitHub is read, an edit would land in the copy about to be ignored, so it is refused.</summary>
+    [Fact]
+    public void Before_the_first_refresh_with_a_kit_dir_source_nothing_is_written_to_the_clone()
+    {
+        var d = new GitHubCorpusDirectory(clone, [Kit, Moved], new Scripted(), new Writer());
+
+        var e = Assert.Throws<NotWritableException>(() => d.WriteText("alpha", "edited"));
+
+        Assert.StartsWith("Kit has not read GitHub yet", e.Message);
+        Assert.Equal("behaviour BEH-A \"on disk\"\n", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.beh")));
+    }
+
+    /// <summary>Only a .kit/ in ANOTHER repo is a move: two .kit/ copies, or one in the same repo, are still refused.</summary>
+    [Theory]
+    [InlineData("o/kit@kit/hosted:.kit")]
+    [InlineData("o/beta@dev:.kit")]
+    public async Task Any_other_pair_naming_one_app_is_still_refused(string second)
+    {
+        var other = ProjectSource.Parse(second)!;
+        var first = second.StartsWith("o/kit", StringComparison.Ordinal) ? Kit : Moved;
+        var d = new GitHubCorpusDirectory(clone, [first, other], new Scripted(Snap(first, ("alpha.beh", "a1", "x")), Snap(other, ("alpha.beh", "z1", "y"))));
+
+        await Assert.ThrowsAsync<GitHubReadException>(() => d.RefreshAsync());
     }
 
     [Fact]

@@ -68,6 +68,16 @@ describe('where the button appears', () => {
     expect(screen.getByRole('button', { name: /Propose edits/ })).toBeInTheDocument()
   })
 
+  it("names the write's project, so one in its own repo is proposed there (BEH-USERS-12)", async () => {
+    const calls = answer(200, { opened: true, alreadyOpen: false, number: 4, url: 'https://github.com/o/beta/pull/4' })
+    render(<WriteResultNote result={pushed} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Propose edits/ }))
+
+    await screen.findByRole('link', { name: 'Pull request #4' })
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ app: 'snip-it' })
+  })
+
   it('CONTROL: not after a write that reached no branch (git off, or committed and not pushed)', () => {
     const { unmount } = render(<WriteResultNote result={{ ...pushed, committed: false, pushed: undefined, commit: null, branch: null }} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()

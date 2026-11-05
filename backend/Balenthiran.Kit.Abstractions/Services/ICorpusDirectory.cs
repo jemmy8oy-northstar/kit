@@ -76,4 +76,10 @@ public interface ICorpusDirectory
     /// <see cref="Exceptions.NotWritableException"/> with GitHub's reason when nothing was committed.
     /// </summary>
     (string Commit, string Branch)? CommitToOwnRepo(string app, string message) => null;
+
+    /// <summary>
+    /// BEH-USERS-12: the repository (<c>owner/name</c>) and edits branch an app in its own repository
+    /// is written to, so its edits are proposed there. Null for an app the clone holds.
+    /// </summary>
+    (string Repository, string Branch)? OwnRepo(string app) => null;
 }

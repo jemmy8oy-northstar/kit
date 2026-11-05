@@ -359,18 +359,21 @@ public sealed partial class KitRouter(
     /// </summary>
     private PendingView Pending(string app)
     {
-        if (!git.Enabled || string.IsNullOrEmpty(head) || pending is null)
+        // BEH-USERS-12: an app in its own repository waits on its own edits branch there, whatever the clone's write-back is set to.
+        var own = corpora.OwnRepo(app);
+        var from = own?.Branch ?? head;
+        if (pending is null || (own is null && (!git.Enabled || string.IsNullOrEmpty(head))))
         {
-            return new PendingView { App = app, Head = head, Base = baseBranch, Reason = "git write-back is off, so no edit is waiting on a branch" };
+            return new PendingView { App = app, Head = from, Base = baseBranch, Reason = "git write-back is off, so no edit is waiting on a branch" };
         }
 
         // Sync over async, as Commit does: the host has no synchronisation context to deadlock on.
-        var all = pending.PendingAsync(head, baseBranch).GetAwaiter().GetResult();
+        var all = pending.PendingAsync(from!, baseBranch, own?.Repository).GetAwaiter().GetResult();
         var mine = all.Edits.Where(e => string.Equals(e.App, app, StringComparison.Ordinal)).ToList();
         return new PendingView
         {
             App = app,
-            Head = head,
+            Head = from,
             Base = baseBranch,
             Edits = mine,
             // The pull request carries every project's edits; it is only worth showing beside this one's.
@@ -465,7 +468,7 @@ public sealed partial class KitRouter(
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.
         if (pathname == "/api/commit")
         {
-            return Commit();
+            return Commit(body);
         }
 
         if (pathname.StartsWith("/api/push/", StringComparison.Ordinal))
@@ -703,8 +706,14 @@ public sealed partial class KitRouter(
     /// Every refusal is 409 with the opener's own sentence — GitHub's words where GitHub spoke —
     /// so the UI shows one shape and the reason names the layer.
     /// </summary>
-    private KitResponse Commit()
+    private KitResponse Commit(JsonElement? body)
     {
+        // BEH-USERS-12: the edits of an app in its own repository are proposed there, from the branch they were committed to.
+        if (body is { } b && Str(b, "app") is { } app && corpora.OwnRepo(app) is { } own)
+        {
+            return Propose(own.Branch, own.Repository);
+        }
+
         if (!git.Enabled)
         {
             return Json(409, new ApiError
@@ -719,6 +728,11 @@ public sealed partial class KitRouter(
             return Json(409, new ApiError { Error = "no-edits-branch", Reason = "Kit was not told which branch its edits are pushed to (KIT_GIT_BRANCH), so it cannot propose them" });
         }
 
+        return Propose(head!, null);
+    }
+
+    private KitResponse Propose(string from, string? repository)
+    {
         if (pulls is null)
         {
             return Json(409, new ApiError { Error = "no-pull-request", Reason = "this Kit has no way to open a pull request" });
@@ -732,7 +746,7 @@ public sealed partial class KitRouter(
         IPullRequestResult r;
         lock (commitGate)
         {
-            r = pulls.OpenAsync(head, baseBranch, $"kit: hosted edits ({head} → {baseBranch})", CommitBody).GetAwaiter().GetResult();
+            r = pulls.OpenAsync(from, baseBranch, $"kit: hosted edits ({from} → {baseBranch})", CommitBody, repository).GetAwaiter().GetResult();
         }
         return r.Reason is { } reason
             ? Json(409, new ApiError { Error = "no-pull-request", Reason = reason })
