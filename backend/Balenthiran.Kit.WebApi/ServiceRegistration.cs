@@ -73,6 +73,12 @@ public static class ServiceRegistration
         // BEH-USERS-4: a user's memory is the accounts' database when there is one; without, it dies with the pod.
         services.TryAddSingleton<IUserMemoryStore>(_ => settings.Accounts ? new PostgresUserMemoryStore(settings.ConnectionString()!) : new MemoryUserMemoryStore());
 
+        // BEH-USERS-9: runs are recorded in the accounts' database when there is one; without, they die with the pod.
+        // No runner exists yet, so a run stays queued; the model proxy is the one way a run reaches the model.
+        services.TryAddSingleton<IAgentRunStore>(_ => settings.Accounts ? new PostgresAgentRunStore(settings.ConnectionString()!) : new MemoryAgentRunStore());
+        services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
+        services.TryAddSingleton(sp => new AgentProxy(sp.GetRequiredService<IAgentRunStore>(), AgentClient(sp), settings.AnthropicKey(), settings.AgentRunCapUsd, sp.GetService<TimeProvider>(), settings.AgentRunMaxAge));
+
         // BEH-NOTIFY-3: web push only with the VAPID key pair (the optional kit-push secret). Without
         // it nothing here exists: no store, no sender, no poller, and the routes answer "not switched on".
         // The store is the accounts' database when there is one; without, subscriptions die with the pod.
@@ -162,7 +168,10 @@ public static class ServiceRegistration
             userProjects: sp.GetService<IUserProjects>(),
             userMemory: sp.GetRequiredService<IUserMemoryStore>(),
             triage: sp.GetService<ITriageChat>(),
-            triageLimit: settings.TriageLimit));
+            triageLimit: settings.TriageLimit,
+            runStore: sp.GetRequiredService<IAgentRunStore>(),
+            runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
+            agentRunCap: settings.AgentRunCapUsd));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
@@ -180,6 +189,14 @@ public static class ServiceRegistration
     // A model reply takes longer than a GitHub read; a minute, then the page says to try again.
     private static HttpClient ModelClient(IServiceProvider sp) =>
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(60) };
+
+    // An agent's call can think for minutes before its first byte; the timeout covers the wait for headers, not a stream.
+    // Redirects are never followed: Kit's key rides every request, and a redirect could carry it to another host.
+    private static HttpClient AgentClient(IServiceProvider sp) =>
+        new(sp.GetService<HttpMessageHandler>() ?? AgentHandler()) { Timeout = TimeSpan.FromMinutes(10) };
+
+    /// <summary>The handler the model proxy talks to Anthropic through: it never follows a redirect.</summary>
+    public static SocketsHttpHandler AgentHandler() => new() { AllowAutoRedirect = false };
 
     private static HttpClient GitHubClient(IServiceProvider sp) =>
         new(sp.GetService<HttpMessageHandler>() ?? new SocketsHttpHandler()) { Timeout = TimeSpan.FromSeconds(20) };

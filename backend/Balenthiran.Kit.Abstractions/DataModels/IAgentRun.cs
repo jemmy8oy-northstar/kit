@@ -1,0 +1,70 @@
+namespace Balenthiran.Kit.Abstractions.DataModels;
+
+/// <summary>
+/// BEH-USERS-9: one run of an agent Kit runs for a user. The run token that authenticates it is never
+/// part of this, and is not stored: only its SHA-256 is, in the run store.
+/// </summary>
+public interface IAgentRun
+{
+    /// <summary>Kit's id for the run.</summary>
+    string Id { get; }
+
+    /// <summary>The signed-in account that owns the run (the operator's is <c>ISessionStore.Operator</c>).</summary>
+    string Owner { get; }
+
+    /// <summary>The project the run works on.</summary>
+    string Project { get; }
+
+    /// <summary>The model the run was asked to use.</summary>
+    string Model { get; }
+
+    /// <summary>One of <see cref="Balenthiran.Kit.Abstractions.Services.AgentRunStatus"/>.</summary>
+    string Status { get; }
+
+    /// <summary>When the run was created.</summary>
+    DateTimeOffset Started { get; }
+
+    /// <summary>When it finished, failed or was refused; null while it is queued or running.</summary>
+    DateTimeOffset? Ended { get; }
+
+    /// <summary>Uncached input tokens the run has used.</summary>
+    long InputTokens { get; }
+
+    /// <summary>Output tokens the run has used.</summary>
+    long OutputTokens { get; }
+
+    /// <summary>Tokens written to the prompt cache (5 minute and 1 hour together).</summary>
+    long CacheWriteTokens { get; }
+
+    /// <summary>Tokens read back from the prompt cache.</summary>
+    long CacheReadTokens { get; }
+
+    /// <summary>What the run's model calls have cost so far, USD at list price.</summary>
+    decimal CostUsd { get; }
+}
+
+/// <summary>The body of <c>GET /api/runs</c>: runs newest first and the cap each is held to.</summary>
+public interface IAgentRunList
+{
+    /// <summary>What one run may spend, USD (<c>KIT_AGENT_RUN_CAP_USD</c>).</summary>
+    decimal CapUsd { get; }
+
+    /// <summary>Newest first.</summary>
+    IReadOnlyList<IAgentRun> Runs { get; }
+}
+
+/// <summary>
+/// The body of <c>POST /api/projects/&lt;project&gt;/runs</c>: the run, the run token (shown this once and
+/// never again) and what the launcher said.
+/// </summary>
+public interface IAgentRunStarted
+{
+    /// <summary>The run as created, after the launcher has had it.</summary>
+    IAgentRun Run { get; }
+
+    /// <summary>The secret the run authenticates to Kit's model proxy with. Only its SHA-256 is kept.</summary>
+    string Token { get; }
+
+    /// <summary>What the launcher said, e.g. that no runner is configured.</summary>
+    string Launch { get; }
+}

@@ -204,6 +204,24 @@ public sealed record KitSettings(
         : int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n
         : throw new InvalidOperationException($"KIT_TRIAGE_DAILY_LIMIT is \"{value}\": set it to a whole number of replies a day, 0 or more");
 
+    /// <summary><c>KIT_AGENT_RUN_CAP_USD</c> (BEH-USERS-9): what one agent run may spend through the model proxy, USD. Unset is <see cref="AgentProxy.DefaultCapUsd"/>.</summary>
+    public decimal AgentRunCapUsd { get; init; } = AgentProxy.DefaultCapUsd;
+
+    /// <summary><c>KIT_AGENT_RUN_CAP_USD</c>: a decimal number of dollars, 0 or more (0 stops every run's first call); unset is the default. Anything else THROWS.</summary>
+    public static decimal ParseAgentRunCap(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? AgentProxy.DefaultCapUsd
+        : decimal.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n
+        : throw new InvalidOperationException($"KIT_AGENT_RUN_CAP_USD is \"{value}\": set it to a number of dollars a run may spend, 0 or more, such as 5 or 2.50");
+
+    /// <summary><c>KIT_AGENT_RUN_MAX_HOURS</c> (BEH-USERS-9): how long after its creation a run's token reaches the model. Unset is <see cref="AgentProxy.DefaultMaxAge"/>.</summary>
+    public TimeSpan AgentRunMaxAge { get; init; } = AgentProxy.DefaultMaxAge;
+
+    /// <summary><c>KIT_AGENT_RUN_MAX_HOURS</c>: a number of hours, above 0 (fractions allowed); unset is the default. Anything else THROWS.</summary>
+    public static TimeSpan ParseAgentRunMaxAge(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? AgentProxy.DefaultMaxAge
+        : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var h) && h > 0 && h <= 24 * 365 ? TimeSpan.FromHours(h)
+        : throw new InvalidOperationException($"KIT_AGENT_RUN_MAX_HOURS is \"{value}\": set it to the hours a run's token works for, above 0, such as 6 or 0.5");
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -286,6 +304,8 @@ public sealed record KitSettings(
             Operator = env("KIT_OPERATOR") is { Length: > 0 } op ? op : KitRouter.DefaultOperator,
             AnthropicApiKey = env("KIT_ANTHROPIC_API_KEY") is { } k && !string.IsNullOrWhiteSpace(k) ? k.Trim() : null,
             TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
+            AgentRunCapUsd = ParseAgentRunCap(env("KIT_AGENT_RUN_CAP_USD")),
+            AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
         };
     }
 

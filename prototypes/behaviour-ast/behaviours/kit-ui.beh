@@ -1333,6 +1333,89 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   contract his note (kit-ui.notes.md#2026-10-26-2250): "I added client id and client secret idk whether this was for this ticket feel free to move it if it wasn't"
   contract my assumption: a client id and secret are what a user token needs, so they serve the half above that is his call (Kit creating the repo itself). Reading them is auth, so they stay unused until he approves that half; the link-based first build stands
   contract my assumption: a name is normalised by turning whitespace runs into - and dropping anything outside letters, digits, . _ -, and the links are withheld while the result is empty
+  contract his note (kit-ui.notes.md#2026-11-04-1808): "all spec currently lives centrally in the kit repo, not in each project's repo. So the card's 'no spec held centrally' describes the target, not today's state"
+  contract my assumption: the title stays the target, and today's state is this line: James's own projects' specs still live in kit's prototypes/behaviour-ast/behaviours, while a user's project is read from their own repo. BEH-USERS-12 moves his there too
+  contract my assumption: a repo is a Kit project when its default branch has a .kit/ directory holding a .beh file, or, until BEH-USERS-12 lands, a .beh file anywhere, so no project drops off the list mid-migration
+
+behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in its own repo, Kit's own included"
+  in FEAT-USER-REPOS
+  layer technical
+  source defined kit-ui.notes.md#2026-11-04-1807
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract "Migrate the spec out of the kit repo into each project's repo, under a hidden .kit/ directory. Each project's spec lives in .kit/ in its own repo, the same way for every project, including kit: kit's own spec moves out of the kit repo into kit's .kit/. Consistent with BEH-USERS-2 (no spec held centrally)."
+  contract my assumption: a project's .kit/ holds its .beh, .notes.md and .schedule files under the names they have today, and Kit reads and writes them through the project's own repo, as it already does for a user's project
+  contract my assumption: one project moves per PR, the smallest first, and its tests' behaviour links move with it, so test health never reads a project as unspecified mid-move
+  contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
+
+feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
+  in EPIC-KIT-USERS
+  stage logic
+
+behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a context bundle per work item, and the run ends"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "New notes, chat, stimulus comes in haiku assesses it against existing spec and the backlog. Puts together context for a beh spec or collection of context for beh specs in the same domain (note not creating the actual spec yet). And creates the new branch or updates the existing branch… Then it terminates."
+  contract his note (kit#668): "Basically taking the need for that heavy costly manager and delegating tasks to smaller agents." The measured reason: 93% of the bot's spend is its Opus lead, 87% of that is input, and 83% of calls carry a prompt over 100K tokens
+  contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
+  contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
+
+behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "if it wants a second review over it it flags it for review and a smarter agent will take another look over it… having already been looked over by haiku the more expensive model doesn't have to go searching… Reading is cheaper than writing."
+  contract his note (kit#672): "over time we can figure out what type of work requires a review from an advanced model. And we can always keep this flexible as models change"
+  contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
+  contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
+
+behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "The orchestrator will handle all of this by the way. New tasks coming in, setting off the haiku review, looping in stronger agents if there's a flag… Then the orchestrator will trigger the final stage to implement the tests and code and get the tests passing."
+  contract my assumption: the stages are triage (BEH-ORCH-1), spec (formalise the cards and plan the tests), then build (tests first, then code, until they pass); each is one agent run (BEH-USERS-9)
+  contract my assumption: the orchestrator is plain code in Kit, not a model, so starting and sequencing stages costs no tokens
+  contract his note (kit#668): once this runs Kit's own work, the bot that maintains the ecosystem wakes less often and reads the pipeline's notes, "just like a boss would". The same shape may later serve users as a periodic check by a stronger model
+
+feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
+  in EPIC-KIT-USERS
+  stage logic
+
+behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and its tests run through the host against a test database"
+  in FEAT-KIT-DEBT
+  source defined kit#671
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his answer (kit#671): "Otherwise let's do it. We should also have a migration plan to start being old code up to debt. Let's backlog this tech debt and hopefully with the cost reduction this will free up some capacity to churn through the tech debt later down the line."
+  contract his answer (kit#671): "I think tests should not run against the real db. Isn't there such thing as a test db?" So integration tests use a throwaway Postgres made per test run, never preprod's
+  contract my assumption: no new interface is added from 2026-11-04 except at a boundary: GitHub, the database store, push, time, the model API
+  contract my assumption, the migration plan: three PRs, data-model interfaces first, then internal services, keeping the boundaries; tests that mocked a deleted interface move to the in-memory host
+  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; priority 4 until then
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
@@ -1385,6 +1468,8 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract my assumption: each run reports its token usage before it exits, because its transcript dies with it, and that report is what billing (BEH-USERS-7) and the cost per card are read from
   contract measured (2026-11-04, from my own sessions at API list prices, tools/session-cost.js in claude-code-bot): $1,829 over 6 weeks, about $305 a week, against 498 kit PRs merged in the same window, so about $3 to $4 a merged PR with Opus leading. 70% of it is cache reads, the agent re-reading its own context, so short focused runs matter more than the model
   contract my assumption: a user's agent runs Sonnet by default, half Opus's price per token, with Opus by choice
+  contract my assumption: a run's token stops reaching the model 6 hours after the run was created, whatever its status or spend, so a leaked or forgotten token cannot spend for ever. Kit answers 403 like a run that is over, and the operator can change the limit (KIT_AGENT_RUN_MAX_HOURS)
+  contract my assumption: a run may have at most 4 model calls in flight at once, because the cap counts only what a run has already spent and parallel calls could otherwise carry it past without bound; a fifth is refused 429 (rate_limit_error) until one finishes
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
@@ -1461,6 +1546,20 @@ behaviour BEH-USERS-7 "A user sees what their compute and AI tokens cost, and pa
   contract his ask (kit.notes.md#2026-11-04-1058): "we should start recording the cost that Claude code bot incurs from kit sessions… figure out weekly cost historically? And compare to subscription cost?" Done 2026-11-04: tools/session-cost.js in claude-code-bot prices every session at API list prices, per week; the figures are on BEH-USERS-9
   contract my reading, unreviewed: at the measured $3 to $4 a merged PR with Opus (about half with Sonnet), £10 of tokens is roughly 3 to 6 PRs a month, so the £15 tier fits a light user; a busy one buys credit, which is where the premium earns
   contract my assumption: no volume is priced, because a run needs none (BEH-USERS-9); the £5 pays for compute while a run is live
+
+behaviour BEH-USERS-13 "A user brings their own AI subscription by signing in with its provider, as a cheaper tier"
+  in FEAT-USER-BILLING
+  source defined kit#669
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his ask (kit#669, kit#678): "open ai has announced a sign in with chat gpt. Meaning users can bring there open ai subscription to my app… We can offer different tiers api, bring your own… later this is definitely a feature worth integrating."
+  contract his answer (kit#678): the cost work (FEAT-AGENT-PIPELINE) comes first, so this waits at priority 4
+  contract my assumption: before building, the provider's terms are read, because a subscription token used by Kit's server on a user's behalf has to be something the provider allows
+  contract my assumption: a Claude sign-in is added the same way if Anthropic offers one, as he expects (kit#678)
 
 feature FEAT-USER-ISOLATION "One user never reaches another's work"
   in EPIC-KIT-USERS
