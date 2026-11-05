@@ -31,7 +31,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-PROJECT "How this project is worked"
-  stage logic
+  stage development
 feature FEAT-TRIP "Trips and the people in them"
   stage development
 feature FEAT-ENGINE "The Compromise Engine: ranked options with reasons"
