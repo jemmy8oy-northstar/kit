@@ -12,6 +12,9 @@ public static class StageModels
     /// <summary>The stronger model that reviews a flagged stage from its bundle.</summary>
     public const string DefaultReview = "claude-opus-5-5";
 
+    /// <summary>The spec and build stages do the work on a cheap model; only a review uses a stronger one (BEH-ORCH-3).</summary>
+    public const string DefaultWork = "claude-haiku-5-5";
+
     /// <summary>
     /// The value of environment variable <paramref name="name"/>: unset or blank is <paramref name="fallback"/>;
     /// otherwise it must look like a model name, by the same rule a run's model is checked with. Anything else THROWS.
