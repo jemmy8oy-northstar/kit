@@ -11,6 +11,7 @@ namespace Balenthiran.Kit.Services;
 /// # Title
 /// Work-item: the-slug
 /// Flag: one-line reason        (optional, BEH-ORCH-2)
+/// Review: agreed — one line    (optional, only after a Flag; agreed, revised or escalated)
 /// Cards:
 /// - BEH-X-1                    (existing id, or "new: one line")
 /// Notes:
@@ -28,7 +29,8 @@ public sealed record ContextBundle(
     IReadOnlyList<string> Notes,
     IReadOnlyList<string> Files,
     string Context,
-    string? Flag = null)
+    string? Flag = null,
+    BundleReview? Review = null)
 {
     /// <summary>Lower-case words joined by single hyphens: safe in a branch name and a file name.</summary>
     public static readonly Regex SlugPattern = new(@"^[a-z0-9]+(-[a-z0-9]+)*\z", RegexOptions.Compiled);
@@ -40,6 +42,8 @@ public sealed record ContextBundle(
     public const int MaxSlug = 60;
 
     private const string NewPrefix = "new: ";
+
+    private const string ReviewSeparator = " — ";
 
     /// <summary>The bundle as markdown. THROWS for a bundle <see cref="Parse"/> would refuse.</summary>
     public string Render()
@@ -55,6 +59,11 @@ public sealed record ContextBundle(
         if (Flag is not null)
         {
             sb.Append("Flag: ").Append(Flag).Append('\n');
+        }
+
+        if (Review is not null)
+        {
+            sb.Append("Review: ").Append(Review.Outcome.ToString().ToLowerInvariant()).Append(ReviewSeparator).Append(Review.Note).Append('\n');
         }
 
         Section(sb, "Cards", Cards);
@@ -79,6 +88,13 @@ public sealed record ContextBundle(
         if (OneLine(Title) is null) return "the title is empty or spans lines";
         if (Slug.Length > MaxSlug || !SlugPattern.IsMatch(Slug)) return $"the work-item slug \"{Slug}\" must be lower-case words joined by hyphens, at most {MaxSlug} characters";
         if (Flag is not null && OneLine(Flag) is null) return "the flag needs a one-line reason";
+        if (Review is not null)
+        {
+            if (Flag is null) return "a review needs the flag it answers";
+            if (!Enum.IsDefined(Review.Outcome)) return "the review outcome must be agreed, revised or escalated";
+            if (OneLine(Review.Note) is null) return "the review needs a one-line note";
+        }
+
         if (Cards.Count == 0) return "Cards is empty: name an existing card id, or \"new: <one line>\"";
         foreach (var c in Cards)
         {
@@ -129,6 +145,28 @@ public sealed record ContextBundle(
             flag = lines[at++]["Flag:".Length..].Trim();
         }
 
+        BundleReview? review = null;
+        if (at < lines.Length && lines[at].StartsWith("Review:", StringComparison.Ordinal))
+        {
+            var body = lines[at++]["Review:".Length..].Trim();
+            var split = body.IndexOf(ReviewSeparator.Trim(), StringComparison.Ordinal);
+            var word = split < 0 ? body : body[..split].Trim();
+            ReviewOutcome? outcome = word switch
+            {
+                "agreed" => ReviewOutcome.Agreed,
+                "revised" => ReviewOutcome.Revised,
+                "escalated" => ReviewOutcome.Escalated,
+                _ => null,
+            };
+            if (outcome is null)
+            {
+                return Fail($"the review outcome \"{word}\" must be agreed, revised or escalated");
+            }
+
+            var note = split < 0 ? "" : body[(split + ReviewSeparator.Trim().Length)..].Trim();
+            review = new BundleReview(outcome.Value, note);
+        }
+
         var lists = new Dictionary<string, List<string>>();
         foreach (var name in new[] { "Cards", "Notes", "Files" })
         {
@@ -164,7 +202,7 @@ public sealed record ContextBundle(
         }
 
         var context = string.Join('\n', lines[(at + 1)..]).Trim();
-        var bundle = new ContextBundle(title, slug, lists["Cards"], lists["Notes"], lists["Files"], context, flag);
+        var bundle = new ContextBundle(title, slug, lists["Cards"], lists["Notes"], lists["Files"], context, flag, review);
         return bundle.Check() is { } why ? Fail(why) : new Parsed(bundle, null);
 
         static Parsed Fail(string why) => new(null, why);
