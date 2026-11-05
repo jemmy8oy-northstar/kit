@@ -13,6 +13,7 @@ public static class KitCli
     public const string Usage =
         "usage: kit <command> [args]\n\ncommands:\n"
         + "  check <app> --repo <path-to-app-repo> [--via mapping|markers] [--dir <corpus-dir>]\n"
+        + "  verify-links record|check <app> --repo <path-to-app-repo> [--dir <corpus-dir>]\n"
         + "  report [<corpus-name>] [--dir <corpus-dir>]\n"
         + "  sheet [<corpus-name>] [--rev <rev>] [--dir <corpus-dir>]";
 
@@ -35,6 +36,7 @@ public static class KitCli
         ICommandRun? run = args.Count == 0 ? null : args[0] switch
         {
             "check" => new KitCheck(parser, resolver, new TestTitleReader(), disk).Run(rest),
+            "verify-links" => new KitVerifyLinks().Run(rest),
             "report" or "sheet" => new KitReport(parser, resolver, new TestGenerator(), new ProjectReporter(), new QuestionSheet(), disk).Run(rest, sheet: args[0] == "sheet"),
             _ => null,
         };
