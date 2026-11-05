@@ -1,6 +1,10 @@
 {
-  "lastImprovedBy": { "pr": "kit#536", "url": "https://github.com/jemmy8oy-northstar/kit/pull/536", "on": "2026-10-28" },
-  "_":"behaviour -> the test(s) that name it, in jemmy8oy-northstar/language-vocab. Keyed on file + title (a C# test's title is its method name; there are no frontend tests in the repo).",
+  "lastImprovedBy": {
+    "pr": "kit#536",
+    "url": "https://github.com/jemmy8oy-northstar/kit/pull/536",
+    "on": "2026-10-28"
+  },
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/language-vocab. Keyed on file + title (a C# test's title is its method name; there are no frontend tests in the repo).",
   "_authored": "2026-10-28, by reading language-vocab.beh against language-vocab@dev (89dcecb) backend/Balenthiran.LanguageVocab.Tests. A test is mapped only where it checks what the behaviour's contracts say. Every test is a backend service/domain test; none drives the UI.",
   "_incomplete": "None: every behaviour has a test. The five frontend ones (AUDIO-1, CHAR-1, CARD-1, LEARN-2, LEARN-3) are vitest component tests from language-vocab#24; until a CI step runs them (language-vocab#25), only a local run checks them. BEH-STATS-1 and BEH-LEARN-1 are mapped on their data half only.",
   "BEH-DRILL-ZHEN": [
@@ -353,6 +357,44 @@
     {
       "file": "frontend/src/pages/Learn.test.tsx",
       "title": "BEH-PATH-1: a pack quiz answered all right credits its words to the section, a miss does not"
+    }
+  ],
+  "BEH-PATH-2": [
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: the ticked sections and the Words toggle build the item set, a shared word once"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: Sentences keeps only the sentences, and search then Select shown ticks what is listed"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: Both drills every item, and Start round needs a ticked section"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: the end of the round says how many were right and how many wrong"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: Review them lists the missed items with their answers"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: Drill the missed again loops until every missed item is answered right"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: after re-drilling, the breakdown shows each item's times wrong in this round"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: every miss is counted once on this device, and Worst words lists the highest counts first"
+    },
+    {
+      "file": "frontend/src/pages/Path.test.tsx",
+      "title": "BEH-PATH-2: wrong counts are ordered by count and corrupt storage reads as none"
     }
   ]
 }

@@ -218,6 +218,165 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.False(File.Exists(Path.Combine(root, "behaviours", "beta.beh")));
     }
 
+    private const string Beta = "behaviour BEH-B \"b\"\n  when opens page:Home\n";
+
+    private async Task<(GitHubCorpusDirectory D, Services.KitRouter Router)> OwnRepo(Writer writer, params ICorpusSnapshot[] more)
+    {
+        var d = new GitHubCorpusDirectory(clone, [Kit, Other], new Scripted([Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", Beta)), .. more]), writer);
+        await d.RefreshAsync();
+        var viewer = new Services.ProjectViewer(d, new Services.CorpusParser(), new Services.BehaviourResolver(), new Services.TestGenerator(), new Services.ProjectReporter());
+        return (d, new Services.KitRouter(d, viewer, new Services.UiBundle(Path.Combine(root, "no-bundle")), null));
+    }
+
+    private static System.Text.Json.JsonElement Body(IKitResponse r) =>
+        System.Text.Json.JsonSerializer.SerializeToElement(r.Body, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+
+    private static IKitResponse AddBehaviour(Services.KitRouter router, string id) =>
+        router.Route("POST", "/api/projects/beta/behaviours", body: System.Text.Json.JsonDocument.Parse($$"""{"id":"{{id}}","title":"new"}""").RootElement);
+
+    /// <summary>BEH-USERS-12: a write to an app in its own repository is one commit there, on the branch it is read from, naming the blob Kit read.</summary>
+    [Fact]
+    public async Task A_write_to_an_app_in_its_own_repo_is_committed_there_and_read_back()
+    {
+        var writer = new Writer();
+        var (d, router) = await OwnRepo(writer);
+
+        var r = AddBehaviour(router, "BEH-N");
+
+        Assert.Equal(200, r.Status);
+        var put = Assert.Single(writer.Puts);
+        Assert.Equal((Other, "beta.beh", "b1", "kit: add BEH-N (beta)"), (put.Source, put.File, put.Sha, put.Message));
+        Assert.Contains("BEH-N", put.Text);
+        Assert.Equal(put.Text, d.ReadText("beta"));
+        var body = Body(r);
+        Assert.Equal("c1", body.GetProperty("commit").GetString());
+        Assert.Equal("dev", body.GetProperty("branch").GetString());
+        Assert.False(File.Exists(Path.Combine(root, "behaviours", "beta.beh")));
+    }
+
+    /// <summary>A second write before GitHub is re-read names the blob the first one committed, or GitHub would refuse Kit's own edit as stale.</summary>
+    [Fact]
+    public async Task A_second_write_before_a_re_read_names_the_blob_the_first_committed()
+    {
+        var writer = new Writer();
+        var (_, router) = await OwnRepo(writer);
+
+        AddBehaviour(router, "BEH-N");
+        AddBehaviour(router, "BEH-M");
+
+        Assert.Equal(["b1", "blob1"], writer.Puts.Select(p => p.Sha));
+    }
+
+    /// <summary>Someone else changed the file first: nothing is overwritten, the page stops showing the edit, and Kit re-reads at once.</summary>
+    [Fact]
+    public async Task A_stale_write_is_a_409_and_the_edit_is_not_kept()
+    {
+        var writer = new Writer { Refuse = new GitHubWriteException("beta.beh was changed by someone else first", stale: true) };
+        var (d, router) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b2", "theirs")));
+
+        var r = AddBehaviour(router, "BEH-N");
+
+        Assert.Equal(409, r.Status);
+        Assert.Equal("beta.beh was changed by someone else first", Body(r).GetProperty("reason").GetString());
+        for (var i = 0; i < 100 && d.ReadText("beta") != "theirs"; i++)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.Equal("theirs", d.ReadText("beta"));
+    }
+
+    /// <summary>Any other refusal also keeps nothing: an edit on the page that reached no repository would be a lie.</summary>
+    [Fact]
+    public async Task A_refused_write_is_a_409_with_GitHubs_reason_and_the_old_text_stays()
+    {
+        var writer = new Writer { Refuse = new GitHubWriteException("o/snip-it@dev:behaviours: GitHub answered 403 to committing beta.beh: Resource not accessible by integration") };
+        var (d, router) = await OwnRepo(writer);
+
+        var r = AddBehaviour(router, "BEH-N");
+
+        Assert.Equal(409, r.Status);
+        Assert.EndsWith("Resource not accessible by integration", Body(r).GetProperty("reason").GetString());
+        Assert.Equal(Beta, d.ReadText("beta"));
+    }
+
+    /// <summary>
+    /// The poller swaps in someone else's change between a route's read and its write: the commit names the
+    /// blob the text was read from, so GitHub refuses it rather than lose their change. Synchronous on purpose,
+    /// as a route is: the read and the write happen on one thread.
+    /// </summary>
+    [Fact]
+    public void A_re_read_between_the_read_and_the_write_cannot_change_the_blob_the_commit_names()
+    {
+        var writer = new Writer();
+        var d = new GitHubCorpusDirectory(clone, [Kit, Other], new Scripted(Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", Beta)), Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b2", "theirs"))), writer);
+        d.RefreshAsync().GetAwaiter().GetResult();
+
+        var text = d.ReadText("beta") + "  then sees region:Main\n";
+        d.RefreshAsync().GetAwaiter().GetResult();
+        d.WriteText("beta", text);
+        d.CommitToOwnRepo("beta", "kit: x");
+
+        Assert.Equal("b1", Assert.Single(writer.Puts).Sha);
+    }
+
+    /// <summary>A failed commit puts back the edit before it, which is on GitHub, rather than show text older than both.</summary>
+    [Fact]
+    public async Task A_failed_commit_puts_back_the_committed_edit_before_it()
+    {
+        var writer = new Writer();
+        var (d, router) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "b1", Beta)));
+        AddBehaviour(router, "BEH-N");
+        var committed = d.ReadText("beta");
+        writer.Refuse = new GitHubWriteException("GitHub answered 502");
+
+        Assert.Equal(409, AddBehaviour(router, "BEH-M").Status);
+
+        Assert.Equal(committed, d.ReadText("beta"));
+    }
+
+    /// <summary>An edit whose app a re-read dropped before its commit is refused, not left showing as if saved.</summary>
+    [Fact]
+    public async Task An_edit_whose_app_left_GitHub_before_its_commit_is_refused_and_not_shown()
+    {
+        var writer = new Writer();
+        var (d, _) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other));
+
+        d.WriteText("beta", "edited");
+        await d.RefreshAsync();
+
+        Assert.Throws<NotWritableException>(() => d.CommitToOwnRepo("beta", "kit: x"));
+        Assert.Throws<KeyNotFoundException>(() => d.ReadText("beta"));
+        Assert.Empty(writer.Puts);
+    }
+
+    /// <summary>The clone's apps are untouched: they are written to the clone and committed by its git write-back, never through the Contents API.</summary>
+    [Fact]
+    public async Task An_app_the_clone_holds_never_goes_through_the_writer()
+    {
+        var writer = new Writer();
+        var (d, _) = await OwnRepo(writer);
+
+        d.WriteText("alpha", "edited");
+
+        Assert.Null(d.CommitToOwnRepo("alpha", "kit: x"));
+        Assert.Empty(writer.Puts);
+        Assert.Equal("edited", File.ReadAllText(Path.Combine(root, "behaviours", "alpha.beh")));
+    }
+
+    /// <summary>The commit is the re-read's: once GitHub serves the committed blob, the override ends and GitHub answers again.</summary>
+    [Fact]
+    public async Task Once_GitHub_has_the_commit_GitHub_answers_again()
+    {
+        var writer = new Writer();
+        var (d, router) = await OwnRepo(writer, Snap(Kit, ("alpha.beh", "a1", "x")), Snap(Other, ("beta.beh", "blob1", "as GitHub has it")));
+        AddBehaviour(router, "BEH-N");
+
+        await d.RefreshAsync();
+
+        Assert.Equal("as GitHub has it", d.ReadText("beta"));
+    }
+
     [Fact]
     public void The_full_paths_a_commit_needs_are_the_clones()
     {
@@ -370,6 +529,25 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Source = source,
         Files = files.ToDictionary(f => f.Name, f => (ISnapshotFile)new SnapshotFile { Sha = f.Sha, Text = f.Text }, StringComparer.Ordinal),
     };
+
+    /// <summary>Records each commit and answers blob1, blob2… and c1, c2…, or throws <see cref="Refuse"/>.</summary>
+    private sealed class Writer : IGitHubCorpusWriter
+    {
+        public List<(IProjectSource Source, string File, string Text, string? Sha, string Message)> Puts { get; } = [];
+
+        public GitHubWriteException? Refuse { get; set; }
+
+        public Task<(string Blob, string Commit)> PutAsync(IProjectSource source, string fileName, string text, string? sha, string message, CancellationToken cancellationToken = default)
+        {
+            if (Refuse is not null)
+            {
+                throw Refuse;
+            }
+
+            Puts.Add((source, fileName, text, sha, message));
+            return Task.FromResult(($"blob{Puts.Count}", $"c{Puts.Count}"));
+        }
+    }
 
     /// <summary>Answers each read with the next snapshot, and records the previous snapshot it was handed.</summary>
     private sealed class Scripted(params ICorpusSnapshot[] answers) : IGitHubCorpusReader

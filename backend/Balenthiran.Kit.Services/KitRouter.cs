@@ -1311,6 +1311,25 @@ public sealed partial class KitRouter(
     /// </summary>
     private WriteOutcome GitOutcome(string file, string summary, string app, WriteOutcome plain)
     {
+        // BEH-USERS-12: an app in its own repository is committed there, whatever the clone's write-back is set to.
+        if (corpora.CommitToOwnRepo(app, GitStore.Message(summary, app)) is { } own)
+        {
+            return new GitWriteOutcome
+            {
+                App = plain.App,
+                Behaviour = plain.Behaviour,
+                Noun = plain.Noun,
+                File = plain.File,
+                SharedWith = plain.SharedWith,
+                UnreadableCorpora = plain.UnreadableCorpora,
+                Committed = true,
+                Pushed = true,
+                Commit = own.Commit,
+                Branch = own.Branch,
+                Note = $"committed as {own.Commit} on {own.Branch} in the project's own repository.",
+            };
+        }
+
         var g = git.WriteBack(file, summary, app);
         if (!git.Enabled)
         {

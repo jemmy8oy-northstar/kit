@@ -335,7 +335,20 @@ export interface ProjectDetail {
   decisions?: Decision[]
   /** `"maintained"` on a project's primary file that carries `# kit:goal maintained` (BEH-NARR-2). Absent otherwise. */
   goal?: 'maintained'
+  /** BEH-HEALTH-4: whether its recorded test links still hold. Absent when no link has a hash recorded. */
+  links?: LinkHealth
 }
+
+/** A test link whose recorded hash no longer matches the code it exercises. */
+export interface BrokenLink {
+  behaviourId: string
+  title: string
+  reason: string
+}
+
+export type LinkHealth =
+  | { available: true; recorded: number; broken: BrokenLink[] }
+  | { available: false; reason: string }
 
 /** The parts of a system an architecture decision belongs to, in the order the page shows them. */
 export type DecisionPart = 'frontend' | 'backend' | 'data' | 'deployment'

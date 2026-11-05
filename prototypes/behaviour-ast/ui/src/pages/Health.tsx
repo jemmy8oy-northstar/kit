@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '@jemmy8oy-northstar/design-system'
 import { fetchProject, fetchProjects } from '../api/client'
 import { useResource } from '../hooks/useResource'
-import type { ProjectSummary } from '../api/types'
+import type { LinkHealth, ProjectDetail, ProjectSummary } from '../api/types'
 import CoverageBadge from '../components/CoverageBadge'
 import ResourceView from '../components/Resource'
 import { isIdea } from '../board'
@@ -122,31 +122,73 @@ function HealthRow({ row }: { row: Row }) {
           Last improved by <a href={last.url}>{last.pr}</a> on {last.on}
         </p>
       ) : null}
-      {measured && measured.covered < measured.total ? <Untested app={project.app} /> : null}
+      <Detail app={project.app} untested={!!measured && measured.covered < measured.total} />
     </Card>
   )
 }
 
 /**
- * BEH-HEALTH-3: the behaviours no test names. The list endpoint only carries counts, so this reads
- * the project's own view, which carries the ids, and takes each title from the same response.
+ * The list endpoint only carries counts, so what sits under a project reads its own view once:
+ * BEH-HEALTH-3's behaviours no test names (when the counts say there are some) and BEH-HEALTH-4's
+ * possibly-broken test links (when the project has any recorded). A project with neither says nothing.
  */
-function Untested({ app }: { app: string }) {
+function Detail({ app, untested }: { app: string; untested: boolean }) {
   const detail = useResource(() => fetchProject(app), [app])
-  if (detail.state === 'loading') return <p className="muted">Reading which behaviours no test names…</p>
-  if (detail.state === 'error') return <p className="muted">Could not list the untested behaviours: {detail.message}</p>
-  const { coverage, behaviours } = detail.value
-  if (!coverage || !coverage.available) return null
-  const titles = new Map(behaviours.map((b) => [b.id, b.title]))
-  if (coverage.uncovered.length === 0) return null
+  if (detail.state === 'loading') return untested ? <p className="muted">Reading which behaviours no test names…</p> : null
+  if (detail.state === 'error') {
+    return (
+      <p className="muted">
+        {untested ? 'Could not list the untested behaviours' : 'Could not check the test links'}: {detail.message}
+      </p>
+    )
+  }
+  const { coverage, behaviours, links } = detail.value
   return (
     <>
-      <p className="muted">No test names these {coverage.uncovered.length}:</p>
+      {untested && coverage && coverage.available ? <Untested app={app} ids={coverage.uncovered} behaviours={behaviours} /> : null}
+      {links ? <BrokenLinks app={app} links={links} /> : null}
+    </>
+  )
+}
+
+/** BEH-HEALTH-3: the behaviours no test names, each title taken from the same response as the ids. */
+function Untested({ app, ids, behaviours }: { app: string; ids: string[]; behaviours: ProjectDetail['behaviours'] }) {
+  const titles = new Map(behaviours.map((b) => [b.id, b.title]))
+  if (ids.length === 0) return null
+  return (
+    <>
+      <p className="muted">No test names these {ids.length}:</p>
       <ul aria-label={`Untested in ${app}`}>
-        {coverage.uncovered.map((id) => (
+        {ids.map((id) => (
           <li key={id}>
             <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(id)}`}>{id}</Link>
             {titles.has(id) ? ` ${titles.get(id)}` : ''}
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
+/**
+ * BEH-HEALTH-4: test links whose recorded hash no longer matches the code they exercise are "possibly
+ * broken" — a prompt to re-check, not a verdict. Unavailable says why in words; it never reads as "all hold".
+ */
+function BrokenLinks({ app, links }: { app: string; links: LinkHealth }) {
+  if (!links.available) return <p className="muted">Test links not checked: {links.reason}</p>
+  if (links.broken.length === 0) {
+    return <p className="muted">All {links.recorded} recorded test {links.recorded === 1 ? 'link holds' : 'links hold'}.</p>
+  }
+  return (
+    <>
+      <p className="muted">
+        {links.broken.length} of {links.recorded} recorded test {links.recorded === 1 ? 'link is' : 'links are'} possibly broken:
+      </p>
+      <ul aria-label={`Possibly broken test links in ${app}`}>
+        {links.broken.map((b) => (
+          <li key={`${b.behaviourId}/${b.title}`}>
+            <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.behaviourId)}`}>{b.behaviourId}</Link>{' '}
+            {b.title} — {b.reason}
           </li>
         ))}
       </ul>

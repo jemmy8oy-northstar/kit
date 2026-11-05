@@ -21,7 +21,7 @@ namespace Balenthiran.Kit.Database;
 /// public repository allows (BEH-PULL-2). Asked per read, so an expired token is replaced.
 /// </param>
 /// <param name="api">Default <c>https://api.github.com/</c>.</param>
-public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader, IGitHubTestReader
+public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader, IGitHubTestReader, IGitHubCorpusWriter
 {
     // Per repo (BEH-HEALTH-1): the last tree's ETag and the text of each test blob, by sha. Reads are
     // single-flight (the poller's ExpiringRefresh), so a state is never written by two reads at once.
@@ -159,6 +159,75 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
         }
 
         return reading;
+    }
+
+    /// <inheritdoc />
+    public async Task<(string Blob, string Commit)> PutAsync(IProjectSource source, string fileName, string text, string? sha, string message, CancellationToken cancellationToken = default)
+    {
+        // A write has no public fallback: without a token GitHub refuses it, so the mint's reason is the answer.
+        string token;
+        try
+        {
+            token = await tokens.TokenAsync(cancellationToken) ?? throw new GitHubTokenException("no GitHub token is set");
+        }
+        catch (GitHubTokenException e)
+        {
+            throw new GitHubWriteException($"{Key(source)}: Kit could not get a GitHub token to commit {fileName}: {e.Message}");
+        }
+
+        var body = new Dictionary<string, string>
+        {
+            ["message"] = message,
+            ["content"] = Convert.ToBase64String(Utf8.GetBytes(text)),
+            ["branch"] = source.Branch,
+        };
+        if (sha is not null)
+        {
+            body["sha"] = sha;
+        }
+
+        var uri = new Uri(api ?? DefaultApi, $"repos/{source.Owner}/{source.Repository}/contents/{Escape($"{source.Path}/{fileName}")}");
+        using var request = new HttpRequestMessage(HttpMethod.Put, uri) { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
+        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await http.SendAsync(request, cancellationToken);
+        }
+        catch (HttpRequestException e)
+        {
+            throw new GitHubWriteException($"{Key(source)}: GitHub could not be reached to commit {fileName} ({e.Message})", e);
+        }
+        catch (TaskCanceledException e) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new GitHubWriteException($"{Key(source)}: GitHub did not answer in time, so {fileName} may or may not be committed", e);
+        }
+
+        using (response)
+        {
+            if (!response.IsSuccessStatusCode)
+            {
+                var code = (int)response.StatusCode;
+                var why = await MessageAsync(response, cancellationToken);
+
+                // 409: the sha is not the file's blob now. 422 with a sha missing: the file was created meanwhile.
+                var stale = response.StatusCode == HttpStatusCode.Conflict || (response.StatusCode == HttpStatusCode.UnprocessableEntity && sha is null);
+                throw new GitHubWriteException(
+                    stale ? $"{fileName} in {Key(source)} was changed by someone else first, so Kit did not overwrite it. Kit is re-reading it; try again"
+                          : $"{Key(source)}: GitHub answered {code} to committing {fileName}: {why}",
+                    stale);
+            }
+
+            var json = await ReadBodyAsync(response, source, cancellationToken);
+            return json.TryGetProperty("content", out var c) && c.TryGetProperty("sha", out var b) && b.GetString() is { } blob
+                && json.TryGetProperty("commit", out var m) && m.TryGetProperty("sha", out var s) && s.GetString() is { } commit
+                ? (blob, commit)
+                : throw new GitHubWriteException($"{Key(source)}: GitHub committed {fileName} but did not say as which blob, so Kit cannot write it again safely");
+        }
     }
 
     // BEH-PULL-2: "a public read that fails because a token could not be minted is a bug". So a

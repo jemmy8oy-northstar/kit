@@ -23,7 +23,7 @@ public static class ServiceRegistration
         {
             // BEH-PULL-1 (kit#88): reads from GitHub, writes to the clone on disk.
             services.AddSingleton(sp => new GitHubCorpusReader(GitHubClient(sp), sp.GetRequiredService<IGitHubTokenSource>()));
-            services.AddSingleton(sp => new GitHubCorpusDirectory(disk, settings.Projects, sp.GetRequiredService<GitHubCorpusReader>()));
+            services.AddSingleton(sp => new GitHubCorpusDirectory(disk, settings.Projects, sp.GetRequiredService<GitHubCorpusReader>(), sp.GetRequiredService<GitHubCorpusReader>()));
             services.AddSingleton<ICorpusDirectory>(sp => sp.GetRequiredService<GitHubCorpusDirectory>());
 
             // BEH-HEALTH-1: hosted Kit reads the tests repos the corpora name; local Kit has no store
@@ -43,6 +43,7 @@ public static class ServiceRegistration
         services.AddSingleton<ITestGenerator, TestGenerator>();
         services.AddSingleton<IProjectReporter, ProjectReporter>();
         services.AddSingleton<IEngineJsonSerialiser, EngineJsonSerialiser>();
+        services.AddSingleton(new SourceCheckout(settings.RepoRoot, settings.GitRepository));
         services.AddSingleton<IProjectViewer, ProjectViewer>();
         services.AddSingleton<ICorpusWriter, CorpusWriter>();
         services.AddSingleton<ICorpusHistory, GitCorpusHistory>();
