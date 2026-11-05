@@ -339,7 +339,6 @@ behaviour BEH-PATH-1 "Words are learned along a path of themed sections, in orde
   source defined language-vocab.notes.md#2026-11-04-1144
   review unreviewed
   priority 2
-  pending
   actor learner
   when opens page:Path
   then sees region:PathSections
@@ -350,6 +349,8 @@ behaviour BEH-PATH-1 "Words are learned along a path of themed sections, in orde
   contract my assumption: every section can be opened at any time and a search finds any word or section; a "Next in order" button returns to the first section not yet passed
   contract my assumption: each section ends with a test of its words and sentences, using the Learn quiz (BEH-LEARN-2); passing it marks the section done and moves "next in order" on; failing changes nothing and it can be retaken
   contract my assumption: progress is kept in the browser, as there are no accounts, so it is per device
+  contract my assumption, built 2026-11-05 (language-vocab#29): a section's Learn round is its five least-seen words, so its test is spread over rounds: a round answered all right credits its words, and the section is passed once every word in it is credited; the path shows "N of M words passed"
+  contract my assumption, built 2026-11-05: sentences are not in yet, as the data model reserves them for a later phase, so a section tests its words only for now
 
 behaviour BEH-PATH-2 "A flash-card round drills the lessons he picks, then re-drills the ones he got wrong until he gets them right"
   in FEAT-LV-WAYS
