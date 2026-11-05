@@ -30,14 +30,14 @@ public class PipelineTests
     {
         private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
 
-        public Rig(string corpus = Corpus, bool on = true)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null)
         {
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -381,6 +381,31 @@ public class PipelineTests
     public void Cards_are_each_behaviours_id_and_title_in_file_order()
     {
         Assert.Equal([("BEH-A", "A user sees the list"), ("BEH-B", "A user adds an item")], Pipeline.Cards(Corpus));
+    }
+
+    [Fact]
+    public void A_note_on_a_project_outside_the_list_queues_nothing_and_one_inside_it_does()
+    {
+        using var outside = new Rig(projects: new HashSet<string> { "kit" });
+        outside.Note("the list should sort by date");
+        Assert.Null(outside.Claim());
+        Assert.Empty(outside.Pipeline!.Items());
+
+        using var inside = new Rig(projects: new HashSet<string> { "kit", "demo" });
+        inside.Note("the list should sort by date");
+        Assert.NotNull(inside.Claim());
+    }
+
+    [Fact]
+    public void KIT_PIPELINE_PROJECTS_names_the_projects_triaged_and_unset_means_all()
+    {
+        Assert.Null(KitSettings.ParsePipelineProjects(null));
+        Assert.Null(KitSettings.ParsePipelineProjects(" "));
+        Assert.Equal(new HashSet<string> { "kit", "kit-ui" }, KitSettings.ParsePipelineProjects(" kit , kit-ui "));
+        foreach (var bad in new[] { "kit,", "Kit", "kit;kit-ui", "kit,,kit-ui" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineProjects(bad));
+        }
     }
 
     [Fact]

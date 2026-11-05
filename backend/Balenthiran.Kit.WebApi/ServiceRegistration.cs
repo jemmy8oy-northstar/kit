@@ -98,7 +98,8 @@ public static class ServiceRegistration
                 sp.GetRequiredService<RunnerPool>(),
                 sp.GetRequiredService<IAgentRunStore>(),
                 new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild),
-                clock: sp.GetService<TimeProvider>()));
+                clock: sp.GetService<TimeProvider>(),
+                projects: settings.PipelineProjects));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());

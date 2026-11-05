@@ -11,7 +11,8 @@ namespace Balenthiran.Kit.Services;
 /// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again.
 /// </summary>
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null)
+/// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null)
 {
     private readonly object gate = new();
 
@@ -40,10 +41,15 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     /// <summary>
     /// A note was left on <paramref name="app"/>: queue a triage of its notes, unless one is already queued (that
-    /// one will read this note too), then start whatever may start.
+    /// one will read this note too), then start whatever may start. A project not in <c>projects</c> queues nothing.
     /// </summary>
     public void NoteLeft(string app)
     {
+        if (projects is not null && !projects.Contains(app))
+        {
+            return;
+        }
+
         lock (gate)
         {
             QueueTriage(app);
