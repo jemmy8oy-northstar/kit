@@ -245,6 +245,18 @@ public sealed record KitSettings(
         : double.TryParse(value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var s) && s >= 0 && s <= 120 ? TimeSpan.FromSeconds(s)
         : throw new InvalidOperationException($"KIT_RUNNER_CLAIM_WAIT_SECONDS is \"{value}\": set it to a number of seconds from 0 to 120, such as 25");
 
+    /// <summary><c>KIT_STAGE_MODEL_TRIAGE</c> (BEH-ORCH-2): the model the triage stage runs on. Unset is <see cref="StageModels.DefaultTriage"/>.</summary>
+    public string StageModelTriage { get; init; } = StageModels.DefaultTriage;
+
+    /// <summary><c>KIT_STAGE_MODEL_TRIAGE</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelTriage(string? value) => StageModels.Parse("KIT_STAGE_MODEL_TRIAGE", value, StageModels.DefaultTriage);
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW</c> (BEH-ORCH-2): the model that reviews a flagged stage. Unset is <see cref="StageModels.DefaultReview"/>.</summary>
+    public string StageModelReview { get; init; } = StageModels.DefaultReview;
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelReview(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW", value, StageModels.DefaultReview);
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -329,6 +341,8 @@ public sealed record KitSettings(
             TriageLimit = ParseTriageLimit(env("KIT_TRIAGE_DAILY_LIMIT")),
             AgentRunCapUsd = ParseAgentRunCap(env("KIT_AGENT_RUN_CAP_USD")),
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
+            StageModelTriage = ParseStageModelTriage(env("KIT_STAGE_MODEL_TRIAGE")),
+            StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
         };
