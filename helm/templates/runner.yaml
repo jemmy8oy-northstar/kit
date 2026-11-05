@@ -1,15 +1,14 @@
 {{- /*
 BEH-USERS-9, slice C: where a user's agent run is allowed to happen.
 
-A run is a short-lived Job in its own namespace, built from the runner image (slice B). Kit
-creates it through the Kubernetes API (the launcher, slice D), so Kit's pod gets a service
-account that may create Jobs and Secrets in THAT namespace and nowhere else. A run's tokens
-go in a Secret Kit makes per run, never in the Job's spec, which anyone who can list Jobs
-can read. The runs get their own namespace so that Kit's right to create and delete Secrets
-does not reach the secrets of the apps sharing this one.
+A fixed pool of runner pods (James's choice, kit#672), built from the runner image (slice B).
+Each one asks Kit's public URL for the next queued run, does it in scratch disk, and asks again.
+Kit starts nothing in the cluster, so Kit has no service account and no Kubernetes rights, and
+nothing here can create a pod or read a secret.
 
-The Job itself is in values.yaml (runner.job), handed to Kit as JSON in a ConfigMap. Kit
-names the Job, labels it, and adds an envFrom for the run's Secret; it changes nothing else.
+"Before we go live we need ensure that the run pods do not have control plane access" (kit#686):
+a runner mounts no Kubernetes token, and the namespace's default account it runs as is bound to
+no Role, so even a run that reaches the API server has no credential to show it.
 */}}
 {{- if .Values.runner.enabled }}
 apiVersion: v1
@@ -17,46 +16,68 @@ kind: Namespace
 metadata:
   name: {{ .Values.runner.namespace }}
 ---
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: {{ include "app.fullname" . }}
-  namespace: {{ .Release.Namespace }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: {{ include "app.fullname" . }}-launcher
+  name: {{ include "app.fullname" . }}-runner
   namespace: {{ .Values.runner.namespace }}
-rules:
-  - apiGroups: ["batch"]
-    resources: ["jobs"]
-    verbs: ["create", "get", "list", "watch", "delete"]
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create", "get", "patch", "delete"]
-  # Status and logs of a run, for the run's page.
-  - apiGroups: [""]
-    resources: ["pods", "pods/log"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    resourceNames: ["{{ include "app.fullname" . }}-runner-job"]
-    verbs: ["get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "app.fullname" . }}-launcher
-  namespace: {{ .Values.runner.namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: {{ include "app.fullname" . }}-launcher
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "app.fullname" . }}
-    namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.runner.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "app.fullname" . }}-runner
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.fullname" . }}-runner
+    spec:
+      # A run needs no Kubernetes API: mount no token, so there is nothing to find.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: {{ .Values.runner.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001 # `runner` in runner/Dockerfile
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: runner
+          image: {{ .Values.runner.image | quote }}
+          imagePullPolicy: Always
+          # The pool loop (slice D); the image's own entrypoint is one run.
+          command: ["/usr/local/bin/kit-pool"]
+          env:
+            - name: KIT_URL
+              value: "https://balenthiran.co.uk/kit"
+            - name: KIT_RUNNER_POOL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kit-runner-pool
+                  key: token
+            - name: KIT_RUNS_PER_CONTAINER
+              value: {{ .Values.runner.runsPerContainer | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.runner.resources | nindent 12 }}
+          volumeMounts:
+            - name: work
+              mountPath: /work
+            - name: home
+              mountPath: /home/runner
+      volumes:
+        # Scratch only, and the loop empties both after every run. The user's repo is the
+        # run's storage, so nothing survives a run but what it pushed.
+        - name: work
+          emptyDir:
+            sizeLimit: 3Gi
+        - name: home
+          emptyDir:
+            sizeLimit: 512Mi
 ---
 # A run executes whatever the agent decides, so it gets the internet (GitHub, Kit's public
 # URL, npm) and nothing private: no in-cluster service, no node, and not the cloud metadata
@@ -90,12 +111,4 @@ spec:
               - 192.168.0.0/16
               - 169.254.0.0/16
               - 100.64.0.0/10
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "app.fullname" . }}-runner-job
-  namespace: {{ .Values.runner.namespace }}
-data:
-  job.json: {{ .Values.runner.job | toJson | quote }}
 {{- end }}
