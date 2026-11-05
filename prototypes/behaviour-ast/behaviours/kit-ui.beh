@@ -1352,6 +1352,71 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: one project moves per PR, the smallest first, and its tests' behaviour links move with it, so test health never reads a project as unspecified mid-move
   contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
 
+feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
+  in EPIC-KIT-USERS
+  stage logic
+
+behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a context bundle per work item, and the run ends"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "New notes, chat, stimulus comes in haiku assesses it against existing spec and the backlog. Puts together context for a beh spec or collection of context for beh specs in the same domain (note not creating the actual spec yet). And creates the new branch or updates the existing branch… Then it terminates."
+  contract his note (kit#668): "Basically taking the need for that heavy costly manager and delegating tasks to smaller agents." The measured reason: 93% of the bot's spend is its Opus lead, 87% of that is input, and 83% of calls carry a prompt over 100K tokens
+  contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
+  contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
+
+behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "if it wants a second review over it it flags it for review and a smarter agent will take another look over it… having already been looked over by haiku the more expensive model doesn't have to go searching… Reading is cheaper than writing."
+  contract his note (kit#672): "over time we can figure out what type of work requires a review from an advanced model. And we can always keep this flexible as models change"
+  contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
+  contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
+
+behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#672
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit#672): "The orchestrator will handle all of this by the way. New tasks coming in, setting off the haiku review, looping in stronger agents if there's a flag… Then the orchestrator will trigger the final stage to implement the tests and code and get the tests passing."
+  contract my assumption: the stages are triage (BEH-ORCH-1), spec (formalise the cards and plan the tests), then build (tests first, then code, until they pass); each is one agent run (BEH-USERS-9)
+  contract my assumption: the orchestrator is plain code in Kit, not a model, so starting and sequencing stages costs no tokens
+  contract his note (kit#668): once this runs Kit's own work, the bot that maintains the ecosystem wakes less often and reads the pipeline's notes, "just like a boss would". The same shape may later serve users as a periodic check by a stronger model
+
+feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
+  in EPIC-KIT-USERS
+  stage logic
+
+behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and its tests run through the host against a test database"
+  in FEAT-KIT-DEBT
+  source defined kit#671
+  review unreviewed
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his answer (kit#671): "Otherwise let's do it. We should also have a migration plan to start being old code up to debt. Let's backlog this tech debt and hopefully with the cost reduction this will free up some capacity to churn through the tech debt later down the line."
+  contract his answer (kit#671): "I think tests should not run against the real db. Isn't there such thing as a test db?" So integration tests use a throwaway Postgres made per test run, never preprod's
+  contract my assumption: no new interface is added from 2026-11-04 except at a boundary: GitHub, the database store, push, time, the model API
+  contract my assumption, the migration plan: three PRs, data-model interfaces first, then internal services, keeping the boundaries; tests that mocked a deleted interface move to the in-memory host
+  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; priority 4 until then
+
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
   stage development
