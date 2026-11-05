@@ -68,4 +68,12 @@ public interface ICorpusDirectory
 
     /// <summary>The schedule, absolute — what a git write-back commits.</summary>
     string FullSchedulePath(string app);
+
+    /// <summary>
+    /// BEH-USERS-12: commit what was just written for an app that lives in its own repository, one
+    /// this Kit has no clone of, and answer the commit and branch. Null for an app the clone holds,
+    /// whose write the caller's git write-back commits as before. Throws
+    /// <see cref="Exceptions.NotWritableException"/> with GitHub's reason when nothing was committed.
+    /// </summary>
+    (string Commit, string Branch)? CommitToOwnRepo(string app, string message) => null;
 }
