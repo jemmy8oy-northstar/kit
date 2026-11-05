@@ -190,6 +190,19 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   contract slice 1 is the 10 companies filing an EA storm-overflow (EDM) annual return in England, by Companies House number, with their 2025 spill events and hours (whos-accountable#19)
   contract then UK ETS emissions for energy utilities, then UK-linked Carbon Majors, then the FTSE 100; each slice is its own PR
   contract one year per company until the engine scores per year, because it sums every record a company holds
+  contract slice 2 is the 16 UK ETS account holders with the largest 2025 verified emissions at electricity-generation installations (NACE 3511), 27.95 Mt, absolute tonnes only, with intensity recorded as unknown (whos-accountable#23)
+
+behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
+  in FEAT-SCORING
+  layer technical
+  source inferred whos-accountable#23
+  review unreviewed
+  priority 4
+  actor visitor
+  pending
+  contract on the 16 power generators in slice 2, emissions per £m of revenue scores every one between 0.00 and 0.27, because the v1 scale of 200 t/£m was set for the synthetic cohort
+  contract a tolled plant's revenue is a fee for being available, so per-revenue intensity spans 1,186 to 33,292 t/£m across gas plants: it ranks the contract, not the carbon
+  contract my assumption: until a like-for-like denominator exists (tCO2e per MWh generated needs a generation source the registry does not hold), their intensity stays unknown and they are listed without a composite, never imputed
 
 behaviour BEH-SCORE-7 "The violations scale is calibrated on the real cohort, so real companies spread across 0-100"
   in FEAT-SCORING
