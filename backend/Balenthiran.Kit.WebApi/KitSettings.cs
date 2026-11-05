@@ -283,6 +283,29 @@ public sealed record KitSettings(
         _ => throw new InvalidOperationException($"KIT_PIPELINE is \"{value}\": set it to on or off"),
     };
 
+    /// <summary>
+    /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
+    /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
+    /// (kit#714).
+    /// </summary>
+    public IReadOnlySet<string>? PipelineProjects { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_PROJECTS</c>: null when unset or blank; else project names. THROWS for a malformed list.</summary>
+    public static IReadOnlySet<string>? ParsePipelineProjects(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var names = value.Split(',', StringSplitOptions.TrimEntries);
+        return names.All(n => ProjectName.IsMatch(n))
+            ? names.ToHashSet(StringComparer.Ordinal)
+            : throw new InvalidOperationException($"KIT_PIPELINE_PROJECTS is \"{value}\": set it to project names separated by commas");
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex ProjectName = new("^[a-z0-9]+(-[a-z0-9]+)*$");
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -374,6 +397,7 @@ public sealed record KitSettings(
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
+            PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }
 
