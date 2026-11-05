@@ -166,11 +166,14 @@ public sealed class KitVerifyLinks(Func<string, string, string>? coverage = null
             try
             {
                 var xml = runCoverage(Path.Combine(repo, Path.GetDirectoryName(file) ?? string.Empty), title);
-                var files = LinkHasher.ExercisedFiles(xml, repo);
-                if (files.Count == 0)
+                // The test's own file is part of what is hashed: a test edited so it no longer
+                // asserts the behaviour is as much a broken link as a change to the code it runs.
+                if (!File.Exists(Path.Combine(repo, file)))
                 {
-                    throw new InvalidOperationException("the coverage run touched no source files");
+                    throw new IOException($"the test file {file} is gone");
                 }
+
+                var files = LinkHasher.ExercisedFiles(xml, repo).Append(file).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
 
                 link["verified"] = new JsonObject
                 {
@@ -183,6 +186,9 @@ public sealed class KitVerifyLinks(Func<string, string, string>? coverage = null
             catch (Exception e) when (e is InvalidOperationException or IOException or System.Xml.XmlException)
             {
                 failed++;
+                // A hash that could not be re-recorded is no longer evidence: drop it, so the link
+                // reads unrecorded rather than verified against code it was never run on.
+                link.Remove("verified");
                 Err($"   ✗ {id}: {title} — {e.Message}");
             }
         }

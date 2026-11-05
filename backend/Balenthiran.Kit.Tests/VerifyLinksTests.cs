@@ -41,6 +41,7 @@ public sealed class VerifyLinksTests : IDisposable
     {
         Write("src/a.cs", "class A {}\n");
         Write("src/b.cs", "class B {}\n");
+        Write("tests/XTests.cs", "class XTests { void X_works() {} }\n");
         Write("behaviours/app.tests.json", "{\n  \"_\": \"a comment — kept\",\n  \"BEH-X-1\": [\n    {\n      \"file\": \"tests/XTests.cs\",\n      \"title\": \"X_works\"\n    }\n  ]\n}");
         Assert.Equal(0, Run("record", (_, _) => Report(("src/a.cs", 3), ("src/b.cs", 1))).Code);
     }
@@ -108,11 +109,36 @@ public sealed class VerifyLinksTests : IDisposable
         var link = map["BEH-X-1"]![0]!;
         Assert.Equal("a comment — kept", (string?)map["_"]);
         Assert.Equal("X_works", (string?)link["title"]);
-        Assert.Equal(LinkHasher.Hash(_root, ["src/a.cs", "src/b.cs"]), (string?)link["verified"]!["hash"]);
-        Assert.Equal(["src/a.cs", "src/b.cs"], link["verified"]!["files"]!.AsArray().Select(f => (string?)f));
+        Assert.Equal(LinkHasher.Hash(_root, ["src/a.cs", "src/b.cs", "tests/XTests.cs"]), (string?)link["verified"]!["hash"]);
+        Assert.Equal(["src/a.cs", "src/b.cs", "tests/XTests.cs"], link["verified"]!["files"]!.AsArray().Select(f => (string?)f));
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", (string?)link["verified"]!["on"]);
         Assert.StartsWith("{\n  \"_\": \"a comment — kept\",\n  \"BEH-X-1\": [\n    {\n      \"file\"", File.ReadAllText(MapPath));
         Assert.False(File.ReadAllText(MapPath).EndsWith('\n'));
+    }
+
+    [Fact]
+    public void Check_flags_a_link_whose_test_file_was_edited()
+    {
+        Recorded();
+        Write("tests/XTests.cs", "class XTests { void X_works() { /* no longer asserts */ } }\n");
+
+        var (code, output) = Run("check");
+
+        Assert.Equal(1, code);
+        Assert.Contains("POSSIBLY BROKEN", output);
+    }
+
+    [Fact]
+    public void A_link_that_can_no_longer_be_recorded_loses_its_old_hash()
+    {
+        Recorded();
+
+        var (code, _) = Run("record", (_, _) => throw new InvalidOperationException("dotnet test exited 1"));
+
+        Assert.Equal(1, code);
+        var link = JsonNode.Parse(File.ReadAllText(MapPath))!.AsObject()["BEH-X-1"]![0]!;
+        Assert.Null(link["verified"]);
+        Assert.Contains("unrecorded", Run("check").Out);
     }
 
     [Fact]

@@ -2009,6 +2009,7 @@ behaviour BEH-HEALTH-4 "A test's link to its behaviour records a hash of the cod
   contract my assumption: "the code a test exercises" is the set of source files the test's run touches, taken from a coverage run, not guessed from imports; the hash is SHA-256 over those files' paths and contents in sorted order, with line endings normalised, so it does not depend on the machine
   contract my assumption: the hash sits beside each test in <app>.tests.json as "verified": { "hash", "on" }; a link whose files now hash differently is "possibly broken" on the Health page, and the agent re-checks it and records the new hash in the same PR
   contract my assumption: each link also records the files it was hashed over, because without them the hash cannot be recomputed without a coverage run
+  contract my assumption: the test's own file is hashed with the code it runs, because a test edited so it no longer asserts the behaviour is as broken a link as a change to that code. A link whose test can no longer be recorded loses its old hash and reads unrecorded
   contract my assumption: this is design-first. The coverage-per-test step differs per stack (.NET, Vitest, Swift), so the first slice is Kit's own .NET tests, measured before any other stack
 
 feature FEAT-SETTINGS "Settings"

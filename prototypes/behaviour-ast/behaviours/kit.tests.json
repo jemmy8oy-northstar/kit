@@ -7,7 +7,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it",
       "verified": {
-        "hash": "68717cd8e31f995564a1c0c15e558af9fbed23a4af4b418ed38a482cce0cb040",
+        "hash": "366efc4dd7e5360aff4a1b08ecbc27fbca0814a6bbded0441fd1f8010e59e780",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
@@ -26,7 +26,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/KitCheck.cs",
           "backend/Balenthiran.Kit.Services/TestReading.cs",
-          "backend/Balenthiran.Kit.Services/TestTitleReader.cs"
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -37,7 +38,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_gate_exits_2_never_0_when_the_repo_has_no_test_files",
       "verified": {
-        "hash": "d5970d6bc0a2340dc99f19148ed8affe51458910d8f9b96e5c8815a789528d74",
+        "hash": "15978cbd826cb3906e29d163fb9b8cc0468021588d635c9deabc5fbb4d7b14bb",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
@@ -53,7 +54,8 @@
           "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
           "backend/Balenthiran.Kit.Services/KitCheck.cs",
           "backend/Balenthiran.Kit.Services/TestReading.cs",
-          "backend/Balenthiran.Kit.Services/TestTitleReader.cs"
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -64,7 +66,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_gate_refuses_a_mapping_naming_a_test_that_no_longer_exists",
       "verified": {
-        "hash": "68717cd8e31f995564a1c0c15e558af9fbed23a4af4b418ed38a482cce0cb040",
+        "hash": "366efc4dd7e5360aff4a1b08ecbc27fbca0814a6bbded0441fd1f8010e59e780",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
@@ -83,7 +85,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/KitCheck.cs",
           "backend/Balenthiran.Kit.Services/TestReading.cs",
-          "backend/Balenthiran.Kit.Services/TestTitleReader.cs"
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -94,7 +97,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_gate_refuses_when_the_readers_two_counts_disagree",
       "verified": {
-        "hash": "d5970d6bc0a2340dc99f19148ed8affe51458910d8f9b96e5c8815a789528d74",
+        "hash": "15978cbd826cb3906e29d163fb9b8cc0468021588d635c9deabc5fbb4d7b14bb",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
@@ -110,7 +113,8 @@
           "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
           "backend/Balenthiran.Kit.Services/KitCheck.cs",
           "backend/Balenthiran.Kit.Services/TestReading.cs",
-          "backend/Balenthiran.Kit.Services/TestTitleReader.cs"
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -121,7 +125,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "An_unbound_noun_is_refused_and_the_missing_noun_is_named",
       "verified": {
-        "hash": "d1d7282261d15c87e309df0ee284653b069d925bcfc68f83713cf9d000c2a293",
+        "hash": "36a6057517eeb04d8b9cd49e71b99e17748bd62c8abb44fa4caf3d9ed7e2a4a4",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
@@ -135,7 +139,8 @@
           "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
           "backend/Balenthiran.Kit.Services/JsValue.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -146,7 +151,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "An_unsupplied_route_param_is_refused_rather_than_truncated",
       "verified": {
-        "hash": "577a68b953ff56e2336b064e03f6cd831b936fa668d99ae6cc3e851a480e332c",
+        "hash": "1bc758fa3128d01fa7c84278c291b7353ffd2ffeaefacd488288ba66195343bd",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
@@ -162,7 +167,8 @@
           "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
           "backend/Balenthiran.Kit.Services/JsValue.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -173,14 +179,15 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped",
       "verified": {
-        "hash": "8163367c169a69656aeb10ba45ffacb727e4d92321cf59146800b61a4213a312",
+        "hash": "aa8527882d335092ec159a93f6440947a020b319ed648b4be7d83787995e108b",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -191,7 +198,7 @@
       "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
       "title": "A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line",
       "verified": {
-        "hash": "a706ee3455aba8d16b1d212e588147fb58f0d8d80e2e34754d48e3afe0945ffb",
+        "hash": "5bad95f2b401657771a9e72ea1e506b94da5d3d52db22deab7c9287a8c20f975",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
@@ -200,7 +207,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/FeatureTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -209,7 +217,7 @@
       "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
       "title": "A_malformed_feature_or_tag_line_is_refused",
       "verified": {
-        "hash": "a706ee3455aba8d16b1d212e588147fb58f0d8d80e2e34754d48e3afe0945ffb",
+        "hash": "5bad95f2b401657771a9e72ea1e506b94da5d3d52db22deab7c9287a8c20f975",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
@@ -218,7 +226,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/FeatureTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -229,7 +238,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
       "title": "A_priority_Kit_cannot_rank_is_refused",
       "verified": {
-        "hash": "7123276673fac92007388d8abcc34615d8a55c156160d2205e3984dfc2e480ee",
+        "hash": "88cecc98881c78d4db5e7f3c38b0855e57296f4480aefc73c31fe13ee66abeed",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
@@ -237,7 +246,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs"
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -246,7 +256,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
       "title": "Without_a_line_there_is_no_priority_and_none_is_written",
       "verified": {
-        "hash": "aef215c9cfd54c9d494b42f5b327c8cad0338a990919d72ad0eff17b8b416dd1",
+        "hash": "9bd9dd4f9bea19b03898ea4329fef3f6b8aedceb2d0b36c80720cc728c78a57e",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
@@ -255,7 +265,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs"
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -264,14 +275,15 @@
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
       "title": "A_priority_line_is_read_as_its_number",
       "verified": {
-        "hash": "03a3f2876d45c9d77a9140dd85bcceb21b7617b36d168c7eb1b34163245bf1d3",
+        "hash": "a0e6dd3f7e6cf18d248eed6f59d3700f9255845f8e026935b6b77eace54cd946",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs"
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -282,14 +294,15 @@
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
       "title": "A_review_request_that_does_not_say_what_to_look_at_is_refused",
       "verified": {
-        "hash": "8163367c169a69656aeb10ba45ffacb727e4d92321cf59146800b61a4213a312",
+        "hash": "2a857712c79b896091f2035aa9ee914eb8d880ffbfa56855b9fc73eca220ba95",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -298,13 +311,14 @@
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
       "title": "A_review_request_is_read_with_what_to_look_at",
       "verified": {
-        "hash": "855cd592144fb4b01d29dd030ca96ef2c67755b0113fca2d1fe8cc45c46966db",
+        "hash": "df0fa31de6c8366842ce12c8801c310f224d958af7ae77668ce0dcbecdba7f1b",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -313,13 +327,14 @@
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
       "title": "A_request_on_an_inference_is_not_overwritten_back_to_unreviewed",
       "verified": {
-        "hash": "855cd592144fb4b01d29dd030ca96ef2c67755b0113fca2d1fe8cc45c46966db",
+        "hash": "df0fa31de6c8366842ce12c8801c310f224d958af7ae77668ce0dcbecdba7f1b",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -330,7 +345,7 @@
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
       "title": "A_kit_idea_file_is_flagged_in_the_list_and_the_view",
       "verified": {
-        "hash": "7cdadefa2b9a9e8acc094f196b6f824d0389c7daa1ff820c4a0a1752997389c0",
+        "hash": "512df64786d0a16f435f9cb21e817a9b71a8239c732b18c07f33c5d7a1ee3e2c",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -370,7 +385,8 @@
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -379,7 +395,7 @@
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
       "title": "A_corpus_that_is_not_an_idea_writes_no_idea_key",
       "verified": {
-        "hash": "ab612e5c7c42e6358a74604701e655787e2009ec26bfa6735e39c4085bdb12d2",
+        "hash": "322cfbb39c108c2413e90f8faedb618787f7cc1eb466221734a3397048d0f2f7",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -417,7 +433,8 @@
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -426,7 +443,7 @@
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
       "title": "Only_the_directive_itself_flags_an_idea",
       "verified": {
-        "hash": "0db1fbe4d86d308bf62e8e0b799f7ee90070db44f08309fe062518dfdfc1b0ca",
+        "hash": "4ad49d2b6793446e7888c48305614462b35a3b9e370aa6f0c5216ea7fdea1c7f",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -451,7 +468,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -462,7 +480,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
       "title": "Principles_are_read_in_order_with_their_scope_and_line",
       "verified": {
-        "hash": "328aff194a4171296484c1cacc767cfbf66ea85f3945ec5525d3c071ae281cde",
+        "hash": "19b86fad41611507401b199495e083d322a0911d685509b42adcba130d62a781",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -495,7 +513,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -504,7 +523,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
       "title": "A_file_with_no_principles_writes_no_principles_key",
       "verified": {
-        "hash": "4413f4df49243352717495dda9acb89fdb84ad332ccf5e1e76337764eab197a0",
+        "hash": "0c9baa8d1b7ca3943bac390879f0b89020343c1b4494329dfd74f40e1af7a548",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -537,7 +556,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -546,7 +566,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
       "title": "A_principle_that_does_not_say_what_it_means_is_refused",
       "verified": {
-        "hash": "e73d1ac9d105b35dee39a80dcb274fe6bf2ea699d2d26491480e3ce47c6f2f00",
+        "hash": "e0a9a03ae8ccd5aeffb242f658b1209936dfe77c7277d1a976bbb12914cea321",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/ProjectionFailedException.cs",
@@ -580,7 +600,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -589,7 +610,7 @@
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
       "title": "A_comment_that_only_mentions_principles_is_not_one",
       "verified": {
-        "hash": "85cfc5f87337ae97794e349f3339dcf0a0dc072e964e7d26851f0735e7b6d624",
+        "hash": "c44cd51fa841241feda100da9bd88e596860f8e02fa561324888020a3e63543f",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
@@ -621,7 +642,8 @@
           "backend/Balenthiran.Kit.Services/JsValue.cs",
           "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/TestGenerator.cs"
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -632,7 +654,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "A_hole_is_filled_by_a_different_behaviour",
       "verified": {
-        "hash": "166da97190dc0e0dbac282d96be94c5960249d6fe54659c1a99a09fdf323da0c",
+        "hash": "77871eeacc85469cd615195fe3a827f017d73c397510cf44338644fedbbddd6d",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Filled.cs",
@@ -647,7 +669,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Unknown.cs",
           "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -658,7 +681,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "Two_behaviours_disagreeing_is_a_conflict_with_both_sides_named",
       "verified": {
-        "hash": "c7e571636c85d440d84c86640c5e9d87b3eed732282decb241898a6fb24e6d22",
+        "hash": "b51d18d0c7d3040b4d2170daffbfd3128fd4698fbbde7e2127bb4ecad57e0eec",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Challenger.cs",
@@ -670,7 +693,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
           "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -681,13 +705,14 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "An_inference_defaults_to_unreviewed_without_anyone_writing_review",
       "verified": {
-        "hash": "855cd592144fb4b01d29dd030ca96ef2c67755b0113fca2d1fe8cc45c46966db",
+        "hash": "9203f4f036d9d5af23d22f58509642e1d6e4ef9487c351be1a11dd6b0767baa0",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
           "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
-          "backend/Balenthiran.Kit.Services/CorpusParser.cs"
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -698,7 +723,7 @@
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
       "title": "The_router_answers_as_ui_js_does",
       "verified": {
-        "hash": "c2c8fb11d21fefafc1b436dd4342536ad796cc217fbedc66be07e393ab2fd5e8",
+        "hash": "f6b3514883b8b5dbeb5367030b0ed724b6185e65aedc610c1d870e6c172697d7",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
@@ -773,7 +798,8 @@
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
           "backend/Balenthiran.Kit.Services/TestGenerator.cs",
-          "backend/Balenthiran.Kit.Services/UiBundle.cs"
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -784,13 +810,14 @@
       "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
       "title": "The_default_host_is_loopback_not_every_interface",
       "verified": {
-        "hash": "71b960d0d14b30ef209306472e0fa74606e208b2a1f5238a29851b07e5b029cf",
+        "hash": "ed7accb2ab0b73373d451ff1e2f3031525108b5bfb9ca08ed247f26dc8ecd787",
         "files": [
           "backend/Balenthiran.Kit.Database/GitHubPullRequestOpener.cs",
           "backend/Balenthiran.Kit.Services/AgentProxy.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
           "backend/Balenthiran.Kit.Services/KitHost.cs",
           "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
           "backend/Balenthiran.Kit.WebApi/KitSettings.cs"
         ],
         "on": "2026-11-05"
@@ -802,7 +829,7 @@
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
       "title": "The_router_answers_as_ui_js_does",
       "verified": {
-        "hash": "c2c8fb11d21fefafc1b436dd4342536ad796cc217fbedc66be07e393ab2fd5e8",
+        "hash": "f6b3514883b8b5dbeb5367030b0ed724b6185e65aedc610c1d870e6c172697d7",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
@@ -877,7 +904,8 @@
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
           "backend/Balenthiran.Kit.Services/TestGenerator.cs",
-          "backend/Balenthiran.Kit.Services/UiBundle.cs"
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -888,7 +916,7 @@
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
       "title": "Unavailable_coverage_is_null_in_the_list_never_zero",
       "verified": {
-        "hash": "1151b5de9b1b610ba970a991c6e0ff486a7eb11978c78367a1a8ba7d10f83b60",
+        "hash": "44a50cc79f506b381bef6d1b68efee5995928b493f18c1b8c761180c9e2d6ecd",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
@@ -960,7 +988,8 @@
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
           "backend/Balenthiran.Kit.Services/TestGenerator.cs",
-          "backend/Balenthiran.Kit.Services/UiBundle.cs"
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -971,7 +1000,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_writer_keeps_every_comment_byte_for_byte",
       "verified": {
-        "hash": "84bd9999578a5c4405f9b0079a64c99ce8d7e74f7c10352aa5e0c823651403ab",
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
@@ -981,7 +1010,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
           "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/CorpusWriter.cs"
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -990,7 +1020,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_writer_lands_a_step_at_the_end_of_its_own_block",
       "verified": {
-        "hash": "84bd9999578a5c4405f9b0079a64c99ce8d7e74f7c10352aa5e0c823651403ab",
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
@@ -1000,7 +1030,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
           "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/CorpusWriter.cs"
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1011,7 +1042,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_writer_refuses_an_edit_that_would_not_parse_and_hands_back_no_text",
       "verified": {
-        "hash": "2b86b6ae1bd7ba0fbdd7bf37d1564194568d3f7f24cdb354643f0a18cd418f32",
+        "hash": "713d5ab382e1732478bcf746027f037d42c009e86f77bf4c6cd675a23e7cde5a",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
@@ -1023,7 +1054,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
           "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/CorpusWriter.cs"
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1034,7 +1066,7 @@
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
       "title": "The_writer_refuses_an_edit_that_would_change_a_neighbouring_behaviour",
       "verified": {
-        "hash": "84bd9999578a5c4405f9b0079a64c99ce8d7e74f7c10352aa5e0c823651403ab",
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
@@ -1044,7 +1076,8 @@
           "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
           "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
           "backend/Balenthiran.Kit.Services/CorpusParser.cs",
-          "backend/Balenthiran.Kit.Services/CorpusWriter.cs"
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1053,13 +1086,20 @@
   "BEH-WRITE-4": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_has_no_path_to_git_or_a_process"
+      "title": "The_writer_has_no_path_to_git_or_a_process",
+      "verified": {
+        "hash": "fe27dd3a9f5d7e919dd095fe592e581e74428ebce9287c00d29b519056a59833",
+        "files": [
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs",
       "title": "Every_route_answers_and_writes_as_ui_js_does",
       "verified": {
-        "hash": "52a7b30d0be993ecf3420aca8d1ed28ffb3a3704004dd3b37e39f84efe04481f",
+        "hash": "a043417424af0eb90f8040f17800eaaa78cd2557ce12742b4edcc856118657fe",
         "files": [
           "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
           "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
@@ -1097,7 +1137,8 @@
           "backend/Balenthiran.Kit.Services/NotificationReader.cs",
           "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
-          "backend/Balenthiran.Kit.Services/UiBundle.cs"
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1108,7 +1149,7 @@
       "file": "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs",
       "title": "Every_step_answers_as_ui_js_does",
       "verified": {
-        "hash": "e41434c58ffc2e130536f8dd71925e4725e5c4cade06c5bced505cbef8ae95cf",
+        "hash": "d361454e5856b80207f45c92a9e69e3fa4adb77817b78064fba7463ad7a22b78",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
@@ -1140,7 +1181,8 @@
           "backend/Balenthiran.Kit.Services/SessionStore.cs",
           "backend/Balenthiran.Kit.Services/SignInThrottle.cs",
           "backend/Balenthiran.Kit.Services/UiBundle.cs",
-          "backend/Balenthiran.Kit.Services/UrlParser.cs"
+          "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1149,9 +1191,10 @@
       "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
       "title": "IsLoopback_accepts_the_loopback_range_and_nothing_that_merely_looks_like_it",
       "verified": {
-        "hash": "820a8e44cb19fdd6c21baa02c0168e47bf7438be627ab62c0e9d533ccb2678b4",
+        "hash": "e42211ef5070029014fed05a2d7bcc8ab0f40356de9155b5366bfe5ff003d864",
         "files": [
-          "backend/Balenthiran.Kit.Services/OriginPolicy.cs"
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Tests/LoopbackTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1162,7 +1205,7 @@
       "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
       "title": "The_host_answers_as_ui_js_does",
       "verified": {
-        "hash": "f51fa6d32db4bbf6d8fe96b9914cc5d96ce9701809c18e6d17067dd403ce8662",
+        "hash": "8359b0683396e5f40c8e0650b3f5c774cf582649dd56b553c6c414cde3858d76",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
@@ -1190,7 +1233,8 @@
           "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
           "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
           "backend/Balenthiran.Kit.Services/UiBundle.cs",
-          "backend/Balenthiran.Kit.Services/UrlParser.cs"
+          "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs"
         ],
         "on": "2026-11-05"
       }
@@ -1199,7 +1243,7 @@
       "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
       "title": "Kestrel_delivers_every_answer_over_a_real_socket",
       "verified": {
-        "hash": "7e912e933332d2915e02387e8864e54f4fd800e0d9de4cf6f55df058ca08b5f8",
+        "hash": "67005b765b15689174a3c6e1dc685fcd1555c8a36fa7e20306f2bd3a3d73cf43",
         "files": [
           "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
           "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
@@ -1233,6 +1277,7 @@
           "backend/Balenthiran.Kit.Services/SignInThrottle.cs",
           "backend/Balenthiran.Kit.Services/UiBundle.cs",
           "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
           "backend/Balenthiran.Kit.WebApi/ExpiringRefresh.cs",
           "backend/Balenthiran.Kit.WebApi/KitServer.cs",
           "backend/Balenthiran.Kit.WebApi/KitSettings.cs",
