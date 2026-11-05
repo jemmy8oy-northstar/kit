@@ -1351,8 +1351,8 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: a project's .kit/ holds its .beh, .notes.md and .schedule files under the names they have today, and Kit reads and writes them through the project's own repo, as it already does for a user's project
   contract my assumption: one project moves per PR, the smallest first, and its tests' behaviour links move with it, so test health never reads a project as unspecified mid-move
   contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
-  contract found 2026-11-05: Kit can read a spec from any repo (a KIT_PROJECTS entry), but it writes only to its own clone of kit, so a project moved out today would become read-only in Kit: no notes, no approvals
-  needs-context "Kit can only write to kit's repo today, so moving a project's spec into its own repo needs Kit's GitHub App to write there. My plan is that Kit writes each project's .kit/ on a kit/hosted branch, as it does in kit now, which needs the App to have Contents write on those repos. OK? If you're silent by 2026-11-12, I move kit's own spec into kit's .kit/ first, which needs no new access, and move nothing else."
+  contract found 2026-11-05: Kit can read a spec from any repo (a KIT_PROJECTS entry), but its writer commits only to its own clone of kit, so the writer must learn to commit to a project's own repo before that project moves out, or the project becomes read-only in Kit: no notes, no approvals
+  contract decided 2026-11-05 (kit#683): Kit's GitHub App already has Contents read and write on the project repos, so no new access is needed, and Kit writes each project's .kit/ in that project's own repo
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
