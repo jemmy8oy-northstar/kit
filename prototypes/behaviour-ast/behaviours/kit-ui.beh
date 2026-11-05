@@ -1353,6 +1353,9 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
   contract found 2026-11-05: Kit can read a spec from any repo (a KIT_PROJECTS entry), but its writer commits only to its own clone of kit, so the writer must learn to commit to a project's own repo before that project moves out, or the project becomes read-only in Kit: no notes, no approvals
   contract decided 2026-11-05 (kit#683): Kit's GitHub App already has Contents read and write on the project repos, so no new access is needed, and Kit writes each project's .kit/ in that project's own repo
+  contract my assumption: a write to a project's own repo goes through GitHub's Contents API, one commit per write, with the installation token Kit already reads with. Kit keeps no clone of the project. The write names the blob Kit last read, so if someone else changed the file first, GitHub refuses it, and Kit refuses the write with that reason and re-reads the project; trying again applies the edit to the newer text. Kit never overwrites a change it has not seen
+  contract my assumption: Kit writes to the branch the project's KIT_PROJECTS entry names, and reads from that same branch, so it always sees its own writes. Like Kit's own KIT_GIT_BRANCH, that is an edits branch and never the base branch; Commit proposes it into the project's base as today
+  contract my assumption: the slices are: first the remote writer, proved on a project whose spec already lives in its own repo; then one project at a time moves into its .kit/, the smallest first; kit moves last, with the CI path change as his own PR
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
