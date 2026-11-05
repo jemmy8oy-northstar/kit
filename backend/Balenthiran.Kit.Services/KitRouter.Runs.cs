@@ -23,7 +23,7 @@ public sealed partial class KitRouter
     /// <summary>The longest task a run may be given.</summary>
     public const int MaxTask = 8000;
 
-    private static readonly Regex ModelName = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.Compiled);
+    public static readonly Regex ModelName = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.Compiled);
 
     /// <summary><c>GET /api/runs</c>: every run newest first, with tokens and cost. Operator only: 401 with no session, 403 for another user.</summary>
     private KitResponse RunsList(string? cookie)
