@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.Database;
 using Balenthiran.Kit.DataModels.Models;
@@ -30,20 +31,22 @@ public class PipelineTests
     {
         private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true)
         {
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
         }
 
         public MemoryAgentRunStore Store { get; }
+
+        public Opener Pulls { get; } = new();
 
         public RunnerPool Pool { get; }
 
@@ -79,6 +82,20 @@ public class PipelineTests
             Routes.Finished(claim.Token, Json(new { status = "finished", bundles }));
 
         public void Dispose() => Directory.Delete(root, recursive: true);
+    }
+
+    // Records each pull request asked for and answers with Answer: a page, or GitHub's reason for none.
+    private sealed class Opener : IPullRequestOpener
+    {
+        public List<(string Head, string Base, string Title, string Body, string? Repository)> Asked { get; } = [];
+
+        public PullRequestResult Answer { get; set; } = new() { Opened = true, Number = 7, Url = "https://github.com/someone/demo/pull/7" };
+
+        public Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default)
+        {
+            Asked.Add((head, baseBranch, title, body, repository));
+            return Task.FromResult<IPullRequestResult>(Answer);
+        }
     }
 
     private sealed class Clock : TimeProvider
@@ -273,24 +290,159 @@ public class PipelineTests
     }
 
     [Fact]
-    public void Items_waiting_for_build_do_not_hold_the_projects_next_triage()
+    public void A_running_build_holds_the_projects_next_triage_until_it_ends()
     {
         using var rig = new Rig();
         rig.Note("first note");
         rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
         rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Specced("list-sorting") });
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
 
-        // The build item is now ahead of any triage in the queue.
         rig.Note("second note");
+        Assert.Null(rig.Claim());
 
+        rig.FinishWith(build, new { slug = "list-sorting", text = Built("list-sorting") });
         Assert.Contains("second note", Assert.IsType<PoolClaim>(rig.Claim()).Task);
-        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (item.Stage, item.Status));
     }
 
     // The bundle as a spec run leaves it: a test plan added to the end of its Context.
     private static string Specced(string slug, string? flag = null) =>
         BundleText(slug, flag) + "Test plan:\n- BEH-A: the list is sorted by date\n";
+
+    // The bundle as a build run leaves it: what it built added after the test plan.
+    private static string Built(string slug, string? flag = null) =>
+        Specced(slug, flag) + "Built:\n- BEH-A: ListTests.Sorts_by_date\n- the suite ran 12 tests and passed\n";
+
+    // Triage, then spec, of list-sorting; the build run of it is what is claimed next.
+    private static PoolClaim Specced(Rig rig)
+    {
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting") });
+        return Assert.IsType<PoolClaim>(rig.Claim());
+    }
+
+    [Fact]
+    public void A_specced_item_starts_a_build_run_on_its_branch_with_the_bundle_and_its_test_plan()
+    {
+        using var rig = new Rig();
+
+        var build = Specced(rig);
+
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5"), (build.Repo, build.BaseBranch, build.Model));
+        Assert.Contains("You are the build stage for project \"demo\"", build.Task);
+        Assert.Contains("Check out branch kit/work/list-sorting", build.Task);
+        Assert.Contains("- BEH-A: the list is sorted by date", build.Task);
+        Assert.Contains("Do not open a pull request", build.Task);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Running), (item.Stage, item.Status));
+    }
+
+    [Fact]
+    public void A_build_that_says_what_it_built_is_done_and_kit_opens_its_pull_request_into_the_branch_it_ran_on()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Equal(("kit/work/list-sorting", "dev", "Sort the list", "someone/demo"), (asked.Head, asked.Base, asked.Title, asked.Repository));
+        Assert.Contains("Built:\n- BEH-A: ListTests.Sorts_by_date", asked.Body);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, "https://github.com/someone/demo/pull/7"), (item.Stage, item.Status, item.PullRequest));
+        Assert.Null(rig.Claim());
+    }
+
+    [Theory]
+    [InlineData("not said", "the build run left no list of what was built")]
+    [InlineData("unchanged", "the build run left the bundle unchanged")]
+    [InlineData("failed", "the build run failed")]
+    public void A_build_run_that_did_not_say_what_it_built_stops_the_item_and_opens_nothing(string report, string why)
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+
+        var body = report switch
+        {
+            "not said" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = Specced("list-sorting").Replace("sort by date", "sort by date, done") } } }),
+            "unchanged" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = Specced("list-sorting") } } }),
+            _ => Json(new { status = "failed" }),
+        };
+        Assert.Equal(200, rig.Routes.Finished(build.Token, body).Status);
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Stopped, why), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.Empty(rig.Pulls.Asked);
+    }
+
+    [Fact]
+    public void A_build_that_flags_itself_is_reviewed_and_an_agreed_review_opens_the_pull_request()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting", flag: "the sort may be unstable") });
+        Assert.Empty(rig.Pulls.Asked);
+        var review = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the review stage", review.Task);
+
+        rig.FinishWith(review, new { slug = "list-sorting", text = Built("list-sorting", "the sort may be unstable").Replace("Cards:", "Review: agreed — stable enough\nCards:") });
+
+        Assert.Contains("Review: agreed — stable enough", Assert.Single(rig.Pulls.Asked).Body);
+        Assert.Equal(WorkItemStatus.Done, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").Status);
+    }
+
+    [Fact]
+    public void A_pull_request_github_would_not_open_or_kit_cannot_open_stops_the_built_item_with_the_reason()
+    {
+        using var refused = new Rig();
+        refused.Pulls.Answer = new PullRequestResult { Reason = "GitHub said: No commits between dev and kit/work/list-sorting" };
+        refused.FinishWith(Specced(refused), new { slug = "list-sorting", text = Built("list-sorting") });
+        var item = Assert.Single(refused.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request could not be opened: GitHub said: No commits between dev and kit/work/list-sorting"), (item.Status, item.StoppedBecause));
+
+        using var none = new Rig(canOpenPulls: false);
+        none.FinishWith(Specced(none), new { slug = "list-sorting", text = Built("list-sorting") });
+        Assert.Equal("its pull request could not be opened: Kit has no way to open a pull request", Assert.Single(none.Pipeline!.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+    }
+
+    [Fact]
+    public void A_review_of_a_build_that_drops_its_built_list_stops_the_item_and_opens_nothing()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting", flag: "unsure") });
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Specced("list-sorting", "unsure").Replace("Cards:", "Review: revised — trimmed\nCards:") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "the review run left no list of what was built"), (item.Status, item.StoppedBecause));
+        Assert.Empty(rig.Pulls.Asked);
+    }
+
+    [Fact]
+    public void A_build_waiting_starts_before_an_item_earlier_in_the_list_that_a_triage_sent_back_to_spec()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+        rig.FinishWith(rig.Claim()!, new { slug = "one", text = BundleText("one") }, new { slug = "two", text = BundleText("two") });
+        rig.FinishWith(rig.Claim()!, new { slug = "one", text = Specced("one") });
+        rig.FinishWith(rig.Claim()!, new { slug = "one", text = Built("one") });
+        var specTwo = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Note("second note");
+
+        // two's spec ends with a triage queued, so the triage runs first and sends one, earlier in the list, back to spec.
+        rig.FinishWith(specTwo, new { slug = "two", text = Specced("two") });
+        rig.FinishWith(rig.Claim()!, new { slug = "one", text = BundleText("one").Replace("sort by date", "sort by date, newest first") });
+
+        var next = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the build stage", next.Task);
+        Assert.Contains("Work-item: two", next.Task);
+    }
+
+    [Fact]
+    public void A_build_task_needs_a_test_plan()
+    {
+        var bundle = ContextBundle.Parse(BundleText("list-sorting")).Bundle!;
+
+        Assert.Equal("the bundle has no test plan to build from", Assert.Throws<InvalidOperationException>(() => BuildStage.BuildTask("demo", bundle)).Message);
+    }
 
     // Triage reports one bundle for list-sorting; the spec run of it is what is claimed next.
     private static PoolClaim Triaged(Rig rig, string? flag = null)
@@ -318,14 +470,14 @@ public class PipelineTests
     }
 
     [Fact]
-    public void A_spec_run_reporting_its_bundle_changed_queues_the_item_for_build_and_keeps_the_new_bundle()
+    public void A_spec_run_reporting_its_bundle_changed_starts_the_items_build_and_keeps_the_new_bundle()
     {
         using var rig = new Rig();
 
         rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting") });
 
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (item.Stage, item.Status));
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Running), (item.Stage, item.Status));
         Assert.Contains("Test plan:", rig.Pipeline.Bundle("demo", "list-sorting")!.Context);
     }
 
@@ -434,7 +586,7 @@ public class PipelineTests
     }
 
     [Fact]
-    public void Notes_waiting_are_triaged_before_any_bundle_is_specced_and_bundles_are_specced_one_at_a_time()
+    public void Notes_waiting_are_triaged_before_any_bundle_is_specced_and_each_item_is_built_before_the_next_is_specced()
     {
         using var rig = new Rig();
         rig.Note("first note");
@@ -452,11 +604,16 @@ public class PipelineTests
         Assert.Null(rig.Claim());
         rig.FinishWith(first, new { slug = "one", text = Specced("one") });
 
+        // An item goes on to its build before the next item is specced: one piece of work is finished at a time.
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the build stage", build.Task);
+        Assert.Contains("Work-item: one", build.Task);
+        Assert.Null(rig.Claim());
+        rig.FinishWith(build, new { slug = "one", text = Built("one") });
+
         var second = Assert.IsType<PoolClaim>(rig.Claim());
         Assert.Contains("Work-item: two", second.Task);
-        rig.FinishWith(second, new { slug = "two", text = Specced("two") });
-
-        Assert.Contains("Work-item: three", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+        Assert.Contains("You are the spec stage", second.Task);
     }
 
     [Fact]
