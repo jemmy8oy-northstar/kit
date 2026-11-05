@@ -14,9 +14,16 @@
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
+#   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
+#   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
 #
-# The model is reached only through Kit: ANTHROPIC_BASE_URL is <KIT_URL>/api/agent and the
-# run token stands in for the API key. No real Anthropic key ever enters this container.
+# Two ways to reach the model. Without CLAUDE_CODE_OAUTH_TOKEN, only through Kit: ANTHROPIC_BASE_URL
+# is <KIT_URL>/api/agent and the run token stands in for the API key, so Kit counts and caps every
+# call. With it, the run uses James's subscription and goes straight to Anthropic (his kit#708: no
+# pipeline until it can use his subscription). Kit's proxy then counts nothing, so the run's usage is
+# written to KIT_USAGE_FILE for the pool to report with `finished`. The token is readable inside the
+# run, which James accepted on kit#708; Kit's per-run dollar cap does not apply to it, the
+# subscription's own limits and --max-turns do.
 # Tokens are never echoed; git gets the GitHub token through a credential helper reading env.
 set -euo pipefail
 
@@ -37,9 +44,16 @@ case "$KIT_RUN_ID" in
   *[!A-Za-z0-9._-]*) echo "kit-run: KIT_RUN_ID has characters a branch name cannot" >&2; exit 64 ;;
 esac
 
-export ANTHROPIC_BASE_URL="${KIT_URL%/}/api/agent"
-export ANTHROPIC_API_KEY="$KIT_RUN_TOKEN"
 unset ANTHROPIC_AUTH_TOKEN
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  # An API key would win over the OAuth token, so none may be set.
+  unset ANTHROPIC_BASE_URL ANTHROPIC_API_KEY
+  echo "kit-run[$KIT_RUN_ID]: on the subscription"
+else
+  unset CLAUDE_CODE_OAUTH_TOKEN
+  export ANTHROPIC_BASE_URL="${KIT_URL%/}/api/agent"
+  export ANTHROPIC_API_KEY="$KIT_RUN_TOKEN"
+fi
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
 # git authenticates at call time, so the token is in no URL, config or log.
@@ -49,7 +63,8 @@ export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 # config on stdin, so it is never in argv (visible in ps).
 export GIT_TERMINAL_PROMPT=0
 export KIT_URL KIT_RUN_TOKEN
-helper="$(mktemp /work/credential.XXXXXX)"
+scratch="${KIT_WORK_DIR:-/work}" # overridable only so a test can run this script outside the image
+helper="$(mktemp "$scratch/credential.XXXXXX")"
 cat > "$helper" <<'HELPER'
 #!/usr/bin/env bash
 # git credential helper: `get` prints a fresh repo-scoped token from Kit; anything else is a no-op.
@@ -71,7 +86,7 @@ export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="credential.helper"
 export GIT_CONFIG_VALUE_0="!$helper"
 
-work="$(mktemp -d /work/run.XXXXXX)"
+work="$(mktemp -d "$scratch/run.XXXXXX")"
 trap 'rm -rf "$work" "$helper"' EXIT
 
 echo "kit-run[$KIT_RUN_ID]: cloning $KIT_REPO"
@@ -94,12 +109,33 @@ echo "kit-run[$KIT_RUN_ID]: working"
 # bypassPermissions, so the agent can run the repo's tests: acceptEdits refuses every command.
 # The Job is the sandbox (scratch disk, no Kubernetes token, a capped run token, a GitHub token
 # for one repo), which is the default proposed on kit#684 and met with silence.
+# JSON, so the usage can be read; the agent's final message is still printed for the log.
+result="$work/result.json"
+status=0
 claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
   --permission-mode bypassPermissions \
-  --output-format text
+  --output-format json > "$result" || status=$?
+# A failed run spent tokens too, so its usage is written before the exit status is acted on.
+node -e '
+  const [file, usageFile] = process.argv.slice(1);
+  let r;
+  try { r = JSON.parse(require("fs").readFileSync(file, "utf8")); } catch { process.exit(0); }
+  if (typeof r.result === "string") console.log(r.result);
+  if (usageFile && r.usage && typeof r.usage === "object") {
+    const u = {};
+    for (const k of ["input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"]) {
+      u[k] = Number.isSafeInteger(r.usage[k]) && r.usage[k] >= 0 ? r.usage[k] : 0;
+    }
+    require("fs").writeFileSync(usageFile, JSON.stringify(u));
+  }
+' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}"
+if [ "$status" -ne 0 ]; then
+  echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
+  exit "$status"
+fi
 
 # Push only if the agent left something behind; an empty run is a success with nothing to push.
 if [ "$(git rev-list --count "HEAD" --not --remotes)" -eq 0 ] && git diff --quiet && [ -z "$(git status --porcelain)" ]; then

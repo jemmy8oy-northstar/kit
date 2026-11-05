@@ -56,6 +56,15 @@ spec:
                 secretKeyRef:
                   name: kit-runner-pool
                   key: token
+            # James's subscription token (kit#708), from `claude setup-token`. OPTIONAL: unset, runs
+            # reach the model through Kit's proxy and its key, as before. Created by hand, by him:
+            #   kubectl create secret generic kit-claude-subscription -n kit-runs --from-literal=token=<token>
+            - name: CLAUDE_CODE_OAUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kit-claude-subscription
+                  key: token
+                  optional: true
             - name: KIT_RUNS_PER_CONTAINER
               value: {{ .Values.runner.runsPerContainer | quote }}
           securityContext:

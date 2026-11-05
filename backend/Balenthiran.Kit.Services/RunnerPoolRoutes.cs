@@ -50,8 +50,13 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     }
 
     /// <summary>
-    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", bundles? }</c>, authenticated
-    /// by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed to the pipeline.
+    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, bundles? }</c>,
+    /// authenticated by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed
+    /// to the pipeline. <c>usage</c> is Claude Code's own count, with its field names (<c>input_tokens</c>,
+    /// <c>output_tokens</c>, <c>cache_creation_input_tokens</c>, <c>cache_read_input_tokens</c>). A run on James's
+    /// subscription reaches Anthropic directly, so the model proxy never counts it, and this is the only count Kit gets.
+    /// It is priced at list price for the run's model, as the proxy prices a call, and it is ignored when the proxy has
+    /// already counted the run, so no run is counted twice. Everything is checked before anything is recorded.
     /// </summary>
     public KitResponse Finished(string? runToken, JsonElement? body)
     {
@@ -69,6 +74,17 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(400, "bad-request", "the body must be { \"status\": \"finished\" } or { \"status\": \"failed\" }");
         }
 
+        AgentUsage? usage = null;
+        if (b.TryGetProperty("usage", out var u) && u.ValueKind != JsonValueKind.Null)
+        {
+            if (ReadUsage(u) is not { } read)
+            {
+                return Error(400, "bad-usage", "usage must be an object of whole, non-negative token counts: input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens");
+            }
+
+            usage = read;
+        }
+
         if (AgentRunStatus.IsOver(run.Status))
         {
             return Error(409, "already-over", $"this run is already {run.Status}");
@@ -79,6 +95,13 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         if (s.GetString() == AgentRunStatus.Finished && ReadBundles(b, out bundles) is { } badBundles)
         {
             return badBundles;
+        }
+
+        var proxyCounted = run.InputTokens + run.OutputTokens + run.CacheWriteTokens + run.CacheReadTokens > 0;
+        if (usage is { } x && !proxyCounted)
+        {
+            // Claude Code's total does not split cache writes by lifetime; it writes 5 minute ones, so they are priced as those.
+            store.AddUsage(run.Id, x, AgentPrices.Cost(run.Model, x.Input, x.Output, x.CacheWrite, 0, x.CacheRead));
         }
 
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow());
@@ -147,6 +170,21 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         {
             return Error(502, "github-token", e.Message);
         }
+    }
+
+    /// <summary>Claude Code's usage object as Kit's counts; null when any count is missing, not a whole number, or negative.</summary>
+    private static AgentUsage? ReadUsage(JsonElement u)
+    {
+        if (u.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        long Count(string name) =>
+            u.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt64(out var n) && n >= 0 ? n : -1;
+
+        var (input, output, write, read) = (Count("input_tokens"), Count("output_tokens"), Count("cache_creation_input_tokens"), Count("cache_read_input_tokens"));
+        return input < 0 || output < 0 || write < 0 || read < 0 ? null : new AgentUsage(input, output, write, read);
     }
 
     /// <summary>Most bundles one report may carry.</summary>
