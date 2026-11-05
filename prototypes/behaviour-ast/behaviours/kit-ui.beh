@@ -1999,7 +1999,6 @@ behaviour BEH-HEALTH-4 "A test's link to its behaviour records a hash of the cod
   source defined kit-ui.notes.md#2026-11-03-2344
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitHealth
   then sees region:KitMain
@@ -2011,6 +2010,7 @@ behaviour BEH-HEALTH-4 "A test's link to its behaviour records a hash of the cod
   contract my assumption: each link also records the files it was hashed over, because without them the hash cannot be recomputed without a coverage run
   contract my assumption: the test's own file is hashed with the code it runs, because a test edited so it no longer asserts the behaviour is as broken a link as a change to that code. A link whose test can no longer be recorded loses its old hash and reads unrecorded
   contract my assumption: this is design-first. The coverage-per-test step differs per stack (.NET, Vitest, Swift), so the first slice is Kit's own .NET tests, measured before any other stack
+  contract my assumption: the Health page can only re-hash the source on Kit's own disk, its own checkout. Links recorded against another repo say in words that they were not checked, and never read as "all hold"; checking them waits on Kit having a checkout of each project (BEH-USERS-12)
 
 feature FEAT-SETTINGS "Settings"
   stage ui

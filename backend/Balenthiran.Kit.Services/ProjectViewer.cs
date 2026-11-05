@@ -25,7 +25,8 @@ public sealed class ProjectViewer(
     ITestGenerator generator,
     IProjectReporter reporter,
     ICoverageStore? coverage = null,
-    ICoverageCounter? counter = null) : IProjectViewer
+    ICoverageCounter? counter = null,
+    SourceCheckout? checkout = null) : IProjectViewer
 {
     private const string NoRepo = "no --repo given, so no test files were read";
     private const string NoDirective = "no `# kit:repo` line names where this app's tests live";
@@ -48,7 +49,10 @@ public sealed class ProjectViewer(
         $@"(?:^|(?<=[\n\r\u2028\u2029]))#[{CorpusParser.Ws}]*kit:duplicate-corpus[{CorpusParser.Ws}]+([^{CorpusParser.Ws}]+)", RegexOptions.Compiled);
 
     /// <inheritdoc />
-    public IProjectView View(string app)
+    public IProjectView View(string app) => View(app, withLinks: true);
+
+    // The list calls this with withLinks false: link health reads source files, and the list has no use for it.
+    private ProjectView View(string app, bool withLinks)
     {
         // ui.js's projectOf reports ANY throw from project() as this project's could-not-look.
         // Each narrower catch this port tried left a door: a binding the write route accepted
@@ -57,7 +61,7 @@ public sealed class ProjectViewer(
         // and the list is unauthenticated, so that reason is said without it.
         try
         {
-            return Project(app);
+            return Project(app, withLinks);
         }
         catch (ProjectionFailedException)
         {
@@ -73,7 +77,7 @@ public sealed class ProjectViewer(
         }
     }
 
-    private ProjectView Project(string app)
+    private ProjectView Project(string app, bool withLinks)
     {
         var src = corpora.Read(app);
         var corpus = parser.ParseCorpus(src, $"{app}.beh");
@@ -184,8 +188,80 @@ public sealed class ProjectViewer(
             Idea = Idea.IsMatch(src) ? true : null,
             Goal = (corpus.Project ?? app) == app && GoalDirective.IsMaintained(src) ? "maintained" : null,
             Principles = Principles(src, app) is { Count: > 0 } p ? p : null,
+            Links = withLinks ? LinkHealth(app, src) : null,
         };
     }
+
+    /// <summary>
+    /// BEH-HEALTH-4: whether the app's recorded test links still hold. Null when no link carries a hash
+    /// (nothing to say). Otherwise the tests' repo is the <c># kit:repo</c> line's, and only Kit's own checkout
+    /// can be hashed: a link for another repo, or any recorded file this checkout does not have, is
+    /// unavailable with the reason — an empty <c>Broken</c> only ever means every recorded link was checked and held.
+    /// </summary>
+    private object? LinkHealth(string app, string src)
+    {
+        var tests = corpora.ReadTestsText(app);
+        if (tests is null)
+        {
+            return null;
+        }
+
+        JsonObject map;
+        try
+        {
+            map = JsonNode.Parse(tests.TrimStart('﻿')) as JsonObject ?? throw new JsonException("not an object");
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        var recorded = LinkVerification.Links(map).Where(l => l.Link["verified"] is JsonObject v && LinkVerification.Text(v, "hash") is not null && v["files"] is JsonArray).ToList();
+        if (recorded.Count == 0)
+        {
+            return null;
+        }
+
+        if (checkout is null)
+        {
+            return UnavailableLinks("Kit has no checkout of the source these links were recorded against");
+        }
+
+        var (repo, _) = RepoDirective.Read(src);
+        var named = repo?[..repo.IndexOf('@')];
+        if (named is not null && checkout.Repo is not null && !string.Equals(named, checkout.Repo, StringComparison.OrdinalIgnoreCase))
+        {
+            return UnavailableLinks($"these links are recorded against {named}, and Kit only has a checkout of {checkout.Repo}");
+        }
+
+        // A repo Kit does not know it is a clone of (or a corpus naming none) is trusted only as far as the
+        // files being there: a missing one would read as "gone" when it was never this checkout's to have.
+        if (named is null || checkout.Repo is null)
+        {
+            var absent = recorded
+                .Select(l => l.Link["verified"]!["files"] as JsonArray)
+                .SelectMany(files => files is null ? [] : LinkVerification.Files(files))
+                .FirstOrDefault(f => !File.Exists(Path.Combine(checkout.Root, f)));
+            if (absent is not null)
+            {
+                return UnavailableLinks($"{absent} is not in Kit's checkout, and nothing says which repo the tests live in");
+            }
+        }
+
+        var broken = new List<BrokenLink>();
+        foreach (var (id, link) in recorded)
+        {
+            var verdict = LinkVerification.Classify(link, checkout.Root);
+            if (verdict.State == LinkState.PossiblyBroken)
+            {
+                broken.Add(new BrokenLink { BehaviourId = id, Title = LinkVerification.Text(link, "title") ?? "?", Reason = verdict.Reason ?? "its code has changed" });
+            }
+        }
+
+        return new AvailableLinkHealth { Available = true, Recorded = recorded.Count, Broken = broken };
+    }
+
+    private static UnavailableLinkHealth UnavailableLinks(string reason) => new() { Available = false, Reason = reason };
 
     /// <summary>
     /// BEH-HEALTH-1: the app's coverage from what the store last read of its tests repo. Local Kit
@@ -294,7 +370,7 @@ public sealed class ProjectViewer(
         ProjectView p;
         try
         {
-            p = (ProjectView)View(app);
+            p = View(app, withLinks: false);
         }
         catch (ProjectionFailedException e)
         {

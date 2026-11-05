@@ -85,6 +85,13 @@ public sealed class ProjectView : IProjectView
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Goal { get; init; }
 
+    // BEH-HEALTH-4: whether its recorded test links still hold, an <see cref="AvailableLinkHealth"/> or an
+    // <see cref="UnavailableLinkHealth"/> by runtime type. Absent when no link has a hash recorded, so no
+    // response that predates it changes shape. Detail only: it reads source files.
+    [JsonPropertyOrder(20)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Links { get; init; }
+
     IReadOnlyList<IBehaviourView> IProjectView.Behaviours => Behaviours;
 
     IReadOnlyList<IConflict> IProjectView.Conflicts => Conflicts;

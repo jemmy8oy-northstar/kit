@@ -536,6 +536,26 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says nothing extra for a project where every behaviour is named or none is measured (BEH-HEALTH-3)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says why in words when the ids could not be read (BEH-HEALTH-3)" }
   ],
+  "BEH-HEALTH-4": [
+    { "file": "backend/Balenthiran.Kit.Tests/VerifyLinksTests.cs", "title": "Record_writes_the_hash_and_files_beside_the_link_and_leaves_the_rest" },
+    { "file": "backend/Balenthiran.Kit.Tests/VerifyLinksTests.cs", "title": "Check_flags_a_link_whose_source_changed_and_exits_1" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_link_with_no_recorded_hash_is_unrecorded" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_link_whose_files_still_hash_the_same_is_verified" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_recorded_file_that_is_gone_is_possibly_broken_and_named" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_recorded_path_that_is_not_a_file_in_the_checkout_is_possibly_broken_not_a_throw" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_changed_hash_is_possibly_broken_and_says_since_when" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_project_with_no_recorded_hash_has_no_links_key" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "Held_links_read_as_available_with_nothing_broken_and_how_many_were_checked" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "A_changed_source_file_lists_the_link_with_its_behaviour_title_and_reason" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "Links_recorded_against_another_repo_are_unavailable_and_say_which" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "With_no_known_repo_a_recorded_file_not_in_the_checkout_is_unavailable_not_broken" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "With_no_checkout_at_all_the_links_are_unavailable" },
+    { "file": "backend/Balenthiran.Kit.Tests/LinkHealthTests.cs", "title": "The_project_list_does_not_read_source_files" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "lists a project's possibly-broken test links with behaviour, test and reason (BEH-HEALTH-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says quietly that every recorded link holds when none is broken (BEH-HEALTH-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "gives the reason, and never \"all hold\", when the links could not be checked (BEH-HEALTH-4)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Health.test.tsx", "title": "says nothing about links for a project that has none recorded (BEH-HEALTH-4)" }
+  ],
   "BEH-INBOX-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "queues only the cards that are his, by priority, across projects (BEH-INBOX-1)" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Inbox.test.tsx", "title": "shows the question, or the needs-context line, on the card (BEH-INBOX-1)" },
