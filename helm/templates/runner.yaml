@@ -58,6 +58,39 @@ subjects:
     name: {{ include "app.fullname" . }}
     namespace: {{ .Release.Namespace }}
 ---
+# A run executes whatever the agent decides, so it gets the internet (GitHub, Kit's public
+# URL, npm) and nothing private: no in-cluster service, no node, and not the cloud metadata
+# address, which can hand out the node's own credentials. Nothing may connect in.
+# ⚠️ Enforced only if the cluster's network plugin enforces NetworkPolicy.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runs-egress-public-only
+  namespace: {{ .Values.runner.namespace }}
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 100.64.0.0/10
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
