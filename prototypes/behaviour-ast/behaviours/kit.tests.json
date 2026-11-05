@@ -5,207 +5,1286 @@
   "BEH-GATE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it"
+      "title": "The_gate_exits_1_when_a_behaviour_has_no_test_naming_it",
+      "verified": {
+        "hash": "366efc4dd7e5360aff4a1b08ecbc27fbca0814a6bbded0441fd1f8010e59e780",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/TestTitle.cs",
+          "backend/Balenthiran.Kit.Database/CheckFileSystem.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageResult.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitCheck.cs",
+          "backend/Balenthiran.Kit.Services/TestReading.cs",
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-GATE-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_gate_exits_2_never_0_when_the_repo_has_no_test_files"
+      "title": "The_gate_exits_2_never_0_when_the_repo_has_no_test_files",
+      "verified": {
+        "hash": "15978cbd826cb3906e29d163fb9b8cc0468021588d635c9deabc5fbb4d7b14bb",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.Database/CheckFileSystem.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/KitCheck.cs",
+          "backend/Balenthiran.Kit.Services/TestReading.cs",
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-GATE-3": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_gate_refuses_a_mapping_naming_a_test_that_no_longer_exists"
+      "title": "The_gate_refuses_a_mapping_naming_a_test_that_no_longer_exists",
+      "verified": {
+        "hash": "366efc4dd7e5360aff4a1b08ecbc27fbca0814a6bbded0441fd1f8010e59e780",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/TestTitle.cs",
+          "backend/Balenthiran.Kit.Database/CheckFileSystem.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageResult.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitCheck.cs",
+          "backend/Balenthiran.Kit.Services/TestReading.cs",
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-READ-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_gate_refuses_when_the_readers_two_counts_disagree"
+      "title": "The_gate_refuses_when_the_readers_two_counts_disagree",
+      "verified": {
+        "hash": "15978cbd826cb3906e29d163fb9b8cc0468021588d635c9deabc5fbb4d7b14bb",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CommandRun.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.Database/CheckFileSystem.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/KitCheck.cs",
+          "backend/Balenthiran.Kit.Services/TestReading.cs",
+          "backend/Balenthiran.Kit.Services/TestTitleReader.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-GEN-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "An_unbound_noun_is_refused_and_the_missing_noun_is_named"
+      "title": "An_unbound_noun_is_refused_and_the_missing_noun_is_named",
+      "verified": {
+        "hash": "36a6057517eeb04d8b9cd49e71b99e17748bd62c8abb44fa4caf3d9ed7e2a4a4",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-GEN-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "An_unsupplied_route_param_is_refused_rather_than_truncated"
+      "title": "An_unsupplied_route_param_is_refused_rather_than_truncated",
+      "verified": {
+        "hash": "1bc758fa3128d01fa7c84278c291b7353ffd2ffeaefacd488288ba66195343bd",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-PARSE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped"
+      "title": "An_unrecognised_keyword_is_an_error_not_silently_dropped",
+      "verified": {
+        "hash": "aa8527882d335092ec159a93f6440947a020b319ed648b4be7d83787995e108b",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-PARSE-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
-      "title": "A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line"
+      "title": "A_tag_graph_that_points_nowhere_loops_or_repeats_an_id_is_refused_naming_the_line",
+      "verified": {
+        "hash": "5bad95f2b401657771a9e72ea1e506b94da5d3d52db22deab7c9287a8c20f975",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Feature.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/FeatureTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/FeatureTests.cs",
-      "title": "A_malformed_feature_or_tag_line_is_refused"
+      "title": "A_malformed_feature_or_tag_line_is_refused",
+      "verified": {
+        "hash": "5bad95f2b401657771a9e72ea1e506b94da5d3d52db22deab7c9287a8c20f975",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Feature.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/FeatureTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-PARSE-3": [
     {
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
-      "title": "A_priority_Kit_cannot_rank_is_refused"
+      "title": "A_priority_Kit_cannot_rank_is_refused",
+      "verified": {
+        "hash": "88cecc98881c78d4db5e7f3c38b0855e57296f4480aefc73c31fe13ee66abeed",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
-      "title": "Without_a_line_there_is_no_priority_and_none_is_written"
+      "title": "Without_a_line_there_is_no_priority_and_none_is_written",
+      "verified": {
+        "hash": "9bd9dd4f9bea19b03898ea4329fef3f6b8aedceb2d0b36c80720cc728c78a57e",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/PriorityTests.cs",
-      "title": "A_priority_line_is_read_as_its_number"
+      "title": "A_priority_line_is_read_as_its_number",
+      "verified": {
+        "hash": "a0e6dd3f7e6cf18d248eed6f59d3700f9255845f8e026935b6b77eace54cd946",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Tests/PriorityTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-PARSE-4": [
     {
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
-      "title": "A_review_request_that_does_not_say_what_to_look_at_is_refused"
+      "title": "A_review_request_that_does_not_say_what_to_look_at_is_refused",
+      "verified": {
+        "hash": "2a857712c79b896091f2035aa9ee914eb8d880ffbfa56855b9fc73eca220ba95",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
-      "title": "A_review_request_is_read_with_what_to_look_at"
+      "title": "A_review_request_is_read_with_what_to_look_at",
+      "verified": {
+        "hash": "df0fa31de6c8366842ce12c8801c310f224d958af7ae77668ce0dcbecdba7f1b",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs",
-      "title": "A_request_on_an_inference_is_not_overwritten_back_to_unreviewed"
+      "title": "A_request_on_an_inference_is_not_overwritten_back_to_unreviewed",
+      "verified": {
+        "hash": "df0fa31de6c8366842ce12c8801c310f224d958af7ae77668ce0dcbecdba7f1b",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/ReviewRequestedTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-IDEA-API-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
-      "title": "A_kit_idea_file_is_flagged_in_the_list_and_the_view"
+      "title": "A_kit_idea_file_is_flagged_in_the_list_and_the_view",
+      "verified": {
+        "hash": "512df64786d0a16f435f9cb21e817a9b71a8239c732b18c07f33c5d7a1ee3e2c",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CoverageSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Feature.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/FeatureView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/ConflictsDirective.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/DepthDirective.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
-      "title": "A_corpus_that_is_not_an_idea_writes_no_idea_key"
+      "title": "A_corpus_that_is_not_an_idea_writes_no_idea_key",
+      "verified": {
+        "hash": "322cfbb39c108c2413e90f8faedb618787f7cc1eb466221734a3397048d0f2f7",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CoverageSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/ConflictsDirective.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/DepthDirective.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/IdeaTests.cs",
-      "title": "Only_the_directive_itself_flags_an_idea"
+      "title": "Only_the_directive_itself_flags_an_idea",
+      "verified": {
+        "hash": "4ad49d2b6793446e7888c48305614462b35a3b9e370aa6f0c5216ea7fdea1c7f",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/IdeaTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-PRIN-API-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
-      "title": "Principles_are_read_in_order_with_their_scope_and_line"
+      "title": "Principles_are_read_in_order_with_their_scope_and_line",
+      "verified": {
+        "hash": "19b86fad41611507401b199495e083d322a0911d685509b42adcba130d62a781",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/PrincipleView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
-      "title": "A_file_with_no_principles_writes_no_principles_key"
+      "title": "A_file_with_no_principles_writes_no_principles_key",
+      "verified": {
+        "hash": "0c9baa8d1b7ca3943bac390879f0b89020343c1b4494329dfd74f40e1af7a548",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
-      "title": "A_principle_that_does_not_say_what_it_means_is_refused"
+      "title": "A_principle_that_does_not_say_what_it_means_is_refused",
+      "verified": {
+        "hash": "e0a9a03ae8ccd5aeffb242f658b1209936dfe77c7277d1a976bbb12914cea321",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/ProjectionFailedException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/PrincipleTests.cs",
-      "title": "A_comment_that_only_mentions_principles_is_not_one"
+      "title": "A_comment_that_only_mentions_principles_is_not_one",
+      "verified": {
+        "hash": "c44cd51fa841241feda100da9bd88e596860f8e02fa561324888020a3e63543f",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Tests/PrincipleTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-RESOLVE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "A_hole_is_filled_by_a_different_behaviour"
+      "title": "A_hole_is_filled_by_a_different_behaviour",
+      "verified": {
+        "hash": "77871eeacc85469cd615195fe3a827f017d73c397510cf44338644fedbbddd6d",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Filled.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Hole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Unknown.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-RESOLVE-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "Two_behaviours_disagreeing_is_a_conflict_with_both_sides_named"
+      "title": "Two_behaviours_disagreeing_is_a_conflict_with_both_sides_named",
+      "verified": {
+        "hash": "b51d18d0c7d3040b4d2170daffbfd3128fd4698fbbde7e2127bb4ecad57e0eec",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Challenger.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Conflict.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-ADJ-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "An_inference_defaults_to_unreviewed_without_anyone_writing_review"
+      "title": "An_inference_defaults_to_unreviewed_without_anyone_writing_review",
+      "verified": {
+        "hash": "9203f4f036d9d5af23d22f58509642e1d6e4ef9487c351be1a11dd6b0767baa0",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-UI-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
-      "title": "The_router_answers_as_ui_js_does"
+      "title": "The_router_answers_as_ui_js_does",
+      "verified": {
+        "hash": "f6b3514883b8b5dbeb5367030b0ed724b6185e65aedc610c1d870e6c172697d7",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Challenger.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Citation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Conflict.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ConflictQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CoverageSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Filled.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/FilledView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Health.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Hole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Option.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/OwnedOpenHole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectList.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/QuestionSide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Recommendation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SessionState.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Unknown.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/ConflictsDirective.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/DepthDirective.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-UI-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
-      "title": "The_default_host_is_loopback_not_every_interface"
+      "title": "The_default_host_is_loopback_not_every_interface",
+      "verified": {
+        "hash": "ed7accb2ab0b73373d451ff1e2f3031525108b5bfb9ca08ed247f26dc8ecd787",
+        "files": [
+          "backend/Balenthiran.Kit.Database/GitHubPullRequestOpener.cs",
+          "backend/Balenthiran.Kit.Services/AgentProxy.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/KitHost.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
+          "backend/Balenthiran.Kit.WebApi/KitSettings.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-UI-3": [
     {
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
-      "title": "The_router_answers_as_ui_js_does"
+      "title": "The_router_answers_as_ui_js_does",
+      "verified": {
+        "hash": "f6b3514883b8b5dbeb5367030b0ed724b6185e65aedc610c1d870e6c172697d7",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Challenger.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Citation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Conflict.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ConflictQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CoverageSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Filled.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/FilledView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Health.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Hole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Option.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/OwnedOpenHole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectList.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/QuestionSide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Recommendation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SessionState.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Unknown.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/ConflictsDirective.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/DepthDirective.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-UI-4": [
     {
       "file": "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs",
-      "title": "Unavailable_coverage_is_null_in_the_list_never_zero"
+      "title": "Unavailable_coverage_is_null_in_the_list_never_zero",
+      "verified": {
+        "hash": "44a50cc79f506b381bef6d1b68efee5995928b493f18c1b8c761180c9e2d6ecd",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AdjudicationReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/BehaviourView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Challenger.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Citation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Conflict.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ConflictQuestion.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/CoverageSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/EngineReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Filled.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/FilledView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GenerateStats.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedTest.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/GeneratedView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Hole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/IdRef.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Need.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounRequirement.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NounView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Option.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/OwnedOpenHole.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectList.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectSummary.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ProjectView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Provide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/QuestionSide.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Recommendation.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/RequiresView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Resolution.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/StepView.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SurfaceReport.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Symbol.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/UnavailableCoverage.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Unknown.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/BehaviourResolver.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/ConflictsDirective.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/DepthDirective.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/GoalDirective.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectReporter.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/PromoteDirective.cs",
+          "backend/Balenthiran.Kit.Services/TestGenerator.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/RoutesConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_keeps_every_comment_byte_for_byte"
+      "title": "The_writer_keeps_every_comment_byte_for_byte",
+      "verified": {
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_lands_a_step_at_the_end_of_its_own_block"
+      "title": "The_writer_lands_a_step_at_the_end_of_its_own_block",
+      "verified": {
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-2": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_refuses_an_edit_that_would_not_parse_and_hands_back_no_text"
+      "title": "The_writer_refuses_an_edit_that_would_not_parse_and_hands_back_no_text",
+      "verified": {
+        "hash": "713d5ab382e1732478bcf746027f037d42c009e86f77bf4c6cd675a23e7cde5a",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-3": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_refuses_an_edit_that_would_change_a_neighbouring_behaviour"
+      "title": "The_writer_refuses_an_edit_that_would_change_a_neighbouring_behaviour",
+      "verified": {
+        "hash": "60338d97c9e035cc77e74eea07d5c75eb89fb26f0d04b217b372af45f6e27e59",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-4": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
-      "title": "The_writer_has_no_path_to_git_or_a_process"
+      "title": "The_writer_has_no_path_to_git_or_a_process",
+      "verified": {
+        "hash": "fe27dd3a9f5d7e919dd095fe592e581e74428ebce9287c00d29b519056a59833",
+        "files": [
+          "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs",
-      "title": "Every_route_answers_and_writes_as_ui_js_does"
+      "title": "Every_route_answers_and_writes_as_ui_js_does",
+      "verified": {
+        "hash": "a043417424af0eb90f8040f17800eaaa78cd2557ce12742b4edcc856118657fe",
+        "files": [
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/AppException.cs",
+          "backend/Balenthiran.Kit.Abstractions/Exceptions/CorpusParseException.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Behaviour.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/HostAnswer.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedCorpus.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Reference.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Review.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Source.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Step.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteOutcome.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/WriteResult.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Database/GitWriteBack.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/JsValue.cs",
+          "backend/Balenthiran.Kit.Services/KitHost.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Tests/WritesConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-5": [
     {
       "file": "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs",
-      "title": "Every_step_answers_as_ui_js_does"
+      "title": "Every_step_answers_as_ui_js_does",
+      "verified": {
+        "hash": "d361454e5856b80207f45c92a9e69e3fa4adb77817b78064fba7463ad7a22b78",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/HostAnswer.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedUrl.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SessionState.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/SignInState.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/CorpusParser.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/KitHost.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/SessionStore.cs",
+          "backend/Balenthiran.Kit.Services/SignInThrottle.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/AuthConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/LoopbackTests.cs",
-      "title": "IsLoopback_accepts_the_loopback_range_and_nothing_that_merely_looks_like_it"
+      "title": "IsLoopback_accepts_the_loopback_range_and_nothing_that_merely_looks_like_it",
+      "verified": {
+        "hash": "e42211ef5070029014fed05a2d7bcc8ab0f40356de9155b5366bfe5ff003d864",
+        "files": [
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Tests/LoopbackTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ],
   "BEH-WRITE-6": [
     {
       "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
-      "title": "The_host_answers_as_ui_js_does"
+      "title": "The_host_answers_as_ui_js_does",
+      "verified": {
+        "hash": "8359b0683396e5f40c8e0650b3f5c774cf582649dd56b553c6c414cde3858d76",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Health.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/HostAnswer.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedUrl.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/KitHost.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs"
+        ],
+        "on": "2026-11-05"
+      }
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
-      "title": "Kestrel_delivers_every_answer_over_a_real_socket"
+      "title": "Kestrel_delivers_every_answer_over_a_real_socket",
+      "verified": {
+        "hash": "67005b765b15689174a3c6e1dc685fcd1555c8a36fa7e20306f2bd3a3d73cf43",
+        "files": [
+          "backend/Balenthiran.Kit.DataModels/Models/AgentSchedule.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ApiError.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/Health.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/HostAnswer.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/KitResponse.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/NotificationFeed.cs",
+          "backend/Balenthiran.Kit.DataModels/Models/ParsedUrl.cs",
+          "backend/Balenthiran.Kit.Database/CorpusDirectory.cs",
+          "backend/Balenthiran.Kit.Database/GitHubPullRequestOpener.cs",
+          "backend/Balenthiran.Kit.Database/GitStore.cs",
+          "backend/Balenthiran.Kit.Database/StaticGitHubTokenSource.cs",
+          "backend/Balenthiran.Kit.Services/ActivityReader.cs",
+          "backend/Balenthiran.Kit.Services/AgentProxy.cs",
+          "backend/Balenthiran.Kit.Services/CompletionReader.cs",
+          "backend/Balenthiran.Kit.Services/CorpusWriter.cs",
+          "backend/Balenthiran.Kit.Services/CoverageCounter.cs",
+          "backend/Balenthiran.Kit.Services/EngineJsonSerialiser.cs",
+          "backend/Balenthiran.Kit.Services/KitHost.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Accounts.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.GitHub.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Runs.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.Triage.cs",
+          "backend/Balenthiran.Kit.Services/KitRouter.cs",
+          "backend/Balenthiran.Kit.Services/MemoryAgentRunStore.cs",
+          "backend/Balenthiran.Kit.Services/MemoryUserMemoryStore.cs",
+          "backend/Balenthiran.Kit.Services/NotificationReader.cs",
+          "backend/Balenthiran.Kit.Services/OriginPolicy.cs",
+          "backend/Balenthiran.Kit.Services/ProjectViewer.cs",
+          "backend/Balenthiran.Kit.Services/SessionStore.cs",
+          "backend/Balenthiran.Kit.Services/SignInThrottle.cs",
+          "backend/Balenthiran.Kit.Services/UiBundle.cs",
+          "backend/Balenthiran.Kit.Services/UrlParser.cs",
+          "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",
+          "backend/Balenthiran.Kit.WebApi/ExpiringRefresh.cs",
+          "backend/Balenthiran.Kit.WebApi/KitServer.cs",
+          "backend/Balenthiran.Kit.WebApi/KitSettings.cs",
+          "backend/Balenthiran.Kit.WebApi/ServiceRegistration.cs"
+        ],
+        "on": "2026-11-05"
+      }
     }
   ]
 }
