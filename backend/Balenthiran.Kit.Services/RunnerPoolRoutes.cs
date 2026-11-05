@@ -19,7 +19,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="claimWait">How long a claim waits for work before answering 204.</param>
 /// <param name="github">Mints a run's repo-scoped token; null when no GitHub App is configured.</param>
 /// <param name="maxAge">How long after its start a run may still ask for a GitHub token; null is <see cref="AgentProxy.DefaultMaxAge"/>.</param>
-public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null, GitHubAppTokenSource? github = null, TimeSpan? maxAge = null)
+/// <param name="pipeline">Told when a run ends, so its next stage can start (BEH-ORCH-3); null when <c>KIT_PIPELINE</c> is off.</param>
+public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null, GitHubAppTokenSource? github = null, TimeSpan? maxAge = null, Pipeline? pipeline = null)
 {
     /// <summary>The header a runner pod authenticates a claim with.</summary>
     public const string PoolHeader = "x-kit-runner-pool";
@@ -72,6 +73,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
 
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow());
         pool.Signal();
+        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished);
         return new KitResponse
         {
             Status = 200,

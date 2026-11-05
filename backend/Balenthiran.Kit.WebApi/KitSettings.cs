@@ -269,6 +269,20 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_MODEL_BUILD</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelBuild(string? value) => StageModels.Parse("KIT_STAGE_MODEL_BUILD", value, StageModels.DefaultWork);
 
+    /// <summary>
+    /// <c>KIT_PIPELINE</c> (BEH-ORCH-3): <c>on</c> makes a note left in Kit queue a triage run on the runner pool,
+    /// which spends Kit's own Anthropic credit. Unset or <c>off</c> is off: nothing runs.
+    /// </summary>
+    public bool Pipeline { get; init; }
+
+    /// <summary><c>KIT_PIPELINE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipeline(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE is \"{value}\": set it to on or off"),
+    };
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -359,6 +373,7 @@ public sealed record KitSettings(
             StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
+            Pipeline = ParsePipeline(env("KIT_PIPELINE")),
         };
     }
 

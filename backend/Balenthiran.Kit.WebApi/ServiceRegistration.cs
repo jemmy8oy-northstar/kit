@@ -82,7 +82,23 @@ public static class ServiceRegistration
         {
             services.TryAddSingleton(sp => new RunnerPool(sp.GetRequiredService<IAgentRunStore>()));
             services.TryAddSingleton<IAgentRunLauncher>(sp => sp.GetRequiredService<RunnerPool>());
-            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>(), sp.GetService<IGitHubTokenSource>() as GitHubAppTokenSource, settings.AgentRunMaxAge));
+            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>(), sp.GetService<IGitHubTokenSource>() as GitHubAppTokenSource, settings.AgentRunMaxAge, sp.GetService<Pipeline>()));
+        }
+
+        // BEH-ORCH-3: with KIT_PIPELINE=on a note queues a triage run on the pool. Off, nothing here exists.
+        if (settings.Pipeline)
+        {
+            if (!settings.RunnerPool)
+            {
+                throw new InvalidOperationException("KIT_PIPELINE is on but KIT_RUNNER_POOL_TOKEN is not set: the pipeline's runs need the runner pool");
+            }
+
+            services.TryAddSingleton(sp => new Pipeline(
+                sp.GetRequiredService<ICorpusDirectory>(),
+                sp.GetRequiredService<RunnerPool>(),
+                sp.GetRequiredService<IAgentRunStore>(),
+                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild),
+                clock: sp.GetService<TimeProvider>()));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
@@ -181,7 +197,8 @@ public static class ServiceRegistration
             runStore: sp.GetRequiredService<IAgentRunStore>(),
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
             agentRunCap: settings.AgentRunCapUsd,
-            runnerPool: sp.GetService<RunnerPool>()));
+            runnerPool: sp.GetService<RunnerPool>(),
+            pipeline: sp.GetService<Pipeline>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),
