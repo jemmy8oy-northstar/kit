@@ -142,6 +142,48 @@ describe('Health', () => {
     expect(await screen.findByText(/Could not list the untested behaviours: .*corpus unreadable/)).toBeInTheDocument()
   })
 
+  it("lists a project's possibly-broken test links with behaviour, test and reason (BEH-HEALTH-4)", async () => {
+    const links = {
+      available: true,
+      recorded: 3,
+      broken: [{ behaviourId: 'BEH-A-1', title: 'A_works', reason: 'the code it exercises has changed since 2026-11-01' }],
+    }
+    mockApi([measured('a', 2, 0)], { a: { ...detail([], { 'BEH-A-1': 'One' }), links } })
+    open()
+
+    const list = await screen.findByRole('list', { name: 'Possibly broken test links in a' })
+    expect(within(list).getByRole('link', { name: 'BEH-A-1' })).toHaveAttribute('href', '/projects/a/behaviours/BEH-A-1')
+    expect(list).toHaveTextContent('A_works — the code it exercises has changed since 2026-11-01')
+    expect(screen.getByText(/1 of 3 recorded test links are possibly broken/)).toBeInTheDocument()
+  })
+
+  it('says quietly that every recorded link holds when none is broken (BEH-HEALTH-4)', async () => {
+    mockApi([measured('a', 2, 0)], { a: { ...detail([], {}), links: { available: true, recorded: 4, broken: [] } } })
+    open()
+
+    expect(await screen.findByText('All 4 recorded test links hold.')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: /Possibly broken/ })).not.toBeInTheDocument()
+  })
+
+  it('gives the reason, and never "all hold", when the links could not be checked (BEH-HEALTH-4)', async () => {
+    mockApi([unmeasured('a', 'no repo')], {
+      a: { ...detail([], {}), links: { available: false, reason: 'these links are recorded against o/other' } },
+    })
+    open()
+
+    expect(await screen.findByText(/Test links not checked: these links are recorded against o\/other/)).toBeInTheDocument()
+    expect(screen.queryByText(/hold/)).not.toBeInTheDocument()
+  })
+
+  it('says nothing about links for a project that has none recorded (BEH-HEALTH-4)', async () => {
+    mockApi([measured('a', 2, 0)], { a: detail([], {}) })
+    open()
+
+    await screen.findAllByText(/2 of 2/)
+    await new Promise((r) => setTimeout(r, 50)) // let the project's own view arrive: absence is only a claim once it has
+    expect(screen.queryByText(/test link/)).not.toBeInTheDocument()
+  })
+
   it('orders lowest percentage first and unmeasured last (BEH-HEALTH-1)', async () => {
     mockApi([unmeasured('zz', 'none'), measured('high', 9, 1), measured('low', 1, 9), measured('mid', 5, 5)])
     open()

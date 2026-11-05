@@ -43,6 +43,7 @@ public static class ServiceRegistration
         services.AddSingleton<ITestGenerator, TestGenerator>();
         services.AddSingleton<IProjectReporter, ProjectReporter>();
         services.AddSingleton<IEngineJsonSerialiser, EngineJsonSerialiser>();
+        services.AddSingleton(new SourceCheckout(settings.RepoRoot, settings.GitRepository));
         services.AddSingleton<IProjectViewer, ProjectViewer>();
         services.AddSingleton<ICorpusWriter, CorpusWriter>();
         services.AddSingleton<ICorpusHistory, GitCorpusHistory>();

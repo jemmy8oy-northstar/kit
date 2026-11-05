@@ -130,26 +130,9 @@ public sealed class KitVerifyLinks(Func<string, string, string>? coverage = null
         return code;
     }
 
-    // Every link object under a behaviour id; "_"-keys are the file's comments.
-    private static IEnumerable<(string Id, JsonObject Link)> Links(JsonObject map)
-    {
-        foreach (var (id, node) in map)
-        {
-            if (id.StartsWith('_'))
-            {
-                continue;
-            }
+    private static IEnumerable<(string Id, JsonObject Link)> Links(JsonObject map) => LinkVerification.Links(map);
 
-            var entries = node is JsonArray many ? many.OfType<JsonObject>() : node is JsonObject one ? [one] : [];
-            foreach (var link in entries)
-            {
-                yield return (id, link);
-            }
-        }
-    }
-
-    private static string? Text(JsonObject o, string key) =>
-        o.TryGetPropertyValue(key, out var v) && v is JsonValue s && s.TryGetValue<string>(out var t) ? t : null;
+    private static string? Text(JsonObject o, string key) => LinkVerification.Text(o, key);
 
     private int Record(List<(string Id, JsonObject Link)> links, string repo, Action<string> Out, Action<string> Err)
     {
@@ -203,29 +186,21 @@ public sealed class KitVerifyLinks(Func<string, string, string>? coverage = null
         foreach (var (id, link) in links)
         {
             var title = Text(link, "title") ?? "?";
-            if (link["verified"] is not JsonObject v || Text(v, "hash") is not { } recorded || v["files"] is not JsonArray files)
+            var verdict = LinkVerification.Classify(link, repo);
+            switch (verdict.State)
             {
-                unrecorded++;
-                Out($"   ◌ {id}: {title} — unrecorded");
-                continue;
-            }
-
-            var paths = files.Select(f => f?.GetValue<string>() ?? string.Empty).ToList();
-            var gone = paths.FirstOrDefault(p => !File.Exists(Path.Combine(repo, p)));
-            if (gone is not null)
-            {
-                broken++;
-                Out($"   ✗ {id}: {title} — POSSIBLY BROKEN: {gone} is gone");
-            }
-            else if (LinkHasher.Hash(repo, paths) != recorded)
-            {
-                broken++;
-                Out($"   ✗ {id}: {title} — POSSIBLY BROKEN: the code it exercises has changed since {Text(v, "on")}");
-            }
-            else
-            {
-                verified++;
-                Out($"   ✅ {id}: {title} — verified");
+                case LinkState.Unrecorded:
+                    unrecorded++;
+                    Out($"   ◌ {id}: {title} — unrecorded");
+                    break;
+                case LinkState.PossiblyBroken:
+                    broken++;
+                    Out($"   ✗ {id}: {title} — POSSIBLY BROKEN: {verdict.Reason}");
+                    break;
+                default:
+                    verified++;
+                    Out($"   ✅ {id}: {title} — verified");
+                    break;
             }
         }
 
