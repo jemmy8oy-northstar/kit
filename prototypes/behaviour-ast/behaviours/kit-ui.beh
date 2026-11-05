@@ -1344,6 +1344,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review unreviewed
   priority 2
   pending
+  needs-context "Every project repo is public, and kit is now private, so moving a spec into its repo's .kit/ publishes it: Kit's spec format and the quotes from your notes. Move them anyway? If you don't answer by 2026-11-08, public projects keep their spec in kit, and .kit/ is used only by private repos and new users' projects."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
