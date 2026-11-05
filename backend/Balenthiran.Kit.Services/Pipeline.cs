@@ -83,15 +83,26 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
             else
             {
-                items[run.Index] = item with { Status = WorkItemStatus.Done };
-                triaged.UnionWith(run.Notes);
+                var usable = 0;
                 foreach (var b in reported ?? [])
                 {
-                    Took(item.Project, b);
+                    usable += Took(item.Project, b) ? 1 : 0;
                 }
 
-                // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
-                QueueTriage(item.Project);
+                // Every note goes in a bundle, so a triage with none usable sorted nothing: its notes are read again by
+                // the next note's triage, as a failed run's are, rather than being dropped.
+                if (usable == 0)
+                {
+                    items[run.Index] = Stop(item, "the triage reported no usable bundle");
+                }
+                else
+                {
+                    items[run.Index] = item with { Status = WorkItemStatus.Done };
+                    triaged.UnionWith(run.Notes);
+
+                    // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
+                    QueueTriage(item.Project);
+                }
             }
 
             StartReady();
@@ -109,9 +120,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     /// <summary>
     /// A bundle a triage of <paramref name="app"/> reported, as its work item. A later triage that updates a bundle
-    /// replaces the item, unless that item is running.
+    /// replaces the item, unless that item is running (a stage after triage, once one is wired). True when the bundle was usable.
     /// </summary>
-    private void Took(string app, ReportedBundle reported)
+    private bool Took(string app, ReportedBundle reported)
     {
         var triage = new WorkItem(app, reported.Slug, PipelineStage.Triage, WorkItemStatus.Running);
         var parsed = reported.Text is null ? null : ContextBundle.Parse(reported.Text);
@@ -138,7 +149,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var at = items.FindIndex(i => i.Project == app && i.Slug == reported.Slug);
         if (at >= 0 && items[at].Status == WorkItemStatus.Running)
         {
-            return;
+            return usable is not null;
         }
 
         if (at < 0)
@@ -158,6 +169,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             bundles[(app, reported.Slug)] = usable;
         }
+
+        return usable is not null;
     }
 
     private void StartReady()

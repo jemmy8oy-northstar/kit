@@ -74,7 +74,9 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(409, "already-over", $"this run is already {run.Status}");
         }
 
-        if (ReadBundles(b, out var bundles) is { } badBundles)
+        // A failed run's bundles are never used, so they are not read: a bad list must not keep a failed run from ending.
+        IReadOnlyList<ReportedBundle>? bundles = null;
+        if (s.GetString() == AgentRunStatus.Finished && ReadBundles(b, out bundles) is { } badBundles)
         {
             return badBundles;
         }

@@ -65,8 +65,15 @@ public class PipelineTests
             return r.Status == 204 ? null : Assert.IsType<PoolClaim>(r.Body);
         }
 
-        public void Finish(PoolClaim claim, string status = "finished") =>
-            Assert.Equal(200, Routes.Finished(claim.Token, Json(new { status })).Status);
+        private int finished;
+
+        // A finished triage reports one bundle, as every triage of at least one note does.
+        public void Finish(PoolClaim claim, string status = "finished")
+        {
+            var slug = $"work-{++finished}";
+            var body = status == "finished" ? Json(new { status, bundles = new[] { new { slug, text = BundleText(slug) } } }) : Json(new { status });
+            Assert.Equal(200, Routes.Finished(claim.Token, body).Status);
+        }
 
         public KitResponse FinishWith(PoolClaim claim, params object[] bundles) =>
             Routes.Finished(claim.Token, Json(new { status = "finished", bundles }));
@@ -304,6 +311,39 @@ public class PipelineTests
         Assert.Equal(200, rig.Routes.Finished(rig.Claim()!.Token, Json(new { status = "failed", bundles = new[] { new { slug = "x", text = BundleText("x") } } })).Status);
 
         Assert.DoesNotContain(rig.Pipeline!.Items(), i => i.Slug == "x");
+    }
+
+    [Fact]
+    public void A_finished_triage_with_no_usable_bundle_stops_and_its_notes_are_read_again()
+    {
+        using var rig = new Rig();
+        rig.Note("first note");
+
+        Assert.Equal(200, rig.Routes.Finished(rig.Claim()!.Token, Json(new { status = "finished" })).Status);
+
+        var stopped = Assert.Single(rig.Pipeline!.Items());
+        Assert.Equal("the triage reported no usable bundle", stopped.StoppedBecause);
+        Assert.Null(rig.Claim());
+
+        rig.Note("second note");
+        var next = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("first note", next.Task);
+
+        rig.FinishWith(next, new { slug = "broken", text = "not a bundle" });
+        rig.Note("third note");
+        Assert.Contains("first note", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void A_failed_report_with_malformed_bundles_still_ends_the_run()
+    {
+        using var rig = new Rig();
+        rig.Note("n");
+
+        var r = rig.Routes.Finished(rig.Claim()!.Token, JsonDocument.Parse("""{"status":"failed","bundles":"x"}""").RootElement);
+
+        Assert.Equal(200, r.Status);
+        Assert.Equal(AgentRunStatus.Failed, rig.Store.List()[0].Status);
     }
 
     [Theory]
