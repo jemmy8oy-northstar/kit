@@ -85,9 +85,54 @@ public sealed class GitHubAppTokenSource : IGitHubTokenSource, IDisposable
     private string? Fresh() =>
         cached is { } c && clock.GetUtcNow() < c.ExpiresAt - RefreshBefore ? c.Token : null;
 
+    /// <summary>
+    /// A fresh installation token for ONE repository (its name, without the owner) with contents:write and
+    /// pull_requests:write only — never cached, never shared, so what a run holds is as narrow as GitHub can make
+    /// it. Null when the installation does not reach that repository (GitHub answers 404 or 422); any other
+    /// failure throws <see cref="GitHubTokenException"/>, whose message never holds a secret.
+    /// </summary>
+    public async Task<(string Token, DateTimeOffset ExpiresAt)?> MintForRepoAsync(string repoName, CancellationToken cancellationToken = default)
+    {
+        var body = JsonSerializer.Serialize(new
+        {
+            repositories = new[] { repoName },
+            permissions = new { contents = "write", pull_requests = "write" },
+        });
+        var (minted, code) = await ExchangeAsync(body, cancellationToken);
+        if (minted is not null)
+        {
+            return (minted.Token, minted.ExpiresAt);
+        }
+
+        if (code is 404 or 422)
+        {
+            return null;
+        }
+
+        throw new GitHubTokenException($"GitHub answered {code} when minting an installation token for app {appId}, installation {installationId}");
+    }
+
     private async Task<string> MintAsync(CancellationToken cancellationToken)
     {
+        var (minted, code) = await ExchangeAsync(null, cancellationToken);
+        if (minted is null)
+        {
+            throw new GitHubTokenException($"GitHub answered {code} when minting an installation token for app {appId}, installation {installationId}");
+        }
+
+        cached = minted;
+        return minted.Token;
+    }
+
+    // Minted is null when GitHub refused (the status alone is kept: its message can echo what it was sent).
+    private async Task<(Minted? Minted, int Code)> ExchangeAsync(string? jsonBody, CancellationToken cancellationToken)
+    {
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(api, $"app/installations/{Uri.EscapeDataString(installationId)}/access_tokens"));
+        if (jsonBody is not null)
+        {
+            request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+        }
+
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Jwt());
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("kit", "1"));
@@ -112,8 +157,7 @@ public sealed class GitHubAppTokenSource : IGitHubTokenSource, IDisposable
             var code = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode)
             {
-                // The status alone: GitHub's message for a bad JWT can echo what it was sent.
-                throw new GitHubTokenException($"GitHub answered {code} when minting an installation token for app {appId}, installation {installationId}");
+                return (null, code);
             }
 
             var text = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -124,8 +168,7 @@ public sealed class GitHubAppTokenSource : IGitHubTokenSource, IDisposable
                     && o.TryGetProperty("token", out var t) && t.ValueKind == JsonValueKind.String && t.GetString() is { Length: > 0 } token
                     && o.TryGetProperty("expires_at", out var x) && x.ValueKind == JsonValueKind.String && x.TryGetDateTimeOffset(out var expiresAt))
                 {
-                    cached = new Minted(token, expiresAt);
-                    return token;
+                    return (new Minted(token, expiresAt), code);
                 }
             }
             catch (JsonException)

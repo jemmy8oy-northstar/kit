@@ -8,7 +8,9 @@
 #   KIT_RUN_TOKEN     required  the per-run token; sent as x-api-key to Kit's model proxy
 #   KIT_REPO          required  owner/repo to work on
 #   KIT_TASK          required  what the user asked for
-#   GITHUB_TOKEN      required  short-lived token that can push to KIT_REPO
+#   GITHUB_TOKEN      optional  a fixed token that can push to KIT_REPO; when absent (the pool case) git
+#                               asks Kit's POST /api/runs/github-token each time it needs one
+#                               (this script itself uses no gh CLI)
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
@@ -19,7 +21,7 @@
 set -euo pipefail
 
 missing=()
-for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK GITHUB_TOKEN; do
+for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK; do
   [ -n "${!v:-}" ] || missing+=("$v")
 done
 if [ "${#missing[@]}" -gt 0 ]; then
@@ -40,14 +42,37 @@ export ANTHROPIC_API_KEY="$KIT_RUN_TOKEN"
 unset ANTHROPIC_AUTH_TOKEN
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
-# git authenticates from the env at call time, so the token is in no URL, config or log.
+# git authenticates at call time, so the token is in no URL, config or log.
+# Without GITHUB_TOKEN (the normal case: a run carries no GitHub token) the credential helper asks Kit
+# each time git needs one, with the run token; Kit mints a token for this ONE repo (contents and
+# pull_requests write only) and refuses it once the run is over. The run token goes to curl in a
+# config on stdin, so it is never in argv (visible in ps).
 export GIT_TERMINAL_PROMPT=0
+export KIT_URL KIT_RUN_TOKEN
+helper="$(mktemp /work/credential.XXXXXX)"
+cat > "$helper" <<'HELPER'
+#!/usr/bin/env bash
+# git credential helper: `get` prints a fresh repo-scoped token from Kit; anything else is a no-op.
+[ "${1:-}" = get ] || exit 0
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  echo username=x-access-token
+  echo "password=$GITHUB_TOKEN"
+  exit 0
+fi
+body="$(printf 'header = "x-api-key: %s"\n' "$KIT_RUN_TOKEN" \
+  | curl --fail --silent --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")" || exit 1
+token="$(printf '%s' "$body" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
+[ -n "$token" ] || exit 1
+echo username=x-access-token
+echo "password=$token"
+HELPER
+chmod 700 "$helper"
 export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0="credential.helper"
-export GIT_CONFIG_VALUE_0='!f() { echo username=x-access-token; echo "password=$GITHUB_TOKEN"; }; f'
+export GIT_CONFIG_VALUE_0="!$helper"
 
 work="$(mktemp -d /work/run.XXXXXX)"
-trap 'rm -rf "$work"' EXIT
+trap 'rm -rf "$work" "$helper"' EXIT
 
 echo "kit-run[$KIT_RUN_ID]: cloning $KIT_REPO"
 git clone --quiet "https://github.com/${KIT_REPO}.git" "$work/repo"

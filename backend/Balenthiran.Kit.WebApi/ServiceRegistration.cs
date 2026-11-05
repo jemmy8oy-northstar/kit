@@ -82,7 +82,7 @@ public static class ServiceRegistration
         {
             services.TryAddSingleton(sp => new RunnerPool(sp.GetRequiredService<IAgentRunStore>()));
             services.TryAddSingleton<IAgentRunLauncher>(sp => sp.GetRequiredService<RunnerPool>());
-            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>()));
+            services.TryAddSingleton(sp => new RunnerPoolRoutes(sp.GetRequiredService<RunnerPool>(), sp.GetRequiredService<IAgentRunStore>(), settings.RunnerPoolSecret(), settings.RunnerClaimWait, sp.GetService<TimeProvider>(), sp.GetService<IGitHubTokenSource>() as GitHubAppTokenSource, settings.AgentRunMaxAge));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
