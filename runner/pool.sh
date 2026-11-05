@@ -69,7 +69,7 @@ while [ "$runs_left" -gt 0 ]; do
   (
     unset KIT_RUNNER_POOL_TOKEN
     export KIT_RUN_ID="$run_id" KIT_RUN_TOKEN="$run_token" KIT_REPO="$run_repo" KIT_TASK="$run_task"
-    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json"
+    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_BUNDLES_FILE="$tmp/bundles.json"
     exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
@@ -81,25 +81,33 @@ while [ "$runs_left" -gt 0 ]; do
     outcome=failed
   fi
   echo "kit-pool: $run_id $outcome (exit $status)"
-  # The usage (only written for a run on the subscription) goes with the report. If Kit refuses the report with
-  # it, the run is reported again without it: ending the run matters more than counting it.
+  # The usage (only written for a run on the subscription) and the bundles (only a triage pushes any) go with the
+  # report. If Kit refuses it, the run is reported again without the usage, then with the status alone: ending the
+  # run matters more than counting it, and its bundles matter more than its count. Bodies go by file, not argv.
   report() {
     printf 'header = "x-api-key: %s"\n' "$run_token" \
       | curl --silent --show-error --max-time 30 --config - --request POST \
-          --header 'content-type: application/json' --data "$1" \
+          --header 'content-type: application/json' --data-binary "@$1" \
           --output /dev/null --write-out '%{http_code}' "$base/api/runs/finished" 2>/dev/null || echo 000
   }
-  plain="{\"status\":\"$outcome\"}"
-  body="$plain"
-  if [ -s "$tmp/usage.json" ]; then
-    body="{\"status\":\"$outcome\",\"usage\":$(cat "$tmp/usage.json")}"
-  fi
-  rm -f "$tmp/usage.json"
-  code="$(report "$body")"
-  if [ "$code" != 200 ] && [ "$body" != "$plain" ]; then
-    echo "kit-pool: Kit answered $code to $run_id's usage, reporting it without" >&2
-    code="$(report "$plain")"
-  fi
+  # Writes body.1 (everything), body.2 (no usage) and body.3 (status only), skipping one the same as the one before.
+  node -e '
+    const fs = require("fs");
+    const [dir, status] = process.argv.slice(1);
+    const read = f => { try { return JSON.parse(fs.readFileSync(dir + "/" + f, "utf8")); } catch { return undefined; } };
+    const usage = read("usage.json"), bundles = read("bundles.json");
+    const bodies = [{ status, usage, bundles }, { status, bundles }, { status }].map(b => JSON.stringify(b));
+    bodies.forEach((b, i) => { if (i === 0 || b !== bodies[i - 1]) fs.writeFileSync(dir + "/body." + (i + 1), b); });
+  ' "$tmp" "$outcome" || printf '{"status":"%s"}' "$outcome" > "$tmp/body.3"
+  rm -f "$tmp/usage.json" "$tmp/bundles.json"
+  code=000
+  for n in 1 2 3; do
+    [ -f "$tmp/body.$n" ] || continue
+    [ "$code" = 000 ] || echo "kit-pool: Kit answered $code to $run_id's report, sending less" >&2
+    code="$(report "$tmp/body.$n")"
+    [ "$code" = 200 ] && break
+  done
+  rm -f "$tmp/body.1" "$tmp/body.2" "$tmp/body.3"
   [ "$code" = 200 ] || echo "kit-pool: could not report $run_id to Kit ($code)" >&2
   run_token=""
 done
