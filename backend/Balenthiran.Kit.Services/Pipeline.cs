@@ -221,10 +221,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return Stop(item, "the spec run wrote no test plan");
         }
 
-        // A build that does not say what it built cannot be told from one that only flagged itself.
-        if (item.Stage == PipelineStage.Build && !bundle.Context.Contains(BuildStage.BuiltHeading, StringComparison.Ordinal))
+        // A build that does not say what it built cannot be told from one that only flagged itself. A review of a build
+        // is held to it too, or a revision that dropped the list would still open a pull request.
+        if ((item.Stage == PipelineStage.Build || item.ReviewedStage == PipelineStage.Build)
+            && !bundle.Context.Contains(BuildStage.BuiltHeading, StringComparison.Ordinal))
         {
-            return Stop(item, "the build run did not say what it built");
+            return Stop(item, $"the {stage} run left no list of what was built");
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
@@ -299,12 +301,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     {
         // An item that ends at once (a triage with nothing to read, or one that cannot start) frees its project, so
         // look again. A queued triage goes first: its new notes may update a bundle that would otherwise be specced
-        // or built twice.
+        // or built twice. Then a build, so an item is finished before another is specced, even when a later triage
+        // sent an item earlier in the list back to spec.
         bool again;
         do
         {
             again = false;
-            var ready = items.OrderBy(i => i.Stage == PipelineStage.Triage ? 0 : 1);
+            var ready = items.OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
