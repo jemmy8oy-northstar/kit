@@ -33,6 +33,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     private const string NotesSuffix = ".notes.md";
     private const string ScheduleSuffix = ".schedule";
     private const string TestsSuffix = ".tests.json";
+    private const string KitDir = ".kit";
 
     private readonly ICorpusSnapshot?[] last = new ICorpusSnapshot?[sources.Count];
     private readonly ConcurrentDictionary<string, Override> overrides = new(StringComparer.Ordinal);
@@ -60,6 +61,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             }
 
             var apps = new SortedDictionary<string, Entry>(StringComparer.Ordinal);
+            var moved = new HashSet<string>(StringComparer.Ordinal);
             foreach (var snap in snapshots)
             {
                 foreach (var (name, file) in snap.Files)
@@ -72,7 +74,19 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
                     var app = name[..^Suffix.Length];
                     if (apps.TryGetValue(app, out var other))
                     {
-                        throw new GitHubReadException($"{app}{Suffix} is in both {Key(other.Source)} and {Key(snap.Source)}; Kit will not choose one");
+                        // BEH-USERS-12, mid-move: a project's .kit/ in its own repo wins over the copy it
+                        // left elsewhere, so it is on the list throughout. Any other pair is still refused.
+                        var here = MovedTo(snap.Source, other.Source);
+                        if (here is null)
+                        {
+                            throw new GitHubReadException($"{app}{Suffix} is in both {Key(other.Source)} and {Key(snap.Source)}; Kit will not choose one");
+                        }
+
+                        moved.Add(app);
+                        if (!here.Value)
+                        {
+                            continue;
+                        }
                     }
 
                     snap.Files.TryGetValue(app + BindingsSuffix, out var bindings);
@@ -84,7 +98,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
             }
 
             snapshots.CopyTo(last, 0);
-            served = new Served(apps);
+            served = new Served(apps, moved);
 
             // An override is spent once GitHub's sha has moved past the one it was written over. One
             // not yet committed is kept: dropping it would lose the edit, and its commit is refused anyway.
@@ -229,7 +243,7 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     /// <inheritdoc />
     public (string Commit, string Branch)? CommitToOwnRepo(string app, string message)
     {
-        if (writer is null || clone.Corpora().Contains(app, StringComparer.Ordinal))
+        if (writer is null || InClone(app))
         {
             return null;
         }
@@ -289,14 +303,19 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
     private void Write(string app, string suffix, string text, Action toClone)
     {
         var file = app + suffix;
-        if (clone.Corpora().Contains(app, StringComparer.Ordinal))
+        if (InClone(app))
         {
             toClone();
             overrides[file] = new Override(text, Sha(file));
             return;
         }
 
-        var source = served is { } s && s.Apps.TryGetValue(app, out var e) ? e.Source : null;
+        if (served is null)
+        {
+            throw new NotWritableException($"Kit has not read GitHub yet, so it cannot tell whether {app} has moved to its own repo; try again in a moment");
+        }
+
+        var source = served.Apps.TryGetValue(app, out var e) ? e.Source : null;
         if (source is null || writer is null)
         {
             throw new NotWritableException($"{app} is read from {(source is null ? "GitHub" : Key(source))}, which this Kit has no clone of, so it cannot be edited here");
@@ -371,11 +390,29 @@ public sealed class GitHubCorpusDirectory(ICorpusDirectory clone, IReadOnlyList<
         };
     }
 
+    // The clone's copy of a project that has moved to its own repo is left behind: the read and every
+    // write are the own repo's, or an edit would land in a copy the page no longer shows.
+    // Before the first re-read Kit cannot tell which projects have moved, so with any .kit/ source it writes nothing.
+    private bool InClone(string app) =>
+        clone.Corpora().Contains(app, StringComparer.Ordinal)
+        && (served is { } s ? !s.Moved.Contains(app) : !sources.Any(x => x.Path == KitDir));
+
+    /// <summary>True when <paramref name="incoming"/> is a project's .kit/ in its own repo and <paramref name="held"/> the copy it left in another; false the other way round; null for any other pair.</summary>
+    private static bool? MovedTo(IProjectSource incoming, IProjectSource held)
+    {
+        var sameRepo = string.Equals(incoming.Owner, held.Owner, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(incoming.Repository, held.Repository, StringComparison.OrdinalIgnoreCase);
+        var a = incoming.Path == KitDir;
+        var b = held.Path == KitDir;
+        return sameRepo || a == b ? null : a;
+    }
+
     private static string Key(IProjectSource s) => $"{s.Owner}/{s.Repository}@{s.Branch}:{s.Path}";
 
     private sealed record Entry(IProjectSource Source, ISnapshotFile Corpus, ISnapshotFile? Bindings, ISnapshotFile? Notes, ISnapshotFile? Schedule, ISnapshotFile? Tests);
 
-    private sealed record Served(SortedDictionary<string, Entry> Apps);
+    // Moved: apps whose .kit/ copy in their own repo won over one left in another source.
+    private sealed record Served(SortedDictionary<string, Entry> Apps, IReadOnlySet<string> Moved);
 
     // Over: the sha GitHub served when the override began, so a re-read that has moved past it ends it.
     // Blob: the file's blob as Kit last knew it, which the next commit names. Pending: not yet committed.
