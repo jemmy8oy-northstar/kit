@@ -49,6 +49,7 @@ public static class KitServer
         var poolRoutes = app.Services.GetService<RunnerPoolRoutes>();
         var claimPath = api + "runs/claim";
         var finishedPath = api + "runs/finished";
+        var githubTokenPath = api + "runs/github-token";
         var poolJson = app.Services.GetRequiredService<IEngineJsonSerialiser>().Options;
 
         app.Run(async ctx =>
@@ -69,9 +70,9 @@ public static class KitServer
                 return;
             }
 
-            if (poolRoutes is not null && (path == claimPath || path == finishedPath))
+            if (poolRoutes is not null && (path == claimPath || path == finishedPath || path == githubTokenPath))
             {
-                await ServePool(ctx, poolRoutes, path == claimPath, poolJson);
+                await ServePool(ctx, poolRoutes, path == claimPath ? "claim" : path == githubTokenPath ? "github-token" : "finished", poolJson);
                 return;
             }
 
@@ -110,7 +111,7 @@ public static class KitServer
         return app;
     }
 
-    private static async Task ServePool(HttpContext ctx, RunnerPoolRoutes routes, bool claim, System.Text.Json.JsonSerializerOptions options)
+    private static async Task ServePool(HttpContext ctx, RunnerPoolRoutes routes, string route, System.Text.Json.JsonSerializerOptions options)
     {
         if (!HttpMethods.IsPost(ctx.Request.Method))
         {
@@ -121,9 +122,13 @@ public static class KitServer
         }
 
         Balenthiran.Kit.DataModels.Models.KitResponse answer;
-        if (claim)
+        if (route == "claim")
         {
             answer = await routes.ClaimAsync(Header(ctx.Request.Headers[RunnerPoolRoutes.PoolHeader]), ctx.RequestAborted);
+        }
+        else if (route == "github-token")
+        {
+            answer = await routes.GitHubTokenAsync(Header(ctx.Request.Headers["x-api-key"]), ctx.RequestAborted);
         }
         else
         {

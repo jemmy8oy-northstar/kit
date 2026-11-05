@@ -2,6 +2,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Balenthiran.Kit.Abstractions.DataModels;
+using Balenthiran.Kit.Abstractions.Exceptions;
+using Balenthiran.Kit.Database;
 using Balenthiran.Kit.Abstractions.Services;
 using Balenthiran.Kit.DataModels.Models;
 
@@ -15,7 +17,9 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 /// <param name="poolToken">The configured pool token (<c>KIT_RUNNER_POOL_TOKEN</c>), or null/blank when there is no pool. Never logged or echoed.</param>
 /// <param name="claimWait">How long a claim waits for work before answering 204.</param>
-public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null)
+/// <param name="github">Mints a run's repo-scoped token; null when no GitHub App is configured.</param>
+/// <param name="maxAge">How long after its start a run may still ask for a GitHub token; null is <see cref="AgentProxy.DefaultMaxAge"/>.</param>
+public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null, GitHubAppTokenSource? github = null, TimeSpan? maxAge = null)
 {
     /// <summary>The header a runner pod authenticates a claim with.</summary>
     public const string PoolHeader = "x-kit-runner-pool";
@@ -75,6 +79,62 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             CacheControl = "no-store",
             Body = store.ByTokenHash(AgentTokens.Hash(runToken!)) ?? run,
         };
+    }
+
+    /// <summary>
+    /// Answers a runner's ask for a GitHub token: <c>{ token, expiresAt }</c>, minted now for the ONE repo this run
+    /// was handed, with contents:write and pull_requests:write only. A run carries no GitHub token; it asks each
+    /// time git needs one, so a run that is over, too old or unknown gets nothing. The token is never logged.
+    /// </summary>
+    public async Task<KitResponse> GitHubTokenAsync(string? runToken, CancellationToken cancellationToken = default)
+    {
+        var run = runToken is { Length: > 0 } ? store.ByTokenHash(AgentTokens.Hash(runToken)) : null;
+        if (run is null)
+        {
+            return Error(401, "not-a-run", "this is not a run token Kit knows");
+        }
+
+        if (run.Status != AgentRunStatus.Running)
+        {
+            return Error(403, "run-not-running", $"this run is {run.Status}, so it cannot be given a GitHub token");
+        }
+
+        var limit = maxAge ?? AgentProxy.DefaultMaxAge;
+        if ((clock ?? TimeProvider.System).GetUtcNow() - run.Started > limit)
+        {
+            return Error(403, "run-too-old", $"this run is more than {limit.TotalHours:0.##} hours old, so it can no longer be given a GitHub token");
+        }
+
+        // The repo was checked as owner/name when the run was started.
+        if (pool.RepoOf(run.Id) is not { } repo)
+        {
+            return Error(403, "repo-unknown", "Kit does not know which repo this run is for (it was not handed out by this Kit process)");
+        }
+
+        if (github is null)
+        {
+            return Error(503, "no-github-app", "this Kit has no GitHub App configured, so it cannot mint a repo token");
+        }
+
+        try
+        {
+            if (await github.MintForRepoAsync(repo[(repo.IndexOf('/') + 1)..],cancellationToken) is not { } minted)
+            {
+                return Error(403, "repo-not-installed", $"the GitHub App installation does not reach {repo}");
+            }
+
+            return new KitResponse
+            {
+                Status = 200,
+                ContentType = "application/json",
+                CacheControl = "no-store",
+                Body = new GitHubTokenGrant(minted.Token, minted.ExpiresAt),
+            };
+        }
+        catch (GitHubTokenException e)
+        {
+            return Error(502, "github-token", e.Message);
+        }
     }
 
     private static KitResponse Error(int status, string error, string reason) =>
