@@ -154,7 +154,7 @@ public class OrchestratorTests
             Orchestrator.Advance(Item(PipelineStage.Spec, WorkItemStatus.Running), Ok(PipelineStage.Triage)));
         Assert.Equal("the item is running Spec but the result is for Triage", ex.Message);
 
-        foreach (var status in new[] { WorkItemStatus.Queued, WorkItemStatus.AwaitingReview, WorkItemStatus.Stopped, WorkItemStatus.Done })
+        foreach (var status in new[] { WorkItemStatus.Queued, WorkItemStatus.Stopped, WorkItemStatus.Done })
         {
             var notRunning = Assert.Throws<InvalidOperationException>(() =>
                 Orchestrator.Advance(Item(PipelineStage.Triage, status), Ok(PipelineStage.Triage)));
@@ -188,14 +188,13 @@ public class OrchestratorTests
     }
 
     [Fact]
-    public void BEH_ORCH_3_Stopped_done_and_awaiting_items_are_never_startable_and_do_not_hold_a_project()
+    public void BEH_ORCH_3_Stopped_and_done_items_are_never_startable_and_do_not_hold_a_project()
     {
         var stopped = Item(PipelineStage.Review, WorkItemStatus.Stopped, "alpha", "a-one");
         var done = Item(PipelineStage.Build, WorkItemStatus.Done, "alpha", "a-two");
-        var awaiting = Item(PipelineStage.Spec, WorkItemStatus.AwaitingReview, "alpha", "a-three");
         var queued = Item(PipelineStage.Spec, WorkItemStatus.Queued, "alpha", "a-four");
 
-        Assert.Equal([queued], Orchestrator.Startable([stopped, done, awaiting, queued]));
+        Assert.Equal([queued], Orchestrator.Startable([stopped, done, queued]));
         Assert.Empty(Orchestrator.Startable([]));
     }
 
@@ -206,7 +205,7 @@ public class OrchestratorTests
             Item(PipelineStage.Spec, WorkItemStatus.Running),
             Orchestrator.Start(Item(PipelineStage.Spec, WorkItemStatus.Queued)));
 
-        foreach (var status in new[] { WorkItemStatus.Running, WorkItemStatus.AwaitingReview, WorkItemStatus.Stopped, WorkItemStatus.Done })
+        foreach (var status in new[] { WorkItemStatus.Running, WorkItemStatus.Stopped, WorkItemStatus.Done })
         {
             var ex = Assert.Throws<InvalidOperationException>(() => Orchestrator.Start(Item(PipelineStage.Spec, status)));
             Assert.Equal($"only a queued item can start, not one that is {status}", ex.Message);

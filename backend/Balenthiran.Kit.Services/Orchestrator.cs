@@ -25,9 +25,6 @@ public enum WorkItemStatus
     /// <summary>One agent run is working on it.</summary>
     Running,
 
-    /// <summary>Reserved for an item waiting on a person's review of its output.</summary>
-    AwaitingReview,
-
     /// <summary>It stopped for a reason a person must read: a failed run, an escalation, or output the next stage cannot use.</summary>
     Stopped,
 
