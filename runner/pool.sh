@@ -3,13 +3,12 @@
 # public API for the next queued run, runs it with kit-run, reports how it ended, and asks again. After
 # KIT_RUNS_PER_CONTAINER runs it exits 0 and the pod restarts fresh.
 #
-# NOTE (slice D2): kit-run still needs GITHUB_TOKEN to push, and this loop does not provide one. Until a
-# per-push token comes from Kit (D2), a claimed run clones and works but kit-run stops at its GITHUB_TOKEN check.
-#
 # Environment:
 #   KIT_URL                 required  Kit's base URL, e.g. https://balenthiran.co.uk/kit (no trailing slash)
 #   KIT_RUNNER_POOL_TOKEN   required  proves to Kit that this is one of its pool pods; never given to a run
 #   KIT_RUNS_PER_CONTAINER  optional  runs to do before exiting (default: 20)
+#   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token; passed to each run (see kit-run), whose
+#                                     usage is then sent with the `finished` report
 #
 # No token is ever echoed. The claim answer (which holds the run token) lives only in a 0600 temp file and a
 # subshell's environment, and is removed after each run.
@@ -27,9 +26,10 @@ umask 077
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# Empties the scratch disks' contents, never the mount points themselves.
+# Empties the scratch disks' contents, never the mount points themselves. The KIT_*_DIR and KIT_RUN_BIN
+# overrides exist only so a test can run this loop outside the image.
 clean() {
-  find /work /home/runner -mindepth 1 -delete 2>/dev/null || true
+  find "${KIT_WORK_DIR:-/work}" "${KIT_HOME_DIR:-/home/runner}" -mindepth 1 -delete 2>/dev/null || true
 }
 
 while [ "$runs_left" -gt 0 ]; do
@@ -69,8 +69,8 @@ while [ "$runs_left" -gt 0 ]; do
   (
     unset KIT_RUNNER_POOL_TOKEN
     export KIT_RUN_ID="$run_id" KIT_RUN_TOKEN="$run_token" KIT_REPO="$run_repo" KIT_TASK="$run_task"
-    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model"
-    exec /usr/local/bin/kit-run
+    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json"
+    exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
   clean
@@ -81,10 +81,25 @@ while [ "$runs_left" -gt 0 ]; do
     outcome=failed
   fi
   echo "kit-pool: $run_id $outcome (exit $status)"
-  printf 'header = "x-api-key: %s"\n' "$run_token" \
-    | curl --silent --show-error --max-time 30 --config - --request POST \
-        --header 'content-type: application/json' --data "{\"status\":\"$outcome\"}" \
-        --output /dev/null "$base/api/runs/finished" 2>/dev/null \
-    || echo "kit-pool: could not report $run_id to Kit" >&2
+  # The usage (only written for a run on the subscription) goes with the report. If Kit refuses the report with
+  # it, the run is reported again without it: ending the run matters more than counting it.
+  report() {
+    printf 'header = "x-api-key: %s"\n' "$run_token" \
+      | curl --silent --show-error --max-time 30 --config - --request POST \
+          --header 'content-type: application/json' --data "$1" \
+          --output /dev/null --write-out '%{http_code}' "$base/api/runs/finished" 2>/dev/null || echo 000
+  }
+  plain="{\"status\":\"$outcome\"}"
+  body="$plain"
+  if [ -s "$tmp/usage.json" ]; then
+    body="{\"status\":\"$outcome\",\"usage\":$(cat "$tmp/usage.json")}"
+  fi
+  rm -f "$tmp/usage.json"
+  code="$(report "$body")"
+  if [ "$code" != 200 ] && [ "$body" != "$plain" ]; then
+    echo "kit-pool: Kit answered $code to $run_id's usage, reporting it without" >&2
+    code="$(report "$plain")"
+  fi
+  [ "$code" = 200 ] || echo "kit-pool: could not report $run_id to Kit ($code)" >&2
   run_token=""
 done

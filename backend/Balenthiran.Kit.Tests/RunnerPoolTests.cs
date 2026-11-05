@@ -187,6 +187,92 @@ public class RunnerPoolTests
         Assert.Equal(409, rig.Routes.Finished(started.Token, Json(new { status = "finished" })).Status);
     }
 
+    private static object Usage(long input = 1_000_000, long output = 100_000, long write = 200_000, long read = 3_000_000) => new
+    {
+        input_tokens = input,
+        output_tokens = output,
+        cache_creation_input_tokens = write,
+        cache_read_input_tokens = read,
+    };
+
+    [Fact]
+    public void A_finished_report_with_usage_records_the_counts_and_prices_them_for_the_runs_model()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        var r = rig.Routes.Finished(started.Token, Json(new { status = "finished", usage = Usage() }));
+
+        Assert.Equal(200, r.Status);
+        var run = rig.Store.ByTokenHash(AgentTokens.Hash(started.Token))!;
+        Assert.Equal((1_000_000L, 100_000L, 200_000L, 3_000_000L), (run.InputTokens, run.OutputTokens, run.CacheWriteTokens, run.CacheReadTokens));
+        Assert.Equal(AgentPrices.Cost(run.Model, 1_000_000, 100_000, 200_000, 0, 3_000_000), run.CostUsd);
+        Assert.True(run.CostUsd > 0);
+        Assert.Equal(AgentRunStatus.Finished, run.Status);
+    }
+
+    [Fact]
+    public void A_failed_run_still_has_its_usage_recorded()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "failed", usage = Usage(output: 7) })).Status);
+
+        Assert.Equal(7, rig.Store.ByTokenHash(AgentTokens.Hash(started.Token))!.OutputTokens);
+    }
+
+    [Fact]
+    public void Usage_the_proxy_already_counted_is_not_counted_again()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+        rig.Store.AddUsage(started.Run.Id, new AgentUsage(10, 20, 0, 0), 0.5m);
+
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "finished", usage = Usage() })).Status);
+
+        var run = rig.Store.ByTokenHash(AgentTokens.Hash(started.Token))!;
+        Assert.Equal((10L, 20L, 0.5m), (run.InputTokens, run.OutputTokens, run.CostUsd));
+    }
+
+    [Fact]
+    public void A_report_with_no_usage_or_null_usage_counts_nothing()
+    {
+        var rig = new Rig();
+        var a = rig.Start("kit");
+        var b = rig.Start("kit-ui");
+        rig.Claim();
+        rig.Claim();
+
+        Assert.Equal(200, rig.Routes.Finished(a.Token, Json(new { status = "finished" })).Status);
+        Assert.Equal(200, rig.Routes.Finished(b.Token, Json(new { status = "finished", usage = (object?)null })).Status);
+
+        Assert.All(rig.Store.List(), run => Assert.Equal(0m, run.CostUsd));
+    }
+
+    [Theory]
+    [InlineData("""{"status":"finished","usage":"lots"}""")]
+    [InlineData("""{"status":"finished","usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":3}}""")]
+    [InlineData("""{"status":"finished","usage":{"input_tokens":-1,"output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4}}""")]
+    [InlineData("""{"status":"finished","usage":{"input_tokens":1.5,"output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4}}""")]
+    [InlineData("""{"status":"finished","usage":{"input_tokens":"1","output_tokens":2,"cache_creation_input_tokens":3,"cache_read_input_tokens":4}}""")]
+    public void Bad_usage_is_400_and_the_run_is_left_running(string body)
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        var r = rig.Routes.Finished(started.Token, JsonDocument.Parse(body).RootElement);
+
+        Assert.Equal(400, r.Status);
+        Assert.Equal("bad-usage", Assert.IsType<ApiError>(r.Body).Error);
+        var run = rig.Store.ByTokenHash(AgentTokens.Hash(started.Token))!;
+        Assert.Equal((AgentRunStatus.Running, 0m), (run.Status, run.CostUsd));
+    }
+
     [Theory]
     [InlineData("""{"repo":"no-slash","task":"t"}""")]
     [InlineData("""{"repo":"a/b/c","task":"t"}""")]
