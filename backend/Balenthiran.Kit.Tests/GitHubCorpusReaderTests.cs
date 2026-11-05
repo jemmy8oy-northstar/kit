@@ -267,6 +267,57 @@ public class GitHubCorpusReaderTests
         Assert.Null(ProjectSource.Parse(text));
     }
 
+    /// <summary>BEH-USERS-12: one PUT to the file's contents path, on the source's branch, naming the blob Kit read; the new blob and commit come back.</summary>
+    [Fact]
+    public async Task A_put_commits_the_file_on_the_sources_branch_naming_the_blob_read()
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """{"content": {"sha": "s2"}, "commit": {"sha": "c9"}}"""));
+
+        var (blob, commit) = await Reader(gh, "tok").PutAsync(Kit, "snip-it.beh", "behaviour BEH-S \"é\"\n", "s1", "kit: add BEH-S (snip-it)");
+
+        Assert.Equal(("s2", "c9"), (blob, commit));
+        var sent = Assert.Single(gh.Sent);
+        Assert.Equal(HttpMethod.Put, sent.Method);
+        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit/contents/prototypes/behaviour-ast/behaviours/snip-it.beh", sent.Uri.ToString());
+        Assert.Equal("Bearer tok", sent.Authorization);
+        var body = System.Text.Json.JsonDocument.Parse(sent.Body!).RootElement;
+        Assert.Equal("kit/hosted", body.GetProperty("branch").GetString());
+        Assert.Equal("s1", body.GetProperty("sha").GetString());
+        Assert.Equal("kit: add BEH-S (snip-it)", body.GetProperty("message").GetString());
+        Assert.Equal("behaviour BEH-S \"é\"\n", Encoding.UTF8.GetString(Convert.FromBase64String(body.GetProperty("content").GetString()!)));
+    }
+
+    /// <summary>A new file sends no sha; a 409 (or a 422 for a file created meanwhile) is the stale refusal, and anything else carries GitHub's reason.</summary>
+    [Theory]
+    [InlineData(HttpStatusCode.Conflict, "s1", true)]
+    [InlineData(HttpStatusCode.UnprocessableEntity, null, true)]
+    [InlineData(HttpStatusCode.Forbidden, "s1", false)]
+    public async Task A_refused_put_says_whether_it_was_stale(HttpStatusCode status, string? sha, bool stale)
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(status, """{"message": "Resource not accessible by integration"}"""));
+
+        var e = await Assert.ThrowsAsync<GitHubWriteException>(() => Reader(gh, "tok").PutAsync(Kit, "snip-it.beh", "x", sha, "kit: x"));
+
+        Assert.Equal(stale, e.Stale);
+        Assert.Equal(sha is not null, System.Text.Json.JsonDocument.Parse(gh.Sent[0].Body!).RootElement.TryGetProperty("sha", out _));
+        if (!stale)
+        {
+            Assert.EndsWith("GitHub answered 403 to committing snip-it.beh: Resource not accessible by integration", e.Message);
+        }
+    }
+
+    /// <summary>A write has no tokenless fallback, unlike a public read: with no token it is refused before any request.</summary>
+    [Fact]
+    public async Task A_put_with_no_token_is_refused_without_a_request()
+    {
+        var gh = new FakeGitHub();
+
+        var e = await Assert.ThrowsAsync<GitHubWriteException>(() => Reader(gh, null).PutAsync(Kit, "snip-it.beh", "x", "s1", "kit: x"));
+
+        Assert.Contains("could not get a GitHub token", e.Message);
+        Assert.Empty(gh.Sent);
+    }
+
     private static GitHubCorpusReader Reader(FakeGitHub gh, string? token) =>
         new(new HttpClient(gh), new StaticGitHubTokenSource(token));
 
