@@ -1377,6 +1377,7 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract his note (kit#668): "Basically taking the need for that heavy costly manager and delegating tasks to smaller agents." The measured reason: 93% of the bot's spend is its Opus lead, 87% of that is input, and 83% of calls carry a prompt over 100K tokens
   contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
   contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
+  contract my assumption, slice 1 (built switched off): the triage task text, the bundle's format at .kit/bundles/<slug>.md on branch kit/work/<slug>, and the stage-model settings (KIT_STAGE_MODEL_TRIAGE, default Haiku; KIT_STAGE_MODEL_REVIEW, default Opus) exist but start nothing. A task carries at most 2000 characters a note and 12000 in all, and says what it cut. Starting the triage run waits on runs taking a repo and a task (kit#701)
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
