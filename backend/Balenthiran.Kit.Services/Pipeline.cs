@@ -5,23 +5,25 @@ namespace Balenthiran.Kit.Services;
 /// <summary>
 /// kit-ui.beh <c>BEH-ORCH-3</c>, wiring slice 1: a note left in Kit queues a triage run of its project's notes
 /// (BEH-ORCH-1) on the runner pool, and the run's end lets the next one start. A triage run reports the bundles
-/// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Spec and review
-/// runs start from that bundle and report it back changed, which moves the item on. Build is not wired yet, so an
-/// item that reaches it waits. Exists
+/// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Spec, build and
+/// review runs start from that bundle and report it back changed, which moves the item on. A built item gets a pull
+/// request from its branch, opened by Kit. Exists
 /// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
 /// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again.
 /// </summary>
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null)
+/// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null)
 {
     private readonly object gate = new();
 
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
-    // A started run's item, the note keys a triage's task carries, and the bundle a later stage's run was given.
-    private readonly Dictionary<string, (int Index, IReadOnlyList<string> Notes, ContextBundle? Given)> started = new(StringComparer.Ordinal);
+    // A started run's item, the note keys a triage's task carries, the bundle a later stage's run was given, and the
+    // owner/repo@branch it ran on, which a built item's pull request goes into.
+    private readonly Dictionary<string, (int Index, IReadOnlyList<string> Notes, ContextBundle? Given, string RepoAt)> started = new(StringComparer.Ordinal);
 
     // Notes a finished triage run has already sorted into bundles: a later triage leaves them out.
     private readonly HashSet<string> triaged = new(StringComparer.Ordinal);
@@ -76,6 +78,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null)
     {
+        (int Index, WorkItem Item, ContextBundle Bundle, string RepoAt)? built = null;
         lock (gate)
         {
             if (!started.Remove(runId, out var run))
@@ -87,6 +90,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             if (item.Stage != PipelineStage.Triage)
             {
                 items[run.Index] = Ended(item, run.Given!, succeeded, reported);
+
+                // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
+                if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
+                {
+                    built = (run.Index, done, bundles[(done.Project, done.Slug)], run.RepoAt);
+                }
             }
             else if (!succeeded)
             {
@@ -117,6 +126,52 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             StartReady();
+        }
+
+        // Outside the lock: opening it is a request to GitHub, and the pipeline must not wait on one.
+        if (built is { } pr)
+        {
+            _ = OpenPullRequestAsync(pr.Index, pr.Item, pr.Bundle, pr.RepoAt);
+        }
+    }
+
+    /// <summary>
+    /// Opens the pull request of built <paramref name="item"/> from its work branch into the branch it ran on, and
+    /// records its page on the item, or stops the item saying why there is none. An item a later triage has replaced
+    /// meanwhile is left as it is.
+    /// </summary>
+    private async Task OpenPullRequestAsync(int index, WorkItem item, ContextBundle bundle, string repoAt)
+    {
+        var at = repoAt.LastIndexOf('@');
+        string? url = null;
+        string reason;
+        if (pulls is null)
+        {
+            reason = "Kit has no way to open a pull request";
+        }
+        else
+        {
+            try
+            {
+                var result = await pulls.OpenAsync(TriageStage.Branch(item.Slug), repoAt[(at + 1)..], bundle.Title, BuildStage.PullRequestBody(item.Project, bundle), repoAt[..at]);
+                url = result.Url;
+                reason = result.Reason ?? "GitHub returned no pull request";
+            }
+            catch (Exception e)
+            {
+                // The type only, as Enqueue logs it: an exception from the opener may carry the token it sent.
+                reason = $"opening it threw {e.GetType().Name}";
+            }
+        }
+
+        lock (gate)
+        {
+            if (items[index] != item)
+            {
+                return;
+            }
+
+            items[index] = url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url };
         }
     }
 
@@ -164,6 +219,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         if (item.Stage == PipelineStage.Spec && !bundle.Context.Contains(SpecStage.TestPlanHeading, StringComparison.Ordinal))
         {
             return Stop(item, "the spec run wrote no test plan");
+        }
+
+        // A build that does not say what it built cannot be told from one that only flagged itself.
+        if (item.Stage == PipelineStage.Build && !bundle.Context.Contains(BuildStage.BuiltHeading, StringComparison.Ordinal))
+        {
+            return Stop(item, "the build run did not say what it built");
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
@@ -236,16 +297,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private void StartReady()
     {
-        // Build is not wired yet: an item waiting for it must not hold its project's next stage. An item that ends at
-        // once (a triage with nothing to read, or one that cannot start) frees its project, so look again. A queued
-        // triage goes first: its new notes may update a bundle that would otherwise be specced twice.
+        // An item that ends at once (a triage with nothing to read, or one that cannot start) frees its project, so
+        // look again. A queued triage goes first: its new notes may update a bundle that would otherwise be specced
+        // or built twice.
         bool again;
         do
         {
             again = false;
-            var ready = items
-                .Where(i => i.Stage != PipelineStage.Build || i.Status == WorkItemStatus.Running)
-                .OrderBy(i => i.Stage == PipelineStage.Triage ? 0 : 1);
+            var ready = items.OrderBy(i => i.Stage == PipelineStage.Triage ? 0 : 1);
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
@@ -285,9 +344,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             string text;
             try
             {
-                text = item.Stage == PipelineStage.Spec
-                    ? SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle)
-                    : ReviewStage.BuildTask(item.Project, bundle);
+                text = item.Stage switch
+                {
+                    PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
+                    PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
+                    _ => ReviewStage.BuildTask(item.Project, bundle),
+                };
             }
             catch (InvalidOperationException e)
             {
@@ -338,7 +400,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return Stop(item, $"the runner pool would not take the {stage} run");
         }
 
-        started[run.Id] = (index, notes, given);
+        started[run.Id] = (index, notes, given, repoAt);
         return Orchestrator.Start(item);
     }
 
