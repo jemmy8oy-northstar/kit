@@ -257,6 +257,18 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_MODEL_REVIEW</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelReview(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW", value, StageModels.DefaultReview);
 
+    /// <summary><c>KIT_STAGE_MODEL_SPEC</c> (BEH-ORCH-3): the model the spec stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
+    public string StageModelSpec { get; init; } = StageModels.DefaultWork;
+
+    /// <summary><c>KIT_STAGE_MODEL_SPEC</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelSpec(string? value) => StageModels.Parse("KIT_STAGE_MODEL_SPEC", value, StageModels.DefaultWork);
+
+    /// <summary><c>KIT_STAGE_MODEL_BUILD</c> (BEH-ORCH-3): the model the build stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
+    public string StageModelBuild { get; init; } = StageModels.DefaultWork;
+
+    /// <summary><c>KIT_STAGE_MODEL_BUILD</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelBuild(string? value) => StageModels.Parse("KIT_STAGE_MODEL_BUILD", value, StageModels.DefaultWork);
+
     /// <summary>As <c>parseArgs</c> derives it: an https public origin sets the cookie's <c>Secure</c> flag.</summary>
     public bool Secure => PublicOrigin is not null && PublicOrigin.StartsWith("https:", StringComparison.OrdinalIgnoreCase);
 
@@ -343,6 +355,8 @@ public sealed record KitSettings(
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
             StageModelTriage = ParseStageModelTriage(env("KIT_STAGE_MODEL_TRIAGE")),
             StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
+            StageModelSpec = ParseStageModelSpec(env("KIT_STAGE_MODEL_SPEC")),
+            StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
         };
