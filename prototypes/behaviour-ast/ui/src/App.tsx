@@ -10,6 +10,7 @@ import EpicPage from './pages/EpicPage'
 import Principles from './pages/Principles'
 import Activity from './pages/Activity'
 import Health from './pages/Health'
+import Runs from './pages/Runs'
 import Inbox from './pages/Inbox'
 import Chat from './pages/Chat'
 import Notifications from './pages/Notifications'
@@ -21,6 +22,7 @@ import { BoardNavLink } from './components/BoardViews'
 import { OpeningPage } from './components/OpeningPage'
 import { FeatureGate, FlagsProvider } from './components/FeatureGate'
 import { FEATURE_PAGES, useFlags } from './components/flags'
+import { useSession } from './components/session'
 import { IDEAS } from './board'
 
 /** BEH-FLAGS-2: a page that belongs to a feature, shown only when that feature is on for this group. */
@@ -32,6 +34,12 @@ function gated(feature: string, page: React.ReactNode) {
 function FeatureNavLink({ feature }: { feature: string }) {
   const { path, label } = FEATURE_PAGES[feature]
   return useFlags().isOn(feature) ? <NavLink to={path}>{label}</NavLink> : null
+}
+
+/** BEH-USERS-9: runs spend Kit's own credit, so only the operator is shown the link (the API refuses anyone else). */
+function RunsNavLink() {
+  const session = useSession()
+  return session?.accounts && !session.operator ? null : <NavLink to="/runs">Runs</NavLink>
 }
 
 export default function App() {
@@ -89,6 +97,7 @@ export default function App() {
               <NavLink to="/principles">Principles</NavLink>
               <FeatureNavLink feature="FEAT-HEALTH" />
               <FeatureNavLink feature="FEAT-ACTIVITY" />
+              <RunsNavLink />
               <FeatureNavLink feature="FEAT-NOTIFICATIONS" />
               {/* BEH-SETTINGS-1: the account area, GitHub and config, on a page of its own. */}
               <NavLink to="/settings">Settings</NavLink>
@@ -114,6 +123,7 @@ export default function App() {
               <Route path="/inbox" element={gated('FEAT-INBOX', <Inbox />)} />
               <Route path="/chat" element={gated('FEAT-CHAT', <Chat />)} />
               <Route path="/activity" element={gated('FEAT-ACTIVITY', <Activity />)} />
+              <Route path="/runs" element={<Runs />} />
               <Route path="/notifications" element={gated('FEAT-NOTIFICATIONS', <Notifications />)} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/projects/:app"element={<Project />} />
