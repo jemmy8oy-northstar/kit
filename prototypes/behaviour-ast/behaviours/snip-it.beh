@@ -461,7 +461,6 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   review unreviewed
   priority 3
   pending
-  needs-context "Short or long (kit#723)? If no answer by 2026-11-09, draft 2 is a vertical Short of 30 to 45 seconds, made by the playbook, kept private. Nothing is posted."
   actor creator
   contract "I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos"
   contract "Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that"
@@ -476,6 +475,7 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   contract "I'm going to be brutally honest. I don't like it… mainly the fonts. The text looks really bad… I think the headline note to live in 48 minutes is not that impressive… A stronger message would be something like bringing engineering tools to non engineers. And this sort of message will become the message that we use to make kit" (kit#723, on draft 1)
   contract "we definitely need to be using opus for this… it is worth researching workflows and skills used to make the best videos and follow that. Do not be afraid to use inspiration from online" (kit#723)
   contract "it is worth recording what my feedback is on a video and including it in the video creation playbook/loop… in the create stage and the review stage… in the return stage as well make it clear that you need to update the playbook with my feedback otherwise u won't improve" (kit#723): docs/video-playbook.md is that loop, and his feedback log in it is read at create and review and appended at return
+  contract "Yh shorts works tbh. We can have some long form content later" (kit#723): build-channel videos are YouTube Shorts, vertical, 30 to 45 seconds
   contract my assumption: draft 2 tells "Engineers don't just write code. They write specs. Tests. Reviews. Now so can you." on a real note of his, and never sells speed
   contract my assumption: drafts are rendered with Remotion (free for one person or a company of up to three; it brings its own ffmpeg, which the pod's broken one needed), installed in a scratch directory on the bot's volume, never into a repo; if Northstar grows past three people, its licence is re-checked first
 

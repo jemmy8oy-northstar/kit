@@ -9,7 +9,7 @@ The Owner's feedback log at the bottom is part of the loop. Read it at the start
 
 - **Model:** the creative pass (concept, script, storyboard, type and motion choices) runs on **Opus**. Cheaper models may do mechanical work only: rendering, frame extraction, file shuffling.
 - **Tool:** Remotion (React, frame-driven), using the official `remotion-best-practices` agent skill rules. HyperFrames (HTML + GSAP, Apache-2.0) is the fallback. See Research notes §2.
-- **Format:** 1080×1920 vertical, 30 fps, 30–45 s. Make a 16:9 cut only as a derivative. (My default on kit#723 for his "short or long?"; his answer replaces it.)
+- **Format:** 1080×1920 vertical, 30 fps, 30–45 s. Make a 16:9 cut only as a derivative. His word (kit#723, 2026-11-06): "Yh shorts works tbh. We can have some long form content later".
 - **Message spine:** *engineering tools for people who aren't engineers.* Kit gives a non-engineer the things engineers rely on: a spec, tests, review and a safe release. **Don't sell speed.** "Note to live in 48 minutes" was rejected as unimpressive.
 - **Type system** (one family, two weights max):
   - Display: **Inter Display** or **Geist**, weight 700–800, 120–180 px on a 1080 px-wide frame, tracking −2 % to −4 %, line-height 0.95–1.05, at most 5 words per screen.
@@ -77,6 +77,12 @@ Rules derived:
 - **taste:** typography is the main failure. Use the explicit type system and load fonts. Stills aren't a video, so real motion is required.
 - **message:** speed is not the story. The story is engineering tools for non-engineers, and that becomes Kit's message too.
 - **process:** this log feeds CREATE, REVIEW and RETURN.
+
+### 2026-11-06, kit#723, format
+> "Yh shorts works tbh. We can have some long form content later"
+
+Rules derived:
+- **process:** Shorts are the format (Defaults, Format). Long-form waits until he asks for it.
 
 ---
 
