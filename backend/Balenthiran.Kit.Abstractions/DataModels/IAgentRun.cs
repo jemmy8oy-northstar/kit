@@ -41,6 +41,9 @@ public interface IAgentRun
 
     /// <summary>What the run's model calls have cost so far, USD at list price.</summary>
     decimal CostUsd { get; }
+
+    /// <summary>Why a failed run failed, as its runner reported it: a step and an exit code; null otherwise.</summary>
+    string? Failure { get; }
 }
 
 /// <summary>The body of <c>GET /api/runs</c>: runs newest first and the cap each is held to.</summary>

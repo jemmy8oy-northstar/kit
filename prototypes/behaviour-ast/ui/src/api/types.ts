@@ -608,6 +608,31 @@ export interface ActivityFeed {
   noHistory: ActivityGap[]
 }
 
+/** One agent run (BEH-USERS-9). */
+export interface AgentRun {
+  id: string
+  project: string
+  model: string
+  status: string
+  /** ISO 8601 UTC. */
+  started: string
+  /** Absent or null while the run is queued or running. */
+  ended?: string | null
+  inputTokens: number
+  outputTokens: number
+  cacheWriteTokens: number
+  cacheReadTokens: number
+  costUsd: number
+  /** Why a failed run failed, as its runner reported it: `<step> exit <code>`. Null otherwise. */
+  failure?: string | null
+}
+
+/** `GET /api/runs` (BEH-USERS-9): every run newest first, and what one run may spend. */
+export interface AgentRunList {
+  capUsd: number
+  runs: AgentRun[]
+}
+
 /** One message from the agent (BEH-NOTIFY-1). */
 export interface AgentNotification {
   /** ISO 8601 UTC, as the agent wrote it. */

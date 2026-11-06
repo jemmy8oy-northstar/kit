@@ -41,4 +41,7 @@ public sealed class AgentRun : IAgentRun
 
     [JsonPropertyOrder(12)]
     public decimal CostUsd { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public string? Failure { get; init; }
 }
