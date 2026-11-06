@@ -657,3 +657,9 @@ Just thoughts, with making a note as we start to design this
 To help us with cost analysis we should start recording the cost that Claude code bot incurs from kit sessions. Apprentice this should be easy to extract and we can even look at previous sessions by looking inside ~/.Claude/ this should help us with figuring out pricing models and whether this is a viable product.
 
 I am worried because people have said that api incurs a much lower cost than if you were using api. So we can use the cost outputs to figure out weekly cost historically? And compare to subscription cost?
+
+## 2026-11-06 18:07Z
+
+<!-- from: note-button -->
+
+This is just a test please discard it
