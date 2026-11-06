@@ -171,9 +171,3 @@ Under BEH-USERS-2 ("Kit lists a user's projects from their own GitHub, with no s
 <!-- from: chat -->
 
 Backlog idea: Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies. Not yet specified; to be backlogged for more detail later.
-
-## 2026-11-06 13:48Z
-
-<!-- from: chat -->
-
-Kit should be able to read the application logs of a project, later. This is wanted but not now: keep it in the backlog, unscheduled, under BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a log trigger" (FEAT-EXTERNAL-DATA). Application logs are the first source to cover when it is picked up.
