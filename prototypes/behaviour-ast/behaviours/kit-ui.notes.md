@@ -177,3 +177,9 @@ Backlog idea: Kit keeps a rough profile of each user's technical level, tracking
 <!-- from: chat -->
 
 Kit should be able to read the internal logs of the backend and service pods that Kit has run for a project. The user should not have to wire these up, since they come from pods Kit itself runs. This is wanted later, not now: keep it in the backlog, unscheduled.
+
+## 2026-11-06 18:01Z
+
+<!-- from: chat -->
+
+Add to FEAT-ARCH, as a new behaviour alongside BEH-ARCH-1 (which it extends, not changes): a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now. Open and left open: the exact layout, and whether anything from the spec is also drawn.
