@@ -234,6 +234,73 @@ public class RunnerScriptTests
         Assert.Equal("clone exit 128\n", File.ReadAllText(failure));
     }
 
+    // ── entrypoint.sh: the credential helper ───────────────────────────────────────────────────
+
+    [Fact]
+    public void The_credential_helper_gives_git_the_token_from_the_answer_Kit_actually_serialises()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        // The grant exactly as the server writes it: through the engine's options, which indent (kit#714).
+        var grant = new Balenthiran.Kit.Services.EngineJsonSerialiser()
+            .Serialise(new Balenthiran.Kit.Services.GitHubTokenGrant("ghs_minted", DateTimeOffset.Parse("2026-11-06T18:00:00Z")));
+        Assert.Contains("\"token\": \"ghs_minted\"", grant);
+        File.WriteAllText(Path.Combine(rig.Rec, "grant.json"), grant);
+        var cred = Path.Combine(rig.Rec, "cred.out");
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "case \"$1\" in",
+            "  clone) printf 'protocol=https\\nhost=github.com\\n\\n' | sh -c \"${GIT_CONFIG_VALUE_0#!} get\" > '" + cred + "' || exit 128",
+            "         for a; do d=\"$a\"; done; mkdir -p \"$d\";;",
+            "  rev-list) echo 0;;",
+            "esac",
+            "exit 0");
+        Executable(System.IO.Path.Combine(rig.Bin, "curl"),
+            "#!/bin/sh",
+            "url=",
+            "while [ $# -gt 0 ]; do",
+            "  case \"$1\" in",
+            "    --config) cat > '" + Path.Combine(rig.Rec, "curl.config") + "';;",
+            "    --output|-o) echo 'the process' > \"$2\"; shift;;",
+            "    *) url=\"$1\";;",
+            "  esac",
+            "  shift",
+            "done",
+            "case \"$url\" in */api/runs/github-token) cat '" + Path.Combine(rig.Rec, "grant.json") + "';; esac",
+            "exit 0");
+
+        var r = rig.Entrypoint(new());
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["username=x-access-token", "password=ghs_minted"], File.ReadAllLines(cred));
+        Assert.Contains("x-api-key: run-secret", File.ReadAllText(Path.Combine(rig.Rec, "curl.config")));
+    }
+
+    [Fact]
+    public void The_credential_helper_gives_git_nothing_and_says_so_when_Kit_answers_without_a_token()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        var cred = Path.Combine(rig.Rec, "cred.out");
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "case \"$1\" in",
+            "  clone) printf 'protocol=https\\nhost=github.com\\n\\n' | sh -c \"${GIT_CONFIG_VALUE_0#!} get\" > '" + cred + "' || exit 128;;",
+            "esac",
+            "exit 0");
+        Executable(System.IO.Path.Combine(rig.Bin, "curl"),
+            "#!/bin/sh",
+            "cat > /dev/null",
+            "printf '{\\n  \"expiresAt\": \"x\"\\n}'",
+            "exit 0");
+
+        var r = rig.Entrypoint(new());
+
+        Assert.Equal(128, r.Status);
+        Assert.Equal("", File.ReadAllText(cred));
+        Assert.Contains("kit-run: Kit's github-token answer held no token", r.Stderr);
+    }
+
     [Fact]
     public void A_failing_agent_writes_the_claude_step()
     {
