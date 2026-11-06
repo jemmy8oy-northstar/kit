@@ -193,6 +193,7 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   contract one year per company until the engine scores per year, because it sums every record a company holds
   contract slice 2 is the 16 UK ETS account holders with the largest 2025 verified emissions at electricity-generation installations (NACE 3511), 27.95 Mt, absolute tonnes only, with intensity recorded as unknown (whos-accountable#23)
   contract my assumption: slice 3 is the 16 UK ETS account holders with the largest 2025 verified emissions at oil and gas extraction and refining installations (NACE 610, 620, 1920), 16.74 Mt, on the same terms as slice 2, in place of the Carbon Majors dataset: that is InfluenceMap data for non-commercial use, which the licence audit (whos-accountable#9) already bars from the composite (whos-accountable#25)
+  contract my assumption: slice 4 is the 16 UK ETS account holders with the largest 2025 verified emissions in heavy industry (steel, cement, lime, basic chemicals, glass, paper, bricks and plaster), 11.27 Mt, on the same terms as slice 3, ahead of the FTSE 100: only 14 of its 100 hold any UK ETS emissions, and the largest of them are already in slices 2 and 3, so the FTSE 100 waits for a scope 1 and 2 source such as SECR disclosures (whos-accountable#26)
 
 behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
   in FEAT-SCORING
