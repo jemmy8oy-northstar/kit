@@ -91,8 +91,19 @@ if [ -n "${GITHUB_TOKEN:-}" ]; then
   echo "password=$GITHUB_TOKEN"
   exit 0
 fi
-body="$(printf 'header = "x-api-key: %s"\n' "$KIT_RUN_TOKEN" \
-  | curl --fail --silent --show-error --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")" || exit 1
+# --fail-with-body keeps Kit's refusal, whose error and reason name no secret, so the log says WHICH one (kit#714).
+if ! body="$(printf 'header = "x-api-key: %s"\n' "$KIT_RUN_TOKEN" \
+  | curl --fail-with-body --silent --show-error --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")"; then
+  printf '%s' "$body" | node -e '
+    let s = "";
+    process.stdin.on("data", (d) => (s += d)).on("end", () => {
+      let j = {};
+      try { j = JSON.parse(s); } catch {}
+      const say = (v) => (typeof v === "string" ? v.replace(/[^\x20-\x7e]/g, "").slice(0, 300) : "");
+      process.stderr.write(`kit-run: Kit refused a GitHub token: ${say(j.error) || "no reason given"}${j.reason ? ` (${say(j.reason)})` : ""}\n`);
+    });'
+  exit 1
+fi
 # Parsed as JSON: Kit writes it indented ("token": "..."), which a sed pattern without the space missed (kit#714).
 token="$(printf '%s' "$body" | node -e '
   let s = "";
