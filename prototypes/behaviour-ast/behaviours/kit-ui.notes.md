@@ -183,3 +183,9 @@ Kit should be able to read the internal logs of the backend and service pods tha
 <!-- from: chat -->
 
 Add to FEAT-ARCH, as a new behaviour alongside BEH-ARCH-1 (which it extends, not changes): a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now. Open and left open: the exact layout, and whether anything from the spec is also drawn.
+
+## 2026-11-06 18:04Z
+
+<!-- from: chat -->
+
+EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works.
