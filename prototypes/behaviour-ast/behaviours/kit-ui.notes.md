@@ -171,3 +171,9 @@ Under BEH-USERS-2 ("Kit lists a user's projects from their own GitHub, with no s
 <!-- from: chat -->
 
 Backlog idea: Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies. Not yet specified; to be backlogged for more detail later.
+
+## 2026-11-06 13:50Z
+
+<!-- from: chat -->
+
+Kit should be able to read the internal logs of the backend and service pods that Kit has run for a project. The user should not have to wire these up, since they come from pods Kit itself runs. This is wanted later, not now: keep it in the backlog, unscheduled.
