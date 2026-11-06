@@ -180,7 +180,7 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   pending
   contract data is versioned in the repo as data-as-code
   contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
-  contract done so far 2026-11-06: 74 of about 150 companies, in the five slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29)
+  contract done so far 2026-11-06: 138 of about 150 companies, in the nine slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29, whos-accountable#30, whos-accountable#31, whos-accountable#32, whos-accountable#33)
 
 behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 English water and sewerage companies"
   in FEAT-DATA
@@ -196,6 +196,10 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   contract my assumption: slice 3 is the 16 UK ETS account holders with the largest 2025 verified emissions at oil and gas extraction and refining installations (NACE 610, 620, 1920), 16.74 Mt, on the same terms as slice 2, in place of the Carbon Majors dataset: that is InfluenceMap data for non-commercial use, which the licence audit (whos-accountable#9) already bars from the composite (whos-accountable#25)
   contract my assumption: slice 4 is the 16 UK ETS account holders with the largest 2025 verified emissions in heavy industry (steel, cement, lime, basic chemicals, glass, paper, bricks and plaster), 11.27 Mt, on the same terms as slice 3, ahead of the FTSE 100: only 14 of its 100 hold any UK ETS emissions, and the largest of them are already in slices 2 and 3, so the FTSE 100 waits for a scope 1 and 2 source such as SECR disclosures (whos-accountable#26)
   contract my assumption: slice 5 is the 16 UK ETS aircraft operators incorporated in the UK with the largest 2025 verified emissions, 4.64 Mt, tagged aviation, on the same terms as slice 4. Foreign airlines registered here only for a UK establishment are left out (Ryanair DAC, Wizz Air Hungary), and their UK subsidiaries are in. The UK ETS covers only domestic and European flights, so long-haul emissions are not counted and British Airways is understated (whos-accountable#29)
+  contract my assumption: slice 6 is the 16 UK ETS holders ranked 17 to 32 under slice 3's oil and gas filter, 3.15 Mt, on the same terms as slice 3, so slices 3 and 6 hold 97% of that filter. It comes ahead of power ranked 17 to 32, which falls to 21,000 t by rank 32. Each holder is its own company, so the four Chrysaor companies are listed separately (whos-accountable#30)
+  contract my assumption: slice 7 is the 16 UK ETS holders ranked 17 to 32 under slice 4's heavy-industry filter, 1.93 Mt, on the same terms as slice 4, so slices 4 and 7 hold 91% of that filter. Encirc ranks 33 because its English glassworks is classed NACE 3299, outside the filter; the rule is kept, and a later slice can take Encirc whole (whos-accountable#31)
+  contract my assumption: slice 8 is the 16 UK ETS holders with the largest 2025 verified emissions at food and drink installations (NACE 10 and 11), 1.74 Mt, led by British Sugar, in the ConsumerGoods sector with a food-and-drink tag, on the same terms as slice 4. It comes ahead of power ranked 17 to 32, which holds slightly more (1.90 Mt), because these are companies a reader buys from (whos-accountable#32)
+  contract my assumption: slice 9 is the 16 UK ETS holders ranked 17 to 32 under slice 2's power filter (NACE 3511), 1.90 Mt, summed within the filter as slices 3 to 8 are, so slices 2 and 9 hold 99% of it. Drax enters at rank 26 on its zero-rated biomass figure, with slice 2's caveat (whos-accountable#33)
 
 behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
   in FEAT-SCORING
