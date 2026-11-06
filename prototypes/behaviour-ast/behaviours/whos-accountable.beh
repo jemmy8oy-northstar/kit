@@ -116,6 +116,7 @@ behaviour BEH-SCORE-3 "The violations sub-score falls with fines, incidents and 
   actor visitor
   contract harm = 1.0 per million pounds of fines + 0.5 per incident + 1.0 per 1,000 hours of sewage or storm-overflow discharge
   contract score = 100 * e^(-harm / 5); a company with no recorded enforcement scores 100
+  contract my assumption: only when the dataset holds its sector's enforcement register (violationsCoverage, today water only); elsewhere no record is unknown, because slice 2 otherwise crowned 16 power generators with a composite of 100 (whos-accountable#24)
 
 behaviour BEH-SCORE-4 "Missing data is unknown, never a neutral 50"
   in FEAT-SCORING
@@ -188,9 +189,10 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   priority 4
   actor maintainer
   contract slice 1 is the 10 companies filing an EA storm-overflow (EDM) annual return in England, by Companies House number, with their 2025 spill events and hours (whos-accountable#19)
-  contract then UK ETS emissions for energy utilities, then UK-linked Carbon Majors, then the FTSE 100; each slice is its own PR
+  contract then UK ETS emissions for energy utilities, then UK oil and gas, then the FTSE 100; each slice is its own PR
   contract one year per company until the engine scores per year, because it sums every record a company holds
   contract slice 2 is the 16 UK ETS account holders with the largest 2025 verified emissions at electricity-generation installations (NACE 3511), 27.95 Mt, absolute tonnes only, with intensity recorded as unknown (whos-accountable#23)
+  contract my assumption: slice 3 is the 16 UK ETS account holders with the largest 2025 verified emissions at oil and gas extraction and refining installations (NACE 610, 620, 1920), 16.74 Mt, on the same terms as slice 2, in place of the Carbon Majors dataset: that is InfluenceMap data for non-commercial use, which the licence audit (whos-accountable#9) already bars from the composite (whos-accountable#25)
 
 behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
   in FEAT-SCORING
