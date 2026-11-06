@@ -194,6 +194,7 @@ public class RunGitHubTokenTests
         var error = Assert.IsType<ApiError>(r.Body);
         Assert.Equal("repo-not-installed", error.Error);
         Assert.Contains("octo/cat", error.Reason);
+        Assert.Contains("Pull requests", error.Reason);
     }
 
     [Fact]
