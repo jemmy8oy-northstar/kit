@@ -1587,6 +1587,7 @@ behaviour BEH-USERS-13 "A user brings their own AI subscription by signing in wi
   review unreviewed
   priority 4
   pending
+  needs-context "Waits on the cost work (your kit#678): the agent pipeline has to complete a real run first, which needs kit-runner restarted on the kit#743 fix. Then I read the providers' terms and start."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -3035,6 +3036,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   review approved
   priority 2
   pending
+  needs-context "Done, but it can't leave the Queue: its test is in balenthiran.co.uk, which kit-ui's check can't read. Unless you say otherwise by 2026-11-09, I'll move this card into balenthiran's spec, where the test map reads that repo."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain

@@ -461,6 +461,7 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   review unreviewed
   priority 3
   pending
+  needs-context "Draft 3 is on kit#723 (2026-11-06): a 34s Short, private. Your verdict goes into the playbook before the next cut."
   actor creator
   contract "I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos"
   contract "Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that"
