@@ -90,6 +90,7 @@ behaviour BEH-IDEA-COACH-2 "The athlete gets feedback on their training"
   priority 5
   review unreviewed
   pending
+  needs-context "Waits on BEH-IDEA-COACH-1's question, whether the coach becomes a project. Until then it stays an idea."
   actor athlete
   contract "able to give feedback on training"
 
@@ -99,6 +100,7 @@ behaviour BEH-IDEA-COACH-3 "The athlete can chat with the AI about their trainin
   priority 5
   review unreviewed
   pending
+  needs-context "Waits on BEH-IDEA-COACH-1's question, whether the coach becomes a project. Until then it stays an idea."
   actor athlete
   contract "A chat feature where the human can chat with the ai about training"
 
@@ -118,6 +120,7 @@ behaviour BEH-IDEA-POKER-2 "The solver and the explaining AI run open source and
   priority 5
   review unreviewed
   pending
+  needs-context "Waits on BEH-IDEA-POKER-1's question, whether the poker trainer becomes a project. Until then it stays an idea."
   actor player
   contract "Using open source solves to begin with and on device ai to begin with to keep costs low."
   contract my assumption: solving a whole hand is too slow for a phone, so common spots are solved ahead of time and the device looks them up; the on-device model only writes the explanation

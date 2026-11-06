@@ -1431,6 +1431,7 @@ behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and i
   review unreviewed
   priority 4
   pending
+  needs-context "Deleting about 145 interfaces is an architecture choice and a large deletion, so it is yours (kit#671). If no answer by 2026-11-11, I delete none, and new code adds interfaces only at boundaries."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1991,7 +1992,6 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   source defined kit.notes.md#2026-10-27-2133
   source defined kit.notes.md#2026-11-03-1117
   review unreviewed
-  pending
   priority 3
   actor engineer
   when opens page:KitHealth
@@ -2005,6 +2005,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22); balenthiran 6 → 7/7 (balenthiran.co.uk#31, 2026-10-29). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
   contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
   contract his question, does reading the Queue need to be built into CLAUDE.md (kit.notes.md#2026-11-03-1117): no, it says so already, and the prose has lost three times (kit#388, kit#401, 2026-11-03). Instead a hook refuses my idle suspend while the Queue holds a card that is not built, paused or marked needs-context; registering it is his (claude-code-bot#132)
+  contract my assumption, 2026-11-06: it is built, so it leaves the Queue. Every active corpus has a test map (whos-accountable's was the last, kit#726), the Health page's "Last improved by" line has its test, and the agent keeps doing this work on idle wakes because the idle choice says "health" (BEH-SETTINGS-6), not because the card is pending. What is left is snip-it's last 7, which are SwiftUI or hardware and need an iPhone test runner the agent's pod does not have
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
