@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
   PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
@@ -119,6 +119,11 @@ export function fetchProjects(): Promise<ProjectListBody> {
 /** What changed recently across every project, newest first, from git (BEH-ACTIVITY-1). */
 export function fetchActivity(): Promise<ActivityFeed> {
   return get<ActivityFeed>('/api/activity')
+}
+
+/** Every agent run newest first, and the cap each is held to; the operator's (BEH-USERS-9). */
+export function fetchRuns(): Promise<AgentRunList> {
+  return get<AgentRunList>('/api/runs')
 }
 
 /** The agent's messages, newest first, from the feed it appends to in its own repo (BEH-NOTIFY-1). */

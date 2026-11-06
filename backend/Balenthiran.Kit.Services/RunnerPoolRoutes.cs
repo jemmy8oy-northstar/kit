@@ -50,7 +50,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     }
 
     /// <summary>
-    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, bundles? }</c>,
+    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, bundles?, failure? }</c>,
     /// authenticated by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed
     /// to the pipeline. <c>usage</c> is Claude Code's own count, with its field names (<c>input_tokens</c>,
     /// <c>output_tokens</c>, <c>cache_creation_input_tokens</c>, <c>cache_read_input_tokens</c>). A run on James's
@@ -85,6 +85,19 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             usage = read;
         }
 
+        // Only a failed report may say why, and only as a step and an exit code: nothing a run could write beyond that is kept.
+        string? failure = null;
+        if (b.TryGetProperty("failure", out var f) && f.ValueKind != JsonValueKind.Null)
+        {
+            if (s.GetString() != AgentRunStatus.Failed || f.ValueKind != JsonValueKind.String
+                || f.GetString() is not { Length: <= 40 } text || !FailurePattern.IsMatch(text))
+            {
+                return Error(400, "bad-failure", "failure is only for a failed report, and is a step and an exit code, like \"clone exit 128\"");
+            }
+
+            failure = text;
+        }
+
         if (AgentRunStatus.IsOver(run.Status))
         {
             return Error(409, "already-over", $"this run is already {run.Status}");
@@ -104,7 +117,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             store.AddUsage(run.Id, x, AgentPrices.Cost(run.Model, x.Input, x.Output, x.CacheWrite, 0, x.CacheRead));
         }
 
-        store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow());
+        store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow(), failure);
         pool.Signal();
         pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
         return new KitResponse
@@ -186,6 +199,8 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         var (input, output, write, read) = (Count("input_tokens"), Count("output_tokens"), Count("cache_creation_input_tokens"), Count("cache_read_input_tokens"));
         return input < 0 || output < 0 || write < 0 || read < 0 ? null : new AgentUsage(input, output, write, read);
     }
+
+    private static readonly System.Text.RegularExpressions.Regex FailurePattern = new("^[a-z]+ exit [0-9]{1,3}$");
 
     /// <summary>Most bundles one report may carry.</summary>
     public const int MaxBundles = 50;

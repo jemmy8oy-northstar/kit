@@ -20,8 +20,8 @@ public interface IAgentRunStore
     /// <summary>Adds one call's tokens and cost to the run, atomically; null when the run does not exist.</summary>
     IAgentRun? AddUsage(string id, AgentUsage usage, decimal costUsd);
 
-    /// <summary>Moves the run to <paramref name="status"/>; an over status stamps <paramref name="ended"/>.</summary>
-    void SetStatus(string id, string status, DateTimeOffset? ended = null);
+    /// <summary>Moves the run to <paramref name="status"/>; an over status stamps <paramref name="ended"/>; <paramref name="failure"/> is why a failed run failed, kept only for a failed status.</summary>
+    void SetStatus(string id, string status, DateTimeOffset? ended = null, string? failure = null);
 
     /// <summary>
     /// Moves the run from queued to running, atomically, and only if it is still queued, so a run that became

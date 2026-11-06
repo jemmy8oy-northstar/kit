@@ -25,11 +25,13 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
             output_tokens bigint NOT NULL DEFAULT 0,
             cache_write_tokens bigint NOT NULL DEFAULT 0,
             cache_read_tokens bigint NOT NULL DEFAULT 0,
-            cost_usd numeric(14,6) NOT NULL DEFAULT 0
-        )
+            cost_usd numeric(14,6) NOT NULL DEFAULT 0,
+            failure text
+        );
+        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS failure text
         """;
 
-    private const string Columns = "id, owner, project, model, status, started, ended, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd";
+    private const string Columns = "id, owner, project, model, status, started, ended, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd, failure";
 
     private readonly NpgsqlDataSource source = NpgsqlDataSource.Create(connectionString);
     private readonly Lock gate = new();
@@ -71,11 +73,12 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
     }
 
     /// <inheritdoc />
-    public void SetStatus(string id, string status, DateTimeOffset? ended = null)
+    public void SetStatus(string id, string status, DateTimeOffset? ended = null, string? failure = null)
     {
         using var cmd = Command(
-            "UPDATE agent_runs SET status = $2, ended = $3 WHERE id = $1",
-            id, status, AgentRunStatus.IsOver(status) && ended is { } e ? e : DBNull.Value);
+            "UPDATE agent_runs SET status = $2, ended = $3, failure = $4 WHERE id = $1",
+            id, status, AgentRunStatus.IsOver(status) && ended is { } e ? e : DBNull.Value,
+            status == AgentRunStatus.Failed && failure is not null ? failure : DBNull.Value);
         cmd.ExecuteNonQuery();
     }
 
@@ -111,6 +114,7 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
                 CacheWriteTokens = r.GetInt64(9),
                 CacheReadTokens = r.GetInt64(10),
                 CostUsd = r.GetDecimal(11),
+                Failure = r.IsDBNull(12) ? null : r.GetString(12),
             });
         }
 
@@ -143,6 +147,8 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
         public long CacheReadTokens { get; init; }
 
         public decimal CostUsd { get; init; }
+
+        public string? Failure { get; init; }
     }
 
     private NpgsqlCommand Command(string sql, params object[] values)

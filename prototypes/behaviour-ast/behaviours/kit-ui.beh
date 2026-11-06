@@ -1501,6 +1501,9 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract my assumption, slice D: a run is started with a task and a repo (owner/name) as well as the model. The task is handed to the launcher and not stored, and the repo must be one Kit's GitHub App installation reaches, or the run fails to launch and says so
   contract found 2026-11-05: a GitHub installation token lasts one hour, and a run may last six, so a token handed to a run when it starts can have expired by the time it pushes
   contract my assumption: so the runner carries no GitHub token. Each time git needs one, it asks Kit with its run token, and Kit mints a token for that one repo with contents and pull-request write only. A run that is over gets 403. Kit minting tokens for a run is auth, and the runner is a platform change, so slice D goes to you for review and I do not self-merge it
+  contract found 2026-11-06 (kit#714): his first live run failed after one second with no tokens, and neither Kit nor any page said why; he had to paste /api/runs
+  contract my assumption: a Runs page, linked for the operator only, lists every run newest first with its project, model, status, time taken, tokens and cost, and a failed run's reason in plain words
+  contract my assumption: a failed run's report may carry a reason, only as "<step> exit <code>" (setup, clone, checkout, process, claude, bundles, push, or run when the runner knows nothing more), so no text a run wrote is ever stored; anything else is refused 400. The runner side is a platform change and goes to him as its own pull request
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
