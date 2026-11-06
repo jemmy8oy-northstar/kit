@@ -1378,6 +1378,7 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
   contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
   contract my assumption, slice 1 (built switched off): the triage task text, the bundle's format at .kit/bundles/<slug>.md on branch kit/work/<slug>, and the stage-model settings (KIT_STAGE_MODEL_TRIAGE, default Haiku; KIT_STAGE_MODEL_REVIEW, default Opus) exist but start nothing. A task carries at most 1500 characters a note and 4000 in all, and says what it cut. The whole task fits a run's 8000-character task: notes that do not fit wait for the next triage run, and cards past the room left are counted and the run told to read the spec files. Starting the triage run waits on runs taking a repo and a task (kit#701)
+  needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
@@ -1393,6 +1394,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
   contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
+  needs-context "Built and wired to the orchestrator (BEH-ORCH-3) on dev, not yet promoted. No real review has run: production Kit has not deployed since kit went private (kit#714 has the one secret ArgoCD needs). Once a triage is seen live, I promote this and watch a flagged item."
 
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
@@ -1415,7 +1417,9 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption, subscription slice (kit#709, his PR): with CLAUDE_CODE_OAUTH_TOKEN from a `kit-claude-subscription` secret, a run uses his subscription directly, the token readable inside the run (he accepted that on kit#708), and the runner's finished report carries the run's token counts so Kit still shows what it would have cost. Without the secret, runs use Kit's proxy as before
   contract my assumption, bundles slice 1 (built switched off): a triage run's bundles come back to Kit IN ITS FINISHED REPORT, as { slug, text } for each kit/work/<slug> branch it pushed, rather than Kit reading those branches through the GitHub App: no extra GitHub reads, and the run token already authenticates the report. Each valid bundle becomes a work item queued for spec, or for review when it carries a Flag; a malformed one, one too large to send, or one naming another slug stops its item with that reason. A finished triage with no usable bundle sorted nothing, so it stops and its notes are read again by the next triage. A failed report's bundles are not read. A later triage updating a bundle replaces its item. Items waiting for a stage that is not wired yet never hold the project's next triage. The runner half (collecting the pushed bundles) follows kit#709
   contract my assumption, projects (KIT_PIPELINE_PROJECTS): a triage pushes bundles quoting his notes to the project's repo, and every project repo but kit's is public, so the pipeline starts on kit and kit-ui only; unset, every project is triaged. He widens it
-  needs-context "To switch the pipeline on, merge kit#714 after checking the kit-runner-pool secret exists in both namespaces: Kit refuses to start without it. It triages kit and kit-ui notes only until you widen KIT_PIPELINE_PROJECTS."
+  contract my assumption, spec and review slice: a work item queued for spec or review starts a run on its kit/work/<slug> branch, given its bundle. Spec writes the cards the bundle names into the project's spec as "contract my assumption:" lines and new cards as unreviewed, adds a "Test plan:" to the bundle's Context, and writes no tests or code. It may add a Flag only when the bundle has none. The run must report its own bundle back changed, and a spec's must carry its test plan: an unchanged, missing or malformed bundle, a spec with no test plan, or a failed run, stops the item with the reason. A later triage that updates a bundle not yet running sends it back to spec with the new bundle. A queued triage starts before any later stage, so new notes can update a bundle before it is specced. An item that reaches build starts it (the build slice, below)
+  contract my assumption, build slice: a specced work item starts a build run on its kit/work/<slug> branch, given its bundle. Build writes the tests its test plan names first and sees them fail, then the code until they and the project's whole suite pass, and adds a "Built:" list to the bundle's Context naming each test it wrote and the suite's result. It may add a Flag only when the bundle has none, and a flagged build is reviewed before it counts as built. A build, or a review of one, that reports its bundle without a Built list, unchanged, or failed stops the item with the reason. A waiting build starts before any waiting spec, so an item is built before the next item is specced. A built item is done, and Kit, not the run, opens a pull request from its branch into the branch the run started from, titled with the bundle's title and carrying the bundle as its body; GitHub refusing it, or Kit having no way to open one, stops the item with the reason. Nothing merges it: it is reviewed like any other pull request
+  needs-context "The pipeline is switched on in main (kit#714), but production Kit has not deployed since kit went private on 2026-11-04: ArgoCD most likely needs read access to the private repo (kit#714 has the steps). It triages kit and kit-ui notes only until you widen KIT_PIPELINE_PROJECTS."
 
 feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
   in EPIC-KIT-USERS
@@ -1427,6 +1431,7 @@ behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and i
   review unreviewed
   priority 4
   pending
+  needs-context "Deleting about 145 interfaces is an architecture choice and a large deletion, so it is yours (kit#671). If no answer by 2026-11-11, I delete none, and new code adds interfaces only at boundaries."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1496,6 +1501,9 @@ behaviour BEH-USERS-9 "A user's work is done by an agent Kit runs, not by James'
   contract my assumption, slice D: a run is started with a task and a repo (owner/name) as well as the model. The task is handed to the launcher and not stored, and the repo must be one Kit's GitHub App installation reaches, or the run fails to launch and says so
   contract found 2026-11-05: a GitHub installation token lasts one hour, and a run may last six, so a token handed to a run when it starts can have expired by the time it pushes
   contract my assumption: so the runner carries no GitHub token. Each time git needs one, it asks Kit with its run token, and Kit mints a token for that one repo with contents and pull-request write only. A run that is over gets 403. Kit minting tokens for a run is auth, and the runner is a platform change, so slice D goes to you for review and I do not self-merge it
+  contract found 2026-11-06 (kit#714): his first live run failed after one second with no tokens, and neither Kit nor any page said why; he had to paste /api/runs
+  contract my assumption: a Runs page, linked for the operator only, lists every run newest first with its project, model, status, time taken, tokens and cost, and a failed run's reason in plain words
+  contract my assumption: a failed run's report may carry a reason, only as "<step> exit <code>" (setup, clone, checkout, process, claude, bundles, push, or run when the runner knows nothing more), so no text a run wrote is ever stored; anything else is refused 400. The runner side is a platform change and goes to him as its own pull request
 
 feature FEAT-USER-SECRETS "Production secrets per user"
   in EPIC-KIT-USERS
@@ -1987,7 +1995,6 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   source defined kit.notes.md#2026-10-27-2133
   source defined kit.notes.md#2026-11-03-1117
   review unreviewed
-  pending
   priority 3
   actor engineer
   when opens page:KitHealth
@@ -2001,6 +2008,7 @@ behaviour BEH-HEALTH-2 "When the agent has no priority work, it improves the pro
   contract done so far 2026-10-28: tracks mapped 23/23 (kit#522); snip-it 5 → 23 of 30 (kit#526, kit#528, and new tests in snip-it#70 and snip-it#71), with Kit reading Swift tests (kit#527). snip-it's last 7 are app-only SwiftUI (TELE-1, TELE-2, EDITION-2) or hardware/config (TELE-3 to 6). language-vocab unmeasured → 31/31 (kit#534, its first frontend tests in language-vocab#24, kit#536); kit-hosted 16 → 18/18 (kit#538); earnyourbeers 19 → 21/21 (earnyourbeers#22); balenthiran 6 → 7/7 (balenthiran.co.uk#31, 2026-10-29). The corpora still unmeasured (whos-accountable, macro-metrics, james-habits-app) belong to repos nobody has pushed since 08-14, 09-10 and 10-13, so they wait until one is active again rather than grow work on a paused project; ideas has no repo
   contract built: each project's tests.json may carry "lastImprovedBy" { pr, url, on }, and the Health page shows "Last improved by <PR> on <date>" under that project; a missing or malformed value shows nothing and never fails coverage
   contract his question, does reading the Queue need to be built into CLAUDE.md (kit.notes.md#2026-11-03-1117): no, it says so already, and the prose has lost three times (kit#388, kit#401, 2026-11-03). Instead a hook refuses my idle suspend while the Queue holds a card that is not built, paused or marked needs-context; registering it is his (claude-code-bot#132)
+  contract my assumption, 2026-11-06: it is built, so it leaves the Queue. Every active corpus has a test map (whos-accountable's was the last, kit#726), the Health page's "Last improved by" line has its test, and the agent keeps doing this work on idle wakes because the idle choice says "health" (BEH-SETTINGS-6), not because the card is pending. What is left is snip-it's last 7, which are SwiftUI or hardware and need an iPhone test runner the agent's pod does not have
 
 behaviour BEH-HEALTH-3 "The health page lists, under each project, the behaviours no test names"
   in FEAT-HEALTH
@@ -2757,6 +2765,20 @@ behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sen
   contract "Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line."
   contract my assumption: "a phone" is a device whose main pointer is coarse (a touch screen), read with the `(pointer: coarse)` media query, so a tablet with a keyboard attached counts as a desktop
   contract built: the box reads matchMedia('(pointer: coarse)') at each key press; when it matches, Enter is a new line and only the Send button sends. Otherwise Enter sends and Shift+Enter is a new line, as before. A browser with no matchMedia counts as a desktop
+
+behaviour BEH-CHAT-18 "Kit keeps a rough sense of how technical each user is, and pitches its replies to it"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-06-0001
+  review unreviewed
+  priority 5
+  pending
+  needs-context "Backlogged as you asked. When you pick it up: should the user see their profile and be able to correct it, or should it stay invisible and only shape the tone?"
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies."
+  contract my assumption: the profile only changes how replies are worded (jargon, how much is explained), never what Kit will do for the user or what it shows them
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).

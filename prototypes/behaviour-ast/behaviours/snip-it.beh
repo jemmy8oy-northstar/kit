@@ -163,6 +163,7 @@ behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words a
   review approved
   priority 3
   pending
+  needs-context "The app would have to sign in to snip-it to fetch a card's script, and sign-in is yours to choose. Until you do, scripts stay typed in the app, which is already how it works with Studio off."
   actor creator
   contract the iPhone teleprompter (claude-code-bot#105) reads the script from the card instead of a pasted copy
   contract a take recorded against a card moves it to Recorded
@@ -471,6 +472,12 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   contract "this doesn't have to be one feature per video specifically, it could be a collection and then all grind implemented together" (snip-it.notes.md#2026-11-02-1913)
   contract "You are also given (within reason) a bit of creative license to edit the messages to cut down fluff or improve wording etc. We will probably also need some disclaimer to show not actual kit use or not exact example or something but these could go in the description" (snip-it.notes.md#2026-11-02-1913)
   contract my assumption: an edited message keeps its meaning and never gains a claim he did not make; every video whose messages were edited says so in its description
+  contract "I'm going to be brutally honest. I don't like it… mainly the fonts. The text looks really bad… I think the headline note to live in 48 minutes is not that impressive… A stronger message would be something like bringing engineering tools to non engineers. And this sort of message will become the message that we use to make kit" (kit#723, on draft 1)
+  contract "we definitely need to be using opus for this… it is worth researching workflows and skills used to make the best videos and follow that. Do not be afraid to use inspiration from online" (kit#723)
+  contract "it is worth recording what my feedback is on a video and including it in the video creation playbook/loop… in the create stage and the review stage… in the return stage as well make it clear that you need to update the playbook with my feedback otherwise u won't improve" (kit#723): docs/video-playbook.md is that loop, and his feedback log in it is read at create and review and appended at return
+  contract "Yh shorts works tbh. We can have some long form content later" (kit#723): build-channel videos are YouTube Shorts, vertical, 30 to 45 seconds
+  contract my assumption: draft 2 tells "Engineers don't just write code. They write specs. Tests. Reviews. Now so can you." on a real note of his, and never sells speed
+  contract my assumption: drafts are rendered with Remotion (free for one person or a company of up to three; it brings its own ffmpeg, which the pod's broken one needed), installed in a scratch directory on the bot's volume, never into a repo; if Northstar grows past three people, its licence is re-checked first
 
 behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, stored on snip-it's own volume, with its usage shown where he can see it"
   in FEAT-BUILD-CHANNEL
@@ -479,6 +486,7 @@ behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, s
   review unreviewed
   priority 3
   pending
+  needs-context "The drafts volume is a chart change, which is yours to merge, and more drafts wait on your view of draft 1 (kit#723). Until then drafts go up as pull requests, as kit#723 did."
   actor creator
   contract "Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this"
   contract my assumption: the drafts volume is snip-it's (as BEH-EDITION-3 has it: the volume is on snip-it, not Kit), small to start (5Gi), and separate from the 50Gi take store BEH-EDITION-3 waits on; adding it is a chart change, so it goes up as its own pull request for him to merge
@@ -492,6 +500,7 @@ behaviour BEH-BUILD-3 "Some videos are compilations: how an app grew from its st
   review unreviewed
   priority 4
   pending
+  needs-context "A compilation uses the style of draft 1 (kit#723), so it waits on your view of that draft. If no answer by 2026-11-09, I follow draft 1's style."
   actor creator
   contract "Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature"
   contract my assumption: Kit's git history already dates every note and the pull request that built it, so a compilation is assembled from the record rather than filmed

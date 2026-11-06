@@ -1,0 +1,66 @@
+{
+  "lastImprovedBy": { "pr": "whos-accountable#28", "url": "https://github.com/jemmy8oy-northstar/whos-accountable/pull/28", "on": "2026-11-06" },
+  "_": "behaviour -> the test(s) that name it, in jemmy8oy-northstar/whos-accountable. Keyed on file + title (a C# test's title is its method name; a Vitest test's is its title string, describe blocks are not part of it).",
+  "_authored": "2026-11-06, by reading whos-accountable.beh against whos-accountable@dev backend/Balenthiran.WhosAccountable.Tests and frontend/src/App.test.tsx. A test is mapped only where it checks what the behaviour's contracts say. SCORE-2 and SCOPE-2 had no test; whos-accountable#28 added one each. ApiTests.BEH_SCORE_5_methodology_publishes_the_real_weights_and_constants is left out: it tests the methodology API, and SCORE-5 is the methodology page, which is not built. ScoreCompany_rejects_null_arguments, Ranks_are_dense_and_one_based and the two coverage-field loader tests guard the code, not a behaviour.",
+  "BEH-LEADER-1": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_LEADER_1_worst_board_is_lowest_composite_first_and_is_the_default" },
+    { "file": "frontend/src/App.test.tsx", "title": "worst page renders rows in API order (BEH-LEADER-1)" },
+    { "file": "frontend/src/App.test.tsx", "title": "sector filter re-requests with sector=... (BEH-LEADER-1)" }
+  ],
+  "BEH-LEADER-2": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_LEADER_2_best_board_is_highest_composite_first" },
+    { "file": "frontend/src/App.test.tsx", "title": "best page requests direction=best (BEH-LEADER-2)" }
+  ],
+  "BEH-SCOPE-1": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Every_company_is_identified_by_a_companies_house_number" }
+  ],
+  "BEH-SCOPE-2": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_SCOPE_2_a_visitor_cannot_write_through_any_route" }
+  ],
+  "BEH-SCORE-1": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Every_score_stays_within_zero_to_one_hundred" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Scoring_is_deterministic" }
+  ],
+  "BEH-SCORE-2": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Higher_emissions_intensity_yields_a_lower_emissions_score" }
+  ],
+  "BEH-SCORE-3": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "More_enforcement_harm_yields_a_lower_violations_score" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "No_enforcement_but_has_emissions_scores_a_clean_hundred_on_violations" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "No_enforcement_in_a_sector_whose_registers_are_not_held_is_unknown_not_clean" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "A_company_outside_the_held_enforcement_registers_gets_no_composite" }
+  ],
+  "BEH-SCORE-4": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Company_with_no_records_at_all_is_unknown_not_neutral" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Emissions_without_derivable_intensity_leaves_that_pillar_unknown" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Composite_renormalises_over_only_the_present_pillars" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ScoreEngineTests.cs", "title": "Unknown_companies_sort_last_in_both_directions" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_SCORE_4_unknown_composite_is_null_and_sorts_after_every_scored_company" },
+    { "file": "frontend/src/App.test.tsx", "title": "null composite renders Unknown, never 0 or 50 (BEH-SCORE-4)" }
+  ],
+  "BEH-SCORE-6": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/GoldenLeaderboardTests.cs", "title": "Leaderboard_matches_the_committed_golden_snapshot" }
+  ],
+  "BEH-DATA-1": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Every_record_links_to_its_published_source_with_a_retrieval_date" }
+  ],
+  "BEH-DATA-2": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Every_record_links_to_its_published_source_with_a_retrieval_date" }
+  ],
+  "BEH-DATA-4": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "The_real_cohort_loads_through_the_same_loader_as_the_engine" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Every_oil_and_gas_company_is_tagged_and_holds_only_emissions" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Every_heavy_industry_company_is_tagged_and_holds_only_emissions" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Each_emitter_holds_one_year_of_verified_emissions_and_no_intensity" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "Each_company_holds_exactly_one_year_so_the_engine_does_not_double_count" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/RealCohortTests.cs", "title": "An_edm_spill_is_never_recorded_as_a_fine" }
+  ],
+  "BEH-API-1": [
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_sector_filter_keeps_one_sector_and_reranks_from_one" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_bad_direction_or_sector_is_a_400" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_company_returns_score_pillars_and_source_evidence" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_unknown_company_is_a_404" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_status_reports_the_loaded_cohort" },
+    { "file": "backend/Balenthiran.WhosAccountable.Tests/ApiTests.cs", "title": "BEH_API_1_default_configuration_serves_the_committed_real_cohort" }
+  ]
+}

@@ -273,6 +273,52 @@ public class RunnerPoolTests
         Assert.Equal((AgentRunStatus.Running, 0m), (run.Status, run.CostUsd));
     }
 
+    [Fact]
+    public void A_failed_report_with_a_failure_stores_it_and_it_is_listed()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "failed", failure = "clone exit 128" })).Status);
+
+        Assert.Equal("clone exit 128", rig.Store.List().Single().Failure);
+    }
+
+    [Fact]
+    public void A_report_with_no_failure_leaves_it_null()
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        Assert.Equal(200, rig.Routes.Finished(started.Token, Json(new { status = "failed" })).Status);
+
+        Assert.Null(rig.Store.List().Single().Failure);
+    }
+
+    [Theory]
+    [InlineData("""{"status":"finished","failure":"clone exit 128"}""")]
+    [InlineData("""{"status":"failed","failure":"clone exit"}""")]
+    [InlineData("""{"status":"failed","failure":"Clone exit 1"}""")]
+    [InlineData("""{"status":"failed","failure":"clone exit 1234"}""")]
+    [InlineData("""{"status":"failed","failure":"fatal: https://x:tok@github.com exit 1"}""")]
+    [InlineData("""{"status":"failed","failure":"clone exit 1\nmore"}""")]
+    [InlineData("""{"status":"failed","failure":7}""")]
+    public void A_bad_failure_is_400_and_the_run_is_left_running(string body)
+    {
+        var rig = new Rig();
+        var started = rig.Start("kit");
+        rig.Claim();
+
+        var r = rig.Routes.Finished(started.Token, JsonDocument.Parse(body).RootElement);
+
+        Assert.Equal(400, r.Status);
+        Assert.Equal("bad-failure", Assert.IsType<ApiError>(r.Body).Error);
+        var run = rig.Store.ByTokenHash(AgentTokens.Hash(started.Token))!;
+        Assert.Equal((AgentRunStatus.Running, (string?)null), (run.Status, run.Failure));
+    }
+
     [Theory]
     [InlineData("""{"repo":"no-slash","task":"t"}""")]
     [InlineData("""{"repo":"a/b/c","task":"t"}""")]

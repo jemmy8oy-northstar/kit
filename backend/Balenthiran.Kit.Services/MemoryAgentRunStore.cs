@@ -70,14 +70,15 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
     }
 
     /// <inheritdoc />
-    public void SetStatus(string id, string status, DateTimeOffset? ended = null)
+    public void SetStatus(string id, string status, DateTimeOffset? ended = null, string? failure = null)
     {
         lock (gate)
         {
             var at = runs.FindIndex(r => r.Id == id);
             if (at >= 0)
             {
-                runs[at] = With(runs[at], status, AgentRunStatus.IsOver(status) ? ended : null, default, 0m);
+                runs[at] = With(runs[at], status, AgentRunStatus.IsOver(status) ? ended : null, default, 0m,
+                    status == AgentRunStatus.Failed ? failure : null);
             }
         }
     }
@@ -98,7 +99,7 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
         }
     }
 
-    private static AgentRun With(AgentRun r, string status, DateTimeOffset? ended, AgentUsage add, decimal cost) => new()
+    private static AgentRun With(AgentRun r, string status, DateTimeOffset? ended, AgentUsage add, decimal cost, string? failure = null) => new()
     {
         Id = r.Id,
         Owner = r.Owner,
@@ -112,5 +113,6 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
         CacheWriteTokens = r.CacheWriteTokens + add.CacheWrite,
         CacheReadTokens = r.CacheReadTokens + add.CacheRead,
         CostUsd = r.CostUsd + cost,
+        Failure = failure ?? r.Failure,
     };
 }

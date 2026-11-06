@@ -1156,7 +1156,7 @@ public class AgentRunTests
 
         public IAgentRun? AddUsage(string id, AgentUsage usage, decimal costUsd) => throw new InvalidOperationException($"database down for {Key}");
 
-        public void SetStatus(string id, string status, DateTimeOffset? ended = null) => inner.SetStatus(id, status, ended);
+        public void SetStatus(string id, string status, DateTimeOffset? ended = null, string? failure = null) => inner.SetStatus(id, status, ended, failure);
 
         public bool StartIfQueued(string id) => inner.StartIfQueued(id);
     }

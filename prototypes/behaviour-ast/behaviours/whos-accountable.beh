@@ -116,6 +116,7 @@ behaviour BEH-SCORE-3 "The violations sub-score falls with fines, incidents and 
   actor visitor
   contract harm = 1.0 per million pounds of fines + 0.5 per incident + 1.0 per 1,000 hours of sewage or storm-overflow discharge
   contract score = 100 * e^(-harm / 5); a company with no recorded enforcement scores 100
+  contract my assumption: only when the dataset holds its sector's enforcement register (violationsCoverage, today water only); elsewhere no record is unknown, because slice 2 otherwise crowned 16 power generators with a composite of 100 (whos-accountable#24)
 
 behaviour BEH-SCORE-4 "Missing data is unknown, never a neutral 50"
   in FEAT-SCORING
@@ -176,9 +177,9 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   review approved
   priority 4
   actor maintainer
-  pending
   contract data is versioned in the repo as data-as-code
   contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
+  contract done 2026-11-06: 150 companies, in the ten slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29, whos-accountable#30, whos-accountable#31, whos-accountable#32, whos-accountable#33, whos-accountable#34)
 
 behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 English water and sewerage companies"
   in FEAT-DATA
@@ -188,8 +189,29 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   priority 4
   actor maintainer
   contract slice 1 is the 10 companies filing an EA storm-overflow (EDM) annual return in England, by Companies House number, with their 2025 spill events and hours (whos-accountable#19)
-  contract then UK ETS emissions for energy utilities, then UK-linked Carbon Majors, then the FTSE 100; each slice is its own PR
+  contract then UK ETS emissions for energy utilities, then UK oil and gas, then the FTSE 100; each slice is its own PR
   contract one year per company until the engine scores per year, because it sums every record a company holds
+  contract slice 2 is the 16 UK ETS account holders with the largest 2025 verified emissions at electricity-generation installations (NACE 3511), 27.95 Mt, absolute tonnes only, with intensity recorded as unknown (whos-accountable#23)
+  contract my assumption: slice 3 is the 16 UK ETS account holders with the largest 2025 verified emissions at oil and gas extraction and refining installations (NACE 610, 620, 1920), 16.74 Mt, on the same terms as slice 2, in place of the Carbon Majors dataset: that is InfluenceMap data for non-commercial use, which the licence audit (whos-accountable#9) already bars from the composite (whos-accountable#25)
+  contract my assumption: slice 4 is the 16 UK ETS account holders with the largest 2025 verified emissions in heavy industry (steel, cement, lime, basic chemicals, glass, paper, bricks and plaster), 11.27 Mt, on the same terms as slice 3, ahead of the FTSE 100: only 14 of its 100 hold any UK ETS emissions, and the largest of them are already in slices 2 and 3, so the FTSE 100 waits for a scope 1 and 2 source such as SECR disclosures (whos-accountable#26)
+  contract my assumption: slice 5 is the 16 UK ETS aircraft operators incorporated in the UK with the largest 2025 verified emissions, 4.64 Mt, tagged aviation, on the same terms as slice 4. Foreign airlines registered here only for a UK establishment are left out (Ryanair DAC, Wizz Air Hungary), and their UK subsidiaries are in. The UK ETS covers only domestic and European flights, so long-haul emissions are not counted and British Airways is understated (whos-accountable#29)
+  contract my assumption: slice 6 is the 16 UK ETS holders ranked 17 to 32 under slice 3's oil and gas filter, 3.15 Mt, on the same terms as slice 3, so slices 3 and 6 hold 97% of that filter. It comes ahead of power ranked 17 to 32, which falls to 21,000 t by rank 32. Each holder is its own company, so the four Chrysaor companies are listed separately (whos-accountable#30)
+  contract my assumption: slice 7 is the 16 UK ETS holders ranked 17 to 32 under slice 4's heavy-industry filter, 1.93 Mt, on the same terms as slice 4, so slices 4 and 7 hold 91% of that filter. Encirc ranks 33 because its English glassworks is classed NACE 3299, outside the filter; the rule is kept, and a later slice can take Encirc whole (whos-accountable#31)
+  contract my assumption: slice 8 is the 16 UK ETS holders with the largest 2025 verified emissions at food and drink installations (NACE 10 and 11), 1.74 Mt, led by British Sugar, in the ConsumerGoods sector with a food-and-drink tag, on the same terms as slice 4. It comes ahead of power ranked 17 to 32, which holds slightly more (1.90 Mt), because these are companies a reader buys from (whos-accountable#32)
+  contract my assumption: slice 9 is the 16 UK ETS holders ranked 17 to 32 under slice 2's power filter (NACE 3511), 1.90 Mt, summed within the filter as slices 3 to 8 are, so slices 2 and 9 hold 99% of it. Drax enters at rank 26 on its zero-rated biomass figure, with slice 2's caveat (whos-accountable#33)
+  contract my assumption: slice 10, the last, is the 12 UK ETS holders with the largest 2025 emissions among those holding an installation outside every earlier filter, each counted whole, 1.76 Mt, bringing the cohort to 150. Each takes the nearest existing sector and a tag for what it does: gas-networks and heat-and-steam under EnergyUtilities, heavy-industry and a new manufacturing tag under Industrials. Encirc enters on its whole total, as slice 7 said it could (whos-accountable#34)
+
+behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
+  in FEAT-SCORING
+  layer technical
+  source inferred whos-accountable#23
+  review unreviewed
+  priority 4
+  actor visitor
+  pending
+  contract on the 16 power generators in slice 2, emissions per £m of revenue scores every one between 0.00 and 0.27, because the v1 scale of 200 t/£m was set for the synthetic cohort
+  contract a tolled plant's revenue is a fee for being available, so per-revenue intensity spans 1,186 to 33,292 t/£m across gas plants: it ranks the contract, not the carbon
+  contract my assumption: until a like-for-like denominator exists (tCO2e per MWh generated needs a generation source the registry does not hold), their intensity stays unknown and they are listed without a composite, never imputed
 
 behaviour BEH-SCORE-7 "The violations scale is calibrated on the real cohort, so real companies spread across 0-100"
   in FEAT-SCORING
@@ -249,6 +271,10 @@ behaviour BEH-BACKLOG-1 "Coverage expands from the UK to the US, then the EU, th
   pending
   contract "create an issue to expand to uk + us and then maybe eu and global later" (issue whos-accountable#4)
   contract his answer to "restart whos-accountable now, or keep it parked?" (whos-accountable.notes.md#2026-10-31-0949): "Yes start it!"; whos-accountable is unparked, and its Queue is built from the top, so the UK dataset (BEH-DATA-3) comes before this expansion
+  contract my assumption: the US starts the way the UK did, with emissions from a government register: the EPA Greenhouse Gas Reporting Program, public domain, whose latest published year is 2023 (2024 is not out as of 2026-11-06). Its facilities name their parent companies with ownership shares, so a parent's figure is its shares of its facilities' direct emissions. US slice 1 is the 16 largest parents at power plants
+  contract my assumption: every company carries a country (GB or US), and the leaderboard gains a country filter beside the sector filter, showing all countries by default. A US company is identified by its LEI where GLEIF holds one, because the EPA names parents without any registry number; one without an LEI is named as an exception in data/README.md
+  contract my assumption: each figure keeps the year its source published, so UK companies show 2025 and US companies 2023, and the year is shown with the figure. A government is not a company, so a parent such as "US Government" is left out
+  contract done so far 2026-11-06: every company carries a country, with a filter (whos-accountable#35), and US slice 1, the 16 largest power plant parents, 658 Mt (whos-accountable#36)
 
 behaviour BEH-BACKLOG-2 "Individuals, such as billionaires, get leaderboard entries"
   in FEAT-BACKLOG
