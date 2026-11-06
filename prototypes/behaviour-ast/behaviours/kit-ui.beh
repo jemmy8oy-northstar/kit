@@ -1587,7 +1587,7 @@ behaviour BEH-USERS-13 "A user brings their own AI subscription by signing in wi
   review unreviewed
   priority 4
   pending
-  needs-context "Waits on the agent pipeline actually running, which waits on you merging kit#743 (the runner fix). Then I read the providers' terms and start."
+  needs-context "Waits on the cost work (your kit#678): the agent pipeline has to complete a real run first, which needs kit-runner restarted on the kit#743 fix. Then I read the providers' terms and start."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
