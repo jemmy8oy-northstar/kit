@@ -2958,6 +2958,20 @@ behaviour BEH-EXTDATA-1 "Kit can read an external data source, such as logs or a
   contract "and maybe even some way for kit to integrate with external data sources. I am thinking logs or log triggers."
   contract my assumption: a log trigger would raise an item on the project when a pattern appears, and it needs the project's integrations page (BEH-PROJCONF-1) to hold the credentials it reads with
 
+behaviour BEH-EXTDATA-2 "Kit reads the logs of the pods it runs for a project, with nothing for the user to wire up"
+  in FEAT-EXTERNAL-DATA
+  layer technical
+  source defined kit-ui.notes.md#2026-11-06-1350
+  review unreviewed
+  priority 5
+  pending
+  needs-context "Backlogged and unscheduled, as you asked. When you pick it up: does the user see these logs too, or only the agent?"
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract "Kit should be able to read the internal logs of the backend and service pods that Kit has run for a project. The user should not have to wire these up, since they come from pods Kit itself runs."
+  contract my assumption: only the pods Kit deployed for that project, read with Kit's own cluster access, never a user's credentials; that is what separates it from BEH-EXTDATA-1, which reads sources outside Kit with the user's stored secrets
+
 behaviour BEH-NOTE-14 "Notes stay alongside Chat, as the quick brain dump the coding agent files"
   in FEAT-NOTES
   layer ux
