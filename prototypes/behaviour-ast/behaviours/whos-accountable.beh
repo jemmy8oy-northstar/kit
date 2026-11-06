@@ -177,10 +177,9 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   review approved
   priority 4
   actor maintainer
-  pending
   contract data is versioned in the repo as data-as-code
   contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
-  contract done so far 2026-11-06: 138 of about 150 companies, in the nine slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29, whos-accountable#30, whos-accountable#31, whos-accountable#32, whos-accountable#33)
+  contract done 2026-11-06: 150 companies, in the ten slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29, whos-accountable#30, whos-accountable#31, whos-accountable#32, whos-accountable#33, whos-accountable#34)
 
 behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 English water and sewerage companies"
   in FEAT-DATA
@@ -200,6 +199,7 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   contract my assumption: slice 7 is the 16 UK ETS holders ranked 17 to 32 under slice 4's heavy-industry filter, 1.93 Mt, on the same terms as slice 4, so slices 4 and 7 hold 91% of that filter. Encirc ranks 33 because its English glassworks is classed NACE 3299, outside the filter; the rule is kept, and a later slice can take Encirc whole (whos-accountable#31)
   contract my assumption: slice 8 is the 16 UK ETS holders with the largest 2025 verified emissions at food and drink installations (NACE 10 and 11), 1.74 Mt, led by British Sugar, in the ConsumerGoods sector with a food-and-drink tag, on the same terms as slice 4. It comes ahead of power ranked 17 to 32, which holds slightly more (1.90 Mt), because these are companies a reader buys from (whos-accountable#32)
   contract my assumption: slice 9 is the 16 UK ETS holders ranked 17 to 32 under slice 2's power filter (NACE 3511), 1.90 Mt, summed within the filter as slices 3 to 8 are, so slices 2 and 9 hold 99% of it. Drax enters at rank 26 on its zero-rated biomass figure, with slice 2's caveat (whos-accountable#33)
+  contract my assumption: slice 10, the last, is the 12 UK ETS holders with the largest 2025 emissions among those holding an installation outside every earlier filter, each counted whole, 1.76 Mt, bringing the cohort to 150. Each takes the nearest existing sector and a tag for what it does: gas-networks and heat-and-steam under EnergyUtilities, heavy-industry and a new manufacturing tag under Industrials. Encirc enters on its whole total, as slice 7 said it could (whos-accountable#34)
 
 behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
   in FEAT-SCORING
