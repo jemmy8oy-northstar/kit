@@ -165,3 +165,9 @@ Migrate the spec out of the kit repo into each project's repo, under a hidden .k
 <!-- from: chat -->
 
 Under BEH-USERS-2 ("Kit lists a user's projects from their own GitHub, with no spec held centrally"): the owner says all spec currently lives centrally in the kit repo, not in each project's repo. So the card's "no spec held centrally" describes the target, not today's state. Please note this against BEH-USERS-2. The card also detects a project by a .beh file on the default branch, so once the migration to .kit/ lands, detection needs to find .kit/ too. Settle which the card should say, current or target, and what detection checks.
+
+## 2026-11-06 00:01Z
+
+<!-- from: chat -->
+
+Backlog idea: Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies. Not yet specified; to be backlogged for more detail later.
