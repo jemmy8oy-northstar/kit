@@ -179,6 +179,157 @@ public class RunnerScriptTests
         Assert.Equal(["{\"status\":\"finished\"}"], rig.Finished());
     }
 
+    [Fact]
+    public void A_failed_run_reports_the_step_and_exit_code_its_runner_wrote()
+    {
+        using var rig = new Rig();
+        rig.PoolStubs([200], writesUsage: false, runExit: 128, writesFailure: "clone exit 128");
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["{\"status\":\"failed\",\"failure\":\"clone exit 128\"}"], rig.Finished());
+    }
+
+    [Fact]
+    public void A_failed_run_that_wrote_no_failure_is_reported_as_the_run_failing_with_its_status()
+    {
+        using var rig = new Rig();
+        rig.PoolStubs([200], writesUsage: false, runExit: 3);
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["{\"status\":\"failed\",\"failure\":\"run exit 3\"}"], rig.Finished());
+    }
+
+    [Fact]
+    public void A_refused_failed_report_is_sent_again_as_the_status_alone()
+    {
+        using var rig = new Rig();
+        rig.PoolStubs([400, 200], writesUsage: false, runExit: 3);
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["{\"status\":\"failed\",\"failure\":\"run exit 3\"}", "{\"status\":\"failed\"}"], rig.Finished());
+    }
+
+    // ── entrypoint.sh: where a failed run stopped ─────────────────────────────────────────────
+
+    [Fact]
+    public void A_run_failing_at_the_clone_writes_only_the_step_and_the_exit_code()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "echo 'fatal: could not read from https://x-access-token:SECRET@github.com/o/r.git' >&2",
+            "exit 128");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal(128, r.Status);
+        Assert.Equal("clone exit 128\n", File.ReadAllText(failure));
+    }
+
+    // ── entrypoint.sh: the credential helper ───────────────────────────────────────────────────
+
+    [Fact]
+    public void The_credential_helper_gives_git_the_token_from_the_answer_Kit_actually_serialises()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        // The grant exactly as the server writes it: through the engine's options, which indent (kit#714).
+        var grant = new Balenthiran.Kit.Services.EngineJsonSerialiser()
+            .Serialise(new Balenthiran.Kit.Services.GitHubTokenGrant("ghs_minted", DateTimeOffset.Parse("2026-11-06T18:00:00Z")));
+        Assert.Contains("\"token\": \"ghs_minted\"", grant);
+        File.WriteAllText(Path.Combine(rig.Rec, "grant.json"), grant);
+        var cred = Path.Combine(rig.Rec, "cred.out");
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "case \"$1\" in",
+            "  clone) printf 'protocol=https\\nhost=github.com\\n\\n' | sh -c \"${GIT_CONFIG_VALUE_0#!} get\" > '" + cred + "' || exit 128",
+            "         for a; do d=\"$a\"; done; mkdir -p \"$d\";;",
+            "  rev-list) echo 0;;",
+            "esac",
+            "exit 0");
+        Executable(System.IO.Path.Combine(rig.Bin, "curl"),
+            "#!/bin/sh",
+            "url=",
+            "while [ $# -gt 0 ]; do",
+            "  case \"$1\" in",
+            "    --config) cat > '" + Path.Combine(rig.Rec, "curl.config") + "';;",
+            "    --output|-o) echo 'the process' > \"$2\"; shift;;",
+            "    *) url=\"$1\";;",
+            "  esac",
+            "  shift",
+            "done",
+            "case \"$url\" in */api/runs/github-token) cat '" + Path.Combine(rig.Rec, "grant.json") + "';; esac",
+            "exit 0");
+
+        var r = rig.Entrypoint(new());
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["username=x-access-token", "password=ghs_minted"], File.ReadAllLines(cred));
+        Assert.Contains("x-api-key: run-secret", File.ReadAllText(Path.Combine(rig.Rec, "curl.config")));
+    }
+
+    [Fact]
+    public void The_credential_helper_gives_git_nothing_and_says_so_when_Kit_answers_without_a_token()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        var cred = Path.Combine(rig.Rec, "cred.out");
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "case \"$1\" in",
+            "  clone) printf 'protocol=https\\nhost=github.com\\n\\n' | sh -c \"${GIT_CONFIG_VALUE_0#!} get\" > '" + cred + "' || exit 128;;",
+            "esac",
+            "exit 0");
+        Executable(System.IO.Path.Combine(rig.Bin, "curl"),
+            "#!/bin/sh",
+            "cat > /dev/null",
+            "printf '{\\n  \"expiresAt\": \"x\"\\n}'",
+            "exit 0");
+
+        var r = rig.Entrypoint(new());
+
+        Assert.Equal(128, r.Status);
+        Assert.Equal("", File.ReadAllText(cred));
+        Assert.Contains("kit-run: Kit's github-token answer held no token", r.Stderr);
+    }
+
+    [Fact]
+    public void A_failing_agent_writes_the_claude_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 3);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal("claude exit 3\n", File.ReadAllText(failure));
+    }
+
+    [Fact]
+    public void A_missing_env_var_writes_the_setup_step_and_a_success_writes_nothing()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var bad = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_REPO"] = "norepo" });
+        Assert.Equal(64, bad.Status);
+        Assert.Equal("setup exit 64\n", File.ReadAllText(failure));
+
+        File.Delete(failure);
+        var ok = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+        Assert.True(ok.Status == 0, ok.Stderr);
+        Assert.False(File.Exists(failure));
+    }
+
     private const string UsageJson = "{\"input_tokens\":1,\"output_tokens\":2,\"cache_creation_input_tokens\":3,\"cache_read_input_tokens\":4}";
     private const string BundlesJson = "[{\"slug\":\"a\",\"text\":\"hi\"},{\"slug\":\"b\",\"text\":null}]";
 
@@ -387,7 +538,7 @@ public class RunnerScriptTests
         /// <paramref name="answers"/> is what Kit says to the 1st, 2nd, ... finished report (the last repeats).
         /// The body is read from the <c>@file</c> given to <c>--data-binary</c>, as curl would send it.
         /// </summary>
-        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null)
+        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null)
         {
             Executable(System.IO.Path.Combine(Bin, "kit-run"),
                 "#!/bin/sh",
@@ -396,7 +547,8 @@ public class RunnerScriptTests
                     ? "printf '%s' '{\"input_tokens\":1,\"output_tokens\":2,\"cache_creation_input_tokens\":3,\"cache_read_input_tokens\":4}' > \"$KIT_USAGE_FILE\""
                     : "true",
                 bundlesJson is null ? "true" : "printf '%s' '" + bundlesJson + "' > \"$KIT_BUNDLES_FILE\"",
-                "exit 0");
+                writesFailure is null ? "true" : "printf '%s\\n' '" + writesFailure + "' > \"$KIT_FAILURE_FILE\"",
+                "exit " + runExit);
             var counter = System.IO.Path.Combine(Rec, "finished.count");
             var cases = answers.Select((a, i) => "      " + (i + 1) + ") printf " + a + ";;").ToList();
             cases.Add("      *) printf " + answers[^1] + ";;");
