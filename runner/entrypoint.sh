@@ -26,7 +26,23 @@
 # run, which James accepted on kit#708; Kit's per-run dollar cap does not apply to it, the
 # subscription's own limits and --max-turns do.
 # Tokens are never echoed; git gets the GitHub token through a credential helper reading env.
+#   KIT_FAILURE_FILE  optional  where to write "<step> exit <code>" when the run fails; only a fixed step word and a number
 set -euo pipefail
+
+# The step the run is in, so a failure can say where it stopped. Only this word and the exit code are ever
+# written out: no stderr text, URL or token.
+step=setup
+work=""
+helper=""
+finish() {
+  local code=$?
+  if [ "$code" -ne 0 ] && [ -n "${KIT_FAILURE_FILE:-}" ]; then
+    printf '%s exit %s\n' "$step" "$code" > "$KIT_FAILURE_FILE" 2>/dev/null || true
+  fi
+  [ -z "$work" ] || rm -rf "$work"
+  [ -z "$helper" ] || rm -rf "$helper"
+}
+trap finish EXIT
 
 missing=()
 for v in KIT_RUN_ID KIT_URL KIT_RUN_TOKEN KIT_REPO KIT_TASK; do
@@ -88,24 +104,27 @@ export GIT_CONFIG_KEY_0="credential.helper"
 export GIT_CONFIG_VALUE_0="!$helper"
 
 work="$(mktemp -d "$scratch/run.XXXXXX")"
-trap 'rm -rf "$work" "$helper"' EXIT
 
+step=clone
 echo "kit-run[$KIT_RUN_ID]: cloning $KIT_REPO"
 git clone --quiet "https://github.com/${KIT_REPO}.git" "$work/repo"
 cd "$work/repo"
 git config user.name "Kit agent"
 git config user.email "agent@kit.invalid"
+step=checkout
 if [ -n "${KIT_BASE_BRANCH:-}" ]; then
   git checkout --quiet "$KIT_BASE_BRANCH"
 fi
 branch="kit/run-${KIT_RUN_ID}"
 git checkout --quiet -b "$branch"
 
+step=process
 # The process is served by Kit so a fix reaches every run at once. The route is public, so
 # the run token is not sent: it goes only to the model proxy.
 process="$work/process.md"
 curl --fail --silent --show-error --location "${KIT_URL%/}/api/process" -o "$process"
 
+step=claude
 echo "kit-run[$KIT_RUN_ID]: working"
 # bypassPermissions, so the agent can run the repo's tests: acceptEdits refuses every command.
 # The Job is the sandbox (scratch disk, no Kubernetes token, a capped run token, a GitHub token
@@ -138,6 +157,7 @@ if [ "$status" -ne 0 ]; then
   exit "$status"
 fi
 
+step=bundles
 # BEH-ORCH-3: the bundles a triage pushed go back to Kit with the pool's finished report. A work branch counts only
 # when origin has exactly what the run has, i.e. it was pushed. Each bundle is sent whole or not at all (text null),
 # so the report stays inside Kit's 64KB body limit; Kit stops an item whose text is null and says why.
@@ -171,6 +191,7 @@ if [ "$(git rev-list --count "HEAD" --not --remotes)" -eq 0 ] && git diff --quie
   echo "kit-run[$KIT_RUN_ID]: nothing to push"
   exit 0
 fi
+step=push
 if [ -n "$(git status --porcelain)" ]; then
   git add -A
   git commit --quiet -m "kit run ${KIT_RUN_ID}: ${KIT_TASK:0:60}"

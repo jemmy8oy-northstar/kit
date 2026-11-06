@@ -69,7 +69,7 @@ while [ "$runs_left" -gt 0 ]; do
   (
     unset KIT_RUNNER_POOL_TOKEN
     export KIT_RUN_ID="$run_id" KIT_RUN_TOKEN="$run_token" KIT_REPO="$run_repo" KIT_TASK="$run_task"
-    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_BUNDLES_FILE="$tmp/bundles.json"
+    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_FAILURE_FILE="$tmp/failure.txt" KIT_BUNDLES_FILE="$tmp/bundles.json"
     exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
@@ -90,16 +90,22 @@ while [ "$runs_left" -gt 0 ]; do
           --header 'content-type: application/json' --data-binary "@$1" \
           --output /dev/null --write-out '%{http_code}' "$base/api/runs/finished" 2>/dev/null || echo 000
   }
+  # A failed run says which step failed (the run writes "<step> exit <code>"); if it wrote nothing, only its status is known.
+  failure=""
+  if [ "$outcome" = failed ]; then
+    failure="$(head -c 100 "$tmp/failure.txt" 2>/dev/null | head -n 1)" || failure=""
+    [ -n "$failure" ] || failure="run exit $status"
+  fi
   # Writes body.1 (everything), body.2 (no usage) and body.3 (status only), skipping one the same as the one before.
   node -e '
     const fs = require("fs");
-    const [dir, status] = process.argv.slice(1);
+    const [dir, status, failure] = process.argv.slice(1);
     const read = f => { try { return JSON.parse(fs.readFileSync(dir + "/" + f, "utf8")); } catch { return undefined; } };
     const usage = read("usage.json"), bundles = read("bundles.json");
-    const bodies = [{ status, usage, bundles }, { status, bundles }, { status }].map(b => JSON.stringify(b));
+    const bodies = [{ status, usage, bundles, failure: failure || undefined }, { status, bundles, failure: failure || undefined }, { status }].map(b => JSON.stringify(b));
     bodies.forEach((b, i) => { if (i === 0 || b !== bodies[i - 1]) fs.writeFileSync(dir + "/body." + (i + 1), b); });
-  ' "$tmp" "$outcome" || printf '{"status":"%s"}' "$outcome" > "$tmp/body.3"
-  rm -f "$tmp/usage.json" "$tmp/bundles.json"
+  ' "$tmp" "$outcome" "$failure" || printf '{"status":"%s"}' "$outcome" > "$tmp/body.3"
+  rm -f "$tmp/usage.json" "$tmp/bundles.json" "$tmp/failure.txt"
   code=000
   for n in 1 2 3; do
     [ -f "$tmp/body.$n" ] || continue
