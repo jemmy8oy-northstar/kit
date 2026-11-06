@@ -92,9 +92,17 @@ if [ -n "${GITHUB_TOKEN:-}" ]; then
   exit 0
 fi
 body="$(printf 'header = "x-api-key: %s"\n' "$KIT_RUN_TOKEN" \
-  | curl --fail --silent --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")" || exit 1
-token="$(printf '%s' "$body" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')"
-[ -n "$token" ] || exit 1
+  | curl --fail --silent --show-error --max-time 30 --config - --request POST "${KIT_URL%/}/api/runs/github-token")" || exit 1
+# Parsed as JSON: Kit writes it indented ("token": "..."), which a sed pattern without the space missed (kit#714).
+token="$(printf '%s' "$body" | node -e '
+  let s = "";
+  process.stdin.on("data", (d) => (s += d)).on("end", () => {
+    try { const t = JSON.parse(s).token; if (typeof t === "string") process.stdout.write(t); } catch {}
+  });')"
+if [ -z "$token" ]; then
+  echo "kit-run: Kit's github-token answer held no token" >&2
+  exit 1
+fi
 echo username=x-access-token
 echo "password=$token"
 HELPER
