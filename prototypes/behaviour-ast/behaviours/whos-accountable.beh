@@ -180,6 +180,7 @@ behaviour BEH-DATA-3 "The first real dataset replaces the synthetic fixtures: ab
   pending
   contract data is versioned in the repo as data-as-code
   contract scheduled refresh (whos-accountable#7) and SECR full-text extraction (whos-accountable#8) are separate, later
+  contract done so far 2026-11-06: 74 of about 150 companies, in the five slices BEH-DATA-4 lists (whos-accountable#19, whos-accountable#23, whos-accountable#25, whos-accountable#26, whos-accountable#29)
 
 behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 English water and sewerage companies"
   in FEAT-DATA
@@ -194,6 +195,7 @@ behaviour BEH-DATA-4 "The real cohort lands in slices, starting with the 10 Engl
   contract slice 2 is the 16 UK ETS account holders with the largest 2025 verified emissions at electricity-generation installations (NACE 3511), 27.95 Mt, absolute tonnes only, with intensity recorded as unknown (whos-accountable#23)
   contract my assumption: slice 3 is the 16 UK ETS account holders with the largest 2025 verified emissions at oil and gas extraction and refining installations (NACE 610, 620, 1920), 16.74 Mt, on the same terms as slice 2, in place of the Carbon Majors dataset: that is InfluenceMap data for non-commercial use, which the licence audit (whos-accountable#9) already bars from the composite (whos-accountable#25)
   contract my assumption: slice 4 is the 16 UK ETS account holders with the largest 2025 verified emissions in heavy industry (steel, cement, lime, basic chemicals, glass, paper, bricks and plaster), 11.27 Mt, on the same terms as slice 3, ahead of the FTSE 100: only 14 of its 100 hold any UK ETS emissions, and the largest of them are already in slices 2 and 3, so the FTSE 100 waits for a scope 1 and 2 source such as SECR disclosures (whos-accountable#26)
+  contract my assumption: slice 5 is the 16 UK ETS aircraft operators incorporated in the UK with the largest 2025 verified emissions, 4.64 Mt, tagged aviation, on the same terms as slice 4. Foreign airlines registered here only for a UK establishment are left out (Ryanair DAC, Wizz Air Hungary), and their UK subsidiaries are in. The UK ETS covers only domestic and European flights, so long-haul emissions are not counted and British Airways is understated (whos-accountable#29)
 
 behaviour BEH-SCORE-8 "Power generators get an emissions score that compares their carbon, not their contracts"
   in FEAT-SCORING
