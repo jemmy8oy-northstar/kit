@@ -2762,6 +2762,20 @@ behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sen
   contract my assumption: "a phone" is a device whose main pointer is coarse (a touch screen), read with the `(pointer: coarse)` media query, so a tablet with a keyboard attached counts as a desktop
   contract built: the box reads matchMedia('(pointer: coarse)') at each key press; when it matches, Enter is a new line and only the Send button sends. Otherwise Enter sends and Shift+Enter is a new line, as before. A browser with no matchMedia counts as a desktop
 
+behaviour BEH-CHAT-18 "Kit keeps a rough sense of how technical each user is, and pitches its replies to it"
+  in FEAT-CHAT
+  layer ux
+  source defined kit-ui.notes.md#2026-11-06-0001
+  review unreviewed
+  priority 5
+  pending
+  needs-context "Backlogged as you asked. When you pick it up: should the user see their profile and be able to correct it, or should it stay invisible and only shape the tone?"
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract "Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies."
+  contract my assumption: the profile only changes how replies are worded (jargon, how much is explained), never what Kit will do for the user or what it shows them
+
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
 
