@@ -17,8 +17,11 @@
 #               Each is `review unreviewed`: it shows in Proposed, and he can
 #               deny it. Numbers are copied from ScoringConstants.cs.
 #
-# Nothing here is wired to a test map yet; `kit check whos-accountable` names
-# what is not built.
+# The test map is whos-accountable.tests.json (kit#726); `kit check
+# whos-accountable` names what is not built.
+#
+# kit:repo jemmy8oy-northstar/whos-accountable@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
 # ─────────────────────────────────────────────────────────────────────────────
 
 feature FEAT-LEADERBOARD "Leaderboards of the worst offenders and the top do-gooders"
