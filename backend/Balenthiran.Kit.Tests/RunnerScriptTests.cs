@@ -302,6 +302,33 @@ public class RunnerScriptTests
     }
 
     [Fact]
+    public void The_credential_helper_says_which_refusal_Kit_gave_when_it_will_not_mint()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        var cred = Path.Combine(rig.Rec, "cred.out");
+        Executable(System.IO.Path.Combine(rig.Bin, "git"),
+            "#!/bin/sh",
+            "case \"$1\" in",
+            "  clone) printf 'protocol=https\\nhost=github.com\\n\\n' | sh -c \"${GIT_CONFIG_VALUE_0#!} get\" > '" + cred + "' || exit 128;;",
+            "esac",
+            "exit 0");
+        // What curl --fail-with-body does with a 403: the body on stdout, exit 22 (kit#714).
+        Executable(System.IO.Path.Combine(rig.Bin, "curl"),
+            "#!/bin/sh",
+            "cat > /dev/null",
+            "printf '{\\n  \"error\": \"repo-unknown\",\\n  \"reason\": \"Kit does not know which repo this run is for\"\\n}'",
+            "echo 'curl: (22) The requested URL returned error: 403' >&2",
+            "exit 22");
+
+        var r = rig.Entrypoint(new());
+
+        Assert.Equal(128, r.Status);
+        Assert.Equal("", File.ReadAllText(cred));
+        Assert.Contains("kit-run: Kit refused a GitHub token: repo-unknown (Kit does not know which repo this run is for)", r.Stderr);
+    }
+
+    [Fact]
     public void A_failing_agent_writes_the_claude_step()
     {
         using var rig = new Rig();
