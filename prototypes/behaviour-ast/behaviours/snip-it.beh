@@ -163,6 +163,7 @@ behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words a
   review approved
   priority 3
   pending
+  needs-context "The app would have to sign in to snip-it to fetch a card's script, and sign-in is yours to choose. Until you do, scripts stay typed in the app, which is already how it works with Studio off."
   actor creator
   contract the iPhone teleprompter (claude-code-bot#105) reads the script from the card instead of a pasted copy
   contract a take recorded against a card moves it to Recorded
@@ -460,6 +461,7 @@ behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it
   review unreviewed
   priority 3
   pending
+  needs-context "Is draft 1 (kit#723) the right style? If no answer by 2026-11-09, I make candidate 1, the Chat entry point, the same way and keep it private. Nothing is posted."
   actor creator
   contract "I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos"
   contract "Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that"
@@ -479,6 +481,7 @@ behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, s
   review unreviewed
   priority 3
   pending
+  needs-context "The drafts volume is a chart change, which is yours to merge, and more drafts wait on your view of draft 1 (kit#723). Until then drafts go up as pull requests, as kit#723 did."
   actor creator
   contract "Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this"
   contract my assumption: the drafts volume is snip-it's (as BEH-EDITION-3 has it: the volume is on snip-it, not Kit), small to start (5Gi), and separate from the 50Gi take store BEH-EDITION-3 waits on; adding it is a chart change, so it goes up as its own pull request for him to merge
@@ -492,6 +495,7 @@ behaviour BEH-BUILD-3 "Some videos are compilations: how an app grew from its st
   review unreviewed
   priority 4
   pending
+  needs-context "A compilation uses the style of draft 1 (kit#723), so it waits on your view of that draft. If no answer by 2026-11-09, I follow draft 1's style."
   actor creator
   contract "Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature"
   contract my assumption: Kit's git history already dates every note and the pull request that built it, so a compilation is assembled from the record rather than filmed
