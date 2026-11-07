@@ -1521,6 +1521,22 @@ behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags a
   contract my assumption: today work items live in memory, so the page shows only items since Kit last started; past items come from the runs recorded per work item, which do survive. Keeping the items themselves is a later slice
   contract built, slice 1: each run records its stage (agent_runs.stage: triage, spec, build or review; null for a run by hand). GET /api/pipeline, behind the same operator-only gate as /api/runs, serves { on, items } with each item's project, slug, stage, status, stoppedBecause, pullRequest, flag, review and reviewNote. Runs shows a Pipeline section when it is on: the items oldest first, each with its own runs (stage · model · tokens · cost), then the cost of every recorded run by stage
 
+behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built once its checks pass"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1128
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1128): "Pipeline can raise and complete PRs for completed work"
+  contract my assumption: raising is built (BEH-ORCH-3's build slice opens the pull request). Completing means merging it into the branch the run started from, which is dev for kit, never main
+  contract my assumption: Kit merges only when every Actions run at the pull request's head commit has succeeded and GitHub says it is mergeable, and it merges that exact commit, so a push after the check is not merged unseen. A failed check, or a conflict, stops the item with the reason and leaves the pull request open for a person
+  contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
+  contract my assumption: it is behind KIT_PIPELINE_MERGE, off until he turns it on, because a merge puts code no person has read into dev; promotion to main stays the bot's, under BEH-SETTINGS-4
+  contract my assumption: Kit's GitHub App needs read access to Actions and write access to pull requests on the repo. If it has no read access to Actions, the item stops saying so rather than merging unchecked
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
