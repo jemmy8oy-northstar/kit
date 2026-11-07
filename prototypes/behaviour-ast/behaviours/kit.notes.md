@@ -729,3 +729,9 @@ A kit pipeline uncertainty flag from haiku picks a model by complexity level can
 <!-- from: note-button -->
 
 Running kit pipeline with a node script. Surely this is perfect application for csharp async
+
+## 2026-11-07 10:50Z
+
+<!-- from: note-button -->
+
+Some page that shows visibility into agents running, what stage of the pipeline they are at, whether they flagged for a review and by which agent. Maybe you can also view the pipeline run of historic runs and see which stage costed the money, what reviews were requested for. This is purely an internal feature for now
