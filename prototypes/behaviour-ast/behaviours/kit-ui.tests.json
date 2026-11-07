@@ -958,6 +958,8 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 says when the pipeline is on with no items yet" }
   ],
   "BEH-ORCH-10": [
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_a_skipped_run_beside_a_success_merges_but_only_skipped_runs_wait" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_a_run_that_did_not_finish_cleanly_refuses" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_merges_the_exact_head_commit_when_every_run_succeeded_and_it_is_mergeable" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_waits_while_a_run_is_in_progress_or_there_is_none_yet_or_mergeable_is_null" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_refuses_a_failed_run_even_while_another_is_still_running" },

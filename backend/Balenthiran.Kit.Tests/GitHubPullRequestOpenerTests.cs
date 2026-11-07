@@ -268,6 +268,33 @@ public class GitHubPullRequestOpenerTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_10_a_skipped_run_beside_a_success_merges_but_only_skipped_runs_wait()
+    {
+        // kit's "Claude Code" workflow shows up as skipped: it ran nothing, so it must not block a merge, nor pass one alone.
+        var beside = new FakeGitHub(Pull(), Runs(Run("completed", "skipped", "Claude Code"), Run("completed", "success")), FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}"""));
+        var alone = new FakeGitHub(Pull(), Runs(Run("completed", "skipped", "Claude Code"), Run("completed", "neutral")));
+
+        Assert.True((await Opener(beside).MergeIfGreenAsync(Page, null, CancellationToken.None)).Merged);
+        var r = await Opener(alone).MergeIfGreenAsync(Page, null, CancellationToken.None);
+        Assert.True(r.Waiting);
+        Assert.DoesNotContain(alone.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Theory]
+    [InlineData("cancelled")]
+    [InlineData("timed_out")]
+    [InlineData("action_required")]
+    public async Task BEH_ORCH_10_a_run_that_did_not_finish_cleanly_refuses(string conclusion)
+    {
+        var gh = new FakeGitHub(Pull(), Runs(Run("completed", "success"), Run("completed", conclusion, "e2e")));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.Equal($"e2e did not succeed ({conclusion})", r.Reason);
+        Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_10_refuses_a_failed_run_even_while_another_is_still_running()
     {
         var gh = new FakeGitHub(Pull(), Runs(Run("in_progress", null), Run("completed", "failure", "unit tests")));

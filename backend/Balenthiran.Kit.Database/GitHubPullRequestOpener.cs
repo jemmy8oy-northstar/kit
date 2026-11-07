@@ -267,6 +267,7 @@ public sealed partial class GitHubPullRequestOpener(
         }
 
         var waiting = list.GetArrayLength() == 0;
+        var succeeded = false;
         foreach (var run in list.EnumerateArray())
         {
             var done = run.ValueKind == JsonValueKind.Object
@@ -278,14 +279,18 @@ public sealed partial class GitHubPullRequestOpener(
             }
 
             var conclusion = run.TryGetProperty("conclusion", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
-            if (conclusion != "success")
+            succeeded |= conclusion == "success";
+
+            // A workflow whose condition skipped it, or that reported neutral, ran nothing that failed.
+            if (conclusion is not ("success" or "skipped" or "neutral"))
             {
                 var name = run.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "a check";
                 return Refuse($"{name} did not succeed ({conclusion ?? "no conclusion"})");
             }
         }
 
-        if (waiting)
+        // Only skipped runs so far proves nothing passed: wait for one that did.
+        if (waiting || !succeeded)
         {
             return new PullRequestMerge { Waiting = true };
         }
