@@ -27,6 +27,9 @@ All four cards already exist in kit-ui.beh and each has a test line in kit-ui.te
 - 2026-10-27 21:16Z has two "What does this mean?" notes, one tagged BEH-STAGE-9 and one BEH-STAGE-11. Answer each on its card in plain words. Stage board placement is set by the stage a feature is at (problem, UX, logic, development, UI). The agent decides it, and the owner only reads the board. Do not change the placement rules.
 - 2026-10-28 23:53Z asks whether placement is by how much is written. The owner's answer is that it is by stage, not by how much is written. Reword BEH-STAGE-11 if its wording makes this unclear.
 
+Built:
+The whole UI suite ran 540 tests (47 files) and all passed. I wrote no new tests: the nine named tests already existed and pass. The only change is the reworded first contract on BEH-STAGE-11 in kit-ui.beh, which states the same rule (stage by the agent's reading; writing is only the evidence for a feature with no code).
+
 Test plan:
 - BEH-KIND-1: Board.test.tsx "shows each card its layer and filters by layer, in the url beside the project filter" checks each card shows its layer, the board filters by the chosen layer, and the choice is kept in the url beside the project filter.
 - BEH-STAGE-7: Stages.test.tsx "puts the Unstaged column first, holding the features with no stage line and none that has one" checks Unstaged is the first column and holds exactly the features with no stage line.

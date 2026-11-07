@@ -1009,7 +1009,7 @@ behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the stage it is
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
-  contract my assumption: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
+  contract my assumption: the stage is the agent's reading of where the feature is, not a count of its writing. For a feature with no code, the agent's evidence is what is written: a one-line idea reads as problem, who-does-what steps as ux, written rules as logic
   contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
   contract my assumption: answer to his 2026-10-27 21:16Z note ("What does this mean", kit-ui.notes.md#2026-10-27-2116). BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet: the agent places each at the stage it is at, and for these the writing is the evidence it reads. A one-line idea is at problem, one that says who does what step by step is at ux, and one whose rules are written down is at logic
   contract my assumption: answer to his 2026-10-28 23:53Z note (kit-ui.notes.md#2026-10-28-2353), "Placed by how much of it is written?": no. The board places a feature by the stage it is at (problem, ux, logic, development or ui), not by how much is written. The writing is only how the agent tells which stage that is for a feature with no code yet
