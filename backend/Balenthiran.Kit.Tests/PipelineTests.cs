@@ -274,13 +274,70 @@ public class PipelineTests
     public void A_set_aside_bundle_stops_for_a_person_with_its_flag_and_its_notes_are_not_triaged_again()
     {
         using var rig = new Rig();
-        rig.Note("test");
+        // Not a note the plain rule catches, so a run is started and the triage itself sets it aside.
+        rig.Note("asdf, sorry");
 
         rig.FinishWith(rig.Claim()!, new { slug = TriageStage.SetAside, text = BundleText(TriageStage.SetAside, flag: "a test note, asks for nothing") });
 
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
         Assert.Equal((WorkItemStatus.Stopped, "set aside: a test note, asks for nothing"), (item.Status, item.StoppedBecause));
         Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_lone_test_note_starts_no_run_and_is_set_aside_and_not_triaged_again()
+    {
+        using var rig = new Rig();
+
+        rig.Note("Test");
+
+        Assert.Null(rig.Claim());
+        Assert.Empty(rig.Store.List());
+        var aside = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
+        Assert.Equal((WorkItemStatus.Stopped, "set aside: a test note, no run started"), (aside.Status, aside.StoppedBecause));
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Status is WorkItemStatus.Queued or WorkItemStatus.Running);
+
+        rig.Note("the list should sort by date");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("the list should sort by date", claim.Task);
+        Assert.DoesNotContain("### demo.notes.md#2026-11-05 12:30\nTest", claim.Task);
+        Assert.Single(rig.Pipeline.Items(), i => i.Slug == TriageStage.SetAside);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_test_note_among_real_ones_is_set_aside_and_only_the_real_ones_reach_the_run()
+    {
+        using var rig = new Rig();
+        rig.Note("This is a test.");
+        rig.Note("the list should sort by date");
+        rig.Note("test");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+
+        Assert.Contains("the list should sort by date", claim.Task);
+        Assert.Contains("## New notes (1)", claim.Task);
+        Assert.DoesNotContain("This is a test.", claim.Task);
+        Assert.Equal(WorkItemStatus.Stopped, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside).Status);
+
+        // A later set-aside, from a run or the rule, replaces the item rather than throwing on its slug.
+        rig.FinishWith(claim, new { slug = TriageStage.SetAside, text = BundleText(TriageStage.SetAside, flag: "accidental") });
+        rig.Note("ignore");
+        Assert.Single(rig.Pipeline.Items(), i => i.Slug == TriageStage.SetAside);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_backlog_bundle_stops_as_on_the_backlog_and_starts_nothing()
+    {
+        using var rig = new Rig();
+        rig.Note("one day the list could export to csv");
+
+        rig.FinishWith(rig.Claim()!, new { slug = TriageStage.Backlog, text = BundleText(TriageStage.Backlog, flag: "an idea for later") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.Backlog);
+        Assert.Equal((WorkItemStatus.Stopped, "on the backlog: an idea for later"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+        Assert.Equal(["BEH-A"], rig.Pipeline.Bundle("demo", TriageStage.Backlog)!.Cards);
     }
 
     [Fact]

@@ -201,6 +201,32 @@ public class OrchestrationStageTests
     }
 
     [Fact]
+    public void BEH_ORCH_1_The_task_sends_an_idea_for_later_to_the_backlog_item_unbuilt()
+    {
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+
+        Assert.Contains($"work item \"{TriageStage.Backlog}\"", task);
+        Assert.Contains("idea for later", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
+    }
+
+    [Theory]
+    [InlineData("test", true)]
+    [InlineData("Test", true)]
+    [InlineData("This is a test.", true)]
+    [InlineData("  Testing!  ", true)]
+    [InlineData("ignore", true)]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("test the login page", false)]
+    [InlineData("the list should sort by date", false)]
+    [InlineData("test 2", false)]
+    public void BEH_ORCH_1_The_noise_rule_catches_only_an_empty_or_test_word_note(string text, bool noise)
+    {
+        Assert.Equal(noise, NoteNoise.IsNoise(text));
+    }
+
+    [Fact]
     public void BEH_ORCH_1_A_new_work_branch_is_cut_from_the_branch_the_run_started_on_not_the_default()
     {
         var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
