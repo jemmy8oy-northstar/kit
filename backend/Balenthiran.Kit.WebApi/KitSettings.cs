@@ -328,6 +328,20 @@ public sealed record KitSettings(
     };
 
     /// <summary>
+    /// <c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <c>on</c> lets the pipeline merge the pull request of work it built once
+    /// its checks pass, which puts code no person has read into the base branch. Unset or <c>off</c> is off.
+    /// </summary>
+    public bool PipelineMerge { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_MERGE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineMerge(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE_MERGE is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
     /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
     /// (kit#714).
@@ -447,6 +461,7 @@ public sealed record KitSettings(
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
             PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
+            PipelineMerge = ParsePipelineMerge(env("KIT_PIPELINE_MERGE")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }

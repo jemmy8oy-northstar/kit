@@ -99,6 +99,7 @@ function Pipeline({ runs }: { runs: AgentRun[] }) {
                 {i.flag ? <div>Flagged: {i.flag}</div> : null}
                 {i.review ? <div>Review: {i.review}{i.reviewNote ? ` — ${i.reviewNote}` : ''}</div> : null}
                 {i.pullRequest ? <div><a href={i.pullRequest}>Pull request</a></div> : null}
+                {i.pullRequest && i.merged ? <div>Merged</div> : null}
                 {own.length > 0 ? (
                   <ul aria-label={`Runs of ${i.slug}`}>
                     {[...own].reverse().map((r) => (

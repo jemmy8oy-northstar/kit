@@ -217,4 +217,118 @@ public class GitHubPullRequestOpenerTests
     {
         Assert.Equal(expected, GitHubPullRequestOpener.RepositoryFromRemote(url));
     }
+
+    // ---- BEH-ORCH-10: merging a built pull request once its checks pass ------------------------------
+
+    private const string Page = "https://github.com/someone/demo/pull/7";
+    private const string Head = "abc123def456";
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> Pull(string mergeable = "true", string state = "open") =>
+        FakeGitHub.Json(HttpStatusCode.OK, $$$"""{"state":"{{{state}}}","mergeable":{{{mergeable}}},"head":{"sha":"{{{Head}}}"}}""");
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> Runs(params string[] runs) =>
+        FakeGitHub.Json(HttpStatusCode.OK, $$"""{"total_count":{{runs.Length}},"workflow_runs":[{{string.Join(',', runs)}}]}""");
+
+    private static string Run(string status, string? conclusion, string name = "ci") =>
+        $$"""{"name":"{{name}}","status":"{{status}}","conclusion":{{(conclusion is null ? "null" : $"\"{conclusion}\"")}}}""";
+
+    [Fact]
+    public async Task BEH_ORCH_10_merges_the_exact_head_commit_when_every_run_succeeded_and_it_is_mergeable()
+    {
+        var gh = new FakeGitHub(Pull(), Runs(Run("completed", "success"), Run("completed", "success", "e2e")), FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.True(r.Merged);
+        Assert.Null(r.Reason);
+        Assert.Equal("https://api.github.com/repos/someone/demo/pulls/7", gh.Sent[0].Uri.AbsoluteUri);
+        Assert.Equal($"https://api.github.com/repos/someone/demo/actions/runs?head_sha={Head}&per_page=100", gh.Sent[1].Uri.AbsoluteUri);
+        var put = gh.Sent[2];
+        Assert.Equal(HttpMethod.Put, put.Method);
+        Assert.Equal("https://api.github.com/repos/someone/demo/pulls/7/merge", put.Uri.AbsoluteUri);
+        using var sent = JsonDocument.Parse(put.Body!);
+        Assert.Equal(Head, sent.RootElement.GetProperty("sha").GetString());
+        Assert.Equal("merge", sent.RootElement.GetProperty("merge_method").GetString());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_waits_while_a_run_is_in_progress_or_there_is_none_yet_or_mergeable_is_null()
+    {
+        var running = new FakeGitHub(Pull(), Runs(Run("completed", "success"), Run("in_progress", null)));
+        var none = new FakeGitHub(Pull(), Runs());
+        var unknown = new FakeGitHub(Pull("null"), Runs(Run("completed", "success")));
+
+        foreach (var gh in new[] { running, none, unknown })
+        {
+            var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+            Assert.True(r.Waiting);
+            Assert.False(r.Merged);
+            Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+        }
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_refuses_a_failed_run_even_while_another_is_still_running()
+    {
+        var gh = new FakeGitHub(Pull(), Runs(Run("in_progress", null), Run("completed", "failure", "unit tests")));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.False(r.Merged);
+        Assert.False(r.Waiting);
+        Assert.Equal("unit tests did not succeed (failure)", r.Reason);
+        Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_refuses_a_conflict_and_a_closed_pull_request_and_merges_neither()
+    {
+        var conflict = new FakeGitHub(Pull("false"), Runs(Run("completed", "success")));
+        var closed = new FakeGitHub(Pull(state: "closed"));
+
+        var c = await Opener(conflict).MergeIfGreenAsync(Page, null, CancellationToken.None);
+        var x = await Opener(closed).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.Equal("it has a conflict with its base branch", c.Reason);
+        Assert.Equal("its pull request is closed", x.Reason);
+        Assert.DoesNotContain(conflict.Sent.Concat(closed.Sent), s => s.Method == HttpMethod.Put);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task BEH_ORCH_10_refuses_when_the_checks_cannot_be_read_saying_so_and_never_the_token(HttpStatusCode status)
+    {
+        var gh = new FakeGitHub(Pull(), FakeGitHub.Json(status, """{"message":"Resource not accessible by integration"}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.False(r.Merged);
+        Assert.False(r.Waiting);
+        Assert.StartsWith("Kit cannot read the checks of this pull request", r.Reason);
+        Assert.DoesNotContain(Token, r.Reason);
+        Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_a_head_that_moved_after_the_check_is_looked_at_again_not_merged()
+    {
+        var gh = new FakeGitHub(Pull(), Runs(Run("completed", "success")), FakeGitHub.Json(HttpStatusCode.Conflict, """{"message":"Head branch was modified. Review and try the merge again."}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.True(r.Waiting);
+        Assert.False(r.Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_an_address_that_is_not_a_pull_request_page_is_refused_without_a_request()
+    {
+        var gh = new FakeGitHub();
+
+        var r = await Opener(gh).MergeIfGreenAsync("https://example.com/someone/demo/pull/7", null, CancellationToken.None);
+
+        Assert.NotNull(r.Reason);
+        Assert.Empty(gh.Sent);
+    }
 }

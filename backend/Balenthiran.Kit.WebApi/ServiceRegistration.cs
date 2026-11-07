@@ -105,8 +105,16 @@ public static class ServiceRegistration
                 pulls: sp.GetService<IPullRequestOpener>(),
                 turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild),
                 scheduled: settings.PipelineScheduled,
-                sorted: sp.GetRequiredService<ITriagedNoteStore>()));
+                sorted: sp.GetRequiredService<ITriagedNoteStore>(),
+                merger: sp.GetService<IPullRequestMerger>(),
+                merge: settings.PipelineMerge));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
+
+            // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.
+            if (settings.PipelineMerge)
+            {
+                services.AddHostedService(sp => new PipelineMerger(sp.GetRequiredService<Pipeline>()));
+            }
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
@@ -164,6 +172,10 @@ public static class ServiceRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(sp => TokenSource(settings, GitHubClient(sp), sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
+            settings.GitRepository));
+        services.TryAddSingleton<IPullRequestMerger>(sp => new GitHubPullRequestOpener(
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));

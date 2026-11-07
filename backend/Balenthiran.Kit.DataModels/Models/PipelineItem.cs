@@ -32,4 +32,7 @@ public sealed class PipelineItem : IPipelineItem
 
     [JsonPropertyOrder(9)]
     public string? ReviewNote { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public bool Merged { get; init; }
 }
