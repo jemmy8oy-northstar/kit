@@ -35,6 +35,6 @@ Test plan:
 - BEH-STAGE-8: the Features and Behaviours switch works on both pages in one tap, and the header has one Board link for both; the Epics option is covered by BEH-EPIC-4
 - BEH-STAGE-9: the Stages page only reads each feature's stage line; no card can be dragged and no page writes a stage
 - BEH-STAGE-10: a feature with some behaviour built shows in development, and one with every behaviour built shows in ui
-- BEH-STAGE-11: a feature with no behaviour built shows in the column its stage line names (problem, ux or logic); the page does not compute the column from the spec's content
+- BEH-STAGE-11: a feature with no behaviour built shows in the column its stage line names (problem, ux, logic or architecture); the page does not compute the column from the spec's content
 - BEH-STAGE-12: a feature whose live behaviours are all in the behaviour board's Done column shows in Done, after ui; a paused, blocked, proposed or in-review behaviour keeps it in its stage column; a denied behaviour is ignored; a feature with no live behaviours is never Done; the written stage line is unchanged. The ui-column reading against BEH-STAGE-10 is held until the review request is answered
 - BEH-ARCH-2: a feature whose stage line is architecture shows in the architecture column, between logic and development; no other feature moves
