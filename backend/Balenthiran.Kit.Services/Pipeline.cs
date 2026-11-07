@@ -14,7 +14,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null)
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null)
 {
     private readonly object gate = new();
 
@@ -271,13 +271,25 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             item = Stop(triage, $"set aside: {bundle.Flag ?? "the triage found nothing to build"}");
             usable = bundle;
         }
+        else if (bundle.Slug == TriageStage.Backlog)
+        {
+            // An idea for later: its notes are sorted, nothing is specced or built, and the bot schedules it from its cards.
+            item = Stop(triage, $"on the backlog: {bundle.Flag ?? "an idea for later"}");
+            usable = bundle;
+        }
         else
         {
             item = Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null));
             usable = bundle;
         }
 
-        var at = items.FindIndex(i => i.Project == app && i.Slug == reported.Slug);
+        return Record(app, reported.Slug, item, usable);
+    }
+
+    /// <summary>Puts <paramref name="item"/> in the list, replacing an earlier item of the same slug unless that is running. True when <paramref name="usable"/> is not null.</summary>
+    private bool Record(string app, string slug, WorkItem item, ContextBundle? usable)
+    {
+        var at = items.FindIndex(i => i.Project == app && i.Slug == slug);
         if (at >= 0 && items[at].Status == WorkItemStatus.Running)
         {
             return usable is not null;
@@ -294,11 +306,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         if (usable is null)
         {
-            bundles.Remove((app, reported.Slug));
+            bundles.Remove((app, slug));
         }
         else
         {
-            bundles[(app, reported.Slug)] = usable;
+            bundles[(app, slug)] = usable;
         }
 
         return usable is not null;
@@ -370,6 +382,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         var notes = Untriaged(item.Project);
+
+        // The plain rule first (BEH-ORCH-1): a note that asks for nothing is set aside here, with no run, and counts as sorted.
+        var noise = notes.Where(n => NoteNoise.IsNoise(n.Text)).ToList();
+        if (noise.Count > 0)
+        {
+            triaged.UnionWith(noise.Select(n => n.Key));
+            var aside = Stop(new WorkItem(item.Project, TriageStage.SetAside, PipelineStage.Triage, WorkItemStatus.Running), $"set aside: {NoteNoise.Reason}");
+            Record(item.Project, TriageStage.SetAside, aside, null);
+            notes = notes.Where(n => !NoteNoise.IsNoise(n.Text)).ToList();
+        }
+
         if (notes.Count == 0)
         {
             return item with { Status = WorkItemStatus.Done };
@@ -400,7 +423,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models), AgentTokens.Hash(token), now);
         try
         {
-            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..]);
+            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));
         }
         catch (Exception e)
         {

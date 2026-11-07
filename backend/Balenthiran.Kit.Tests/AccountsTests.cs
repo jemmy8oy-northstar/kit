@@ -102,7 +102,7 @@ public class AccountsTests
             "/api/projects/kit/schedule", "/api/projects/kit/bindings", "/api/projects/kit/behaviours",
             "/api/projects/kit/behaviours/BEH-1/title", "/api/projects/kit/behaviours/BEH-1/review",
             "/api/projects/kit/behaviours/BEH-1/paused", "/api/projects/kit/behaviours/BEH-1/remove",
-            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote", "/api/projects/kit/conflicts", "/api/projects/kit/depth","/api/settings/idle",
+            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote", "/api/projects/kit/conflicts", "/api/projects/kit/depth","/api/settings/idle", "/api/settings/wake",
             "/api/projects/kit/behaviours/BEH-1/steps/0", "/api/projects/kit/triage", "/api/projects/kit/chat",
         };
 
@@ -112,7 +112,13 @@ public class AccountsTests
             Assert.Equal(403, refused.Status);
             Assert.Equal("not-yours", Assert.IsType<ApiError>(refused.Body).Error);
 
-            // The same request from him passes the gate, whatever the route then makes of it.
+            // The same request from him passes the gate, whatever the route then makes of it. The wake
+            // route needs no body, so from him it would really write; WakeTests covers his side of it.
+            if (path == "/api/settings/wake")
+            {
+                continue;
+            }
+
             var his = router.Route("POST", path, him, body: Json(new { }));
             Assert.NotEqual(401, his.Status);
             Assert.NotEqual(403, his.Status);

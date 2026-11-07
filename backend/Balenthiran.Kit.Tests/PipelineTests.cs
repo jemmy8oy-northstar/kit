@@ -31,14 +31,14 @@ public class PipelineTests
     {
         private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null)
         {
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -274,13 +274,70 @@ public class PipelineTests
     public void A_set_aside_bundle_stops_for_a_person_with_its_flag_and_its_notes_are_not_triaged_again()
     {
         using var rig = new Rig();
-        rig.Note("test");
+        // Not a note the plain rule catches, so a run is started and the triage itself sets it aside.
+        rig.Note("asdf, sorry");
 
         rig.FinishWith(rig.Claim()!, new { slug = TriageStage.SetAside, text = BundleText(TriageStage.SetAside, flag: "a test note, asks for nothing") });
 
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
         Assert.Equal((WorkItemStatus.Stopped, "set aside: a test note, asks for nothing"), (item.Status, item.StoppedBecause));
         Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_lone_test_note_starts_no_run_and_is_set_aside_and_not_triaged_again()
+    {
+        using var rig = new Rig();
+
+        rig.Note("Test");
+
+        Assert.Null(rig.Claim());
+        Assert.Empty(rig.Store.List());
+        var aside = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
+        Assert.Equal((WorkItemStatus.Stopped, "set aside: a test note, no run started"), (aside.Status, aside.StoppedBecause));
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Status is WorkItemStatus.Queued or WorkItemStatus.Running);
+
+        rig.Note("the list should sort by date");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("the list should sort by date", claim.Task);
+        Assert.DoesNotContain("### demo.notes.md#2026-11-05 12:30\nTest", claim.Task);
+        Assert.Single(rig.Pipeline.Items(), i => i.Slug == TriageStage.SetAside);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_test_note_among_real_ones_is_set_aside_and_only_the_real_ones_reach_the_run()
+    {
+        using var rig = new Rig();
+        rig.Note("This is a test.");
+        rig.Note("the list should sort by date");
+        rig.Note("test");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+
+        Assert.Contains("the list should sort by date", claim.Task);
+        Assert.Contains("## New notes (1)", claim.Task);
+        Assert.DoesNotContain("This is a test.", claim.Task);
+        Assert.Equal(WorkItemStatus.Stopped, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside).Status);
+
+        // A later set-aside, from a run or the rule, replaces the item rather than throwing on its slug.
+        rig.FinishWith(claim, new { slug = TriageStage.SetAside, text = BundleText(TriageStage.SetAside, flag: "accidental") });
+        rig.Note("ignore");
+        Assert.Single(rig.Pipeline.Items(), i => i.Slug == TriageStage.SetAside);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_backlog_bundle_stops_as_on_the_backlog_and_starts_nothing()
+    {
+        using var rig = new Rig();
+        rig.Note("one day the list could export to csv");
+
+        rig.FinishWith(rig.Claim()!, new { slug = TriageStage.Backlog, text = BundleText(TriageStage.Backlog, flag: "an idea for later") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.Backlog);
+        Assert.Equal((WorkItemStatus.Stopped, "on the backlog: an idea for later"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+        Assert.Equal(["BEH-A"], rig.Pipeline.Bundle("demo", TriageStage.Backlog)!.Cards);
     }
 
     [Fact]
@@ -300,6 +357,42 @@ public class PipelineTests
         Assert.Equal("its bundle was too large for the runner to report", Why("huge"));
         Assert.Equal("its bundle names work item \"something-else\"", Why("named-wrong"));
         Assert.Null(rig.Pipeline!.Bundle("demo", "broken"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(15, triage.MaxTurns);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(30, spec.MaxTurns);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+        Assert.Equal(100, Assert.IsType<PoolClaim>(rig.Claim()).MaxTurns);
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_A_flagged_stage_is_reviewed_on_the_review_turn_limit()
+    {
+        using var rig = new Rig();
+
+        var review = Triaged(rig, flag: "touches the schema");
+
+        Assert.Equal(20, review.MaxTurns);
+        Assert.Contains("review", review.Task, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim()
+    {
+        using var rig = new Rig(turns: new StageTurnSettings(3, 4, 5, 6));
+        rig.Note("the list should sort by date");
+
+        Assert.Equal(3, Assert.IsType<PoolClaim>(rig.Claim()).MaxTurns);
     }
 
     [Fact]
