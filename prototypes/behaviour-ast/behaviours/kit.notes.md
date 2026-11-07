@@ -723,3 +723,9 @@ The opus agent needs to be able to identify what backlog items can be scheduled 
 <!-- from: note-button -->
 
 A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs
+
+## 2026-11-07 02:11Z
+
+<!-- from: note-button -->
+
+Running kit pipeline with a node script. Surely this is perfect application for csharp async
