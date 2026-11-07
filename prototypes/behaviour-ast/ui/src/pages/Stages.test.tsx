@@ -243,6 +243,13 @@ describe('stage rules', () => {
     ])
   })
 
+  it('BEH-STAGE-11: a feature with nothing built sits in architecture when its stage line says so, whatever its pending spec says', () => {
+    const features = [feat('FEAT-N', { stage: 'architecture' })]
+    // A pending ui-layer behaviour would suggest a later stage: the page must read the stage line only.
+    const behaviours = [beh('N1', { in: ['FEAT-N'], layer: 'ui', pending: true })]
+    expect(stageCards('app', 'app', features, behaviours).map((c) => [c.feature.id, c.built, columnFor(c)])).toEqual([['FEAT-N', 0, 'architecture']])
+  })
+
   it('BEH-STAGE-12: a proposed or in-review behaviour keeps its feature in its stage, and Done leaves the stage line unchanged', () => {
     const features = [feat('FEAT-P', { stage: 'ui' }), feat('FEAT-R', { stage: 'ui' }), feat('FEAT-D', { stage: 'ui' })]
     const behaviours = [

@@ -27,8 +27,9 @@ Built:
 - BEH-STAGE-9: the Stages page has no draggable card and sends no request other than GET
 - BEH-STAGE-10: a feature staged development with some behaviour built stays in development, not Done
 - BEH-STAGE-11: a feature with nothing built sits in the column its stage line names (problem, ux, logic), whatever the layer of its pending behaviours
+- BEH-STAGE-11: a feature with nothing built and an architecture stage line sits in the architecture column, whatever its pending spec says (added this run; it passed on first run, since the page already reads only the stage line)
 - BEH-STAGE-12: a proposed or in-review behaviour keeps its feature in its stage column; a feature in Done keeps its written stage line
-The whole suite ran 545 tests and passed (tsc -b and eslint clean). The BEH-STAGE-1 six-column check and the BEH-STAGE-10 all-built-in-ui reading are held and not built or tested as new.
+The whole suite ran 546 tests and passed (tsc -b and eslint clean). The BEH-STAGE-1 six-column check and the BEH-STAGE-10 all-built-in-ui reading are held and not built or tested as new.
 
 Test plan:
 - BEH-STAGE-1: the Stages page shows the columns problem, ux, logic, architecture, development, ui, with Unstaged first and Done last; held until the review request on BEH-STAGE-1 is answered, since the card still says five
