@@ -1362,7 +1362,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
-  stage logic
+  stage development
 
 behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a context bundle per work item, and the run ends"
   in FEAT-AGENT-PIPELINE
