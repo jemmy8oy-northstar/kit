@@ -1,4 +1,4 @@
-# Free-form text everywhere: behaviours, question answers, board box, feedback
+# Free-form text everywhere: behaviours, question answers, board box
 Work-item: free-form-text-input
 Flag: The 2026-10-26 22:51Z note removes notes from the board page, which settles the BEH-BOARD-24 conflict in favour of no board box; apply the project's kit:conflicts setting and confirm before removing it.
 Cards:
@@ -11,13 +11,11 @@ Cards:
 - BEH-TITLE-1
 - BEH-NOTE-12
 - BEH-NOTE-13
-- BEH-FEEDBACK-1
 - BEH-BOARD-24
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-12 16:33Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-12 16:34Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:30Z ("Boards could probably have a free form text input")
-- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:30Z ("Oo a backlog idea for when we have real users")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 22:51Z
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
@@ -27,5 +25,5 @@ Files:
 - prototypes/behaviour-ast/ui/src/notes.ts
 - prototypes/behaviour-ast/ui/src/pages/Board.tsx
 Context:
-Four notes ask for free text in place of forms. The 10-12 notes want behaviours and question answers in free text, with a way to dismiss text the AI cannot decode. BEH-NOTE-4 to BEH-NOTE-8 and BEH-SHEET-3 already cover this, and BEH-TITLE-1 covers the heavy-id complaint. Check what is built before adding anything. The 07:30 board note asks for a project picker that suggests while typing, and says that part can be its own enhancement. BEH-NOTE-13 covers the floating button naming a project. The board box itself conflicts with BEH-BOARD-24, as flagged above. The 07:30 backlog note about feedback is already BEH-FEEDBACK-1, which is backlog until there are users. Do not build it now.
+Four notes ask for free text in place of forms. The 10-12 notes want behaviours and question answers in free text, with a way to dismiss text the AI cannot decode. BEH-NOTE-4 to BEH-NOTE-8 and BEH-SHEET-3 already cover this, and BEH-TITLE-1 covers the heavy-id complaint. Check what is built before adding anything. The 07:30 board note asks for a project picker that suggests while typing, and says that part can be its own enhancement. BEH-NOTE-13 covers the floating button naming a project. The board box itself conflicts with BEH-BOARD-24, as flagged above. The 07:30 backlog note about feedback has moved to the backlog bundle (BEH-FEEDBACK-1).
 The 2026-10-26 22:51Z note asks to remove notes from the board page, because the floating button now adds notes. That supports BEH-BOARD-24 (the board has no note box of its own), so remove the board's note box and leave the floating button as the only way to add a note. It also asks that the floating button suggest an app when the note names one. BEH-NOTE-13 already offers that as one tap per project, so check it is built, and do not add a second suggestion.
