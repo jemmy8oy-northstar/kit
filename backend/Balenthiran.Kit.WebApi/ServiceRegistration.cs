@@ -101,7 +101,8 @@ public static class ServiceRegistration
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
                 pulls: sp.GetService<IPullRequestOpener>(),
-                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild)));
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild),
+                scheduled: settings.PipelineScheduled));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());

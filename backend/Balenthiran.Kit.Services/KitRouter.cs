@@ -1353,6 +1353,11 @@ public sealed partial class KitRouter(
         }
 
         corpora.WriteScheduleText(app, Schedule.Render(app, ids));
+        if (action == Schedule.Add)
+        {
+            pipeline?.ScheduleChanged(app);
+        }
+
         return Json(200, GitOutcome(corpora.FullSchedulePath(app), Schedule.Summary(action, id), app, new WriteOutcome
         {
             App = app,
