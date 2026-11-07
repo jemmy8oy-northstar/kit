@@ -735,3 +735,9 @@ Running kit pipeline with a node script. Surely this is perfect application for 
 <!-- from: note-button -->
 
 Some page that shows visibility into agents running, what stage of the pipeline they are at, whether they flagged for a review and by which agent. Maybe you can also view the pipeline run of historic runs and see which stage costed the money, what reviews were requested for. This is purely an internal feature for now
+
+## 2026-11-07 10:56Z
+
+<!-- from: note-button -->
+
+The note and chart inputs do not get lost when subscription credits run out and the pipeline cannot activate
