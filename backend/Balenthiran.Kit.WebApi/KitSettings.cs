@@ -314,6 +314,20 @@ public sealed record KitSettings(
     };
 
     /// <summary>
+    /// <c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): <c>on</c> lets the pipeline start the agent's scheduled cards at spec,
+    /// which spends the owner's subscription without a note from him. Unset or <c>off</c> is off.
+    /// </summary>
+    public bool PipelineScheduled { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_SCHEDULED</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineScheduled(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE_SCHEDULED is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
     /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
     /// (kit#714).
@@ -432,6 +446,7 @@ public sealed record KitSettings(
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
+            PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }
