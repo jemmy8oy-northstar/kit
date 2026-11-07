@@ -1,0 +1,18 @@
+# User agent: cost estimate and spend cap
+Work-item: user-agent-cost-and-spend-cap
+Flag: The 2026-11-03 23:30Z note is tagged BEH-SPECAGENT-2, but its text is the user's spend cap for their Kit agent. BEH-USERS-9 already quotes it at kit-ui.beh near line 1488. Confirm the tag before filing.
+Cards:
+- BEH-USERS-9
+- BEH-USERS-7
+Notes:
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-31 16:45Z · BEH-USERS-9
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-03 23:30Z · BEH-SPECAGENT-2
+Files:
+- prototypes/behaviour-ast/behaviours/kit-ui.beh
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md
+- prototypes/behaviour-ast/behaviours/kit-ui.tests.json
+Context:
+- Cost estimate: the owner asks how much a feature will cost to execute with the Anthropic API on Opus 5.5, and expects it to be expensive. Give a per-stage token estimate and a cost figure only from current Anthropic pricing, looked up in the claude-api skill or the official pricing page. Do not answer from memory. Post the estimate as an answer on BEH-USERS-9.
+- Spend cap: the owner's answer is that the user can spend up to the money credited to their account, and may also set a money allowance per day, week or month for their Kit agent, drawn from that credit. BEH-USERS-9 already quotes this (kit-ui.beh near line 1488) and says the cap is the credit plus the user's allowance. BEH-USERS-7 (cost and payment, pending, priority 4) says it waits for BEH-USERS-9. No new card is needed for the cap unless the builder finds the allowance has no place in BEH-USERS-9.
+- The API key is already in use for chat, per the same note.
+- BEH-USERS-7 has no tests yet. Leave it pending unless USERS-9 is built.
