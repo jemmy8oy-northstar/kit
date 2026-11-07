@@ -23,6 +23,12 @@ Files:
 - prototypes/behaviour-ast/ui/src/pages/Project.tsx
 Context:
 The 07:14 question "are these notes wrapped into the spec?" is answered by the spec: BEH-NOTE-3 says a note is removed in the change that folds it into the spec, and BEH-NOTE-10 and BEH-NOTE-11 cover folded notes. That is an answer for the user, not new work. The 07:13 note wants the describe box above the tabs, and notes as a tab; BEH-FEAT-7 already says so, and it is built (AskForBehaviour sits above ProjectTabs in Project.tsx). BEH-FEAT-7 also already has the contract "asking for a behaviour opens the Notes tab", and Project.tsx does it (onAsked calls select('notes'); the tab lives in ?tab=notes). The 07:24 note asks for newest first and a load-more button; BEH-NOTE-9 says newest first, ten at a time, and it is built: NotesPanel reverses the list and shows ten with a "Show N more (M hidden)" button. So the only gap is the floating note button (NoteFab.tsx, BEH-NOTE-12): its submit posts the note and clears the box but never moves the user to the Notes tab. The new card is that: after a note is posted from the button, go to /projects/<app>?tab=notes. Open point to record as an assumption: on a behaviour's page the note is tagged with that behaviour, so leaving the page may be unwanted; the default is to move to the Notes tab anyway, as the 07:13 note asks. Checked against code on 2026-11-07.
+Built:
+- BEH-NOTE-16: a note left on a project page moves the page to ?tab=notes (NoteFab.test.tsx)
+- BEH-NOTE-16: a note left on a behaviour's page moves the page to that project's ?tab=notes, and is still tagged with the behaviour (NoteFab.test.tsx)
+- BEH-NOTE-16: a refused note does not move the page, and the refusal stays beside the box (NoteFab.test.tsx)
+- BEH-NOTE-16: a note written with a project chosen in the box moves to that project's ?tab=notes (NoteFab.test.tsx)
+The whole UI suite ran 544 tests and passed (vitest run, 47 files).
 Test plan:
 - BEH-FEAT-6: the project page opens on Features, and on Questions when the url says ?tab=questions; the Questions tab shows its waiting count.
 - BEH-FEAT-7: the describe box renders above the tab list; a Notes tab is present; asking for a behaviour selects Notes.

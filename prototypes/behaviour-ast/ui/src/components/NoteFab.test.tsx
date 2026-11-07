@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import NoteFab, { NOTE_WRITTEN } from './NoteFab'
 
 /** Records every note posted, by URL, and lists two projects (one of which does not parse). */
@@ -117,5 +117,94 @@ describe('NoteFab (BEH-NOTE-12)', () => {
     at('/projects/demo')
     fireEvent.click(screen.getByRole('button', { name: /Note/ }))
     expect(screen.getByRole('textbox')).toHaveAccessibleDescription(/anyone can read/)
+  })
+})
+
+/** Shows where the page is now, so a test can see the button move it. */
+function Where() {
+  const { pathname, search } = useLocation()
+  return <p data-testid="where">{`${pathname}${search}`}</p>
+}
+
+/** Accepts or refuses every note posted, by `refuse`, and lists two projects. */
+function serverFor(refuse?: string) {
+  const posts: { url: string; body: unknown }[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        posts.push({ url, body: JSON.parse(String(init.body)) })
+        if (refuse) return { ok: false, status: 400, statusText: 'x', json: async () => ({ reason: refuse }) }
+        const app = url.split('/').at(-2)
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ app, behaviour: null, file: `${app}.notes.md`, committed: true, pushed: true, commit: 'abc1234', branch: 'kit/hosted', note: 'x' }),
+        }
+      }
+      return { ok: true, status: 200, statusText: 'OK', json: async () => ({ projects: [{ app: 'demo' }, { app: 'other' }] }) }
+    }),
+  )
+  return posts
+}
+
+function atWithWhere(path: string) {
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <NoteFab />
+      <Where />
+    </MemoryRouter>,
+  )
+}
+
+describe('NoteFab moves to the Notes tab after a note is left (BEH-NOTE-16)', () => {
+  it('a note left on a project page moves the page to ?tab=notes', async () => {
+    serverFor()
+    atWithWhere('/projects/demo?tab=features')
+
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'the header is too tall' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/projects/demo?tab=notes'))
+  })
+
+  it('a note left on a behaviour page also moves the page to that project’s ?tab=notes', async () => {
+    const posts = serverFor()
+    atWithWhere('/projects/demo/behaviours/BEH-1')
+
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'wrong word' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/projects/demo?tab=notes'))
+    expect(posts[0].body).toEqual({ text: 'wrong word', behaviour: 'BEH-1', from: 'note-button' })
+  })
+
+  it('a refused note does not move the page, and the refusal stays beside the box', async () => {
+    serverFor('the notes file is locked')
+    atWithWhere('/projects/demo/features/FEAT-X')
+
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'will be refused' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('the notes file is locked')
+    expect(screen.getByTestId('where')).toHaveTextContent('/projects/demo/features/FEAT-X')
+  })
+
+  it('a note written with a project chosen in the box moves to that project’s Notes tab', async () => {
+    const posts = serverFor()
+    atWithWhere('/board')
+
+    fireEvent.click(screen.getByRole('button', { name: /Note/ }))
+    await screen.findByRole('option', { name: 'other' })
+    fireEvent.change(screen.getByLabelText('Which project is this about?'), { target: { value: 'other' } })
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'an idea' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/projects/other?tab=notes'))
+    expect(posts[0].url).toMatch(/\/api\/projects\/other\/notes$/)
   })
 })

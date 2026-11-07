@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { matchPath, useLocation } from 'react-router-dom'
+import { matchPath, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Card } from '@jemmy8oy-northstar/design-system'
 import { fetchProjects, leaveNote } from '../api/client'
 import { useResource } from '../hooks/useResource'
@@ -34,8 +34,15 @@ export default function NoteFab() {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [chosen, setChosen] = useState('')
-  const { write, run, reset } = useWrite(() => window.dispatchEvent(new Event(NOTE_WRITTEN)))
+  const navigate = useNavigate()
   const id = useId()
+  const app = here.app ?? chosen
+  // Only a note that was written moves the page; a refused one stays put, so nothing is lost.
+  // The page goes to the project's Notes tab, so the note just left is in view (BEH-NOTE-16).
+  const { write, run, reset } = useWrite(() => {
+    window.dispatchEvent(new Event(NOTE_WRITTEN))
+    navigate(`/projects/${encodeURIComponent(app)}?tab=notes`)
+  })
 
   // A new page is a new subject: what the last page's box said no longer applies.
   useEffect(() => {
@@ -43,8 +50,6 @@ export default function NoteFab() {
     reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
-
-  const app = here.app ?? chosen
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
