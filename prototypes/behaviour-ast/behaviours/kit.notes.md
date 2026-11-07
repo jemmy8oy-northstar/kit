@@ -765,3 +765,9 @@ I think it would be worth changing the .beh extension to .kit or .spec or someth
 <!-- from: note-button -->
 
 Backlog: I want to do some proper work on designing the kit spec structure I think one file dump per project is not structured well at all
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+First tester can see my proposed projects when they should not be able to, tester should only see work from there own space. Proposed projects should be per user, maybe this gets stored in the db until they create a fit repo for it
