@@ -705,3 +705,9 @@ Test
 <!-- from: note-button -->
 
 test
+
+## 2026-11-07 01:50Z
+
+<!-- from: note-button -->
+
+Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog
