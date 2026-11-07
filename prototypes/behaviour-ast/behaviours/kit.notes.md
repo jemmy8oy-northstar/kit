@@ -771,3 +771,9 @@ Backlog: I want to do some proper work on designing the kit spec structure I thi
 <!-- from: note-button -->
 
 First tester can see my proposed projects when they should not be able to, tester should only see work from there own space. Proposed projects should be per user, maybe this gets stored in the db until they create a fit repo for it
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+tester can’t see their own project - holiday planner, they are a contributor to holiday planner  - I feel like maybe we haven’t moved the spec files into this repo yet so we don’t see it. We also need to make sure that kit finds projects where are users are added contributors
