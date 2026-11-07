@@ -257,6 +257,12 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_MODEL_REVIEW</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelReview(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW", value, StageModels.DefaultReview);
 
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW_LOW</c> (BEH-ORCH-2): the model that reviews a flag marked "(level: low)". Unset is <see cref="StageModels.DefaultReviewLow"/>.</summary>
+    public string StageModelReviewLow { get; init; } = StageModels.DefaultReviewLow;
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW_LOW</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelReviewLow(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW_LOW", value, StageModels.DefaultReviewLow);
+
     /// <summary><c>KIT_STAGE_MODEL_SPEC</c> (BEH-ORCH-3): the model the spec stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
     public string StageModelSpec { get; init; } = StageModels.DefaultWork;
 
@@ -416,6 +422,7 @@ public sealed record KitSettings(
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
             StageModelTriage = ParseStageModelTriage(env("KIT_STAGE_MODEL_TRIAGE")),
             StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
+            StageModelReviewLow = ParseStageModelReviewLow(env("KIT_STAGE_MODEL_REVIEW_LOW")),
             StageModelSpec = ParseStageModelSpec(env("KIT_STAGE_MODEL_SPEC")),
             StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
             StageTurnsTriage = ParseStageTurnsTriage(env("KIT_STAGE_TURNS_TRIAGE")),

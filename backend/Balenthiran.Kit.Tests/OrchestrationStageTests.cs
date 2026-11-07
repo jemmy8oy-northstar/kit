@@ -473,6 +473,50 @@ public class OrchestrationStageTests
         {
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelTriage(bad));
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelReview(bad));
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelReviewLow(bad));
         }
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_The_low_review_model_defaults_to_sonnet_and_is_read_from_the_environment()
+    {
+        Assert.Equal("claude-sonnet-5-5", KitSettings.ParseStageModelReviewLow(null));
+        Assert.Equal("claude-sonnet-5-5", new KitSettings("d", "r", null, "dist").StageModelReviewLow);
+        Assert.Equal("claude-haiku-5-5", KitSettings.ParseStageModelReviewLow(" claude-haiku-5-5 "));
+    }
+
+    [Theory]
+    [InlineData("unsure (level: low)", FlagLevel.Low)]
+    [InlineData("unsure (level: high)", FlagLevel.High)]
+    [InlineData("unsure (LEVEL:  LOW) ", FlagLevel.Low)]
+    [InlineData("unsure", FlagLevel.High)]
+    [InlineData("unsure (level: mid)", FlagLevel.High)]
+    [InlineData("(level: low) but then more", FlagLevel.High)]
+    [InlineData("", FlagLevel.High)]
+    [InlineData(null, FlagLevel.High)]
+    public void BEH_ORCH_2_A_flags_level_is_read_from_its_end_and_anything_else_is_high(string? flag, FlagLevel expected)
+    {
+        Assert.Equal(expected, FlagLevels.Of(flag));
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_Only_a_low_flag_reviews_on_the_low_model()
+    {
+        var models = new StageModelSettings("m-triage", "m-review", "m-spec", "m-build", "m-low");
+
+        Assert.Equal("m-low", Orchestrator.ModelFor(PipelineStage.Review, models, "x (level: low)"));
+        Assert.Equal("m-review", Orchestrator.ModelFor(PipelineStage.Review, models, "x"));
+        Assert.Equal("m-spec", Orchestrator.ModelFor(PipelineStage.Spec, models, "x (level: low)"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_Each_stage_is_told_what_the_two_levels_mean()
+    {
+        Assert.Contains("(level: low)", FlagLevels.Guidance);
+        Assert.Contains("(level: high)", FlagLevels.Guidance);
+        var triage = TriageStage.BuildTask("kit", Notes, Cards).Text;
+        Assert.Contains("level: low", triage);
+        Assert.Contains("level: high", triage);
+        Assert.True(triage.Length <= 8000);
     }
 }

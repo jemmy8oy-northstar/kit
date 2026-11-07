@@ -36,7 +36,7 @@ public static class BuildStage
         sb.Append("4. Write the code until those tests pass, then run the project's whole test suite and make it pass. Change nothing the cards do not ask for.\n");
         sb.Append("5. In ").Append(path).Append(", at the end of Context add a line \"").Append(BuiltHeading)
             .Append("\" and under it one \"- \" line per test you wrote, then one line saying how many tests the whole suite ran and that it passed.\n");
-        sb.Append("6. If you are unsure of what you built and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it.\n");
+        sb.Append("6. If you are unsure of what you built and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. ").Append(FlagLevels.Guidance).Append('\n');
         sb.Append("7. Commit and push the branch to origin, then STOP. Do not open a pull request: Kit opens it.\n\n");
         var rendered = bundle.Render();
         if (sb.Length + path.Length + rendered.Length + 40 <= KitRouter.MaxTask)
