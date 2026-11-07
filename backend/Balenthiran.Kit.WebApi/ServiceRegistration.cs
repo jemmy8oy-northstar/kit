@@ -93,6 +93,8 @@ public static class ServiceRegistration
                 throw new InvalidOperationException("KIT_PIPELINE is on but KIT_RUNNER_POOL_TOKEN is not set: the pipeline's runs need the runner pool");
             }
 
+            // BEH-ORCH-8: the notes a triage sorted are the accounts' database when there is one; without, they die with the pod.
+            services.TryAddSingleton<ITriagedNoteStore>(_ => settings.Accounts ? new PostgresTriagedNoteStore(settings.ConnectionString()!) : new MemoryTriagedNoteStore());
             services.TryAddSingleton(sp => new Pipeline(
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
@@ -102,7 +104,9 @@ public static class ServiceRegistration
                 projects: settings.PipelineProjects,
                 pulls: sp.GetService<IPullRequestOpener>(),
                 turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild),
-                scheduled: settings.PipelineScheduled));
+                scheduled: settings.PipelineScheduled,
+                sorted: sp.GetRequiredService<ITriagedNoteStore>()));
+            services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
