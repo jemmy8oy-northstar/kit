@@ -1382,7 +1382,8 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption: triage puts a note that asks for nothing (a test, an empty or accidental note) in a work item named set-aside, with a Flag line saying why. That item is never specced or built and no model reviews it then: it stops with "set aside: <reason>", for a person to look at later. Its notes count as sorted, so they are not triaged again
   contract his notes of 2026-11-06 23:53Z, 23:54Z and 2026-11-07 01:23Z ("This is a test", "Test", "test") are the case it is for: on the first live run each one still paid for a whole triage run, a clone and a pushed bundle, to be set aside
   contract his note (kit.notes.md#2026-11-07-0150): "Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog"
-  contract my assumption: before any agent run starts, one Haiku API call (the same in-process call the Inbox chat makes, no clone and no tools) sorts each new note as noise, backlog or work. Noise is set aside as above; backlog becomes a new unreviewed card on the Backlog, with no bundle and no run; only work queues a triage run, with the work notes alone. A note it cannot sort, or a failed call, counts as work, so nothing is lost by the sort
+  contract my assumption: before any agent run starts, a plain rule in Kit, with no model, sets aside a note that is empty or only a test word ("test", "testing", "this is a test"), so it costs nothing. A note the rule does not catch goes to triage as now
+  contract my assumption: triage, within its own turn limit (BEH-ORCH-5), may also put a note in a work item named backlog when it is an idea for later. That item writes its cards as unreviewed with no build, and stops, so no spec or build run is paid for. A Haiku API call could sort notes before any run starts, but it bills his API key rather than his subscription, against his kit#708 rule, so it is not used unless he says so
   needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
@@ -1431,6 +1432,7 @@ behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no
   source defined kit.notes.md#2026-11-07-0151
   review unreviewed
   priority 3
+  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
@@ -1458,6 +1460,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   source defined kit#714
   review unreviewed
   priority 3
+  pending
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1471,6 +1474,7 @@ behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   source defined kit#714
   review unreviewed
   priority 3
+  pending
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
