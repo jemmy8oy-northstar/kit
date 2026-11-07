@@ -747,3 +747,9 @@ The note and chart inputs do not get lost when subscription credits run out and 
 <!-- from: note-button -->
 
 Pipeline can raise and complete PRs for completed work
+
+## 2026-11-07 14:22Z
+
+<!-- from: note-button -->
+
+www.kitstudio.dev seems to be broken what do i need to change
