@@ -43,6 +43,15 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Each work item's bundle, as its triage reported it: what the stages after triage start from.
     private readonly Dictionary<(string App, string Slug), ContextBundle> bundles = [];
 
+    /// <summary>BEH-ORCH-8: how long after a failed triage the next try is made.</summary>
+    public static readonly TimeSpan RetryAfter = TimeSpan.FromHours(1);
+
+    /// <summary>BEH-ORCH-8: triages failing this many times in a row are not tried again until one works.</summary>
+    public const int MaxFailures = 12;
+
+    // Per project, under gate: consecutive failed triages, and the one timer of the retry pending (null when none).
+    private readonly Dictionary<string, (int Failures, ITimer? Pending)> retries = new(StringComparer.Ordinal);
+
     private int count;
 
     /// <summary>Every work item, oldest first.</summary>
@@ -122,6 +131,60 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
+    /// <summary>
+    /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
+    /// limit), so another is tried <see cref="RetryAfter"/> later. A project has at most one retry pending, and none is
+    /// scheduled once <see cref="MaxFailures"/> triages in a row have failed. Called with the gate held.
+    /// </summary>
+    private void TriageFailed(string app)
+    {
+        retries.TryGetValue(app, out var state);
+        var failures = state.Failures + 1;
+        if (failures >= MaxFailures)
+        {
+            state.Pending?.Dispose();
+            retries[app] = (failures, null);
+            Console.Error.WriteLine($"kit: {app}'s triage failed {failures} times in a row; not retrying until one works");
+            return;
+        }
+
+        var pending = state.Pending ?? (clock ?? TimeProvider.System).CreateTimer(_ => RetryDue(app), null, RetryAfter, Timeout.InfiniteTimeSpan);
+        retries[app] = (failures, pending);
+    }
+
+    /// <summary>A triage of <paramref name="app"/> worked: its failures are forgotten and a retry still pending is cancelled. Called with the gate held.</summary>
+    private void ClearRetries(string app)
+    {
+        if (retries.Remove(app, out var state))
+        {
+            state.Pending?.Dispose();
+        }
+    }
+
+    /// <summary>The hour is up: queue the triage again, which reads only the notes still unsorted.</summary>
+    private void RetryDue(string app)
+    {
+        try
+        {
+            lock (gate)
+            {
+                if (!retries.TryGetValue(app, out var state) || state.Pending is null)
+                {
+                    return;
+                }
+
+                state.Pending.Dispose();
+                retries[app] = (state.Failures, null);
+                QueueTriage(app);
+                StartReady();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: retrying {app}'s triage threw {e.GetType().Name}");
+        }
+    }
+
     /// <summary>The bundle work item <paramref name="slug"/> of <paramref name="app"/> was last given by a triage; null when none.</summary>
     public ContextBundle? Bundle(string app, string slug)
     {
@@ -162,6 +225,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             else if (!succeeded)
             {
                 items[run.Index] = Stop(item, "the triage run failed");
+                TriageFailed(item.Project);
             }
             else
             {
@@ -181,6 +245,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 {
                     items[run.Index] = item with { Status = WorkItemStatus.Done };
                     MarkSorted(item.Project, run.Notes);
+                    ClearRetries(item.Project);
 
                     // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
                     QueueTriage(item.Project);
