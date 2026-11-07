@@ -1,5 +1,6 @@
 # Kit supports users other than James
 Work-item: kit-supports-other-users
+Flag: The 17:21Z note moves central spec and user data out of the kit repo, and the user data store is undecided (OKE, AKS or Neon are all open), so this touches how Kit stores work; the owner should choose the store (level: high)
 Cards:
 - EPIC-KIT-USERS
 - BEH-EPIC-7
