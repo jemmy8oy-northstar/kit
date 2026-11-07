@@ -29,10 +29,15 @@ public class PipelineTests
 
     private sealed class Rig : IDisposable
     {
-        private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
+        private readonly string root;
+        private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null)
         {
+            owned = root is null;
+            this.root = root ?? Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
+            root = this.root;
+            Sorted = sorted ?? new MemoryTriagedNoteStore();
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
             if (schedule is not null)
             {
@@ -43,13 +48,15 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
         }
 
         public MemoryAgentRunStore Store { get; }
+
+        public ITriagedNoteStore Sorted { get; }
 
         public Opener Pulls { get; } = new();
 
@@ -86,7 +93,17 @@ public class PipelineTests
         public KitResponse FinishWith(PoolClaim claim, params object[] bundles) =>
             Routes.Finished(claim.Token, Json(new { status = "finished", bundles }));
 
-        public void Dispose() => Directory.Delete(root, recursive: true);
+        // Kit restarting: the same files and the same triaged-notes store, but a new pool, run store and pipeline,
+        // so everything kept in memory is gone. Disposing the restarted rig leaves the files to this one.
+        public Rig Restart(ITriagedNoteStore? sorted = null) => new(sorted: sorted ?? Sorted, root: root);
+
+        public void Dispose()
+        {
+            if (owned)
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
     }
 
     // Records each pull request asked for and answers with Answer: a page, or GitHub's reason for none.
@@ -1049,5 +1066,125 @@ public class PipelineTests
         {
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineScheduled(bad));
         }
+    }
+
+    // ---- BEH-ORCH-8: the notes a triage sorted survive a restart ---------------------------------------
+
+    [Fact]
+    public void BEH_ORCH_8_after_a_restart_a_note_triages_only_the_notes_no_triage_has_sorted()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+
+        using var restarted = rig.Restart();
+        restarted.Note("the list should export");
+
+        var task = Assert.IsType<PoolClaim>(restarted.Claim()).Task;
+        Assert.Contains("the list should export", task);
+        Assert.DoesNotContain("the list should sort by date", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_without_the_store_a_restart_triages_every_note_again()
+    {
+        // The other side of the seam: the store is what remembers, not something else that survives a restart.
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+
+        using var restarted = rig.Restart(new MemoryTriagedNoteStore());
+        restarted.Note("the list should export");
+
+        Assert.Contains("the list should sort by date", Assert.IsType<PoolClaim>(restarted.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_on_start_a_note_whose_triage_failed_is_triaged_without_a_new_note()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+        rig.Note("the list should export");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+
+        using var restarted = rig.Restart();
+        restarted.Pipeline!.Resume();
+
+        var task = Assert.IsType<PoolClaim>(restarted.Claim()).Task;
+        Assert.Contains("the list should export", task);
+        Assert.DoesNotContain("the list should sort by date", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_on_start_nothing_runs_when_every_note_is_sorted_or_none_was_ever_recorded()
+    {
+        using var sorted = new Rig();
+        sorted.Note("the list should sort by date");
+        sorted.Finish(Assert.IsType<PoolClaim>(sorted.Claim()));
+        using var allSorted = sorted.Restart();
+        allSorted.Pipeline!.Resume();
+        Assert.Null(allSorted.Claim());
+
+        // Never recorded: the first start with a store must not triage the whole notes file without a note from him.
+        using var failed = new Rig();
+        failed.Note("the list should sort by date");
+        failed.Finish(Assert.IsType<PoolClaim>(failed.Claim()), status: "failed");
+        using var fresh = failed.Restart();
+        fresh.Pipeline!.Resume();
+        Assert.Null(fresh.Claim());
+        Assert.Empty(fresh.Store.List());
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_set_aside_test_note_is_recorded_as_sorted_too()
+    {
+        using var rig = new Rig();
+        rig.Note("test");
+        Assert.Null(rig.Claim());
+        Assert.Single(rig.Sorted.Read("demo"));
+        Assert.Contains(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
+
+        using var restarted = rig.Restart();
+        restarted.Note("the list should export");
+
+        Assert.IsType<PoolClaim>(restarted.Claim());
+        Assert.DoesNotContain(restarted.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_the_store_keeps_a_hash_of_a_note_not_its_text()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+
+        var key = Assert.Single(rig.Sorted.Read("demo"));
+        Assert.Matches("^[0-9a-f]{64}$", key);
+        Assert.Equal(["demo"], rig.Sorted.Projects());
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_the_postgres_store_keeps_keys_per_project_and_ignores_a_repeat()
+    {
+        // Needs a real database, so CI without one skips it by passing. Run it with KIT_TEST_DATABASE set.
+        if (Environment.GetEnvironmentVariable("KIT_TEST_DATABASE") is not { Length: > 0 } connection)
+        {
+            return;
+        }
+
+        using var store = new PostgresTriagedNoteStore(connection);
+        var project = $"p{Guid.NewGuid():N}"[..12];
+        var other = $"p{Guid.NewGuid():N}"[..12];
+
+        store.Add(project, ["a", "b"]);
+        store.Add(project, ["b", "c"]);
+        store.Add(other, ["a"]);
+        store.Add(project, []);
+
+        Assert.Equal(["a", "b", "c"], store.Read(project).Order(StringComparer.Ordinal));
+        Assert.Equal(["a"], store.Read(other));
+        Assert.Empty(store.Read($"p{Guid.NewGuid():N}"[..12]));
+        Assert.Contains(project, store.Projects());
     }
 }

@@ -937,5 +937,14 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_5_A_run_started_by_hand_is_claimed_with_no_turn_limit" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none" }
+  ],
+  "BEH-ORCH-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_after_a_restart_a_note_triages_only_the_notes_no_triage_has_sorted" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_without_the_store_a_restart_triages_every_note_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_on_start_a_note_whose_triage_failed_is_triaged_without_a_new_note" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_on_start_nothing_runs_when_every_note_is_sorted_or_none_was_ever_recorded" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_a_set_aside_test_note_is_recorded_as_sorted_too" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_the_store_keeps_a_hash_of_a_note_not_its_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_the_postgres_store_keeps_keys_per_project_and_ignores_a_repeat" }
   ]
 }
