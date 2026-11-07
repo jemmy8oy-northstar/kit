@@ -9,13 +9,15 @@ namespace Balenthiran.Kit.Services;
 /// review runs start from that bundle and report it back changed, which moves the item on. A built item gets a pull
 /// request from its branch, opened by Kit. Exists
 /// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
-/// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again.
+/// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again. Which
+/// notes a triage has sorted is kept in the store (BEH-ORCH-8), so that triage reads only the notes still unsorted.
 /// </summary>
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
 /// <param name="scheduled"><c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): also start the agent's scheduled cards at spec, one per project at a time. Off by default: each starts runs on the owner's subscription.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false)
+/// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null)
 {
     private readonly object gate = new();
 
@@ -29,8 +31,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // owner/repo@branch it ran on, which a built item's pull request goes into.
     private readonly Dictionary<string, (int Index, IReadOnlyList<string> Notes, ContextBundle? Given, string RepoAt)> started = new(StringComparer.Ordinal);
 
-    // Notes a finished triage run has already sorted into bundles: a later triage leaves them out.
-    private readonly HashSet<string> triaged = new(StringComparer.Ordinal);
+    // Notes a finished triage run has already sorted into bundles, per project: a later triage leaves them out.
+    // Read from the store on a project's first use, and written through to it (BEH-ORCH-8).
+    private readonly Dictionary<string, HashSet<string>> triaged = new(StringComparer.Ordinal);
+
+    private readonly ITriagedNoteStore store = sorted ?? new MemoryTriagedNoteStore();
 
     // Each work item's bundle, as its triage reported it: what the stages after triage start from.
     private readonly Dictionary<(string App, string Slug), ContextBundle> bundles = [];
@@ -67,6 +72,50 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 StartReady();
             }
+        }
+    }
+
+    /// <summary>
+    /// Kit has started (BEH-ORCH-8): each project with sorted notes on record and notes not yet sorted gets a triage,
+    /// so a note left while Kit was down, or whose triage failed, does not wait for his next note. A project with
+    /// nothing on record starts nothing, so the first start with a store does not triage every note without a word
+    /// from him. A store or notes file that cannot be read starts nothing for that project.
+    /// </summary>
+    public void Resume()
+    {
+        IReadOnlyList<string> recorded;
+        try
+        {
+            recorded = store.Projects();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: listing the projects with triaged notes threw {e.GetType().Name}");
+            return;
+        }
+
+        lock (gate)
+        {
+            foreach (var app in recorded.Where(a => projects is null || projects.Contains(a)))
+            {
+                bool waiting;
+                try
+                {
+                    waiting = Untriaged(app).Count > 0;
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"kit: reading {app}'s notes to resume threw {e.GetType().Name}");
+                    continue;
+                }
+
+                if (waiting)
+                {
+                    QueueTriage(app);
+                }
+            }
+
+            StartReady();
         }
     }
 
@@ -128,7 +177,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 else
                 {
                     items[run.Index] = item with { Status = WorkItemStatus.Done };
-                    triaged.UnionWith(run.Notes);
+                    MarkSorted(item.Project, run.Notes);
 
                     // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
                     QueueTriage(item.Project);
@@ -488,7 +537,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var noise = notes.Where(n => NoteNoise.IsNoise(n.Text)).ToList();
         if (noise.Count > 0)
         {
-            triaged.UnionWith(noise.Select(n => n.Key));
+            MarkSorted(item.Project, noise.Select(n => n.Key).ToList());
             var aside = Stop(new WorkItem(item.Project, TriageStage.SetAside, PipelineStage.Triage, WorkItemStatus.Running), $"set aside: {NoteNoise.Reason}");
             Record(item.Project, TriageStage.SetAside, aside, null);
             notes = notes.Where(n => !NoteNoise.IsNoise(n.Text)).ToList();
@@ -522,7 +571,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();
         var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models, given?.Flag), AgentTokens.Hash(token), now,
-            item.Stage == PipelineStage.Triage ? null : item.Slug);
+            item.Stage == PipelineStage.Triage ? null : item.Slug, stage);
         try
         {
             pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));
@@ -549,9 +598,51 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var file = corpora.RelativeNotesPath(app);
         return Notes.Parse(corpora.ReadNotesText(app))
             .Where(n => n.Kind is Notes.NoteKind or Notes.RequestKind)
-            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: n.At + "\n" + n.Text))
-            .Where(n => !triaged.Contains(n.Key))
+            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text)))
+            .Where(n => !Sorted(app).Contains(n.Key))
             .ToList();
+    }
+
+    /// <summary>A note's key: the SHA-256 of its date and text, so the store keeps no copy of what he wrote.</summary>
+    public static string KeyOf(string at, string text) =>
+        Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(at + "\n" + text)));
+
+    /// <summary>
+    /// <paramref name="app"/>'s sorted notes, read from the store on first use. A store that cannot be read is
+    /// counted as empty until Kit restarts, so the cost of a database that is down is a triage, not Kit.
+    /// </summary>
+    private HashSet<string> Sorted(string app)
+    {
+        if (!triaged.TryGetValue(app, out var keys))
+        {
+            try
+            {
+                keys = store.Read(app).ToHashSet(StringComparer.Ordinal);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: reading {app}'s triaged notes threw {e.GetType().Name}");
+                keys = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            triaged[app] = keys;
+        }
+
+        return keys;
+    }
+
+    /// <summary>Marks <paramref name="keys"/> sorted on <paramref name="app"/>, here and in the store; a store that cannot be written costs a later triage, not this one's report.</summary>
+    private void MarkSorted(string app, IReadOnlyList<string> keys)
+    {
+        Sorted(app).UnionWith(keys);
+        try
+        {
+            store.Add(app, keys);
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: recording {app}'s triaged notes threw {e.GetType().Name}");
+        }
     }
 
     /// <summary>Each behaviour of <paramref name="corpus"/> as (id, title), in file order.</summary>

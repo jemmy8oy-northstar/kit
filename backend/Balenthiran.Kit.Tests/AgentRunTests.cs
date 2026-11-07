@@ -742,6 +742,16 @@ public class AgentRunTests
     }
 
     [Fact]
+    public void BEH_ORCH_9_the_pipeline_is_listed_to_the_operator_alone()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+
+        Assert.Equal(401, router.Route("GET", "/api/pipeline").Status);
+        Assert.Equal(403, router.Route("GET", "/api/pipeline", SignIn(router, "ann")).Status);
+        Assert.Equal(200, router.Route("GET", "/api/pipeline", cookie).Status);
+    }
+
+    [Fact]
     public void With_no_password_runs_are_served_to_loopback_only()
     {
         var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
@@ -1148,7 +1158,7 @@ public class AgentRunTests
     /// <summary>A store whose spend cannot be written, as a database that has gone away.</summary>
     private sealed class FailingStore(MemoryAgentRunStore inner) : IAgentRunStore
     {
-        public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null) => inner.Create(owner, project, model, tokenHash, started, workItem);
+        public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null, string? stage = null) => inner.Create(owner, project, model, tokenHash, started, workItem, stage);
 
         public IReadOnlyList<IAgentRun> List() => inner.List();
 

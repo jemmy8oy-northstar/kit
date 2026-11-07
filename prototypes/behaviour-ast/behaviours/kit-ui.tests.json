@@ -937,5 +937,24 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_5_A_run_started_by_hand_is_claimed_with_no_turn_limit" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none" }
+  ],
+  "BEH-ORCH-8": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_after_a_restart_a_note_triages_only_the_notes_no_triage_has_sorted" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_without_the_store_a_restart_triages_every_note_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_on_start_a_note_whose_triage_failed_is_triaged_without_a_new_note" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_on_start_nothing_runs_when_every_note_is_sorted_or_none_was_ever_recorded" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_a_set_aside_test_note_is_recorded_as_sorted_too" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_the_store_keeps_a_hash_of_a_note_not_its_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_8_the_postgres_store_keeps_keys_per_project_and_ignores_a_repeat" }
+  ],
+  "BEH-ORCH-9": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_9_the_pipeline_lists_each_work_item_with_its_stage_status_and_flag" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_9_a_stopped_item_says_why_and_a_reviewed_one_carries_its_outcome" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_9_each_pipeline_run_records_its_stage_and_a_run_by_hand_none" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_9_with_the_pipeline_off_the_list_is_empty_and_says_so" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_ORCH_9_the_pipeline_is_listed_to_the_operator_alone" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 shows each work item's stage, flag, review and runs per stage, and cost by stage" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 shows no pipeline section when the pipeline is off" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 says when the pipeline is on with no items yet" }
   ]
 }

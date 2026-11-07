@@ -1491,6 +1491,52 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
   contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
 
+behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a restart does not pay to triage it twice"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1056
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1056): "The note and chart inputs do not get lost when subscription credits run out and the pipeline cannot activate"
+  contract my assumption: "chart" is chat. A chat message reaches the pipeline as a note (BEH-CHAT-3), so keeping notes keeps both
+  contract my assumption: what was measured on 2026-11-07: the set of notes a triage has sorted lived in memory, so the 07:47Z promotion's restart forgot it, and his 10:50Z note started a triage that read yesterday's notes again (kit#754's 11:01Z commit re-sorted the 16:44Z note). Nothing was lost, but each restart paid to triage every note in the file again
+  contract my assumption: the notes a triage has sorted are kept in Kit's database (pipeline_triaged_notes: project, a hash of the note's date and text, when), so a restart remembers them. Without a database they are kept in memory, as today
+  contract my assumption: when Kit starts, a project whose sorted notes are in the database and that has notes not yet sorted gets a triage, so a note left while Kit was down, or whose triage failed, is not waiting for his next note. A project with nothing recorded yet starts nothing, so the first deploy of this does not start runs without a note from him
+  contract built, slice 1: Pipeline keeps a note's key (SHA-256 of its date and text) in ITriagedNoteStore, Postgres pipeline_triaged_notes with KIT_DATABASE and memory without; a store that cannot be read or written is logged and costs a later triage, not the run's report. PipelineResume calls Pipeline.Resume once after start, which queues a triage only for a recorded project with unsorted notes
+  contract my assumption, slice 2 (not built): a triage that fails is tried again an hour later while it keeps failing, at most 12 times, so a note left when his subscription's limit is reached is sorted once the limit resets. A run that fails on the limit spends nothing
+
+behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags and who reviewed them, and what each stage of a past item cost"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1050
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1050): "Some page that shows visibility into agents running, what stage of the pipeline they are at, whether they flagged for a review and by which agent. Maybe you can also view the pipeline run of historic runs and see which stage costed the money, what reviews were requested for. This is purely an internal feature for now"
+  contract my assumption: it is a Pipeline section on Runs, for the operator only, as Runs is. Each work item is one row: project, slug, stage, status, the reason it stopped, its pull request, and its Flag and Review lines, naming the model that reviewed it
+  contract my assumption: an item's row opens to its runs, one per stage, each with its model, turns, tokens and cost, so which stage spent the money is read off one list. The runs are already recorded per work item (BEH-ORCH-6)
+  contract my assumption: today work items live in memory, so the page shows only items since Kit last started; past items come from the runs recorded per work item, which do survive. Keeping the items themselves is a later slice
+  contract built, slice 1: each run records its stage (agent_runs.stage: triage, spec, build or review; null for a run by hand). GET /api/pipeline, behind the same operator-only gate as /api/runs, serves { on, items } with each item's project, slug, stage, status, stoppedBecause, pullRequest, flag, review and reviewNote. Runs shows a Pipeline section when it is on: the items oldest first, each with its own runs (stage · model · tokens · cost), then the cost of every recorded run by stage
+
+behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built once its checks pass"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1128
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1128): "Pipeline can raise and complete PRs for completed work"
+  contract my assumption: raising is built (BEH-ORCH-3's build slice opens the pull request). Completing means merging it into the branch the run started from, which is dev for kit, never main
+  contract my assumption: Kit merges only when every Actions run at the pull request's head commit has succeeded and GitHub says it is mergeable, and it merges that exact commit, so a push after the check is not merged unseen. A failed check, or a conflict, stops the item with the reason and leaves the pull request open for a person
+  contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
+  contract my assumption: it is behind KIT_PIPELINE_MERGE, off until he turns it on, because a merge puts code no person has read into dev; promotion to main stays the bot's, under BEH-SETTINGS-4
+  contract my assumption: Kit's GitHub App needs read access to Actions and write access to pull requests on the repo. If it has no read access to Actions, the item stops saying so rather than merging unchecked
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
