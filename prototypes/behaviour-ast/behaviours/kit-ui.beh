@@ -1402,6 +1402,23 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
   contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
   needs-context "Built and wired to the orchestrator (BEH-ORCH-3) on dev, not yet promoted. No real review has run: production Kit has not deployed since kit went private (kit#714 has the one secret ArgoCD needs). Once a triage is seen live, I promote this and watch a flagged item."
+  contract his note (kit.notes.md#2026-11-07-0210): "A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs"
+  contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
+  contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
+  contract built: FlagLevels.Of reads a trailing "(level: low|high)" off the Flag line (case and spacing ignored; none, unreadable or mid-text is high); the review run is created on KIT_STAGE_MODEL_REVIEW_LOW (default claude-sonnet-5-5) for low and KIT_STAGE_MODEL_REVIEW for high; the triage, spec and build tasks say what each level means (kit#751)
+
+behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-0211
+  review unreviewed
+  priority 4
+  pending
+  needs-context "This is a platform choice, so it is yours. Today the orchestrator is already C# in Kit (Pipeline.cs, async, no model). Only the runner pod's loop is shell (runner/pool.sh, using node to read the claim's JSON), and each run is the Claude Code CLI, which is itself a Node program whatever wraps it. A C# runner would mean a .NET image for the runner, and the change is in the runner image, which is yours to merge. Approve and I build it; deny and the shell loop stays."
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-0211): "Running kit pipeline with a node script. Surely this is perfect application for csharp async"
+  contract my assumption: the loop that claims a run, starts the CLI, and reports usage, bundles and failure back to Kit moves into a small C# worker; the CLI run itself stays the same
 
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
@@ -1469,6 +1486,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   contract my assumption: at each scheduled wake the bot reads the items the pipeline stopped, its flags and how their reviews came out, and what each item cost, and fixes the stage that did worst, one change at a time
   contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
   contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
+  contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS

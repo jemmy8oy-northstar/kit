@@ -31,7 +31,7 @@ public static class SpecStage
         sb.Append("4. In ").Append(path).Append(", replace each \"new: <one line>\" under Cards with the id you gave it. At the end of Context add a line \"")
             .Append(TestPlanHeading).Append("\" and under it one \"- \" line per test: the card id, then what the test checks.\n");
         sb.Append("5. Write no tests and no code.\n");
-        sb.Append("6. If you are unsure of the spec and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it.\n");
+        sb.Append("6. If you are unsure of the spec and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. ").Append(FlagLevels.Guidance).Append('\n');
         sb.Append("7. Commit and push the branch to origin, then STOP. Do not start any other work and do not open a pull request.\n\n");
         var rendered = bundle.Render();
         if (sb.Length + path.Length + rendered.Length + 40 <= KitRouter.MaxTask)
