@@ -206,6 +206,17 @@ public sealed partial class KitRouter(
             return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
         }
 
+        // BEH-SETTINGS-7: when he last asked the agent to wake; a read like the rest.
+        if (pathname == "/api/settings/wake")
+        {
+            return Json(200, new WakeSetting
+            {
+                Requested = corpora.Corpora().Contains(WakeDirective.App, StringComparer.Ordinal)
+                    ? WakeDirective.Read(corpora.ReadText(WakeDirective.App))
+                    : null,
+            });
+        }
+
         // BEH-FLAGS-1/2: Kit's features switched on and off for him and for testers; a read like the rest.
         if (pathname == "/api/settings/features")
         {
@@ -485,6 +496,14 @@ public sealed partial class KitRouter(
             lock (writeGate)
             {
                 return SetIdle(body);
+            }
+        }
+
+        if (pathname == "/api/settings/wake")
+        {
+            lock (writeGate)
+            {
+                return SetWake();
             }
         }
 
@@ -1158,6 +1177,29 @@ public sealed partial class KitRouter(
 
         corpora.WriteText(app, result.Text!);
         return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle work to {(chosen.Count == 0 ? "none" : string.Join(", ", chosen))}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
+    /// <summary>
+    /// BEH-SETTINGS-7: record that he asked the agent to wake — the <c># kit:wake</c> line in Kit's own
+    /// primary file set to now, committed like any edit. Operator-only, by the gate every write sits behind.
+    /// </summary>
+    private KitResponse SetWake()
+    {
+        var app = WakeDirective.App;
+        if (!corpora.Corpora().Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"the setting lives in the corpus named '{app}', which this Kit does not serve" });
+        }
+
+        var at = (clock ?? TimeProvider.System).GetUtcNow();
+        var result = writer.SetWake(corpora.ReadText(app), at);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), "asked the agent to wake", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
     /// <summary>Kit's own features (the files of project <c>kit</c>), in file order, each id once.</summary>

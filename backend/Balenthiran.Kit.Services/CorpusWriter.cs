@@ -525,6 +525,30 @@ public sealed class CorpusWriter(ICorpusParser parser) : ICorpusWriter
     }
 
     /// <summary>
+    /// BEH-SETTINGS-7: sets the <c># kit:wake</c> line to <paramref name="at"/>, replacing the first and
+    /// dropping the rest, else adding it after the leading directives.
+    /// </summary>
+    public IWriteResult SetWake(string text, DateTimeOffset at)
+    {
+        var lines = text.Split('\n').ToList();
+        var existing = WakeDirective.Lines([.. lines]).ToList();
+        if (existing.Count > 0)
+        {
+            lines[existing[0]] = WakeDirective.Line(at);
+            foreach (var i in existing.Skip(1).Reverse())
+            {
+                lines.RemoveAt(i);
+            }
+        }
+        else
+        {
+            lines.Insert(HeaderAnchor(lines) + 1, WakeDirective.Line(at));
+        }
+
+        return ValidatedEdit(text, string.Join('\n', lines));
+    }
+
+    /// <summary>
     /// BEH-FLAGS-1: sets one feature's switch for one group as a <c># kit:switch</c> comment line. The
     /// default (on for the operator, off for testers) is stored as no line, so setting it back removes
     /// the line; anything else replaces the first line for that feature and group, drops repeats, or is
