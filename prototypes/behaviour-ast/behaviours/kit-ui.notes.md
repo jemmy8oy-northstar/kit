@@ -189,3 +189,9 @@ Add to FEAT-ARCH, as a new behaviour alongside BEH-ARCH-1 (which it extends, not
 <!-- from: chat -->
 
 EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works.
+
+## 2026-11-07 01:32Z
+
+<!-- from: chat -->
+
+Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT-PIPELINE and not a custom agent under BEH-AGENTS-1. It is an exception to the no-timer rule in BEH-ORCH-3: a cheap model still triages most tasks as the pipeline does now, and the Opus review runs on a timer. The review checks things like neglected tasks, a sample of completed work, and the architecture, to keep things in check. The user chooses how often it runs: daily, every two days, or weekly. Where that cadence setting lives is still open: a new setting on the Settings page, or under BEH-SETTINGS-5 or BEH-SETTINGS-6.
