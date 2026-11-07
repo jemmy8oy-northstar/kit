@@ -1,6 +1,7 @@
 # Chat: show again, options, action cards, Kit's capabilities, item links and input
 Work-item: chat-show-again-options-and-action-cards
 Flag: Unsure of four points: BEH-CHAT-18's source note (kit-ui.notes.md#2026-11-06-0001, cited above as 00:01Z) is not in kit-ui.notes.md and the card has no test; BEH-CHAT-13's card says the Answered line, not the action card, shows the answer text; BEH-CHAT-7's can-list has no tool for the coding-agent question and omits show_note and offer_options, which I added as later asks; BEH-NOTE-15 already stores the tag, so the notes-page-archive-tag-and-warning bundle's "new:" tag card would duplicate it.
+Review: revised — all four flags hold; most cards are already built, so Context now narrows the build to the CHAT-13 action card and a CHAT-7 tool-list check, notes that CHAT-17's Shift+Enter is already specced and tested, and records CHAT-18's missing source note
 Cards:
 - BEH-CHAT-9
 - BEH-CHAT-10
@@ -27,30 +28,28 @@ Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.tests.json
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
 Context:
-Every card above exists in kit-ui.beh with a test line in kit-ui.tests.json, so the job is to verify each against the code and build only what is missing. The Chat page's source is not yet identified; find it from the test paths in kit-ui.tests.json.
-- BEH-CHAT-9 (Show again): the card says it is built, beside Approve and Skip, and reposts the item in hand at the foot of the chat. Verify the label is "Show again".
-- BEH-CHAT-10 (tappable options for yes/no and multiple-choice questions): the owner can tap one or type a free-form answer. Check the free-form path still works.
-- BEH-CHAT-6 and BEH-CHAT-3 (note created from chat, with bubble and undo): CHAT-6 says a saved note shows a Kit line with an Undo, and Undo dismisses the note. The owner wants the bubble to state exactly what happened. Check the wording against that.
-- BEH-CHAT-12 (show a posted answer, or a note's text, answer and tag, on request): from the 23:32Z note, item 1.
-- BEH-CHAT-13 (action card shows the answer text just added): from the 23:32Z note, item 2.
-- BEH-CHAT-14 (no next-up-in-Kit section): from the 23:32Z note, item 3. Confirm the section is gone.
-- BEH-CHAT-12 needs the note's tag, which the note-tag work in notes-page-archive-tag-and-warning also adds. Coordinate, and do not build the tag here.
-- BEH-CHAT-7 (what Kit can and cannot do; 2026-11-03 23:40Z): the card is marked built, with agent instructions and a help line. The note lists what Kit can do: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item (BEH-CHAT-6); show an item again (BEH-CHAT-9); save a note for the coding agent; put a technical question to the coding agent (BEH-SPECAGENT-3); read whole spec cards (BEH-CHAT-8). It cannot reorder, pause, schedule, change priority, or edit the spec; for those it leaves a note and the coding agent makes the change. Check the agent's instructions list exactly these, and nothing it cannot do is offered as a button.
-- BEH-CHAT-15 (2026-11-03 23:35Z): an item id written in the chat or on an action card (e.g. BEH-USERS-5) is a link that opens that item. The card is on the list with no build mark seen in this triage; check its built state. Use the item-page route that already exists rather than a new one. Links must work from both places.
-- BEH-CHAT-17 (2026-11-04 11:00Z): on a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends. The card does not mention Shift+Enter, which the note asks for on desktop (Shift+Enter adds a new line). Add it to the card's contract or confirm with the owner before building it; do not change the phone behaviour.
-- BEH-CHAT-18 (2026-11-06 00:01Z): Kit keeps a rough sense of each user's technical level and pitches replies to it. The card is priority 5, pending, which is the backlog the note asks for. Do not build it here. The note's signals (whether the user hand-edits the repo, how technical their prompts are) are not yet specified; leave them on the card.
+Every card above exists in kit-ui.beh. All but BEH-CHAT-18 have test lines in kit-ui.tests.json, and all but BEH-CHAT-18 already carry "contract built" lines. So the job is to check each against the code and build only the gaps named below. The Chat page is prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx's subject (ui/src/pages/Chat.tsx); the backend side is in backend/Balenthiran.Kit.Tests/TriageTests.cs's subject.
+- BEH-CHAT-9 (Show again): built, beside Approve and "Skip to next item", reposting the item in hand at the foot of the chat. Check that the label is exactly "Show again". No test pins the label yet.
+- BEH-CHAT-10 (tappable options): built through offer_options. Typing a free-form answer is covered by an existing test. Verify only.
+- BEH-CHAT-6 and BEH-CHAT-3 (note saved from chat, with bubble and Undo): built. The bubble reads "Saved as a note on <project>: “<the note, in full>”" with an Undo, and Undo dismisses exactly that note, then "Undone: …". This matches the 13:54Z ask for a bubble that states exactly what happened. Verify only. A test pinning the bubble wording is the one gap.
+- BEH-CHAT-12 (show a posted answer, or a note's text, answer and tag): built through show_note, with tests. BEH-NOTE-15 is already built and stores the origin as the note's `<!-- from: … -->` line, and CHAT-12 only reads it. Build no tag here. The "new:" tag card in the notes-page-archive-tag-and-warning bundle duplicates BEH-NOTE-15. That is for that bundle's review, not this one.
+- BEH-CHAT-13 (action card shows the answer text just added): Kit's line quoting the full answer is built. The card's own assumption says the action card itself should also show the full text (the 23:32Z note says "the card shows the text that was added"), and that part is unverified. This is the one real build gap in the bundle: make the action card show the answer's full text, alongside Kit's line.
+- BEH-CHAT-14 (no next-up-in-Kit section): built. Kit's line no longer says "Next up". The dock's jump to another project's item (BEH-SPACE-2) stays. Verify only.
+- BEH-CHAT-7 (what Kit can and cannot do; 23:40Z note): built, with instructions and a help line. The card's assumptions map the can-list to approve_item, deny_item, answer_item, undo_last, show_item, save_note, ask_coding_agent (BEH-SPECAGENT-3) and read_spec (BEH-CHAT-8). They also add show_note and offer_options as later asks. Check the instructions and help line against that whole list, not only the 23:40Z list. If ask_coding_agent does not exist yet (BEH-SPECAGENT-3 unbuilt), the instructions must not claim it. Record that as an assumption on the card rather than building the tool here. Nothing on the cannot-list (reorder, pause, schedule, priority, spec edit) has a tool or a button; asked for one of them, Kit offers to leave a note.
+- BEH-CHAT-15 (item ids as links): built, with four tests. Ids link to the existing /projects/<app>/<epics|features|behaviours>/<id> route in messages, item cards, action cards and shown notes. Verify only; add no new route.
+- BEH-CHAT-17 (Enter on phone and desktop): built. Shift+Enter on a desktop is already on the card (from the 11:00Z note) and tested ("on a fine pointer Enter sends and Shift+Enter does not"). Nothing to confirm with the owner. Do not change the phone behaviour.
+- BEH-CHAT-18 (technical level): priority 5, pending, needs-context. Do not build it. Its source, kit-ui.notes.md#2026-11-06-0001, is not in kit-ui.notes.md (the file ends at 2026-11-04 18:08Z), so the card's quoted contract is the only record of the ask. Leave the card as it is, and say in the PR that the source note is missing so the owner can point to where it lives.
 
 Test plan:
 - BEH-CHAT-9: new, the dock shows a button labelled exactly "Show again" beside Approve and "Skip to next item".
 - BEH-CHAT-9: existing "puts the item at the bottom with no model call, no write and no reply spent" still passes.
-- BEH-CHAT-10: existing "leaves typing free, and sending his own words retires the options" still passes; the free-form path sends his typed words.
+- BEH-CHAT-10: existing "leaves typing free, and sending his own words retires the options" still passes.
 - BEH-CHAT-3: new, a note saved from the chat puts Kit's bubble "Saved as a note on <project>: “<the note, in full>”" in the thread, with an Undo.
-- BEH-CHAT-6: existing "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" still passes; Undo dismisses exactly that note and says "Undone: …".
-- BEH-CHAT-12: new, a note shown by show_note carries its origin tag (chat, note button or agent, from BEH-NOTE-15) with its text and its answers.
-- BEH-CHAT-13: new, after an answer is posted the action card itself shows the whole answer text, not only Kit's line.
+- BEH-CHAT-6: existing "saves a note on the project with no behaviour, even with no item in hand, and Undo dismisses that note" still passes.
+- BEH-CHAT-12: existing "puts the note found by its item id into the thread with its text, its answer and its origin, and writes nothing" still passes.
+- BEH-CHAT-13: new, after an answer is posted the action card itself shows the whole answer text, not only Kit's line; existing "quotes every word of the answer that was posted" still passes.
 - BEH-CHAT-14: existing "after an item is dealt with the next one only comes up in the thread, with no Next up line" still passes.
-- BEH-CHAT-7: new, the agent's instructions and the help line name the same can-list, map to the tools named in the card, and offer no button for reorder, pause, schedule, priority or spec edit.
-- BEH-CHAT-15: existing "links a known id in the agent’s words, and in an action card, and leaves an unknown id as text" and "links the ids in the question on the item card" still pass.
-- BEH-CHAT-17: new, on a fine pointer Shift+Enter inserts a new line into the text and does not send.
-- BEH-CHAT-17: existing "on a coarse pointer Enter does not send and the Send button does" still passes.
-- BEH-CHAT-18: no test; the card is pending and is not built here.
+- BEH-CHAT-7: new, the agent's instructions and the help line name the same can-list, made up only of tools that exist, and no button is offered for reorder, pause, schedule, priority or spec edit; existing "the header button and a typed help or /help add the help line and never call the agent" still passes.
+- BEH-CHAT-15: existing four tests still pass.
+- BEH-CHAT-17: existing "on a coarse pointer Enter does not send and the Send button does" and "on a fine pointer Enter sends and Shift+Enter does not" still pass.
+- BEH-CHAT-18: no test; the card is pending and not built here.
