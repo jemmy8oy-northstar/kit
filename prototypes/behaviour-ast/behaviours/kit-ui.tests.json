@@ -956,5 +956,24 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 shows each work item's stage, flag, review and runs per stage, and cost by stage" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 shows no pipeline section when the pipeline is off" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-9 says when the pipeline is on with no items yet" }
+  ],
+  "BEH-ORCH-10": [
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_a_skipped_run_beside_a_success_merges_but_only_skipped_runs_wait" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_a_run_that_did_not_finish_cleanly_refuses" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_merges_the_exact_head_commit_when_every_run_succeeded_and_it_is_mergeable" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_waits_while_a_run_is_in_progress_or_there_is_none_yet_or_mergeable_is_null" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_refuses_a_failed_run_even_while_another_is_still_running" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_refuses_a_conflict_and_a_closed_pull_request_and_merges_neither" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_refuses_when_the_checks_cannot_be_read_saying_so_and_never_the_token" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_a_head_that_moved_after_the_check_is_looked_at_again_not_merged" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_10_an_address_that_is_not_a_pull_request_page_is_refused_without_a_request" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_a_built_item_whose_pull_request_is_green_is_merged_once" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_a_pull_request_still_waiting_is_left_alone_and_asked_again_next_time" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_a_refused_merge_stops_the_item_with_the_reason_and_is_not_asked_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_with_merging_off_nothing_is_asked" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_an_item_that_changed_while_the_merge_was_asked_is_left_alone" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_the_pipeline_lists_whether_each_item_was_merged" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_10_KIT_PIPELINE_MERGE_is_off_unless_it_says_on_and_a_typo_throws" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-10 shows a Merged line under the pull request link once Kit merged it" }
   ]
 }

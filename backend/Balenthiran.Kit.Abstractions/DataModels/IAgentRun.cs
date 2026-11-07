@@ -95,6 +95,9 @@ public interface IPipelineItem
 
     string? PullRequest { get; }
 
+    /// <summary>Kit merged the pull request (BEH-ORCH-10).</summary>
+    bool Merged { get; }
+
     /// <summary>The bundle's Flag line, without "Flag: "; null when it has none.</summary>
     string? Flag { get; }
 

@@ -148,6 +148,24 @@ describe('Runs', () => {
     expect(stages.map((li) => li.textContent)).toEqual(['triage: 1 run · $0.05', 'spec: 1 run · $0.10', 'review: 1 run · $0.30'])
   })
 
+  it('BEH-ORCH-10 shows a Merged line under the pull request link once Kit merged it', async () => {
+    mockBoth(
+      { capUsd: 5, runs: [run] },
+      {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'merged-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/1', merged: true },
+          { project: 'kit', slug: 'open-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/2' },
+        ],
+      },
+    )
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Pipeline work items' })).getAllByRole('listitem')
+    expect(items.find((li) => li.textContent?.includes('merged-one'))).toHaveTextContent('Merged')
+    expect(items.find((li) => li.textContent?.includes('open-one'))).not.toHaveTextContent('Merged')
+  })
+
   it('BEH-ORCH-9 shows no pipeline section when the pipeline is off', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: false, items: [] })
     renderRuns()
