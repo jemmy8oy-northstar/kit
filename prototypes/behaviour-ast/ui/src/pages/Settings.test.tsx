@@ -16,7 +16,7 @@ import { githubNavigation } from '../components/githubNavigation'
 type Posted = { path: string; body: unknown }
 
 /** A session that answers GET with `sessions` in turn (last one repeats) and records every POST. */
-function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], order: string[] = ['health']) {
+function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], order: string[] = ['health'], wake: string | null = null) {
   const posted: Posted[] = []
   let gets = 0
   const fn = vi.fn((path: string, init?: RequestInit) => {
@@ -24,6 +24,7 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
       const sent = JSON.parse(init.body as string)
       posted.push({ path, body: sent })
       const r = reply ?? { status: 200, body: { ok: true, signedIn: true, user: 'sam' } }
+      if (path === '/api/settings/wake' && r.status < 400) wake = '2026-11-07T02:15:00Z'
       if (path === '/api/settings/idle' && r.status < 400) order = sent.order
       return Promise.resolve({
         ok: r.status < 400, status: r.status, json: () => Promise.resolve(r.body),
@@ -38,6 +39,9 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
     }
     if (path === '/api/settings/idle') {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ idle: order[0] ?? 'idle', order }) } as Response)
+    }
+    if (path === '/api/settings/wake') {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ requested: wake }) } as Response)
     }
     throw new Error(`unexpected fetch to ${path}`)
   })
@@ -441,6 +445,50 @@ describe('Idle work order (BEH-SETTINGS-6)', () => {
     expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'When nothing is asked of the agent' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'Suggest ideas' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Wake the agent (BEH-SETTINGS-7)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+
+  it('shows the operator the button, never asked, and when the agent wakes', async () => {
+    vi.stubGlobal('fetch', server([james]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Wake the agent' })).toBeInTheDocument()
+    expect(await screen.findByText('Never asked')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Wake the agent' })).toBeEnabled()
+    expect(screen.getByText('The agent wakes at its next look, within about 5 minutes, unless you have paused it.')).toBeInTheDocument()
+  })
+
+  it('shows the last time he asked', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, [], ['health'], '2026-11-07T02:15:00Z').fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText(/^Last asked: /)).toBeInTheDocument()
+    expect(screen.queryByText('Never asked')).not.toBeInTheDocument()
+  })
+
+  it('posts the wake request when the button is pressed, says so, and shows the new time', async () => {
+    const s = server([james], { status: 200, body: { app: 'kit' } })
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Wake the agent' }))
+    expect(await screen.findByText('Asked. The agent will wake at its next look.')).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/settings/wake', body: null }])
+    expect(await screen.findByText(/^Last asked: /)).toBeInTheDocument()
+  })
+
+  it('shows the server reason when the request is refused', async () => {
+    vi.stubGlobal('fetch', server([james], { status: 403, body: { error: 'not-yours', reason: 'not yours to change' } }).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.click(await screen.findByRole('button', { name: 'Wake the agent' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('not yours to change')
+  })
+
+  it('does not show the button to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }]).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Wake the agent' })).not.toBeInTheDocument()
   })
 })
 

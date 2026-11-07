@@ -97,14 +97,24 @@ public static class Orchestrator
             ? item with { Status = WorkItemStatus.Running }
             : throw new InvalidOperationException($"only a queued item can start, not one that is {item.Status}");
 
-    /// <summary>The model <paramref name="stage"/> runs on.</summary>
-    public static string ModelFor(PipelineStage stage, StageModelSettings models) => stage switch
+    /// <summary>The model <paramref name="stage"/> runs on; a review of a low-level <paramref name="flag"/> runs on the cheaper review model (BEH-ORCH-2).</summary>
+    public static string ModelFor(PipelineStage stage, StageModelSettings models, string? flag = null) => stage switch
     {
         PipelineStage.Triage => models.Triage,
-        PipelineStage.Review => models.Review,
+        PipelineStage.Review => FlagLevels.Of(flag) == FlagLevel.Low ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
+    };
+
+    /// <summary>The turn limit of <paramref name="stage"/>'s run (BEH-ORCH-5).</summary>
+    public static int TurnsFor(PipelineStage stage, StageTurnSettings turns) => stage switch
+    {
+        PipelineStage.Triage => turns.Triage,
+        PipelineStage.Review => turns.Review,
+        PipelineStage.Spec => turns.Spec,
+        PipelineStage.Build => turns.Build,
+        _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
     };
 
     private static WorkItem Stop(WorkItem item, string because) =>

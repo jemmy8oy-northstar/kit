@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Balenthiran.Kit.Database;
+using Balenthiran.Kit.Services;
 
 namespace Balenthiran.Kit.Tests;
 
@@ -128,6 +130,31 @@ public class RunnerScriptTests
     }
 
     // ── pool.sh ──────────────────────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(100)]
+    [InlineData(null)]
+    public void BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none(int? maxTurns)
+    {
+        using var rig = new Rig();
+        // The claim body is what the server itself writes for this PoolClaim, not typed by hand.
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", maxTurns);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        if (maxTurns is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_MAX_TURNS"), "a run with no limit must not be given an empty one");
+        }
+        else
+        {
+            Assert.Equal(maxTurns.ToString(), seen["KIT_MAX_TURNS"]);
+        }
+    }
 
     [Fact]
     public void A_subscription_run_is_reported_finished_with_its_usage_and_never_sees_the_pool_token()
@@ -565,7 +592,7 @@ public class RunnerScriptTests
         /// <paramref name="answers"/> is what Kit says to the 1st, 2nd, ... finished report (the last repeats).
         /// The body is read from the <c>@file</c> given to <c>--data-binary</c>, as curl would send it.
         /// </summary>
-        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null)
+        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null, string? claimJson = null)
         {
             Executable(System.IO.Path.Combine(Bin, "kit-run"),
                 "#!/bin/sh",
@@ -594,7 +621,7 @@ public class RunnerScriptTests
                 "done",
                 "case \"$url\" in",
                 "  */api/runs/claim)",
-                "    printf '%s' '{\"id\":\"r1\",\"token\":\"tok\",\"repo\":\"o/r\",\"task\":\"t\",\"baseBranch\":\"\",\"model\":\"sonnet\"}' > \"$out\"",
+                "    printf '%s' '" + (claimJson ?? "{\"id\":\"r1\",\"token\":\"tok\",\"repo\":\"o/r\",\"task\":\"t\",\"baseBranch\":\"\",\"model\":\"sonnet\"}") + "' > \"$out\"",
                 "    printf 200;;",
                 "  */api/runs/finished)",
                 "    printf '%s\\n' \"$data\" >> '" + System.IO.Path.Combine(Rec, "finished.log") + "'",

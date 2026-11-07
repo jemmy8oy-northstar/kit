@@ -101,6 +101,17 @@ public class RunnerPoolTests
     }
 
     [Fact]
+    public void BEH_ORCH_5_A_run_started_by_hand_is_claimed_with_no_turn_limit()
+    {
+        var rig = new Rig();
+        rig.Start("kit");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim().Body);
+
+        Assert.Null(claim.MaxTurns);
+    }
+
+    [Fact]
     public void A_started_run_with_a_repo_and_task_is_claimed_with_the_token_the_start_returned_and_moves_to_running()
     {
         var rig = new Rig();

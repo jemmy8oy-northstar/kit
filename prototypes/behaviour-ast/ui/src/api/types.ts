@@ -140,6 +140,11 @@ export type DepthMode = 'goals' | 'behaviours' | 'architecture'
 /** What the agent does when two specs conflict (BEH-CONFLICT-2). `build` is the default and is no line. */
 export type ConflictMode = 'build' | 'ask' | 'wait'
 
+/** When he last asked the agent to wake (BEH-SETTINGS-7): ISO 8601 UTC, or null when never asked. */
+export interface WakeSetting {
+  requested: string | null
+}
+
 /** The agent's kinds of idle work (BEH-SETTINGS-6). One not in the order is switched off. */
 export type IdleItem = 'health' | 'ideas'
 
@@ -625,6 +630,8 @@ export interface AgentRun {
   costUsd: number
   /** Why a failed run failed, as its runner reported it: `<step> exit <code>`. Null otherwise. */
   failure?: string | null
+  /** The work-item slug a pipeline run was for (BEH-ORCH-6); null for triage and runs not started for one item. */
+  workItem?: string | null
 }
 
 /** `GET /api/runs` (BEH-USERS-9): every run newest first, and what one run may spend. */

@@ -451,6 +451,21 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
+  "BEH-SETTINGS-7": [
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_no_line_means_requested_is_null" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_post_writes_the_line_with_the_clocks_time" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_second_post_replaces_the_line_rather_than_adding_one" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_the_writer_drops_repeats_and_touches_nothing_else" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_non_operator_post_is_refused_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_get_reads_a_written_line" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_malformed_line_reads_as_never_asked" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_the_written_line_is_what_the_scheduler_greps" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator the button, never asked, and when the agent wakes" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the last time he asked" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the wake request when the button is pressed, says so, and shows the new time" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the request is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the button to anyone but the operator" }
+  ],
   "BEH-SETTINGS-6": [
     { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "An_ordered_list_is_read_in_his_order" },
     { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "Legacy_idle_and_on_change_and_none_read_as_nothing_switched_on" },
@@ -904,5 +919,15 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Reading_the_spec_gives_whole_cards_of_any_kind_and_names_a_missing_one" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_reads_the_cards_asked_for_and_asks_again_with_them" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once" }
+  ],
+  "BEH-ORCH-5": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Each_stage_runs_on_its_own_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_A_turn_limit_is_read_from_the_environment_or_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_flagged_stage_is_reviewed_on_the_review_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_5_A_run_started_by_hand_is_claimed_with_no_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none" }
   ]
 }
