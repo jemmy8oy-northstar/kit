@@ -271,6 +271,19 @@ public class PipelineTests
     }
 
     [Fact]
+    public void A_set_aside_bundle_stops_for_a_person_with_its_flag_and_its_notes_are_not_triaged_again()
+    {
+        using var rig = new Rig();
+        rig.Note("test");
+
+        rig.FinishWith(rig.Claim()!, new { slug = TriageStage.SetAside, text = BundleText(TriageStage.SetAside, flag: "a test note, asks for nothing") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == TriageStage.SetAside);
+        Assert.Equal((WorkItemStatus.Stopped, "set aside: a test note, asks for nothing"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
     public void A_bundle_that_is_malformed_too_large_or_for_another_slug_stops_its_item_with_the_reason()
     {
         using var rig = new Rig();
