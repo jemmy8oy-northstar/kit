@@ -14,9 +14,13 @@ namespace Balenthiran.Kit.Services;
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null)
+/// <param name="scheduled"><c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): also start the agent's scheduled cards at spec, one per project at a time. Off by default: each starts runs on the owner's subscription.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false)
 {
     private readonly object gate = new();
+
+    // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
+    private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
 
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
@@ -57,6 +61,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             QueueTriage(app);
             StartReady();
+
+            // After the triage, which may have ended at once: notes go first.
+            if (QueueScheduled(app))
+            {
+                StartReady();
+            }
         }
     }
 
@@ -126,6 +136,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             StartReady();
+            if (QueueScheduled(items[run.Index].Project))
+            {
+                StartReady();
+            }
         }
 
         // Outside the lock: opening it is a request to GitHub, and the pipeline must not wait on one.
@@ -232,6 +246,92 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         bundles[(item.Project, item.Slug)] = bundle;
         return Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null));
     }
+
+    /// <summary>
+    /// <c>BEH-ORCH-4</c>: <paramref name="app"/>'s schedule changed (a card was added to it): with
+    /// <c>KIT_PIPELINE_SCHEDULED=on</c>, queue its first unstarted scheduled card at spec. Otherwise nothing happens.
+    /// </summary>
+    public void ScheduleChanged(string app)
+    {
+        if (!scheduled || (projects is not null && !projects.Contains(app)))
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            if (QueueScheduled(app))
+            {
+                StartReady();
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>BEH-ORCH-4</c>: with the switch on, no triage queued for <paramref name="app"/> and no scheduled card of it
+    /// unfinished, queue the first scheduled pending card that has no work item yet straight at spec, with a bundle
+    /// written from the card itself. A card whose bundle cannot be made is queued stopped, saying why, so it is not
+    /// tried again. True when an item was added.
+    /// </summary>
+    private bool QueueScheduled(string app)
+    {
+        if (!scheduled
+            || (projects is not null && !projects.Contains(app))
+            || items.Any(i => i.Project == app && i.Stage == PipelineStage.Triage && i.Status == WorkItemStatus.Queued)
+            || items.Any(i => i.Project == app && scheduledSlugs.Contains((app, i.Slug)) && i.Status is WorkItemStatus.Queued or WorkItemStatus.Running))
+        {
+            return false;
+        }
+
+        try
+        {
+            var behaviours = new CorpusParser().Parse(corpora.Read(app), corpora.RelativePath(app));
+            foreach (var id in Schedule.Parse(corpora.ReadScheduleText(app)))
+            {
+                var card = behaviours.FirstOrDefault(b => b.Id == id);
+                if (card is not { Pending: true })
+                {
+                    continue;
+                }
+
+                var slug = SlugOf(id);
+                if (items.Any(i => i.Project == app && i.Slug == slug))
+                {
+                    continue;
+                }
+
+                var contracts = card.Steps.Where(s => s.Kind == "contract").Select(s => s.Text.Trim()).Where(t => t.Length > 0).ToList();
+                var context = contracts.Count == 0
+                    ? $"Kit made this bundle from the scheduled card {id}, which has no contract lines yet."
+                    : $"Kit made this bundle from the scheduled card {id}. Its contracts:\n" + string.Join('\n', contracts.Select(c => "- " + c));
+                var notes = card.Source.Ref is { Length: > 0 } r && r == r.Trim() && !r.Contains('\n') ? [r] : new List<string>();
+                var bundle = new ContextBundle(card.Title, slug, [id], notes, [], context);
+                scheduledSlugs.Add((app, slug));
+                if (bundle.Check() is { } why)
+                {
+                    items.Add(Stop(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued), $"the scheduled card's bundle is not valid: {why}"));
+                }
+                else
+                {
+                    bundles[(app, slug)] = bundle;
+                    items.Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
+                }
+
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            // Not read means not queued: the next note, schedule change or run's end looks again.
+            Console.Error.WriteLine($"kit: pipeline could not read the schedule of {app} ({e.GetType().Name})");
+        }
+
+        return false;
+    }
+
+    /// <summary>The work-item slug of card <paramref name="id"/>: lower-case words joined by hyphens (<c>BEH-ORCH-4</c> is <c>beh-orch-4</c>).</summary>
+    private static string SlugOf(string id) =>
+        System.Text.RegularExpressions.Regex.Replace(id.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
 
     private void QueueTriage(string app)
     {
@@ -368,7 +468,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 text = item.Stage switch
                 {
-                    PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
+                    PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };

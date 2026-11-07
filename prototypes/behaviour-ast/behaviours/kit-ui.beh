@@ -1457,6 +1457,8 @@ behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no
   contract his note (kit.notes.md#2026-11-07-0151): "The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage"
   contract my assumption: the agent schedules a card as today, with its kit-ui.schedule line; the pipeline reads that file and queues the scheduled card straight at spec, with a bundle Kit writes from the card itself (its title, contracts and source notes), so no triage run is paid for
   contract my assumption: one scheduled card is started per project at a time, after any queued triage, so notes still go first
+  contract my assumption: it is off until he sets KIT_PIPELINE_SCHEDULED=on, because a scheduled card starts runs on his subscription without a note from him
+  contract built: with KIT_PIPELINE_SCHEDULED=on and no triage queued, the pipeline queues the first unstarted scheduled card at spec with a bundle Kit writes from the card, one per project at a time (kit#751)
 
 behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays cheap"
   in FEAT-AGENT-PIPELINE
