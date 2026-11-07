@@ -14,7 +14,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null)
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null)
 {
     private readonly object gate = new();
 
@@ -400,7 +400,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models), AgentTokens.Hash(token), now);
         try
         {
-            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..]);
+            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));
         }
         catch (Exception e)
         {

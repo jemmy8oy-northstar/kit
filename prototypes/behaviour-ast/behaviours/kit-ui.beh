@@ -1451,6 +1451,7 @@ behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays c
   contract my assumption: each stage has its own limit: triage 15, spec 30, review 20, build 100; each is a setting (KIT_STAGE_TURNS_TRIAGE and so on), so a limit is one change
   contract my assumption: the limit travels with the run, the way its model does, so a run started by hand keeps the runner's 100
   contract my assumption: a stage that runs out of turns fails as any run does, and its item stops with the reason, so a limit set too low shows on Runs rather than passing silently
+  contract built: KIT_STAGE_TURNS_TRIAGE, _REVIEW, _SPEC and _BUILD (defaults 15, 20, 30, 100; blank is the default; zero, negative or non-whole THROWS at startup); the pipeline queues each run with its stage's limit, the pool's claim carries it as `maxTurns` (null for a run started by hand), and pool.sh exports it as KIT_MAX_TURNS only when present, so the runner's own 100 applies otherwise
 
 behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixes its weakest stage"
   in FEAT-AGENT-PIPELINE

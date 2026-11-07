@@ -904,5 +904,15 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Reading_the_spec_gives_whole_cards_of_any_kind_and_names_a_missing_one" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_reads_the_cards_asked_for_and_asks_again_with_them" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once" }
+  ],
+  "BEH-ORCH-5": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Each_stage_runs_on_its_own_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_A_turn_limit_is_read_from_the_environment_or_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_flagged_stage_is_reviewed_on_the_review_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerPoolTests.cs", "title": "BEH_ORCH_5_A_run_started_by_hand_is_claimed_with_no_turn_limit" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none" }
   ]
 }

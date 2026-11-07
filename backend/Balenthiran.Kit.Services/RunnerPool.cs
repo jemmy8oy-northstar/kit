@@ -15,7 +15,7 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
     /// <summary>What the operator is told when a run went to the pool.</summary>
     public const string QueuedNote = "queued for the runner pool";
 
-    private sealed record Item(string RunId, string Token, string Repo, string Task, string? BaseBranch);
+    private sealed record Item(string RunId, string Token, string Repo, string Task, string? BaseBranch, int? MaxTurns);
 
     private readonly object gate = new();
     private readonly List<Item> queue = [];
@@ -31,12 +31,15 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
     public Task<AgentLaunch> LaunchAsync(IAgentRun run, string runToken, CancellationToken cancellationToken = default) =>
         Task.FromResult(new AgentLaunch(false, "the runner pool needs a repo and a task to run, so the run stays queued"));
 
-    /// <summary>Holds <paramref name="run"/> for the next runner that asks. Memory only.</summary>
-    public void Enqueue(IAgentRun run, string token, string repo, string task, string? baseBranch)
+    /// <summary>
+    /// Holds <paramref name="run"/> for the next runner that asks. Memory only. <paramref name="maxTurns"/> (BEH-ORCH-5)
+    /// is the run's turn limit; none means the runner keeps its own.
+    /// </summary>
+    public void Enqueue(IAgentRun run, string token, string repo, string task, string? baseBranch, int? maxTurns = null)
     {
         lock (gate)
         {
-            queue.Add(new Item(run.Id, token, repo, task, baseBranch));
+            queue.Add(new Item(run.Id, token, repo, task, baseBranch, maxTurns));
         }
 
         Signal();
@@ -137,7 +140,7 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
 
                 handedOut[run.Project] = run.Id;
                 repoByRun[run.Id] = item.Repo;
-                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model);
+                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns);
             }
 
             return null;

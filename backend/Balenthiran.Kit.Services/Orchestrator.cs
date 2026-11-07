@@ -107,6 +107,16 @@ public static class Orchestrator
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
+    /// <summary>The turn limit of <paramref name="stage"/>'s run (BEH-ORCH-5).</summary>
+    public static int TurnsFor(PipelineStage stage, StageTurnSettings turns) => stage switch
+    {
+        PipelineStage.Triage => turns.Triage,
+        PipelineStage.Review => turns.Review,
+        PipelineStage.Spec => turns.Spec,
+        PipelineStage.Build => turns.Build,
+        _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
+    };
+
     private static WorkItem Stop(WorkItem item, string because) =>
         item with { Status = WorkItemStatus.Stopped, StoppedBecause = because };
 

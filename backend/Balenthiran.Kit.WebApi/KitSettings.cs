@@ -269,6 +269,30 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_MODEL_BUILD</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelBuild(string? value) => StageModels.Parse("KIT_STAGE_MODEL_BUILD", value, StageModels.DefaultWork);
 
+    /// <summary><c>KIT_STAGE_TURNS_TRIAGE</c> (BEH-ORCH-5): the turn limit of a triage run. Unset is <see cref="StageTurnSettings.DefaultTriage"/>.</summary>
+    public int StageTurnsTriage { get; init; } = StageTurnSettings.DefaultTriage;
+
+    /// <summary><c>KIT_STAGE_TURNS_TRIAGE</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsTriage(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_TRIAGE", value, StageTurnSettings.DefaultTriage);
+
+    /// <summary><c>KIT_STAGE_TURNS_REVIEW</c> (BEH-ORCH-5): the turn limit of a review run. Unset is <see cref="StageTurnSettings.DefaultReview"/>.</summary>
+    public int StageTurnsReview { get; init; } = StageTurnSettings.DefaultReview;
+
+    /// <summary><c>KIT_STAGE_TURNS_REVIEW</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsReview(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_REVIEW", value, StageTurnSettings.DefaultReview);
+
+    /// <summary><c>KIT_STAGE_TURNS_SPEC</c> (BEH-ORCH-5): the turn limit of a spec run. Unset is <see cref="StageTurnSettings.DefaultSpec"/>.</summary>
+    public int StageTurnsSpec { get; init; } = StageTurnSettings.DefaultSpec;
+
+    /// <summary><c>KIT_STAGE_TURNS_SPEC</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsSpec(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_SPEC", value, StageTurnSettings.DefaultSpec);
+
+    /// <summary><c>KIT_STAGE_TURNS_BUILD</c> (BEH-ORCH-5): the turn limit of a build run. Unset is <see cref="StageTurnSettings.DefaultBuild"/>.</summary>
+    public int StageTurnsBuild { get; init; } = StageTurnSettings.DefaultBuild;
+
+    /// <summary><c>KIT_STAGE_TURNS_BUILD</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsBuild(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_BUILD", value, StageTurnSettings.DefaultBuild);
+
     /// <summary>
     /// <c>KIT_PIPELINE</c> (BEH-ORCH-3): <c>on</c> makes a note left in Kit queue a triage run on the runner pool,
     /// which spends Kit's own Anthropic credit. Unset or <c>off</c> is off: nothing runs.
@@ -394,6 +418,10 @@ public sealed record KitSettings(
             StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
             StageModelSpec = ParseStageModelSpec(env("KIT_STAGE_MODEL_SPEC")),
             StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
+            StageTurnsTriage = ParseStageTurnsTriage(env("KIT_STAGE_TURNS_TRIAGE")),
+            StageTurnsReview = ParseStageTurnsReview(env("KIT_STAGE_TURNS_REVIEW")),
+            StageTurnsSpec = ParseStageTurnsSpec(env("KIT_STAGE_TURNS_SPEC")),
+            StageTurnsBuild = ParseStageTurnsBuild(env("KIT_STAGE_TURNS_BUILD")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),

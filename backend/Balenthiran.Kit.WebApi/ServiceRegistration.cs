@@ -100,7 +100,8 @@ public static class ServiceRegistration
                 new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild),
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
-                pulls: sp.GetService<IPullRequestOpener>()));
+                pulls: sp.GetService<IPullRequestOpener>(),
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild)));
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
