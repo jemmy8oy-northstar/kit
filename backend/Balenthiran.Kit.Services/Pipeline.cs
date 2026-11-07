@@ -289,7 +289,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             foreach (var id in Schedule.Parse(corpora.ReadScheduleText(app)))
             {
                 var card = behaviours.FirstOrDefault(b => b.Id == id);
-                if (card is not { Pending: true })
+                // A paused card stays on the Backlog and is not built (BEH-BOARD-16), even when it is scheduled.
+                if (card is not { Pending: true, Paused: false })
                 {
                     continue;
                 }

@@ -1011,6 +1011,18 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_4_a_paused_scheduled_card_is_skipped_for_the_next()
+    {
+        var corpus = ScheduledCorpus.Replace("  pending\n  contract the list sorts", "  pending\n  paused\n  contract the list sorts");
+        Assert.Contains("paused", corpus);
+        using var rig = new Rig(corpus, scheduled: true, schedule: "BEH-A\nBEH-B\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        Assert.Equal(["beh-b"], rig.Pipeline.Items().Select(i => i.Slug));
+    }
+
+    [Fact]
     public void BEH_ORCH_4_a_second_scheduled_card_waits_while_the_first_is_unfinished()
     {
         using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\nBEH-B\n");
