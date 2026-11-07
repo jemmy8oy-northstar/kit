@@ -1,5 +1,6 @@
 # Project page tabs and the notes tab: order, tab navigation after posting
 Work-item: project-page-and-notes
+Flag: Not checked against the Notes panel code; whether notes already sort newest first and page ten at a time is unconfirmed.
 Cards:
 - BEH-FEAT-6
 - BEH-FEAT-7
