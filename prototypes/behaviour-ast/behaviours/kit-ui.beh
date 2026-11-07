@@ -957,6 +957,7 @@ behaviour BEH-STAGE-1 "A separate board takes every feature through five stages:
   source defined kit.notes.md#2026-10-19-0823
   priority 2
   review approved
+  review requested six stages, not five: BEH-ARCH-2 (built 2026-11-01) put architecture between logic and development, so the page now has six stage columns. Proposed wording for the title: "A separate board takes every feature through six stages: problem, UX, logic, architecture, development, UI", and for the stages contract: "the stages, in order: problem statement, UX requirements, business logic, architecture (when a feature needs one), development, UI requirements". BEH-STAGE-7 and BEH-STAGE-9 also say five and would follow this wording if approved; neither is edited here
   actor engineer
   when opens page:KitStages
   then sees region:KitStagesBoard
@@ -1073,6 +1074,7 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   in FEAT-STAGES
   source defined kit.notes.md#2026-10-31-1647
   review unreviewed
+  review requested BEH-STAGE-10 (approved) puts a feature with every behaviour built at ui, "so the board reads nothing left but polish", and leaves it there; this card shows that same feature in Done and leaves its ui stage line alone. Both can hold, since the stage line is the written word and Done is the column it shows in, but the ui column no longer shows fully built features. Please say which the board should show; no winner is picked here
   priority 2
   actor engineer
   when opens page:KitStages
@@ -2225,6 +2227,7 @@ behaviour BEH-ARCH-2 "A feature can pass an architecture stage before it is buil
   contract "Maybe kit needs another layer to its ux ui business logic spec state"
   contract my assumption: architecture is a stage between logic and development, used only when a feature needs a new part or a new platform choice; a feature that fits the existing design skips it
   contract built 2026-11-01: the stage word is architecture, between logic and development; a feature that fits the existing design skips it
+  contract my assumption: the Stages page shows architecture as its own column, after logic and before development (BEH-STAGE-12 puts Done after UI); a feature at architecture sits there, and a feature that skips it is not moved by this card. BEH-STAGE-1, -7 and -9 still say five stages and do not name it until the review request on BEH-STAGE-1 is answered
 
 behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the rest for them"
   in FEAT-ARCH
