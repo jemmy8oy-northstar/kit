@@ -71,6 +71,20 @@ describe('SchedulePanel (BEH-SCHED-1..3)', () => {
     expect(within(backlog()).getByText('2 pending behaviours')).toBeInTheDocument()
   })
 
+  it('leads each card with its title, and its id follows in muted type and still links (BEH-TITLE-1)', async () => {
+    server({ demo: { scheduled: [pending('BEH-B', 'bee')], backlog: [pending('BEH-C', 'sea')] } })
+    show()
+
+    for (const [region, title, id] of [
+      [await screen.findByRole('region', { name: 'Schedule' }), 'bee', 'BEH-B'],
+      [await screen.findByRole('region', { name: 'Backlog' }), 'sea', 'BEH-C'],
+    ] as const) {
+      const link = within(region).getByRole('link', { name: title })
+      expect(link).toHaveAttribute('href', `/projects/demo/behaviours/${id}`)
+      expect(within(link.closest('h3')!).getByText(id)).toHaveClass('muted')
+    }
+  })
+
   it('schedules a backlog behaviour, which moves across and is marked next', async () => {
     const posts = server({ demo: { scheduled: [], backlog: [pending('BEH-B', 'bee'), pending('BEH-C', 'sea')] } })
     show()

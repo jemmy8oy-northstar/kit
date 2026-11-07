@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { dismissNote, fetchNotes, leaveNote, replyToNote } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Note } from '../api/types'
+import type { AnyWriteResult, Note } from '../api/types'
 import { CAP } from '../board'
 import { foldedBy, type Citation } from '../notes'
 import Count from './Count'
@@ -53,6 +53,8 @@ export default function NotesPanel({
   const { resource, reload } = useReloadableResource(() => fetchNotes(app), [app, version])
   const [text, setText] = useState('')
   const { write, run } = useWrite(reload)
+  // BEH-NOTE-6: a reply's result is said here, not on its card: the card leaves "Needs your answer" when the reply lands, and would take the result with it.
+  const [replied, setReplied] = useState<AnyWriteResult | null>(null)
   // A note left from the floating button (BEH-NOTE-12) shows here without a reload.
   useEffect(() => {
     window.addEventListener(NOTE_WRITTEN, reload)
@@ -90,9 +92,10 @@ export default function NotesPanel({
     <>
       <ResourceView resource={resource}>
         {(list) => (
-          <NeedsAnswer app={app} notes={mine(list.notes).filter(({ note, folded }) => note.questions.length > 0 && !folded.length)} onChanged={reload} />
+          <NeedsAnswer app={app} notes={mine(list.notes).filter(({ note, folded }) => note.questions.length > 0 && !folded.length)} onChanged={reload} onAnswered={setReplied} />
         )}
       </ResourceView>
+      {replied && <WriteResultNote result={replied} subject="an answer" />}
 
       <section aria-labelledby="open-notes">
         <h2 id="open-notes">Notes</h2>
@@ -104,6 +107,7 @@ export default function NotesPanel({
               file={list.file}
               onItem={!!behaviour}
               onChanged={reload}
+              onAnswered={setReplied}
             />
           )}
         </ResourceView>
@@ -198,13 +202,13 @@ function Folded({ app, notes, onChanged }: { app: string; notes: Placed[]; onCha
  * every project page is exactly the scrolling he asked to be rid of, and a list
  * that failed to load still says so through `ResourceView`.
  */
-function NeedsAnswer({ app, notes, onChanged }: { app: string; notes: Placed[]; onChanged: () => void }) {
+function NeedsAnswer({ app, notes, onChanged, onAnswered }: { app: string; notes: Placed[]; onChanged: () => void; onAnswered: (r: AnyWriteResult) => void }) {
   if (!notes.length) return null
 
   return (
     <section aria-labelledby="needs-answer">
       <h2 id="needs-answer">Needs your answer</h2>
-      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} status={status} />} />
+      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} onAnswered={onAnswered} status={status} />} />
     </section>
   )
 }
@@ -215,12 +219,14 @@ function OpenNotes({
   file,
   onItem,
   onChanged,
+  onAnswered,
 }: {
   app: string
   notes: Placed[]
   file: string
   onItem: boolean
   onChanged: () => void
+  onAnswered: (r: AnyWriteResult) => void
 }) {
   if (!notes.length) {
     // BEH-NOTE-3: says so rather than vanishing — an empty region and a broken one look the same.
@@ -236,7 +242,7 @@ function OpenNotes({
         {/* BEH-COMMENT-2: on an item's page a cited comment stays here, so the project page's hint would be wrong. */}
         In <code>{file}</code>. {onItem ? 'Each says whether a card has picked it up.' : 'Once a behaviour cites one, it is archived below.'}
       </p>
-      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} status={status} />} />
+      <Capped items={notes} render={({ note, index, status }) => <NoteCard app={app} note={note} index={index} onChanged={onChanged} onAnswered={onAnswered} status={status} />} />
     </>
   )
 }
@@ -259,6 +265,7 @@ function NoteCard({
   note,
   index,
   onChanged,
+  onAnswered,
   folded = [],
   status,
 }: {
@@ -266,6 +273,7 @@ function NoteCard({
   note: Note
   index: number
   onChanged: () => void
+  onAnswered?: (r: AnyWriteResult) => void
   folded?: Citation[]
   status?: Citation[]
 }) {
@@ -279,6 +287,7 @@ function NoteCard({
     await answer.run(async () => {
       const result = await replyToNote(app, index, note.at, text)
       setText('')
+      onAnswered?.(result)
       return result
     })
   }
