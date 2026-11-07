@@ -777,3 +777,9 @@ First tester can see my proposed projects when they should not be able to, teste
 <!-- from: note-button -->
 
 tester can’t see their own project - holiday planner, they are a contributor to holiday planner  - I feel like maybe we haven’t moved the spec files into this repo yet so we don’t see it. We also need to make sure that kit finds projects where are users are added contributors
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+A new user as part of the onboarding has to sign in with git before they can use the app - currently a user can look around without having signed into git
