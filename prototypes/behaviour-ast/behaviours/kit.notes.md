@@ -717,3 +717,9 @@ Kit pipeline needs to quickly (and cheaply) identify when something is just for 
 <!-- from: note-button -->
 
 The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage
+
+## 2026-11-07 02:10Z
+
+<!-- from: note-button -->
+
+A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs
