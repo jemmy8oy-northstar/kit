@@ -753,3 +753,9 @@ Pipeline can raise and complete PRs for completed work
 <!-- from: note-button -->
 
 www.kitstudio.dev seems to be broken what do i need to change
+
+## 2026-11-07 21:13Z
+
+<!-- from: note-button -->
+
+I think it would be worth changing the .beh extension to .kit or .spec or something. .beh is not intuitive it’s not easy to say i don’t really like it. Currently im leaning towards .kit
