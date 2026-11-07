@@ -187,6 +187,12 @@ public sealed partial class KitRouter(
             return RunsList(cookie);
         }
 
+        // BEH-ORCH-9: the pipeline's work items, for the operator only, as runs are.
+        if (pathname == "/api/pipeline")
+        {
+            return PipelineList(cookie);
+        }
+
         if (pathname == "/api/projects")
         {
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit

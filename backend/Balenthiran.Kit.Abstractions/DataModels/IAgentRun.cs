@@ -47,6 +47,9 @@ public interface IAgentRun
 
     /// <summary>The work-item slug a pipeline run was for (BEH-ORCH-6); null for a run not started for one item, such as triage.</summary>
     string? WorkItem { get; }
+
+    /// <summary>The pipeline stage a run was for (triage, spec, build or review; BEH-ORCH-9); null for a run started by hand.</summary>
+    string? Stage { get; }
 }
 
 /// <summary>The body of <c>GET /api/runs</c>: runs newest first and the cap each is held to.</summary>
@@ -73,4 +76,38 @@ public interface IAgentRunStarted
 
     /// <summary>What the launcher said, e.g. that no runner is configured.</summary>
     string Launch { get; }
+}
+
+/// <summary>One work item on <c>GET /api/pipeline</c> (BEH-ORCH-9): where it is, why it stopped, and its flag and review.</summary>
+public interface IPipelineItem
+{
+    string Project { get; }
+
+    string Slug { get; }
+
+    /// <summary>triage, spec, build or review.</summary>
+    string Stage { get; }
+
+    /// <summary>queued, running, stopped or done.</summary>
+    string Status { get; }
+
+    string? StoppedBecause { get; }
+
+    string? PullRequest { get; }
+
+    /// <summary>The bundle's Flag line, without "Flag: "; null when it has none.</summary>
+    string? Flag { get; }
+
+    /// <summary>The review's outcome, agreed, revised or escalated; null when it was not reviewed.</summary>
+    string? Review { get; }
+
+    string? ReviewNote { get; }
+}
+
+/// <summary>The body of <c>GET /api/pipeline</c>: whether the pipeline is on, and its items since Kit last started, oldest first.</summary>
+public interface IPipelineItemList
+{
+    bool On { get; }
+
+    IReadOnlyList<IPipelineItem> Items { get; }
 }

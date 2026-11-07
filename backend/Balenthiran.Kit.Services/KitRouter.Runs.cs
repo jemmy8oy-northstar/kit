@@ -36,6 +36,36 @@ public sealed partial class KitRouter
         return Json(200, new AgentRunList { CapUsd = agentRunCap, Runs = agentRuns.List() });
     }
 
+    /// <summary>
+    /// <c>GET /api/pipeline</c> (BEH-ORCH-9): the pipeline's work items since Kit last started, oldest first, each with
+    /// its bundle's flag and review. Operator only, as runs are; with the pipeline off, <c>on</c> is false and none are listed.
+    /// </summary>
+    private KitResponse PipelineList(string? cookie)
+    {
+        if (RunsRefusal(cookie) is { } refused)
+        {
+            return refused;
+        }
+
+        var items = (pipeline?.Items() ?? []).Select(i =>
+        {
+            var bundle = pipeline!.Bundle(i.Project, i.Slug);
+            return (IPipelineItem)new PipelineItem
+            {
+                Project = i.Project,
+                Slug = i.Slug,
+                Stage = i.Stage.ToString().ToLowerInvariant(),
+                Status = i.Status.ToString().ToLowerInvariant(),
+                StoppedBecause = i.StoppedBecause,
+                PullRequest = i.PullRequest,
+                Flag = bundle?.Flag,
+                Review = bundle?.Review?.Outcome.ToString().ToLowerInvariant(),
+                ReviewNote = bundle?.Review?.Note,
+            };
+        }).ToList();
+        return Json(200, new PipelineItemList { On = pipeline is not null, Items = items });
+    }
+
     private KitResponse? RunsRefusal(string? cookie)
     {
         if (lockRequired)

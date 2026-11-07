@@ -632,12 +632,37 @@ export interface AgentRun {
   failure?: string | null
   /** The work-item slug a pipeline run was for (BEH-ORCH-6); null for triage and runs not started for one item. */
   workItem?: string | null
+  /** The pipeline stage the run was for: triage, spec, build or review (BEH-ORCH-9); null for a run started by hand. */
+  stage?: string | null
 }
 
 /** `GET /api/runs` (BEH-USERS-9): every run newest first, and what one run may spend. */
 export interface AgentRunList {
   capUsd: number
   runs: AgentRun[]
+}
+
+/** One work item of the pipeline (BEH-ORCH-9). */
+export interface PipelineItem {
+  project: string
+  slug: string
+  /** triage, spec, build or review. */
+  stage: string
+  /** queued, running, stopped or done. */
+  status: string
+  stoppedBecause?: string | null
+  pullRequest?: string | null
+  /** The bundle's Flag line, without "Flag: ". */
+  flag?: string | null
+  /** agreed, revised or escalated; null when it was not reviewed. */
+  review?: string | null
+  reviewNote?: string | null
+}
+
+/** `GET /api/pipeline` (BEH-ORCH-9): whether the pipeline is on, and its items since Kit last started, oldest first. */
+export interface PipelineItemList {
+  on: boolean
+  items: PipelineItem[]
 }
 
 /** One message from the agent (BEH-NOTIFY-1). */

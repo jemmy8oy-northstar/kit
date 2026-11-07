@@ -1,4 +1,4 @@
-import { fetchRuns } from '../api/client'
+import { fetchPipeline, fetchRuns } from '../api/client'
 import type { AgentRun } from '../api/types'
 import { useResource } from '../hooks/useResource'
 import ResourceView from '../components/Resource'
@@ -61,6 +61,67 @@ function byWorkItem(runs: AgentRun[]): ItemCost[] {
   return [...items.values()].sort((a, b) => Date.parse(b.newest) - Date.parse(a.newest))
 }
 
+const STAGES = ['triage', 'spec', 'review', 'build']
+
+/** Runs summed per pipeline stage (BEH-ORCH-9), in pipeline order; a run started by hand has no stage and is left out. */
+function byStage(runs: AgentRun[]): { stage: string; runs: number; costUsd: number }[] {
+  return STAGES.map((stage) => {
+    const of = runs.filter((r) => r.stage === stage)
+    return { stage, runs: of.length, costUsd: of.reduce((sum, r) => sum + r.costUsd, 0) }
+  }).filter((s) => s.runs > 0)
+}
+
+/**
+ * The pipeline's work items (BEH-ORCH-9), oldest first: each one's stage and status, why it stopped, its flag and
+ * review, and its runs, one per stage, so which stage spent the money reads off the item. Items are kept in memory,
+ * so they are the ones since Kit last started; the cost by stage below them is every run on record.
+ */
+function Pipeline({ runs }: { runs: AgentRun[] }) {
+  const resource = useResource(fetchPipeline, [])
+  if (resource.state === 'error') return <p className="muted">The pipeline could not be read: {resource.message}</p>
+  if (resource.state !== 'ready' || !resource.value.on || !Array.isArray(resource.value.items)) return null
+  const items = resource.value.items
+  const stages = byStage(runs)
+  return (
+    <>
+      <h2>Pipeline</h2>
+      {items.length === 0 ? (
+        <p>No work items since Kit last started.</p>
+      ) : (
+        <ol aria-label="Pipeline work items" className="activity">
+          {items.map((i) => {
+            const own = i.slug.startsWith('triage #') ? [] : runs.filter((r) => r.project === i.project && r.workItem === i.slug)
+            return (
+              <li key={`${i.project}/${i.slug}`}>
+                <div className="muted">{i.project} · {i.slug}</div>
+                {i.stage} · {i.status}
+                {i.stoppedBecause ? <div>Stopped: {i.stoppedBecause}</div> : null}
+                {i.flag ? <div>Flagged: {i.flag}</div> : null}
+                {i.review ? <div>Review: {i.review}{i.reviewNote ? ` — ${i.reviewNote}` : ''}</div> : null}
+                {i.pullRequest ? <div><a href={i.pullRequest}>Pull request</a></div> : null}
+                {own.length > 0 ? (
+                  <ul aria-label={`Runs of ${i.slug}`}>
+                    {[...own].reverse().map((r) => (
+                      <li key={r.id}>{r.stage ?? 'run'} · {r.model} · {tokensOf(r)} tokens · ${r.costUsd.toFixed(2)}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </li>
+            )
+          })}
+        </ol>
+      )}
+      {stages.length > 0 ? (
+        <ul aria-label="Cost by stage" className="activity">
+          {stages.map((s) => (
+            <li key={s.stage}>{s.stage}: {s.runs} {s.runs === 1 ? 'run' : 'runs'} · ${s.costUsd.toFixed(2)}</li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  )
+}
+
 /**
  * Every agent run Kit has started, newest first (BEH-USERS-9). The server sends them in that order and
  * this keeps it. A failed run says which step of the runner failed.
@@ -76,6 +137,7 @@ export default function Runs() {
         {({ capUsd, runs }) => (
           <>
             <p className="muted">Each run is capped at ${capUsd}.</p>
+            <Pipeline runs={runs} />
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (

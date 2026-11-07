@@ -1512,7 +1512,6 @@ behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags a
   source defined kit.notes.md#2026-11-07-1050
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1520,6 +1519,7 @@ behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags a
   contract my assumption: it is a Pipeline section on Runs, for the operator only, as Runs is. Each work item is one row: project, slug, stage, status, the reason it stopped, its pull request, and its Flag and Review lines, naming the model that reviewed it
   contract my assumption: an item's row opens to its runs, one per stage, each with its model, turns, tokens and cost, so which stage spent the money is read off one list. The runs are already recorded per work item (BEH-ORCH-6)
   contract my assumption: today work items live in memory, so the page shows only items since Kit last started; past items come from the runs recorded per work item, which do survive. Keeping the items themselves is a later slice
+  contract built, slice 1: each run records its stage (agent_runs.stage: triage, spec, build or review; null for a run by hand). GET /api/pipeline, behind the same operator-only gate as /api/runs, serves { on, items } with each item's project, slug, stage, status, stoppedBecause, pullRequest, flag, review and reviewNote. Runs shows a Pipeline section when it is on: the items oldest first, each with its own runs (stage · model · tokens · cost), then the cost of every recorded run by stage
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
