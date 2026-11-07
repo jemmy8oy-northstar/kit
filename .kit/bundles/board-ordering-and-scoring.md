@@ -30,3 +30,12 @@ The sort already does what the cards say (board.ts byPriorityAcrossProjects, Boa
 The 2026-10-19 13:40Z complaint that the board "looks ordered by project" describes the time before the interleave and the backfill. If it still looks that way, the likely cause is many equal scores (built cards all score 5), not a missing sort.
 BEH-BOARD-13 (drag to reorder) answers the cost question itself: "every corpus lives in the kit repo, so a reorder is one commit to one repo" (kit-ui.beh line 717). It was denied, stood in for a pause, and is `paused until 2026-11-14`, so do not build it in this bundle.
 Remaining work, if any: BEH-BOARD-12 is still `review unreviewed`. Nothing in the listed files needs changing for these cards.
+Test plan:
+- BEH-BOARD-5: a card with a priority ranks by its number across projects in Proposed and Backlog, and a card with none sorts after every ranked card.
+- BEH-BOARD-6: a card with a review request sits in the first ranked column, Review requested, whatever its priority.
+- BEH-BOARD-10: within one priority, cards from two projects alternate, so a tie never shows a block of one project.
+- BEH-BOARD-12: within one priority a project's cards are newest-added first by git time; a card no commit holds yet is newest; a priority 4 card sorts below a priority 2 card of any age.
+- BEH-BOARD-14: each run in a ranked column starts with a heading (Rung, Questions, Priority 1 to 5, Unscored, Paused) showing its count, and the Paused run is at the foot.
+- BEH-BOARD-20: every behaviour in kit-ui.beh and kit.beh carries exactly one priority line, so no board run is Unscored.
+- BEH-BELL-3: a rung card sits above every priority in Review requested, Proposed, Backlog, Queue and Blocked, and rung cards are ordered by priority among themselves.
+- BEH-BOARD-13: none in this bundle; the card is paused until 2026-11-14 and is not built here.
