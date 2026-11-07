@@ -1,5 +1,6 @@
 # Feature stage board: what the pipeline means, and how it sits beside the behaviour board
 Work-item: feature-stage-board
+Flag: The gap check between BEH-STAGE-9 to BEH-STAGE-12 and the current Stages page was not done; the builder must check before deciding no new card is needed.
 Cards:
 - BEH-STAGE-1
 - BEH-STAGE-8
