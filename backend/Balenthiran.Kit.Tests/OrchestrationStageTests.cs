@@ -201,6 +201,14 @@ public class OrchestrationStageTests
     }
 
     [Fact]
+    public void BEH_ORCH_1_A_new_work_branch_is_cut_from_the_branch_the_run_started_on_not_the_default()
+    {
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+
+        Assert.Contains("create it from the branch you started on (not the default branch)", task);
+    }
+
+    [Fact]
     public void BEH_ORCH_1_A_long_note_is_truncated_and_the_task_says_so()
     {
         var long_ = new string('x', TriageStage.MaxNoteChars + 500);
