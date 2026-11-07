@@ -759,3 +759,9 @@ www.kitstudio.dev seems to be broken what do i need to change
 <!-- from: note-button -->
 
 I think it would be worth changing the .beh extension to .kit or .spec or something. .beh is not intuitive it’s not easy to say i don’t really like it. Currently im leaning towards .kit
+
+## 2026-11-07 21:14Z
+
+<!-- from: note-button -->
+
+Backlog: I want to do some proper work on designing the kit spec structure I think one file dump per project is not structured well at all
