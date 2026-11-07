@@ -647,6 +647,7 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
+  contract my assumption: recorded from his approval in kit-ui.notes.md#2026-10-16-1145 ("I am going to accept this as well"), which is why review is approved; the layer filter is already built, so nothing is rebuilt for it. His wish for the filter in the project view is BEH-KIND-2, not this card
 
 behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
@@ -986,7 +987,7 @@ behaviour BEH-STAGE-9 "The agent decides which stage each feature is at; he only
   contract "the human can use it to quickly identify what work is left to be done": the board is for reading, and he never has to move a card
   contract every feature goes through the stages; a simple one just needs less written at each, and a one-line answer is enough
   contract the agent writes the stage line and moves it on when it rereads the feature; "rough" means a stage can lag the spec by a wake
-  contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": each feature's column on the Stages page (problem, ux, logic, development, ui) is my judgement of how far along it is, written into the spec as its `stage` line. You never set or drag it; you read the board to see what is left. If a column looks wrong, leave a note on the feature and I move it
+  contract my assumption: answer to his 2026-10-27 21:16Z note ("What does this mean", kit-ui.notes.md#2026-10-27-2116). Each feature's column on the Stages page (problem, ux, logic, development, ui) is the stage the feature is at, as the agent judges it, and the agent writes it into the spec as the feature's `stage` line. He never sets or drags a column; he reads the board to see what is left. If a column looks wrong, he leaves a note on the feature and the agent moves it. The placement rules are not changed by this answer
 
 behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at ui once all of it is built"
   in FEAT-STAGE-READING
@@ -1000,7 +1001,7 @@ behaviour BEH-STAGE-10 "A feature with anything built sits at development, or at
   contract my assumption: engine features with no screen (kit.beh's parser, writer, server) still go to ui when built, so the board reads "nothing left but polish"
   contract a build is never "rough": a feature with a built behaviour still at problem, ux or logic turns the suite red. On 2026-10-22 that caught FEAT-COMMENTS, built the day before and left at problem
 
-behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest stage its spec has reached"
+behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the stage it is at, as the agent judges it"
   in FEAT-STAGE-READING
   source inferred kit.notes.md#2026-10-19-1616
   review approved
@@ -1010,8 +1011,8 @@ behaviour BEH-STAGE-11 "A feature with nothing built yet sits at the furthest st
   then sees region:KitStagesBoard
   contract my assumption: problem for one-line ideas, ux for who-does-what steps, logic once its rules are written
   contract built by the agent's reading, so no test can say a placement is right; BEH-STAGE-9's test holds only that one is written
-  contract his question (kit-ui.notes.md#2026-10-27-2116), "What does this mean": BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet, where I go by the writing: a one-line idea sits at problem, one that says who does what step by step sits at ux, and one whose rules are written down sits at logic
-  contract his question (kit-ui.notes.md#2026-10-28-2353), "Do you mean spec wise? It's placed on the board by what stage it's at": yes, spec-wise. The title said "how much of it is written", and it now says what it means: the stage is the furthest of ux, behaviour, ui and implementation that the feature has, and with no code that is the furthest its spec has reached
+  contract my assumption: answer to his 2026-10-27 21:16Z note ("What does this mean", kit-ui.notes.md#2026-10-27-2116). BEH-STAGE-10 places anything with code (development, or ui once all built). This card covers features with no code yet: the agent places each at the stage it is at, and for these the writing is the evidence it reads. A one-line idea is at problem, one that says who does what step by step is at ux, and one whose rules are written down is at logic
+  contract my assumption: answer to his 2026-10-28 23:53Z note (kit-ui.notes.md#2026-10-28-2353), "Placed by how much of it is written?": no. The board places a feature by the stage it is at (problem, ux, logic, development or ui), not by how much is written. The writing is only how the agent tells which stage that is for a feature with no code yet
 
 behaviour BEH-STAGE-3 "Development is iterative and runs through the spec: behaviours are added and refined until they are built"
   in FEAT-STAGES
@@ -1066,6 +1067,7 @@ behaviour BEH-STAGE-7 "A feature with no stage line sits in an Unstaged column, 
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "I think we need some unstated column rather than leaving it off the board so that they can be found and staged"
+  contract my assumption: this column is the answer to his 2026-10-20 07:13Z note (kit-ui.notes.md#2026-10-20-0713). It is built: the Unstaged column is first on the Stages page (ui/src/stages.ts, COLUMNS), and Stages.test.tsx tests it
   contract my assumption: Unstaged is the first column, before problem, since staging a feature moves it rightwards out of it
   contract a stage line holds one of problem, ux, logic, development, ui; a second one is refused, as a second priority is
 
