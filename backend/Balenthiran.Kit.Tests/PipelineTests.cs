@@ -429,6 +429,54 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_6_The_memory_store_keeps_the_work_item_a_run_was_created_for()
+    {
+        var store = new MemoryAgentRunStore();
+        var now = DateTimeOffset.UtcNow;
+        var forItem = store.Create("ann", "demo", "m", "h1", now, "list-sorting");
+        var none = store.Create("ann", "demo", "m", "h2", now);
+
+        Assert.Equal("list-sorting", forItem.WorkItem);
+        Assert.Null(none.WorkItem);
+        store.AddUsage(forItem.Id, new AgentUsage(1, 2, 0, 0), 0.1m);
+        Assert.Equal("list-sorting", store.ByTokenHash("h1")!.WorkItem);
+    }
+
+    [Fact]
+    public void BEH_ORCH_6_A_triage_run_has_no_work_item_and_spec_and_build_runs_carry_the_slug()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Null(Assert.Single(rig.Store.List()).WorkItem);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("list-sorting", rig.Store.List()[0].WorkItem);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+        Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("list-sorting", rig.Store.List()[0].WorkItem);
+        Assert.Equal(3, rig.Store.List().Count);
+        Assert.Single(rig.Store.List(), r => r.WorkItem is null);
+    }
+
+    [Fact]
+    public void BEH_ORCH_6_The_runs_json_carries_each_runs_work_item()
+    {
+        var store = new MemoryAgentRunStore();
+        store.Create("ann", "demo", "m", "h1", DateTimeOffset.UtcNow, "list-sorting");
+        store.Create("ann", "demo", "m", "h2", DateTimeOffset.UtcNow);
+
+        var json = JsonSerializer.Serialize(new AgentRunList { CapUsd = 1m, Runs = store.List() }, typeof(AgentRunList), new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        using var doc = JsonDocument.Parse(json);
+        var runs = doc.RootElement.GetProperty("runs").EnumerateArray().ToList();
+        Assert.Equal(JsonValueKind.Null, runs[0].GetProperty("workItem").ValueKind);
+        Assert.Equal("list-sorting", runs[1].GetProperty("workItem").GetString());
+    }
+
+    [Fact]
     public void A_running_build_holds_the_projects_next_triage_until_it_ends()
     {
         using var rig = new Rig();

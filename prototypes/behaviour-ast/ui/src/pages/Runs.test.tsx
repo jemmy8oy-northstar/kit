@@ -66,6 +66,32 @@ describe('Runs', () => {
     expect(items[2]).not.toHaveTextContent('Failed:')
   })
 
+  it('sums an item\'s runs into one row and leaves out a run with no item (BEH-ORCH-6)', async () => {
+    mockApi({
+      capUsd: 5,
+      runs: [
+        { ...run, id: 'b', workItem: 'list-sorting', started: '2026-11-06T10:00:00Z', costUsd: 0.1, inputTokens: 100, outputTokens: 0, cacheWriteTokens: 0, cacheReadTokens: 0 },
+        { ...run, id: 'a', workItem: 'list-sorting', started: '2026-11-06T09:00:00Z', costUsd: 0.25, inputTokens: 200, outputTokens: 0, cacheWriteTokens: 0, cacheReadTokens: 0 },
+        { ...run, id: 't', workItem: null, costUsd: 9, inputTokens: 5000 },
+      ],
+    })
+    renderRuns()
+
+    const rows = within(await screen.findByRole('list', { name: 'Cost by work item' })).getAllByRole('listitem')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toHaveTextContent('kit · list-sorting')
+    expect(rows[0]).toHaveTextContent('2 runs · 300 tokens · $0.35')
+    expect(within(screen.getByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('shows no by-item section when no run has an item (BEH-ORCH-6)', async () => {
+    mockApi({ capUsd: 5, runs: [run] })
+    renderRuns()
+
+    await screen.findByRole('list', { name: 'Agent runs' })
+    expect(screen.queryByRole('list', { name: 'Cost by work item' })).toBeNull()
+  })
+
   it('says so when there are no runs', async () => {
     mockApi({ capUsd: 5, runs: [] })
     renderRuns()

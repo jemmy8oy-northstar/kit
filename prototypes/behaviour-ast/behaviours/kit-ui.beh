@@ -1486,6 +1486,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   contract my assumption: at each scheduled wake the bot reads the items the pipeline stopped, its flags and how their reviews came out, and what each item cost, and fixes the stage that did worst, one change at a time
   contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
   contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
+  contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS

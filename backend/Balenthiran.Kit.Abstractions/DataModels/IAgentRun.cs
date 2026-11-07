@@ -44,6 +44,9 @@ public interface IAgentRun
 
     /// <summary>Why a failed run failed, as its runner reported it: a step and an exit code; null otherwise.</summary>
     string? Failure { get; }
+
+    /// <summary>The work-item slug a pipeline run was for (BEH-ORCH-6); null for a run not started for one item, such as triage.</summary>
+    string? WorkItem { get; }
 }
 
 /// <summary>The body of <c>GET /api/runs</c>: runs newest first and the cap each is held to.</summary>

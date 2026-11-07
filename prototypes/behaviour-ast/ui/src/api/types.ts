@@ -630,6 +630,8 @@ export interface AgentRun {
   costUsd: number
   /** Why a failed run failed, as its runner reported it: `<step> exit <code>`. Null otherwise. */
   failure?: string | null
+  /** The work-item slug a pipeline run was for (BEH-ORCH-6); null for triage and runs not started for one item. */
+  workItem?: string | null
 }
 
 /** `GET /api/runs` (BEH-USERS-9): every run newest first, and what one run may spend. */
