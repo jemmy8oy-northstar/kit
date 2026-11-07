@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody, WakeSetting,
+  ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, PipelineItemList, ProjectDetail, ProjectListBody, WakeSetting,
   PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
@@ -124,6 +124,11 @@ export function fetchActivity(): Promise<ActivityFeed> {
 /** Every agent run newest first, and the cap each is held to; the operator's (BEH-USERS-9). */
 export function fetchRuns(): Promise<AgentRunList> {
   return get<AgentRunList>('/api/runs')
+}
+
+/** The pipeline's work items since Kit last started (BEH-ORCH-9); the operator's, as runs are. */
+export function fetchPipeline(): Promise<PipelineItemList> {
+  return get<PipelineItemList>('/api/pipeline')
 }
 
 /** The agent's messages, newest first, from the feed it appends to in its own repo (BEH-NOTIFY-1). */

@@ -8,8 +8,11 @@ namespace Balenthiran.Kit.Abstractions.Services;
 /// </summary>
 public interface IAgentRunStore
 {
-    /// <summary>Records a new queued run; <paramref name="workItem"/> is the slug of the item a pipeline run is for, null otherwise.</summary>
-    IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null);
+    /// <summary>
+    /// Records a new queued run; <paramref name="workItem"/> is the slug of the item a pipeline run is for, null
+    /// otherwise, and <paramref name="stage"/> the pipeline stage it runs (BEH-ORCH-9), null for a run started by hand.
+    /// </summary>
+    IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null, string? stage = null);
 
     /// <summary>Every run, newest first.</summary>
     IReadOnlyList<IAgentRun> List();

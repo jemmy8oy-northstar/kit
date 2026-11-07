@@ -15,11 +15,12 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
     private readonly Dictionary<string, string> hashes = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
-    public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null)
+    public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null, string? stage = null)
     {
         var run = new AgentRun
         {
             WorkItem = workItem,
+            Stage = stage,
             Id = Guid.NewGuid().ToString("N"),
             Owner = owner,
             Project = project,
@@ -116,5 +117,6 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
         CostUsd = r.CostUsd + cost,
         Failure = failure ?? r.Failure,
         WorkItem = r.WorkItem,
+        Stage = r.Stage,
     };
 }

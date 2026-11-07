@@ -1068,6 +1068,67 @@ public class PipelineTests
         }
     }
 
+    // ---- BEH-ORCH-9: the pipeline page's data ---------------------------------------------------------
+
+    [Fact]
+    public void BEH_ORCH_9_the_pipeline_lists_each_work_item_with_its_stage_status_and_flag()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card") });
+
+        var r = rig.Router.Route("GET", "/api/pipeline");
+
+        Assert.Equal(200, r.Status);
+        var list = Assert.IsType<PipelineItemList>(r.Body);
+        Assert.True(list.On);
+        Assert.Equal(["triage #1", "list-sorting", "triage #2"], list.Items.Select(i => i.Slug));
+        var item = list.Items[1];
+        Assert.Equal(("demo", "review", "running", "unsure which card"), (item.Project, item.Stage, item.Status, item.Flag));
+        Assert.Null(item.Review);
+        Assert.Equal("done", list.Items[0].Status);
+    }
+
+    [Fact]
+    public void BEH_ORCH_9_a_stopped_item_says_why_and_a_reviewed_one_carries_its_outcome()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card") });
+        var review = rig.Claim()!;
+        rig.FinishWith(review, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card").Replace("Cards:", "Review: escalated — he must pick the card\nCards:") });
+
+        var item = Assert.Single(Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Items, i => i.Slug == "list-sorting");
+
+        Assert.Equal(("stopped", "escalated", "he must pick the card"), (item.Status, item.Review, item.ReviewNote));
+        Assert.NotNull(item.StoppedBecause);
+    }
+
+    [Fact]
+    public void BEH_ORCH_9_each_pipeline_run_records_its_stage_and_a_run_by_hand_none()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        var byHand = rig.Store.Create("james", "demo", "m", "hand", DateTimeOffset.UtcNow);
+
+        var runs = rig.Store.List();
+        Assert.Equal(["spec", "triage"], runs.Where(r => r.Stage is not null).Select(r => r.Stage!).Order());
+        Assert.Equal("list-sorting", Assert.Single(runs, r => r.Stage == "spec").WorkItem);
+        Assert.Null(byHand.Stage);
+    }
+
+    [Fact]
+    public void BEH_ORCH_9_with_the_pipeline_off_the_list_is_empty_and_says_so()
+    {
+        using var rig = new Rig(on: false);
+
+        var list = Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body);
+
+        Assert.False(list.On);
+        Assert.Empty(list.Items);
+    }
+
     // ---- BEH-ORCH-8: the notes a triage sorted survive a restart ---------------------------------------
 
     [Fact]
