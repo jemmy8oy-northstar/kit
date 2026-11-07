@@ -31,14 +31,19 @@ public class PipelineTests
     {
         private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null)
         {
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
+            if (schedule is not null)
+            {
+                File.WriteAllText(Path.Combine(root, "demo.schedule"), schedule);
+            }
+
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -935,6 +940,114 @@ public class PipelineTests
         foreach (var bad in new[] { "true", "1", "ON", "yes" })
         {
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipeline(bad));
+        }
+    }
+
+    private const string ScheduledCorpus = """
+        # kit:repo someone/demo@dev
+
+        behaviour BEH-A "A user sees the list"
+          source defined demo.notes.md#2026-11-07-0151
+          pending
+          contract the list sorts by date
+          contract the newest is first
+
+        behaviour BEH-B "A user adds an item"
+          pending
+        """;
+
+    [Fact]
+    public void BEH_ORCH_4_with_the_switch_off_a_scheduled_card_is_not_queued()
+    {
+        using var rig = new Rig(ScheduledCorpus, schedule: "BEH-A\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+        Assert.Null(rig.Claim());
+        rig.Note("the list should sort by date");
+
+        Assert.Contains("You are the triage stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Stage == PipelineStage.Spec);
+    }
+
+    [Fact]
+    public void BEH_ORCH_4_the_first_scheduled_card_starts_at_spec_with_a_bundle_kit_wrote_and_no_triage()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\nBEH-B\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        var item = Assert.Single(rig.Pipeline.Items());
+        Assert.Equal(("beh-a", PipelineStage.Spec, WorkItemStatus.Running), (item.Slug, item.Stage, item.Status));
+        var bundle = Assert.IsType<ContextBundle>(rig.Pipeline.Bundle("demo", "beh-a"));
+        Assert.Equal("A user sees the list", bundle.Title);
+        Assert.Equal(["BEH-A"], bundle.Cards);
+        Assert.Equal(["demo.notes.md#2026-11-07-0151"], bundle.Notes);
+        Assert.Empty(bundle.Files);
+        Assert.Contains("the list sorts by date", bundle.Context);
+        Assert.Contains("the newest is first", bundle.Context);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", claim.Task);
+        Assert.Contains("create it from the branch you started on", claim.Task);
+        Assert.Contains("Work-item: beh-a", claim.Task);
+        Assert.Contains("the newest is first", claim.Task);
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Stage == PipelineStage.Triage);
+    }
+
+    [Fact]
+    public void BEH_ORCH_4_a_queued_triage_goes_before_the_scheduled_card()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\n");
+
+        rig.Note("the list should sort by date");
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the triage stage", claim.Task);
+        Assert.Contains(rig.Pipeline!.Items(), i => i.Slug == "beh-a" && i.Stage == PipelineStage.Spec && i.Status == WorkItemStatus.Queued);
+
+        rig.Finish(claim);
+
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", spec.Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_4_a_paused_scheduled_card_is_skipped_for_the_next()
+    {
+        var corpus = ScheduledCorpus.Replace("  pending\n  contract the list sorts", "  pending\n  paused\n  contract the list sorts");
+        Assert.Contains("paused", corpus);
+        using var rig = new Rig(corpus, scheduled: true, schedule: "BEH-A\nBEH-B\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        Assert.Equal(["beh-b"], rig.Pipeline.Items().Select(i => i.Slug));
+    }
+
+    [Fact]
+    public void BEH_ORCH_4_a_second_scheduled_card_waits_while_the_first_is_unfinished()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\nBEH-B\n");
+        rig.Pipeline!.ScheduleChanged("demo");
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.Pipeline.ScheduleChanged("demo");
+
+        Assert.Equal(["beh-a"], rig.Pipeline.Items().Where(i => i.Stage == PipelineStage.Spec).Select(i => i.Slug));
+
+        rig.Finish(claim, status: "failed");
+
+        Assert.Contains(rig.Pipeline.Items(), i => i.Slug == "beh-b" && i.Stage == PipelineStage.Spec && i.Status == WorkItemStatus.Running);
+    }
+
+    [Fact]
+    public void BEH_ORCH_4_KIT_PIPELINE_SCHEDULED_is_off_unless_it_says_on_and_a_typo_throws()
+    {
+        Assert.False(KitSettings.ParsePipelineScheduled(null));
+        Assert.False(KitSettings.ParsePipelineScheduled(" "));
+        Assert.False(KitSettings.ParsePipelineScheduled("off"));
+        Assert.True(KitSettings.ParsePipelineScheduled(" on "));
+        foreach (var bad in new[] { "true", "1", "ON", "yes" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineScheduled(bad));
         }
     }
 }
