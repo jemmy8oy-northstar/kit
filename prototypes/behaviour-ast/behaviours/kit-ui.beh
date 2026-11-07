@@ -3163,6 +3163,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   source defined kit-ui.notes.md#2026-11-03-0857
   source defined kit-ui.notes.md#2026-11-03-0917
   source defined kit-ui.notes.md#2026-11-03-1058
+  source defined kit.notes.md#2026-11-07-1422
   review approved
   priority 2
   pending
@@ -3181,6 +3182,8 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
   contract his question, is it complete: yes. kitstudio.dev serves the splash and its register-interest flow, and the live check reads it green on 2026-11-03
   contract he approved it on 2026-11-03, so it is closed: it stays marked pending only for the reason above, and nothing on it is left for him or the agent
+  contract "www.kitstudio.dev seems to be broken what do i need to change"
+  contract my assumption: www.kitstudio.dev serves the same splash as the apex, without redirecting to it; it returned a Cloudflare 526 because the Ingress named only the apex, which balenthiran.co.uk#40 fixes on dev, and it goes live when he merges the promotion balenthiran.co.uk#42
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS
