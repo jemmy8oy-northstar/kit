@@ -1439,20 +1439,20 @@ public class PipelineTests
     }
 
     [Fact]
-    public void BEH_ORCH_8_the_twelfth_failure_in_a_row_stops_the_retries()
+    public void BEH_ORCH_8_a_failing_triage_is_tried_again_twelve_times_and_then_stops()
     {
         var time = new Ticking();
         using var rig = new Rig(clock: time);
         rig.Note("the list should export");
-        for (var failed = 1; failed < Pipeline.MaxFailures; failed++)
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        for (var retry = 1; retry <= Pipeline.MaxRetries; retry++)
         {
-            rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
             Assert.Equal(1, time.Pending);
             time.Advance(Pipeline.RetryAfter);
+            rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
         }
 
-        // The twelfth failure.
-        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        // The twelfth retry failed too: nothing more is scheduled.
         Assert.Equal(0, time.Pending);
         time.Advance(TimeSpan.FromDays(1));
         Assert.Null(rig.Claim());

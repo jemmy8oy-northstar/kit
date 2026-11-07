@@ -46,11 +46,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>BEH-ORCH-8: how long after a failed triage the next try is made.</summary>
     public static readonly TimeSpan RetryAfter = TimeSpan.FromHours(1);
 
-    /// <summary>BEH-ORCH-8: triages failing this many times in a row are not tried again until one works.</summary>
-    public const int MaxFailures = 12;
+    /// <summary>BEH-ORCH-8: a failing triage is tried again at most this many times in a row, until one works.</summary>
+    public const int MaxRetries = 12;
 
-    // Per project, under gate: consecutive failed triages, and the one timer of the retry pending (null when none).
-    private readonly Dictionary<string, (int Failures, ITimer? Pending)> retries = new(StringComparer.Ordinal);
+    // Per project, under gate: consecutive failed triages, and the one timer of the retry pending (null when none)
+    // with its generation, so a timer that fires after it was replaced does not take its replacement's turn.
+    private readonly Dictionary<string, (int Failures, ITimer? Pending, int Generation)> retries = new(StringComparer.Ordinal);
+
+    private int retryGeneration;
 
     private int count;
 
@@ -134,22 +137,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>
     /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
     /// limit), so another is tried <see cref="RetryAfter"/> later. A project has at most one retry pending, and none is
-    /// scheduled once <see cref="MaxFailures"/> triages in a row have failed. Called with the gate held.
+    /// scheduled once <see cref="MaxRetries"/> retries in a row have failed too. Called with the gate held.
     /// </summary>
     private void TriageFailed(string app)
     {
         retries.TryGetValue(app, out var state);
         var failures = state.Failures + 1;
-        if (failures >= MaxFailures)
+        if (failures > MaxRetries)
         {
             state.Pending?.Dispose();
-            retries[app] = (failures, null);
+            retries[app] = (failures, null, 0);
             Console.Error.WriteLine($"kit: {app}'s triage failed {failures} times in a row; not retrying until one works");
             return;
         }
 
-        var pending = state.Pending ?? (clock ?? TimeProvider.System).CreateTimer(_ => RetryDue(app), null, RetryAfter, Timeout.InfiniteTimeSpan);
-        retries[app] = (failures, pending);
+        if (state.Pending is not null)
+        {
+            retries[app] = (failures, state.Pending, state.Generation);
+            return;
+        }
+
+        var generation = ++retryGeneration;
+        var pending = (clock ?? TimeProvider.System).CreateTimer(_ => RetryDue(app, generation), null, RetryAfter, Timeout.InfiniteTimeSpan);
+        retries[app] = (failures, pending, generation);
     }
 
     /// <summary>A triage of <paramref name="app"/> worked: its failures are forgotten and a retry still pending is cancelled. Called with the gate held.</summary>
@@ -162,19 +172,19 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     }
 
     /// <summary>The hour is up: queue the triage again, which reads only the notes still unsorted.</summary>
-    private void RetryDue(string app)
+    private void RetryDue(string app, int generation)
     {
         try
         {
             lock (gate)
             {
-                if (!retries.TryGetValue(app, out var state) || state.Pending is null)
+                if (!retries.TryGetValue(app, out var state) || state.Pending is null || state.Generation != generation)
                 {
                     return;
                 }
 
                 state.Pending.Dispose();
-                retries[app] = (state.Failures, null);
+                retries[app] = (state.Failures, null, 0);
                 QueueTriage(app);
                 StartReady();
             }
