@@ -264,6 +264,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             item = Stop(triage, $"its bundle names work item \"{bundle.Slug}\"");
         }
+        else if (bundle.Slug == TriageStage.SetAside)
+        {
+            // Its notes are sorted, so they are not triaged again, but nothing is built from them and no model reviews
+            // them now: the item stops for a person, with the triage's reason.
+            item = Stop(triage, $"set aside: {bundle.Flag ?? "the triage found nothing to build"}");
+            usable = bundle;
+        }
         else
         {
             item = Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null));
