@@ -1,6 +1,7 @@
 # Board: layer filter, unstaged column and stage questions
 Work-item: board-stages-and-filters
 Flag: the owner says placement is by stage, not by how much is written, but the rule for features with no code still places them by their writing (one-line idea at problem, step-by-step at ux, written rules at logic); kept as the bundle says, so the owner should confirm that rule.
+Review: agreed — the no-code rule fits the owner's own words (BEH-STAGE-9 quotes "the spec that the dev has filled in and implementation state"; the 2026-10-28 note says "how much of ux beh ui impl"), and it is already on BEH-STAGE-11 as an unreviewed assumption the owner can deny, so no decision blocks the work.
 Cards:
 - BEH-KIND-1
 - BEH-STAGE-7
