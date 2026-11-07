@@ -711,3 +711,9 @@ test
 <!-- from: note-button -->
 
 Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog
+
+## 2026-11-07 01:51Z
+
+<!-- from: note-button -->
+
+The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage
