@@ -212,6 +212,47 @@ public class OrchestratorTests
         }
     }
 
+    // ---- BEH-ORCH-5: the turn limit per stage ----------------------------------------------------
+
+    [Fact]
+    public void BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100()
+    {
+        var turns = StageTurnSettings.Defaults;
+
+        Assert.Equal(15, Orchestrator.TurnsFor(PipelineStage.Triage, turns));
+        Assert.Equal(20, Orchestrator.TurnsFor(PipelineStage.Review, turns));
+        Assert.Equal(30, Orchestrator.TurnsFor(PipelineStage.Spec, turns));
+        Assert.Equal(100, Orchestrator.TurnsFor(PipelineStage.Build, turns));
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.Equal((15, 20, 30, 100), (settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild));
+        Assert.Equal((15, 20, 30, 100), (KitSettings.ParseStageTurnsTriage(null), KitSettings.ParseStageTurnsReview(""), KitSettings.ParseStageTurnsSpec("  "), KitSettings.ParseStageTurnsBuild(null)));
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_Each_stage_runs_on_its_own_turn_limit()
+    {
+        var turns = new StageTurnSettings(1, 2, 3, 4);
+
+        Assert.Equal(1, Orchestrator.TurnsFor(PipelineStage.Triage, turns));
+        Assert.Equal(2, Orchestrator.TurnsFor(PipelineStage.Review, turns));
+        Assert.Equal(3, Orchestrator.TurnsFor(PipelineStage.Spec, turns));
+        Assert.Equal(4, Orchestrator.TurnsFor(PipelineStage.Build, turns));
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_A_turn_limit_is_read_from_the_environment_or_refused()
+    {
+        Assert.Equal(7, KitSettings.ParseStageTurnsTriage(" 7 "));
+        Assert.Equal(250, KitSettings.ParseStageTurnsBuild("250"));
+        foreach (var bad in new[] { "0", "-5", "1.5", "ten", "7 turns", "+3", "99999999999" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsTriage(bad));
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsReview(bad));
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsSpec(bad));
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsBuild(bad));
+        }
+    }
+
     // ---- BEH-ORCH-3: the model per stage ---------------------------------------------------------
 
     [Fact]

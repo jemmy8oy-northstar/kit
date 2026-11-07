@@ -31,14 +31,14 @@ public class PipelineTests
     {
         private readonly string root = Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null)
         {
             File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
             Store = new MemoryAgentRunStore();
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -300,6 +300,42 @@ public class PipelineTests
         Assert.Equal("its bundle was too large for the runner to report", Why("huge"));
         Assert.Equal("its bundle names work item \"something-else\"", Why("named-wrong"));
         Assert.Null(rig.Pipeline!.Bundle("demo", "broken"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(15, triage.MaxTurns);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(30, spec.MaxTurns);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+        Assert.Equal(100, Assert.IsType<PoolClaim>(rig.Claim()).MaxTurns);
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_A_flagged_stage_is_reviewed_on_the_review_turn_limit()
+    {
+        using var rig = new Rig();
+
+        var review = Triaged(rig, flag: "touches the schema");
+
+        Assert.Equal(20, review.MaxTurns);
+        Assert.Contains("review", review.Task, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim()
+    {
+        using var rig = new Rig(turns: new StageTurnSettings(3, 4, 5, 6));
+        rig.Note("the list should sort by date");
+
+        Assert.Equal(3, Assert.IsType<PoolClaim>(rig.Claim()).MaxTurns);
     }
 
     [Fact]

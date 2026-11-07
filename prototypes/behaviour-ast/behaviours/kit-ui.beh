@@ -1362,7 +1362,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
-  stage logic
+  stage development
 
 behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a context bundle per work item, and the run ends"
   in FEAT-AGENT-PIPELINE
@@ -1380,6 +1380,10 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption, slice 1 (built switched off): the triage task text, the bundle's format at .kit/bundles/<slug>.md on branch kit/work/<slug>, and the stage-model settings (KIT_STAGE_MODEL_TRIAGE, default Haiku; KIT_STAGE_MODEL_REVIEW, default Opus) exist but start nothing. A task carries at most 1500 characters a note and 4000 in all, and says what it cut. The whole task fits a run's 8000-character task: notes that do not fit wait for the next triage run, and cards past the room left are counted and the run told to read the spec files. Starting the triage run waits on runs taking a repo and a task (kit#701)
   contract his note (kit#714, 2026-11-07): "maybe we can let the pipeline decide if it can disregard a note and leave it for a more thorough review later"
   contract my assumption: triage puts a note that asks for nothing (a test, an empty or accidental note) in a work item named set-aside, with a Flag line saying why. That item is never specced or built and no model reviews it then: it stops with "set aside: <reason>", for a person to look at later. Its notes count as sorted, so they are not triaged again
+  contract his notes of 2026-11-06 23:53Z, 23:54Z and 2026-11-07 01:23Z ("This is a test", "Test", "test") are the case it is for: on the first live run each one still paid for a whole triage run, a clone and a pushed bundle, to be set aside
+  contract his note (kit.notes.md#2026-11-07-0150): "Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog"
+  contract my assumption: before any agent run starts, a plain rule in Kit, with no model, sets aside a note that is empty or only a test word ("test", "testing", "this is a test"), so it costs nothing. A note the rule does not catch goes to triage as now
+  contract my assumption: triage, within its own turn limit (BEH-ORCH-5), may also put a note in a work item named backlog when it is an idea for later. That item writes its cards as unreviewed with no build, and stops, so no spec or build run is paid for. A Haiku API call could sort notes before any run starts, but it bills his API key rather than his subscription, against his kit#708 rule, so it is not used unless he says so
   needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
@@ -1422,6 +1426,62 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption, spec and review slice: a work item queued for spec or review starts a run on its kit/work/<slug> branch, given its bundle. Spec writes the cards the bundle names into the project's spec as "contract my assumption:" lines and new cards as unreviewed, adds a "Test plan:" to the bundle's Context, and writes no tests or code. It may add a Flag only when the bundle has none. The run must report its own bundle back changed, and a spec's must carry its test plan: an unchanged, missing or malformed bundle, a spec with no test plan, or a failed run, stops the item with the reason. A later triage that updates a bundle not yet running sends it back to spec with the new bundle. A queued triage starts before any later stage, so new notes can update a bundle before it is specced. An item that reaches build starts it (the build slice, below)
   contract my assumption, build slice: a specced work item starts a build run on its kit/work/<slug> branch, given its bundle. Build writes the tests its test plan names first and sees them fail, then the code until they and the project's whole suite pass, and adds a "Built:" list to the bundle's Context naming each test it wrote and the suite's result. It may add a Flag only when the bundle has none, and a flagged build is reviewed before it counts as built. A build, or a review of one, that reports its bundle without a Built list, unchanged, or failed stops the item with the reason. A waiting build starts before any waiting spec, so an item is built before the next item is specced. A built item is done, and Kit, not the run, opens a pull request from its branch into the branch the run started from, titled with the bundle's title and carrying the bundle as its body; GitHub refusing it, or Kit having no way to open one, stops the item with the reason. Nothing merges it: it is reviewed like any other pull request
   needs-context "The pipeline is switched on in main (kit#714), but production Kit has not deployed since kit went private on 2026-11-04: ArgoCD most likely needs read access to the private repo (kit#714 has the steps). It triages kit and kit-ui notes only until you widen KIT_PIPELINE_PROJECTS."
+
+behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no triage"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-0151
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-0151): "The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage"
+  contract my assumption: the agent schedules a card as today, with its kit-ui.schedule line; the pipeline reads that file and queues the scheduled card straight at spec, with a bundle Kit writes from the card itself (its title, contracts and source notes), so no triage run is paid for
+  contract my assumption: one scheduled card is started per project at a time, after any queued triage, so notes still go first
+
+behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays cheap"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#751
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his ask (kit#751): "50p feels quite expensive for some small tickets… figure out a reasonable way to keep things cheap", and "for some of them it is producing an entire feature… its for the ones that its not it needs to be cheaper"
+  contract my assumption: today every stage's run gets the runner's 100 turns, and on his subscription no dollar cap applies, so the turn limit is the only brake
+  contract my assumption: each stage has its own limit: triage 15, spec 30, review 20, build 100; each is a setting (KIT_STAGE_TURNS_TRIAGE and so on), so a limit is one change
+  contract my assumption: the limit travels with the run, the way its model does, so a run started by hand keeps the runner's 100
+  contract my assumption: a stage that runs out of turns fails as any run does, and its item stops with the reason, so a limit set too low shows on Runs rather than passing silently
+  contract built: KIT_STAGE_TURNS_TRIAGE, _REVIEW, _SPEC and _BUILD (defaults 15, 20, 30, 100; blank is the default; zero, negative or non-whole THROWS at startup); the pipeline queues each run with its stage's limit, the pool's claim carries it as `maxTurns` (null for a run started by hand), and pool.sh exports it as KIT_MAX_TURNS only when present, so the runner's own 100 applies otherwise
+
+behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixes its weakest stage"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#714
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit#714, 2026-11-07): "we also probably need some kind of feedback loop so that we can ensure that the pipeline keeps improving in development, maybe even it reports back when things are not going well in production as well"
+  contract my assumption: at each scheduled wake the bot reads the items the pipeline stopped, its flags and how their reviews came out, and what each item cost, and fixes the stage that did worst, one change at a time
+  contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
+  contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
+
+behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
+  in FEAT-SETTINGS
+  source defined kit#714
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit#714, 2026-11-07): "i would still like a way to wake ccb manually maybe at that as a me feature only in settings - an on next wake it wakes rather than stays asleep"
+  contract my assumption: a "Wake the agent" button on Settings, for the operator only, records the time he pressed it; the agent's scheduler looks every 5 minutes and wakes it when that time is newer than its last wake, even from a sleep it chose itself; his own pause still wins
+  contract my assumption: stored as a "# kit:wake <ISO time>" line in kit.beh, so a press is a commit he can see; GET /api/settings/wake serves { requested } and POST /api/settings/wake sets it to now, behind the operator-only gate
+  contract my assumption: it matters once the bot stops waking on every Kit action and wakes on a schedule instead (his kit#714 suggestion); the scheduler half lives in claude-code-bot and is his to merge
 
 feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
   in EPIC-KIT-USERS
