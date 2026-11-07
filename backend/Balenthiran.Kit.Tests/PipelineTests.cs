@@ -387,6 +387,39 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_2_A_low_level_flag_is_reviewed_on_the_cheaper_model()
+    {
+        using var rig = new Rig();
+
+        Assert.Equal("claude-sonnet-5-5", Triaged(rig, flag: "unsure of the wording (level: low)").Model);
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_The_spec_and_build_tasks_say_what_the_levels_mean()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        Assert.Contains("level: low", spec.Task);
+        Assert.Contains("level: high", spec.Task);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("level: low", build.Task);
+        Assert.Contains("level: high", build.Task);
+    }
+
+    [Theory]
+    [InlineData("touches the schema (level: high)")]
+    [InlineData("touches the schema")]
+    [InlineData("touches the schema (level: mid)")]
+    public void BEH_ORCH_2_A_high_unlevelled_or_unreadable_flag_is_reviewed_on_the_review_model(string flag)
+    {
+        using var rig = new Rig();
+
+        Assert.Equal("claude-opus-5-5", Triaged(rig, flag: flag).Model);
+    }
+
+    [Fact]
     public void BEH_ORCH_5_A_turn_limit_that_is_set_reaches_the_claim()
     {
         using var rig = new Rig(turns: new StageTurnSettings(3, 4, 5, 6));

@@ -1405,6 +1405,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract his note (kit.notes.md#2026-11-07-0210): "A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs"
   contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
   contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
+  contract built: FlagLevels.Of reads a trailing "(level: low|high)" off the Flag line (case and spacing ignored; none, unreadable or mid-text is high); the review run is created on KIT_STAGE_MODEL_REVIEW_LOW (default claude-sonnet-5-5) for low and KIT_STAGE_MODEL_REVIEW for high; the triage, spec and build tasks say what each level means (kit#751)
 
 behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
   in FEAT-AGENT-PIPELINE
