@@ -1450,7 +1450,6 @@ behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no
   source defined kit.notes.md#2026-11-07-0151
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
@@ -1482,6 +1481,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   review unreviewed
   priority 3
   pending
+  needs-context "To read how the pipeline did, the bot needs to read Runs, and Runs is yours only. Should the bot get a read-only key for it? That is an auth change, so it is your decision. Until you say, I'll read the costs from screenshots or text you send me."
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
