@@ -1712,6 +1712,19 @@ behaviour BEH-NOTE-13 "A note from the floating button that names a project offe
   contract it is the board's suggestion (BEH-BOARD-9) moved: a project named as a whole word, in any case, is offered as "For <project>?", and only a listed project can be offered
   contract built: offered while no project is chosen, on a page with no project of its own (the board, activity); a project that does not parse is not listed, so never offered
 
+behaviour BEH-NOTE-16 "After a note is left from the floating button, Kit opens that project's Notes tab"
+  in FEAT-NOTES
+  source inferred kit.notes.md#2026-10-16-0713
+  priority 2
+  review unreviewed
+  actor engineer
+  when activates button:KitLeaveNote
+  then sees tab:KitProjectNotesTab
+  contract my assumption: once the note is written, the page goes to that project's Notes tab (/projects/<app>?tab=notes), so the note just left is in view, as asking for a behaviour does (BEH-FEAT-7)
+  contract my assumption: a note left on a behaviour's page is tagged with that behaviour (BEH-NOTE-12); Kit still goes to the project's Notes tab, which leaves that behaviour's page, because the 07:13 note asks for the Notes tab and the default is to move
+  contract my assumption: on a page with no project of its own, the note goes to the project chosen in the box, and Kit opens that project's Notes tab
+  contract my assumption: a note that is refused stays on the page where it was left, with the refusal beside the box, so nothing is lost by moving away
+
 # His note of 2026-10-20 12:21Z: "a chronological feed which shows recent actions so i can
 # easily [see] what has happened recently".
 feature FEAT-ACTIVITY "Recent activity"
