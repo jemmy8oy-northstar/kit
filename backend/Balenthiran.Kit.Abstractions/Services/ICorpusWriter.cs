@@ -63,6 +63,12 @@ public interface ICorpusWriter
     IWriteResult SetIdleOrder(string text, IReadOnlyList<string> order);
 
     /// <summary>
+    /// Sets the file's <c># kit:wake</c> line to <paramref name="at"/> (BEH-SETTINGS-7), replacing the
+    /// first and dropping any others, else adding it after the leading directives.
+    /// </summary>
+    IWriteResult SetWake(string text, DateTimeOffset at);
+
+    /// <summary>
     /// Sets one feature's <c># kit:switch</c> line for <c>operator</c> or <c>testers</c> (BEH-FLAGS-1).
     /// The default is stored as no line. Asking for what the file already says rewrites nothing.
     /// </summary>

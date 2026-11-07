@@ -1,5 +1,5 @@
 import type {
-  ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody,
+  ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, ProjectDetail, ProjectListBody, WakeSetting,
   PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
@@ -343,6 +343,16 @@ export function fetchIdle(): Promise<IdleSetting> {
 /** Set the idle work, in order (BEH-SETTINGS-6): rewrites the `# kit:idle` line in Kit's own corpus. Operator only. */
 export function setIdleOrder(order: IdleItem[]): Promise<WriteResult> {
   return post<WriteResult>('/api/settings/idle', { order })
+}
+
+/** When he last asked the agent to wake (BEH-SETTINGS-7). */
+export function fetchWake(): Promise<WakeSetting> {
+  return get<WakeSetting>('/api/settings/wake')
+}
+
+/** Ask the agent to wake at its next look (BEH-SETTINGS-7): sets the `# kit:wake` line to now. Operator only. */
+export function requestWake(): Promise<WriteResult> {
+  return post<WriteResult>('/api/settings/wake', null)
 }
 
 /** Kit's features and which are off for this session's group (BEH-FLAGS-1, BEH-FLAGS-2). */

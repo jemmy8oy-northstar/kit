@@ -1474,7 +1474,6 @@ behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   source defined kit#714
   review unreviewed
   priority 3
-  pending
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1482,6 +1481,7 @@ behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   contract my assumption: a "Wake the agent" button on Settings, for the operator only, records the time he pressed it; the agent's scheduler looks every 5 minutes and wakes it when that time is newer than its last wake, even from a sleep it chose itself; his own pause still wins
   contract my assumption: stored as a "# kit:wake <ISO time>" line in kit.beh, so a press is a commit he can see; GET /api/settings/wake serves { requested } and POST /api/settings/wake sets it to now, behind the operator-only gate
   contract my assumption: it matters once the bot stops waking on every Kit action and wakes on a schedule instead (his kit#714 suggestion); the scheduler half lives in claude-code-bot and is his to merge
+  contract built: a "Wake the agent" section on Settings, shown to the operator only, with a "Wake the agent" button, a "Last asked: <local time>" or "Never asked" line, and the sentence "The agent wakes at its next look, within about 5 minutes, unless you have paused it."; pressing it POSTs /api/settings/wake with no body, which replaces any "# kit:wake" line in kit.beh with exactly "# kit:wake <ISO 8601 UTC time>" (nothing after, so grep -E '^# kit:wake [0-9]' and the third field give the time) or adds one after the leading directives; GET serves { requested: <iso> | null }; both sit behind the same operator-only gate as every write
 
 feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
   in EPIC-KIT-USERS

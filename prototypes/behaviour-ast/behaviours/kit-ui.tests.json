@@ -451,6 +451,21 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "sends a GitHub return that lands elsewhere on to Settings, query intact" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "leaves every other page where it is" }
   ],
+  "BEH-SETTINGS-7": [
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_no_line_means_requested_is_null" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_post_writes_the_line_with_the_clocks_time" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_second_post_replaces_the_line_rather_than_adding_one" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_the_writer_drops_repeats_and_touches_nothing_else" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_non_operator_post_is_refused_and_nothing_is_written" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_get_reads_a_written_line" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_a_malformed_line_reads_as_never_asked" },
+    { "file": "backend/Balenthiran.Kit.Tests/WakeTests.cs", "title": "BEH_SETTINGS_7_the_written_line_is_what_the_scheduler_greps" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the operator the button, never asked, and when the agent wakes" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the last time he asked" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "posts the wake request when the button is pressed, says so, and shows the new time" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "shows the server reason when the request is refused" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Settings.test.tsx", "title": "does not show the button to anyone but the operator" }
+  ],
   "BEH-SETTINGS-6": [
     { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "An_ordered_list_is_read_in_his_order" },
     { "file": "backend/Balenthiran.Kit.Tests/IdleTests.cs", "title": "Legacy_idle_and_on_change_and_none_read_as_nothing_switched_on" },
