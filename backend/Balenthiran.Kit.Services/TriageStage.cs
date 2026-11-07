@@ -24,6 +24,9 @@ public static class TriageStage
     /// <summary>The work item for notes that ask for nothing (a test, an accidental note): it is never built, and stops for a person.</summary>
     public const string SetAside = "set-aside";
 
+    /// <summary>The work item for notes that are ideas for later: it is never specced or built, and stops as "on the backlog".</summary>
+    public const string Backlog = "backlog";
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -55,7 +58,9 @@ public static class TriageStage
         sb.Append("```\n");
         sb.Append("If you are unsure of your assessment, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. Every note must appear in exactly one bundle.\n");
         sb.Append("A note that asks for nothing (a test, an empty or accidental note) goes in the work item \"").Append(SetAside)
-            .Append("\" with a Flag line saying why and the one card line \"new: nothing to build\". It is not built: a person looks at it later.\n\n");
+            .Append("\" with a Flag line saying why and the one card line \"new: nothing to build\". It is not built: a person looks at it later.\n");
+        sb.Append("A note that is an idea for later, not work to do now, goes in the work item \"").Append(Backlog)
+            .Append("\" with a Flag line saying why and its card lines (existing ids, or \"new: <title>\"). It is not specced or built.\n\n");
 
         var noteParts = new List<string>();
         var budget = MaxTotalNoteChars;
