@@ -652,6 +652,8 @@ export interface PipelineItem {
   status: string
   stoppedBecause?: string | null
   pullRequest?: string | null
+  /** Kit merged the pull request (BEH-ORCH-10). */
+  merged?: boolean
   /** The bundle's Flag line, without "Flag: ". */
   flag?: string | null
   /** agreed, revised or escalated; null when it was not reviewed. */

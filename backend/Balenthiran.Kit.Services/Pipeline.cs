@@ -1,3 +1,4 @@
+using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.Services;
@@ -16,8 +17,10 @@ namespace Balenthiran.Kit.Services;
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
 /// <param name="scheduled"><c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): also start the agent's scheduled cards at spec, one per project at a time. Off by default: each starts runs on the owner's subscription.</param>
+/// <param name="merger">Merges a built item's pull request once its checks pass (BEH-ORCH-10); null stops such an item, saying Kit cannot merge.</param>
+/// <param name="merge"><c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <see cref="MergeReadyAsync"/> merges built items' pull requests. Off by default: a merge puts code no person has read into the base branch.</param>
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null)
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false)
 {
     private readonly object gate = new();
 
@@ -235,6 +238,66 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             items[index] = url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url };
+        }
+    }
+
+    /// <summary>
+    /// <c>BEH-ORCH-10</c>: with the switch on, asks to merge the pull request of each built item not yet merged. A merge
+    /// is merged, still waiting (left for the next look), or refused (the item stops saying why, and the pull request
+    /// stays open). An item changed meanwhile is left as it is. Does nothing with the switch off.
+    /// </summary>
+    public async Task MergeReadyAsync(CancellationToken cancellationToken)
+    {
+        if (!merge)
+        {
+            return;
+        }
+
+        List<WorkItem> ready;
+        lock (gate)
+        {
+            ready = items.Where(i => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false }).ToList();
+        }
+
+        foreach (var item in ready)
+        {
+            IPullRequestMerge? result = null;
+            string? reason = null;
+            if (merger is null)
+            {
+                reason = "Kit has no way to merge a pull request";
+            }
+            else
+            {
+                try
+                {
+                    result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken);
+                }
+                catch (Exception e) when (e is not OperationCanceledException)
+                {
+                    // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
+                    Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
+                    continue;
+                }
+            }
+
+            if (result is { Merged: false, Waiting: true })
+            {
+                continue;
+            }
+
+            lock (gate)
+            {
+                var index = items.IndexOf(item);
+                if (index < 0 || items[index] != item)
+                {
+                    continue;
+                }
+
+                items[index] = result is { Merged: true }
+                    ? item with { Merged = true }
+                    : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}");
+            }
         }
     }
 

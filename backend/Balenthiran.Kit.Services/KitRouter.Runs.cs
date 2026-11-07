@@ -58,6 +58,7 @@ public sealed partial class KitRouter
                 Status = i.Status.ToString().ToLowerInvariant(),
                 StoppedBecause = i.StoppedBecause,
                 PullRequest = i.PullRequest,
+                Merged = i.Merged,
                 Flag = bundle?.Flag,
                 Review = bundle?.Review?.Outcome.ToString().ToLowerInvariant(),
                 ReviewNote = bundle?.Review?.Note,

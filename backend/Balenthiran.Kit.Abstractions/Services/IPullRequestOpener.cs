@@ -18,3 +18,16 @@ public interface IPullRequestOpener
     /// </summary>
     Task<IPullRequestResult> OpenAsync(string head, string baseBranch, string title, string body, string? repository = null, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Merges a pull request the pipeline opened, once its checks have passed (BEH-ORCH-10).</summary>
+public interface IPullRequestMerger
+{
+    /// <summary>
+    /// Merge the pull request at <paramref name="pullRequestUrl"/> when every Actions run at its head commit
+    /// has succeeded (and there is at least one) and GitHub says it is mergeable, merging exactly that commit.
+    /// Still-running checks or an unknown mergeability are waiting; a failed run, a conflict, a closed pull
+    /// request or unreadable checks are refused with a reason. Never throws for a GitHub or network failure.
+    /// <paramref name="repository"/> (<c>owner/name</c>) is used only when the URL does not name one.
+    /// </summary>
+    Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken);
+}

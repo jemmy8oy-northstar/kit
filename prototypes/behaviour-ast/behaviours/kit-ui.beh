@@ -1526,7 +1526,6 @@ behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built onc
   source defined kit.notes.md#2026-11-07-1128
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1536,6 +1535,7 @@ behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built onc
   contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
   contract my assumption: it is behind KIT_PIPELINE_MERGE, off until he turns it on, because a merge puts code no person has read into dev; promotion to main stays the bot's, under BEH-SETTINGS-4
   contract my assumption: Kit's GitHub App needs read access to Actions and write access to pull requests on the repo. If it has no read access to Actions, the item stops saying so rather than merging unchecked
+  contract built: with KIT_PIPELINE_MERGE=on a PipelineMerger looks every 2 minutes at each built item's pull request, and GitHubPullRequestOpener.MergeIfGreenAsync merges that exact head commit (merge method "merge") once every Actions run at it has succeeded and GitHub says it is mergeable, waits on running checks, no checks yet or unknown mergeability, and stops the item with a plain reason on a failed run, a conflict, a closed pull request or an unreadable Actions API (403/404), leaving the pull request open; GET /api/pipeline carries merged and the Runs page shows a "Merged" line under the pull request link
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
