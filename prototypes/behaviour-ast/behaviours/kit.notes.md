@@ -741,3 +741,9 @@ Some page that shows visibility into agents running, what stage of the pipeline 
 <!-- from: note-button -->
 
 The note and chart inputs do not get lost when subscription credits run out and the pipeline cannot activate
+
+## 2026-11-07 11:28Z
+
+<!-- from: note-button -->
+
+Pipeline can raise and complete PRs for completed work
