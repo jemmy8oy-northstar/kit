@@ -2566,6 +2566,7 @@ behaviour BEH-CHAT-3 "An item is answered or marked off from inside the chat, an
   contract built (17:54Z note): after Approve, Skip or an answer, Kit adds a line of its own: what was done, then the next item in the project, or where the next one is, or that none is left, and "we can define new spec or discuss <project>". The agent is told what he did at the head of his next message, e.g. "[He approved <id>]"
   contract "When a note is created from the chat, a bubble in the chat shows the deterministic action that was taken, with an undo button. He wants this kept: after a note is created from the chat, the chat shows a bubble that states exactly what happened, and that bubble has an undo button that reverses it." (kit-ui.notes.md#2026-11-03-1354)
   contract built already (BEH-CHAT-6): a note saved from the chat puts Kit's bubble in the thread, "Saved as a note on <project>: “<the note, in full>”", with an Undo; Undo dismisses exactly that note and Kit says "Undone: …"
+  contract my assumption: the bubble for each action states what was done, on what, and where it went (a note's text in full), which is what the 13:54Z note asks for; an Undo then adds Kit's "Undone: …" line, so the bubble never leaves the outcome unstated
 
 behaviour BEH-CHAT-4 "When he seems to be talking about another project, the agent asks, and names the projects it might be"
   in FEAT-CHAT
@@ -2631,6 +2632,8 @@ behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explain
   contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
   contract his list (kit-ui.notes.md#2026-11-03-2340): "Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change."
   contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and offers to leave the note, rather than claiming it did it
+  contract my assumption: the list maps to the tools: approve_item, deny_item and answer_item (approve, deny, answer), undo_last (undo), show_item (show again), save_note (save a note), ask_coding_agent (BEH-SPECAGENT-3, the technical question), and read_spec (BEH-CHAT-8, read whole cards)
+  contract my assumption: show_note (BEH-CHAT-12) and offer_options (BEH-CHAT-10) are not in his 23:40Z list; they are added to the can list as later asks, so the instructions and help line name them too, and no tool exists for reorder, pause, schedule, priority or spec edit, so none is offered as a button
 
 behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
   in FEAT-CHAT
@@ -2657,7 +2660,7 @@ behaviour BEH-CHAT-9 "A Show again button reposts the item in hand at the foot o
   contract "The owner wants a button next to Approve and Skip in the chat's floating widget that reposts the current item at the bottom of the chat, so he doesn't have to scroll up to find it. Label: Show again"
   contract built: "Show again" sits beside Approve and "Skip to next item" in the dock. It puts the item in hand into the thread again, at the foot, with its question
   contract built: it sends nothing to the model and spends no reply. It is the same as asking the agent to show_item (BEH-CHAT-6), without the agent; the agent is told of the item as it is of any item in the thread
-  contract my assumption: the label is "Show again", the first of the three he offered, and it waits while a reply is on its way, as the other buttons do
+  contract my assumption: the label is "Show again", as the 13:49Z note gives it (not one of his alternatives, "Bring to bottom" or "Recap"), and it waits while a reply is on its way, as the other buttons do
 
 behaviour BEH-CHAT-10 "When the agent asks a yes/no or multiple-choice question, it offers the answers as tappable options"
   in FEAT-CHAT
@@ -2700,6 +2703,7 @@ behaviour BEH-CHAT-12 "The chat shows, on request, an answer he already posted t
   contract my assumption: the agent gets one more read-only tool, show_note, that puts a note (by item id or note time) into the thread as a card with its text, answer and origin tag (BEH-NOTE-15); it acts on nothing, so it needs no Undo
   contract built: on the Chat page only, the model is offered show_note with the item id or the note's time; the reply carries it as an action of kind shownote, which needs no item in hand, and the server writes nothing for it
   contract built: the page reads the notes of the project's apps and puts each note found into the thread as a card: its time, the item it is on, "from chat" or its other origin, its text, and each answer written under it; the newest three when an item has more. It carries no Undo, and the agent is told which note was shown. A note not found is said in Kit's line
+  contract my assumption: the tag shown is the origin BEH-NOTE-15 already stores (the note's from line); this card reads it and adds no tag of its own, so the tag is not built twice
 
 behaviour BEH-CHAT-13 "When an answer is added to a note in an action card, the card shows the text that was added"
   in FEAT-CHAT
@@ -2713,6 +2717,7 @@ behaviour BEH-CHAT-13 "When an answer is added to a note in an action card, the 
   contract "When an answer is added to a note in an action card, the card shows the text that was added, so he can see it straight away."
   contract my assumption: the "Answered" line under the action card quotes the answer's words in full, rather than only saying an answer was saved
   contract built: Kit's line after an answer is posted reads "Your answer is posted on “title”: “the answer, in full”." followed by what comes next, whether he or the agent posted it
+  contract my assumption: the action card itself shows the answer's full text, as the 23:32Z note asks ("the card shows the text that was added"), as well as Kit's line; the built line above describes Kit's line only, and the card's part is not yet verified
 
 behaviour BEH-CHAT-14 "The chat has no next-up-in-Kit section, because the next item comes up in the chat"
   in FEAT-CHAT
@@ -2725,7 +2730,7 @@ behaviour BEH-CHAT-14 "The chat has no next-up-in-Kit section, because the next 
   then sees region:KitMain
   contract "Remove the 'next up in Kit' section. The next item comes up in the chat anyway, so it is not needed."
   contract my assumption: "next up in Kit" is Kit's line after an item is dealt with, which read "Next up in kit: “title”. Reply to answer it…" and repeated the item that then comes into the thread by itself; the dock's button to jump to another project's waiting item (BEH-SPACE-2) is a different thing and stays
-  contract built: that line no longer names the next item or says "Next up": it reads "Approved “title”. Reply to answer the next item, or we can define new spec or discuss x." The item itself still comes up in the thread as before
+  contract built: that line no longer names the next item or says "Next up": it reads "Approved “title”. Reply to answer the next item, or we can define new spec or discuss <project>." The item itself still comes up in the thread as before
 
 behaviour BEH-CHAT-15 "An item id written in the chat or on an action card is a link to that item"
   in FEAT-CHAT
@@ -2764,6 +2769,7 @@ behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sen
   when opens page:KitChat
   then sees region:KitMain
   contract "Chat input: on a phone, Enter adds a new line and the send button sends. On a desktop, Enter sends and Shift+Enter adds a new line."
+  contract my assumption: on a desktop Shift+Enter adds a new line, as the 11:00Z note writes it (kit-ui.notes.md#2026-11-04-1100); the one-line title above does not say so, so this line carries it
   contract my assumption: "a phone" is a device whose main pointer is coarse (a touch screen), read with the `(pointer: coarse)` media query, so a tablet with a keyboard attached counts as a desktop
   contract built: the box reads matchMedia('(pointer: coarse)') at each key press; when it matches, Enter is a new line and only the Send button sends. Otherwise Enter sends and Shift+Enter is a new line, as before. A browser with no matchMedia counts as a desktop
 
