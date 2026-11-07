@@ -420,7 +420,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         var at = repoAt.LastIndexOf('@');
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();
-        var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models), AgentTokens.Hash(token), now);
+        var run = runs.Create(owner, item.Project, Orchestrator.ModelFor(item.Stage, models), AgentTokens.Hash(token), now,
+            item.Stage == PipelineStage.Triage ? null : item.Slug);
         try
         {
             pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));

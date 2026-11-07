@@ -34,6 +34,33 @@ function failureInWords(failure: string): string {
   return m && STEPS[m[1]] ? `${STEPS[m[1]]} (exit ${m[2]})` : failure
 }
 
+const tokensOf = (r: AgentRun) => r.inputTokens + r.outputTokens + r.cacheWriteTokens + r.cacheReadTokens
+
+interface ItemCost {
+  project: string
+  slug: string
+  runs: number
+  tokens: number
+  costUsd: number
+  newest: string
+}
+
+/** Runs summed per work item (BEH-ORCH-6), newest item first; a run with no work item is left out. */
+function byWorkItem(runs: AgentRun[]): ItemCost[] {
+  const items = new Map<string, ItemCost>()
+  for (const r of runs) {
+    if (!r.workItem) continue
+    const key = `${r.project}\n${r.workItem}`
+    const item = items.get(key) ?? { project: r.project, slug: r.workItem, runs: 0, tokens: 0, costUsd: 0, newest: r.started }
+    item.runs += 1
+    item.tokens += tokensOf(r)
+    item.costUsd += r.costUsd
+    if (Date.parse(r.started) > Date.parse(item.newest)) item.newest = r.started
+    items.set(key, item)
+  }
+  return [...items.values()].sort((a, b) => Date.parse(b.newest) - Date.parse(a.newest))
+}
+
 /**
  * Every agent run Kit has started, newest first (BEH-USERS-9). The server sends them in that order and
  * this keeps it. A failed run says which step of the runner failed.
@@ -52,17 +79,32 @@ export default function Runs() {
             {runs.length === 0 ? (
               <p>No runs yet.</p>
             ) : (
-              <ol aria-label="Agent runs" className="activity">
-                {runs.map((r) => (
-                  <li key={r.id}>
-                    <div className="muted">
-                      <time dateTime={r.started}>{when(r.started)}</time> · {r.project} · {r.model}
-                    </div>
-                    {r.status} · {took(r)} · {r.inputTokens + r.outputTokens + r.cacheWriteTokens + r.cacheReadTokens} tokens · ${r.costUsd.toFixed(2)}
-                    {r.status === 'failed' && r.failure ? <div>Failed: {failureInWords(r.failure)}</div> : null}
-                  </li>
-                ))}
-              </ol>
+              <>
+                {byWorkItem(runs).length > 0 ? (
+                  <>
+                    <h2>By work item</h2>
+                    <ul aria-label="Cost by work item" className="activity">
+                      {byWorkItem(runs).map((i) => (
+                        <li key={`${i.project}/${i.slug}`}>
+                          <div className="muted">{i.project} · {i.slug}</div>
+                          {i.runs} {i.runs === 1 ? 'run' : 'runs'} · {i.tokens} tokens · ${i.costUsd.toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+                <ol aria-label="Agent runs" className="activity">
+                  {runs.map((r) => (
+                    <li key={r.id}>
+                      <div className="muted">
+                        <time dateTime={r.started}>{when(r.started)}</time> · {r.project} · {r.model}
+                      </div>
+                      {r.status} · {took(r)} · {tokensOf(r)} tokens · ${r.costUsd.toFixed(2)}
+                      {r.status === 'failed' && r.failure ? <div>Failed: {failureInWords(r.failure)}</div> : null}
+                    </li>
+                  ))}
+                </ol>
+              </>
             )}
           </>
         )}

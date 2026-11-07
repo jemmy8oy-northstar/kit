@@ -28,24 +28,25 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
             cost_usd numeric(14,6) NOT NULL DEFAULT 0,
             failure text
         );
-        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS failure text
+        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS failure text;
+        ALTER TABLE agent_runs ADD COLUMN IF NOT EXISTS work_item text
         """;
 
-    private const string Columns = "id, owner, project, model, status, started, ended, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd, failure";
+    private const string Columns = "id, owner, project, model, status, started, ended, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost_usd, failure, work_item";
 
     private readonly NpgsqlDataSource source = NpgsqlDataSource.Create(connectionString);
     private readonly Lock gate = new();
     private bool made;
 
     /// <inheritdoc />
-    public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started)
+    public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null)
     {
         var id = Guid.NewGuid().ToString("N");
         using var cmd = Command(
-            "INSERT INTO agent_runs (id, owner, project, model, status, token_hash, started) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            id, owner, project, model, AgentRunStatus.Queued, tokenHash, started);
+            "INSERT INTO agent_runs (id, owner, project, model, status, token_hash, started, work_item) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            id, owner, project, model, AgentRunStatus.Queued, tokenHash, started, workItem is null ? DBNull.Value : workItem);
         cmd.ExecuteNonQuery();
-        return new Row { Id = id, Owner = owner, Project = project, Model = model, Status = AgentRunStatus.Queued, Started = started };
+        return new Row { Id = id, Owner = owner, Project = project, Model = model, Status = AgentRunStatus.Queued, Started = started, WorkItem = workItem };
     }
 
     /// <inheritdoc />
@@ -115,6 +116,7 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
                 CacheReadTokens = r.GetInt64(10),
                 CostUsd = r.GetDecimal(11),
                 Failure = r.IsDBNull(12) ? null : r.GetString(12),
+                WorkItem = r.IsDBNull(13) ? null : r.GetString(13),
             });
         }
 
@@ -149,6 +151,8 @@ public sealed class PostgresAgentRunStore(string connectionString) : IAgentRunSt
         public decimal CostUsd { get; init; }
 
         public string? Failure { get; init; }
+
+        public string? WorkItem { get; init; }
     }
 
     private NpgsqlCommand Command(string sql, params object[] values)

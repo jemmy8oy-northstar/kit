@@ -1148,7 +1148,7 @@ public class AgentRunTests
     /// <summary>A store whose spend cannot be written, as a database that has gone away.</summary>
     private sealed class FailingStore(MemoryAgentRunStore inner) : IAgentRunStore
     {
-        public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started) => inner.Create(owner, project, model, tokenHash, started);
+        public IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null) => inner.Create(owner, project, model, tokenHash, started, workItem);
 
         public IReadOnlyList<IAgentRun> List() => inner.List();
 
