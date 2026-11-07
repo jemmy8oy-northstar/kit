@@ -312,6 +312,9 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
     const kit = await kitLine(/^Approved “.*”\. Reply to answer the next item, or we can define new spec or discuss alpha\.$/)
     expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
+    // The next item comes into the thread one effect after Kit's line; skipping before it lands can put Kit's
+    // second line ahead of it (flaked 1 in 2 under load, 2026-11-07).
+    await waitFor(() => expect(order()).toEqual(['item', 'kit', 'item']))
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     await kitLine(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)
