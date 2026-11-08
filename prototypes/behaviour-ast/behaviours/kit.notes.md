@@ -783,3 +783,18 @@ tester can’t see their own project - holiday planner, they are a contributor t
 <!-- from: note-button -->
 
 A new user as part of the onboarding has to sign in with git before they can use the app - currently a user can look around without having signed into git
+
+## 2026-11-08 22:06Z
+
+<!-- from: note-button -->
+
+Ok so v1 of the pipeline had some queuing issues I have some ideas for a rework. The main issue I am seeing is that I don’t think a note should immediately trigger a feature build. Instead I think just like everything else it should go on the backlog. Then we have a few different jobs monitoring different status’ and waking agents to act on the tasks in various states. Rough idea:
+1. chat adds notes
+2. Hook to backend haiku agent which triages ensures there are no similar tickets and creates a ticket and or updates existing backlog tickets in new states
+3. Another agent which goes through tickets in new state and adds more context and loves state to ready or something
+4. Another one which runs through all items and plans them
+5. Another one which runs through implements and raises the pr
+6. Another one which is in charge of resolving conflicts and merging PRs
+There are a few things I’m not sure on. Like could/ should any of the stages be merged? Should 3&4 be merged for example. 3 will have brought all the context in already for 4 but then also will likely have extra context. I am thinking we start with them all as separate and then evaluate. But you see the benefit here right. Existing tickets will still get actioned currently only new tickets are getting actioned (and quite poorly). And also actioning will take place based off priority not based off a hook.
+
+In terms of hosting I kinda of feel that we should host a cluster local csharp backend to handle this and then have jobs for everything that handles the border tasks  but the triage stays acting on a hook. Seem reasonable?
