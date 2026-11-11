@@ -1437,6 +1437,7 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption: the stages are triage (BEH-ORCH-1), spec (formalise the cards and plan the tests), then build (tests first, then code, until they pass); each is one agent run (BEH-USERS-9)
   contract my assumption: the orchestrator is plain code in Kit, not a model, so starting and sequencing stages costs no tokens
   contract his note (kit#672, 2026-11-05): "instead of being jobs that wake and poll, we could have this triggered by a user taking an action. But this adds questions of timing. I think we only want one orchestrator live per repo or per user not sure yet maybe a user can configure that"
+  contract my assumption: superseded by BEH-ORCH-11 once its jobs are built: only triage stays on the hook, and each later stage is taken by its own job in priority order
   contract my assumption: a user's action in Kit (a note, a chat message, an approval) is what queues the next stage; nothing runs on a timer. A runner waits on Kit with a held-open request, so a queued stage starts within seconds and an idle pool makes no model calls
   contract my assumption: one orchestrator is live per project: a project's next stage waits while one of its stages is running, and other projects are not held up. Per user, and a user's own setting, can come later: once this runs Kit's own work, the bot that maintains the ecosystem wakes less often and reads the pipeline's notes, "just like a boss would". The same shape may later serve users as a periodic check by a stronger model
   contract my assumption, slice 1 (built switched off): the orchestrator is a pure state machine over work items (triage, review, spec, build; queued, running, stopped, done). A flagged stage goes to review, and an agreed or revised review resumes at the stage after the flagged one; an escalated review or a failed run stops the item with the reason. At most one item per project starts at a time. Spec and build run on KIT_STAGE_MODEL_SPEC and KIT_STAGE_MODEL_BUILD, default Haiku. Nothing calls it yet: wiring waits on runs taking a repo and a task
@@ -1540,6 +1541,31 @@ behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built onc
   contract my assumption: it is behind KIT_PIPELINE_MERGE, off until he turns it on, because a merge puts code no person has read into dev; promotion to main stays the bot's, under BEH-SETTINGS-4
   contract my assumption: Kit's GitHub App needs read access to Actions and write access to pull requests on the repo. If it has no read access to Actions, the item stops saying so rather than merging unchecked
   contract built: with KIT_PIPELINE_MERGE=on a PipelineMerger looks every 2 minutes at each built item's pull request, and GitHubPullRequestOpener.MergeIfGreenAsync merges that exact head commit (merge method "merge") once every Actions run at it has succeeded and GitHub says it is mergeable, waits on running checks, no checks yet or unknown mergeability, and stops the item with a plain reason on a failed run, a conflict, a closed pull request or an unreadable Actions API (403/404), leaving the pull request open; GET /api/pipeline carries merged and the Runs page shows a "Merged" line under the pull request link
+
+behaviour BEH-ORCH-11 "A note goes on the backlog as a ticket, and a job per stage takes the highest-priority ticket waiting for it"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-08-2206
+  review unreviewed
+  priority 1
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-08-2206): "I don't think a note should immediately trigger a feature build. Instead I think just like everything else it should go on the backlog. Then we have a few different jobs monitoring different status' and waking agents to act on the tasks in various states"
+  contract his note (kit.notes.md#2026-11-08-2206): "1. chat adds notes 2. Hook to backend haiku agent which triages ensures there are no similar tickets and creates a ticket and or updates existing backlog tickets in new states 3. Another agent which goes through tickets in new state and adds more context and moves state to ready or something 4. Another one which runs through all items and plans them 5. Another one which runs through implements and raises the pr 6. Another one which is in charge of resolving conflicts and merging PRs"
+  contract his note (kit.notes.md#2026-11-08-2206): "I am thinking we start with them all as separate and then evaluate… Existing tickets will still get actioned currently only new tickets are getting actioned (and quite poorly). And also actioning will take place based off priority not based off a hook"
+  contract his note (kit.notes.md#2026-11-08-2206): "In terms of hosting I kinda of feel that we should host a cluster local csharp backend to handle this and then have jobs for everything that handles the border tasks but the triage stays acting on a hook. Seem reasonable?"
+  contract my assumption: yes. It also fixes what was measured on 2026-11-07: 44 work branches, 5 pull requests and none merged, because each note pushed a chain of stages straight through and nothing went back to older work
+  contract my assumption: a ticket is a row in Kit's database (pipeline_tickets: project, slug, title, state, priority, the cards it touches, its bundle, its pull request, why it stopped), so tickets survive a restart. Today's work items, held in memory, become tickets
+  contract my assumption: a ticket's states are new, ready, planned, built, merged, and stopped. A Flag still sends a stage's output to review (BEH-ORCH-2) before the ticket moves on
+  contract my assumption: triage stays on the hook (a note or a chat message, BEH-ORCH-1). It is given the project's open tickets and must update one that covers the same thing rather than open a second. It moves no ticket past new, and it starts no other stage
+  contract my assumption: the four jobs after triage are context (new to ready: gathers what a planner needs into the bundle), plan (ready to planned: writes the cards and the test plan, today's spec stage), build (planned to built: tests then code, and opens the pull request), and merge (built to merged: brings the branch up to date with dev, has an agent resolve a conflict, and merges once checks pass, BEH-ORCH-10). Each starts as its own job, as he said, so whether context and plan should merge is decided from what Runs shows they cost
+  contract my assumption: each job looks every few minutes, takes the waiting ticket with the highest priority (oldest first among equals), and runs one ticket at a time per project. A job with nothing waiting makes no model call
+  contract my assumption: priority is the card's priority (1 to 4). A ticket triage opens takes the highest priority of the cards it touches, or 3 when it touches none
+  contract my assumption: existing backlog cards enter as tickets at new when the agent schedules them (BEH-ORCH-4), so old work is taken in priority order alongside new notes
+  contract my assumption: the jobs live in Kit's own C# backend, which already runs in the cluster, as background services beside PipelineMerger. Moving them into a separate service is a platform choice, so it would wait for his word
+  contract my assumption: each job has its own switch (KIT_PIPELINE_JOB_CONTEXT and so on), off until he turns it on, because each one spends his subscription
+  contract my assumption: it is built in slices, each one merged before the next: tickets kept in the database; triage reading and updating open tickets; then one job at a time, in the order context, plan, build, merge
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
