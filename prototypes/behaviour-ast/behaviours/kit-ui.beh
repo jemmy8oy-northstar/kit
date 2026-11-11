@@ -1588,10 +1588,10 @@ feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its b
 behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and its tests run through the host against a test database"
   in FEAT-KIT-DEBT
   source defined kit#671
-  review unreviewed
+  review approved
   priority 4
   pending
-  needs-context "Deleting about 145 interfaces is an architecture choice and a large deletion, so it is yours (kit#671). If no answer by 2026-11-11, I delete none, and new code adds interfaces only at boundaries."
+  paused until 2026-11-25
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1599,7 +1599,8 @@ behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and i
   contract his answer (kit#671): "I think tests should not run against the real db. Isn't there such thing as a test db?" So integration tests use a throwaway Postgres made per test run, never preprod's
   contract my assumption: no new interface is added from 2026-11-04 except at a boundary: GitHub, the database store, push, time, the model API
   contract my assumption, the migration plan: three PRs, data-model interfaces first, then internal services, keeping the boundaries; tests that mocked a deleted interface move to the in-memory host
-  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; priority 4 until then
+  contract his answer (kit#671, 2026-11-11 22:32Z): "Deleting all our interface create a backlog item and we can action this when we have addressed the cost issues". So the deletion is approved, and it waits on the cost work
+  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; it is paused, and on 2026-11-25 I check whether the cost work has landed and either start it or pause it again
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
