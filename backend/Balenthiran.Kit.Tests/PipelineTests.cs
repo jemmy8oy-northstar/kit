@@ -32,7 +32,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null)
         {
             owned = root is null;
             this.root = root ?? Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
@@ -48,7 +48,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -149,6 +149,73 @@ public class PipelineTests
     private sealed class Clock : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 11, 5, 12, 30, 0, TimeSpan.Zero);
+    }
+
+    // A clock whose timers fire only when the test moves it on, so a retry's hour costs no wait.
+    private sealed class Ticking : TimeProvider
+    {
+        private readonly List<Tick> ticks = [];
+        private DateTimeOffset now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);
+
+        public int Pending
+        {
+            get
+            {
+                lock (ticks)
+                {
+                    return ticks.Count(t => !t.Disposed);
+                }
+            }
+        }
+
+        public override DateTimeOffset GetUtcNow() => now;
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            var tick = new Tick(callback, state, now + dueTime);
+            lock (ticks)
+            {
+                ticks.Add(tick);
+            }
+
+            return tick;
+        }
+
+        public void Advance(TimeSpan by)
+        {
+            now += by;
+            List<Tick> due;
+            lock (ticks)
+            {
+                due = ticks.Where(t => !t.Disposed && t.Due <= now).ToList();
+            }
+
+            foreach (var t in due)
+            {
+                t.Callback(t.State);
+            }
+        }
+
+        private sealed class Tick(TimerCallback callback, object? state, DateTimeOffset due) : ITimer
+        {
+            public TimerCallback Callback { get; } = callback;
+
+            public object? State { get; } = state;
+
+            public DateTimeOffset Due { get; } = due;
+
+            public bool Disposed { get; private set; }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period) => false;
+
+            public void Dispose() => Disposed = true;
+
+            public ValueTask DisposeAsync()
+            {
+                Disposed = true;
+                return ValueTask.CompletedTask;
+            }
+        }
     }
 
     private static readonly StageModelSettings Models = new("claude-haiku-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-haiku-5-5");
@@ -1308,6 +1375,87 @@ public class PipelineTests
         var task = Assert.IsType<PoolClaim>(restarted.Claim()).Task;
         Assert.Contains("the list should export", task);
         Assert.DoesNotContain("the list should sort by date", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_failed_triage_is_tried_again_an_hour_later_on_the_notes_still_unsorted()
+    {
+        var time = new Ticking();
+        using var rig = new Rig(clock: time);
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed"); // the spec run of the bundle it reported
+        rig.Note("the list should export");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        Assert.Null(rig.Claim());
+
+        time.Advance(TimeSpan.FromMinutes(59));
+        Assert.Null(rig.Claim());
+
+        time.Advance(TimeSpan.FromMinutes(1));
+        var task = Assert.IsType<PoolClaim>(rig.Claim()).Task;
+        Assert.Contains("the list should export", task);
+        Assert.DoesNotContain("the list should sort by date", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_triage_that_works_ends_the_retries()
+    {
+        var time = new Ticking();
+        using var rig = new Rig(clock: time);
+        rig.Note("the list should export");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        Assert.Equal(1, time.Pending);
+
+        // A new note's triage works before the hour is up: nothing is left to retry.
+        rig.Note("the list should sort by date");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()));
+        Assert.Equal(0, time.Pending);
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed"); // the spec run of the bundle it reported
+
+        time.Advance(TimeSpan.FromHours(2));
+        Assert.Null(rig.Claim());
+
+        // And the count starts again: one failure afterwards schedules a retry, as a first failure does.
+        rig.Note("the list should print");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        Assert.Equal(1, time.Pending);
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_triage_failing_while_a_retry_is_pending_does_not_add_a_second()
+    {
+        var time = new Ticking();
+        using var rig = new Rig(clock: time);
+        rig.Note("the list should export");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        rig.Note("the list should print");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+
+        Assert.Equal(1, time.Pending);
+        time.Advance(TimeSpan.FromHours(1));
+        Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_8_a_failing_triage_is_tried_again_twelve_times_and_then_stops()
+    {
+        var time = new Ticking();
+        using var rig = new Rig(clock: time);
+        rig.Note("the list should export");
+        rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        for (var retry = 1; retry <= Pipeline.MaxRetries; retry++)
+        {
+            Assert.Equal(1, time.Pending);
+            time.Advance(Pipeline.RetryAfter);
+            rig.Finish(Assert.IsType<PoolClaim>(rig.Claim()), status: "failed");
+        }
+
+        // The twelfth retry failed too: nothing more is scheduled.
+        Assert.Equal(0, time.Pending);
+        time.Advance(TimeSpan.FromDays(1));
+        Assert.Null(rig.Claim());
     }
 
     [Fact]
