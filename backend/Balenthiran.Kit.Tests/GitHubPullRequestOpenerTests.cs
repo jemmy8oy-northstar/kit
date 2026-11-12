@@ -358,4 +358,78 @@ public class GitHubPullRequestOpenerTests
         Assert.NotNull(r.Reason);
         Assert.Empty(gh.Sent);
     }
+
+    // ---- BEH-ORCH-11, slice 7: the merge job brings the branch up to date first ----------------------
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> PullOnDev() =>
+        FakeGitHub.Json(HttpStatusCode.OK, $$$"""{"state":"open","mergeable":true,"head":{"sha":"{{{Head}}}"},"base":{"ref":"dev"}}""");
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> Compared(int behindBy) =>
+        FakeGitHub.Json(HttpStatusCode.OK, $$"""{"status":"ahead","ahead_by":2,"behind_by":{{behindBy}}}""");
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_branch_behind_its_base_is_updated_and_waited_on_before_its_checks_are_read()
+    {
+        var gh = new FakeGitHub(PullOnDev(), Compared(3), FakeGitHub.Json(HttpStatusCode.Accepted, """{"message":"Updating pull request branch."}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+
+        Assert.True(r.Waiting);
+        Assert.False(r.Merged);
+        Assert.Equal("brought up to date with dev", r.Reason);
+        Assert.Equal($"https://api.github.com/repos/someone/demo/compare/dev...{Head}?per_page=1", gh.Sent[1].Uri.AbsoluteUri);
+        var put = gh.Sent[2];
+        Assert.Equal(HttpMethod.Put, put.Method);
+        Assert.Equal("https://api.github.com/repos/someone/demo/pulls/7/update-branch", put.Uri.AbsoluteUri);
+        using var sent = JsonDocument.Parse(put.Body!);
+        Assert.Equal(Head, sent.RootElement.GetProperty("expected_head_sha").GetString());
+        Assert.Equal(3, gh.Sent.Count);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_branch_not_behind_goes_on_to_the_checks_and_the_merge_as_before()
+    {
+        var gh = new FakeGitHub(PullOnDev(), Compared(0), Runs(Run("completed", "success")), FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+
+        Assert.True(r.Merged);
+        Assert.DoesNotContain(gh.Sent, s => s.Uri.AbsoluteUri.EndsWith("/update-branch", StringComparison.Ordinal));
+        Assert.Contains("/actions/runs?", gh.Sent[2].Uri.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_branch_github_cannot_update_has_a_conflict_and_is_refused()
+    {
+        var gh = new FakeGitHub(PullOnDev(), Compared(1), FakeGitHub.Json(HttpStatusCode.UnprocessableEntity, """{"message":"merge conflict between base and head"}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+
+        Assert.False(r.Waiting);
+        Assert.False(r.Merged);
+        Assert.Equal("it has a conflict with its base branch", r.Reason);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_without_updateFirst_no_comparison_is_made()
+    {
+        var gh = new FakeGitHub(PullOnDev(), Runs(Run("completed", "success")), FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}"""));
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.True(r.Merged);
+        Assert.DoesNotContain(gh.Sent, s => s.Uri.AbsoluteUri.Contains("/compare/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_comparison_github_cannot_answer_waits_on_a_server_error_and_refuses_on_a_client_error()
+    {
+        var down = new FakeGitHub(PullOnDev(), FakeGitHub.Json(HttpStatusCode.BadGateway, """{"message":"bad gateway"}"""));
+        var denied = new FakeGitHub(PullOnDev(), FakeGitHub.Json(HttpStatusCode.NotFound, """{"message":"Not Found"}"""));
+
+        Assert.True((await Opener(down).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true)).Waiting);
+        var r = await Opener(denied).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+        Assert.False(r.Waiting);
+        Assert.NotNull(r.Reason);
+    }
 }

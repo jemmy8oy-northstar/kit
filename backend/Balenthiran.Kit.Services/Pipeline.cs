@@ -538,7 +538,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public async Task MergeReadyAsync(CancellationToken cancellationToken)
     {
-        if (!merge)
+        // With the merge job on, the job owns this hop (BEH-ORCH-11, slice 7), whatever KIT_PIPELINE_MERGE says.
+        if (!merge || jobs?.Contains(PipelineStage.Merge) == true)
         {
             return;
         }
@@ -546,48 +547,93 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<WorkItem> ready;
         lock (gate)
         {
-            ready = items.Where(i => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false }).ToList();
+            ready = items.Where(IsBuilt).ToList();
         }
 
         foreach (var item in ready)
         {
-            IPullRequestMerge? result = null;
-            string? reason = null;
-            if (merger is null)
+            await MergeOneAsync(item, false, cancellationToken);
+        }
+    }
+
+    private static bool IsBuilt(WorkItem i) => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false };
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: one look of the merge job (<c>KIT_PIPELINE_JOB_MERGE=on</c>; nothing happens with it off). Per
+    /// project with a built, unmerged item, takes only the one with the lowest priority number (oldest first among equals)
+    /// and asks to merge it after bringing its branch up to date with its base, so merges into the base branch happen one
+    /// at a time in priority order. Merged, waiting and refused are as for <see cref="MergeReadyAsync"/>: a refused item
+    /// stops, and the next look takes the next one.
+    /// </summary>
+    public async Task MergeTickAsync(CancellationToken cancellationToken)
+    {
+        if (jobs?.Contains(PipelineStage.Merge) != true)
+        {
+            return;
+        }
+
+        List<WorkItem> top;
+        lock (gate)
+        {
+            var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList();
+            top = [];
+            foreach (var app in apps)
             {
-                reason = "Kit has no way to merge a pull request";
+                RefreshPriorities(app);
+                var next = items
+                    .Select((item, index) => (Item: item, Index: index))
+                    .Where(x => x.Item.Project == app && IsBuilt(x.Item))
+                    .OrderBy(x => priorities.GetValueOrDefault((x.Item.Project, x.Item.Slug), DefaultPriority))
+                    .ThenBy(x => x.Index)
+                    .First();
+                top.Add(next.Item);
             }
-            else
+        }
+
+        foreach (var item in top)
+        {
+            await MergeOneAsync(item, true, cancellationToken);
+        }
+    }
+
+    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken)
+    {
+        IPullRequestMerge? result = null;
+        string? reason = null;
+        if (merger is null)
+        {
+            reason = "Kit has no way to merge a pull request";
+        }
+        else
+        {
+            try
             {
-                try
-                {
-                    result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken);
-                }
-                catch (Exception e) when (e is not OperationCanceledException)
-                {
-                    // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
-                    Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
-                    continue;
-                }
+                result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken, updateFirst);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
+                Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
+                return;
+            }
+        }
+
+        if (result is { Merged: false, Waiting: true })
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            var index = items.IndexOf(item);
+            if (index < 0 || items[index] != item)
+            {
+                return;
             }
 
-            if (result is { Merged: false, Waiting: true })
-            {
-                continue;
-            }
-
-            lock (gate)
-            {
-                var index = items.IndexOf(item);
-                if (index < 0 || items[index] != item)
-                {
-                    continue;
-                }
-
-                Set(index, result is { Merged: true }
-                    ? item with { Merged = true }
-                    : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
-            }
+            Set(index, result is { Merged: true }
+                ? item with { Merged = true }
+                : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
         }
     }
 

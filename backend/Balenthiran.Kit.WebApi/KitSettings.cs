@@ -372,6 +372,16 @@ public sealed record KitSettings(
     /// <summary><c>KIT_PIPELINE_JOB_BUILD</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
     public static bool ParsePipelineJobBuild(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_BUILD", value);
 
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_MERGE</c> (BEH-ORCH-11, slice 7): <c>on</c> moves the merge of built items' pull requests to the
+    /// merge job, which brings the oldest highest-priority one per project up to date with its base and merges it, one at
+    /// a time. Unset or <c>off</c> is off: <c>KIT_PIPELINE_MERGE</c> merges as before.
+    /// </summary>
+    public bool PipelineJobMerge { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_MERGE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobMerge(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_MERGE", value);
+
     private static bool ParseJobSwitch(string name, string? value) => value?.Trim() switch
     {
         null or "" or "off" => false,
@@ -381,7 +391,7 @@ public sealed record KitSettings(
 
     /// <summary>The stages a job owns: one for each job switch that is on. What the pipeline takes as <c>jobs</c> and what registers a <see cref="PipelineJob"/> each.</summary>
     public IReadOnlyList<PipelineStage> PipelineJobs =>
-        [.. (PipelineJobContext ? [PipelineStage.Context] : Array.Empty<PipelineStage>()), .. (PipelineJobPlan ? [PipelineStage.Spec] : Array.Empty<PipelineStage>()), .. (PipelineJobBuild ? [PipelineStage.Build] : Array.Empty<PipelineStage>())];
+        [.. (PipelineJobContext ? [PipelineStage.Context] : Array.Empty<PipelineStage>()), .. (PipelineJobPlan ? [PipelineStage.Spec] : Array.Empty<PipelineStage>()), .. (PipelineJobBuild ? [PipelineStage.Build] : Array.Empty<PipelineStage>()), .. (PipelineJobMerge ? [PipelineStage.Merge] : Array.Empty<PipelineStage>())];
 
     /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c> (BEH-ORCH-11): how often a pipeline job looks for a ticket waiting. Unset is <see cref="PipelineJob.DefaultInterval"/> (2 minutes).</summary>
     public TimeSpan PipelineJobInterval { get; init; } = PipelineJob.DefaultInterval;
@@ -528,6 +538,7 @@ public sealed record KitSettings(
             PipelineJobContext = ParsePipelineJobContext(env("KIT_PIPELINE_JOB_CONTEXT")),
             PipelineJobPlan = ParsePipelineJobPlan(env("KIT_PIPELINE_JOB_PLAN")),
             PipelineJobBuild = ParsePipelineJobBuild(env("KIT_PIPELINE_JOB_BUILD")),
+            PipelineJobMerge = ParsePipelineJobMerge(env("KIT_PIPELINE_JOB_MERGE")),
             PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
             StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
             StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
