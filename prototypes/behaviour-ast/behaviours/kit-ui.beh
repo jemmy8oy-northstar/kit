@@ -3348,6 +3348,8 @@ behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump
   contract his note (kit.notes.md#2026-11-07-2114): "Backlog: I want to do some proper work on designing the kit spec structure I think one file dump per project is not structured well at all"
   contract my assumption: this is a design job for him and me together, not a build; no spec file is split or moved until he has said what the structure should be
   contract my assumption: BEH-USERS-12 (the .kit/ directory) moves the files and does not change their shape, so it can go ahead without this
+  contract his note (kit.notes.md#2026-11-07-2113): "I think it would be worth changing the .beh extension to .kit or .spec or something. .beh is not intuitive it's not easy to say i don't really like it. Currently im leaning towards .kit"
+  contract my assumption: the extension change is part of this redesign, not done on its own, so the files are renamed once; .kit is his leaning and the default, and the parser, gh-sync and every path that names .beh move with it
 
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES
