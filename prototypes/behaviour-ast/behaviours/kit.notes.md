@@ -798,3 +798,9 @@ Ok so v1 of the pipeline had some queuing issues I have some ideas for a rework.
 There are a few things I’m not sure on. Like could/ should any of the stages be merged? Should 3&4 be merged for example. 3 will have brought all the context in already for 4 but then also will likely have extra context. I am thinking we start with them all as separate and then evaluate. But you see the benefit here right. Existing tickets will still get actioned currently only new tickets are getting actioned (and quite poorly). And also actioning will take place based off priority not based off a hook.
 
 In terms of hosting I kinda of feel that we should host a cluster local csharp backend to handle this and then have jobs for everything that handles the border tasks  but the triage stays acting on a hook. Seem reasonable?
+
+## 2026-11-12 08:08Z
+
+<!-- from: note-button -->
+
+Ah my minutes r used up. I feel like if we swap to paid we will still run out it’s only 50% increase right?. Are there any other options. Is self hosting viable? Maybe we should switch back to free tier.
