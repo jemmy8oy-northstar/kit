@@ -9,8 +9,9 @@ namespace Balenthiran.Kit.Services;
 /// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Spec, build and
 /// review runs start from that bundle and report it back changed, which moves the item on. A built item gets a pull
 /// request from its branch, opened by Kit. Exists
-/// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
-/// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again. Which
+/// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Each work item with a
+/// bundle is also a ticket in the store (BEH-ORCH-11), which <see cref="Resume"/> reloads, so a restart keeps it; the
+/// pool's queue and the runs in flight are in memory only, as before. Which
 /// notes a triage has sorted is kept in the store (BEH-ORCH-8), so that triage reads only the notes still unsorted.
 /// </summary>
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
@@ -20,9 +21,23 @@ namespace Balenthiran.Kit.Services;
 /// <param name="merger">Merges a built item's pull request once its checks pass (BEH-ORCH-10); null stops such an item, saying Kit cannot merge.</param>
 /// <param name="merge"><c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <see cref="MergeReadyAsync"/> merges built items' pull requests. Off by default: a merge puts code no person has read into the base branch.</param>
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false)
+/// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null)
 {
     private readonly object gate = new();
+
+    // BEH-ORCH-11, slice 1: every work item that has a bundle is also a ticket row, written whenever the item changes
+    // and reloaded by Resume. A work item's stage and status map onto a ticket's state like this (the context job
+    // does not exist yet, so a triaged item waits for the spec stage, which is today's "plan"):
+    //   Spec  (queued, running, or under review) -> ready      (new is not written yet: triage has no stage of its own)
+    //   Build (queued, running, or under review) -> planned
+    //   Build, Done, no pull request merged      -> built      (its pull request, once opened, is on the ticket)
+    //   Build, Done, Merged                      -> merged
+    //   any stage, Stopped                       -> stopped    (with why)
+    // A triage item is not a ticket: it has no bundle. Neither is the set-aside or backlog pseudo-item.
+    // Resume reverses it: new and ready become a queued Spec item, planned a queued Build item, built a Done Build item.
+    // A run in flight, or a review under way, is not kept: a resumed item starts its stage again.
+    private readonly ITicketStore ticketStore = tickets ?? new MemoryTicketStore();
 
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
@@ -98,6 +113,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public void Resume()
     {
+        ResumeTickets();
+
         IReadOnlyList<string> recorded;
         try
         {
@@ -133,6 +150,125 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             StartReady();
         }
     }
+
+    /// <summary>
+    /// BEH-ORCH-11: reloads the open tickets as work items, so a restart does not lose them. A ticket whose project is
+    /// not in <c>projects</c>, whose bundle cannot be read, or which the pipeline already holds is left out. A store that
+    /// cannot be read resumes none. Starts nothing itself: <see cref="Resume"/> does that once everything is loaded.
+    /// </summary>
+    private void ResumeTickets()
+    {
+        IReadOnlyList<PipelineTicket> open;
+        try
+        {
+            open = ticketStore.Open();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading the open tickets threw {e.GetType().Name}");
+            return;
+        }
+
+        lock (gate)
+        {
+            foreach (var ticket in open)
+            {
+                if ((projects is not null && !projects.Contains(ticket.Project)) || items.Any(i => i.Project == ticket.Project && i.Slug == ticket.Slug))
+                {
+                    continue;
+                }
+
+                var bundle = ticket.Bundle is null ? null : ContextBundle.Parse(ticket.Bundle).Bundle;
+                if (bundle is null)
+                {
+                    Console.Error.WriteLine($"kit: the bundle of ticket {ticket.Project} {ticket.Slug} could not be read; not resuming it");
+                    continue;
+                }
+
+                var item = ticket.State switch
+                {
+                    TicketState.New or TicketState.Ready => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Spec, WorkItemStatus.Queued),
+                    TicketState.Planned => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Queued),
+                    TicketState.Built => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Done, PullRequest: ticket.PullRequest),
+                    _ => null,
+                };
+                if (item is null)
+                {
+                    continue;
+                }
+
+                bundles[(ticket.Project, ticket.Slug)] = bundle;
+                if (ticket.Scheduled)
+                {
+                    scheduledSlugs.Add((ticket.Project, ticket.Slug));
+                }
+
+                items.Add(item);
+            }
+        }
+    }
+
+    /// <summary>Puts <paramref name="item"/> at <paramref name="index"/> and writes its ticket.</summary>
+    private void Set(int index, WorkItem item)
+    {
+        items[index] = item;
+        Persist(item);
+    }
+
+    /// <summary>Appends <paramref name="item"/> and writes its ticket.</summary>
+    private void Add(WorkItem item)
+    {
+        items.Add(item);
+        Persist(item);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="item"/>'s ticket (the mapping is at the top of the class). A store that cannot be written
+    /// costs the ticket its restart, not the pipeline its run. Called with the gate held.
+    /// </summary>
+    private void Persist(WorkItem item)
+    {
+        // "#" is never in a bundle slug: a triage's own item is no ticket, nor are the pseudo-items of notes set aside.
+        if (item.Slug.Contains('#') || item.Slug is TriageStage.SetAside or TriageStage.Backlog)
+        {
+            return;
+        }
+
+        bundles.TryGetValue((item.Project, item.Slug), out var bundle);
+        string? text = null;
+        try
+        {
+            text = bundle?.Render();
+        }
+        catch (InvalidOperationException)
+        {
+            // A bundle that will not render is kept out of the row; the ticket is still written.
+        }
+
+        var stage = item.Stage == PipelineStage.Review ? item.ReviewedStage ?? PipelineStage.Spec : item.Stage;
+        var state = item switch
+        {
+            { Merged: true } => TicketState.Merged,
+            { Status: WorkItemStatus.Stopped } => TicketState.Stopped,
+            _ => stage switch
+            {
+                PipelineStage.Spec => TicketState.Ready,
+                PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
+                _ => TicketState.New,
+            },
+        };
+        try
+        {
+            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, DefaultPriority, bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug))));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: writing the ticket {item.Project} {item.Slug} threw {e.GetType().Name}");
+        }
+    }
+
+    // Slice 1 keeps no priority of its own: the card-driven priority (1 to 4) arrives with the jobs, and 3 is its fallback.
+    private const int DefaultPriority = 3;
 
     /// <summary>
     /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
@@ -224,7 +360,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             var item = items[run.Index];
             if (item.Stage != PipelineStage.Triage)
             {
-                items[run.Index] = Ended(item, run.Given!, succeeded, reported);
+                Set(run.Index, Ended(item, run.Given!, succeeded, reported));
 
                 // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
                 if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
@@ -234,7 +370,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
             else if (!succeeded)
             {
-                items[run.Index] = Stop(item, "the triage run failed");
+                Set(run.Index, Stop(item, "the triage run failed"));
                 TriageFailed(item.Project);
             }
             else
@@ -249,11 +385,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 // the next note's triage, as a failed run's are, rather than being dropped.
                 if (usable == 0)
                 {
-                    items[run.Index] = Stop(item, "the triage reported no usable bundle");
+                    Set(run.Index, Stop(item, "the triage reported no usable bundle"));
                 }
                 else
                 {
-                    items[run.Index] = item with { Status = WorkItemStatus.Done };
+                    Set(run.Index, item with { Status = WorkItemStatus.Done });
                     MarkSorted(item.Project, run.Notes);
                     ClearRetries(item.Project);
 
@@ -312,7 +448,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 return;
             }
 
-            items[index] = url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url };
+            Set(index, url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url });
         }
     }
 
@@ -369,9 +505,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     continue;
                 }
 
-                items[index] = result is { Merged: true }
+                Set(index, result is { Merged: true }
                     ? item with { Merged = true }
-                    : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}");
+                    : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
             }
         }
     }
@@ -497,12 +633,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 scheduledSlugs.Add((app, slug));
                 if (bundle.Check() is { } why)
                 {
-                    items.Add(Stop(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued), $"the scheduled card's bundle is not valid: {why}"));
+                    Add(Stop(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued), $"the scheduled card's bundle is not valid: {why}"));
                 }
                 else
                 {
                     bundles[(app, slug)] = bundle;
-                    items.Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
+                    Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
                 }
 
                 return true;
@@ -601,6 +737,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             bundles[(app, slug)] = usable;
         }
 
+        // After the bundle is recorded, as the ticket carries it.
+        Persist(item);
         return usable is not null;
     }
 
@@ -620,12 +758,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 var index = items.IndexOf(next);
                 try
                 {
-                    items[index] = Begin(index, next);
+                    Set(index, Begin(index, next));
                 }
                 catch (Exception e)
                 {
                     // A spec or notes file that cannot be read stops this item; it must not fail the note or the run's report.
-                    items[index] = Stop(next, $"the project could not be read ({e.GetType().Name})");
+                    Set(index, Stop(next, $"the project could not be read ({e.GetType().Name})"));
                 }
 
                 again |= items[index].Status != WorkItemStatus.Running;

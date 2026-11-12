@@ -32,9 +32,10 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null)
         {
             owned = root is null;
+            Tickets = tickets ?? new MemoryTicketStore();
             this.root = root ?? Directory.CreateTempSubdirectory("kit-pipeline-").FullName;
             root = this.root;
             Sorted = sorted ?? new MemoryTriagedNoteStore();
@@ -48,7 +49,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -57,6 +58,8 @@ public class PipelineTests
         public MemoryAgentRunStore Store { get; }
 
         public ITriagedNoteStore Sorted { get; }
+
+        public ITicketStore Tickets { get; }
 
         public Opener Pulls { get; } = new();
 
@@ -96,8 +99,9 @@ public class PipelineTests
             Routes.Finished(claim.Token, Json(new { status = "finished", bundles }));
 
         // Kit restarting: the same files and the same triaged-notes store, but a new pool, run store and pipeline,
-        // so everything kept in memory is gone. Disposing the restarted rig leaves the files to this one.
-        public Rig Restart(ITriagedNoteStore? sorted = null) => new(sorted: sorted ?? Sorted, root: root);
+        // so everything kept in memory is gone. Disposing the restarted rig leaves the files to this one. Tickets
+        // are kept only when asked for (BEH-ORCH-11), so the BEH-ORCH-8 restarts above them are as they were.
+        public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets);
 
         public void Dispose()
         {
@@ -1528,5 +1532,189 @@ public class PipelineTests
         Assert.Equal(["a"], store.Read(other));
         Assert.Empty(store.Read($"p{Guid.NewGuid():N}"[..12]));
         Assert.Contains(project, store.Projects());
+    }
+
+    // ---- BEH-ORCH-11, slice 1: tickets kept in the database --------------------------------------------
+
+    private static PipelineTicket Ticket(Rig rig) => Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "list-sorting");
+
+    [Fact]
+    public void BEH_ORCH_11_a_bundle_a_triage_reports_is_written_as_a_ticket_and_the_triage_is_not()
+    {
+        using var rig = new Rig();
+
+        Triaged(rig);
+
+        var ticket = Ticket(rig);
+        Assert.Equal((TicketState.Ready, 3, "Sort the list"), (ticket.State, ticket.Priority, ticket.Title));
+        Assert.Equal(["BEH-A"], ticket.Cards);
+        Assert.Contains("Work-item: list-sorting", ticket.Bundle);
+        Assert.Null(ticket.PullRequest);
+        Assert.Single(rig.Tickets.Read("demo"));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_ticket_follows_its_item_from_spec_to_build_to_a_pull_request_to_merged()
+    {
+        using var rig = await BuiltRig(merge: true);
+        Assert.Equal((TicketState.Built, "https://github.com/someone/demo/pull/7"), (Ticket(rig).State, Ticket(rig).PullRequest));
+        Assert.Contains("Built:", Ticket(rig).Bundle);
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal(TicketState.Merged, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_ticket_being_built_is_planned_and_keeps_the_spec_runs_bundle()
+    {
+        using var rig = new Rig();
+
+        Specced(rig);
+
+        var ticket = Ticket(rig);
+        Assert.Equal(TicketState.Planned, ticket.State);
+        Assert.Contains("Test plan:", ticket.Bundle);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_ticket_whose_run_failed_is_stopped_with_why()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+
+        rig.Finish(spec, status: "failed");
+
+        var ticket = Ticket(rig);
+        Assert.Equal((TicketState.Stopped, "the spec run failed"), (ticket.State, ticket.StoppedBecause));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_after_a_restart_a_ready_ticket_is_specced_again_from_its_bundle()
+    {
+        using var rig = new Rig();
+        Triaged(rig);
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+
+        var spec = Assert.IsType<PoolClaim>(restarted.Claim());
+        Assert.Contains("You are the spec stage for project \"demo\"", spec.Task);
+        Assert.Contains("Work-item: list-sorting", spec.Task);
+        var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_after_a_restart_a_planned_ticket_is_built_from_its_test_plan()
+    {
+        using var rig = new Rig();
+        Specced(rig);
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+
+        var build = Assert.IsType<PoolClaim>(restarted.Claim());
+        Assert.Contains("You are the build stage for project \"demo\"", build.Task);
+        Assert.Contains("- BEH-A: the list is sorted by date", build.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_after_a_restart_a_built_ticket_keeps_its_pull_request_and_is_not_built_again()
+    {
+        using var rig = await BuiltRig(merge: false);
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+
+        Assert.Null(restarted.Claim());
+        var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, "https://github.com/someone/demo/pull/7"), (item.Stage, item.Status, item.PullRequest));
+        Assert.Contains("Built:", restarted.Pipeline.Bundle("demo", "list-sorting")!.Context);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_after_a_restart_stopped_and_merged_tickets_are_not_resumed()
+    {
+        using var stopped = new Rig();
+        stopped.Finish(Triaged(stopped), status: "failed");
+        using var afterStop = stopped.Restart(tickets: stopped.Tickets);
+        afterStop.Pipeline!.Resume();
+        Assert.Null(afterStop.Claim());
+        Assert.Empty(afterStop.Pipeline.Items());
+
+        using var merged = await BuiltRig(merge: true);
+        await merged.Pipeline!.MergeReadyAsync(CancellationToken.None);
+        using var afterMerge = merged.Restart(tickets: merged.Tickets);
+        afterMerge.Pipeline!.Resume();
+        Assert.Null(afterMerge.Claim());
+        Assert.Empty(afterMerge.Pipeline.Items());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_without_the_ticket_store_a_restart_forgets_the_ticket()
+    {
+        // The other side of the seam: the store is what remembers.
+        using var rig = new Rig();
+        Triaged(rig);
+
+        using var restarted = rig.Restart();
+        restarted.Pipeline!.Resume();
+
+        Assert.Null(restarted.Claim());
+        Assert.Empty(restarted.Pipeline.Items());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_resumed_ticket_is_not_added_twice_by_a_second_resume()
+    {
+        using var rig = new Rig();
+        Triaged(rig);
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+        restarted.Pipeline.Resume();
+
+        Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_scheduled_ticket_is_still_specced_from_its_card_after_a_restart()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\n");
+        rig.Pipeline!.ScheduleChanged("demo");
+        var ticket = Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(("beh-a", TicketState.Ready, true), (ticket.Slug, ticket.State, ticket.Scheduled));
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+
+        Assert.Contains("create it from the branch you started on", Assert.IsType<PoolClaim>(restarted.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_postgres_store_keeps_a_ticket_across_stores_and_replaces_it_on_save()
+    {
+        // Needs a real database, so CI without one skips it by passing. Run it with KIT_TEST_DATABASE set.
+        if (Environment.GetEnvironmentVariable("KIT_TEST_DATABASE") is not { Length: > 0 } connection)
+        {
+            return;
+        }
+
+        var project = $"p{Guid.NewGuid():N}"[..12];
+        var ticket = new PipelineTicket(project, "list-sorting", "Sort the list", TicketState.Ready, 3, ["BEH-A", "BEH-B"], "# Sort the list\n", null, null, false);
+        using (var store = new PostgresTicketStore(connection))
+        {
+            store.Save(ticket);
+            store.Save(ticket with { State = TicketState.Built, PullRequest = "https://github.com/someone/demo/pull/7" });
+            store.Save(ticket with { Slug = "other", State = TicketState.Stopped, StoppedBecause = "the spec run failed", Bundle = null });
+        }
+
+        using var again = new PostgresTicketStore(connection);
+        var all = again.Read(project);
+        Assert.Equal(["list-sorting", "other"], all.Select(t => t.Slug));
+        Assert.Equal((TicketState.Built, "https://github.com/someone/demo/pull/7", (IReadOnlyList<string>)["BEH-A", "BEH-B"]), (all[0].State, all[0].PullRequest, all[0].Cards));
+        Assert.Equal(("the spec run failed", null), (all[1].StoppedBecause, all[1].Bundle));
+        Assert.Equal(["list-sorting"], again.Open().Where(t => t.Project == project).Select(t => t.Slug));
     }
 }
