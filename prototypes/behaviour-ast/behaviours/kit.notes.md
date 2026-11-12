@@ -804,3 +804,9 @@ In terms of hosting I kinda of feel that we should host a cluster local csharp b
 <!-- from: note-button -->
 
 Ah my minutes r used up. I feel like if we swap to paid we will still run out it’s only 50% increase right?. Are there any other options. Is self hosting viable? Maybe we should switch back to free tier.
+
+## 2026-11-12 08:37Z
+
+<!-- from: note-button -->
+
+Maybe to cut costs we can use the kit pipeline for deployment - it can run tests as well but only use it for those completed merge promotions. Maybe we should have some promotion pipeline as well like deploy from main rather than develop so that promotions can be purposeful. Then you can just make sure that tests are passing locally otherwise build will fail
