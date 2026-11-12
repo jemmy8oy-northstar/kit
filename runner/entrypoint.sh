@@ -14,6 +14,7 @@
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
+#   KIT_STAGE         optional  the pipeline stage; "test" (BEH-ORCH-12) makes the script check the agent's verdict line and never push
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
 #   KIT_BUNDLES_FILE  optional  where to write the bundles of the kit/work/* branches the run pushed (BEH-ORCH-3)
@@ -174,6 +175,28 @@ node -e '
 if [ "$status" -ne 0 ]; then
   echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
   exit "$status"
+fi
+
+# BEH-ORCH-12: a test run's verdict is checked here, not taken from claude's exit code (an agent that saw failures and
+# said so in prose still exits 0). Fail-closed: it passes only when the last non-empty line of the agent's final message
+# is exactly "KIT-TEST: PASS <40 lowercase hex>", that commit is the one the task named, and HEAD is that commit.
+# A test run never reports bundles and never pushes, whatever the agent left in the tree.
+if [ "${KIT_STAGE:-}" = test ]; then
+  step=verdict
+  want="$(node -e '
+    let r;
+    try { r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch { process.exit(0); }
+    if (typeof r.result !== "string") process.exit(0);
+    const lines = r.result.split(/\r?\n/).filter((l) => l.trim() !== "");
+    const m = /^KIT-TEST: PASS ([0-9a-f]{40})$/.exec(lines[lines.length - 1] ?? "");
+    if (m) process.stdout.write(m[1]);
+  ' "$result")" || want=""
+  [ -n "$want" ] || exit 1
+  case "$KIT_TASK" in *"$want"*) ;; *) exit 1 ;; esac
+  head="$(git rev-parse HEAD)" || exit 1
+  [ "$head" = "$want" ] || exit 1
+  echo "kit-run[$KIT_RUN_ID]: tests passed at $want; nothing pushed"
+  exit 0
 fi
 
 step=bundles

@@ -192,9 +192,10 @@ public sealed partial class GitHubPullRequestOpener(
     /// <remarks>
     /// Up to three calls: the pull request (state, head commit, mergeability), the Actions runs at that
     /// head commit, and the merge, which names the head commit it checked so a push after the check is
-    /// answered 409 by GitHub (looked at again, not merged unseen).
+    /// answered 409 by GitHub (looked at again, not merged unseen). BEH-ORCH-12: with <c>updateFirst</c> on a private
+    /// repo the Actions runs need not include a success, and the head commit must be <c>testedSha</c> (a Kit test run passed there).
     /// </remarks>
-    public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false)
+    public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false, string? testedSha = null)
     {
         var page = PullPage().Match(pullRequestUrl ?? string.Empty);
         if (!page.Success)
@@ -275,7 +276,12 @@ public sealed partial class GitHubPullRequestOpener(
             return Refuse($"GitHub answered {runs.Status} with JSON that is not a list of checks");
         }
 
-        var waiting = list.GetArrayLength() == 0;
+        // BEH-ORCH-12: a private repo's pull request into the base has no Actions run (CI runs only for main), so on the
+        // merge job's path none is required; Kit's own test run stands in for it below. A run that exists still counts.
+        var kitTests = updateFirst && p.TryGetProperty("base", out var baseObj) && baseObj.ValueKind == JsonValueKind.Object
+            && baseObj.TryGetProperty("repo", out var baseRepo) && baseRepo.ValueKind == JsonValueKind.Object
+            && baseRepo.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == JsonValueKind.True;
+        var waiting = !kitTests && list.GetArrayLength() == 0;
         var succeeded = false;
         foreach (var run in list.EnumerateArray())
         {
@@ -299,7 +305,7 @@ public sealed partial class GitHubPullRequestOpener(
         }
 
         // Only skipped runs so far proves nothing passed: wait for one that did.
-        if (waiting || !succeeded)
+        if (waiting || (!succeeded && !kitTests))
         {
             return new PullRequestMerge { Waiting = true };
         }
@@ -313,6 +319,11 @@ public sealed partial class GitHubPullRequestOpener(
         if (mergeable.ValueKind != JsonValueKind.True)
         {
             return new PullRequestMerge { Conflict = true, Reason = ConflictReason };
+        }
+
+        if (kitTests && testedSha != sha)
+        {
+            return new PullRequestMerge { NeedsTest = true, HeadSha = sha, Reason = $"no Kit test run has passed at {(sha.Length > 7 ? sha[..7] : sha)}" };
         }
 
         var payload = JsonSerializer.Serialize(new { sha, merge_method = "merge" });

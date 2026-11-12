@@ -30,6 +30,9 @@ public interface IPullRequestMerger
     /// <paramref name="repository"/> (<c>owner/name</c>) is used only when the URL does not name one.
     /// With <paramref name="updateFirst"/> (BEH-ORCH-11, slice 7), a pull request whose branch is behind its base is first
     /// brought up to date and waited on, so its checks run on what would be merged; one that cannot be updated is a conflict.
+    /// With <paramref name="updateFirst"/> on a private repo (BEH-ORCH-12) no successful Actions run is required, because CI does not run
+    /// for it: a pull request that is otherwise ready answers <c>NeedsTest</c> with its head commit until <paramref name="testedSha"/>
+    /// (the commit a Kit test run passed) is that head, and is then merged. A failed or running Actions run still refuses or waits.
     /// </summary>
-    Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false);
+    Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false, string? testedSha = null);
 }
