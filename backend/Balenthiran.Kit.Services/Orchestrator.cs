@@ -9,6 +9,12 @@ public enum PipelineStage
     /// <summary>A stronger model checks a flagged stage's bundle (BEH-ORCH-2).</summary>
     Review,
 
+    /// <summary>
+    /// BEH-ORCH-11: adds to a triaged ticket's bundle what a planner needs. Only entered with
+    /// <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, by the context job; otherwise a triaged item goes straight to Spec.
+    /// </summary>
+    Context,
+
     /// <summary>Formalises the cards and plans the tests.</summary>
     Spec,
 
@@ -102,6 +108,7 @@ public static class Orchestrator
     {
         PipelineStage.Triage => models.Triage,
         PipelineStage.Review => FlagLevels.Of(flag) == FlagLevel.Low ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
+        PipelineStage.Context => models.Context ?? StageModels.DefaultContext,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
@@ -112,6 +119,7 @@ public static class Orchestrator
     {
         PipelineStage.Triage => turns.Triage,
         PipelineStage.Review => turns.Review,
+        PipelineStage.Context => turns.Context,
         PipelineStage.Spec => turns.Spec,
         PipelineStage.Build => turns.Build,
         _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
@@ -124,6 +132,7 @@ public static class Orchestrator
     private static WorkItem Next(WorkItem item, PipelineStage finished) => finished switch
     {
         PipelineStage.Triage => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
+        PipelineStage.Context => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Spec => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Build => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done, ReviewedStage = null },
         _ => throw new InvalidOperationException($"nothing follows {finished}"),

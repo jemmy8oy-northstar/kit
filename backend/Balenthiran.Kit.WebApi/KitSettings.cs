@@ -342,6 +342,43 @@ public sealed record KitSettings(
     };
 
     /// <summary>
+    /// <c>KIT_PIPELINE_JOB_CONTEXT</c> (BEH-ORCH-11): <c>on</c> makes a triaged item wait as a <c>new</c> ticket for the
+    /// context job, which takes the highest-priority one per project every few minutes and runs the context stage on it
+    /// before it chains to spec. It spends the owner's subscription. Unset or <c>off</c> is off: a triaged item goes
+    /// straight to spec, as before.
+    /// </summary>
+    public bool PipelineJobContext { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_CONTEXT</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobContext(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE_JOB_CONTEXT is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c> (BEH-ORCH-11): how often a pipeline job looks for a ticket waiting. Unset is <see cref="PipelineContextJob.DefaultInterval"/> (2 minutes).</summary>
+    public TimeSpan PipelineJobInterval { get; init; } = PipelineContextJob.DefaultInterval;
+
+    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c>: a whole number of minutes above zero; unset is 2. Anything else THROWS.</summary>
+    public static TimeSpan ParsePipelineJobInterval(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? PipelineContextJob.DefaultInterval
+        : int.TryParse(value.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var m) && m > 0 ? TimeSpan.FromMinutes(m)
+        : throw new InvalidOperationException($"KIT_PIPELINE_JOB_MINUTES is \"{value}\": set it to a whole number of minutes above zero, such as 2");
+
+    /// <summary><c>KIT_STAGE_MODEL_CONTEXT</c> (BEH-ORCH-11): the model the context job runs on. Unset is <see cref="StageModels.DefaultContext"/>.</summary>
+    public string StageModelContext { get; init; } = StageModels.DefaultContext;
+
+    /// <summary><c>KIT_STAGE_MODEL_CONTEXT</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelContext(string? value) => StageModels.Parse("KIT_STAGE_MODEL_CONTEXT", value, StageModels.DefaultContext);
+
+    /// <summary><c>KIT_STAGE_TURNS_CONTEXT</c> (BEH-ORCH-11): the turn limit of a context run. Unset is <see cref="StageTurnSettings.DefaultContext"/>.</summary>
+    public int StageTurnsContext { get; init; } = StageTurnSettings.DefaultContext;
+
+    /// <summary><c>KIT_STAGE_TURNS_CONTEXT</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsContext(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_CONTEXT", value, StageTurnSettings.DefaultContext);
+
+    /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
     /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
     /// (kit#714).
@@ -462,6 +499,10 @@ public sealed record KitSettings(
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
             PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
             PipelineMerge = ParsePipelineMerge(env("KIT_PIPELINE_MERGE")),
+            PipelineJobContext = ParsePipelineJobContext(env("KIT_PIPELINE_JOB_CONTEXT")),
+            PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
+            StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
+            StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }
