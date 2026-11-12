@@ -11,5 +11,9 @@ public sealed record PullRequestMerge : IPullRequestMerge
 
     public bool Conflict { get; init; }
 
+    public bool NeedsTest { get; init; }
+
+    public string? HeadSha { get; init; }
+
     public string? Reason { get; init; }
 }

@@ -18,6 +18,15 @@ public interface IPullRequestMerge
     /// </summary>
     bool Conflict { get; }
 
+    /// <summary>
+    /// Not merged because no Kit test run has passed at <see cref="HeadSha"/> yet (BEH-ORCH-12): a private repo's pull request
+    /// has no Actions run to wait for, so Kit runs the suite itself. Neither waiting nor refused; every other answer leaves this false.
+    /// </summary>
+    bool NeedsTest { get; }
+
+    /// <summary>The head commit <see cref="NeedsTest"/> asks to have tested; null otherwise.</summary>
+    string? HeadSha { get; }
+
     /// <summary>Why the pull request will not be merged, in plain words. Never contains the token.</summary>
     string? Reason { get; }
 }

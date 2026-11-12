@@ -449,4 +449,116 @@ public class GitHubPullRequestOpenerTests
         Assert.False(r.Waiting);
         Assert.NotNull(r.Reason);
     }
+
+    // ---- BEH-ORCH-12: a private repo has no Actions run, so Kit tests the head commit itself -----------
+
+    // The pull request's base repo object is what says whether the repo is private; the default is a private one.
+    private static Func<HttpRequestMessage, HttpResponseMessage> PrivatePull(string mergeable = "true", string repo = """{"private":true}""") =>
+        FakeGitHub.Json(HttpStatusCode.OK, "{\"state\":\"open\",\"mergeable\":" + mergeable + ",\"head\":{\"sha\":\"" + Head + "\"},\"base\":{\"ref\":\"dev\",\"repo\":" + repo + "}}");
+
+    private static readonly Func<HttpRequestMessage, HttpResponseMessage> Merged = FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}""");
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_private_repos_pull_request_with_no_actions_run_asks_for_a_test_of_its_head()
+    {
+        var gh = new FakeGitHub(PrivatePull(), Compared(0), Runs());
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+
+        Assert.True(r.NeedsTest);
+        Assert.Equal(Head, r.HeadSha);
+        Assert.False(r.Merged);
+        Assert.False(r.Waiting);
+        Assert.False(r.Conflict);
+        Assert.Equal("no Kit test run has passed at abc123d", r.Reason);
+        Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_private_repos_pull_request_is_merged_at_exactly_the_commit_a_kit_test_passed_at()
+    {
+        var gh = new FakeGitHub(PrivatePull(), Compared(0), Runs(), Merged);
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true, testedSha: Head);
+
+        Assert.True(r.Merged);
+        Assert.False(r.NeedsTest);
+        var put = gh.Sent[3];
+        Assert.Equal("https://api.github.com/repos/someone/demo/pulls/7/merge", put.Uri.AbsoluteUri);
+        using var sent = JsonDocument.Parse(put.Body!);
+        Assert.Equal(Head, sent.RootElement.GetProperty("sha").GetString());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_head_that_moved_since_the_kit_test_asks_for_a_new_test_and_merges_nothing()
+    {
+        var gh = new FakeGitHub(PrivatePull(), Compared(0), Runs());
+
+        var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true, testedSha: "0000000aaaa");
+
+        Assert.True(r.NeedsTest);
+        Assert.Equal(Head, r.HeadSha);
+        Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_private_repos_failed_or_running_actions_run_still_refuses_or_waits()
+    {
+        var failed = new FakeGitHub(PrivatePull(), Compared(0), Runs(Run("completed", "failure", "unit tests")));
+        var running = new FakeGitHub(PrivatePull(), Compared(0), Runs(Run("in_progress", null)));
+
+        var f = await Opener(failed).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true, testedSha: Head);
+        var w = await Opener(running).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true, testedSha: Head);
+
+        Assert.Equal("unit tests did not succeed (failure)", f.Reason);
+        Assert.False(f.NeedsTest);
+        Assert.True(w.Waiting);
+        Assert.False(w.NeedsTest);
+        Assert.DoesNotContain(failed.Sent.Concat(running.Sent), s => s.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_private_repos_conflicting_or_unknown_mergeability_is_settled_before_any_test_is_asked_for()
+    {
+        var conflict = new FakeGitHub(PrivatePull("false"), Compared(0), Runs());
+        var unknown = new FakeGitHub(PrivatePull("null"), Compared(0), Runs());
+
+        var c = await Opener(conflict).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+        var u = await Opener(unknown).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true);
+
+        Assert.True(c.Conflict);
+        Assert.False(c.NeedsTest);
+        Assert.True(u.Waiting);
+        Assert.False(u.NeedsTest);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_public_repo_or_one_that_does_not_say_is_unchanged_and_waits_for_an_actions_run()
+    {
+        var open = new FakeGitHub(PrivatePull(repo: """{"private":false}"""), Compared(0), Runs());
+        var silent = new FakeGitHub(PullOnDev(), Compared(0), Runs());
+        var none = new FakeGitHub(PrivatePull(repo: "{}"), Compared(0), Runs());
+
+        foreach (var gh in new[] { open, silent, none })
+        {
+            var r = await Opener(gh).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true, testedSha: Head);
+            Assert.True(r.Waiting);
+            Assert.False(r.NeedsTest);
+            Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
+        }
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_private_repo_on_the_path_without_updateFirst_is_unchanged()
+    {
+        var none = new FakeGitHub(PrivatePull(), Runs());
+        var green = new FakeGitHub(PrivatePull(), Runs(Run("completed", "success")), Merged);
+
+        var w = await Opener(none).MergeIfGreenAsync(Page, null, CancellationToken.None, testedSha: Head);
+        var m = await Opener(green).MergeIfGreenAsync(Page, null, CancellationToken.None);
+
+        Assert.True(w.Waiting);
+        Assert.False(w.NeedsTest);
+        Assert.True(m.Merged);
+    }
 }

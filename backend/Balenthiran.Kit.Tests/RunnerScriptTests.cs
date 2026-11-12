@@ -524,6 +524,153 @@ public class RunnerScriptTests
         Assert.Empty(Directory.GetFiles(rig.Rec, "bundles*"));
     }
 
+    // ── entrypoint.sh: a test run's verdict is checked by the runner (BEH-ORCH-12) ────────────
+
+    private sealed record Tested(Ran Ran, string Sha, string Failure, string Pushed, bool BundlesWritten);
+
+    // Real git and a real origin (as BundleStubs); the stub claude prints message(sha) as its final message, then runs `leave`
+    // (shell, inside the clone) as the agent's leftovers. The task names the sha unless task says otherwise.
+    private static Tested TestRun_(Rig rig, string? stage, Func<string, string> message, string leave = "true", Func<string, string>? task = null)
+    {
+        rig.BundleStubs();
+        var origin = System.IO.Path.Combine(rig.Root, "origin.git");
+        var env = new Dictionary<string, string> { ["PATH"] = rig.Bin + ":" + Environment.GetEnvironmentVariable("PATH"), ["HOME"] = rig.Home };
+        var sha = Run("git", ["--git-dir", origin, "rev-parse", "main"], env).Stdout.Trim();
+        File.WriteAllText(System.IO.Path.Combine(rig.Rec, "claude.json"), JsonSerializer.Serialize(new { result = message(sha) }));
+        Executable(System.IO.Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "cat '" + System.IO.Path.Combine(rig.Rec, "claude.json") + "'", leave);
+        var failure = System.IO.Path.Combine(rig.Rec, "failure.txt");
+        var bundles = System.IO.Path.Combine(rig.Rec, "bundles.json");
+        var extra = new Dictionary<string, string> { ["KIT_TASK"] = task?.Invoke(sha) ?? $"run the tests at {sha}", ["KIT_FAILURE_FILE"] = failure, ["KIT_BUNDLES_FILE"] = bundles };
+        if (stage is not null) extra["KIT_STAGE"] = stage;
+        var ran = rig.Entrypoint(extra);
+        var pushed = Run("git", ["--git-dir", origin, "for-each-ref", "refs/heads/kit/run-r1"], env).Stdout.Trim();
+        return new Tested(ran, sha, File.Exists(failure) ? File.ReadAllText(failure) : "", pushed, File.Exists(bundles));
+    }
+
+    private static string Pass(string sha) => $"Ran everything.\nKIT-TEST: PASS {sha}\n";
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_with_the_pass_line_at_the_named_commit_succeeds_and_pushes_nothing_even_from_a_dirty_tree()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", Pass, "echo left > dirty.txt");
+
+        Assert.True(t.Ran.Status == 0, t.Ran.Stderr);
+        Assert.Equal("", t.Pushed);
+        Assert.False(t.BundlesWritten, "a test run reports no bundles");
+        Assert.Equal("", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_whose_agent_said_FAIL_or_failures_in_prose_fails_at_the_verdict_step()
+    {
+        foreach (var message in new Func<string, string>[] { _ => "3 tests failed.\nKIT-TEST: FAIL\n", _ => "Ran the suite: 3 failures, sorry.\n" })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, "test", message);
+
+            Assert.Equal(1, t.Ran.Status);
+            Assert.Equal("verdict exit 1\n", t.Failure);
+            Assert.Equal("", t.Pushed);
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_line_that_is_not_the_last_or_not_exact_fails()
+    {
+        foreach (var message in new Func<string, string>[]
+        {
+            sha => $"KIT-TEST: PASS {sha}\nactually, one test failed.\n",
+            sha => $"KIT-TEST: PASS {sha} \n",
+            sha => $"kit-test: pass {sha}\n",
+            sha => $"KIT-TEST: PASS {sha[..39]}\n",
+            sha => $"KIT-TEST: PASS {sha.ToUpperInvariant()}\n",
+        })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, "test", message);
+
+            Assert.Equal(1, t.Ran.Status);
+            Assert.Equal("verdict exit 1\n", t.Failure);
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_for_a_commit_the_task_did_not_name_fails()
+    {
+        using var rig = new Rig();
+
+        // HEAD is that commit, but the agent was asked about another one.
+        var t = TestRun_(rig, "test", Pass, task: _ => "run the tests at " + new string('a', 40));
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_while_the_working_directory_is_at_another_commit_fails_and_pushes_nothing()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", Pass, "git -c user.name=t -c user.email=t@t commit -q --allow-empty -m moved");
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+        Assert.Equal("", t.Pushed);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_with_no_result_text_fails()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", _ => "");
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left()
+    {
+        foreach (var stage in new string?[] { "build", null })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, stage, Pass, "echo left > dirty.txt");
+
+            Assert.True(t.Ran.Status == 0, t.Ran.Stderr);
+            Assert.Contains("refs/heads/kit/run-r1", t.Pushed);
+            Assert.True(t.BundlesWritten);
+        }
+    }
+
+    [Theory]
+    [InlineData("test")]
+    [InlineData(null)]
+    public void BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one(string? stage)
+    {
+        using var rig = new Rig();
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", null, stage);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        if (stage is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_STAGE"), "a run started by hand must not be given an empty stage");
+        }
+        else
+        {
+            Assert.Equal(stage, seen["KIT_STAGE"]);
+        }
+    }
+
     // ── the rig ──────────────────────────────────────────────────────────────────────────────
 
     private sealed record Ran(int Status, string Stdout, string Stderr);

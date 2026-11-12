@@ -152,10 +152,14 @@ public class PipelineTests
         // The answer for a pull request, when it is not the default one.
         public Dictionary<string, IPullRequestMerge> AnswerFor { get; } = [];
 
-        public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false)
+        // The commit each ask said a Kit test run had passed at (BEH-ORCH-12), null when none had.
+        public List<string?> TestedSha { get; } = [];
+
+        public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false, string? testedSha = null)
         {
             Asked.Add(pullRequestUrl);
             UpdateFirst.Add(updateFirst);
+            TestedSha.Add(testedSha);
             if (AnswerFor.TryGetValue(pullRequestUrl, out var own))
             {
                 return own;
@@ -3006,5 +3010,195 @@ public class PipelineTests
         Assert.Equal("m-res", Orchestrator.ModelFor(PipelineStage.Merge, Models with { Resolve = "m-res" }));
         Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults));
         Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults with { Resolve = 5 }));
+    }
+
+    // ---- BEH-ORCH-12: Kit runs a private project's test suite itself -----------------------------------------
+
+    private const string HeadA = "abc1234def5678";
+
+    private const string HeadB = "fed9876cba4321";
+
+    private static PullRequestMerge NeedsTest(string sha) => new() { NeedsTest = true, HeadSha = sha, Reason = $"no Kit test run has passed at {sha[..7]}" };
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_merge_look_that_needs_a_test_starts_one_test_run_at_that_commit_on_the_pull_requests_branch()
+    {
+        using var rig = ResolveRig(new StageTurnSettings(10, 11, 12, 77), BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5", 77), (claim.Repo, claim.BaseBranch, claim.Model, claim.MaxTurns));
+        Assert.Equal("test", claim.Stage);
+        Assert.Contains("You are the test stage for project \"demo\"", claim.Task);
+        Assert.Contains(HeadA, claim.Task);
+        Assert.Contains("kit/work/a", claim.Task);
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Test, WorkItemStatus.Running, PullOf(1)), (item.Stage, item.Status, item.PullRequest));
+        Assert.Equal(TicketState.Built, rig.Tickets.Read("demo").Single().State);
+        Assert.Contains(rig.Store.List(), r => r.Stage == "test");
+        Assert.Equal([null], rig.Merges.TestedSha);
+
+        // The next look neither asks for a merge nor starts a second run: the project has a test running.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_test_run_that_passed_is_remembered_and_the_next_merge_look_merges_that_commit()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, PullOf(1), false), (item.Stage, item.Status, item.PullRequest, item.Merged));
+        Assert.Null(rig.Claim());
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([null, HeadA], rig.Merges.TestedSha);
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.Equal(TicketState.Merged, rig.Tickets.Read("demo").Single().State);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_test_run_that_failed_stops_the_item_with_why_and_is_not_asked_again()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the project's tests failed at abc1234"), (item.Status, item.StoppedBecause));
+        Assert.Equal(TicketState.Stopped, rig.Tickets.Read("demo").Single().State);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_head_that_moved_after_a_pass_is_tested_again_at_the_new_commit()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        // The merger sees a new head: the pass at HeadA does not cover it.
+        rig.Merges.Answer = NeedsTest(HeadB);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([null, HeadA], rig.Merges.TestedSha);
+        var second = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains(HeadB, second.Task);
+        Assert.DoesNotContain(HeadA, second.Task);
+        Assert.Equal(PipelineStage.Test, ItemOf(rig, "a").Stage);
+        Assert.Equal(2, rig.Store.List().Count(r => r.Stage == "test"));
+
+        EndRun(rig, second, true);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(HeadB, rig.Merges.TestedSha[^1]);
+        Assert.True(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_project_with_another_run_in_flight_starts_no_test_and_the_item_stays_built()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Note("something to triage");
+        Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Merges.Answer = NeedsTest(HeadA);
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (item.Stage, item.Status));
+        Assert.Null(rig.Claim());
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_no_other_ticket_of_the_project_merges_while_its_test_run_is_in_flight()
+    {
+        // b (priority 1) is the top item and needs a test; a waits behind it. Another project is not held.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("x", 3, "other"));
+        rig.Merges.AnswerFor[PullOf(2)] = NeedsTest(HeadA);
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Equal(PipelineStage.Test, ItemOf(rig, "b").Stage);
+        Assert.True(ItemOf(rig, "x", "other").Merged);
+
+        rig.Merges.Asked.Clear();
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_with_the_merge_switch_off_no_test_is_asked_for_or_run()
+    {
+        using var rig = MergeRig(mergeJob: false, merge: true, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal([false], rig.Merges.UpdateFirst);
+        Assert.Equal([null], rig.Merges.TestedSha);
+        Assert.Null(rig.Claim());
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Stage == PipelineStage.Test);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_the_test_task_names_the_commit_and_branch_and_forbids_changing_anything()
+    {
+        var bundle = ContextBundle.Parse(Specced("a")).Bundle!;
+
+        var task = TestStage.BuildTask("demo", bundle, "dev", HeadA);
+
+        Assert.Contains($"check out exactly commit {HeadA} (a detached checkout)", task);
+        Assert.Contains("Fetch branch kit/work/a from origin", task);
+        Assert.Contains("whole test suite", task);
+        Assert.Contains("the run succeeds only if the whole suite passed at that commit", task);
+        Assert.Contains($"must END with exactly one of these two lines", task);
+        Assert.Contains($"`KIT-TEST: PASS {HeadA}`", task);
+        Assert.Contains("`KIT-TEST: FAIL`", task);
+        Assert.Contains($"checked out at commit {HeadA} when you finish: the runner checks HEAD", task);
+        Assert.Contains("do not edit, commit or push anything, do not open a pull request", task);
+        Assert.Contains("## Bundle (.kit/bundles/a.md)", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_the_test_stage_runs_on_triages_model_and_the_build_stages_turns_unless_set()
+    {
+        Assert.Null(KitSettings.ParseStageModelTest(null));
+        Assert.Null(KitSettings.ParseStageModelTest(" "));
+        Assert.Equal("claude-opus-5-5", KitSettings.ParseStageModelTest(" claude-opus-5-5 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelTest("not a model!"));
+        Assert.Null(KitSettings.ParseStageTurnsTest(null));
+        Assert.Equal(9, KitSettings.ParseStageTurnsTest(" 9 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsTest("0"));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsTest("many"));
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.Equal((null, null), (settings.StageModelTest, settings.StageTurnsTest));
+
+        var models = Models with { Triage = "m-tri", Build = "m-build" };
+        Assert.Equal("m-tri", Orchestrator.ModelFor(PipelineStage.Test, models));
+        Assert.Equal("m-test", Orchestrator.ModelFor(PipelineStage.Test, models with { Test = "m-test" }));
+        Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults));
+        Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Test, StageTurnSettings.Defaults with { Test = 5 }));
     }
 }

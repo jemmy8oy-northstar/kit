@@ -27,6 +27,12 @@ public enum PipelineStage
     /// long as its conflict-resolution run is in flight (it is a built ticket meanwhile), and Build, Done again after.
     /// </summary>
     Merge,
+
+    /// <summary>
+    /// BEH-ORCH-12: the stage of a work item for exactly as long as Kit's own test run of its pull request's head commit is in
+    /// flight (a built ticket meanwhile), and Build, Done again after a pass. Never a queued stage a job takes.
+    /// </summary>
+    Test,
 }
 
 /// <summary>Where a work item is within its current stage.</summary>
@@ -119,6 +125,7 @@ public static class Orchestrator
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
         PipelineStage.Merge => models.Resolve ?? models.Build,
+        PipelineStage.Test => models.Test ?? models.Triage,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
@@ -131,6 +138,7 @@ public static class Orchestrator
         PipelineStage.Spec => turns.Spec,
         PipelineStage.Build => turns.Build,
         PipelineStage.Merge => turns.Resolve ?? turns.Build,
+        PipelineStage.Test => turns.Test ?? turns.Build,
         _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
     };
 

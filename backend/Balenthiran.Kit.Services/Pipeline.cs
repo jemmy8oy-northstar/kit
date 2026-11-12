@@ -58,6 +58,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // no column for it, so a restart forgets it and a ticket may then get one more run.
     private readonly HashSet<(string App, string Slug)> resolved = [];
 
+    // BEH-ORCH-12: the head commit a Kit test run passed at, per ticket, which the merge look hands the merger; and the commit
+    // a test run in flight was started for. In memory only, like resolved: a restart forgets them and a ticket may get one more test run.
+    private readonly Dictionary<(string App, string Slug), string> tested = [];
+
+    private readonly Dictionary<(string App, string Slug), string> testing = [];
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -273,6 +279,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 PipelineStage.Spec => TicketState.Ready,
                 PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
                 PipelineStage.Merge => TicketState.Built, // its conflict-resolution run is in flight (slice 7b)
+                PipelineStage.Test => TicketState.Built, // its test run is in flight (BEH-ORCH-12)
                 _ => TicketState.New, // Context, or a triage under review
             },
         };
@@ -451,6 +458,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
                     : Stop(item, "the conflict-resolution run failed"));
             }
+            else if (item.Stage == PipelineStage.Test)
+            {
+                // BEH-ORCH-12: a test run of the pull request's head commit. It reports no bundle; its success is the run's. A
+                // pass is remembered for that commit and the item is built again, so the next merge look merges exactly it.
+                var key = (item.Project, item.Slug);
+                testing.Remove(key, out var sha);
+                if (succeeded && sha is not null)
+                {
+                    tested[key] = sha;
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else
+                {
+                    Set(run.Index, Stop(item, $"the project's tests failed at {(sha is null ? "its head commit" : sha.Length > 7 ? sha[..7] : sha)}"));
+                }
+            }
             else if (item.Stage != PipelineStage.Triage)
             {
                 Set(run.Index, Ended(item, run.Given!, succeeded, reported));
@@ -589,9 +612,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<WorkItem> top;
         lock (gate)
         {
-            // A project whose ticket is having a conflict resolved merges nothing else until that run ends (slice 7b).
+            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends.
             var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
-                .Where(app => !items.Any(i => i.Project == app && i.Stage == PipelineStage.Merge && i.Status == WorkItemStatus.Running))
+                .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
                 .ToList();
             top = [];
             foreach (var app in apps)
@@ -623,9 +646,18 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
         else
         {
+            string? testedSha = null;
+            if (updateFirst)
+            {
+                lock (gate)
+                {
+                    tested.TryGetValue((item.Project, item.Slug), out testedSha);
+                }
+            }
+
             try
             {
-                result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken, updateFirst);
+                result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken, updateFirst, testedSha);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
@@ -667,6 +699,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 try
                 {
                     Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    Set(index, Stop(item, $"the project could not be read ({e.GetType().Name})"));
+                }
+
+                return;
+            }
+
+            // BEH-ORCH-12: a private repo's pull request has no Actions run, so Kit tests the head commit itself, once per
+            // commit: a head that moves is asked about again, and a pass is remembered for the commit it passed at.
+            if (updateFirst && result is { Merged: false, NeedsTest: true, HeadSha: { Length: > 0 } sha })
+            {
+                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
+                {
+                    return;
+                }
+
+                testing[(item.Project, item.Slug)] = sha;
+                try
+                {
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
                 }
                 catch (Exception e)
                 {
@@ -1039,6 +1094,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
                     PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
+                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)]),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }
