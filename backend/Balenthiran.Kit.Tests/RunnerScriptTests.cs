@@ -620,10 +620,10 @@ public class RunnerScriptTests
                 "  shift",
                 "done",
                 "case \"$url\" in",
-                "  */api/runs/claim)",
+                "  */next)",
                 "    printf '%s' '" + (claimJson ?? "{\"id\":\"r1\",\"token\":\"tok\",\"repo\":\"o/r\",\"task\":\"t\",\"baseBranch\":\"\",\"model\":\"sonnet\"}") + "' > \"$out\"",
                 "    printf 200;;",
-                "  */api/runs/finished)",
+                "  */finished)",
                 "    printf '%s\\n' \"$data\" >> '" + System.IO.Path.Combine(Rec, "finished.log") + "'",
                 "    n=$(cat '" + counter + "' 2>/dev/null || echo 0); n=$((n+1)); echo $n > '" + counter + "'",
                 "    case $n in",
@@ -691,7 +691,8 @@ public class RunnerScriptTests
             ["PATH"] = Path_,
             ["HOME"] = Home,
             ["KIT_URL"] = "http://kit.test/kit",
-            ["KIT_RUNNER_POOL_TOKEN"] = "pool-secret",
+            // No pool token: the runner container does not have one (kit#701); the sidecar does.
+            ["KIT_CLAIMER_URL"] = "http://claimer.test",
             ["KIT_RUNS_PER_CONTAINER"] = "1",
             ["KIT_RUN_BIN"] = System.IO.Path.Combine(Bin, "kit-run"),
             // The loop deletes the contents of these; they must never default to /work or /home/runner.
