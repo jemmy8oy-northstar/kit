@@ -33,7 +33,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,7 +50,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob)) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -102,11 +102,11 @@ public class PipelineTests
         // Kit restarting: the same files and the same triaged-notes store, but a new pool, run store and pipeline,
         // so everything kept in memory is gone. Disposing the restarted rig leaves the files to this one. Tickets
         // are kept only when asked for (BEH-ORCH-11), so the BEH-ORCH-8 restarts above them are as they were.
-        public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets, contextJob: contextJob, planJob: planJob);
+        public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets, contextJob: contextJob, planJob: planJob, buildJob: buildJob);
 
-        // The stages a job owns, from the two switches (BEH-ORCH-11).
-        private static IReadOnlySet<PipelineStage> Jobs(bool context, bool plan) =>
-            new[] { (context, PipelineStage.Context), (plan, PipelineStage.Spec) }.Where(j => j.Item1).Select(j => j.Item2).ToHashSet();
+        // The stages a job owns, from the three switches (BEH-ORCH-11).
+        private static IReadOnlySet<PipelineStage> Jobs(bool context, bool plan, bool build) =>
+            new[] { (context, PipelineStage.Context), (plan, PipelineStage.Spec), (build, PipelineStage.Build) }.Where(j => j.Item1).Select(j => j.Item2).ToHashSet();
 
         // A second project, with the same repo as the first (BEH-ORCH-11: the context job takes one ticket per project).
         public void AddProject(string name) => File.WriteAllText(Path.Combine(root, name + ".beh"), Corpus);
@@ -2138,9 +2138,9 @@ public class PipelineTests
     }
 
     // A planned ticket whose bundle carries a test plan, so that on start it is built (a run in flight for its project).
-    private static PipelineTicket PlannedSeed(string slug)
+    private static PipelineTicket PlannedSeed(string slug, int priority = 3)
     {
-        var ticket = Seeded(slug, TicketState.Planned);
+        var ticket = Seeded(slug, TicketState.Planned, priority);
         return ticket with { Bundle = ticket.Bundle!.Replace("sort by date", "sort by date\n" + SpecStage.TestPlanHeading + "\n- BEH-A: sorts by date") };
     }
 
@@ -2329,6 +2329,179 @@ public class PipelineTests
         Assert.Single(Jobs(baseline with { PipelineJobPlan = true }));
         Assert.Equal(2, Jobs(baseline with { PipelineJobContext = true, PipelineJobPlan = true }).Count);
         Assert.Empty(Jobs(new KitSettings("d", "r", null, "dist") with { PipelineJobPlan = true }));
+    }
+
+    // ---- BEH-ORCH-11, slice 5: the build job -------------------------------------------------------------
+
+    // Tickets in the store, as a restart finds them, for a pipeline with the build job on and two projects.
+    private static Rig BuildRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(buildJob: true, tickets: store);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_with_the_build_switch_off_a_specced_items_build_starts_as_before_and_a_build_tick_does_nothing()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+        Assert.Contains("You are the build stage", build.Task);
+
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_with_the_build_switch_on_a_specced_item_waits_as_a_planned_ticket_until_the_build_tick()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal(TicketState.Planned, Ticket(rig).State);
+
+        rig.Pipeline!.JobTick(PipelineStage.Spec);
+        rig.Pipeline.JobTick(PipelineStage.Context);
+        Assert.Null(rig.Claim());
+
+        rig.Pipeline.JobTick(PipelineStage.Build);
+
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the build stage for project \"demo\"", build.Task);
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Running), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_one_build_tick_takes_only_the_highest_priority_planned_ticket()
+    {
+        using var rig = BuildRig(PlannedSeed("a", 3), PlannedSeed("b", 1), PlannedSeed("c", 1), PlannedSeed("d", 2));
+        Assert.Null(rig.Claim());
+
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+
+        var claim = Assert.Single(Claims(rig));
+        Assert.Contains("Work-item: b", claim.Task);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "b").Status);
+        Assert.All(new[] { "a", "c", "d" }, slug => Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, slug).Stage, ItemOf(rig, slug).Status)));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_among_equal_priorities_the_build_job_takes_the_oldest_ticket_first()
+    {
+        using var rig = BuildRig(PlannedSeed("old", 2), PlannedSeed("newer", 2), PlannedSeed("newest", 2));
+
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+
+        Assert.Contains("Work-item: old", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_build_job_skips_a_project_with_a_run_in_flight_and_another_project_goes_ahead()
+    {
+        // "busy" is ready, so on resume its spec starts (the plan job is off) and its project has a run in flight.
+        using var rig = BuildRig(Seeded("busy", TicketState.Ready), PlannedSeed("waiting", 1), PlannedSeed("o1", 3) with { Project = "other" });
+        Assert.Contains("You are the spec stage", Assert.Single(Claims(rig)).Task);
+
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+
+        var claim = Assert.Single(Claims(rig));
+        Assert.Contains("You are the build stage", claim.Task);
+        Assert.Contains("Work-item: o1", claim.Task);
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "waiting").Stage, ItemOf(rig, "waiting").Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_built_ticket_is_never_taken_by_a_build_tick()
+    {
+        using var rig = BuildRig(Seeded("built", TicketState.Built), Seeded("merged", TicketState.Merged));
+
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (ItemOf(rig, "built").Stage, ItemOf(rig, "built").Status));
+        Assert.Empty(rig.Store.List());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_after_a_restart_a_planned_ticket_waits_for_the_build_job_when_the_switch_is_on_and_is_built_when_it_is_off()
+    {
+        using var first = new Rig();
+        Specced(first);
+        Assert.Equal(TicketState.Planned, Ticket(first).State);
+
+        using var on = first.Restart(tickets: first.Tickets, buildJob: true);
+        on.Pipeline!.Resume();
+        Assert.Null(on.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(on, "list-sorting").Stage, ItemOf(on, "list-sorting").Status));
+        on.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage", Assert.IsType<PoolClaim>(on.Claim()).Task);
+
+        using var off = first.Restart(tickets: first.Tickets);
+        off.Pipeline!.Resume();
+        Assert.Contains("You are the build stage", Assert.IsType<PoolClaim>(off.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_with_all_three_switches_on_a_ticket_walks_new_then_ready_then_planned_one_tick_at_a_time()
+    {
+        using var rig = new Rig(contextJob: true, planJob: true, buildJob: true);
+        TriagedForContext(rig);
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+        Assert.Null(rig.Claim());
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Contexted("list-sorting") });
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+        Assert.Null(rig.Claim());
+
+        rig.Pipeline.JobTick(PipelineStage.Spec);
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", spec.Task);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+        Assert.Equal(TicketState.Planned, Ticket(rig).State);
+        Assert.Null(rig.Claim());
+
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_KIT_PIPELINE_JOB_BUILD_is_off_unless_it_says_on_and_a_typo_throws()
+    {
+        Assert.False(KitSettings.ParsePipelineJobBuild(null));
+        Assert.False(KitSettings.ParsePipelineJobBuild(""));
+        Assert.False(KitSettings.ParsePipelineJobBuild("off"));
+        Assert.True(KitSettings.ParsePipelineJobBuild(" on "));
+        foreach (var bad in new[] { "true", "1", "ON", "yes" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineJobBuild(bad));
+        }
+
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.False(settings.PipelineJobBuild);
+        Assert.Empty(settings.PipelineJobs);
+        Assert.Equal([PipelineStage.Build], (settings with { PipelineJobBuild = true }).PipelineJobs);
+        Assert.Equal([PipelineStage.Context, PipelineStage.Spec, PipelineStage.Build], (settings with { PipelineJobContext = true, PipelineJobPlan = true, PipelineJobBuild = true }).PipelineJobs);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_job_is_registered_for_the_build_switch()
+    {
+        var baseline = new KitSettings("d", "r", null, "dist") with { Pipeline = true, RunnerPoolToken = "pool-token", PipelineJobBuild = true };
+
+        using var provider = new ServiceCollection().AddKitServices(baseline).BuildServiceProvider();
+        Assert.Single(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<PipelineJob>());
     }
 
     [Fact]
