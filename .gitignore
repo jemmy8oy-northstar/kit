@@ -1,0 +1,2 @@
+# A test run from the repo root writes vitest's cache here; it is never source (b84c0c0 committed it by accident).
+/node_modules/
