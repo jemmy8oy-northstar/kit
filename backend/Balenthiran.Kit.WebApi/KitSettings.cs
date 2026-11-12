@@ -426,6 +426,18 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_TURNS_RESOLVE</c>: a whole number above zero; unset is null (the build limit). Anything else THROWS.</summary>
     public static int? ParseStageTurnsResolve(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageTurnSettings.Parse("KIT_STAGE_TURNS_RESOLVE", value, 0);
 
+    /// <summary><c>KIT_STAGE_MODEL_TEST</c> (BEH-ORCH-12): the model of a test run of a private project's pull request. Unset (null) is triage's model.</summary>
+    public string? StageModelTest { get; init; }
+
+    /// <summary><c>KIT_STAGE_MODEL_TEST</c>: a model name; unset is null (the triage model). Anything else THROWS.</summary>
+    public static string? ParseStageModelTest(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageModels.Parse("KIT_STAGE_MODEL_TEST", value, "");
+
+    /// <summary><c>KIT_STAGE_TURNS_TEST</c> (BEH-ORCH-12): the turn limit of a test run. Unset (null) is the build stage's.</summary>
+    public int? StageTurnsTest { get; init; }
+
+    /// <summary><c>KIT_STAGE_TURNS_TEST</c>: a whole number above zero; unset is null (the build limit). Anything else THROWS.</summary>
+    public static int? ParseStageTurnsTest(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageTurnSettings.Parse("KIT_STAGE_TURNS_TEST", value, 0);
+
     /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
     /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
@@ -556,6 +568,8 @@ public sealed record KitSettings(
             StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
             StageModelResolve = ParseStageModelResolve(env("KIT_STAGE_MODEL_RESOLVE")),
             StageTurnsResolve = ParseStageTurnsResolve(env("KIT_STAGE_TURNS_RESOLVE")),
+            StageModelTest = ParseStageModelTest(env("KIT_STAGE_MODEL_TEST")),
+            StageTurnsTest = ParseStageTurnsTest(env("KIT_STAGE_TURNS_TEST")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }
