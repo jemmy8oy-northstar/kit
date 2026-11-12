@@ -22,7 +22,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="merge"><c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <see cref="MergeReadyAsync"/> merges built items' pull requests. Off by default: a merge puts code no person has read into the base branch.</param>
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
 /// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
-/// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 and 4: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
+/// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
 public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
 {
     private readonly object gate = new();
@@ -32,7 +32,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // over exactly one hop of the chain: with KIT_PIPELINE_JOB_CONTEXT off a triaged item goes straight to the spec stage
     // (today's "plan"), as before; with it on, it waits at Context, which the context job takes, and the chain resumes at
     // spec when the context run has ended. With KIT_PIPELINE_JOB_PLAN on, a queued Spec item waits too, however it got
-    // there, for the plan job to start its spec run; with it off StartReady starts it as before.
+    // there, for the plan job to start its spec run; with it off StartReady starts it as before. The same holds for a
+    // queued Build item (a planned ticket) and KIT_PIPELINE_JOB_BUILD, the build job.
     //   Context (waiting, running, or under review) -> new
     //   Spec  (queued, running, or under review) -> ready
     //   Build (queued, running, or under review) -> planned
@@ -41,7 +42,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     //   any stage, Stopped                       -> stopped    (with why)
     // A triage item is not a ticket: it has no bundle. Neither is the set-aside or backlog pseudo-item.
     // Resume reverses it: ready becomes a queued Spec item (which waits when the plan job is on), and so does new unless the
-    // context job is on, when it is a waiting Context item; planned becomes a queued Build item, built a Done Build item.
+    // context job is on, when it is a waiting Context item; planned becomes a queued Build item (which waits when the build
+    // job is on), built a Done Build item, which is not queued and so is never taken by a job.
     // A run in flight, or a review under way, is not kept: a resumed item starts its stage again.
     private readonly ITicketStore ticketStore = tickets ?? new MemoryTicketStore();
 
@@ -598,8 +600,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private bool IsWaiting(WorkItem item) => item.Status == WorkItemStatus.Queued && jobs?.Contains(item.Stage) == true;
 
     /// <summary>
-    /// BEH-ORCH-11, slices 3 and 4: one look of the job for <paramref name="stage"/> (Context: <c>new</c> tickets; Spec: <c>ready</c>
-    /// tickets, the plan job). With that stage's switch off, nothing happens. Per project with a ticket waiting at that
+    /// BEH-ORCH-11, slices 3 to 5: one look of the job for <paramref name="stage"/> (Context: <c>new</c> tickets; Spec: <c>ready</c>
+    /// tickets, the plan job; Build: <c>planned</c> tickets, the build job). With that stage's switch off, nothing happens. Per project with a ticket waiting at that
     /// stage, and no run in flight, takes the one with the lowest priority number (oldest first among equals) and starts
     /// its run. One ticket at a time per project, and a project with nothing waiting makes no model call. A ticket that
     /// cannot start (no repo, no bundle) is stopped with why, and the next one is taken.

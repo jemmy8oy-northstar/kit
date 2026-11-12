@@ -114,7 +114,7 @@ public static class ServiceRegistration
                 jobs: settings.PipelineJobs.ToHashSet()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
-            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN) exists to take a waiting ticket to its run.
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD) exists to take a waiting ticket to its run.
             foreach (var stage in settings.PipelineJobs)
             {
                 services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));
