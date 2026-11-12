@@ -95,6 +95,8 @@ public static class ServiceRegistration
 
             // BEH-ORCH-8: the notes a triage sorted are the accounts' database when there is one; without, they die with the pod.
             services.TryAddSingleton<ITriagedNoteStore>(_ => settings.Accounts ? new PostgresTriagedNoteStore(settings.ConnectionString()!) : new MemoryTriagedNoteStore());
+            // BEH-ORCH-11: so are the tickets, which hold the pipeline's work items across a restart.
+            services.TryAddSingleton<ITicketStore>(_ => settings.Accounts ? new PostgresTicketStore(settings.ConnectionString()!) : new MemoryTicketStore());
             services.TryAddSingleton(sp => new Pipeline(
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
@@ -107,7 +109,8 @@ public static class ServiceRegistration
                 scheduled: settings.PipelineScheduled,
                 sorted: sp.GetRequiredService<ITriagedNoteStore>(),
                 merger: sp.GetService<IPullRequestMerger>(),
-                merge: settings.PipelineMerge));
+                merge: settings.PipelineMerge,
+                tickets: sp.GetRequiredService<ITicketStore>()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
             // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.
