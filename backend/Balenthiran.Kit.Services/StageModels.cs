@@ -9,6 +9,9 @@ public static class StageModels
     /// <summary>Triage reads and sorts; the cheapest model does it (BEH-ORCH-1).</summary>
     public const string DefaultTriage = "claude-haiku-5-5";
 
+    /// <summary>The context job reads and gathers, as triage does, so it runs on the same cheap model (BEH-ORCH-11).</summary>
+    public const string DefaultContext = DefaultTriage;
+
     /// <summary>The stronger model that reviews a flagged stage from its bundle.</summary>
     public const string DefaultReview = "claude-opus-5-5";
 

@@ -22,22 +22,34 @@ namespace Balenthiran.Kit.Services;
 /// <param name="merge"><c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <see cref="MergeReadyAsync"/> merges built items' pull requests. Off by default: a merge puts code no person has read into the base branch.</param>
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
 /// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null)
+/// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
 {
     private readonly object gate = new();
 
     // BEH-ORCH-11, slice 1: every work item that has a bundle is also a ticket row, written whenever the item changes
-    // and reloaded by Resume. A work item's stage and status map onto a ticket's state like this (the context job
-    // does not exist yet, so a triaged item waits for the spec stage, which is today's "plan"):
-    //   Spec  (queued, running, or under review) -> ready      (new is not written yet: triage has no stage of its own)
+    // and reloaded by Resume. A work item's stage and status map onto a ticket's state like this. Each job's switch takes
+    // over exactly one hop of the chain: with KIT_PIPELINE_JOB_CONTEXT off a triaged item goes straight to the spec stage
+    // (today's "plan"), as before; with it on, it waits at Context, which the context job takes, and the chain resumes at
+    // spec when the context run has ended. With KIT_PIPELINE_JOB_PLAN on, a queued Spec item waits too, however it got
+    // there, for the plan job to start its spec run; with it off StartReady starts it as before. The same holds for a
+    // queued Build item (a planned ticket) and KIT_PIPELINE_JOB_BUILD, the build job.
+    //   Context (waiting, running, or under review) -> new
+    //   Spec  (queued, running, or under review) -> ready
     //   Build (queued, running, or under review) -> planned
     //   Build, Done, no pull request merged      -> built      (its pull request, once opened, is on the ticket)
     //   Build, Done, Merged                      -> merged
     //   any stage, Stopped                       -> stopped    (with why)
     // A triage item is not a ticket: it has no bundle. Neither is the set-aside or backlog pseudo-item.
-    // Resume reverses it: new and ready become a queued Spec item, planned a queued Build item, built a Done Build item.
+    // Resume reverses it: ready becomes a queued Spec item (which waits when the plan job is on), and so does new unless the
+    // context job is on, when it is a waiting Context item; planned becomes a queued Build item (which waits when the build
+    // job is on), built a Done Build item, which is not queued and so is never taken by a job.
     // A run in flight, or a review under way, is not kept: a resumed item starts its stage again.
     private readonly ITicketStore ticketStore = tickets ?? new MemoryTicketStore();
+
+    // The priority a resumed ticket had (1 to 4, lowest first): a job takes the waiting ticket with the lowest,
+    // and a save writes it back rather than resetting it. A ticket not here has DefaultPriority.
+    private readonly Dictionary<(string App, string Slug), int> priorities = [];
 
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
@@ -187,6 +199,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
                 var item = ticket.State switch
                 {
+                    TicketState.New when jobs?.Contains(PipelineStage.Context) == true => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Context, WorkItemStatus.Queued),
                     TicketState.New or TicketState.Ready => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Spec, WorkItemStatus.Queued),
                     TicketState.Planned => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Queued),
                     TicketState.Built => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Done, PullRequest: ticket.PullRequest),
@@ -198,6 +211,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 }
 
                 bundles[(ticket.Project, ticket.Slug)] = bundle;
+                priorities[(ticket.Project, ticket.Slug)] = ticket.Priority;
                 if (ticket.Scheduled)
                 {
                     scheduledSlugs.Add((ticket.Project, ticket.Slug));
@@ -254,12 +268,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 PipelineStage.Spec => TicketState.Ready,
                 PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
-                _ => TicketState.New,
+                _ => TicketState.New, // Context, or a triage under review
             },
         };
         try
         {
-            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, DefaultPriority, bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug))));
+            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, priorities.GetValueOrDefault((item.Project, item.Slug), DefaultPriority), bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug))));
         }
         catch (Exception e)
         {
@@ -567,7 +581,70 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
-        return Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null));
+        return AfterTriage(item, Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null)));
+    }
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 3: the one hop the context job's switch takes over. With <c>KIT_PIPELINE_JOB_CONTEXT=on</c> an
+    /// item that has finished triage (or the review of it) and would be queued for spec waits at Context instead, for
+    /// <see cref="JobTick"/>. With it off, or for any other stage's result, <paramref name="after"/> is returned as it is.
+    /// </summary>
+    private WorkItem AfterTriage(WorkItem before, WorkItem after) =>
+        jobs?.Contains(PipelineStage.Context) == true
+        && (before.Stage == PipelineStage.Triage || before is { Stage: PipelineStage.Review, ReviewedStage: PipelineStage.Triage })
+        && after is { Stage: PipelineStage.Spec, Status: WorkItemStatus.Queued }
+            ? after with { Stage = PipelineStage.Context }
+            : after;
+
+    /// <summary>An item a job owns the stage of and has not taken yet: queued, but not for <see cref="StartReady"/> to start.</summary>
+    private bool IsWaiting(WorkItem item) => item.Status == WorkItemStatus.Queued && jobs?.Contains(item.Stage) == true;
+
+    /// <summary>
+    /// BEH-ORCH-11, slices 3 to 5: one look of the job for <paramref name="stage"/> (Context: <c>new</c> tickets; Spec: <c>ready</c>
+    /// tickets, the plan job; Build: <c>planned</c> tickets, the build job). With that stage's switch off, nothing happens. Per project with a ticket waiting at that
+    /// stage, and no run in flight, takes the one with the lowest priority number (oldest first among equals) and starts
+    /// its run. One ticket at a time per project, and a project with nothing waiting makes no model call. A ticket that
+    /// cannot start (no repo, no bundle) is stopped with why, and the next one is taken.
+    /// </summary>
+    public void JobTick(PipelineStage stage)
+    {
+        if (jobs?.Contains(stage) != true)
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
+            {
+                // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
+                while (!items.Any(i => i.Project == app && i.Status == WorkItemStatus.Running))
+                {
+                    var next = items
+                        .Select((item, index) => (Item: item, Index: index))
+                        .Where(x => x.Item.Project == app && x.Item.Stage == stage && IsWaiting(x.Item))
+                        .OrderBy(x => priorities.GetValueOrDefault((x.Item.Project, x.Item.Slug), DefaultPriority))
+                        .ThenBy(x => x.Index)
+                        .Cast<(WorkItem Item, int Index)?>()
+                        .FirstOrDefault();
+                    if (next is not { } taken)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        Set(taken.Index, Begin(taken.Index, taken.Item));
+                    }
+                    catch (Exception e)
+                    {
+                        Set(taken.Index, Stop(taken.Item, $"the project could not be read ({e.GetType().Name})"));
+                    }
+                }
+            }
+
+            StartReady();
+        }
     }
 
     /// <summary>
@@ -708,7 +785,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
         else
         {
-            item = Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null));
+            item = AfterTriage(triage, Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null)));
             usable = bundle;
         }
 
@@ -757,7 +834,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         do
         {
             again = false;
-            var ready = items.OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
+            var ready = items.Where(i => !IsWaiting(i)).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
@@ -799,6 +876,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 text = item.Stage switch
                 {
+                    PipelineStage.Context => ContextStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
                     _ => ReviewStage.BuildTask(item.Project, bundle),

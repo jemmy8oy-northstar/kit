@@ -101,17 +101,24 @@ public static class ServiceRegistration
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
                 sp.GetRequiredService<IAgentRunStore>(),
-                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow),
+                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow, settings.StageModelContext),
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
                 pulls: sp.GetService<IPullRequestOpener>(),
-                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild),
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild, settings.StageTurnsContext),
                 scheduled: settings.PipelineScheduled,
                 sorted: sp.GetRequiredService<ITriagedNoteStore>(),
                 merger: sp.GetService<IPullRequestMerger>(),
                 merge: settings.PipelineMerge,
-                tickets: sp.GetRequiredService<ITicketStore>()));
+                tickets: sp.GetRequiredService<ITicketStore>(),
+                jobs: settings.PipelineJobs.ToHashSet()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
+
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD) exists to take a waiting ticket to its run.
+            foreach (var stage in settings.PipelineJobs)
+            {
+                services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));
+            }
 
             // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.
             if (settings.PipelineMerge)
