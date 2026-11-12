@@ -101,11 +101,11 @@ public static class ServiceRegistration
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
                 sp.GetRequiredService<IAgentRunStore>(),
-                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow, settings.StageModelContext),
+                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow, settings.StageModelContext, settings.StageModelResolve),
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
                 pulls: sp.GetService<IPullRequestOpener>(),
-                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild, settings.StageTurnsContext),
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild, settings.StageTurnsContext, settings.StageTurnsResolve),
                 scheduled: settings.PipelineScheduled,
                 sorted: sp.GetRequiredService<ITriagedNoteStore>(),
                 merger: sp.GetService<IPullRequestMerger>(),
@@ -114,7 +114,7 @@ public static class ServiceRegistration
                 jobs: settings.PipelineJobs.ToHashSet()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
-            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD) exists to take a waiting ticket to its run.
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD, KIT_PIPELINE_JOB_MERGE) exists to take a waiting ticket to its run (or, for merge, its pull request to a merge).
             foreach (var stage in settings.PipelineJobs)
             {
                 services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));

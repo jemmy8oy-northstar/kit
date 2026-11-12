@@ -194,7 +194,7 @@ public sealed partial class GitHubPullRequestOpener(
     /// head commit, and the merge, which names the head commit it checked so a push after the check is
     /// answered 409 by GitHub (looked at again, not merged unseen).
     /// </remarks>
-    public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken)
+    public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false)
     {
         var page = PullPage().Match(pullRequestUrl ?? string.Empty);
         if (!page.Success)
@@ -247,6 +247,15 @@ public sealed partial class GitHubPullRequestOpener(
         if (!p.TryGetProperty("state", out var state) || state.ValueKind != JsonValueKind.String || state.GetString() != "open")
         {
             return Refuse("its pull request is closed");
+        }
+
+        if (updateFirst)
+        {
+            var behind = await UpdateIfBehindAsync(root, number, p, sha, token, cancellationToken);
+            if (behind is not null)
+            {
+                return behind;
+            }
         }
 
         var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(sha)}&per_page={PageSize}"), token, null, cancellationToken);
@@ -303,7 +312,7 @@ public sealed partial class GitHubPullRequestOpener(
 
         if (mergeable.ValueKind != JsonValueKind.True)
         {
-            return Refuse("it has a conflict with its base branch");
+            return new PullRequestMerge { Conflict = true, Reason = ConflictReason };
         }
 
         var payload = JsonSerializer.Serialize(new { sha, merge_method = "merge" });
@@ -316,6 +325,51 @@ public sealed partial class GitHubPullRequestOpener(
         // 409: the head moved after the checks were read. Not merged unseen; the next look reads the new commit.
         return merged.Status == 409 ? new PullRequestMerge { Waiting = true, Reason = merged.Reason } : Unreadable(merged.Status, merged.Reason);
     }
+
+    // BEH-ORCH-11, slice 7: null when the branch holds everything its base has (go on to the checks); otherwise the
+    // answer to give now. A branch that was behind is updated and waited on: its checks must run on the new head.
+    private async Task<PullRequestMerge?> UpdateIfBehindAsync(Uri root, string number, JsonElement pull, string sha, string token, CancellationToken cancellationToken)
+    {
+        if (!pull.TryGetProperty("base", out var b) || b.ValueKind != JsonValueKind.Object
+            || !b.TryGetProperty("ref", out var r) || r.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(r.GetString()))
+        {
+            return Refuse(NotAPullRequest(200));
+        }
+
+        var baseRef = r.GetString()!;
+        var compare = await SendAsync(HttpMethod.Get, new Uri(root, $"compare/{Segments(baseRef)}...{Uri.EscapeDataString(sha)}?per_page=1"), token, null, cancellationToken);
+        if (compare.Reason is not null)
+        {
+            return Unreadable(compare.Status, compare.Reason);
+        }
+
+        if (compare.Json is not { ValueKind: JsonValueKind.Object } c
+            || !c.TryGetProperty("behind_by", out var n) || n.ValueKind != JsonValueKind.Number || !n.TryGetInt32(out var behindBy))
+        {
+            return Refuse($"GitHub answered {compare.Status} with JSON that is not a comparison");
+        }
+
+        if (behindBy <= 0)
+        {
+            return null;
+        }
+
+        var update = await SendAsync(HttpMethod.Put, new Uri(root, $"pulls/{number}/update-branch"), token, JsonSerializer.Serialize(new { expected_head_sha = sha }), cancellationToken);
+        if (update.Reason is null)
+        {
+            return new PullRequestMerge { Waiting = true, Reason = $"brought up to date with {baseRef}" };
+        }
+
+        // 422: GitHub could not merge the base in by itself, which is a conflict. 409: the head moved, look again.
+        return update.Status switch
+        {
+            422 => new PullRequestMerge { Conflict = true, Reason = ConflictReason },
+            409 => new PullRequestMerge { Waiting = true, Reason = update.Reason },
+            _ => Unreadable(update.Status, update.Reason),
+        };
+    }
+
+    private const string ConflictReason = "it has a conflict with its base branch";
 
     private static PullRequestMerge Refuse(string reason) => new() { Reason = reason };
 

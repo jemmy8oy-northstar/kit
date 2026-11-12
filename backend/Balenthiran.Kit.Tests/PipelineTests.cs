@@ -33,7 +33,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,7 +50,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -105,8 +105,11 @@ public class PipelineTests
         public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets, contextJob: contextJob, planJob: planJob, buildJob: buildJob);
 
         // The stages a job owns, from the three switches (BEH-ORCH-11).
-        private static IReadOnlySet<PipelineStage> Jobs(bool context, bool plan, bool build) =>
-            new[] { (context, PipelineStage.Context), (plan, PipelineStage.Spec), (build, PipelineStage.Build) }.Where(j => j.Item1).Select(j => j.Item2).ToHashSet();
+        private static IReadOnlySet<PipelineStage> Jobs(bool context, bool plan, bool build, bool mergeJob) =>
+            new[] { (context, PipelineStage.Context), (plan, PipelineStage.Spec), (build, PipelineStage.Build), (mergeJob, PipelineStage.Merge) }.Where(j => j.Item1).Select(j => j.Item2).ToHashSet();
+
+        // His edit of the spec between two looks of the pipeline (BEH-ORCH-11, slice 6).
+        public void SetCorpus(string corpus) => File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
 
         // A second project, with the same repo as the first (BEH-ORCH-11: the context job takes one ticket per project).
         public void AddProject(string name) => File.WriteAllText(Path.Combine(root, name + ".beh"), Corpus);
@@ -143,9 +146,21 @@ public class PipelineTests
 
         public Func<Task>? OnAsk { get; set; }
 
-        public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken)
+        // Whether each ask brought the branch up to date first (BEH-ORCH-11, slice 7).
+        public List<bool> UpdateFirst { get; } = [];
+
+        // The answer for a pull request, when it is not the default one.
+        public Dictionary<string, IPullRequestMerge> AnswerFor { get; } = [];
+
+        public async Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false)
         {
             Asked.Add(pullRequestUrl);
+            UpdateFirst.Add(updateFirst);
+            if (AnswerFor.TryGetValue(pullRequestUrl, out var own))
+            {
+                return own;
+            }
+
             var answer = Answer;
             if (OnAsk is { } during)
             {
@@ -1729,11 +1744,17 @@ public class PipelineTests
     // ---- BEH-ORCH-11, slice 2: triage reads and updates open tickets ------------------------------------
 
     // A ticket row as the pipeline writes it: its bundle is the real rendering of a parsed bundle.
+    // A seeded priority other than 3 stands for one read earlier: its card (BEH-STORED) is not in the spec, so slice 6 keeps the stored value.
     private static PipelineTicket Seeded(string slug, TicketState state = TicketState.Ready, int priority = 3, string? title = null)
     {
-        var bundle = ContextBundle.Parse(BundleText(slug)).Bundle!;
+        var text = priority == DefaultSeedPriority ? BundleText(slug) : StoredPriority(BundleText(slug));
+        var bundle = ContextBundle.Parse(text).Bundle!;
         return new PipelineTicket("demo", slug, title ?? bundle.Title, state, priority, bundle.Cards, bundle.Render(), null, null, false);
     }
+
+    private const int DefaultSeedPriority = 3;
+
+    private static string StoredPriority(string bundleText) => bundleText.Replace("Cards:\n- BEH-A\n", "Cards:\n- BEH-STORED\n", StringComparison.Ordinal);
 
     private static PoolClaim TriageClaim(Rig rig, params PipelineTicket[] tickets)
     {
@@ -2084,7 +2105,7 @@ public class PipelineTests
         using var rig = ContextRig(Seeded("a", TicketState.New, 1));
         rig.Pipeline!.JobTick(PipelineStage.Context);
 
-        rig.FinishWith(rig.Claim()!, new { slug = "a", text = Contexted("a") });
+        rig.FinishWith(rig.Claim()!, new { slug = "a", text = StoredPriority(Contexted("a")) });
 
         Assert.Equal((TicketState.Ready, 1), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().Priority));
     }
@@ -2516,5 +2537,474 @@ public class PipelineTests
 
         var big = bundle with { Context = new string('x', KitRouter.MaxTask) };
         Assert.Contains("read it at .kit/bundles/list-sorting.md on that branch first", ContextStage.BuildTask("demo", "demo.beh", big));
+    }
+
+    // ---- BEH-ORCH-11, slice 6: a ticket's priority comes from its cards ---------------------------------
+
+    private static string PriorityCorpus(int urgent = 1) => $"""
+        # kit:repo someone/demo@dev
+
+        behaviour BEH-A "A user sees the list"
+          actor engineer
+          priority {urgent}
+
+        behaviour BEH-B "A user adds an item"
+          actor engineer
+          priority 3
+
+        behaviour BEH-C "A user removes an item"
+          actor engineer
+        """;
+
+    // A bundle text listing exactly these cards.
+    private static string BundleWith(string slug, params string[] cards) =>
+        BundleText(slug).Replace("Cards:\n- BEH-A\n", "Cards:\n" + string.Concat(cards.Select(c => $"- {c}\n")), StringComparison.Ordinal);
+
+    private static PipelineTicket NewSeed(string slug, params string[] cards)
+    {
+        var bundle = ContextBundle.Parse(BundleWith(slug, cards)).Bundle!;
+        return new PipelineTicket("demo", slug, bundle.Title, TicketState.New, 3, bundle.Cards, bundle.Render(), null, null, false);
+    }
+
+    private static Rig PriorityRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(PriorityCorpus(), contextJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    // The priority a triage's bundle listing these cards gives the ticket it opens, as its saved row shows it.
+    private static int TriagedPriority(params string[] cards)
+    {
+        using var rig = new Rig(PriorityCorpus());
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleWith("list-sorting", cards) });
+        return Ticket(rig).Priority;
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_tickets_priority_is_the_lowest_among_its_cards()
+    {
+        Assert.Equal(1, TriagedPriority("BEH-A", "BEH-B"));
+        Assert.Equal(1, TriagedPriority("BEH-B", "BEH-A"));
+        Assert.Equal(3, TriagedPriority("BEH-B"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_ticket_with_no_card_or_no_priority_on_its_cards_has_priority_3()
+    {
+        Assert.Equal(3, TriagedPriority("new: a thing nobody has written yet"));
+        Assert.Equal(3, TriagedPriority("BEH-C"));
+        Assert.Equal(3, TriagedPriority("BEH-C", "new: another thing"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_card_missing_from_the_corpus_is_ignored()
+    {
+        Assert.Equal(1, TriagedPriority("BEH-GONE-1", "BEH-A"));
+        Assert.Equal(3, TriagedPriority("BEH-GONE-1"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_priority_5_card_counts_as_4()
+    {
+        using var rig = new Rig(PriorityCorpus().Replace("priority 3", "priority 5", StringComparison.Ordinal));
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleWith("list-sorting", "BEH-B") });
+
+        Assert.Equal(4, Ticket(rig).Priority);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_scheduled_card_makes_a_ticket_with_its_own_priority()
+    {
+        var corpus = ScheduledCorpus.Replace("pending\n", "pending\n  priority 2\n", StringComparison.Ordinal);
+        Assert.Contains("priority 2", corpus);
+        using var rig = new Rig(corpus, scheduled: true, schedule: "BEH-A\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        Assert.Equal(2, rig.Tickets.Read("demo").Single().Priority);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_job_tick_takes_a_priority_1_ticket_ahead_of_an_older_priority_3_one()
+    {
+        using var rig = PriorityRig(NewSeed("old", "BEH-B"), NewSeed("urgent", "BEH-A"));
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: urgent", Assert.Single(Claims(rig)).Task);
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, "old").Stage, ItemOf(rig, "old").Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_changing_a_cards_priority_between_ticks_reorders_the_waiting_tickets()
+    {
+        using var rig = PriorityRig(NewSeed("first", "BEH-A"), NewSeed("second", "BEH-B"));
+        rig.SetCorpus(PriorityCorpus(urgent: 4));
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: second", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_removing_a_cards_priority_puts_its_ticket_back_to_3()
+    {
+        // "urgent" takes BEH-A's 1 at the first tick's read; with the line gone it is 3, so the older ticket goes first.
+        using var rig = PriorityRig(NewSeed("old", "BEH-B"), NewSeed("urgent", "BEH-A") with { Priority = 1 });
+        var corpus = PriorityCorpus().Replace("  priority 1\n", "", StringComparison.Ordinal);
+        Assert.DoesNotContain("priority 1", corpus);
+        rig.SetCorpus(corpus);
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: old", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_triage_task_lists_tickets_by_their_cards_current_priority()
+    {
+        using var rig = new Rig(PriorityCorpus());
+        var many = Enumerable.Range(1, TriageStage.MaxTickets + 3).Select(i => i == 9 ? NewSeed("t-9", "BEH-A") with { State = TicketState.Ready } : NewSeed($"t-{i}", "BEH-B") with { State = TicketState.Ready }).ToArray();
+
+        var task = TriageClaim(rig, many).Task;
+
+        Assert.Contains($"## Open tickets ({TriageStage.MaxTickets + 3})\n- t-9 [ready]", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_corpus_that_cannot_be_read_in_a_tick_keeps_the_priorities_they_had_and_stops_nothing()
+    {
+        // "urgent" was saved at priority 1 and "old" at 3; the corpus then stops parsing (9 is not on the card scale).
+        using var rig = PriorityRig(NewSeed("old", "BEH-C"), NewSeed("urgent", "BEH-C") with { Priority = 1 });
+        rig.SetCorpus("# kit:repo someone/demo@dev\n\nbehaviour BEH-A \"A\"\n  priority 9\n");
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: urgent", Assert.Single(Claims(rig)).Task);
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Status == WorkItemStatus.Stopped);
+    }
+
+    // ---- BEH-ORCH-11, slice 7: the merge job --------------------------------------------------------------
+
+    private static string PullOf(int number) => $"https://github.com/someone/demo/pull/{number}";
+
+    // Built tickets as a restart finds them: a done item with its pull request. Slugs ending in a number take that pull request.
+    private static PipelineTicket BuiltSeed(string slug, int pull, string project = "demo", params string[] cards) =>
+        NewSeed(slug, cards.Length == 0 ? ["BEH-B"] : cards) with { Project = project, State = TicketState.Built, PullRequest = PullOf(pull) };
+
+    private static Rig MergeRig(bool mergeJob = true, bool merge = false, params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(PriorityCorpus(), merge: merge, mergeJob: mergeJob, tickets: store);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_off_the_merge_of_BEH_ORCH_10_is_unchanged_and_a_tick_does_nothing()
+    {
+        using var rig = MergeRig(mergeJob: false, merge: true, BuiltSeed("a", 1), BuiltSeed("b", 2));
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Empty(rig.Merges.Asked);
+
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1), PullOf(2)], rig.Merges.Asked);
+        Assert.Equal([false, false], rig.Merges.UpdateFirst);
+        Assert.All(rig.Pipeline.Items(), i => Assert.True(i.Merged));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_on_MergeReadyAsync_merges_nothing_even_with_KIT_PIPELINE_MERGE_on()
+    {
+        using var rig = MergeRig(mergeJob: true, merge: true, BuiltSeed("a", 1));
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_merge_tick_merges_only_the_highest_priority_built_item_and_leaves_the_rest()
+    {
+        // b's card is priority 1, a's is 3 and older: b goes first.
+        using var rig = MergeRig(true, false, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("c", 3, "demo", "BEH-B"));
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(2)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "b").Merged);
+        Assert.False(ItemOf(rig, "a").Merged);
+        Assert.False(ItemOf(rig, "c").Merged);
+        Assert.Equal(TicketState.Merged, rig.Tickets.Read("demo").Single(t => t.Slug == "b").State);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        // Equal priority: the older one first.
+        Assert.Equal([PullOf(2), PullOf(1)], rig.Merges.Asked);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_merge_that_is_waiting_is_left_and_the_next_tick_asks_for_the_same_item()
+    {
+        using var rig = MergeRig(true, false, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true, Reason = "brought up to date with dev" };
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(2), PullOf(2)], rig.Merges.Asked);
+        Assert.All(rig.Pipeline.Items(), i => Assert.Equal((WorkItemStatus.Done, false), (i.Status, i.Merged)));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_refused_merge_stops_the_item_and_the_next_tick_takes_the_next_one()
+    {
+        using var rig = MergeRig(true, false, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        rig.Merges.Answer = new PullRequestMerge { Reason = "it has a conflict with its base branch" };
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var stopped = ItemOf(rig, "b");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it has a conflict with its base branch"), (stopped.Status, stopped.StoppedBecause));
+        Assert.Equal([PullOf(2)], rig.Merges.Asked);
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(2), PullOf(1)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_each_project_gets_one_merge_per_tick()
+    {
+        using var rig = MergeRig(true, false, BuiltSeed("a", 1), BuiltSeed("b", 2), BuiltSeed("x", 3, "other"), BuiltSeed("y", 4, "other"));
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1), PullOf(3)], rig.Merges.Asked.Order());
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.False(ItemOf(rig, "b").Merged);
+        Assert.True(ItemOf(rig, "x", "other").Merged);
+        Assert.False(ItemOf(rig, "y", "other").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_the_merge_job_asks_for_the_branch_to_be_brought_up_to_date_first()
+    {
+        using var rig = MergeRig(true, false, BuiltSeed("a", 1));
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([true], rig.Merges.UpdateFirst);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_KIT_PIPELINE_JOB_MERGE_is_off_unless_it_says_on_and_a_typo_throws()
+    {
+        Assert.False(KitSettings.ParsePipelineJobMerge(null));
+        Assert.False(KitSettings.ParsePipelineJobMerge(""));
+        Assert.False(KitSettings.ParsePipelineJobMerge("off"));
+        Assert.True(KitSettings.ParsePipelineJobMerge(" on "));
+        foreach (var bad in new[] { "true", "1", "ON", "yes" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineJobMerge(bad));
+        }
+
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.False(settings.PipelineJobMerge);
+        Assert.Empty(settings.PipelineJobs);
+        Assert.Equal([PipelineStage.Merge], (settings with { PipelineJobMerge = true }).PipelineJobs);
+
+        var baseline = settings with { Pipeline = true, RunnerPoolToken = "pool-token", PipelineJobMerge = true };
+        using var provider = new ServiceCollection().AddKitServices(baseline).BuildServiceProvider();
+        Assert.Single(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<PipelineJob>());
+    }
+
+    // ---- BEH-ORCH-11, slice 7b: an agent resolves a conflict ------------------------------------------------
+
+    private static readonly PullRequestMerge Conflicting = new() { Conflict = true, Reason = "it has a conflict with its base branch" };
+
+    private static Rig ResolveRig(StageTurnSettings? turns = null, params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, turns: turns);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    private static void EndRun(Rig rig, PoolClaim claim, bool succeeded) =>
+        Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = succeeded ? "finished" : "failed" })).Status);
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_off_a_conflict_still_stops_the_item_and_starts_no_run()
+    {
+        using var rig = MergeRig(mergeJob: false, merge: true, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it has a conflict with its base branch"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_on_a_conflict_starts_exactly_one_resolve_run_on_the_pull_requests_branch()
+    {
+        using var rig = ResolveRig(new StageTurnSettings(10, 11, 12, 77), BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5", 77), (claim.Repo, claim.BaseBranch, claim.Model, claim.MaxTurns));
+        Assert.Contains("You are the conflict-resolution stage for project \"demo\"", claim.Task);
+        Assert.Contains("kit/work/a", claim.Task);
+        Assert.Contains("origin/dev", claim.Task);
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running, PullOf(1)), (item.Stage, item.Status, item.PullRequest));
+        Assert.Equal(TicketState.Built, rig.Tickets.Read("demo").Single().State);
+        Assert.Contains(rig.Store.List(), r => r.Stage == "resolve");
+
+        // The next look neither asks for a merge nor starts a second run.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_resolve_run_that_worked_builds_the_item_again_and_the_next_tick_asks_to_merge_it()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, PullOf(1), false), (item.Stage, item.Status, item.PullRequest, item.Merged));
+        Assert.Null(rig.Claim());
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1), PullOf(1)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_resolve_run_that_failed_stops_the_item_with_why()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the conflict-resolution run failed"), (item.Status, item.StoppedBecause));
+        Assert.Equal(TicketState.Stopped, rig.Tickets.Read("demo").Single().State);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_second_conflict_after_a_resolve_run_stops_the_item_without_another_run()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_no_other_ticket_of_the_project_merges_while_its_resolve_run_is_in_flight()
+    {
+        // b (priority 1) is the top item and conflicts; a waits behind it. Another project is not held.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("x", 3, "other"));
+        rig.Merges.AnswerFor[PullOf(2)] = Conflicting;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Equal(PipelineStage.Merge, ItemOf(rig, "b").Stage);
+        Assert.True(ItemOf(rig, "x", "other").Merged);
+
+        rig.Merges.Asked.Clear();
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        Assert.False(ItemOf(rig, "a").Merged);
+
+        // Once the run has ended, a is looked at again only after b has merged (b is built again and is the top item).
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        rig.Merges.AnswerFor.Clear();
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(2)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "b").Merged);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_task_says_which_branch_to_merge_into_and_what_not_to_do()
+    {
+        var bundle = ContextBundle.Parse(Specced("a")).Bundle!;
+
+        var task = ResolveStage.BuildTask("demo", bundle, "dev");
+
+        Assert.Contains("Check out branch kit/work/a from origin", task);
+        Assert.Contains("Merge origin/dev into it", task);
+        Assert.Contains("keeping the intent of both sides", task);
+        Assert.Contains("whole test suite", task);
+        Assert.Contains("push it to kit/work/a on origin", task);
+        Assert.Contains("Do not open a pull request, do not touch any other branch, and never force-push", task);
+        Assert.Contains("## Bundle (.kit/bundles/a.md)", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_stage_runs_on_the_build_stages_model_and_turns_unless_set()
+    {
+        Assert.Null(KitSettings.ParseStageModelResolve(null));
+        Assert.Null(KitSettings.ParseStageModelResolve(" "));
+        Assert.Equal("claude-opus-5-5", KitSettings.ParseStageModelResolve(" claude-opus-5-5 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelResolve("not a model!"));
+        Assert.Null(KitSettings.ParseStageTurnsResolve(null));
+        Assert.Equal(9, KitSettings.ParseStageTurnsResolve(" 9 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsResolve("0"));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsResolve("many"));
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.Equal((null, null), (settings.StageModelResolve, settings.StageTurnsResolve));
+
+        Assert.Equal("claude-haiku-5-5", Orchestrator.ModelFor(PipelineStage.Merge, Models));
+        Assert.Equal("m-res", Orchestrator.ModelFor(PipelineStage.Merge, Models with { Resolve = "m-res" }));
+        Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults));
+        Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults with { Resolve = 5 }));
     }
 }

@@ -54,6 +54,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
 
+    // BEH-ORCH-11, slice 7b: tickets that have had their one conflict-resolution run. In memory only: the ticket row has
+    // no column for it, so a restart forgets it and a ticket may then get one more run.
+    private readonly HashSet<(string App, string Slug)> resolved = [];
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -268,6 +272,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 PipelineStage.Spec => TicketState.Ready,
                 PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
+                PipelineStage.Merge => TicketState.Built, // its conflict-resolution run is in flight (slice 7b)
                 _ => TicketState.New, // Context, or a triage under review
             },
         };
@@ -281,8 +286,73 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
-    // Slice 1 keeps no priority of its own: the card-driven priority (1 to 4) arrives with the jobs, and 3 is its fallback.
+    // BEH-ORCH-11, slice 6: a ticket's priority is the lowest `priority` (1 to 4) among the cards its bundle lists, and
+    // 3 when none of them has one. The jobs read it again on every tick, so a card re-prioritised in Kit reorders the waiting tickets.
     private const int DefaultPriority = 3;
+
+    /// <summary><paramref name="app"/>'s cards, parsed; null when its corpus cannot be read, so the priorities it had stand.</summary>
+    private IReadOnlyList<IBehaviour>? CorpusCards(string app)
+    {
+        try
+        {
+            return new CorpusParser().Parse(corpora.Read(app), corpora.RelativePath(app));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: pipeline could not read the priorities of {app}'s cards ({e.GetType().Name})");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Sets the priority of ticket (<paramref name="app"/>, <paramref name="slug"/>) from the cards <paramref name="bundle"/> lists.
+    /// A card that is not in <paramref name="cards"/>, or has no priority, is ignored; when none counts the ticket keeps the
+    /// priority it has (3, or the one a restart read back). A null <paramref name="cards"/> changes nothing. Called with the gate held.
+    /// </summary>
+    private void SetPriority(string app, string slug, ContextBundle bundle, IReadOnlyList<IBehaviour>? cards)
+    {
+        if (cards is null)
+        {
+            return;
+        }
+
+        if (CardPriority(bundle.Cards, cards) is { } priority)
+        {
+            priorities[(app, slug)] = priority;
+        }
+    }
+
+    /// <summary>
+    /// The lowest priority (1 to 4; the card scale's 5 counts as 4) of the cards <paramref name="ids"/> names, and
+    /// <see cref="DefaultPriority"/> when they are in <paramref name="cards"/> but none has one (so a priority line he
+    /// removes takes effect). Null only when none of them is in <paramref name="cards"/>: there is nothing to read it from.
+    /// </summary>
+    private static int? CardPriority(IEnumerable<string> ids, IReadOnlyList<IBehaviour> cards)
+    {
+        var found = ids.SelectMany(id => cards.Where(c => c.Id == id)).ToList();
+        if (found.Count == 0)
+        {
+            return null;
+        }
+
+        var set = found.Where(c => c.Priority is not null).Select(c => Math.Min(c.Priority!.Value, 4)).ToList();
+        return set.Count == 0 ? DefaultPriority : set.Min();
+    }
+
+    /// <summary>Reads <paramref name="app"/>'s cards once and sets the priority of each of its tickets that has a bundle. Called with the gate held.</summary>
+    private void RefreshPriorities(string app)
+    {
+        var cards = CorpusCards(app);
+        if (cards is null)
+        {
+            return;
+        }
+
+        foreach (var ((project, slug), bundle) in bundles.Where(b => b.Key.App == app).ToList())
+        {
+            SetPriority(project, slug, bundle, cards);
+        }
+    }
 
     /// <summary>
     /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
@@ -372,7 +442,16 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             var item = items[run.Index];
-            if (item.Stage != PipelineStage.Triage)
+            if (item.Stage == PipelineStage.Merge)
+            {
+                // BEH-ORCH-11, slice 7b: a conflict-resolution run. It reports no bundle; its success is the run's. A
+                // built item again, so the next merge look reads its pull request, waits for the checks on the new head
+                // and merges. The pull request is already open, so none is opened here.
+                Set(run.Index, succeeded
+                    ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                    : Stop(item, "the conflict-resolution run failed"));
+            }
+            else if (item.Stage != PipelineStage.Triage)
             {
                 Set(run.Index, Ended(item, run.Given!, succeeded, reported));
 
@@ -473,7 +552,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public async Task MergeReadyAsync(CancellationToken cancellationToken)
     {
-        if (!merge)
+        // With the merge job on, the job owns this hop (BEH-ORCH-11, slice 7), whatever KIT_PIPELINE_MERGE says.
+        if (!merge || jobs?.Contains(PipelineStage.Merge) == true)
         {
             return;
         }
@@ -481,48 +561,124 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<WorkItem> ready;
         lock (gate)
         {
-            ready = items.Where(i => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false }).ToList();
+            ready = items.Where(IsBuilt).ToList();
         }
 
         foreach (var item in ready)
         {
-            IPullRequestMerge? result = null;
-            string? reason = null;
-            if (merger is null)
+            await MergeOneAsync(item, false, cancellationToken);
+        }
+    }
+
+    private static bool IsBuilt(WorkItem i) => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false };
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: one look of the merge job (<c>KIT_PIPELINE_JOB_MERGE=on</c>; nothing happens with it off). Per
+    /// project with a built, unmerged item, takes only the one with the lowest priority number (oldest first among equals)
+    /// and asks to merge it after bringing its branch up to date with its base, so merges into the base branch happen one
+    /// at a time in priority order. Merged, waiting and refused are as for <see cref="MergeReadyAsync"/>: a refused item
+    /// stops, and the next look takes the next one.
+    /// </summary>
+    public async Task MergeTickAsync(CancellationToken cancellationToken)
+    {
+        if (jobs?.Contains(PipelineStage.Merge) != true)
+        {
+            return;
+        }
+
+        List<WorkItem> top;
+        lock (gate)
+        {
+            // A project whose ticket is having a conflict resolved merges nothing else until that run ends (slice 7b).
+            var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
+                .Where(app => !items.Any(i => i.Project == app && i.Stage == PipelineStage.Merge && i.Status == WorkItemStatus.Running))
+                .ToList();
+            top = [];
+            foreach (var app in apps)
             {
-                reason = "Kit has no way to merge a pull request";
+                RefreshPriorities(app);
+                var next = items
+                    .Select((item, index) => (Item: item, Index: index))
+                    .Where(x => x.Item.Project == app && IsBuilt(x.Item))
+                    .OrderBy(x => priorities.GetValueOrDefault((x.Item.Project, x.Item.Slug), DefaultPriority))
+                    .ThenBy(x => x.Index)
+                    .First();
+                top.Add(next.Item);
             }
-            else
+        }
+
+        foreach (var item in top)
+        {
+            await MergeOneAsync(item, true, cancellationToken);
+        }
+    }
+
+    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken)
+    {
+        IPullRequestMerge? result = null;
+        string? reason = null;
+        if (merger is null)
+        {
+            reason = "Kit has no way to merge a pull request";
+        }
+        else
+        {
+            try
             {
+                result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken, updateFirst);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
+                Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
+                return;
+            }
+        }
+
+        if (result is { Merged: false, Waiting: true })
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            var index = items.IndexOf(item);
+            if (index < 0 || items[index] != item)
+            {
+                return;
+            }
+
+            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to one resolve run instead of stopping the item.
+            if (updateFirst && result is { Merged: false, Conflict: true })
+            {
+                if (resolved.Contains((item.Project, item.Slug)))
+                {
+                    Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
+                    return;
+                }
+
+                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
+                {
+                    return;
+                }
+
+                resolved.Add((item.Project, item.Slug));
                 try
                 {
-                    result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken);
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
                 }
-                catch (Exception e) when (e is not OperationCanceledException)
+                catch (Exception e)
                 {
-                    // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
-                    Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
-                    continue;
-                }
-            }
-
-            if (result is { Merged: false, Waiting: true })
-            {
-                continue;
-            }
-
-            lock (gate)
-            {
-                var index = items.IndexOf(item);
-                if (index < 0 || items[index] != item)
-                {
-                    continue;
+                    Set(index, Stop(item, $"the project could not be read ({e.GetType().Name})"));
                 }
 
-                Set(index, result is { Merged: true }
-                    ? item with { Merged = true }
-                    : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
+                return;
             }
+
+            Set(index, result is { Merged: true }
+                ? item with { Merged = true }
+                : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
         }
     }
 
@@ -617,6 +773,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
             {
+                RefreshPriorities(app);
                 // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
                 while (!items.Any(i => i.Project == app && i.Status == WorkItemStatus.Running))
                 {
@@ -715,6 +872,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 else
                 {
                     bundles[(app, slug)] = bundle;
+                    SetPriority(app, slug, bundle, behaviours);
                     Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
                 }
 
@@ -817,9 +975,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         else
         {
             bundles[(app, slug)] = usable;
+            SetPriority(app, slug, usable, CorpusCards(app));
         }
 
-        // After the bundle is recorded, as the ticket carries it.
+        // After the bundle is recorded, as the ticket carries it (and its priority).
         Persist(item);
         return usable is not null;
     }
@@ -879,6 +1038,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     PipelineStage.Context => ContextStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
+                    PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }
@@ -927,7 +1087,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     {
         try
         {
-            return ticketStore.Read(app);
+            // The priorities are the live ones, not the rows': a card may have been re-prioritised since the row was written.
+            var cards = CorpusCards(app);
+            return ticketStore.Read(app)
+                .Select(t => t with { Priority = (cards is null ? null : CardPriority(t.Cards, cards)) ?? priorities.GetValueOrDefault((t.Project, t.Slug), t.Priority) })
+                .ToList();
         }
         catch (Exception e)
         {
@@ -939,7 +1103,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>Hands a run of <paramref name="item"/>'s stage to the pool and records it; Stopped when the pool will not take it.</summary>
     private WorkItem Enqueue(int index, WorkItem item, string repoAt, string task, IReadOnlyList<string> notes, ContextBundle? given)
     {
-        var stage = item.Stage.ToString().ToLowerInvariant();
+        // The merge job's run is the one that resolves a conflict, and Runs shows it so.
+        var stage = item.Stage == PipelineStage.Merge ? "resolve" : item.Stage.ToString().ToLowerInvariant();
         var at = repoAt.LastIndexOf('@');
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();

@@ -20,6 +20,13 @@ public enum PipelineStage
 
     /// <summary>Tests first, then code, until they pass.</summary>
     Build,
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: a job. Owning it (<c>KIT_PIPELINE_JOB_MERGE=on</c>) moves the merge of a built item's pull
+    /// request from <c>MergeReadyAsync</c> to <c>MergeTickAsync</c>. Slice 7b: also the stage of a work item for exactly as
+    /// long as its conflict-resolution run is in flight (it is a built ticket meanwhile), and Build, Done again after.
+    /// </summary>
+    Merge,
 }
 
 /// <summary>Where a work item is within its current stage.</summary>
@@ -111,6 +118,7 @@ public static class Orchestrator
         PipelineStage.Context => models.Context ?? StageModels.DefaultContext,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
+        PipelineStage.Merge => models.Resolve ?? models.Build,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
@@ -122,6 +130,7 @@ public static class Orchestrator
         PipelineStage.Context => turns.Context,
         PipelineStage.Spec => turns.Spec,
         PipelineStage.Build => turns.Build,
+        PipelineStage.Merge => turns.Resolve ?? turns.Build,
         _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
     };
 
