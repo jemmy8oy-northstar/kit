@@ -1754,6 +1754,18 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_11_the_triage_task_does_not_list_a_built_ticket_so_an_update_cannot_strand_its_pull_request()
+    {
+        using var rig = new Rig();
+
+        var task = TriageClaim(rig, Seeded("list-sorting"), Seeded("next-step", TicketState.Planned), Seeded("has-a-pr", TicketState.Built)).Task;
+
+        Assert.Contains("## Open tickets (2)\n", task);
+        Assert.Contains("- next-step [planned]", task);
+        Assert.DoesNotContain("has-a-pr", task);
+    }
+
+    [Fact]
     public void BEH_ORCH_11_a_triage_with_no_open_ticket_has_no_ticket_section_or_instruction()
     {
         using var rig = new Rig();

@@ -144,16 +144,17 @@ public static class TriageStage
     }
 
     /// <summary>
-    /// BEH-ORCH-11: the project's open tickets (not merged, not stopped) as "- slug [state] title (cards)", highest
+    /// BEH-ORCH-11: the project's tickets not yet built (new, ready, planned) as "- slug [state] title (cards)", highest
     /// priority first and newest first among equals, at most <see cref="MaxTickets"/> lines and
     /// <see cref="MaxTicketChars"/> characters; the rest are counted. Empty when there is no open ticket.
-    /// <paramref name="tickets"/> are in the store's order, oldest first.
+    /// <paramref name="tickets"/> are in the store's order, oldest first. A built ticket is not listed: an update to it
+    /// would send its item back to spec and leave its pull request behind, so follow-up work on it is a new ticket.
     /// </summary>
     public static string TicketSection(IReadOnlyList<PipelineTicket> tickets)
     {
         var open = tickets
             .Select((t, i) => (Ticket: t, Order: i))
-            .Where(x => x.Ticket.State is not (TicketState.Merged or TicketState.Stopped))
+            .Where(x => x.Ticket.State is TicketState.New or TicketState.Ready or TicketState.Planned)
             .OrderBy(x => x.Ticket.Priority)
             .ThenByDescending(x => x.Order)
             .Select(x => x.Ticket)
