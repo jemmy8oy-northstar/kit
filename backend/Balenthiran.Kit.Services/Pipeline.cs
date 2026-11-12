@@ -281,8 +281,73 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
-    // Slice 1 keeps no priority of its own: the card-driven priority (1 to 4) arrives with the jobs, and 3 is its fallback.
+    // BEH-ORCH-11, slice 6: a ticket's priority is the lowest `priority` (1 to 4) among the cards its bundle lists, and
+    // 3 when none of them has one. The jobs read it again on every tick, so a card re-prioritised in Kit reorders the waiting tickets.
     private const int DefaultPriority = 3;
+
+    /// <summary><paramref name="app"/>'s cards, parsed; null when its corpus cannot be read, so the priorities it had stand.</summary>
+    private IReadOnlyList<IBehaviour>? CorpusCards(string app)
+    {
+        try
+        {
+            return new CorpusParser().Parse(corpora.Read(app), corpora.RelativePath(app));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: pipeline could not read the priorities of {app}'s cards ({e.GetType().Name})");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Sets the priority of ticket (<paramref name="app"/>, <paramref name="slug"/>) from the cards <paramref name="bundle"/> lists.
+    /// A card that is not in <paramref name="cards"/>, or has no priority, is ignored; when none counts the ticket keeps the
+    /// priority it has (3, or the one a restart read back). A null <paramref name="cards"/> changes nothing. Called with the gate held.
+    /// </summary>
+    private void SetPriority(string app, string slug, ContextBundle bundle, IReadOnlyList<IBehaviour>? cards)
+    {
+        if (cards is null)
+        {
+            return;
+        }
+
+        if (CardPriority(bundle.Cards, cards) is { } priority)
+        {
+            priorities[(app, slug)] = priority;
+        }
+    }
+
+    /// <summary>
+    /// The lowest priority (1 to 4; the card scale's 5 counts as 4) of the cards <paramref name="ids"/> names, and
+    /// <see cref="DefaultPriority"/> when they are in <paramref name="cards"/> but none has one (so a priority line he
+    /// removes takes effect). Null only when none of them is in <paramref name="cards"/>: there is nothing to read it from.
+    /// </summary>
+    private static int? CardPriority(IEnumerable<string> ids, IReadOnlyList<IBehaviour> cards)
+    {
+        var found = ids.SelectMany(id => cards.Where(c => c.Id == id)).ToList();
+        if (found.Count == 0)
+        {
+            return null;
+        }
+
+        var set = found.Where(c => c.Priority is not null).Select(c => Math.Min(c.Priority!.Value, 4)).ToList();
+        return set.Count == 0 ? DefaultPriority : set.Min();
+    }
+
+    /// <summary>Reads <paramref name="app"/>'s cards once and sets the priority of each of its tickets that has a bundle. Called with the gate held.</summary>
+    private void RefreshPriorities(string app)
+    {
+        var cards = CorpusCards(app);
+        if (cards is null)
+        {
+            return;
+        }
+
+        foreach (var ((project, slug), bundle) in bundles.Where(b => b.Key.App == app).ToList())
+        {
+            SetPriority(project, slug, bundle, cards);
+        }
+    }
 
     /// <summary>
     /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
@@ -617,6 +682,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
             {
+                RefreshPriorities(app);
                 // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
                 while (!items.Any(i => i.Project == app && i.Status == WorkItemStatus.Running))
                 {
@@ -715,6 +781,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 else
                 {
                     bundles[(app, slug)] = bundle;
+                    SetPriority(app, slug, bundle, behaviours);
                     Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
                 }
 
@@ -817,9 +884,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         else
         {
             bundles[(app, slug)] = usable;
+            SetPriority(app, slug, usable, CorpusCards(app));
         }
 
-        // After the bundle is recorded, as the ticket carries it.
+        // After the bundle is recorded, as the ticket carries it (and its priority).
         Persist(item);
         return usable is not null;
     }
@@ -927,7 +995,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     {
         try
         {
-            return ticketStore.Read(app);
+            // The priorities are the live ones, not the rows': a card may have been re-prioritised since the row was written.
+            var cards = CorpusCards(app);
+            return ticketStore.Read(app)
+                .Select(t => t with { Priority = (cards is null ? null : CardPriority(t.Cards, cards)) ?? priorities.GetValueOrDefault((t.Project, t.Slug), t.Priority) })
+                .ToList();
         }
         catch (Exception e)
         {

@@ -108,6 +108,9 @@ public class PipelineTests
         private static IReadOnlySet<PipelineStage> Jobs(bool context, bool plan, bool build) =>
             new[] { (context, PipelineStage.Context), (plan, PipelineStage.Spec), (build, PipelineStage.Build) }.Where(j => j.Item1).Select(j => j.Item2).ToHashSet();
 
+        // His edit of the spec between two looks of the pipeline (BEH-ORCH-11, slice 6).
+        public void SetCorpus(string corpus) => File.WriteAllText(Path.Combine(root, "demo.beh"), corpus);
+
         // A second project, with the same repo as the first (BEH-ORCH-11: the context job takes one ticket per project).
         public void AddProject(string name) => File.WriteAllText(Path.Combine(root, name + ".beh"), Corpus);
 
@@ -1729,11 +1732,17 @@ public class PipelineTests
     // ---- BEH-ORCH-11, slice 2: triage reads and updates open tickets ------------------------------------
 
     // A ticket row as the pipeline writes it: its bundle is the real rendering of a parsed bundle.
+    // A seeded priority other than 3 stands for one read earlier: its card (BEH-STORED) is not in the spec, so slice 6 keeps the stored value.
     private static PipelineTicket Seeded(string slug, TicketState state = TicketState.Ready, int priority = 3, string? title = null)
     {
-        var bundle = ContextBundle.Parse(BundleText(slug)).Bundle!;
+        var text = priority == DefaultSeedPriority ? BundleText(slug) : StoredPriority(BundleText(slug));
+        var bundle = ContextBundle.Parse(text).Bundle!;
         return new PipelineTicket("demo", slug, title ?? bundle.Title, state, priority, bundle.Cards, bundle.Render(), null, null, false);
     }
+
+    private const int DefaultSeedPriority = 3;
+
+    private static string StoredPriority(string bundleText) => bundleText.Replace("Cards:\n- BEH-A\n", "Cards:\n- BEH-STORED\n", StringComparison.Ordinal);
 
     private static PoolClaim TriageClaim(Rig rig, params PipelineTicket[] tickets)
     {
@@ -2084,7 +2093,7 @@ public class PipelineTests
         using var rig = ContextRig(Seeded("a", TicketState.New, 1));
         rig.Pipeline!.JobTick(PipelineStage.Context);
 
-        rig.FinishWith(rig.Claim()!, new { slug = "a", text = Contexted("a") });
+        rig.FinishWith(rig.Claim()!, new { slug = "a", text = StoredPriority(Contexted("a")) });
 
         Assert.Equal((TicketState.Ready, 1), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().Priority));
     }
@@ -2516,5 +2525,159 @@ public class PipelineTests
 
         var big = bundle with { Context = new string('x', KitRouter.MaxTask) };
         Assert.Contains("read it at .kit/bundles/list-sorting.md on that branch first", ContextStage.BuildTask("demo", "demo.beh", big));
+    }
+
+    // ---- BEH-ORCH-11, slice 6: a ticket's priority comes from its cards ---------------------------------
+
+    private static string PriorityCorpus(int urgent = 1) => $"""
+        # kit:repo someone/demo@dev
+
+        behaviour BEH-A "A user sees the list"
+          actor engineer
+          priority {urgent}
+
+        behaviour BEH-B "A user adds an item"
+          actor engineer
+          priority 3
+
+        behaviour BEH-C "A user removes an item"
+          actor engineer
+        """;
+
+    // A bundle text listing exactly these cards.
+    private static string BundleWith(string slug, params string[] cards) =>
+        BundleText(slug).Replace("Cards:\n- BEH-A\n", "Cards:\n" + string.Concat(cards.Select(c => $"- {c}\n")), StringComparison.Ordinal);
+
+    private static PipelineTicket NewSeed(string slug, params string[] cards)
+    {
+        var bundle = ContextBundle.Parse(BundleWith(slug, cards)).Bundle!;
+        return new PipelineTicket("demo", slug, bundle.Title, TicketState.New, 3, bundle.Cards, bundle.Render(), null, null, false);
+    }
+
+    private static Rig PriorityRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(PriorityCorpus(), contextJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    // The priority a triage's bundle listing these cards gives the ticket it opens, as its saved row shows it.
+    private static int TriagedPriority(params string[] cards)
+    {
+        using var rig = new Rig(PriorityCorpus());
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleWith("list-sorting", cards) });
+        return Ticket(rig).Priority;
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_tickets_priority_is_the_lowest_among_its_cards()
+    {
+        Assert.Equal(1, TriagedPriority("BEH-A", "BEH-B"));
+        Assert.Equal(1, TriagedPriority("BEH-B", "BEH-A"));
+        Assert.Equal(3, TriagedPriority("BEH-B"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_ticket_with_no_card_or_no_priority_on_its_cards_has_priority_3()
+    {
+        Assert.Equal(3, TriagedPriority("new: a thing nobody has written yet"));
+        Assert.Equal(3, TriagedPriority("BEH-C"));
+        Assert.Equal(3, TriagedPriority("BEH-C", "new: another thing"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_card_missing_from_the_corpus_is_ignored()
+    {
+        Assert.Equal(1, TriagedPriority("BEH-GONE-1", "BEH-A"));
+        Assert.Equal(3, TriagedPriority("BEH-GONE-1"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_priority_5_card_counts_as_4()
+    {
+        using var rig = new Rig(PriorityCorpus().Replace("priority 3", "priority 5", StringComparison.Ordinal));
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleWith("list-sorting", "BEH-B") });
+
+        Assert.Equal(4, Ticket(rig).Priority);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_scheduled_card_makes_a_ticket_with_its_own_priority()
+    {
+        var corpus = ScheduledCorpus.Replace("pending\n", "pending\n  priority 2\n", StringComparison.Ordinal);
+        Assert.Contains("priority 2", corpus);
+        using var rig = new Rig(corpus, scheduled: true, schedule: "BEH-A\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        Assert.Equal(2, rig.Tickets.Read("demo").Single().Priority);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_job_tick_takes_a_priority_1_ticket_ahead_of_an_older_priority_3_one()
+    {
+        using var rig = PriorityRig(NewSeed("old", "BEH-B"), NewSeed("urgent", "BEH-A"));
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: urgent", Assert.Single(Claims(rig)).Task);
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, "old").Stage, ItemOf(rig, "old").Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_changing_a_cards_priority_between_ticks_reorders_the_waiting_tickets()
+    {
+        using var rig = PriorityRig(NewSeed("first", "BEH-A"), NewSeed("second", "BEH-B"));
+        rig.SetCorpus(PriorityCorpus(urgent: 4));
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: second", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_removing_a_cards_priority_puts_its_ticket_back_to_3()
+    {
+        // "urgent" takes BEH-A's 1 at the first tick's read; with the line gone it is 3, so the older ticket goes first.
+        using var rig = PriorityRig(NewSeed("old", "BEH-B"), NewSeed("urgent", "BEH-A") with { Priority = 1 });
+        var corpus = PriorityCorpus().Replace("  priority 1\n", "", StringComparison.Ordinal);
+        Assert.DoesNotContain("priority 1", corpus);
+        rig.SetCorpus(corpus);
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: old", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_triage_task_lists_tickets_by_their_cards_current_priority()
+    {
+        using var rig = new Rig(PriorityCorpus());
+        var many = Enumerable.Range(1, TriageStage.MaxTickets + 3).Select(i => i == 9 ? NewSeed("t-9", "BEH-A") with { State = TicketState.Ready } : NewSeed($"t-{i}", "BEH-B") with { State = TicketState.Ready }).ToArray();
+
+        var task = TriageClaim(rig, many).Task;
+
+        Assert.Contains($"## Open tickets ({TriageStage.MaxTickets + 3})\n- t-9 [ready]", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_corpus_that_cannot_be_read_in_a_tick_keeps_the_priorities_they_had_and_stops_nothing()
+    {
+        // "urgent" was saved at priority 1 and "old" at 3; the corpus then stops parsing (9 is not on the card scale).
+        using var rig = PriorityRig(NewSeed("old", "BEH-C"), NewSeed("urgent", "BEH-C") with { Priority = 1 });
+        rig.SetCorpus("# kit:repo someone/demo@dev\n\nbehaviour BEH-A \"A\"\n  priority 9\n");
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: urgent", Assert.Single(Claims(rig)).Task);
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Status == WorkItemStatus.Stopped);
     }
 }
