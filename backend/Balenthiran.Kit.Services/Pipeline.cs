@@ -612,10 +612,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<WorkItem> top;
         lock (gate)
         {
-            // A project whose ticket is having a conflict resolved merges nothing else until that run ends (slice 7b).
+            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends.
             var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
-                // The same for a ticket whose test run is in flight (BEH-ORCH-12).
-            .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
+                .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
                 .ToList();
             top = [];
             foreach (var app in apps)
