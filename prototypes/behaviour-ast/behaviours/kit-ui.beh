@@ -1547,7 +1547,6 @@ behaviour BEH-ORCH-11 "A note goes on the backlog as a ticket, and a job per sta
   source defined kit.notes.md#2026-11-08-2206
   review unreviewed
   priority 1
-  pending
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1576,6 +1575,20 @@ behaviour BEH-ORCH-11 "A note goes on the backlog as a ticket, and a job per sta
   contract built: slice 7b, a conflict goes to an agent: a merge result now says Conflict, set only on the two refusals GitHub gives for a branch that conflicts with its base (not mergeable, and the 422 on update-branch), with the reason text unchanged. With KIT_PIPELINE_JOB_MERGE=on, a Conflict at a merge look no longer stops the item: it gets one resolve run on the runner pool, shown in Runs as stage resolve, while the item is a PipelineStage.Merge item (running, a built ticket meanwhile, same pull request). The run starts from the project's repo and base branch and is told to check out the pull request's own branch kit/work/<slug> from origin, merge origin/<base> into it, resolve each conflict keeping the intent of both sides, run the project's whole test suite, and commit and push the merge to that same branch, with no new pull request, no other branch and no force-push (ResolveStage.BuildTask). Its model and turns are KIT_STAGE_MODEL_RESOLVE and KIT_STAGE_TURNS_RESOLVE, and unset they are the build stage's. A run that ends well makes the item built again (same pull request), so the next merge look reads the pull request, waits for the checks on the new head and merges; a failed run stops the ticket with "the conflict-resolution run failed". A second Conflict on a ticket that already had its run stops it ("it still conflicts with its base after an agent tried to resolve it"), so a ticket gets at most one run. That a ticket had its run is kept in memory only (the ticket row has no column for it), so a restart forgets it and a ticket may get one more run. While the run is in flight the merge job takes no other ticket of that project, and a project with any other run in flight waits for the next look. With the switch off a conflict still stops the item (BEH-ORCH-10)
   contract my assumption: the resolve run's model and turns default to the build stage's, because resolving a conflict needs the same code judgement as building; whether a cheaper model will do is decided from what Runs shows it costs
   contract my assumption: the context stage's model and turn limit default to triage's (claude-haiku-5-5, 15 turns): it reads and gathers as triage does and writes nothing but the bundle, so the cheapest model should do. Whether it needs more is decided from what Runs shows a context run costs and whether the planner is helped
+
+behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so merging into dev spends no Actions minutes"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-12-0837
+  review unreviewed
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-12-0837): "Maybe to cut costs we can use the kit pipeline for deployment - it can run tests as well but only use it for those completed merge promotions. Maybe we should have some promotion pipeline as well like deploy from main rather than develop so that promotions can be purposeful. Then you can just make sure that tests are passing locally otherwise build will fail"
+  contract my assumption: what was measured on 2026-11-12: kit is private, so its Actions minutes come out of the org's 2,000 free a month, and kit alone billed 1,533 in the first 12 days (CI on PRs into dev 777, on pushes 665). CI stopped starting at 04:56Z that day. Deploys already build only from main
+  contract my assumption: the first step is the GitHub side, as kit#791: Actions CI runs only for pull requests into main and pushes to main, so a promotion still gets full CI before anything deploys, and work into dev is gated by the whole suite run before it merges
+  contract my assumption: then the merge job (BEH-ORCH-11) needs its own check for such a project, because a pull request into dev with no Actions run waits forever (it never merges unchecked). A test run on the runner pool, shown in Runs as stage test, checks out the pull request's exact head, runs the project's whole suite and reports pass or fail against that commit, and the merge job merges that exact commit only after a pass, as it does after a green Actions run today
+  contract my assumption: it applies only to a project whose repo is private; a public project's Actions minutes are free, so it keeps its CI as now
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
