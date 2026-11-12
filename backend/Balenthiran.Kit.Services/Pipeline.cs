@@ -317,11 +317,21 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
-    /// <summary>The lowest priority (1 to 4; the card scale's 5 counts as 4) of the cards <paramref name="ids"/> names, or null when none of them is in <paramref name="cards"/> with one.</summary>
+    /// <summary>
+    /// The lowest priority (1 to 4; the card scale's 5 counts as 4) of the cards <paramref name="ids"/> names, and
+    /// <see cref="DefaultPriority"/> when they are in <paramref name="cards"/> but none has one (so a priority line he
+    /// removes takes effect). Null only when none of them is in <paramref name="cards"/>: there is nothing to read it from.
+    /// </summary>
     private static int? CardPriority(IEnumerable<string> ids, IReadOnlyList<IBehaviour> cards)
     {
-        var found = ids.SelectMany(id => cards.Where(c => c.Id == id)).Where(c => c.Priority is not null).Select(c => Math.Min(c.Priority!.Value, 4)).ToList();
-        return found.Count == 0 ? null : found.Min();
+        var found = ids.SelectMany(id => cards.Where(c => c.Id == id)).ToList();
+        if (found.Count == 0)
+        {
+            return null;
+        }
+
+        var set = found.Where(c => c.Priority is not null).Select(c => Math.Min(c.Priority!.Value, 4)).ToList();
+        return set.Count == 0 ? DefaultPriority : set.Min();
     }
 
     /// <summary>Reads <paramref name="app"/>'s cards once and sets the priority of each of its tickets that has a bundle. Called with the gate held.</summary>

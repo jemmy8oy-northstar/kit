@@ -1732,11 +1732,17 @@ public class PipelineTests
     // ---- BEH-ORCH-11, slice 2: triage reads and updates open tickets ------------------------------------
 
     // A ticket row as the pipeline writes it: its bundle is the real rendering of a parsed bundle.
+    // A seeded priority other than 3 stands for one read earlier: its card (BEH-STORED) is not in the spec, so slice 6 keeps the stored value.
     private static PipelineTicket Seeded(string slug, TicketState state = TicketState.Ready, int priority = 3, string? title = null)
     {
-        var bundle = ContextBundle.Parse(BundleText(slug)).Bundle!;
+        var text = priority == DefaultSeedPriority ? BundleText(slug) : StoredPriority(BundleText(slug));
+        var bundle = ContextBundle.Parse(text).Bundle!;
         return new PipelineTicket("demo", slug, title ?? bundle.Title, state, priority, bundle.Cards, bundle.Render(), null, null, false);
     }
+
+    private const int DefaultSeedPriority = 3;
+
+    private static string StoredPriority(string bundleText) => bundleText.Replace("Cards:\n- BEH-A\n", "Cards:\n- BEH-STORED\n", StringComparison.Ordinal);
 
     private static PoolClaim TriageClaim(Rig rig, params PipelineTicket[] tickets)
     {
@@ -2087,7 +2093,7 @@ public class PipelineTests
         using var rig = ContextRig(Seeded("a", TicketState.New, 1));
         rig.Pipeline!.JobTick(PipelineStage.Context);
 
-        rig.FinishWith(rig.Claim()!, new { slug = "a", text = Contexted("a") });
+        rig.FinishWith(rig.Claim()!, new { slug = "a", text = StoredPriority(Contexted("a")) });
 
         Assert.Equal((TicketState.Ready, 1), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().Priority));
     }
@@ -2635,6 +2641,20 @@ public class PipelineTests
         rig.Pipeline!.JobTick(PipelineStage.Context);
 
         Assert.Contains("Work-item: second", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_removing_a_cards_priority_puts_its_ticket_back_to_3()
+    {
+        // "urgent" takes BEH-A's 1 at the first tick's read; with the line gone it is 3, so the older ticket goes first.
+        using var rig = PriorityRig(NewSeed("old", "BEH-B"), NewSeed("urgent", "BEH-A") with { Priority = 1 });
+        var corpus = PriorityCorpus().Replace("  priority 1\n", "", StringComparison.Ordinal);
+        Assert.DoesNotContain("priority 1", corpus);
+        rig.SetCorpus(corpus);
+
+        rig.Pipeline!.JobTick(PipelineStage.Context);
+
+        Assert.Contains("Work-item: old", Assert.Single(Claims(rig)).Task);
     }
 
     [Fact]
