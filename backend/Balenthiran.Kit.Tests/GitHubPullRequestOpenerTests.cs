@@ -408,6 +408,23 @@ public class GitHubPullRequestOpenerTests
         Assert.False(r.Waiting);
         Assert.False(r.Merged);
         Assert.Equal("it has a conflict with its base branch", r.Reason);
+        Assert.True(r.Conflict);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_only_a_conflict_is_marked_as_one_and_no_other_refusal_or_wait_is()
+    {
+        var mergeable = new FakeGitHub(Pull("false"), Runs(Run("completed", "success")));
+        var closed = new FakeGitHub(Pull(state: "closed"));
+        var failed = new FakeGitHub(Pull(), Runs(Run("completed", "failure")));
+        var waiting = new FakeGitHub(PullOnDev(), Compared(3), FakeGitHub.Json(HttpStatusCode.Accepted, """{"message":"Updating pull request branch."}"""));
+        var denied = new FakeGitHub(PullOnDev(), Compared(1), FakeGitHub.Json(HttpStatusCode.Forbidden, """{"message":"forbidden"}"""));
+
+        Assert.True((await Opener(mergeable).MergeIfGreenAsync(Page, null, CancellationToken.None)).Conflict);
+        Assert.False((await Opener(closed).MergeIfGreenAsync(Page, null, CancellationToken.None)).Conflict);
+        Assert.False((await Opener(failed).MergeIfGreenAsync(Page, null, CancellationToken.None)).Conflict);
+        Assert.False((await Opener(waiting).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true)).Conflict);
+        Assert.False((await Opener(denied).MergeIfGreenAsync(Page, null, CancellationToken.None, updateFirst: true)).Conflict);
     }
 
     [Fact]
