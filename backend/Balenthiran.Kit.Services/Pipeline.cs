@@ -669,6 +669,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>
     /// A bundle a triage of <paramref name="app"/> reported, as its work item. A later triage that updates a bundle
     /// replaces the item, unless that item is running a later stage. True when the bundle was usable.
+    /// BEH-ORCH-11, slice 2: the open tickets are in the triage's task, so a bundle reported under an open ticket's
+    /// slug is that ticket's update: it replaces the ticket's item and bundle (one item, one row). Today a project runs
+    /// one thing at a time, and the reporting triage is it, so no other item can be running when the report lands; when
+    /// the jobs run beside triage that can happen, and the update is then dropped here (its notes still count as sorted),
+    /// which the job slices must handle.
     /// </summary>
     private bool Took(string app, ReportedBundle reported)
     {
@@ -827,7 +832,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         TriageTask task;
         try
         {
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), OpenTickets(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -837,6 +842,20 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         // Worked out before the run is queued, so nothing can throw between queuing it and recording it.
         var taken = notes.Take(task.NotesTaken).Select(n => n.Key).ToList();
         return Enqueue(index, item, repoAt, task.Text, taken, null);
+    }
+
+    /// <summary>BEH-ORCH-11: <paramref name="app"/>'s tickets, for the triage task to list the open ones. A store that cannot be read gives none: the triage then runs as before.</summary>
+    private IReadOnlyList<PipelineTicket> OpenTickets(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app);
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s tickets for triage threw {e.GetType().Name}");
+            return [];
+        }
     }
 
     /// <summary>Hands a run of <paramref name="item"/>'s stage to the pool and records it; Stopped when the pool will not take it.</summary>
