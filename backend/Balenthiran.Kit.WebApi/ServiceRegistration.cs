@@ -111,13 +111,13 @@ public static class ServiceRegistration
                 merger: sp.GetService<IPullRequestMerger>(),
                 merge: settings.PipelineMerge,
                 tickets: sp.GetRequiredService<ITicketStore>(),
-                contextJob: settings.PipelineJobContext));
+                jobs: settings.PipelineJobs.ToHashSet()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
-            // BEH-ORCH-11: only with KIT_PIPELINE_JOB_CONTEXT=on does anything take a waiting ticket to its context run.
-            if (settings.PipelineJobContext)
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN) exists to take a waiting ticket to its run.
+            foreach (var stage in settings.PipelineJobs)
             {
-                services.AddHostedService(sp => new PipelineContextJob(sp.GetRequiredService<Pipeline>(), settings.PipelineJobInterval));
+                services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));
             }
 
             // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.

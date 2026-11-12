@@ -350,19 +350,35 @@ public sealed record KitSettings(
     public bool PipelineJobContext { get; init; }
 
     /// <summary><c>KIT_PIPELINE_JOB_CONTEXT</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
-    public static bool ParsePipelineJobContext(string? value) => value?.Trim() switch
+    public static bool ParsePipelineJobContext(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_CONTEXT", value);
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_PLAN</c> (BEH-ORCH-11, slice 4): <c>on</c> makes every queued spec item wait as a <c>ready</c>
+    /// ticket for the plan job, which takes the highest-priority one per project every few minutes and starts its spec
+    /// run. It spends the owner's subscription. Unset or <c>off</c> is off: a queued spec item starts as before.
+    /// </summary>
+    public bool PipelineJobPlan { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_PLAN</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobPlan(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_PLAN", value);
+
+    private static bool ParseJobSwitch(string name, string? value) => value?.Trim() switch
     {
         null or "" or "off" => false,
         "on" => true,
-        _ => throw new InvalidOperationException($"KIT_PIPELINE_JOB_CONTEXT is \"{value}\": set it to on or off"),
+        _ => throw new InvalidOperationException($"{name} is \"{value}\": set it to on or off"),
     };
 
-    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c> (BEH-ORCH-11): how often a pipeline job looks for a ticket waiting. Unset is <see cref="PipelineContextJob.DefaultInterval"/> (2 minutes).</summary>
-    public TimeSpan PipelineJobInterval { get; init; } = PipelineContextJob.DefaultInterval;
+    /// <summary>The stages a job owns: one for each job switch that is on. What the pipeline takes as <c>jobs</c> and what registers a <see cref="PipelineJob"/> each.</summary>
+    public IReadOnlyList<PipelineStage> PipelineJobs =>
+        [.. (PipelineJobContext ? [PipelineStage.Context] : Array.Empty<PipelineStage>()), .. (PipelineJobPlan ? [PipelineStage.Spec] : Array.Empty<PipelineStage>())];
+
+    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c> (BEH-ORCH-11): how often a pipeline job looks for a ticket waiting. Unset is <see cref="PipelineJob.DefaultInterval"/> (2 minutes).</summary>
+    public TimeSpan PipelineJobInterval { get; init; } = PipelineJob.DefaultInterval;
 
     /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c>: a whole number of minutes above zero; unset is 2. Anything else THROWS.</summary>
     public static TimeSpan ParsePipelineJobInterval(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? PipelineContextJob.DefaultInterval
+        string.IsNullOrWhiteSpace(value) ? PipelineJob.DefaultInterval
         : int.TryParse(value.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var m) && m > 0 ? TimeSpan.FromMinutes(m)
         : throw new InvalidOperationException($"KIT_PIPELINE_JOB_MINUTES is \"{value}\": set it to a whole number of minutes above zero, such as 2");
 
@@ -500,6 +516,7 @@ public sealed record KitSettings(
             PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
             PipelineMerge = ParsePipelineMerge(env("KIT_PIPELINE_MERGE")),
             PipelineJobContext = ParsePipelineJobContext(env("KIT_PIPELINE_JOB_CONTEXT")),
+            PipelineJobPlan = ParsePipelineJobPlan(env("KIT_PIPELINE_JOB_PLAN")),
             PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
             StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
             StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
