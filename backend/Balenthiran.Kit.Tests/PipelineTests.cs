@@ -1717,4 +1717,116 @@ public class PipelineTests
         Assert.Equal(("the spec run failed", null), (all[1].StoppedBecause, all[1].Bundle));
         Assert.Equal(["list-sorting"], again.Open().Where(t => t.Project == project).Select(t => t.Slug));
     }
+
+    // ---- BEH-ORCH-11, slice 2: triage reads and updates open tickets ------------------------------------
+
+    // A ticket row as the pipeline writes it: its bundle is the real rendering of a parsed bundle.
+    private static PipelineTicket Seeded(string slug, TicketState state = TicketState.Ready, int priority = 3, string? title = null)
+    {
+        var bundle = ContextBundle.Parse(BundleText(slug)).Bundle!;
+        return new PipelineTicket("demo", slug, title ?? bundle.Title, state, priority, bundle.Cards, bundle.Render(), null, null, false);
+    }
+
+    private static PoolClaim TriageClaim(Rig rig, params PipelineTicket[] tickets)
+    {
+        foreach (var t in tickets)
+        {
+            rig.Tickets.Save(t);
+        }
+
+        rig.Note("the list should sort by date");
+        var claim = rig.Claim()!;
+        Assert.Contains("You are the triage stage", claim.Task);
+        return claim;
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_triage_task_lists_the_open_tickets_and_not_the_merged_or_stopped_ones()
+    {
+        using var rig = new Rig();
+
+        var task = TriageClaim(rig, Seeded("list-sorting"), Seeded("already-merged", TicketState.Merged), Seeded("gave-up", TicketState.Stopped)).Task;
+
+        Assert.Contains("## Open tickets (1)\n- list-sorting [ready] Sort the list (BEH-A)\n", task);
+        Assert.DoesNotContain("already-merged", task);
+        Assert.DoesNotContain("gave-up", task);
+        Assert.Contains("report a bundle with THAT ticket's slug", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_triage_with_no_open_ticket_has_no_ticket_section_or_instruction()
+    {
+        using var rig = new Rig();
+
+        var task = TriageClaim(rig, Seeded("already-merged", TicketState.Merged)).Task;
+
+        Assert.DoesNotContain("Open tickets", task);
+        Assert.DoesNotContain("THAT ticket's slug", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_bundle_reported_under_an_open_tickets_slug_updates_it_rather_than_opening_a_second()
+    {
+        using var rig = new Rig();
+        var claim = TriageClaim(rig, Seeded("list-sorting"));
+        rig.Pipeline!.Resume();
+        var updated = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first", StringComparison.Ordinal).Replace("- BEH-A", "- BEH-A\n- BEH-B", StringComparison.Ordinal);
+
+        rig.FinishWith(claim, new { slug = "list-sorting", text = updated });
+
+        Assert.Single(rig.Pipeline.Items(), i => i.Slug == "list-sorting");
+        var ticket = Ticket(rig);
+        Assert.Single(rig.Tickets.Read("demo"));
+        Assert.Equal(["BEH-A", "BEH-B"], ticket.Cards);
+        Assert.Contains("newest first", ticket.Bundle);
+        Assert.Contains("newest first", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_bundle_under_a_new_slug_still_opens_a_ticket_and_leaves_the_open_one_alone()
+    {
+        using var rig = new Rig();
+        var claim = TriageClaim(rig, Seeded("list-sorting"));
+
+        rig.FinishWith(claim, new { slug = "another-thing", text = BundleText("another-thing") });
+
+        Assert.Equal(["list-sorting", "another-thing"], rig.Tickets.Read("demo").Select(t => t.Slug));
+        Assert.Equal(Seeded("list-sorting").Bundle, rig.Tickets.Read("demo")[0].Bundle);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_ticket_list_holds_the_highest_priority_first_and_at_most_the_cap()
+    {
+        using var rig = new Rig();
+        var many = Enumerable.Range(1, TriageStage.MaxTickets + 10).Select(i => Seeded($"t-{i}", priority: i == 7 ? 1 : 3)).ToArray();
+
+        var task = TriageClaim(rig, many).Task;
+
+        Assert.Contains($"## Open tickets ({TriageStage.MaxTickets + 10})\n- t-7 [ready]", task);
+        Assert.Equal(TriageStage.MaxTickets, task.Split('\n').Count(l => l.StartsWith("- t-", StringComparison.Ordinal)));
+        Assert.Contains("- t-60 [ready]", task);
+        Assert.DoesNotContain("- t-10 [ready]", task);
+        Assert.Contains("10 more open tickets not listed", task);
+        Assert.InRange(task.Length, 1, KitRouter.MaxTask);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_long_ticket_lists_are_cut_by_size_and_never_push_the_task_past_its_limit()
+    {
+        var long60 = new string('w', TriageStage.MaxTicketTitle * 2);
+        var tickets = Enumerable.Range(1, TriageStage.MaxTickets)
+            .Select(i => Seeded($"ticket-{i}", title: long60) with { Cards = ["BEH-A", "BEH-B", "BEH-C", "BEH-D", "BEH-E", "new: " + long60] })
+            .ToList();
+
+        var section = TriageStage.TicketSection(tickets);
+        var task = TriageStage.BuildTask("demo", [("demo.notes.md#x", new string('n', 6000))], [("BEH-A", "A card")], tickets);
+
+        Assert.InRange(section.Length, 1, TriageStage.MaxTicketChars + 120);
+        Assert.Contains("more open tickets not listed", section);
+        Assert.Contains($"{new string('w', TriageStage.MaxTicketTitle - 1)}…", section);
+        Assert.DoesNotContain(long60, section);
+        Assert.Contains("+2 more", section);
+        Assert.InRange(task.Text.Length, 1, KitRouter.MaxTask);
+        Assert.Equal(1, task.NotesTaken);
+    }
 }

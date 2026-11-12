@@ -1,4 +1,5 @@
 using System.Text;
+using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.Services;
 
@@ -27,6 +28,17 @@ public static class TriageStage
     /// <summary>The work item for notes that are ideas for later: it is never specced or built, and stops as "on the backlog".</summary>
     public const string Backlog = "backlog";
 
+    /// <summary>BEH-ORCH-11: most open tickets one triage task lists; the highest priority first, newest first among equals.</summary>
+    public const int MaxTickets = 50;
+
+    /// <summary>BEH-ORCH-11: most characters the open-ticket list may take of the task, so it cannot crowd the notes out of the cheap model's input.</summary>
+    public const int MaxTicketChars = 2500;
+
+    /// <summary>BEH-ORCH-11: most characters of a ticket's title, and of each card it touches, in the list.</summary>
+    public const int MaxTicketTitle = 60;
+
+    private const int MaxTicketCards = 4;
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -41,8 +53,10 @@ public static class TriageStage
     public static TriageTask BuildTask(
         string project,
         IReadOnlyList<(string Ref, string Text)> notes,
-        IReadOnlyList<(string Id, string Title)> cards)
+        IReadOnlyList<(string Id, string Title)> cards,
+        IReadOnlyList<PipelineTicket>? tickets = null)
     {
+        var ticketSection = TicketSection(tickets ?? []);
         var sb = new StringBuilder();
         sb.Append("You are the triage stage for project \"").Append(project).Append("\". Your job is to collect context, not to write specs or code.\n\n");
         sb.Append("Steps:\n");
@@ -52,6 +66,11 @@ public static class TriageStage
             .Append(ContextBundle.MaxSlug).Append(" characters.\n");
         sb.Append("4. For each work item write one bundle at ").Append(BundlePath("<work-item-slug>"))
             .Append(" on branch ").Append(Branch("<work-item-slug>")).Append(". If that branch already exists on origin, check it out and update the bundle; otherwise create it from the branch you started on (not the default branch). Change nothing but the bundle.\n");
+        if (ticketSection.Length > 0)
+        {
+            sb.Append("   When a note covers the same thing as an open ticket listed below, report a bundle with THAT ticket's slug (an update of it: keep what still holds, add what the note brings) and do NOT open a second work item for it. Use a new slug only for work no open ticket covers.\n");
+        }
+
         sb.Append("5. Commit and push each branch to origin, then STOP. Do not start any other work and do not open a pull request.\n\n");
         sb.Append("A bundle has exactly this shape (sections in this order, every list item on its own \"- \" line):\n\n```\n");
         sb.Append("# <short title>\nWork-item: <work-item-slug>\nCards:\n- <existing card id such as BEH-ORCH-1, or \"new: <one line>\">\nNotes:\n- <source ref of each note it came from>\nFiles:\n- <repo path a builder will need>\nContext:\n<what a builder needs to know, so it need not search again>\n");
@@ -73,7 +92,7 @@ public static class TriageStage
             var part = $"\n### {reference}\n" + (shown.Length < text.Length
                 ? $"{shown}\n[truncated: {text.Length - shown.Length} more characters, read {reference} for the rest]\n"
                 : $"{shown}\n");
-            if (sb.Length + 40 + used + part.Length > KitRouter.MaxTask - Reserve)
+            if (sb.Length + 40 + used + part.Length + ticketSection.Length > KitRouter.MaxTask - Reserve)
             {
                 break;
             }
@@ -101,6 +120,7 @@ public static class TriageStage
                 .Append(" characters a note, ").Append(MaxTotalNoteChars).Append(" in all). Read the source ref when a cut note matters.\n");
         }
 
+        sb.Append(ticketSection);
         sb.Append("\n## Existing cards (").Append(cards.Count).Append(")\n");
         var listed = 0;
         foreach (var (id, title) in cards)
@@ -121,5 +141,56 @@ public static class TriageStage
         }
 
         return new TriageTask(sb.ToString(), noteParts.Count);
+    }
+
+    /// <summary>
+    /// BEH-ORCH-11: the project's open tickets (not merged, not stopped) as "- slug [state] title (cards)", highest
+    /// priority first and newest first among equals, at most <see cref="MaxTickets"/> lines and
+    /// <see cref="MaxTicketChars"/> characters; the rest are counted. Empty when there is no open ticket.
+    /// <paramref name="tickets"/> are in the store's order, oldest first.
+    /// </summary>
+    public static string TicketSection(IReadOnlyList<PipelineTicket> tickets)
+    {
+        var open = tickets
+            .Select((t, i) => (Ticket: t, Order: i))
+            .Where(x => x.Ticket.State is not (TicketState.Merged or TicketState.Stopped))
+            .OrderBy(x => x.Ticket.Priority)
+            .ThenByDescending(x => x.Order)
+            .Select(x => x.Ticket)
+            .ToList();
+        if (open.Count == 0)
+        {
+            return "";
+        }
+
+        var head = $"\n## Open tickets ({open.Count})\n";
+        var sb = new StringBuilder(head);
+        var listed = 0;
+        foreach (var t in open.Take(MaxTickets))
+        {
+            var cardList = string.Join(", ", t.Cards.Take(MaxTicketCards).Select(c => Short(c, MaxTicketTitle)));
+            var more = t.Cards.Count > MaxTicketCards ? $" +{t.Cards.Count - MaxTicketCards} more" : "";
+            var line = $"- {t.Slug} [{t.State.ToString().ToLowerInvariant()}] {Short(t.Title, MaxTicketTitle)} ({cardList}{more})\n";
+            if (sb.Length + line.Length > MaxTicketChars - 80)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
+        }
+
+        if (listed < open.Count)
+        {
+            sb.Append('[').Append(open.Count - listed).Append(" more open tickets not listed: a note about one of them may open a duplicate]\n");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string Short(string text, int max)
+    {
+        var one = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return one.Length <= max ? one : one[..(max - 1)] + "…";
     }
 }
