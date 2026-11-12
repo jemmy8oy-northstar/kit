@@ -2838,4 +2838,173 @@ public class PipelineTests
         using var provider = new ServiceCollection().AddKitServices(baseline).BuildServiceProvider();
         Assert.Single(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<PipelineJob>());
     }
+
+    // ---- BEH-ORCH-11, slice 7b: an agent resolves a conflict ------------------------------------------------
+
+    private static readonly PullRequestMerge Conflicting = new() { Conflict = true, Reason = "it has a conflict with its base branch" };
+
+    private static Rig ResolveRig(StageTurnSettings? turns = null, params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, turns: turns);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    private static void EndRun(Rig rig, PoolClaim claim, bool succeeded) =>
+        Assert.Equal(200, rig.Routes.Finished(claim.Token, Json(new { status = succeeded ? "finished" : "failed" })).Status);
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_off_a_conflict_still_stops_the_item_and_starts_no_run()
+    {
+        using var rig = MergeRig(mergeJob: false, merge: true, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it has a conflict with its base branch"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_with_the_merge_switch_on_a_conflict_starts_exactly_one_resolve_run_on_the_pull_requests_branch()
+    {
+        using var rig = ResolveRig(new StageTurnSettings(10, 11, 12, 77), BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5", 77), (claim.Repo, claim.BaseBranch, claim.Model, claim.MaxTurns));
+        Assert.Contains("You are the conflict-resolution stage for project \"demo\"", claim.Task);
+        Assert.Contains("kit/work/a", claim.Task);
+        Assert.Contains("origin/dev", claim.Task);
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Merge, WorkItemStatus.Running, PullOf(1)), (item.Stage, item.Status, item.PullRequest));
+        Assert.Equal(TicketState.Built, rig.Tickets.Read("demo").Single().State);
+        Assert.Contains(rig.Store.List(), r => r.Stage == "resolve");
+
+        // The next look neither asks for a merge nor starts a second run.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_resolve_run_that_worked_builds_the_item_again_and_the_next_tick_asks_to_merge_it()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, PullOf(1), false), (item.Stage, item.Status, item.PullRequest, item.Merged));
+        Assert.Null(rig.Claim());
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(1), PullOf(1)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_resolve_run_that_failed_stops_the_item_with_why()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the conflict-resolution run failed"), (item.Status, item.StoppedBecause));
+        Assert.Equal(TicketState.Stopped, rig.Tickets.Read("demo").Single().State);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_a_second_conflict_after_a_resolve_run_stops_the_item_without_another_run()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_11_no_other_ticket_of_the_project_merges_while_its_resolve_run_is_in_flight()
+    {
+        // b (priority 1) is the top item and conflicts; a waits behind it. Another project is not held.
+        using var rig = ResolveRig(null, BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("x", 3, "other"));
+        rig.Merges.AnswerFor[PullOf(2)] = Conflicting;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Equal(PipelineStage.Merge, ItemOf(rig, "b").Stage);
+        Assert.True(ItemOf(rig, "x", "other").Merged);
+
+        rig.Merges.Asked.Clear();
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        Assert.False(ItemOf(rig, "a").Merged);
+
+        // Once the run has ended, a is looked at again only after b has merged (b is built again and is the top item).
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        rig.Merges.AnswerFor.Clear();
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([PullOf(2)], rig.Merges.Asked);
+        Assert.True(ItemOf(rig, "b").Merged);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_task_says_which_branch_to_merge_into_and_what_not_to_do()
+    {
+        var bundle = ContextBundle.Parse(Specced("a")).Bundle!;
+
+        var task = ResolveStage.BuildTask("demo", bundle, "dev");
+
+        Assert.Contains("Check out branch kit/work/a from origin", task);
+        Assert.Contains("Merge origin/dev into it", task);
+        Assert.Contains("keeping the intent of both sides", task);
+        Assert.Contains("whole test suite", task);
+        Assert.Contains("push it to kit/work/a on origin", task);
+        Assert.Contains("Do not open a pull request, do not touch any other branch, and never force-push", task);
+        Assert.Contains("## Bundle (.kit/bundles/a.md)", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_resolve_stage_runs_on_the_build_stages_model_and_turns_unless_set()
+    {
+        Assert.Null(KitSettings.ParseStageModelResolve(null));
+        Assert.Null(KitSettings.ParseStageModelResolve(" "));
+        Assert.Equal("claude-opus-5-5", KitSettings.ParseStageModelResolve(" claude-opus-5-5 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelResolve("not a model!"));
+        Assert.Null(KitSettings.ParseStageTurnsResolve(null));
+        Assert.Equal(9, KitSettings.ParseStageTurnsResolve(" 9 "));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsResolve("0"));
+        Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageTurnsResolve("many"));
+        var settings = new KitSettings("d", "r", null, "dist");
+        Assert.Equal((null, null), (settings.StageModelResolve, settings.StageTurnsResolve));
+
+        Assert.Equal("claude-haiku-5-5", Orchestrator.ModelFor(PipelineStage.Merge, Models));
+        Assert.Equal("m-res", Orchestrator.ModelFor(PipelineStage.Merge, Models with { Resolve = "m-res" }));
+        Assert.Equal(StageTurnSettings.DefaultBuild, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults));
+        Assert.Equal(5, Orchestrator.TurnsFor(PipelineStage.Merge, StageTurnSettings.Defaults with { Resolve = 5 }));
+    }
 }

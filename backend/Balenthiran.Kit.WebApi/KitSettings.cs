@@ -414,6 +414,18 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_TURNS_CONTEXT</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
     public static int ParseStageTurnsContext(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_CONTEXT", value, StageTurnSettings.DefaultContext);
 
+    /// <summary><c>KIT_STAGE_MODEL_RESOLVE</c> (BEH-ORCH-11, slice 7b): the model of a conflict-resolution run. Unset (null) is the build stage's model.</summary>
+    public string? StageModelResolve { get; init; }
+
+    /// <summary><c>KIT_STAGE_MODEL_RESOLVE</c>: a model name; unset is null (the build model). Anything else THROWS.</summary>
+    public static string? ParseStageModelResolve(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageModels.Parse("KIT_STAGE_MODEL_RESOLVE", value, "");
+
+    /// <summary><c>KIT_STAGE_TURNS_RESOLVE</c> (BEH-ORCH-11, slice 7b): the turn limit of a conflict-resolution run. Unset (null) is the build stage's.</summary>
+    public int? StageTurnsResolve { get; init; }
+
+    /// <summary><c>KIT_STAGE_TURNS_RESOLVE</c>: a whole number above zero; unset is null (the build limit). Anything else THROWS.</summary>
+    public static int? ParseStageTurnsResolve(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageTurnSettings.Parse("KIT_STAGE_TURNS_RESOLVE", value, 0);
+
     /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
     /// project. A triage pushes bundles quoting his notes to the project's repo, and most project repos are public
@@ -542,6 +554,8 @@ public sealed record KitSettings(
             PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
             StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
             StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
+            StageModelResolve = ParseStageModelResolve(env("KIT_STAGE_MODEL_RESOLVE")),
+            StageTurnsResolve = ParseStageTurnsResolve(env("KIT_STAGE_TURNS_RESOLVE")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }

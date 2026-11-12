@@ -9,5 +9,7 @@ public sealed record PullRequestMerge : IPullRequestMerge
 
     public bool Waiting { get; init; }
 
+    public bool Conflict { get; init; }
+
     public string? Reason { get; init; }
 }

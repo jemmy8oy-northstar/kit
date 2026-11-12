@@ -312,7 +312,7 @@ public sealed partial class GitHubPullRequestOpener(
 
         if (mergeable.ValueKind != JsonValueKind.True)
         {
-            return Refuse("it has a conflict with its base branch");
+            return new PullRequestMerge { Conflict = true, Reason = ConflictReason };
         }
 
         var payload = JsonSerializer.Serialize(new { sha, merge_method = "merge" });
@@ -363,11 +363,13 @@ public sealed partial class GitHubPullRequestOpener(
         // 422: GitHub could not merge the base in by itself, which is a conflict. 409: the head moved, look again.
         return update.Status switch
         {
-            422 => Refuse("it has a conflict with its base branch"),
+            422 => new PullRequestMerge { Conflict = true, Reason = ConflictReason },
             409 => new PullRequestMerge { Waiting = true, Reason = update.Reason },
             _ => Unreadable(update.Status, update.Reason),
         };
     }
+
+    private const string ConflictReason = "it has a conflict with its base branch";
 
     private static PullRequestMerge Refuse(string reason) => new() { Reason = reason };
 

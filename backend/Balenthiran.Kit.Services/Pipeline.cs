@@ -54,6 +54,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
 
+    // BEH-ORCH-11, slice 7b: tickets that have had their one conflict-resolution run. In memory only: the ticket row has
+    // no column for it, so a restart forgets it and a ticket may then get one more run.
+    private readonly HashSet<(string App, string Slug)> resolved = [];
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -268,6 +272,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 PipelineStage.Spec => TicketState.Ready,
                 PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
+                PipelineStage.Merge => TicketState.Built, // its conflict-resolution run is in flight (slice 7b)
                 _ => TicketState.New, // Context, or a triage under review
             },
         };
@@ -437,7 +442,16 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             var item = items[run.Index];
-            if (item.Stage != PipelineStage.Triage)
+            if (item.Stage == PipelineStage.Merge)
+            {
+                // BEH-ORCH-11, slice 7b: a conflict-resolution run. It reports no bundle; its success is the run's. A
+                // built item again, so the next merge look reads its pull request, waits for the checks on the new head
+                // and merges. The pull request is already open, so none is opened here.
+                Set(run.Index, succeeded
+                    ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                    : Stop(item, "the conflict-resolution run failed"));
+            }
+            else if (item.Stage != PipelineStage.Triage)
             {
                 Set(run.Index, Ended(item, run.Given!, succeeded, reported));
 
@@ -575,7 +589,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<WorkItem> top;
         lock (gate)
         {
-            var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList();
+            // A project whose ticket is having a conflict resolved merges nothing else until that run ends (slice 7b).
+            var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
+                .Where(app => !items.Any(i => i.Project == app && i.Stage == PipelineStage.Merge && i.Status == WorkItemStatus.Running))
+                .ToList();
             top = [];
             foreach (var app in apps)
             {
@@ -628,6 +645,34 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             var index = items.IndexOf(item);
             if (index < 0 || items[index] != item)
             {
+                return;
+            }
+
+            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to one resolve run instead of stopping the item.
+            if (updateFirst && result is { Merged: false, Conflict: true })
+            {
+                if (resolved.Contains((item.Project, item.Slug)))
+                {
+                    Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
+                    return;
+                }
+
+                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
+                {
+                    return;
+                }
+
+                resolved.Add((item.Project, item.Slug));
+                try
+                {
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    Set(index, Stop(item, $"the project could not be read ({e.GetType().Name})"));
+                }
+
                 return;
             }
 
@@ -993,6 +1038,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     PipelineStage.Context => ContextStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
+                    PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }
@@ -1057,7 +1103,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>Hands a run of <paramref name="item"/>'s stage to the pool and records it; Stopped when the pool will not take it.</summary>
     private WorkItem Enqueue(int index, WorkItem item, string repoAt, string task, IReadOnlyList<string> notes, ContextBundle? given)
     {
-        var stage = item.Stage.ToString().ToLowerInvariant();
+        // The merge job's run is the one that resolves a conflict, and Runs shows it so.
+        var stage = item.Stage == PipelineStage.Merge ? "resolve" : item.Stage.ToString().ToLowerInvariant();
         var at = repoAt.LastIndexOf('@');
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();
