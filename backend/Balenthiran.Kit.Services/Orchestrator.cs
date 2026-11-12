@@ -20,6 +20,12 @@ public enum PipelineStage
 
     /// <summary>Tests first, then code, until they pass.</summary>
     Build,
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: only ever a job, never the stage of a work item. Owning it (<c>KIT_PIPELINE_JOB_MERGE=on</c>)
+    /// moves the merge of a built item's pull request from <c>MergeReadyAsync</c> to <c>MergeTickAsync</c>.
+    /// </summary>
+    Merge,
 }
 
 /// <summary>Where a work item is within its current stage.</summary>

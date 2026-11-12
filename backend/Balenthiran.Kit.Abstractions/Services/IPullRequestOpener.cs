@@ -28,6 +28,8 @@ public interface IPullRequestMerger
     /// Still-running checks or an unknown mergeability are waiting; a failed run, a conflict, a closed pull
     /// request or unreadable checks are refused with a reason. Never throws for a GitHub or network failure.
     /// <paramref name="repository"/> (<c>owner/name</c>) is used only when the URL does not name one.
+    /// With <paramref name="updateFirst"/> (BEH-ORCH-11, slice 7), a pull request whose branch is behind its base is first
+    /// brought up to date and waited on, so its checks run on what would be merged; one that cannot be updated is a conflict.
     /// </summary>
-    Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken);
+    Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false);
 }
