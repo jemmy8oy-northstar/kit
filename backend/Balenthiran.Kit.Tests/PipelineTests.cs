@@ -3030,6 +3030,7 @@ public class PipelineTests
 
         var claim = Assert.IsType<PoolClaim>(rig.Claim());
         Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5", 77), (claim.Repo, claim.BaseBranch, claim.Model, claim.MaxTurns));
+        Assert.Equal("test", claim.Stage);
         Assert.Contains("You are the test stage for project \"demo\"", claim.Task);
         Assert.Contains(HeadA, claim.Task);
         Assert.Contains("kit/work/a", claim.Task);
@@ -3171,6 +3172,10 @@ public class PipelineTests
         Assert.Contains("Fetch branch kit/work/a from origin", task);
         Assert.Contains("whole test suite", task);
         Assert.Contains("the run succeeds only if the whole suite passed at that commit", task);
+        Assert.Contains($"must END with exactly one of these two lines", task);
+        Assert.Contains($"`KIT-TEST: PASS {HeadA}`", task);
+        Assert.Contains("`KIT-TEST: FAIL`", task);
+        Assert.Contains($"checked out at commit {HeadA} when you finish: the runner checks HEAD", task);
         Assert.Contains("do not edit, commit or push anything, do not open a pull request", task);
         Assert.Contains("## Bundle (.kit/bundles/a.md)", task);
         Assert.True(task.Length <= KitRouter.MaxTask);

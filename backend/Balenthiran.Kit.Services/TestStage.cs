@@ -20,8 +20,11 @@ public static class TestStage
         sb.Append("Steps:\n");
         sb.Append("1. Fetch branch ").Append(branch).Append(" from origin and check out exactly commit ").Append(sha).Append(" (a detached checkout). Test that commit and nothing else.\n");
         sb.Append("2. Install what the project needs and run its whole test suite, every test project and every test step it has, not a subset.\n");
-        sb.Append("3. Report the result: the run succeeds only if the whole suite passed at that commit. If any test fails, or the suite cannot be run, the run has failed: say which test or step and why.\n\n");
+        sb.Append("3. Report the result: the run succeeds only if the whole suite passed at that commit. If any test fails, or the suite cannot be run, the run has failed: say which test or step and why.\n");
+        sb.Append("4. Leave the working directory checked out at commit ").Append(sha).Append(" when you finish: the runner checks HEAD.\n\n");
         sb.Append("Change nothing: do not edit, commit or push anything, do not open a pull request, and do not fix a failing test. STOP when the suite has finished.\n\n");
+        sb.Append("Your final message must END with exactly one of these two lines, on its own line with nothing after it: `KIT-TEST: PASS ").Append(sha)
+            .Append("` (the full commit hash) only if the whole suite passed at that commit, and otherwise `KIT-TEST: FAIL`. The runner reads that line, not your prose, and treats anything else as a failure.\n\n");
         var path = TriageStage.BundlePath(bundle.Slug);
         var rendered = bundle.Render();
         if (sb.Length + path.Length + rendered.Length + 40 <= KitRouter.MaxTask)
