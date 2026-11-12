@@ -32,7 +32,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -49,7 +49,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, contextJob: contextJob) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
@@ -101,7 +101,10 @@ public class PipelineTests
         // Kit restarting: the same files and the same triaged-notes store, but a new pool, run store and pipeline,
         // so everything kept in memory is gone. Disposing the restarted rig leaves the files to this one. Tickets
         // are kept only when asked for (BEH-ORCH-11), so the BEH-ORCH-8 restarts above them are as they were.
-        public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets);
+        public Rig Restart(ITriagedNoteStore? sorted = null, ITicketStore? tickets = null, bool contextJob = false) => new(sorted: sorted ?? Sorted, root: root, tickets: tickets, contextJob: contextJob);
+
+        // A second project, with the same repo as the first (BEH-ORCH-11: the context job takes one ticket per project).
+        public void AddProject(string name) => File.WriteAllText(Path.Combine(root, name + ".beh"), Corpus);
 
         public void Dispose()
         {
@@ -1840,5 +1843,289 @@ public class PipelineTests
         Assert.Contains("+2 more", section);
         Assert.InRange(task.Text.Length, 1, KitRouter.MaxTask);
         Assert.Equal(1, task.NotesTaken);
+    }
+
+    // ---- BEH-ORCH-11, slice 3: the context job ----------------------------------------------------------
+
+    // The bundle as a context run leaves it: what a planner needs added to its Context.
+    private static string Contexted(string slug, string? flag = null) =>
+        BundleText(slug, flag).Replace("sort by date", "sort by date\n- covered by ListTests.Sorts_by_date");
+
+    // Triage of list-sorting with the context job on: a note, and the triage's report. No run follows until the job ticks.
+    private static void TriagedForContext(Rig rig)
+    {
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+    }
+
+    // Tickets in the store at new, as a restart finds them, for a pipeline with the context job on and two projects.
+    private static Rig ContextRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var rig = new Rig(contextJob: true, tickets: store);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return rig;
+    }
+
+    private static List<PoolClaim> Claims(Rig rig)
+    {
+        var claims = new List<PoolClaim>();
+        while (rig.Claim() is { } claim)
+        {
+            claims.Add(claim);
+        }
+
+        return claims;
+    }
+
+    private static WorkItem ItemOf(Rig rig, string slug, string project = "demo") => Assert.Single(rig.Pipeline!.Items(), i => i.Project == project && i.Slug == slug);
+
+    [Fact]
+    public void BEH_ORCH_11_with_the_context_switch_off_a_triaged_item_goes_straight_to_spec_and_the_ticket_is_ready()
+    {
+        using var rig = new Rig();
+
+        var spec = Triaged(rig);
+
+        Assert.Contains("You are the spec stage for project \"demo\"", spec.Task);
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+        rig.Pipeline!.ContextTick();
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_with_the_context_switch_on_a_triaged_item_waits_as_a_new_ticket_and_no_run_starts_until_the_job_ticks()
+    {
+        using var rig = new Rig(contextJob: true);
+
+        TriagedForContext(rig);
+
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+        Assert.Single(rig.Store.List());
+
+        rig.Pipeline!.ContextTick();
+
+        var context = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the context stage for project \"demo\"", context.Task);
+        Assert.Contains("Work-item: list-sorting", context.Task);
+        Assert.Contains("Write no spec, no tests and no code", context.Task);
+        Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5", StageTurnSettings.DefaultTriage), (context.Repo, context.BaseBranch, context.Model, context.MaxTurns));
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Running), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal("context", rig.Store.List().Single(r => r.WorkItem == "list-sorting").Stage);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_one_tick_takes_only_the_highest_priority_new_ticket()
+    {
+        using var rig = ContextRig(Seeded("a", TicketState.New, 3), Seeded("b", TicketState.New, 1), Seeded("c", TicketState.New, 1), Seeded("d", TicketState.New, 2));
+
+        rig.Pipeline!.ContextTick();
+        rig.Pipeline.ContextTick();
+
+        var claim = Assert.Single(Claims(rig));
+        Assert.Contains("Work-item: b", claim.Task);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "b").Status);
+        Assert.All(new[] { "a", "c", "d" }, slug => Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, slug).Stage, ItemOf(rig, slug).Status)));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_among_equal_priorities_the_oldest_ticket_goes_first()
+    {
+        using var rig = ContextRig(Seeded("old", TicketState.New, 2), Seeded("newer", TicketState.New, 2), Seeded("newest", TicketState.New, 2));
+
+        rig.Pipeline!.ContextTick();
+
+        Assert.Contains("Work-item: old", Assert.Single(Claims(rig)).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_project_with_a_run_in_flight_is_skipped_and_another_project_goes_ahead()
+    {
+        // "busy" is ready, so on start it is specced and its project has a run in flight; "waiting" is new beside it.
+        using var rig = ContextRig(Seeded("busy", TicketState.Ready), Seeded("waiting", TicketState.New, 1), Seeded("o1", TicketState.New, 3) with { Project = "other" });
+
+        rig.Pipeline!.ContextTick();
+
+        var claims = Claims(rig);
+        Assert.Equal(2, claims.Count);
+        Assert.Contains(claims, c => c.Task.Contains("You are the spec stage") && c.Task.Contains("Work-item: busy"));
+        Assert.Contains(claims, c => c.Task.Contains("You are the context stage") && c.Task.Contains("Work-item: o1"));
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, "waiting").Stage, ItemOf(rig, "waiting").Status));
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "o1", "other").Status);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_with_nothing_waiting_a_tick_enqueues_no_run()
+    {
+        using var empty = ContextRig();
+        empty.Pipeline!.ContextTick();
+        Assert.Null(empty.Claim());
+        Assert.Empty(empty.Store.List());
+
+        // A ticket past new is not the context job's: its one run is the spec the start gave it, and a tick adds none.
+        using var later = ContextRig(Seeded("r", TicketState.Ready));
+        later.Pipeline!.ContextTick();
+        Assert.Contains("You are the spec stage", Assert.Single(Claims(later)).Task);
+        Assert.Single(later.Store.List());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_context_run_that_worked_makes_the_ticket_ready_and_queues_it_for_spec()
+    {
+        using var rig = new Rig(contextJob: true);
+        TriagedForContext(rig);
+        rig.Pipeline!.ContextTick();
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Contexted("list-sorting") });
+
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+        Assert.Contains("covered by ListTests", Ticket(rig).Bundle);
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage for project \"demo\"", spec.Task);
+        Assert.Contains("covered by ListTests", spec.Task);
+    }
+
+    [Theory]
+    [InlineData("failed", "the context run failed")]
+    [InlineData("unchanged", "the context run left the bundle unchanged")]
+    [InlineData("no bundle", "the context run reported no bundle for its work item")]
+    public void BEH_ORCH_11_a_context_run_that_did_not_work_stops_the_ticket_with_why(string report, string why)
+    {
+        using var rig = new Rig(contextJob: true);
+        TriagedForContext(rig);
+        rig.Pipeline!.ContextTick();
+        var context = Assert.IsType<PoolClaim>(rig.Claim());
+
+        var body = report switch
+        {
+            "unchanged" => Json(new { status = "finished", bundles = new[] { new { slug = "list-sorting", text = BundleText("list-sorting") } } }),
+            "no bundle" => Json(new { status = "finished", bundles = Array.Empty<object>() }),
+            _ => Json(new { status = "failed" }),
+        };
+        Assert.Equal(200, rig.Routes.Finished(context.Token, body).Status);
+
+        Assert.Equal((WorkItemStatus.Stopped, why), (ItemOf(rig, "list-sorting").Status, ItemOf(rig, "list-sorting").StoppedBecause));
+        Assert.Equal((TicketState.Stopped, why), (Ticket(rig).State, Ticket(rig).StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_flagged_context_run_is_reviewed_and_an_agreed_review_queues_spec()
+    {
+        using var rig = new Rig(contextJob: true);
+        TriagedForContext(rig);
+        rig.Pipeline!.ContextTick();
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Contexted("list-sorting", flag: "unsure which tests cover it") });
+
+        var item = ItemOf(rig, "list-sorting");
+        Assert.Equal((PipelineStage.Review, WorkItemStatus.Running, PipelineStage.Context), (item.Stage, item.Status, item.ReviewedStage));
+        Assert.Equal(TicketState.New, Ticket(rig).State);
+        var review = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.FinishWith(review, new { slug = "list-sorting", text = Contexted("list-sorting", "unsure which tests cover it").Replace("Cards:", "Review: agreed — fine\nCards:") });
+
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Equal(TicketState.Ready, Ticket(rig).State);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_flagged_triage_that_a_review_agreed_to_waits_for_the_context_job()
+    {
+        using var rig = new Rig(contextJob: true);
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting", flag: "unsure which card") });
+        var review = Assert.IsType<PoolClaim>(rig.Claim());
+
+        rig.FinishWith(review, new { slug = "list-sorting", text = BundleText("list-sorting", "unsure which card").Replace("Cards:", "Review: agreed — fine\nCards:") });
+
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_after_a_restart_a_new_ticket_waits_for_the_job_when_the_switch_is_on_and_is_specced_when_it_is_off()
+    {
+        using var first = new Rig(contextJob: true);
+        TriagedForContext(first);
+        Assert.Equal(TicketState.New, Ticket(first).State);
+
+        using var on = first.Restart(tickets: first.Tickets, contextJob: true);
+        on.Pipeline!.Resume();
+        Assert.Null(on.Claim());
+        Assert.Equal((PipelineStage.Context, WorkItemStatus.Queued), (ItemOf(on, "list-sorting").Stage, ItemOf(on, "list-sorting").Status));
+        on.Pipeline.ContextTick();
+        Assert.Contains("You are the context stage", Assert.IsType<PoolClaim>(on.Claim()).Task);
+
+        using var off = first.Restart(tickets: first.Tickets);
+        off.Pipeline!.Resume();
+        Assert.Contains("You are the spec stage", Assert.IsType<PoolClaim>(off.Claim()).Task);
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (ItemOf(off, "list-sorting").Stage, ItemOf(off, "list-sorting").Status));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_a_resumed_tickets_priority_is_kept_when_it_is_saved_again()
+    {
+        using var rig = ContextRig(Seeded("a", TicketState.New, 1));
+        rig.Pipeline!.ContextTick();
+
+        rig.FinishWith(rig.Claim()!, new { slug = "a", text = Contexted("a") });
+
+        Assert.Equal((TicketState.Ready, 1), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().Priority));
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_KIT_PIPELINE_JOB_CONTEXT_is_off_unless_it_says_on_and_a_typo_throws()
+    {
+        Assert.False(KitSettings.ParsePipelineJobContext(null));
+        Assert.False(KitSettings.ParsePipelineJobContext(""));
+        Assert.False(KitSettings.ParsePipelineJobContext("off"));
+        Assert.True(KitSettings.ParsePipelineJobContext(" on "));
+        foreach (var bad in new[] { "true", "1", "ON", "yes" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineJobContext(bad));
+        }
+
+        Assert.False(new KitSettings("d", "r", null, "dist").PipelineJobContext);
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_context_stage_runs_on_triages_model_and_turns_unless_set_and_the_job_looks_every_two_minutes()
+    {
+        Assert.Equal(("claude-haiku-5-5", 15), (KitSettings.ParseStageModelContext(null), KitSettings.ParseStageTurnsContext(null)));
+        Assert.Equal(("claude-haiku-5-5", 15), (new KitSettings("d", "r", null, "dist").StageModelContext, new KitSettings("d", "r", null, "dist").StageTurnsContext));
+        Assert.Equal(("claude-sonnet-5-5", 7), (KitSettings.ParseStageModelContext(" claude-sonnet-5-5 "), KitSettings.ParseStageTurnsContext(" 7 ")));
+        Assert.Equal("claude-haiku-5-5", Orchestrator.ModelFor(PipelineStage.Context, Models));
+        Assert.Equal("m-ctx", Orchestrator.ModelFor(PipelineStage.Context, Models with { Context = "m-ctx" }));
+        Assert.Equal(TimeSpan.FromMinutes(2), KitSettings.ParsePipelineJobInterval(null));
+        Assert.Equal(TimeSpan.FromMinutes(5), KitSettings.ParsePipelineJobInterval(" 5 "));
+        foreach (var bad in new[] { "0", "-1", "soon", "1.5" })
+        {
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineJobInterval(bad));
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_11_the_context_task_carries_the_bundle_or_says_where_to_read_it()
+    {
+        var bundle = ContextBundle.Parse(BundleText("list-sorting")).Bundle!;
+        var task = ContextStage.BuildTask("demo", "demo.beh", bundle);
+        Assert.Contains("Check out branch kit/work/list-sorting from origin", task);
+        Assert.Contains("the spec at demo.beh", task);
+        Assert.Contains("Work-item: list-sorting", task);
+        Assert.Contains("Report the bundle back under the same Work-item slug", task);
+
+        var big = bundle with { Context = new string('x', KitRouter.MaxTask) };
+        Assert.Contains("read it at .kit/bundles/list-sorting.md on that branch first", ContextStage.BuildTask("demo", "demo.beh", big));
     }
 }
