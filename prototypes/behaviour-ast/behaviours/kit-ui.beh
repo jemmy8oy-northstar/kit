@@ -1348,6 +1348,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
+  needs-context "Merge kit#797 so Kit reads holiday-planning's spec from its own repo? The next step of this card waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copy, and I copy any edits made there into holiday-planning's .kit/ so the two copies stay the same."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
