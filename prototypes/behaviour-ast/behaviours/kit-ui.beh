@@ -1348,7 +1348,6 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
-  needs-context "Every project repo is public, and kit is now private, so moving a spec into its repo's .kit/ publishes it: Kit's spec format and the quotes from your notes. Move them anyway? If you don't answer by 2026-11-08, public projects keep their spec in kit, and .kit/ is used only by private repos and new users' projects."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1363,6 +1362,8 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: the slices are: first the remote writer, proved on a project whose spec already lives in its own repo; then one project at a time moves into its .kit/, the smallest first; kit moves last, with the CI path change as his own PR
   contract my assumption: while a project moves, its spec is in two places for a while: the new .kit/ in its own repo and the old copy in kit. Kit reads and writes the .kit/ one and ignores the old copy until it is deleted, so the project stays on the list throughout. Any other spec found in two places still stops Kit re-reading, as today
   contract my assumption: "Propose edits for merging" after an edit to a project in its own repo opens the pull request in that repo, from its edits branch into the same base Kit's own edits go to (dev), and the project's pending list reads that branch too
+  contract decided 2026-11-13 (kit#696, his question unanswered, so its default stands): every project repo is public and kit is private, so a move publishes that spec. Only holiday-planning moves, because his note (kit-ui.notes.md#2026-11-07-2121) expects its spec in its own repo. The other public projects keep theirs in kit until he says otherwise
+  contract done 2026-11-13: holiday-planning's spec is in its own repo's .kit/ (holiday-planning#46) with an edits branch kit/hosted. The KIT_PROJECTS entry that makes Kit read it is kit#797, his as a helm change. Kit's old copy is deleted once that is live
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
