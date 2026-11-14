@@ -925,6 +925,13 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error" }
   ],
+  "BEH-ORCH-14": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_A_process_the_agent_left_running_is_killed_when_the_agent_ends" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_A_limit_that_is_not_a_whole_number_of_seconds_refuses_the_run_before_the_agent_starts" }
+  ],
   "BEH-ORCH-4": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_with_the_switch_off_a_scheduled_card_is_not_queued" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_the_first_scheduled_card_starts_at_spec_with_a_bundle_kit_wrote_and_no_triage" },
