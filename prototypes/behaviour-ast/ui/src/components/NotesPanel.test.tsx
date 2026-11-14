@@ -74,7 +74,7 @@ describe('NotesPanel (kit#118)', () => {
     server()
     render(<NotesPanel app="demo" />)
     const box = await screen.findByLabelText('Leave a note')
-    expect(box).toHaveAccessibleDescription(/^Public: .*anyone can read/)
+    expect(box).toHaveAccessibleDescription(/^Saved to this project's GitHub repository\. If that repository is public, anyone can read it/)
   })
 
   it('will not send an empty note', async () => {

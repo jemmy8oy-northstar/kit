@@ -19,7 +19,8 @@ namespace Balenthiran.Kit.WebApi;
 ///
 /// Last, it re-reads the tests repos the corpora name (BEH-HEALTH-1) into <see cref="CoverageStore"/>,
 /// so coverage rides the same interval and the same request-driven clock as the corpora — in the
-/// background, never waited on by a request.
+/// background, never waited on by a request. It also asks whether each of those repos is public
+/// (BEH-GATE-H1, kit#795) into <see cref="ProjectVisibility"/>, which decides a signed-out read.
 /// </summary>
 public sealed class ProjectPoller : BackgroundService
 {
@@ -31,12 +32,14 @@ public sealed class ProjectPoller : BackgroundService
     private readonly IKitRouter router;
     private readonly CoverageStore? coverage;
     private readonly ExpiringRefresh? coverageRefresh;
+    private readonly ProjectVisibility? visibility;
     private readonly ExpiringRefresh refresh;
     private string? lastCatchUp;
 
-    public ProjectPoller(GitHubCorpusDirectory directory, KitSettings settings, TimeProvider clock, IKitRouter router, CoverageStore? coverage = null)
+    public ProjectPoller(GitHubCorpusDirectory directory, KitSettings settings, TimeProvider clock, IKitRouter router, CoverageStore? coverage = null, ProjectVisibility? visibility = null)
     {
         this.directory = directory;
+        this.visibility = visibility;
         this.settings = settings;
         this.router = router;
         this.coverage = coverage;
@@ -70,6 +73,13 @@ public sealed class ProjectPoller : BackgroundService
         // file, and a request must not wait on that. Zero max-age because this read's own clock
         // already decided it is due; in flight, it is joined rather than doubled.
         _ = coverageRefresh?.EnsureFresh();
+
+        // BEH-GATE-H1 (kit#795): one request per repo, awaited so a repo made private is locked by
+        // the end of the same read that saw it. A repo it cannot read is private, so this never throws.
+        if (visibility is not null)
+        {
+            await visibility.RefreshAsync();
+        }
     }
 
     private async Task CoverageAsync()
