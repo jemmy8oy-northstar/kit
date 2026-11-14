@@ -177,6 +177,21 @@ if [ "$status" -ne 0 ]; then
   exit "$status"
 fi
 
+# BEH-ORCH-1: an error result (running out of --max-turns above all) can still exit 0, so the run would end finished with
+# nothing pushed and nothing said. Its subtype is read instead, and only a fixed step word goes out: "turns" or "result".
+ended="$(node -e '
+  let r;
+  try { r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch { process.exit(0); }
+  const sub = typeof r.subtype === "string" ? r.subtype : "";
+  if (sub === "error_max_turns") process.stdout.write("turns");
+  else if (r.is_error === true || sub.startsWith("error")) process.stdout.write("result");
+' "$result")" || ended=""
+if [ -n "$ended" ]; then
+  step="$ended"
+  echo "kit-run[$KIT_RUN_ID]: claude ended with an error result ($ended, max turns ${KIT_MAX_TURNS:-100})" >&2
+  exit 3
+fi
+
 # BEH-ORCH-12: a test run's verdict is checked here, not taken from claude's exit code (an agent that saw failures and
 # said so in prose still exits 0). Fail-closed: it passes only when the last non-empty line of the agent's final message
 # is exactly "KIT-TEST: PASS <40 lowercase hex>", that commit is the one the task named, and HEAD is that commit.
