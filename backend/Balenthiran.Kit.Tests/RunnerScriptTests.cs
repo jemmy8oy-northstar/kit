@@ -367,6 +367,48 @@ public class RunnerScriptTests
         Assert.Equal("claude exit 3\n", File.ReadAllText(failure));
     }
 
+    // BEH-ORCH-1: no triage pushed a bundle after the 15-turn limit went live. Running out of turns can still exit 0.
+    [Fact]
+    public void BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"error_max_turns\",\"is_error\":true,\"num_turns\":16}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_MAX_TURNS"] = "15" });
+
+        Assert.Equal(3, r.Status);
+        Assert.Equal("turns exit 3\n", File.ReadAllText(failure));
+        Assert.Contains("claude ended with an error result (turns, max turns 15)", r.Stderr);
+        Assert.DoesNotContain("pushed", r.Stdout);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"is_error\":true}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal(3, r.Status);
+        Assert.Equal("result exit 3\n", File.ReadAllText(failure));
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"done\"}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.False(File.Exists(failure));
+    }
+
     [Fact]
     public void A_missing_env_var_writes_the_setup_step_and_a_success_writes_nothing()
     {
