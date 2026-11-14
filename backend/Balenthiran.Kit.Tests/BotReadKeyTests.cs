@@ -92,13 +92,28 @@ public class BotReadKeyTests
         Assert.True(state.SignedIn);
     }
 
+    [Fact]
+    public void Another_users_cookie_is_not_lifted_to_the_operator_by_the_bearer()
+    {
+        // Operator-on-operator above passes whichever wins; Runs is the operator's alone, so this cannot.
+        var users = new AccountsTests.MemoryUsers();
+        users.Add("ann", PasswordHash.Hash("ann-pw", iterations: 1000));
+        var router = Router(Key, users);
+        var body = JsonSerializer.SerializeToElement(new { username = "ann", password = "ann-pw" });
+        var ann = router.Route("POST", "/api/session", body: body).SetCookie!.Split(';')[0];
+
+        Assert.Equal(403, router.Route("GET", "/api/runs", ann).Status);
+        Assert.Equal(403, router.Route("GET", "/api/runs", ann, bearer: $"Bearer {Key}").Status);
+        Assert.Equal(200, router.Route("GET", "/api/runs", bearer: $"Bearer {Key}").Status);
+    }
+
     private static string Cookie(KitRouter router)
     {
         var body = JsonSerializer.SerializeToElement(new { password = "pw" });
         return router.Route("POST", "/api/session", body: body).SetCookie!.Split(';')[0];
     }
 
-    private static KitRouter Router(string? botKey)
+    private static KitRouter Router(string? botKey, AccountsTests.MemoryUsers? users = null)
     {
         var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
@@ -110,6 +125,7 @@ public class BotReadKeyTests
             new OriginPolicy(new UrlParser(), null),
             new SessionStore(),
             new SignInThrottle(),
+            users: users,
             botReadToken: botKey);
     }
 }
