@@ -13,6 +13,9 @@ Cards:
 - BEH-KIND-1
 - BEH-KIND-2
 Notes:
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:24Z (ui/ux/logic not shown as tags)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:14Z (filter by ui/ux/logic types)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:13Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-11 12:39Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:14Z ("I feel like when browsing we should be able to filter the different types ui, ux and logic implementation")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:24Z ("Are ui/ux/logic implementation even treated as tags")
@@ -51,3 +54,5 @@ Test plan:
 - BEH-BOARD-2: each card's colour matches its project's filter button, and selecting a project filter narrows the board and is kept in the url
 - BEH-KIND-1: each board and project-page card shows its layer word, the technical chip is labelled and tooltipped as logic implementation, and selecting a layer chip narrows the board to that layer and is kept in `?layer=`
 - BEH-KIND-2: the Features tab shows the three layer chips at its top, a feature with no behaviours in the chosen layers is hidden, and opening a feature keeps `?layer=`
+
+Triage added these 2026-10-16 notes: the tab view should hold the notes and the describe-what-should-happen text, and posting a note should go to the notes tab (07:13Z; not certain which card owns the tab layout, so check BEH-NAV-1 first, level low). Browsing should filter by ui, ux and logic, and those layers should show as tags on features and cards (07:14Z and 07:24Z). The note says logic where BEH-KIND-1 says technical; keep the approved names unless the owner says otherwise. Check what is built before adding a card.
