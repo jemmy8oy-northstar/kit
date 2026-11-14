@@ -1397,7 +1397,6 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   source defined kit#672
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
