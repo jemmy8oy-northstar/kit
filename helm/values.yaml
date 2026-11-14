@@ -202,6 +202,14 @@ apps:
             name: kit-runner-pool
             key: token
             optional: true
+      # BEH-ORCH-6: a GET bearing this key reads Kit as the operator, so the bot can read Runs and the
+      # spec with no session. OPTIONAL on purpose: unset (no `kit-bot-read` secret), nothing changes.
+      - name: KIT_BOT_READ_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: kit-bot-read
+            key: token
+            optional: true
       # BEH-ORCH-3: a note or behaviour request queues a triage run on the runner pool. Switched on by
       # James once runs used his subscription (kit#708). Kit REFUSES TO START with this on and no
       # KIT_RUNNER_POOL_TOKEN, so the `kit-runner-pool` secret above must exist. Remove to switch off.
