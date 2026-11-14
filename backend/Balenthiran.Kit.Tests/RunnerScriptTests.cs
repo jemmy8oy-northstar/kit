@@ -429,6 +429,23 @@ public class RunnerScriptTests
         Assert.DoesNotContain("pushed", r.Stdout);
     }
 
+    // BEH-ORCH-14: an agent that ignores SIGTERM is killed once the grace runs out; timeout then exits 137, not 124.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "trap '' TERM", "sleep 20");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_RUN_MAX_SECONDS"] = "1", ["KIT_RUN_KILL_AFTER"] = "1" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal(124, r.Status);
+        Assert.Equal("time exit 124\n", File.ReadAllText(failure));
+    }
+
     // BEH-ORCH-14: 137 is what a kill from elsewhere (out of memory) looks like too; inside the limit it is the agent failing.
     [Fact]
     public void BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout()

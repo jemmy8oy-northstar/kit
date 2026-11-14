@@ -161,7 +161,8 @@ status=0
 # hung agent never lets it do, and a subscription run never meets the proxy's token age. timeout signals the agent's whole
 # process group, so a test server it left running dies with it rather than holding the pod.
 started=$SECONDS
-timeout --kill-after=30 "$max_seconds" claude -p "$KIT_TASK" \
+kill_after="${KIT_RUN_KILL_AFTER:-30}" # overridable only so a test can reach the SIGKILL path quickly
+timeout --kill-after="$kill_after" "$max_seconds" claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
