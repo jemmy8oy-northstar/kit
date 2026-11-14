@@ -1176,7 +1176,7 @@ behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and pr
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
   contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
-  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's does
+  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's did until 2026-11-14
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   in FEAT-EPICS
@@ -1219,10 +1219,30 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
 
-# His two epics (kit.notes.md 2026-10-19 17:21Z). EPIC-ONBOARD has no feature yet.
+# His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
 
-epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for now)"
+epic EPIC-ONBOARD "Onboard existing projects onto Kit"
+
+# His note (kit-ui.notes.md#2026-11-06-1804) brought EPIC-ONBOARD into scope, starting with Lovable.
+feature FEAT-ONBOARD-LOVABLE "An app built in Lovable can be brought onto Kit"
+  in EPIC-ONBOARD
+  stage problem
+
+behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable onto Kit"
+  in FEAT-ONBOARD-LOVABLE
+  layer ux
+  source defined kit-ui.notes.md#2026-11-06-1804
+  review unreviewed
+  priority 4
+  pending
+  needs-context "In scope, as you asked. Before I build: is the Lovable app already in the user's own GitHub (Lovable's GitHub sync), so onboarding starts from that repo? That is my assumption."
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
+  contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
+  contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
 
 # ═══ EPIC-KIT-USERS, drafted (BEH-EPIC-7) ═════════════════════════════════════
 # His 17:21Z list, split into features by the agent. Every behaviour here is
@@ -1603,6 +1623,21 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract built: the runner decides the pass, not the agent's exit code: the claim now carries the run's stage (pool.sh exports KIT_STAGE), and for stage test entrypoint.sh passes only when the agent's last line is exactly "KIT-TEST: PASS <40 hex>", that commit is named in the task and is HEAD; anything else fails the run at step verdict. A test run never reports bundles and never pushes, whatever it left in the tree
   contract my assumption: a test run's model defaults to triage's (KIT_STAGE_MODEL_TEST, unset) because running a suite needs no code judgement, and its turns to build's (KIT_STAGE_TURNS_TEST, unset) because setting a suite up can take many steps; Runs shows what it costs
   contract my assumption: a failed test stops the ticket rather than retrying, because a flaky suite should be seen, not hidden by a second run
+
+behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
+  in FEAT-AGENT-PIPELINE
+  source defined kit-ui.notes.md#2026-11-07-0132
+  review unreviewed
+  priority 4
+  pending
+  needs-context "Where does the cadence setting live? My pick is its own row on Settings, next to the pipeline. Say if you'd rather it sat under BEH-SETTINGS-5 or 6."
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-07-0132): "Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT-PIPELINE and not a custom agent under BEH-AGENTS-1. It is an exception to the no-timer rule in BEH-ORCH-3"
+  contract his note: a cheap model still triages most tasks; the review checks neglected tasks, a sample of completed work and the architecture; the user chooses daily, every two days or weekly
+  contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
+  contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -2443,6 +2478,21 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   contract my assumption: what a user leaves out, the agent decides and records as an unreviewed suggestion they can open later; the depth levels are goals only, behaviours, or behaviours and architecture
   contract my assumption: the depth is per project, a `# kit:depth` line like the conflicts and promote switches, rather than per user, because a project has one user today and a per-user store would be a data-model change that is his to make
   contract my assumption: behaviours is the default and is stored as no line, as it is today, so a project that never chose behaves as it did
+
+behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack, the same picture every time for the same repo"
+  in FEAT-ARCH
+  layer technical
+  source defined kit-ui.notes.md#2026-11-06-1801
+  review unreviewed
+  priority 5
+  pending
+  needs-context "Backlogged, not for now, as you asked. Left open, as you said: the layout, and whether anything from the spec is drawn too."
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-06-1801): "a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now"
+  contract it extends BEH-ARCH-1 and does not change it
+  contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
