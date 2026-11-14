@@ -22,13 +22,10 @@ function gitHubSignInReturn(): { code: string; state: string } | null {
  * (kit#46, executing James's choice on kit#44).
  *
  * ── why this wraps the app instead of guarding each form ────────────────────
- * The server refuses WRITES, and serves reads to anyone only for projects in
- * public repos (BEH-GATE-H1, kit#795), so a per-form guard would be closer to
- * the truth. It is still the wrong shape: on a phone the
- * first thing he does is open a behaviour and change it, and discovering the
- * lock at the moment he presses the button means losing what he typed. Asking
- * once, up front, costs a signed-in user nothing and is the difference between
- * a tool and a puzzle.
+ * The server refuses every read and write signed out (BEH-GATE-H1, kit#795),
+ * so nothing behind this form would load anyway. Asking once, up front, also
+ * means he never discovers the lock at the moment he presses a button and
+ * loses what he typed.
  *
  * ── the three states, and why none may be guessed ──────────────────────────
  *   unknown  — we have not asked yet. Render NOTHING that implies an answer.
@@ -117,7 +114,7 @@ export default function SignIn({ children }: { children: React.ReactNode }) {
       <form onSubmit={submit} className="signin">
         <h1>This Kit is locked</h1>
         <p className="muted">
-          Sign in to read private projects and to edit any project.
+          Sign in to use Kit.
         </p>
         {/* BEH-USERS-10: a user who has connected their GitHub signs in here, and only here. */}
         {state.gitHubSignIn ? (

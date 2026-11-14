@@ -34,13 +34,6 @@ public static class ServiceRegistration
                 sp.GetRequiredService<GitHubCorpusReader>(),
                 sp.GetRequiredService<ICoverageCounter>()));
             services.AddSingleton<ICoverageStore>(sp => sp.GetRequiredService<CoverageStore>());
-
-            // BEH-GATE-H1 (kit#795): which projects' repos are public, so a signed-out read is served
-            // only those. Local Kit has no store, and the router treats every project as private.
-            services.AddSingleton(sp => new ProjectVisibility(
-                sp.GetRequiredService<ICorpusDirectory>(),
-                sp.GetRequiredService<GitHubCorpusReader>()));
-            services.AddSingleton<IProjectVisibility>(sp => sp.GetRequiredService<ProjectVisibility>());
             services.AddSingleton<ProjectPoller>();
             services.AddHostedService(sp => sp.GetRequiredService<ProjectPoller>());
         }
@@ -235,8 +228,7 @@ public static class ServiceRegistration
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
             agentRunCap: settings.AgentRunCapUsd,
             runnerPool: sp.GetService<RunnerPool>(),
-            pipeline: sp.GetService<Pipeline>(),
-            visibility: sp.GetService<IProjectVisibility>()));
+            pipeline: sp.GetService<Pipeline>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

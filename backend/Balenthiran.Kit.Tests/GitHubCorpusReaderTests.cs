@@ -318,29 +318,6 @@ public class GitHubCorpusReaderTests
         Assert.Empty(gh.Sent);
     }
 
-    /// <summary>BEH-GATE-H1 (kit#795): only GitHub's explicit "private": false makes a project readable signed out.</summary>
-    [Theory]
-    [InlineData("""{"private": false}""", true)]
-    [InlineData("""{"private": true}""", false)]
-    [InlineData("""{"name": "kit"}""", false)]
-    [InlineData("""{"private": "false"}""", false)]
-    public async Task A_repo_is_public_only_when_GitHub_says_private_is_false(string body, bool open)
-    {
-        var gh = new FakeGitHub(Listed(body));
-
-        Assert.Equal(open, await Reader(gh, "tok").IsPublicAsync("jemmy8oy-northstar/kit@dev"));
-        Assert.Equal("https://api.github.com/repos/jemmy8oy-northstar/kit", gh.Sent.Single().Uri.ToString());
-    }
-
-    [Fact]
-    public async Task A_repo_GitHub_will_not_show_is_an_error_not_an_answer()
-    {
-        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.NotFound, """{"message": "Not Found"}"""));
-
-        await Assert.ThrowsAsync<GitHubReadException>(() => Reader(gh, null).IsPublicAsync("jemmy8oy-northstar/kit"));
-        await Assert.ThrowsAsync<GitHubReadException>(() => Reader(new FakeGitHub(), "tok").IsPublicAsync("no-slash"));
-    }
-
     private static GitHubCorpusReader Reader(FakeGitHub gh, string? token) =>
         new(new HttpClient(gh), new StaticGitHubTokenSource(token));
 

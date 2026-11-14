@@ -81,8 +81,7 @@ public sealed partial class KitRouter(
     IAgentRunLauncher? runLauncher = null,
     decimal agentRunCap = AgentProxy.DefaultCapUsd,
     RunnerPool? runnerPool = null,
-    Pipeline? pipeline = null,
-    IProjectVisibility? visibility = null) : IKitRouter
+    Pipeline? pipeline = null) : IKitRouter
 {
     private const string Cookie = "kit_session";
 
@@ -102,8 +101,6 @@ public sealed partial class KitRouter(
     private readonly INotificationReader notifications = notifications ?? new NotificationReader(null, null);
 
     private readonly IUserMemoryStore userMemory = userMemory ?? new MemoryUserMemoryStore();
-
-    private readonly IProjectVisibility visibility = visibility ?? new NoProjectIsPublic();
 
     private readonly IAgentRunStore agentRuns = runStore ?? new MemoryAgentRunStore();
 
@@ -178,6 +175,27 @@ public sealed partial class KitRouter(
             return Process();
         }
 
+        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; open, as the agent reads it signed out (kit#795).
+        if (pathname == "/api/settings/idle")
+        {
+            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
+                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
+                : [IdleDirective.Default];
+            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
+        }
+
+        // BEH-GATE-H1 (kit#795): his words, "none of kit should be accessible to anyone that's not
+        // signed in". Every read below needs a session, before anything is looked up, so a stranger
+        // learns nothing, not even which projects exist.
+        if (SignedOut(cookie))
+        {
+            return Json(401, new ApiError
+            {
+                Error = "not-signed-in",
+                Reason = "Kit is served only to a signed-in session (or to loopback on a Kit with no password)",
+            });
+        }
+
         // BEH-USERS-4: the signed-in user's own memory; the id comes from the session, never the request.
         if (pathname == "/api/me/memory")
         {
@@ -201,19 +219,9 @@ public sealed partial class KitRouter(
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
             // serves is the operator's, so theirs is empty (BEH-USERS-2 adds what their GitHub holds).
             // BEH-SETTINGS-3: the operator keeps the board's projects and gains his personal GitHub's.
-            // BEH-GATE-H1: a signed-out caller is listed only the projects whose repos are public.
             return IsOtherUser(cookie)
                 ? UsersProjects(UserOf(cookie)!, [])
-                : UsersProjects(UserOf(cookie), corpora.Corpora().Where(a => !SignedOut(cookie) || visibility.IsPublic(a)).Select(viewer.Summary).ToList());
-        }
-
-        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; open to anyone, as the agent reads it signed out (kit#795).
-        if (pathname == "/api/settings/idle")
-        {
-            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
-                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
-                : [IdleDirective.Default];
-            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
+                : UsersProjects(UserOf(cookie), corpora.Corpora().Select(viewer.Summary).ToList());
         }
 
         // BEH-SETTINGS-7: when he last asked the agent to wake; a read like the rest.
@@ -233,36 +241,15 @@ public sealed partial class KitRouter(
             return Json(200, FeaturesFor(cookie));
         }
 
-        // BEH-ACTIVITY-1: recent commits across every project, read from kit's private history, so
-        // signed-in only (BEH-GATE-H1, kit#795).
+        // BEH-ACTIVITY-1: recent commits across every project.
         if (pathname == "/api/activity")
         {
-            if (SignedOut(cookie))
-            {
-                return Json(401, new ApiError
-                {
-                    Error = "not-signed-in",
-                    Reason = "the activity feed is served only to a signed-in session (or to loopback on a Kit with no password), because it comes from a private repository",
-                });
-            }
-
             return Json(200, IsOtherUser(cookie) ? new ActivityFeed { Entries = [], NoHistory = [] } : activity.Recent());
         }
 
-        // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
-        // covers projects, which live in a public repo; the feed comes from a private one). Gated as
-        // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
+        // BEH-NOTIFY-1: the agent's messages. A user's feed is empty (BEH-USERS-8).
         if (pathname is "/api/notifications" or "/api/push" or "/api/triage")
         {
-            if (SignedOut(cookie))
-            {
-                return Json(401, new ApiError
-                {
-                    Error = "not-signed-in",
-                    Reason = "the agent's notifications are served only to a signed-in session (or to loopback on a Kit with no password), because they come from a private repository",
-                });
-            }
-
             // BEH-NOTIFY-3: whether this Kit can push to his phone, behind the same gate as the feed it announces.
             if (pathname == "/api/push")
             {
@@ -278,11 +265,11 @@ public sealed partial class KitRouter(
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
         }
 
-        // BEH-GATE-H1 (kit#795): every per-project read below, before it is looked up, so a signed-out
-        // caller learns nothing of a private project, not even whether it exists.
-        if (ProjectReadOf(pathname) is { } readApp && ReadRefused(readApp, cookie) is { } refusedRead)
+        // BEH-USERS-8 (kit#795): every project this Kit serves is the operator's, so another user is
+        // refused each per-project read before it is looked up, and learns nothing of which exist.
+        if (IsProjectRead(pathname) && IsOtherUser(cookie))
         {
-            return refusedRead;
+            return Json(403, new ApiError { Error = "not-yours", Reason = "this project is not in your GitHub" });
         }
 
         // BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub.
@@ -310,19 +297,7 @@ public sealed partial class KitRouter(
 
             try
             {
-                var view = viewer.View(app);
-
-                // BEH-GATE-H1 (kit#795): a public project's nouns name the other projects that share
-                // them; signed out, only the public ones, or the view would list the private ones.
-                if (SignedOut(cookie) && view is ProjectView shown)
-                {
-                    foreach (var n in shown.Requires.Nouns.Concat(shown.Requires.Missing).Concat(shown.Requires.Insufficient))
-                    {
-                        n.SharedWith.RemoveAll(other => !visibility.IsPublic(other));
-                    }
-                }
-
-                return Json(200, view);
+                return Json(200, viewer.View(app));
             }
             catch (ProjectionFailedException e)
             {
@@ -412,45 +387,9 @@ public sealed partial class KitRouter(
     /// </summary>
     private bool SignedOut(string? cookie) => lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host);
 
-    /// <summary>The app a per-project GET names, decoded, or null when it names none or does not decode.</summary>
-    private static string? ProjectReadOf(string pathname)
-    {
-        foreach (var route in new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute })
-        {
-            if (route.Match(pathname) is { Success: true } m)
-            {
-                return DecodeUriComponent(m.Groups[1].Value);
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// BEH-GATE-H1 (kit#795): a project whose repo GitHub does not say is public is read by its owner
-    /// only — kit went private to protect the IP, and a spec served to anyone undid that. Null: serve it.
-    /// </summary>
-    private KitResponse? ReadRefused(string app, string? cookie)
-    {
-        if (visibility.IsPublic(app))
-        {
-            return null;
-        }
-
-        if (SignedOut(cookie))
-        {
-            return Json(401, new ApiError
-            {
-                Error = "not-signed-in",
-                Reason = "this project's repository is not public, so it is served only to a signed-in session (or to loopback on a Kit with no password)",
-            });
-        }
-
-        // BEH-USERS-8: every project this Kit serves is the operator's.
-        return IsOtherUser(cookie)
-            ? Json(403, new ApiError { Error = "not-yours", Reason = "this project is in a private repository that belongs to another user" })
-            : null;
-    }
+    /// <summary>A per-project GET, whatever app it names, even one that does not decode.</summary>
+    private static bool IsProjectRead(string pathname) =>
+        new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute }.Any(route => route.IsMatch(pathname));
 
     /// <summary>
     /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull
