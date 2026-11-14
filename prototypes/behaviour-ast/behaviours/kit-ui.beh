@@ -3277,7 +3277,7 @@ behaviour BEH-PROJCONF-2 "Migrations against a user's production database are li
   in FEAT-PROJECT-CONFIG
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It is your rule to set: whether migrations against a user's production database may run at all, or preprod only."
