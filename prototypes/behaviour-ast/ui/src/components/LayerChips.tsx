@@ -1,4 +1,4 @@
-import { Button } from '@jemmy8oy-northstar/design-system'
+import { Badge, Button } from '@jemmy8oy-northstar/design-system'
 import { LAYERS } from '../board'
 
 /**
@@ -28,6 +28,23 @@ export default function LayerChips({ layers, onToggle }: { layers: string[]; onT
         >
           {l}
         </Button>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * BEH-KIND-1: the layers of the behaviours beneath a feature, as tags, with the same words the
+ * cards carry. Renders nothing when there are none.
+ */
+export function LayerTags({ layers, label = 'Layers' }: { layers: string[]; label?: string }) {
+  if (!layers.length) return null
+  return (
+    <div className="badges" role="group" aria-label={label}>
+      {layers.map((l) => (
+        <Badge key={l} tone="neutral" title={HELP[l]}>
+          {l}
+        </Badge>
       ))}
     </div>
   )

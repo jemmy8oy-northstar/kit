@@ -209,6 +209,27 @@ describe('BEH-KIND-2: a project filters by layer', () => {
     expect(within(contents).getByRole('link', { name: 'Editor' })).toBeInTheDocument()
     expect(within(contents).getByRole('link', { name: 'Home' })).toBeInTheDocument()
   })
+
+  // The app has ui, technical and ux beneath it. Editor has technical (b1) and, through Clip card
+  // (a child of both Editor and Home), ui and ux. Home has ui and ux only, through Clip card.
+  const tagsOf = (group: HTMLElement) => within(group).getAllByText(/^(ui|ux|technical)$/).map((e) => e.textContent)
+
+  it('BEH-KIND-1: a feature card on the project page shows the layers beneath it as tags', async () => {
+    renderAt('/projects/snip-it', layered)
+    const features = await screen.findByRole('region', { name: 'Features' })
+    const appCard = within(features).getByRole('link', { name: 'The app' }).closest('li')!
+    expect(tagsOf(within(appCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux', 'technical'])
+  })
+
+  it('BEH-KIND-1: a feature page shows its own layers, and each child feature card its own', async () => {
+    renderAt('/projects/snip-it/features/FEAT-APP', layered)
+    const contents = await screen.findByRole('region', { name: 'Contents' })
+    const editorCard = within(contents).getByRole('link', { name: 'Editor' }).closest('li')!
+    expect(tagsOf(within(editorCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux', 'technical'])
+    const homeCard = within(contents).getByRole('link', { name: 'Home' }).closest('li')!
+    expect(tagsOf(within(homeCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux'])
+    expect(tagsOf(screen.getByRole('group', { name: 'Layers of this feature' }))).toEqual(['ui', 'ux', 'technical'])
+  })
 })
 
 const row = (app: string, project: string, behaviours = 2): ProjectSummary => ({

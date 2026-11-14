@@ -41,7 +41,9 @@ Built:
 - BEH-KIND-1: the technical chip is tooltipped as logic implementation; it failed first, the tooltip was added in LayerChips.tsx (LayerChips.test.tsx)
 - BEH-KIND-1: the ui and ux chips are tooltipped with what they are (LayerChips.test.tsx)
 - BEH-KIND-1: a layer chip reports its layer when pressed and shows whether it is on (LayerChips.test.tsx)
-- Whole UI suite (`npx vitest run` in prototypes/behaviour-ast/ui): 552 tests ran, all passed.
+- BEH-KIND-1: a feature card on the project page shows the layers beneath it as tags, through its child features (FeaturePage.test.tsx); failed first, LayerTags and layersUnder added
+- BEH-KIND-1: a feature page shows its own layers, and each child feature card its own, walking through child features (FeaturePage.test.tsx); failed first
+- Whole UI suite (`npx vitest run` in prototypes/behaviour-ast/ui): 554 tests ran, all passed (552 before the two BEH-KIND-1 tests above).
 Test plan:
 - BEH-NAV-1: every page (board, project list, project, feature, behaviour) renders the navbar, and the board link marks the board view as current
 - BEH-FEAT-1: a project page lists its top-level features and untagged behaviours, and a feature card counts each behaviour beneath it once
