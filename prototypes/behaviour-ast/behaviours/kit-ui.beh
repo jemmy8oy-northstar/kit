@@ -1499,6 +1499,7 @@ behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixe
   contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
   contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
   contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
+  contract built: with KIT_BOT_READ_TOKEN set, a GET carrying "Authorization: Bearer <that token>" is read as the operator, so the bot reads Runs, the pipeline and the projects with no session; it never writes, a wrong token is the same 401 as none, unset changes nothing, and a session cookie wins over it. The token comes from a `kit-bot-read` secret he creates
 
 behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a restart does not pay to triage it twice"
   in FEAT-AGENT-PIPELINE

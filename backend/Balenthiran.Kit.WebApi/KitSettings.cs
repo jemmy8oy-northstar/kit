@@ -233,6 +233,17 @@ public sealed record KitSettings(
     /// <summary>The pool token, for the claim route and nothing else: never logged or echoed.</summary>
     internal string? RunnerPoolSecret() => runnerPoolToken;
 
+    /// <summary><c>KIT_BOT_READ_TOKEN</c> (BEH-ORCH-6): lets the bot read Kit's API with no session, GET only. Null or blank means there is no such key.</summary>
+    public string? BotReadToken
+    {
+        init => botReadToken = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private readonly string? botReadToken;
+
+    /// <summary>The key, for the router's GET gate and nothing else: never logged or echoed (a readable property would print in the record's ToString).</summary>
+    internal string? BotReadSecret() => botReadToken;
+
     /// <summary>True when runner pods may claim runs.</summary>
     public bool RunnerPool => runnerPoolToken is not null;
 
@@ -555,6 +566,7 @@ public sealed record KitSettings(
             StageTurnsSpec = ParseStageTurnsSpec(env("KIT_STAGE_TURNS_SPEC")),
             StageTurnsBuild = ParseStageTurnsBuild(env("KIT_STAGE_TURNS_BUILD")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
+            BotReadToken = env("KIT_BOT_READ_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
             PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
