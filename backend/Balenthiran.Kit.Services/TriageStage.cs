@@ -71,7 +71,8 @@ public static class TriageStage
             sb.Append("   When a note covers the same thing as an open ticket listed below, report a bundle with THAT ticket's slug (an update of it: keep what still holds, add what the note brings) and do NOT open a second work item for it. Use a new slug only for work no open ticket covers.\n");
         }
 
-        sb.Append("5. Commit and push each branch to origin, then STOP. Do not start any other work and do not open a pull request.\n\n");
+        sb.Append("5. Commit and push each branch to origin, then STOP. Do not start any other work and do not open a pull request.\n");
+        sb.Append("   Your turns are few: do each work item's checkout, bundle write, commit and push in ONE shell command, and push each before reading for the next. An unpushed bundle is lost.\n\n");
         sb.Append("A bundle has exactly this shape (sections in this order, every list item on its own \"- \" line):\n\n```\n");
         sb.Append("# <short title>\nWork-item: <work-item-slug>\nCards:\n- <existing card id such as BEH-ORCH-1, or \"new: <one line>\">\nNotes:\n- <source ref of each note it came from>\nFiles:\n- <repo path a builder will need>\nContext:\n<what a builder needs to know, so it need not search again>\n");
         sb.Append("```\n");

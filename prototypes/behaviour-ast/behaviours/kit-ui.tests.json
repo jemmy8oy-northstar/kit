@@ -920,6 +920,11 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_reads_the_cards_asked_for_and_asks_again_with_them" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once" }
   ],
+  "BEH-ORCH-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error" }
+  ],
   "BEH-ORCH-4": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_with_the_switch_off_a_scheduled_card_is_not_queued" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_the_first_scheduled_card_starts_at_spec_with_a_bundle_kit_wrote_and_no_triage" },
@@ -929,7 +934,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_KIT_PIPELINE_SCHEDULED_is_off_unless_it_says_on_and_a_typo_throws" }
   ],
   "BEH-ORCH-5": [
-    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_30_20_30_and_100" },
     { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Each_stage_runs_on_its_own_turn_limit" },
     { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_A_turn_limit_is_read_from_the_environment_or_refused" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit" },
