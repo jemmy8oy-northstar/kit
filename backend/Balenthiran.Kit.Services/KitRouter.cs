@@ -267,7 +267,7 @@ public sealed partial class KitRouter(
 
         // BEH-USERS-8 (kit#795): every project this Kit serves is the operator's, so another user is
         // refused each per-project read before it is looked up, and learns nothing of which exist.
-        if (ProjectReadOf(pathname) is not null && IsOtherUser(cookie))
+        if (IsProjectRead(pathname) && IsOtherUser(cookie))
         {
             return Json(403, new ApiError { Error = "not-yours", Reason = "this project is not in your GitHub" });
         }
@@ -387,19 +387,9 @@ public sealed partial class KitRouter(
     /// </summary>
     private bool SignedOut(string? cookie) => lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host);
 
-    /// <summary>The app a per-project GET names, decoded, or null when it names none or does not decode.</summary>
-    private static string? ProjectReadOf(string pathname)
-    {
-        foreach (var route in new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute })
-        {
-            if (route.Match(pathname) is { Success: true } m)
-            {
-                return DecodeUriComponent(m.Groups[1].Value);
-            }
-        }
-
-        return null;
-    }
+    /// <summary>A per-project GET, whatever app it names, even one that does not decode.</summary>
+    private static bool IsProjectRead(string pathname) =>
+        new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute }.Any(route => route.IsMatch(pathname));
 
     /// <summary>
     /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull

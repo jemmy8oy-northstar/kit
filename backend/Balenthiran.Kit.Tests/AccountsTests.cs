@@ -176,8 +176,9 @@ public class AccountsTests
             Assert.Equal(200, router.Route("GET", path, him).Status);
         }
 
-        // A name that exists nowhere answers the same, so she cannot tell which of his exist.
+        // A name that exists nowhere, or does not even decode, answers the same, so she cannot tell which of his exist.
         Assert.Equal(403, router.Route("GET", "/api/projects/no-such-app", ann).Status);
+        Assert.Equal(403, router.Route("GET", "/api/projects/%zz/notes", ann).Status);
     }
 
     [Fact]
