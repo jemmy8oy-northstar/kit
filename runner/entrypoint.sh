@@ -14,6 +14,7 @@
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
+#   KIT_RUN_MAX_SECONDS optional  wall-clock limit on the agent, in seconds (default: 6600, under the claimer's 7200)
 #   KIT_STAGE         optional  the pipeline stage; "test" (BEH-ORCH-12) makes the script check the agent's verdict line and never push
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
@@ -60,6 +61,10 @@ case "$KIT_REPO" in
 esac
 case "$KIT_RUN_ID" in
   *[!A-Za-z0-9._-]*) echo "kit-run: KIT_RUN_ID has characters a branch name cannot" >&2; exit 64 ;;
+esac
+max_seconds="${KIT_RUN_MAX_SECONDS:-6600}"
+case "$max_seconds" in
+  ''|*[!0-9]*|0*) echo "kit-run: KIT_RUN_MAX_SECONDS must be a whole number of seconds above zero" >&2; exit 64 ;;
 esac
 
 unset ANTHROPIC_AUTH_TOKEN
@@ -152,7 +157,11 @@ echo "kit-run[$KIT_RUN_ID]: working"
 # JSON, so the usage can be read; the agent's final message is still printed for the log.
 result="$work/result.json"
 status=0
-claude -p "$KIT_TASK" \
+# BEH-ORCH-14: nothing else bounds a run's time. The claimer's limit acts only when pool.sh asks for the next run, which a
+# hung agent never lets it do, and a subscription run never meets the proxy's token age. timeout signals the agent's whole
+# process group, so a test server it left running dies with it rather than holding the pod.
+started=$SECONDS
+timeout --kill-after=30 "$max_seconds" claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
@@ -172,6 +181,12 @@ node -e '
     require("fs").writeFileSync(usageFile, JSON.stringify(u));
   }
 ' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}"
+# 137 is also a kill from elsewhere (out of memory), so it counts as the limit only once the limit has passed.
+if [ "$status" -eq 124 ] || { [ "$status" -eq 137 ] && [ $((SECONDS - started)) -ge "$max_seconds" ]; }; then
+  step=time
+  echo "kit-run[$KIT_RUN_ID]: claude ran out of time (${max_seconds}s)" >&2
+  exit 124
+fi
 if [ "$status" -ne 0 ]; then
   echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
   exit "$status"

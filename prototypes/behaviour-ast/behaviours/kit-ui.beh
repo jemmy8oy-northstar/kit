@@ -1645,6 +1645,19 @@ behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user
   contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
   contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
 
+behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its runner, so one hung run cannot hold the pipeline"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-14-1725
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-14-1725): "I thought you were going to get the pipeline running"
+  contract my assumption: what was measured on 2026-11-14: notes-page-archive-tag-and-warning was specced at 17:31Z, and its branch had not moved by 19:47Z. Nothing bounded a run's time: the claimer's 2-hour limit acts only when its pod asks for the next run, which a hung run never lets it do, and a run on his subscription never meets the proxy's 6-hour token age. One hung run therefore held its pod and its project's pipeline until a restart
+  contract my assumption: the runner ends the agent after KIT_RUN_MAX_SECONDS (default 6600, under the claimer's 7200), with every process the agent started (a test server it left running included), and the run fails at step "time", which Runs shows as "time exit 124"
+  contract my assumption: a kill inside the limit (out of memory) stays a "claude" failure, so Runs does not blame the limit for it; a limit that is not a whole number of seconds above zero refuses the run before the agent starts
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
