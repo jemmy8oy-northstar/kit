@@ -38,6 +38,38 @@ public class ReadGateTests
     }
 
     [Fact]
+    public void A_public_projects_view_names_no_private_project_to_a_stranger()
+    {
+        // A frozen app whose view, signed in, names others that share its nouns: else the check is empty.
+        var probe = Router(password: "pw", visibility: null);
+        var him = Cookie(probe);
+        var app = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot).Corpora()
+            .First(a => SharedWith(probe.Route("GET", $"/api/projects/{a}", him)).Count > 0);
+
+        var router = Router(password: "pw", new PublicApps(app));
+        Assert.NotEmpty(SharedWith(router.Route("GET", $"/api/projects/{app}", Cookie(router))));
+        Assert.Empty(SharedWith(router.Route("GET", $"/api/projects/{app}")));
+    }
+
+    [Fact]
+    public async Task A_refresh_that_breaks_locks_every_project_and_does_not_throw()
+    {
+        using var dir = new Corpora(("open", "o/open@dev"));
+        var reader = new ScriptedRepos(new() { ["o/open"] = true });
+        var store = new ProjectVisibility(dir.Directory, reader);
+        await store.RefreshAsync();
+        Assert.True(store.IsPublic("open"));
+
+        // The one exception the per-repo catch lets through, so this reaches the outer one.
+        reader.Unexpected = new OperationCanceledException("cancelled mid-read");
+        await store.RefreshAsync();
+        Assert.False(store.IsPublic("open"));
+    }
+
+    private static List<string> SharedWith(IKitResponse r) =>
+        Assert.IsType<ProjectView>(r.Body).Requires.Nouns.SelectMany(n => n.SharedWith).Distinct().ToList();
+
+    [Fact]
     public void A_signed_out_list_holds_only_the_public_projects()
     {
         var router = Router(password: "pw", new PublicApps("snip-it"));
@@ -188,9 +220,16 @@ public class ReadGateTests
 
         public List<string> Asked { get; } = [];
 
+        public Exception? Unexpected { get; set; }
+
         public Task<bool> IsPublicAsync(string repo, CancellationToken cancellationToken = default)
         {
             Asked.Add(repo);
+            if (Unexpected is not null)
+            {
+                throw Unexpected;
+            }
+
             return Answers.TryGetValue(repo, out var open)
                 ? Task.FromResult(open)
                 : throw new Abstractions.Exceptions.GitHubReadException($"{repo}: GitHub answered 404");

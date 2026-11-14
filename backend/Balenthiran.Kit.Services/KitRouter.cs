@@ -310,7 +310,19 @@ public sealed partial class KitRouter(
 
             try
             {
-                return Json(200, viewer.View(app));
+                var view = viewer.View(app);
+
+                // BEH-GATE-H1 (kit#795): a public project's nouns name the other projects that share
+                // them; signed out, only the public ones, or the view would list the private ones.
+                if (SignedOut(cookie) && view is ProjectView shown)
+                {
+                    foreach (var n in shown.Requires.Nouns.Concat(shown.Requires.Missing).Concat(shown.Requires.Insufficient))
+                    {
+                        n.SharedWith.RemoveAll(other => !visibility.IsPublic(other));
+                    }
+                }
+
+                return Json(200, view);
             }
             catch (ProjectionFailedException e)
             {

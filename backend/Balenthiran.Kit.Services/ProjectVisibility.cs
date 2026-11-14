@@ -20,8 +20,24 @@ public sealed class ProjectVisibility(ICorpusDirectory corpora, IGitHubRepoReade
     /// <inheritdoc />
     public bool IsPublic(string app) => open.Contains(app);
 
-    /// <summary>Re-ask about every repo a corpus names, then swap the answer in whole.</summary>
+    /// <summary>
+    /// Re-ask about every repo a corpus names, then swap the answer in whole. Never throws: the
+    /// poller's refresh must not fault (ExpiringRefresh), and anything unexpected locks every project.
+    /// </summary>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            open = await ReadAsync(cancellationToken);
+        }
+        catch (Exception e)
+        {
+            open = new HashSet<string>(StringComparer.Ordinal);
+            await Console.Error.WriteLineAsync($"kit: could not read which repos are public, so every project needs a sign-in — {e.GetType().Name}: {e.Message}");
+        }
+    }
+
+    private async Task<HashSet<string>> ReadAsync(CancellationToken cancellationToken)
     {
         var repoOf = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var app in corpora.Corpora())
@@ -53,6 +69,6 @@ public sealed class ProjectVisibility(ICorpusDirectory corpora, IGitHubRepoReade
             }
         }
 
-        open = repoOf.Where(p => answers[p.Value]).Select(p => p.Key).ToHashSet(StringComparer.Ordinal);
+        return repoOf.Where(p => answers[p.Value]).Select(p => p.Key).ToHashSet(StringComparer.Ordinal);
     }
 }
