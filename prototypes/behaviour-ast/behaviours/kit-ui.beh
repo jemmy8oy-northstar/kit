@@ -1418,7 +1418,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
 behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
   in FEAT-AGENT-PIPELINE
   source defined kit.notes.md#2026-11-07-0211
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "This is a platform choice, so it is yours. Today the orchestrator is already C# in Kit (Pipeline.cs, async, no model). Only the runner pod's loop is shell (runner/pool.sh, using node to read the claim's JSON), and each run is the Claude Code CLI, which is itself a Node program whatever wraps it. A C# runner would mean a .NET image for the runner, and the change is in the runner image, which is yours to merge. Approve and I build it; deny and the shell loop stays."
