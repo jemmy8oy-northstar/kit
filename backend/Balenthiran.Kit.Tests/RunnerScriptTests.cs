@@ -409,6 +409,75 @@ public class RunnerScriptTests
         Assert.False(File.Exists(failure));
     }
 
+    // BEH-ORCH-14: a build that hangs held its pod and its project with nothing to end it; the claimer's limit acts only
+    // when the pod asks for the next run. The child sleep holds stderr open, so Run would wait it out if it survived.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "sleep 20 &", "sleep 20");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_RUN_MAX_SECONDS"] = "1" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal(124, r.Status);
+        Assert.Equal("time exit 124\n", File.ReadAllText(failure));
+        Assert.Contains("claude ran out of time (1s)", r.Stderr);
+        Assert.DoesNotContain("pushed", r.Stdout);
+    }
+
+    // BEH-ORCH-14: an agent that ignores SIGTERM is killed once the grace runs out; timeout then exits 137, not 124.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "trap '' TERM", "sleep 20");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_RUN_MAX_SECONDS"] = "1", ["KIT_RUN_KILL_AFTER"] = "1" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal(124, r.Status);
+        Assert.Equal("time exit 124\n", File.ReadAllText(failure));
+    }
+
+    // BEH-ORCH-14: 137 is what a kill from elsewhere (out of memory) looks like too; inside the limit it is the agent failing.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 137);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal(137, r.Status);
+        Assert.Equal("claude exit 137\n", File.ReadAllText(failure));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("00")] // timeout 0 is no limit at all
+    [InlineData("-5")]
+    [InlineData("1.5")]
+    [InlineData("soon")]
+    public void BEH_ORCH_14_A_limit_that_is_not_a_whole_number_of_seconds_refuses_the_run_before_the_agent_starts(string limit)
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+
+        var r = rig.Entrypoint(new() { ["KIT_RUN_MAX_SECONDS"] = limit });
+
+        Assert.Equal(64, r.Status);
+        Assert.Contains("KIT_RUN_MAX_SECONDS must be a whole number", r.Stderr);
+        Assert.False(File.Exists(Path.Combine(rig.Rec, "claude.env")));
+    }
+
     [Fact]
     public void A_missing_env_var_writes_the_setup_step_and_a_success_writes_nothing()
     {
