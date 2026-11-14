@@ -1398,7 +1398,7 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
   pending
   actor engineer
