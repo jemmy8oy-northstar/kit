@@ -2683,7 +2683,7 @@ behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent res
   in FEAT-SPEC-AGENT
   layer ux
   source defined kit.notes.md#2026-11-03-1019
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "It needs web search, which costs per query on top of the model; say if it may spend, and how much a design session may cost."
