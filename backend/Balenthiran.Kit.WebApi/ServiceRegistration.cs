@@ -34,6 +34,13 @@ public static class ServiceRegistration
                 sp.GetRequiredService<GitHubCorpusReader>(),
                 sp.GetRequiredService<ICoverageCounter>()));
             services.AddSingleton<ICoverageStore>(sp => sp.GetRequiredService<CoverageStore>());
+
+            // BEH-GATE-H1 (kit#795): which projects' repos are public, so a signed-out read is served
+            // only those. Local Kit has no store, and the router treats every project as private.
+            services.AddSingleton(sp => new ProjectVisibility(
+                sp.GetRequiredService<ICorpusDirectory>(),
+                sp.GetRequiredService<GitHubCorpusReader>()));
+            services.AddSingleton<IProjectVisibility>(sp => sp.GetRequiredService<ProjectVisibility>());
             services.AddSingleton<ProjectPoller>();
             services.AddHostedService(sp => sp.GetRequiredService<ProjectPoller>());
         }
@@ -95,18 +102,36 @@ public static class ServiceRegistration
 
             // BEH-ORCH-8: the notes a triage sorted are the accounts' database when there is one; without, they die with the pod.
             services.TryAddSingleton<ITriagedNoteStore>(_ => settings.Accounts ? new PostgresTriagedNoteStore(settings.ConnectionString()!) : new MemoryTriagedNoteStore());
+            // BEH-ORCH-11: so are the tickets, which hold the pipeline's work items across a restart.
+            services.TryAddSingleton<ITicketStore>(_ => settings.Accounts ? new PostgresTicketStore(settings.ConnectionString()!) : new MemoryTicketStore());
             services.TryAddSingleton(sp => new Pipeline(
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
                 sp.GetRequiredService<IAgentRunStore>(),
-                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow),
+                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow, settings.StageModelContext, settings.StageModelResolve, settings.StageModelTest),
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
                 pulls: sp.GetService<IPullRequestOpener>(),
-                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild),
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild, settings.StageTurnsContext, settings.StageTurnsResolve, settings.StageTurnsTest),
                 scheduled: settings.PipelineScheduled,
-                sorted: sp.GetRequiredService<ITriagedNoteStore>()));
+                sorted: sp.GetRequiredService<ITriagedNoteStore>(),
+                merger: sp.GetService<IPullRequestMerger>(),
+                merge: settings.PipelineMerge,
+                tickets: sp.GetRequiredService<ITicketStore>(),
+                jobs: settings.PipelineJobs.ToHashSet()));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
+
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD, KIT_PIPELINE_JOB_MERGE) exists to take a waiting ticket to its run (or, for merge, its pull request to a merge).
+            foreach (var stage in settings.PipelineJobs)
+            {
+                services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));
+            }
+
+            // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.
+            if (settings.PipelineMerge)
+            {
+                services.AddHostedService(sp => new PipelineMerger(sp.GetRequiredService<Pipeline>()));
+            }
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
@@ -167,6 +192,10 @@ public static class ServiceRegistration
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
+        services.TryAddSingleton<IPullRequestMerger>(sp => new GitHubPullRequestOpener(
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
+            settings.GitRepository));
         services.TryAddSingleton<IPendingEditsReader>(sp => new GitHubPullRequestOpener(
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
@@ -206,7 +235,8 @@ public static class ServiceRegistration
             runLauncher: sp.GetRequiredService<IAgentRunLauncher>(),
             agentRunCap: settings.AgentRunCapUsd,
             runnerPool: sp.GetService<RunnerPool>(),
-            pipeline: sp.GetService<Pipeline>()));
+            pipeline: sp.GetService<Pipeline>(),
+            visibility: sp.GetService<IProjectVisibility>()));
         services.AddSingleton<IKitHost>(sp => new KitHost(
             sp.GetRequiredService<IKitRouter>(),
             sp.GetRequiredService<IUrlParser>(),

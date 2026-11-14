@@ -9,11 +9,30 @@ public enum PipelineStage
     /// <summary>A stronger model checks a flagged stage's bundle (BEH-ORCH-2).</summary>
     Review,
 
+    /// <summary>
+    /// BEH-ORCH-11: adds to a triaged ticket's bundle what a planner needs. Only entered with
+    /// <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, by the context job; otherwise a triaged item goes straight to Spec.
+    /// </summary>
+    Context,
+
     /// <summary>Formalises the cards and plans the tests.</summary>
     Spec,
 
     /// <summary>Tests first, then code, until they pass.</summary>
     Build,
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: a job. Owning it (<c>KIT_PIPELINE_JOB_MERGE=on</c>) moves the merge of a built item's pull
+    /// request from <c>MergeReadyAsync</c> to <c>MergeTickAsync</c>. Slice 7b: also the stage of a work item for exactly as
+    /// long as its conflict-resolution run is in flight (it is a built ticket meanwhile), and Build, Done again after.
+    /// </summary>
+    Merge,
+
+    /// <summary>
+    /// BEH-ORCH-12: the stage of a work item for exactly as long as Kit's own test run of its pull request's head commit is in
+    /// flight (a built ticket meanwhile), and Build, Done again after a pass. Never a queued stage a job takes.
+    /// </summary>
+    Test,
 }
 
 /// <summary>Where a work item is within its current stage.</summary>
@@ -102,8 +121,11 @@ public static class Orchestrator
     {
         PipelineStage.Triage => models.Triage,
         PipelineStage.Review => FlagLevels.Of(flag) == FlagLevel.Low ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
+        PipelineStage.Context => models.Context ?? StageModels.DefaultContext,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
+        PipelineStage.Merge => models.Resolve ?? models.Build,
+        PipelineStage.Test => models.Test ?? models.Triage,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
@@ -112,8 +134,11 @@ public static class Orchestrator
     {
         PipelineStage.Triage => turns.Triage,
         PipelineStage.Review => turns.Review,
+        PipelineStage.Context => turns.Context,
         PipelineStage.Spec => turns.Spec,
         PipelineStage.Build => turns.Build,
+        PipelineStage.Merge => turns.Resolve ?? turns.Build,
+        PipelineStage.Test => turns.Test ?? turns.Build,
         _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
     };
 
@@ -124,6 +149,7 @@ public static class Orchestrator
     private static WorkItem Next(WorkItem item, PipelineStage finished) => finished switch
     {
         PipelineStage.Triage => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
+        PipelineStage.Context => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Spec => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Build => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done, ReviewedStage = null },
         _ => throw new InvalidOperationException($"nothing follows {finished}"),

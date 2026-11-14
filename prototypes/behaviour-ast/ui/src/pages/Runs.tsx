@@ -61,7 +61,7 @@ function byWorkItem(runs: AgentRun[]): ItemCost[] {
   return [...items.values()].sort((a, b) => Date.parse(b.newest) - Date.parse(a.newest))
 }
 
-const STAGES = ['triage', 'spec', 'review', 'build']
+const STAGES = ['triage', 'context', 'spec', 'review', 'build']
 
 /** Runs summed per pipeline stage (BEH-ORCH-9), in pipeline order; a run started by hand has no stage and is left out. */
 function byStage(runs: AgentRun[]): { stage: string; runs: number; costUsd: number }[] {
@@ -99,6 +99,7 @@ function Pipeline({ runs }: { runs: AgentRun[] }) {
                 {i.flag ? <div>Flagged: {i.flag}</div> : null}
                 {i.review ? <div>Review: {i.review}{i.reviewNote ? ` — ${i.reviewNote}` : ''}</div> : null}
                 {i.pullRequest ? <div><a href={i.pullRequest}>Pull request</a></div> : null}
+                {i.pullRequest && i.merged ? <div>Merged</div> : null}
                 {own.length > 0 ? (
                   <ul aria-label={`Runs of ${i.slug}`}>
                     {[...own].reverse().map((r) => (

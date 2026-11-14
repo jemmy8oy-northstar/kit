@@ -135,7 +135,7 @@ public class AccountsTests
         Assert.Empty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", ann).Body).Projects);
         Assert.Empty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", ann).Body).Entries);
 
-        // Not an empty Kit: he, and an anonymous reader (BEH-GATE-H1), still see the projects.
+        // Not an empty Kit: he, and an anonymous reader (the public ones, BEH-GATE-H1), still see the projects.
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body).Projects);
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects").Body).Projects);
         Assert.NotEmpty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", him).Body).Entries);
@@ -164,11 +164,11 @@ public class AccountsTests
     [Fact]
     public void A_user_may_still_read_one_of_his_projects_by_its_url()
     {
-        // His projects live in a public repo, so a URL serves them to a user as to anyone (BEH-GATE-H1).
+        // A project in a public repo: a URL serves it to a user as to anyone (BEH-GATE-H1).
         var router = Router(Seeded());
         var ann = Cookie(SignIn(router, "ann", AnnPassword));
 
-        foreach (var path in new[] { "/api/projects/kit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/pending" })
+        foreach (var path in new[] { "/api/projects/snip-it", "/api/projects/snip-it/notes", "/api/projects/snip-it/schedule", "/api/projects/snip-it/pending" })
         {
             var hers = router.Route("GET", path, ann);
             var anyone = router.Route("GET", path);
@@ -176,7 +176,13 @@ public class AccountsTests
             Assert.Equal(JsonSerializer.Serialize(anyone.Body), JsonSerializer.Serialize(hers.Body));
         }
 
-        Assert.Equal(200, router.Route("GET", "/api/projects/kit", ann).Status);
+        Assert.Equal(200, router.Route("GET", "/api/projects/snip-it", ann).Status);
+
+        // One in a private repo is served to its owner only (kit-ui.beh, BEH-USERS-8; kit#795).
+        var him = Cookie(SignIn(router, null, Operator));
+        Assert.Equal(403, router.Route("GET", "/api/projects/kit", ann).Status);
+        Assert.Equal(401, router.Route("GET", "/api/projects/kit").Status);
+        Assert.Equal(200, router.Route("GET", "/api/projects/kit", him).Status);
     }
 
     [Fact]
@@ -293,7 +299,8 @@ public class AccountsTests
             new SignInThrottle(),
             activity: new OneCommit(),
             users: users,
-            notifications: new OneNotification());
+            notifications: new OneNotification(),
+            visibility: new ReadGateTests.PublicApps("snip-it"));
     }
 
     internal sealed class MemoryUsers : IUserStore

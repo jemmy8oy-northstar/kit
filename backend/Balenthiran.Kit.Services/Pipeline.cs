@@ -1,3 +1,4 @@
+using Balenthiran.Kit.Abstractions.DataModels;
 using Balenthiran.Kit.Abstractions.Services;
 
 namespace Balenthiran.Kit.Services;
@@ -8,21 +9,60 @@ namespace Balenthiran.Kit.Services;
 /// it pushed with its end, and each becomes a work item queued for spec (or review, when flagged). Spec, build and
 /// review runs start from that bundle and report it back changed, which moves the item on. A built item gets a pull
 /// request from its branch, opened by Kit. Exists
-/// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Work items are kept
-/// IN MEMORY ONLY, as the pool's queue is: a restart forgets them, and the next note queues a triage again. Which
+/// only with <c>KIT_PIPELINE=on</c>, as every run it starts spends Kit's own Anthropic credit. Each work item with a
+/// bundle is also a ticket in the store (BEH-ORCH-11), which <see cref="Resume"/> reloads, so a restart keeps it; the
+/// pool's queue and the runs in flight are in memory only, as before. Which
 /// notes a triage has sorted is kept in the store (BEH-ORCH-8), so that triage reads only the notes still unsorted.
 /// </summary>
 /// <param name="owner">Whose runs these are: the operator's, as only he leaves notes.</param>
 /// <param name="projects">The only projects whose notes are triaged (<c>KIT_PIPELINE_PROJECTS</c>); null is every project.</param>
 /// <param name="pulls">Opens a built item's pull request; null stops a built item, saying Kit cannot open one.</param>
 /// <param name="scheduled"><c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): also start the agent's scheduled cards at spec, one per project at a time. Off by default: each starts runs on the owner's subscription.</param>
+/// <param name="merger">Merges a built item's pull request once its checks pass (BEH-ORCH-10); null stops such an item, saying Kit cannot merge.</param>
+/// <param name="merge"><c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <see cref="MergeReadyAsync"/> merges built items' pull requests. Off by default: a merge puts code no person has read into the base branch.</param>
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null)
+/// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
+/// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
 {
     private readonly object gate = new();
 
+    // BEH-ORCH-11, slice 1: every work item that has a bundle is also a ticket row, written whenever the item changes
+    // and reloaded by Resume. A work item's stage and status map onto a ticket's state like this. Each job's switch takes
+    // over exactly one hop of the chain: with KIT_PIPELINE_JOB_CONTEXT off a triaged item goes straight to the spec stage
+    // (today's "plan"), as before; with it on, it waits at Context, which the context job takes, and the chain resumes at
+    // spec when the context run has ended. With KIT_PIPELINE_JOB_PLAN on, a queued Spec item waits too, however it got
+    // there, for the plan job to start its spec run; with it off StartReady starts it as before. The same holds for a
+    // queued Build item (a planned ticket) and KIT_PIPELINE_JOB_BUILD, the build job.
+    //   Context (waiting, running, or under review) -> new
+    //   Spec  (queued, running, or under review) -> ready
+    //   Build (queued, running, or under review) -> planned
+    //   Build, Done, no pull request merged      -> built      (its pull request, once opened, is on the ticket)
+    //   Build, Done, Merged                      -> merged
+    //   any stage, Stopped                       -> stopped    (with why)
+    // A triage item is not a ticket: it has no bundle. Neither is the set-aside or backlog pseudo-item.
+    // Resume reverses it: ready becomes a queued Spec item (which waits when the plan job is on), and so does new unless the
+    // context job is on, when it is a waiting Context item; planned becomes a queued Build item (which waits when the build
+    // job is on), built a Done Build item, which is not queued and so is never taken by a job.
+    // A run in flight, or a review under way, is not kept: a resumed item starts its stage again.
+    private readonly ITicketStore ticketStore = tickets ?? new MemoryTicketStore();
+
+    // The priority a resumed ticket had (1 to 4, lowest first): a job takes the waiting ticket with the lowest,
+    // and a save writes it back rather than resetting it. A ticket not here has DefaultPriority.
+    private readonly Dictionary<(string App, string Slug), int> priorities = [];
+
     // Work items Kit made itself from a scheduled card (BEH-ORCH-4): their bundle is not on a branch yet.
     private readonly HashSet<(string App, string Slug)> scheduledSlugs = [];
+
+    // BEH-ORCH-11, slice 7b: tickets that have had their one conflict-resolution run. In memory only: the ticket row has
+    // no column for it, so a restart forgets it and a ticket may then get one more run.
+    private readonly HashSet<(string App, string Slug)> resolved = [];
+
+    // BEH-ORCH-12: the head commit a Kit test run passed at, per ticket, which the merge look hands the merger; and the commit
+    // a test run in flight was started for. In memory only, like resolved: a restart forgets them and a ticket may get one more test run.
+    private readonly Dictionary<(string App, string Slug), string> tested = [];
+
+    private readonly Dictionary<(string App, string Slug), string> testing = [];
 
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
@@ -39,6 +79,18 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     // Each work item's bundle, as its triage reported it: what the stages after triage start from.
     private readonly Dictionary<(string App, string Slug), ContextBundle> bundles = [];
+
+    /// <summary>BEH-ORCH-8: how long after a failed triage the next try is made.</summary>
+    public static readonly TimeSpan RetryAfter = TimeSpan.FromHours(1);
+
+    /// <summary>BEH-ORCH-8: a failing triage is tried again at most this many times in a row, until one works.</summary>
+    public const int MaxRetries = 12;
+
+    // Per project, under gate: consecutive failed triages, and the one timer of the retry pending (null when none)
+    // with its generation, so a timer that fires after it was replaced does not take its replacement's turn.
+    private readonly Dictionary<string, (int Failures, ITimer? Pending, int Generation)> retries = new(StringComparer.Ordinal);
+
+    private int retryGeneration;
 
     private int count;
 
@@ -83,6 +135,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// </summary>
     public void Resume()
     {
+        ResumeTickets();
+
         IReadOnlyList<string> recorded;
         try
         {
@@ -119,6 +173,255 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
     }
 
+    /// <summary>
+    /// BEH-ORCH-11: reloads the open tickets as work items, so a restart does not lose them. A ticket whose project is
+    /// not in <c>projects</c>, whose bundle cannot be read, or which the pipeline already holds is left out. A store that
+    /// cannot be read resumes none. Starts nothing itself: <see cref="Resume"/> does that once everything is loaded.
+    /// </summary>
+    private void ResumeTickets()
+    {
+        IReadOnlyList<PipelineTicket> open;
+        try
+        {
+            open = ticketStore.Open();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading the open tickets threw {e.GetType().Name}");
+            return;
+        }
+
+        lock (gate)
+        {
+            foreach (var ticket in open)
+            {
+                if ((projects is not null && !projects.Contains(ticket.Project)) || items.Any(i => i.Project == ticket.Project && i.Slug == ticket.Slug))
+                {
+                    continue;
+                }
+
+                var bundle = ticket.Bundle is null ? null : ContextBundle.Parse(ticket.Bundle).Bundle;
+                if (bundle is null)
+                {
+                    Console.Error.WriteLine($"kit: the bundle of ticket {ticket.Project} {ticket.Slug} could not be read; not resuming it");
+                    continue;
+                }
+
+                var item = ticket.State switch
+                {
+                    TicketState.New when jobs?.Contains(PipelineStage.Context) == true => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Context, WorkItemStatus.Queued),
+                    TicketState.New or TicketState.Ready => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Spec, WorkItemStatus.Queued),
+                    TicketState.Planned => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Queued),
+                    TicketState.Built => new WorkItem(ticket.Project, ticket.Slug, PipelineStage.Build, WorkItemStatus.Done, PullRequest: ticket.PullRequest),
+                    _ => null,
+                };
+                if (item is null)
+                {
+                    continue;
+                }
+
+                bundles[(ticket.Project, ticket.Slug)] = bundle;
+                priorities[(ticket.Project, ticket.Slug)] = ticket.Priority;
+                if (ticket.Scheduled)
+                {
+                    scheduledSlugs.Add((ticket.Project, ticket.Slug));
+                }
+
+                items.Add(item);
+            }
+        }
+    }
+
+    /// <summary>Puts <paramref name="item"/> at <paramref name="index"/> and writes its ticket.</summary>
+    private void Set(int index, WorkItem item)
+    {
+        items[index] = item;
+        Persist(item);
+    }
+
+    /// <summary>Appends <paramref name="item"/> and writes its ticket.</summary>
+    private void Add(WorkItem item)
+    {
+        items.Add(item);
+        Persist(item);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="item"/>'s ticket (the mapping is at the top of the class). A store that cannot be written
+    /// costs the ticket its restart, not the pipeline its run. Called with the gate held.
+    /// </summary>
+    private void Persist(WorkItem item)
+    {
+        // "#" is never in a bundle slug: a triage's own item is no ticket, nor are the pseudo-items of notes set aside.
+        if (item.Slug.Contains('#') || item.Slug is TriageStage.SetAside or TriageStage.Backlog)
+        {
+            return;
+        }
+
+        bundles.TryGetValue((item.Project, item.Slug), out var bundle);
+        string? text = null;
+        try
+        {
+            text = bundle?.Render();
+        }
+        catch (InvalidOperationException)
+        {
+            // A bundle that will not render is kept out of the row; the ticket is still written.
+        }
+
+        var stage = item.Stage == PipelineStage.Review ? item.ReviewedStage ?? PipelineStage.Spec : item.Stage;
+        var state = item switch
+        {
+            { Merged: true } => TicketState.Merged,
+            { Status: WorkItemStatus.Stopped } => TicketState.Stopped,
+            _ => stage switch
+            {
+                PipelineStage.Spec => TicketState.Ready,
+                PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
+                PipelineStage.Merge => TicketState.Built, // its conflict-resolution run is in flight (slice 7b)
+                PipelineStage.Test => TicketState.Built, // its test run is in flight (BEH-ORCH-12)
+                _ => TicketState.New, // Context, or a triage under review
+            },
+        };
+        try
+        {
+            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, priorities.GetValueOrDefault((item.Project, item.Slug), DefaultPriority), bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug))));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: writing the ticket {item.Project} {item.Slug} threw {e.GetType().Name}");
+        }
+    }
+
+    // BEH-ORCH-11, slice 6: a ticket's priority is the lowest `priority` (1 to 4) among the cards its bundle lists, and
+    // 3 when none of them has one. The jobs read it again on every tick, so a card re-prioritised in Kit reorders the waiting tickets.
+    private const int DefaultPriority = 3;
+
+    /// <summary><paramref name="app"/>'s cards, parsed; null when its corpus cannot be read, so the priorities it had stand.</summary>
+    private IReadOnlyList<IBehaviour>? CorpusCards(string app)
+    {
+        try
+        {
+            return new CorpusParser().Parse(corpora.Read(app), corpora.RelativePath(app));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: pipeline could not read the priorities of {app}'s cards ({e.GetType().Name})");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Sets the priority of ticket (<paramref name="app"/>, <paramref name="slug"/>) from the cards <paramref name="bundle"/> lists.
+    /// A card that is not in <paramref name="cards"/>, or has no priority, is ignored; when none counts the ticket keeps the
+    /// priority it has (3, or the one a restart read back). A null <paramref name="cards"/> changes nothing. Called with the gate held.
+    /// </summary>
+    private void SetPriority(string app, string slug, ContextBundle bundle, IReadOnlyList<IBehaviour>? cards)
+    {
+        if (cards is null)
+        {
+            return;
+        }
+
+        if (CardPriority(bundle.Cards, cards) is { } priority)
+        {
+            priorities[(app, slug)] = priority;
+        }
+    }
+
+    /// <summary>
+    /// The lowest priority (1 to 4; the card scale's 5 counts as 4) of the cards <paramref name="ids"/> names, and
+    /// <see cref="DefaultPriority"/> when they are in <paramref name="cards"/> but none has one (so a priority line he
+    /// removes takes effect). Null only when none of them is in <paramref name="cards"/>: there is nothing to read it from.
+    /// </summary>
+    private static int? CardPriority(IEnumerable<string> ids, IReadOnlyList<IBehaviour> cards)
+    {
+        var found = ids.SelectMany(id => cards.Where(c => c.Id == id)).ToList();
+        if (found.Count == 0)
+        {
+            return null;
+        }
+
+        var set = found.Where(c => c.Priority is not null).Select(c => Math.Min(c.Priority!.Value, 4)).ToList();
+        return set.Count == 0 ? DefaultPriority : set.Min();
+    }
+
+    /// <summary>Reads <paramref name="app"/>'s cards once and sets the priority of each of its tickets that has a bundle. Called with the gate held.</summary>
+    private void RefreshPriorities(string app)
+    {
+        var cards = CorpusCards(app);
+        if (cards is null)
+        {
+            return;
+        }
+
+        foreach (var ((project, slug), bundle) in bundles.Where(b => b.Key.App == app).ToList())
+        {
+            SetPriority(project, slug, bundle, cards);
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-8, slice 2: a triage of <paramref name="app"/> failed (a failed run, or one cut short by the subscription's
+    /// limit), so another is tried <see cref="RetryAfter"/> later. A project has at most one retry pending, and none is
+    /// scheduled once <see cref="MaxRetries"/> retries in a row have failed too. Called with the gate held.
+    /// </summary>
+    private void TriageFailed(string app)
+    {
+        retries.TryGetValue(app, out var state);
+        var failures = state.Failures + 1;
+        if (failures > MaxRetries)
+        {
+            state.Pending?.Dispose();
+            retries[app] = (failures, null, 0);
+            Console.Error.WriteLine($"kit: {app}'s triage failed {failures} times in a row; not retrying until one works");
+            return;
+        }
+
+        if (state.Pending is not null)
+        {
+            retries[app] = (failures, state.Pending, state.Generation);
+            return;
+        }
+
+        var generation = ++retryGeneration;
+        var pending = (clock ?? TimeProvider.System).CreateTimer(_ => RetryDue(app, generation), null, RetryAfter, Timeout.InfiniteTimeSpan);
+        retries[app] = (failures, pending, generation);
+    }
+
+    /// <summary>A triage of <paramref name="app"/> worked: its failures are forgotten and a retry still pending is cancelled. Called with the gate held.</summary>
+    private void ClearRetries(string app)
+    {
+        if (retries.Remove(app, out var state))
+        {
+            state.Pending?.Dispose();
+        }
+    }
+
+    /// <summary>The hour is up: queue the triage again, which reads only the notes still unsorted.</summary>
+    private void RetryDue(string app, int generation)
+    {
+        try
+        {
+            lock (gate)
+            {
+                if (!retries.TryGetValue(app, out var state) || state.Pending is null || state.Generation != generation)
+                {
+                    return;
+                }
+
+                state.Pending.Dispose();
+                retries[app] = (state.Failures, null, 0);
+                QueueTriage(app);
+                StartReady();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: retrying {app}'s triage threw {e.GetType().Name}");
+        }
+    }
+
     /// <summary>The bundle work item <paramref name="slug"/> of <paramref name="app"/> was last given by a triage; null when none.</summary>
     public ContextBundle? Bundle(string app, string slug)
     {
@@ -146,9 +449,34 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             var item = items[run.Index];
-            if (item.Stage != PipelineStage.Triage)
+            if (item.Stage == PipelineStage.Merge)
             {
-                items[run.Index] = Ended(item, run.Given!, succeeded, reported);
+                // BEH-ORCH-11, slice 7b: a conflict-resolution run. It reports no bundle; its success is the run's. A
+                // built item again, so the next merge look reads its pull request, waits for the checks on the new head
+                // and merges. The pull request is already open, so none is opened here.
+                Set(run.Index, succeeded
+                    ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                    : Stop(item, "the conflict-resolution run failed"));
+            }
+            else if (item.Stage == PipelineStage.Test)
+            {
+                // BEH-ORCH-12: a test run of the pull request's head commit. It reports no bundle; its success is the run's. A
+                // pass is remembered for that commit and the item is built again, so the next merge look merges exactly it.
+                var key = (item.Project, item.Slug);
+                testing.Remove(key, out var sha);
+                if (succeeded && sha is not null)
+                {
+                    tested[key] = sha;
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else
+                {
+                    Set(run.Index, Stop(item, $"the project's tests failed at {(sha is null ? "its head commit" : sha.Length > 7 ? sha[..7] : sha)}"));
+                }
+            }
+            else if (item.Stage != PipelineStage.Triage)
+            {
+                Set(run.Index, Ended(item, run.Given!, succeeded, reported));
 
                 // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
                 if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
@@ -158,7 +486,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
             else if (!succeeded)
             {
-                items[run.Index] = Stop(item, "the triage run failed");
+                Set(run.Index, Stop(item, "the triage run failed"));
+                TriageFailed(item.Project);
             }
             else
             {
@@ -172,12 +501,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 // the next note's triage, as a failed run's are, rather than being dropped.
                 if (usable == 0)
                 {
-                    items[run.Index] = Stop(item, "the triage reported no usable bundle");
+                    Set(run.Index, Stop(item, "the triage reported no usable bundle"));
                 }
                 else
                 {
-                    items[run.Index] = item with { Status = WorkItemStatus.Done };
+                    Set(run.Index, item with { Status = WorkItemStatus.Done });
                     MarkSorted(item.Project, run.Notes);
+                    ClearRetries(item.Project);
 
                     // Always queued, so nothing is read here, outside StartReady's guard: a triage with no notes left is Done at once.
                     QueueTriage(item.Project);
@@ -234,7 +564,176 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 return;
             }
 
-            items[index] = url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url };
+            Set(index, url is null ? Stop(item, $"its pull request could not be opened: {reason}") : item with { PullRequest = url });
+        }
+    }
+
+    /// <summary>
+    /// <c>BEH-ORCH-10</c>: with the switch on, asks to merge the pull request of each built item not yet merged. A merge
+    /// is merged, still waiting (left for the next look), or refused (the item stops saying why, and the pull request
+    /// stays open). An item changed meanwhile is left as it is. Does nothing with the switch off.
+    /// </summary>
+    public async Task MergeReadyAsync(CancellationToken cancellationToken)
+    {
+        // With the merge job on, the job owns this hop (BEH-ORCH-11, slice 7), whatever KIT_PIPELINE_MERGE says.
+        if (!merge || jobs?.Contains(PipelineStage.Merge) == true)
+        {
+            return;
+        }
+
+        List<WorkItem> ready;
+        lock (gate)
+        {
+            ready = items.Where(IsBuilt).ToList();
+        }
+
+        foreach (var item in ready)
+        {
+            await MergeOneAsync(item, false, cancellationToken);
+        }
+    }
+
+    private static bool IsBuilt(WorkItem i) => i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: not null, Merged: false };
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: one look of the merge job (<c>KIT_PIPELINE_JOB_MERGE=on</c>; nothing happens with it off). Per
+    /// project with a built, unmerged item, takes only the one with the lowest priority number (oldest first among equals)
+    /// and asks to merge it after bringing its branch up to date with its base, so merges into the base branch happen one
+    /// at a time in priority order. Merged, waiting and refused are as for <see cref="MergeReadyAsync"/>: a refused item
+    /// stops, and the next look takes the next one.
+    /// </summary>
+    public async Task MergeTickAsync(CancellationToken cancellationToken)
+    {
+        if (jobs?.Contains(PipelineStage.Merge) != true)
+        {
+            return;
+        }
+
+        List<WorkItem> top;
+        lock (gate)
+        {
+            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends.
+            var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
+                .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
+                .ToList();
+            top = [];
+            foreach (var app in apps)
+            {
+                RefreshPriorities(app);
+                var next = items
+                    .Select((item, index) => (Item: item, Index: index))
+                    .Where(x => x.Item.Project == app && IsBuilt(x.Item))
+                    .OrderBy(x => priorities.GetValueOrDefault((x.Item.Project, x.Item.Slug), DefaultPriority))
+                    .ThenBy(x => x.Index)
+                    .First();
+                top.Add(next.Item);
+            }
+        }
+
+        foreach (var item in top)
+        {
+            await MergeOneAsync(item, true, cancellationToken);
+        }
+    }
+
+    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken)
+    {
+        IPullRequestMerge? result = null;
+        string? reason = null;
+        if (merger is null)
+        {
+            reason = "Kit has no way to merge a pull request";
+        }
+        else
+        {
+            string? testedSha = null;
+            if (updateFirst)
+            {
+                lock (gate)
+                {
+                    tested.TryGetValue((item.Project, item.Slug), out testedSha);
+                }
+            }
+
+            try
+            {
+                result = await merger.MergeIfGreenAsync(item.PullRequest!, null, cancellationToken, updateFirst, testedSha);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // The type only, as OpenPullRequestAsync does: an exception from the merger may carry the token it sent.
+                Console.Error.WriteLine($"kit: merging {item.Project} {item.Slug} threw {e.GetType().Name}");
+                return;
+            }
+        }
+
+        if (result is { Merged: false, Waiting: true })
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            var index = items.IndexOf(item);
+            if (index < 0 || items[index] != item)
+            {
+                return;
+            }
+
+            // BEH-ORCH-11, slice 7b: with the merge job on, a conflict goes to one resolve run instead of stopping the item.
+            if (updateFirst && result is { Merged: false, Conflict: true })
+            {
+                if (resolved.Contains((item.Project, item.Slug)))
+                {
+                    Set(index, Stop(item, "its pull request was not merged: it still conflicts with its base after an agent tried to resolve it"));
+                    return;
+                }
+
+                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
+                {
+                    return;
+                }
+
+                resolved.Add((item.Project, item.Slug));
+                try
+                {
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    Set(index, Stop(item, $"the project could not be read ({e.GetType().Name})"));
+                }
+
+                return;
+            }
+
+            // BEH-ORCH-12: a private repo's pull request has no Actions run, so Kit tests the head commit itself, once per
+            // commit: a head that moves is asked about again, and a pass is remembered for the commit it passed at.
+            if (updateFirst && result is { Merged: false, NeedsTest: true, HeadSha: { Length: > 0 } sha })
+            {
+                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
+                {
+                    return;
+                }
+
+                testing[(item.Project, item.Slug)] = sha;
+                try
+                {
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    Set(index, Stop(item, $"the project could not be read ({e.GetType().Name})"));
+                }
+
+                return;
+            }
+
+            Set(index, result is { Merged: true }
+                ? item with { Merged = true }
+                : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
         }
     }
 
@@ -293,7 +792,71 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
-        return Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null));
+        return AfterTriage(item, Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null)));
+    }
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 3: the one hop the context job's switch takes over. With <c>KIT_PIPELINE_JOB_CONTEXT=on</c> an
+    /// item that has finished triage (or the review of it) and would be queued for spec waits at Context instead, for
+    /// <see cref="JobTick"/>. With it off, or for any other stage's result, <paramref name="after"/> is returned as it is.
+    /// </summary>
+    private WorkItem AfterTriage(WorkItem before, WorkItem after) =>
+        jobs?.Contains(PipelineStage.Context) == true
+        && (before.Stage == PipelineStage.Triage || before is { Stage: PipelineStage.Review, ReviewedStage: PipelineStage.Triage })
+        && after is { Stage: PipelineStage.Spec, Status: WorkItemStatus.Queued }
+            ? after with { Stage = PipelineStage.Context }
+            : after;
+
+    /// <summary>An item a job owns the stage of and has not taken yet: queued, but not for <see cref="StartReady"/> to start.</summary>
+    private bool IsWaiting(WorkItem item) => item.Status == WorkItemStatus.Queued && jobs?.Contains(item.Stage) == true;
+
+    /// <summary>
+    /// BEH-ORCH-11, slices 3 to 5: one look of the job for <paramref name="stage"/> (Context: <c>new</c> tickets; Spec: <c>ready</c>
+    /// tickets, the plan job; Build: <c>planned</c> tickets, the build job). With that stage's switch off, nothing happens. Per project with a ticket waiting at that
+    /// stage, and no run in flight, takes the one with the lowest priority number (oldest first among equals) and starts
+    /// its run. One ticket at a time per project, and a project with nothing waiting makes no model call. A ticket that
+    /// cannot start (no repo, no bundle) is stopped with why, and the next one is taken.
+    /// </summary>
+    public void JobTick(PipelineStage stage)
+    {
+        if (jobs?.Contains(stage) != true)
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
+            {
+                RefreshPriorities(app);
+                // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
+                while (!items.Any(i => i.Project == app && i.Status == WorkItemStatus.Running))
+                {
+                    var next = items
+                        .Select((item, index) => (Item: item, Index: index))
+                        .Where(x => x.Item.Project == app && x.Item.Stage == stage && IsWaiting(x.Item))
+                        .OrderBy(x => priorities.GetValueOrDefault((x.Item.Project, x.Item.Slug), DefaultPriority))
+                        .ThenBy(x => x.Index)
+                        .Cast<(WorkItem Item, int Index)?>()
+                        .FirstOrDefault();
+                    if (next is not { } taken)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        Set(taken.Index, Begin(taken.Index, taken.Item));
+                    }
+                    catch (Exception e)
+                    {
+                        Set(taken.Index, Stop(taken.Item, $"the project could not be read ({e.GetType().Name})"));
+                    }
+                }
+            }
+
+            StartReady();
+        }
     }
 
     /// <summary>
@@ -359,12 +922,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 scheduledSlugs.Add((app, slug));
                 if (bundle.Check() is { } why)
                 {
-                    items.Add(Stop(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued), $"the scheduled card's bundle is not valid: {why}"));
+                    Add(Stop(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued), $"the scheduled card's bundle is not valid: {why}"));
                 }
                 else
                 {
                     bundles[(app, slug)] = bundle;
-                    items.Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
+                    SetPriority(app, slug, bundle, behaviours);
+                    Add(new WorkItem(app, slug, PipelineStage.Spec, WorkItemStatus.Queued));
                 }
 
                 return true;
@@ -395,6 +959,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>
     /// A bundle a triage of <paramref name="app"/> reported, as its work item. A later triage that updates a bundle
     /// replaces the item, unless that item is running a later stage. True when the bundle was usable.
+    /// BEH-ORCH-11, slice 2: the open tickets are in the triage's task, so a bundle reported under an open ticket's
+    /// slug is that ticket's update: it replaces the ticket's item and bundle (one item, one row). Today a project runs
+    /// one thing at a time, and the reporting triage is it, so no other item can be running when the report lands; when
+    /// the jobs run beside triage that can happen, and the update is then dropped here (its notes still count as sorted),
+    /// which the job slices must handle.
     /// </summary>
     private bool Took(string app, ReportedBundle reported)
     {
@@ -429,7 +998,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
         else
         {
-            item = Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null));
+            item = AfterTriage(triage, Orchestrator.Advance(triage, new StageResult(PipelineStage.Triage, true, bundle, null)));
             usable = bundle;
         }
 
@@ -461,8 +1030,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         else
         {
             bundles[(app, slug)] = usable;
+            SetPriority(app, slug, usable, CorpusCards(app));
         }
 
+        // After the bundle is recorded, as the ticket carries it (and its priority).
+        Persist(item);
         return usable is not null;
     }
 
@@ -476,18 +1048,18 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         do
         {
             again = false;
-            var ready = items.OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
+            var ready = items.Where(i => !IsWaiting(i)).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
                 try
                 {
-                    items[index] = Begin(index, next);
+                    Set(index, Begin(index, next));
                 }
                 catch (Exception e)
                 {
                     // A spec or notes file that cannot be read stops this item; it must not fail the note or the run's report.
-                    items[index] = Stop(next, $"the project could not be read ({e.GetType().Name})");
+                    Set(index, Stop(next, $"the project could not be read ({e.GetType().Name})"));
                 }
 
                 again |= items[index].Status != WorkItemStatus.Running;
@@ -518,8 +1090,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             {
                 text = item.Stage switch
                 {
+                    PipelineStage.Context => ContextStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle),
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
+                    PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
+                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)]),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }
@@ -551,7 +1126,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         TriageTask task;
         try
         {
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), OpenTickets(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -563,10 +1138,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         return Enqueue(index, item, repoAt, task.Text, taken, null);
     }
 
+    /// <summary>BEH-ORCH-11: <paramref name="app"/>'s tickets, for the triage task to list the open ones. A store that cannot be read gives none: the triage then runs as before.</summary>
+    private IReadOnlyList<PipelineTicket> OpenTickets(string app)
+    {
+        try
+        {
+            // The priorities are the live ones, not the rows': a card may have been re-prioritised since the row was written.
+            var cards = CorpusCards(app);
+            return ticketStore.Read(app)
+                .Select(t => t with { Priority = (cards is null ? null : CardPriority(t.Cards, cards)) ?? priorities.GetValueOrDefault((t.Project, t.Slug), t.Priority) })
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s tickets for triage threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
     /// <summary>Hands a run of <paramref name="item"/>'s stage to the pool and records it; Stopped when the pool will not take it.</summary>
     private WorkItem Enqueue(int index, WorkItem item, string repoAt, string task, IReadOnlyList<string> notes, ContextBundle? given)
     {
-        var stage = item.Stage.ToString().ToLowerInvariant();
+        // The merge job's run is the one that resolves a conflict, and Runs shows it so.
+        var stage = item.Stage == PipelineStage.Merge ? "resolve" : item.Stage.ToString().ToLowerInvariant();
         var at = repoAt.LastIndexOf('@');
         var now = (clock ?? TimeProvider.System).GetUtcNow();
         var token = AgentTokens.Mint();

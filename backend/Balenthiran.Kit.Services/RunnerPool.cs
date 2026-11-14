@@ -140,7 +140,7 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
 
                 handedOut[run.Project] = run.Id;
                 repoByRun[run.Id] = item.Repo;
-                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns);
+                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage);
             }
 
             return null;

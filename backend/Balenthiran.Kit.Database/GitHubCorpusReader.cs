@@ -21,7 +21,7 @@ namespace Balenthiran.Kit.Database;
 /// public repository allows (BEH-PULL-2). Asked per read, so an expired token is replaced.
 /// </param>
 /// <param name="api">Default <c>https://api.github.com/</c>.</param>
-public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader, IGitHubTestReader, IGitHubCorpusWriter
+public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource tokens, Uri? api = null) : IGitHubCorpusReader, IGitHubFileReader, IGitHubTestReader, IGitHubCorpusWriter, IGitHubRepoReader
 {
     // Per repo (BEH-HEALTH-1): the last tree's ETag and the text of each test blob, by sha. Reads are
     // single-flight (the poller's ExpiringRefresh), so a state is never written by two reads at once.
@@ -86,6 +86,27 @@ public sealed class GitHubCorpusReader(HttpClient http, IGitHubTokenSource token
 
         var bytes = await answer.Content.ReadAsByteArrayAsync(cancellationToken);
         return (Utf8.GetString(bytes), answer.Headers.ETag?.ToString());
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsPublicAsync(string repo, CancellationToken cancellationToken = default)
+    {
+        var at = repo.IndexOf('@', StringComparison.Ordinal);
+        var name = at < 0 ? repo : repo[..at];
+        var slash = name.IndexOf('/', StringComparison.Ordinal);
+        if (slash <= 0 || slash == name.Length - 1)
+        {
+            throw new GitHubReadException($"{repo}: a repo to ask about is owner/repo");
+        }
+
+        var source = new ProjectSource { Owner = name[..slash], Repository = name[(slash + 1)..], Branch = string.Empty, Path = string.Empty };
+        var (token, mintFailed) = await MintAsync(cancellationToken);
+        using var answer = await SendAsync(new Uri(api ?? DefaultApi, $"repos/{source.Owner}/{source.Repository}"), token, null, "application/vnd.github+json", source, mintFailed, cancellationToken);
+
+        // Only an explicit "private": false is public; a missing or odd field is not.
+        var json = await ReadBodyAsync(answer, source, cancellationToken);
+        return json.ValueKind == JsonValueKind.Object
+            && json.TryGetProperty("private", out var p) && p.ValueKind == JsonValueKind.False;
     }
 
     /// <inheritdoc />
