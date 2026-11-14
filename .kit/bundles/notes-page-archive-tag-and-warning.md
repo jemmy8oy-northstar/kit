@@ -6,6 +6,7 @@ Cards:
 - BEH-GATE-H2
 - new: a note carries a tag showing where it came from (chat, floating note button, or the agent's background work), shown on the Notes page only
 Notes:
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:24Z (notes newest first, load-more button)
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-16 11:53Z · BEH-NOTE-10
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-31 01:01Z · BEH-GATE-H2
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-03 13:55Z
@@ -19,3 +20,5 @@ Context:
 - Warning question: "What does this mean?" on 2026-10-31 01:01Z. Answer on the card. BEH-GATE-H2 in kit-ui says the note box warns that what is typed is public. Resolve the duplicate ID with the owner before any rename.
 - Source tag: there is no card for it yet. A note needs a tag showing where it came from (the chat, the floating note button, or the agent's background work). It shows on the Notes page only, not in the chat for now. The builder should say in the card where the tag is stored (the note's line in kit-ui.notes.md, or elsewhere) and should not change the chat.
 - Related cards: BEH-NOTE-9 (notes listed newest first), BEH-NOTE-12 (floating note button), BEH-FEAT-7 (notes are a tab).
+
+Triage added the 2026-10-16 07:24Z note: notes are listed most recent first, and past the first page a load-more button fetches the rest, so the whole list is not pulled into the UI. Check BEH-NOTE-11 first; the new card covers ordering and paging, not the archive or tag work above (level low: an existing card may already cover ordering).
