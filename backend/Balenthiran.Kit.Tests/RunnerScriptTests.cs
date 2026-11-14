@@ -446,6 +446,22 @@ public class RunnerScriptTests
         Assert.Equal("time exit 124\n", File.ReadAllText(failure));
     }
 
+    // BEH-ORCH-14: a run that ended well can leave a server behind; nothing signals it then, so only the group kill ends it.
+    // This is also the half that does not depend on how a coreutils version delivers timeout's SIGKILL.
+    [Fact]
+    public void BEH_ORCH_14_A_process_the_agent_left_running_is_killed_when_the_agent_ends()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "sleep 20 &", "echo '{\"result\":\"done\"}'");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_RUN_MAX_SECONDS"] = "60" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.True(r.Status == 0, r.Stderr);
+    }
+
     // BEH-ORCH-14: 137 is what a kill from elsewhere (out of memory) looks like too; inside the limit it is the agent failing.
     [Fact]
     public void BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout()

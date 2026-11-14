@@ -160,6 +160,9 @@ status=0
 # BEH-ORCH-14: nothing else bounds a run's time. The claimer's limit acts only when pool.sh asks for the next run, which a
 # hung agent never lets it do, and a subscription run never meets the proxy's token age. timeout signals the agent's whole
 # process group, so a test server it left running dies with it rather than holding the pod.
+# Whether its final SIGKILL reaches that whole group differs between coreutils versions (it did not on CI's Ubuntu), so
+# once timeout has returned, whatever is left in its group is killed here. timeout leads that group, so its id is the pgid.
+# The same goes for a run that ended well: a server the agent left behind would otherwise outlive it.
 started=$SECONDS
 kill_after="${KIT_RUN_KILL_AFTER:-30}" # overridable only so a test can reach the SIGKILL path quickly
 timeout --kill-after="$kill_after" "$max_seconds" claude -p "$KIT_TASK" \
@@ -167,7 +170,10 @@ timeout --kill-after="$kill_after" "$max_seconds" claude -p "$KIT_TASK" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
   --permission-mode bypassPermissions \
-  --output-format json > "$result" || status=$?
+  --output-format json > "$result" &
+agent=$!
+wait "$agent" || status=$?
+kill -KILL -- "-$agent" 2>/dev/null || true
 # A failed run spent tokens too, so its usage is written before the exit status is acted on.
 node -e '
   const [file, usageFile] = process.argv.slice(1);
