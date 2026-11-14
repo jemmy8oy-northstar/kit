@@ -7,7 +7,11 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 public sealed record StageTurnSettings(int Triage, int Review, int Spec, int Build, int Context = StageTurnSettings.DefaultContext, int? Resolve = null, int? Test = null)
 {
-    public const int DefaultTriage = 15;
+    /// <summary>
+    /// BEH-ORCH-1: was 15. No triage has pushed a bundle since that limit went live (2026-11-07 12:01Z), and pushing
+    /// one work item takes about four turns of its own, so running out of turns is the likely cause.
+    /// </summary>
+    public const int DefaultTriage = 30;
 
     /// <summary>BEH-ORCH-11: the context job reads a repo and a spec for one bundle, so it gets the turns triage gets.</summary>
     public const int DefaultContext = DefaultTriage;

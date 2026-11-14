@@ -360,7 +360,7 @@ behaviour BEH-GATE-H1 "Nothing of Kit is read by anyone who has not signed in"
   in FEAT-LOCK
   layer technical
   source inferred kit#795
-  review unreviewed
+  review approved
   priority 5
   actor engineer
   given request:Anonymous

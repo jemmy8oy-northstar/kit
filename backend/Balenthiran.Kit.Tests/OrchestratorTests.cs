@@ -215,17 +215,17 @@ public class OrchestratorTests
     // ---- BEH-ORCH-5: the turn limit per stage ----------------------------------------------------
 
     [Fact]
-    public void BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100()
+    public void BEH_ORCH_5_Stage_turn_limits_default_to_30_20_30_and_100()
     {
         var turns = StageTurnSettings.Defaults;
 
-        Assert.Equal(15, Orchestrator.TurnsFor(PipelineStage.Triage, turns));
+        Assert.Equal(30, Orchestrator.TurnsFor(PipelineStage.Triage, turns));
         Assert.Equal(20, Orchestrator.TurnsFor(PipelineStage.Review, turns));
         Assert.Equal(30, Orchestrator.TurnsFor(PipelineStage.Spec, turns));
         Assert.Equal(100, Orchestrator.TurnsFor(PipelineStage.Build, turns));
         var settings = new KitSettings("d", "r", null, "dist");
-        Assert.Equal((15, 20, 30, 100), (settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild));
-        Assert.Equal((15, 20, 30, 100), (KitSettings.ParseStageTurnsTriage(null), KitSettings.ParseStageTurnsReview(""), KitSettings.ParseStageTurnsSpec("  "), KitSettings.ParseStageTurnsBuild(null)));
+        Assert.Equal((30, 20, 30, 100), (settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild));
+        Assert.Equal((30, 20, 30, 100), (KitSettings.ParseStageTurnsTriage(null), KitSettings.ParseStageTurnsReview(""), KitSettings.ParseStageTurnsSpec("  "), KitSettings.ParseStageTurnsBuild(null)));
     }
 
     [Fact]

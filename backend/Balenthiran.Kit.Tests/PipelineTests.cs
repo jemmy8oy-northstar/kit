@@ -511,7 +511,7 @@ public class PipelineTests
         using var rig = new Rig();
         rig.Note("the list should sort by date");
         var triage = Assert.IsType<PoolClaim>(rig.Claim());
-        Assert.Equal(15, triage.MaxTurns);
+        Assert.Equal(30, triage.MaxTurns);
 
         rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
         var spec = Assert.IsType<PoolClaim>(rig.Claim());
@@ -2132,8 +2132,8 @@ public class PipelineTests
     [Fact]
     public void BEH_ORCH_11_the_context_stage_runs_on_triages_model_and_turns_unless_set_and_the_job_looks_every_two_minutes()
     {
-        Assert.Equal(("claude-haiku-5-5", 15), (KitSettings.ParseStageModelContext(null), KitSettings.ParseStageTurnsContext(null)));
-        Assert.Equal(("claude-haiku-5-5", 15), (new KitSettings("d", "r", null, "dist").StageModelContext, new KitSettings("d", "r", null, "dist").StageTurnsContext));
+        Assert.Equal(("claude-haiku-5-5", 30), (KitSettings.ParseStageModelContext(null), KitSettings.ParseStageTurnsContext(null)));
+        Assert.Equal(("claude-haiku-5-5", 30), (new KitSettings("d", "r", null, "dist").StageModelContext, new KitSettings("d", "r", null, "dist").StageTurnsContext));
         Assert.Equal(("claude-sonnet-5-5", 7), (KitSettings.ParseStageModelContext(" claude-sonnet-5-5 "), KitSettings.ParseStageTurnsContext(" 7 ")));
         Assert.Equal("claude-haiku-5-5", Orchestrator.ModelFor(PipelineStage.Context, Models));
         Assert.Equal("m-ctx", Orchestrator.ModelFor(PipelineStage.Context, Models with { Context = "m-ctx" }));
