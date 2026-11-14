@@ -810,3 +810,11 @@ Ah my minutes r used up. I feel like if we swap to paid we will still run out it
 <!-- from: note-button -->
 
 Maybe to cut costs we can use the kit pipeline for deployment - it can run tests as well but only use it for those completed merge promotions. Maybe we should have some promotion pipeline as well like deploy from main rather than develop so that promotions can be purposeful. Then you can just make sure that tests are passing locally otherwise build will fail
+
+## 2026-11-14 08:27Z
+
+<!-- from: note-button -->
+
+Made kit public temporarily to unblock us but we still need to look at minimising credit usage in our private usage
+
+Later when we r making money I can pay for github
