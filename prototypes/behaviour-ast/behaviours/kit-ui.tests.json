@@ -432,7 +432,7 @@
   "BEH-USERS-8": [
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_write_to_the_operators_projects" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
-    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
   ],
   "BEH-LOADING-1": [
@@ -623,7 +623,7 @@
   ],
   "BEH-FLAGS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_tester_is_served_what_is_off_for_testers_and_not_the_table" },
-    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_a_tester" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_refused" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 leaves the navigation entry of a feature that is off for testers out of their bar" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows the same feature in his bar when it is on for him" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page" },

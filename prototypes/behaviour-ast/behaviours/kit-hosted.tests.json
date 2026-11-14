@@ -94,15 +94,15 @@
   "BEH-GATE-H1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
-      "title": "Locked_a_private_project_needs_a_session_and_a_public_one_does_not"
+      "title": "Locked_every_read_needs_a_session"
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
-      "title": "With_no_answer_about_visibility_every_project_is_private"
+      "title": "What_a_machine_reads_signed_out_stays_open"
     },
     {
       "file": "backend/Balenthiran.Kit.Tests/ReadGateTests.cs",
-      "title": "The_store_lists_an_app_only_when_GitHub_said_its_repo_is_public"
+      "title": "Unlocked_loopback_reads_everything_and_any_other_interface_reads_nothing"
     }
   ],
   "BEH-GATE-H2": [
