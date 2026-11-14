@@ -620,7 +620,7 @@ behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   then sees region:KitOpenNotes
   contract newest written at the top, in Needs your answer and the open notes alike
   contract ten are shown and a button shows more, saying how many are hidden, as a board column does (BEH-BOARD-7)
-  contract the API still sends every open note; paging the request waits until a notes file is long enough to be slow
+  contract my assumption: the API sends the open notes ten at a time, and the button asks it for the next ten, so the whole list is not pulled into the UI (kit.notes.md#2026-10-16-0724, "we don't have to pull all into the ui"); today the panel still receives the full list and pages it on screen, which is the part this changes
 
 behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready to dismiss"
   in FEAT-NOTES
@@ -670,6 +670,7 @@ behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
   contract an archived note can still be dismissed, which deletes it from the notes file as before
   contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
+  contract my assumption: his 2026-10-16 11:53Z note (kit-ui.notes.md#2026-10-16-1153) approved BEH-NOTE-10 and asked for this archive, with expiry for later; I read that as his approval of this card, and he can deny it. Built: the panel hides folded notes behind Show archived with a count, and the tests in kit-ui.tests.json are mapped
 
 # Was BEH-BOARD-8, "The board takes free text, and asks which project it is for", and
 # BEH-BOARD-9, "Typing a project's name in the board's box suggests it" (kit.notes.md#2026-10-16-0730).

@@ -6,7 +6,7 @@ Cards:
 - BEH-NOTE-9
 - BEH-NOTE-11
 - BEH-GATE-H2
-- new: a note carries a tag showing where it came from (chat, floating note button, or the agent's background work), shown on the Notes page only
+- BEH-NOTE-15
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:24Z (notes newest first, load-more button)
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-16 11:53Z · BEH-NOTE-10
@@ -24,3 +24,10 @@ Context:
 - Related cards: BEH-NOTE-9 (notes listed newest first), BEH-NOTE-12 (floating note button), BEH-FEAT-7 (notes are a tab).
 
 Triage added the 2026-10-16 07:24Z note: notes are listed most recent first, and past the first page a load-more button fetches the rest, so the whole list is not pulled into the UI. BEH-NOTE-9 already covers newest-first ordering. Check it first; the load-more paging may need a new card (level low: not sure whether BEH-NOTE-9 or BEH-NOTE-11 already covers paging).
+
+Test plan:
+- BEH-NOTE-9: the panel asks the API for ten notes at a time and the load-more button asks for the next ten, so the full list is not requested (new; the existing "shows ten" test checks only the on-screen count)
+- BEH-NOTE-9: the newest note is listed first, and the button's count of hidden notes is right (existing "lists the newest note first" and "shows ten" tests)
+- BEH-NOTE-11: an archived note can still be dismissed, and dismissing it removes it from the notes file (new; existing tests cover only hiding and counting)
+- BEH-NOTE-15: a note with an origin outside chat, note-button and agent is accepted and shows untagged (new CONTROL; existing test covers a tag shown and none for a note without one)
+- BEH-NOTE-15: the Chat page does not show the origin tag (new CONTROL; existing test covers the Notes panel only)
