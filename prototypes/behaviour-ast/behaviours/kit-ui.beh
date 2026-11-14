@@ -3388,7 +3388,7 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   in FEAT-USER-DATABASES
   layer ux
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58); it waits on that, as BEH-LITE-1 does."
