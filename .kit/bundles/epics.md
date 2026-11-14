@@ -1,6 +1,7 @@
 # Epics as their own block, tagged onto features and behaviours at any depth
 Work-item: epics
 Flag: Epic tags (BEH-EPIC-3) would share the tag and colour rendering that open ticket project-navigation-and-tags is building (BEH-FEAT-2, BEH-KIND-1); build on that component, or check that ticket first (level: low)
+Review: agreed — BEH-EPIC-3 already fixes a distinct secondary colour and opens the epic page, so the bundle stands; build epic tags on the shared tag component from project-navigation-and-tags if it has landed, else add a small epic variant and reconcile later
 Cards:
 - BEH-EPIC-1
 - BEH-EPIC-2
