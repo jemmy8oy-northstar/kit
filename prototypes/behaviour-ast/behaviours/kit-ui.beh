@@ -3371,7 +3371,7 @@ behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump
   in FEAT-PROJECT-SPACES
   layer technical
   source defined kit.notes.md#2026-11-07-2114
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "What do you find wrong with one spec file per project: its size, finding things in it, or how it reads in a diff? Until you say, it stays on the Backlog and I build nothing."
