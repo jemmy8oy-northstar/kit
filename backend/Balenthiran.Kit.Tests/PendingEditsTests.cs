@@ -231,12 +231,11 @@ public class PendingEditsTests
     }
 
     [Fact]
-    public void It_is_a_read_so_a_locked_Kit_gates_it_as_the_project_is()
+    public void It_is_a_read_so_a_locked_Kit_refuses_it_without_a_session()
     {
         var reader = new ScriptedReader(new PendingEdits());
 
-        // BEH-GATE-H1 (kit#795): served signed out when the project's repo is public, refused when not.
-        Assert.Equal(200, Router(reader, password: "pw", visibility: new ReadGateTests.PublicApps("snip-it")).Route("GET", "/api/projects/snip-it/pending").Status);
+        // BEH-GATE-H1 (kit#795): nothing of Kit is read signed out.
         Assert.Equal(401, Router(reader, password: "pw").Route("GET", "/api/projects/snip-it/pending").Status);
     }
 
@@ -277,7 +276,7 @@ public class PendingEditsTests
         Assert.Equal($"Bearer {Token}", gh.Sent[0].Authorization);
     }
 
-    private static KitRouter Router(ScriptedReader pending, bool git = true, string? password = null, IProjectVisibility? visibility = null)
+    private static KitRouter Router(ScriptedReader pending, bool git = true, string? password = null)
     {
         var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);
         var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
@@ -288,8 +287,7 @@ public class PendingEditsTests
             password,
             git: new GitStore(enabled: git),
             head: "kit/hosted",
-            pending: pending,
-            visibility: visibility);
+            pending: pending);
     }
 
     private static JsonElement Body(IKitResponse r) => JsonDocument.Parse(Serialiser.Serialise(r.Body!)).RootElement;
