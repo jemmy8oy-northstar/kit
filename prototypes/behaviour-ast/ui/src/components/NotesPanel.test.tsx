@@ -168,6 +168,21 @@ describe('NotesPanel (kit#118)', () => {
     expect(within(region()).getByText(/You answered: today only/)).toBeInTheDocument()
   })
 
+  it('keeps a note open after its answer, and says the reply was committed and pushed (BEH-NOTE-6)', async () => {
+    server([asked()])
+    render(<NotesPanel app="demo" />)
+
+    const needs = await screen.findByRole('region', { name: 'Needs your answer' })
+    fireEvent.change(within(needs).getByLabelText('Your answer'), { target: { value: 'only on the today view' } })
+    fireEvent.click(within(needs).getByRole('button', { name: 'Reply' }))
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Needs your answer' })).not.toBeInTheDocument())
+    expect(within(region()).getByText('keep the order', { selector: 'p' })).toBeInTheDocument()
+    expect(within(region()).getByText(/You answered: only on the today view/)).toBeInTheDocument()
+    expect(within(region()).getByText('1 open note')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Committed as abc1234 and pushed to kit/hosted.')
+  })
+
   it('dismisses a note in one tap, by its place and date', async () => {
     const posts = server([note('2026-10-09 08:00Z', null, 'first'), note('2026-10-09 09:00Z', null, 'second')])
     render(<NotesPanel app="demo" />)

@@ -194,6 +194,7 @@ behaviour BEH-SHEET-3 "He can answer what Kit is asking, under the question"
   contract an answer is a plain note on the card the question is about, in the notes the page shows, so the agent reads and folds it like any other note
   contract until it is folded, his answer shows under the question, marked as waiting for Kit, and the box becomes "Add to your answer"
   contract my assumption: the question stays on the tab until the agent acts on his answer and edits or removes the card's needs-context line, so an answer is never lost between his reply and the agent's next wake
+  contract my assumption: built, as the answer box under each question (AskCard, Project.tsx): the reply is a plain note on the card, shown as waiting for Kit until folded
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
@@ -321,6 +322,7 @@ behaviour BEH-NOTE-4 "A new behaviour is asked for in free text, not a form"
   contract it is saved as a request note in <app>.notes.md; the corpus is not touched until it is folded
   contract no id, title or actor is asked for — whoever folds it writes those, and the steps
   contract Ask for behaviour is disabled while the box is empty
+  contract my assumption: built, as the free-text ask box on the project page (AskForBehaviour, Project.tsx): no id, title or actor fields; it writes a request note through askForBehaviour, and the corpus is not touched
 
 behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with questions"
   in FEAT-NOTES
@@ -334,6 +336,7 @@ behaviour BEH-NOTE-5 "A note that could not be turned into spec comes back with 
   contract notes with questions are listed above every other open note, newest question first
   contract with none waiting there is no region at all — an empty one on every project page is the scrolling he asked to lose
   contract a note waiting on an answer is listed only there, never again among the open notes
+  contract my assumption: built, as "Needs your answer" on the project page (NeedsAnswer, NotesPanel.tsx): above the open notes, and no region at all when none is waiting
 
 behaviour BEH-NOTE-6 "A note's questions are answered in free text"
   in FEAT-NOTES
@@ -346,6 +349,7 @@ behaviour BEH-NOTE-6 "A note's questions are answered in free text"
   then sees region:KitOpenNotes
   contract the reply is appended under the note and its questions; the note stays open for the next fold
   contract it is committed and pushed like any other edit, and the write result says so
+  contract my assumption: built, as the Reply box under a note's questions (NotesPanel.tsx, Notes.cs Reply): the answer is appended under the note, which stays open
 
 behaviour BEH-NOTE-7 "A note can be dismissed"
   in FEAT-NOTES
@@ -358,6 +362,7 @@ behaviour BEH-NOTE-7 "A note can be dismissed"
   contract the note leaves <app>.notes.md in a commit of its own; git history keeps it, so dismissing is recoverable
   contract it asks nothing further — dismiss is the cancel, and a second prompt would make it a chore again
   contract dismissing a note that someone else already removed says so, rather than failing silently
+  contract my assumption: built, as one-tap Dismiss on every note (NotesPanel.tsx, Notes.cs Dismiss), with no confirm
 
 behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
   in FEAT-NOTES
@@ -371,6 +376,7 @@ behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
   then sees region:KitOpenNotes
   contract it leaves a note tagged with the decision's key; the conflict stays on the sheet until the note is folded
   contract no corpus keyword is invented to record it — the fold is what edits the behaviours
+  contract my assumption: built, on the question sheet (QuestionSheet, Project.tsx): a decision is answered in free text, written as a resolution note tagged with the decision's key (Notes.cs AppendResolution)
 
 behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
   in FEAT-PROJECT
@@ -382,6 +388,7 @@ behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
   when opens page:KitProject
   contract every card leads with the title; the id follows in muted type, still there to search and link by
   contract an id is never removed from a URL or a commit — it is quieter, not gone
+  contract my assumption: built, on the project page and the schedule (Project.tsx, SchedulePanel.tsx Title): the title leads and the id follows in a muted span, still a link target
 
 # ═══ Navigation and the board (kit#237) ═══════════════════════════════════════
 # "What I am seeing is more like an agile tool … a navbar with two views for now:
@@ -1944,6 +1951,7 @@ behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   contract "Maybe from anywhere there is a floating action button which can add a note"
   contract my assumption: the note lands on the project of the page it was added from, or asks which project when there is none
   contract my assumption: the button sits bottom right on every page and opens a small box above it; on a behaviour's page the note is tagged with that behaviour, as the page's own note box does
+  contract my assumption: built, as the floating note button (NoteFab.tsx, mounted in App.tsx): on every page, the note lands on the page's project and behaviour, and a page with no project asks which
 
 behaviour BEH-NOTE-13 "A note from the floating button that names a project offers that project, one tap each"
   in FEAT-NOTES
