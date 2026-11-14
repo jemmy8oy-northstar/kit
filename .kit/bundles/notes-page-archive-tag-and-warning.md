@@ -2,6 +2,7 @@
 Work-item: notes-page-archive-tag-and-warning
 Flag: BEH-GATE-H2 is used by two cards with different text: kit-ui's "Every note box warns that what you type is public" and kit-hosted's "A write is refused unless the caller proved they are the operator". The 2026-10-31 01:01Z note does not say which one it is on. Check the note's position before answering.
 Cards:
+- BEH-NOTE-9
 - BEH-NOTE-11
 - BEH-GATE-H2
 - new: a note carries a tag showing where it came from (chat, floating note button, or the agent's background work), shown on the Notes page only
@@ -21,4 +22,4 @@ Context:
 - Source tag: there is no card for it yet. A note needs a tag showing where it came from (the chat, the floating note button, or the agent's background work). It shows on the Notes page only, not in the chat for now. The builder should say in the card where the tag is stored (the note's line in kit-ui.notes.md, or elsewhere) and should not change the chat.
 - Related cards: BEH-NOTE-9 (notes listed newest first), BEH-NOTE-12 (floating note button), BEH-FEAT-7 (notes are a tab).
 
-Triage added the 2026-10-16 07:24Z note: notes are listed most recent first, and past the first page a load-more button fetches the rest, so the whole list is not pulled into the UI. Check BEH-NOTE-11 first; the new card covers ordering and paging, not the archive or tag work above (level low: an existing card may already cover ordering).
+Triage added the 2026-10-16 07:24Z note: notes are listed most recent first, and past the first page a load-more button fetches the rest, so the whole list is not pulled into the UI. BEH-NOTE-9 already covers newest-first ordering. Check it first; the load-more paging may need a new card (level low: not sure whether BEH-NOTE-9 or BEH-NOTE-11 already covers paging).
