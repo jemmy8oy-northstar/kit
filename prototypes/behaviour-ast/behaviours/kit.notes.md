@@ -657,3 +657,170 @@ Just thoughts, with making a note as we start to design this
 To help us with cost analysis we should start recording the cost that Claude code bot incurs from kit sessions. Apprentice this should be easy to extract and we can even look at previous sessions by looking inside ~/.Claude/ this should help us with figuring out pricing models and whether this is a viable product.
 
 I am worried because people have said that api incurs a much lower cost than if you were using api. So we can use the cost outputs to figure out weekly cost historically? And compare to subscription cost?
+
+## 2026-11-06 18:07Z
+
+<!-- from: note-button -->
+
+This is just a test please discard it
+
+## 2026-11-06 18:16Z
+
+<!-- from: note-button -->
+
+This is a test (I need Claude code bot to wake)
+
+## 2026-11-06 18:20Z
+
+<!-- from: note-button -->
+
+Test
+
+## 2026-11-06 18:34Z
+
+<!-- from: note-button -->
+
+Test
+
+## 2026-11-06 18:37Z
+
+<!-- from: note-button -->
+
+Test
+
+## 2026-11-06 23:53Z
+
+<!-- from: note-button -->
+
+This is a test
+
+## 2026-11-06 23:54Z
+
+<!-- from: note-button -->
+
+Test
+
+## 2026-11-07 01:23Z
+
+<!-- from: note-button -->
+
+test
+
+## 2026-11-07 01:50Z
+
+<!-- from: note-button -->
+
+Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog
+
+## 2026-11-07 01:51Z
+
+<!-- from: note-button -->
+
+The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage
+
+## 2026-11-07 02:10Z
+
+<!-- from: note-button -->
+
+A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs
+
+## 2026-11-07 02:11Z
+
+<!-- from: note-button -->
+
+Running kit pipeline with a node script. Surely this is perfect application for csharp async
+
+## 2026-11-07 10:50Z
+
+<!-- from: note-button -->
+
+Some page that shows visibility into agents running, what stage of the pipeline they are at, whether they flagged for a review and by which agent. Maybe you can also view the pipeline run of historic runs and see which stage costed the money, what reviews were requested for. This is purely an internal feature for now
+
+## 2026-11-07 10:56Z
+
+<!-- from: note-button -->
+
+The note and chart inputs do not get lost when subscription credits run out and the pipeline cannot activate
+
+## 2026-11-07 11:28Z
+
+<!-- from: note-button -->
+
+Pipeline can raise and complete PRs for completed work
+
+## 2026-11-07 14:22Z
+
+<!-- from: note-button -->
+
+www.kitstudio.dev seems to be broken what do i need to change
+
+## 2026-11-07 21:13Z
+
+<!-- from: note-button -->
+
+I think it would be worth changing the .beh extension to .kit or .spec or something. .beh is not intuitive it’s not easy to say i don’t really like it. Currently im leaning towards .kit
+
+## 2026-11-07 21:14Z
+
+<!-- from: note-button -->
+
+Backlog: I want to do some proper work on designing the kit spec structure I think one file dump per project is not structured well at all
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+First tester can see my proposed projects when they should not be able to, tester should only see work from there own space. Proposed projects should be per user, maybe this gets stored in the db until they create a fit repo for it
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+tester can’t see their own project - holiday planner, they are a contributor to holiday planner  - I feel like maybe we haven’t moved the spec files into this repo yet so we don’t see it. We also need to make sure that kit finds projects where are users are added contributors
+
+## 2026-11-07 21:21Z
+
+<!-- from: note-button -->
+
+A new user as part of the onboarding has to sign in with git before they can use the app - currently a user can look around without having signed into git
+
+## 2026-11-08 22:06Z
+
+<!-- from: note-button -->
+
+Ok so v1 of the pipeline had some queuing issues I have some ideas for a rework. The main issue I am seeing is that I don’t think a note should immediately trigger a feature build. Instead I think just like everything else it should go on the backlog. Then we have a few different jobs monitoring different status’ and waking agents to act on the tasks in various states. Rough idea:
+1. chat adds notes
+2. Hook to backend haiku agent which triages ensures there are no similar tickets and creates a ticket and or updates existing backlog tickets in new states
+3. Another agent which goes through tickets in new state and adds more context and loves state to ready or something
+4. Another one which runs through all items and plans them
+5. Another one which runs through implements and raises the pr
+6. Another one which is in charge of resolving conflicts and merging PRs
+There are a few things I’m not sure on. Like could/ should any of the stages be merged? Should 3&4 be merged for example. 3 will have brought all the context in already for 4 but then also will likely have extra context. I am thinking we start with them all as separate and then evaluate. But you see the benefit here right. Existing tickets will still get actioned currently only new tickets are getting actioned (and quite poorly). And also actioning will take place based off priority not based off a hook.
+
+In terms of hosting I kinda of feel that we should host a cluster local csharp backend to handle this and then have jobs for everything that handles the border tasks  but the triage stays acting on a hook. Seem reasonable?
+
+## 2026-11-12 08:08Z
+
+<!-- from: note-button -->
+
+Ah my minutes r used up. I feel like if we swap to paid we will still run out it’s only 50% increase right?. Are there any other options. Is self hosting viable? Maybe we should switch back to free tier.
+
+## 2026-11-12 08:37Z
+
+<!-- from: note-button -->
+
+Maybe to cut costs we can use the kit pipeline for deployment - it can run tests as well but only use it for those completed merge promotions. Maybe we should have some promotion pipeline as well like deploy from main rather than develop so that promotions can be purposeful. Then you can just make sure that tests are passing locally otherwise build will fail
+
+## 2026-11-14 08:27Z
+
+<!-- from: note-button -->
+
+Made kit public temporarily to unblock us but we still need to look at minimising credit usage in our private usage
+
+Later when we r making money I can pay for github
+
+## 2026-11-14 12:50Z
+
+<!-- from: note-button -->
+
+Can I get a button to flag for a ccb wake for my personal kit only. Sometimes I want it to wake but have to wait or write a note

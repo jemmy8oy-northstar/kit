@@ -1176,7 +1176,7 @@ behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and pr
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
   contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
-  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's does
+  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's did until 2026-11-14
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   in FEAT-EPICS
@@ -1219,10 +1219,30 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
 
-# His two epics (kit.notes.md 2026-10-19 17:21Z). EPIC-ONBOARD has no feature yet.
+# His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
 
-epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for now)"
+epic EPIC-ONBOARD "Onboard existing projects onto Kit"
+
+# His note (kit-ui.notes.md#2026-11-06-1804) brought EPIC-ONBOARD into scope, starting with Lovable.
+feature FEAT-ONBOARD-LOVABLE "An app built in Lovable can be brought onto Kit"
+  in EPIC-ONBOARD
+  stage problem
+
+behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable onto Kit"
+  in FEAT-ONBOARD-LOVABLE
+  layer ux
+  source defined kit-ui.notes.md#2026-11-06-1804
+  review unreviewed
+  priority 4
+  pending
+  needs-context "In scope, as you asked. Before I build: is the Lovable app already in the user's own GitHub (Lovable's GitHub sync), so onboarding starts from that repo? That is my assumption."
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
+  contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
+  contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
 
 # ═══ EPIC-KIT-USERS, drafted (BEH-EPIC-7) ═════════════════════════════════════
 # His 17:21Z list, split into features by the agent. Every behaviour here is
@@ -1393,12 +1413,13 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption: before any agent run starts, a plain rule in Kit, with no model, sets aside a note that is empty or only a test word ("test", "testing", "this is a test"), so it costs nothing. A note the rule does not catch goes to triage as now
   contract my assumption: triage, within its own turn limit (BEH-ORCH-5), may also put a note in a work item named backlog when it is an idea for later, naming the cards it would touch or "new: <title>". That item stops with "on the backlog: <reason>", so no spec or build run is paid for, and the bot writes its cards on its next wake and decides when to schedule them (BEH-ORCH-4). A Haiku API call could sort notes before any run starts, but it bills his API key rather than his subscription, against his kit#708 rule, so it is not used unless he says so
   contract built: NoteNoise.IsNoise sets aside an empty or test-word note when a triage begins, before any run, as a stopped set-aside item; only the other notes reach the run, and none at all starts no run. A backlog bundle from triage stops as "on the backlog: <reason>" and is never specced or built (kit#751)
-  needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
+  contract measured from his Runs screenshot (kit#803, 2026-11-14 09:20Z): triage has run live, 12 runs for $1.14 in all. The runs at 08:44Z (411,457 tokens) and 09:14Z (293,036 tokens) finished, but no kit/work/* branch has moved since 2026-11-07 11:32Z, so neither pushed a bundle, and the newest stopped with "the triage reported no usable bundle". Each such stop means the next note's triage reads its notes again and pays for them again
+  needs-context "Why today's triages push no bundle is not readable from outside: run logs are behind sign-in since kit#801. The read-only key for the bot (BEH-ORCH-6) is what lets me see it. Until then, a triage that sorts nothing costs about $0.20 each time a note is left."
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
   pending
   actor engineer
@@ -1409,7 +1430,7 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
   contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
-  needs-context "Built and wired to the orchestrator (BEH-ORCH-3) on dev, not yet promoted. No real review has run: production Kit has not deployed since kit went private (kit#714 has the one secret ArgoCD needs). Once a triage is seen live, I promote this and watch a flagged item."
+  contract approved by him 2026-11-14. It is on main and live since kit#794. No flagged item has been reviewed live yet, because no triage has pushed a bundle since 2026-11-07 (BEH-ORCH-1)
   contract his note (kit.notes.md#2026-11-07-0210): "A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs"
   contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
   contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
@@ -1418,10 +1439,10 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
 behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
   in FEAT-AGENT-PIPELINE
   source defined kit.notes.md#2026-11-07-0211
-  review unreviewed
+  review approved
   priority 4
   pending
-  needs-context "This is a platform choice, so it is yours. Today the orchestrator is already C# in Kit (Pipeline.cs, async, no model). Only the runner pod's loop is shell (runner/pool.sh, using node to read the claim's JSON), and each run is the Claude Code CLI, which is itself a Node program whatever wraps it. A C# runner would mean a .NET image for the runner, and the change is in the runner image, which is yours to merge. Approve and I build it; deny and the shell loop stays."
+  contract approved by him 2026-11-14, which answers the platform question: the runner's loop moves to C#. The runner image is packaging, so the change goes up as its own pull request for him to merge (claude-code-bot#83). At priority 4 it waits behind the pipeline's live defects (BEH-ORCH-1)
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1452,7 +1473,9 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption, projects (KIT_PIPELINE_PROJECTS): a triage pushes bundles quoting his notes to the project's repo, and every project repo but kit's is public, so the pipeline starts on kit and kit-ui only; unset, every project is triaged. He widens it
   contract my assumption, spec and review slice: a work item queued for spec or review starts a run on its kit/work/<slug> branch, given its bundle. Spec writes the cards the bundle names into the project's spec as "contract my assumption:" lines and new cards as unreviewed, adds a "Test plan:" to the bundle's Context, and writes no tests or code. It may add a Flag only when the bundle has none. The run must report its own bundle back changed, and a spec's must carry its test plan: an unchanged, missing or malformed bundle, a spec with no test plan, or a failed run, stops the item with the reason. A later triage that updates a bundle not yet running sends it back to spec with the new bundle. A queued triage starts before any later stage, so new notes can update a bundle before it is specced. An item that reaches build starts it (the build slice, below)
   contract my assumption, build slice: a specced work item starts a build run on its kit/work/<slug> branch, given its bundle. Build writes the tests its test plan names first and sees them fail, then the code until they and the project's whole suite pass, and adds a "Built:" list to the bundle's Context naming each test it wrote and the suite's result. It may add a Flag only when the bundle has none, and a flagged build is reviewed before it counts as built. A build, or a review of one, that reports its bundle without a Built list, unchanged, or failed stops the item with the reason. A waiting build starts before any waiting spec, so an item is built before the next item is specced. A built item is done, and Kit, not the run, opens a pull request from its branch into the branch the run started from, titled with the bundle's title and carrying the bundle as its body; GitHub refusing it, or Kit having no way to open one, stops the item with the reason. Nothing merges it: it is reviewed like any other pull request
-  needs-context "The pipeline is switched on in main (kit#714), but production Kit has not deployed since kit went private on 2026-11-04: ArgoCD most likely needs read access to the private repo (kit#714 has the steps). It triages kit and kit-ui notes only until you widen KIT_PIPELINE_PROJECTS."
+  contract his note (kit-ui.notes.md#2026-11-14-0925): "The pipeline approach has changed recently right"
+  contract my answer: yes. BEH-ORCH-11 replaces the chain this card describes with tickets and one job per stage (context, plan, build, merge), taken in priority order. It went live in kit#794 on 2026-11-14, but each job has its own switch (KIT_PIPELINE_JOB_CONTEXT, _PLAN, _BUILD, _MERGE), and production sets none of them, because each one spends his subscription. So production still runs this card's chain: a note queues a triage, and a triaged item goes straight on to spec and build
+  needs-context "Production is live and triages kit and kit-ui notes only, until you widen KIT_PIPELINE_PROJECTS. Switching on the BEH-ORCH-11 jobs is your call (kit#803)."
 
 behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no triage"
   in FEAT-AGENT-PIPELINE
@@ -1487,10 +1510,11 @@ behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays c
 behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixes its weakest stage"
   in FEAT-AGENT-PIPELINE
   source defined kit#714
-  review unreviewed
+  review approved
   priority 3
   pending
-  needs-context "To read how the pipeline did, the bot needs to read Runs, and Runs is yours only. Should the bot get a read-only key for it? That is an auth change, so it is your decision. Until you say, I'll read the costs from screenshots or text you send me."
+  contract approved by him 2026-11-14. I read that as yes to the question this card carried, whether the bot gets a read-only key for Runs. The key is an auth change, so I build it and he merges it. He can deny it
+  contract his Runs screenshot (kit#803, 2026-11-14) is the screenshot route this card offered until the key exists. The weakest stage it shows is triage: two runs today finished, pushed no bundle, and will be paid for again (BEH-ORCH-1)
   actor engineer
   when opens page:KitRuns
   then sees region:KitMain
@@ -1600,6 +1624,21 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract my assumption: a test run's model defaults to triage's (KIT_STAGE_MODEL_TEST, unset) because running a suite needs no code judgement, and its turns to build's (KIT_STAGE_TURNS_TEST, unset) because setting a suite up can take many steps; Runs shows what it costs
   contract my assumption: a failed test stops the ticket rather than retrying, because a flaky suite should be seen, not hidden by a second run
 
+behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
+  in FEAT-AGENT-PIPELINE
+  source defined kit-ui.notes.md#2026-11-07-0132
+  review unreviewed
+  priority 4
+  pending
+  needs-context "Where does the cadence setting live? My pick is its own row on Settings, next to the pipeline. Say if you'd rather it sat under BEH-SETTINGS-5 or 6."
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-07-0132): "Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT-PIPELINE and not a custom agent under BEH-AGENTS-1. It is an exception to the no-timer rule in BEH-ORCH-3"
+  contract his note: a cheap model still triages most tasks; the review checks neglected tasks, a sample of completed work and the architecture; the user chooses daily, every two days or weekly
+  contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
+  contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
@@ -1612,6 +1651,8 @@ behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   contract my assumption: a "Wake the agent" button on Settings, for the operator only, records the time he pressed it; the agent's scheduler looks every 5 minutes and wakes it when that time is newer than its last wake, even from a sleep it chose itself; his own pause still wins
   contract my assumption: stored as a "# kit:wake <ISO time>" line in kit.beh, so a press is a commit he can see; GET /api/settings/wake serves { requested } and POST /api/settings/wake sets it to now, behind the operator-only gate
   contract my assumption: it matters once the bot stops waking on every Kit action and wakes on a schedule instead (his kit#714 suggestion); the scheduler half lives in claude-code-bot and is his to merge
+  contract his note (kit.notes.md#2026-11-14-1250): "Can I get a button to flag for a ccb wake for my personal kit only. Sometimes I want it to wake but have to wait or write a note"
+  contract my answer: it is this card, live on main since 2026-11-07 and never pressed (kit.beh has no "# kit:wake" line). Settings, "Wake the agent": the press is a Kit commit, so the scheduler wakes the agent about 5 minutes later, the same as a note does but with nothing to write
   contract built: a "Wake the agent" section on Settings, shown to the operator only, with a "Wake the agent" button, a "Last asked: <local time>" or "Never asked" line, and the sentence "The agent wakes at its next look, within about 5 minutes, unless you have paused it."; pressing it POSTs /api/settings/wake with no body, which replaces any "# kit:wake" line in kit.beh with exactly "# kit:wake <ISO 8601 UTC time>" (nothing after, so grep -E '^# kit:wake [0-9]' and the third field give the time) or adds one after the leading directives; GET serves { requested: <iso> | null }; both sit behind the same operator-only gate as every write
 
 feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
@@ -2440,6 +2481,21 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   contract my assumption: the depth is per project, a `# kit:depth` line like the conflicts and promote switches, rather than per user, because a project has one user today and a per-user store would be a data-model change that is his to make
   contract my assumption: behaviours is the default and is stored as no line, as it is today, so a project that never chose behaves as it did
 
+behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack, the same picture every time for the same repo"
+  in FEAT-ARCH
+  layer technical
+  source defined kit-ui.notes.md#2026-11-06-1801
+  review unreviewed
+  priority 5
+  pending
+  needs-context "Backlogged, not for now, as you asked. Left open, as you said: the layout, and whether anything from the spec is drawn too."
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-06-1801): "a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now"
+  contract it extends BEH-ARCH-1 and does not change it
+  contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
+
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
 
@@ -2683,7 +2739,7 @@ behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent res
   in FEAT-SPEC-AGENT
   layer ux
   source defined kit.notes.md#2026-11-03-1019
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "It needs web search, which costs per query on top of the model; say if it may spend, and how much a design session may cost."
@@ -3277,7 +3333,7 @@ behaviour BEH-PROJCONF-2 "Migrations against a user's production database are li
   in FEAT-PROJECT-CONFIG
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It is your rule to set: whether migrations against a user's production database may run at all, or preprod only."
@@ -3296,7 +3352,7 @@ behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no 
   in FEAT-LITE-APPS
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58)."
@@ -3371,7 +3427,7 @@ behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump
   in FEAT-PROJECT-SPACES
   layer technical
   source defined kit.notes.md#2026-11-07-2114
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "What do you find wrong with one spec file per project: its size, finding things in it, or how it reads in a diff? Until you say, it stays on the Backlog and I build nothing."
@@ -3388,7 +3444,7 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   in FEAT-USER-DATABASES
   layer ux
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58); it waits on that, as BEH-LITE-1 does."
