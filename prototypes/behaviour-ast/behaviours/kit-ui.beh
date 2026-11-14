@@ -650,6 +650,7 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract the type is the existing `layer` line: ux unless a `layer` line or the file's `# kit:layer` says otherwise, so every behaviour has exactly one
   contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
+  contract my assumption: a feature shows as tags the layers of the behaviours beneath it, on its card and on its own page, so the layers read as tags on features as well as on cards (kit.notes.md#2026-10-16-0724: "are ui/ux/logic implementation even treated as tags")
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
   contract my assumption: each card's layer is a visible word, ui, ux or technical, as written; the technical chip and badge also say "logic implementation" in a tooltip naming it the logic under both, because the 10-16 notes call it that (kit.notes.md#2026-10-16-0714, #2026-10-16-0724: "I am not seeing them anywhere")
 
