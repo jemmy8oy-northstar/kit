@@ -1487,7 +1487,7 @@ behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays c
 behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixes its weakest stage"
   in FEAT-AGENT-PIPELINE
   source defined kit#714
-  review unreviewed
+  review approved
   priority 3
   pending
   needs-context "To read how the pipeline did, the bot needs to read Runs, and Runs is yours only. Should the bot get a read-only key for it? That is an auth change, so it is your decision. Until you say, I'll read the costs from screenshots or text you send me."
