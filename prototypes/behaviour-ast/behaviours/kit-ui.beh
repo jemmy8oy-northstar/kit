@@ -3296,7 +3296,7 @@ behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no 
   in FEAT-LITE-APPS
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58)."
