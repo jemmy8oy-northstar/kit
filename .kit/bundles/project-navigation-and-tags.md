@@ -13,8 +13,6 @@ Cards:
 - BEH-KIND-1
 - BEH-KIND-2
 Notes:
-- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:24Z (ui/ux/logic not shown as tags)
-- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:14Z (filter by ui/ux/logic types)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:13Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-11 12:39Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:14Z ("I feel like when browsing we should be able to filter the different types ui, ux and logic implementation")
