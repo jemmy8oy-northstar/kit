@@ -25,6 +25,12 @@ Context:
 
 Triage added the 2026-10-16 07:24Z note: notes are listed most recent first, and past the first page a load-more button fetches the rest, so the whole list is not pulled into the UI. BEH-NOTE-9 already covers newest-first ordering. Check it first; the load-more paging may need a new card (level low: not sure whether BEH-NOTE-9 or BEH-NOTE-11 already covers paging).
 
+Built:
+- BEH-NOTE-11: an archived note can still be dismissed, and the notes file no longer lists it (passed on first run; the archive was already built)
+- BEH-NOTE-15: a note whose origin is not one of the three is shown untagged, not as "from …" (failed first; fixed in NotesPanel.tsx by showing a tag only for chat, note-button and agent)
+- BEH-NOTE-15: CONTROL, an ordinary chat turn shows no "from" tag, even with a note that carries one (passed on first run)
+- Whole suite: 543 UI tests ran (prototypes/behaviour-ast/ui, npm test) and all passed; tsc -b and eslint on the changed files are clean. The C# backend suite was not run because no .NET SDK is installed here.
+
 Test plan:
 - BEH-NOTE-9: the panel asks the API for ten notes at a time and the load-more button asks for the next ten, so the full list is not requested (new; the existing "shows ten" test checks only the on-screen count)
 - BEH-NOTE-9: the newest note is listed first, and the button's count of hidden notes is right (existing "lists the newest note first" and "shows ten" tests)

@@ -280,6 +280,17 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
   })
 })
 
+describe('BEH-NOTE-15: the chat does not show a note\'s origin tag', () => {
+  it('CONTROL: an ordinary chat turn shows no "from" tag, even with a note that carries one in the project', async () => {
+    mockApi()
+    await open()
+    notesNow = [{ at: '2026-11-03 13:49Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.', from: 'chat' }]
+    await say('hello', 'reply 1')
+
+    expect(screen.queryByText(/from chat/)).not.toBeInTheDocument()
+  })
+})
+
 describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', () => {
   it('sends the item in hand with each turn, and the messages carry no post-as-answer buttons', async () => {
     mockApi()

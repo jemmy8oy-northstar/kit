@@ -190,7 +190,8 @@
   ],
   "BEH-NOTE-11": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "hides archived notes again, and counts them on the button (BEH-NOTE-11)" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" }
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "an archived note can still be dismissed, and the notes file no longer lists it (BEH-NOTE-11)" }
   ],
   "BEH-NOTE-12": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "leaves a note on the project of the page it was opened from, and tells the page's notes to re-read" },
@@ -865,7 +866,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links to the project's notes, and follows the project the chat is about" }
   ],
   "BEH-NOTE-15": [
-    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows a muted \"from\" tag for a note that carries an origin, and none for one that does not" }
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows a muted \"from\" tag for a note that carries an origin, and none for one that does not" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "a note whose origin is not one of the three is shown untagged, not as \"from …\"" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "CONTROL: an ordinary chat turn shows no \"from\" tag, even with a note that carries one in the project" }
   ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
