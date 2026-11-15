@@ -2108,9 +2108,10 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   when opens page:KitProjects
   then sees region:KitNav
   contract "can you take a look at the kit header on mobile it is really cluttered"
-  contract my assumption: on a narrow screen the brand and the account sit on one line, the links sit on a single line under them that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
+  contract my assumption: on a narrow screen the brand sits alone on the first line, the links sit on a single line under it that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
+  contract my assumption: checked 2026-11-15 against index.css (the 40rem media rules for .app > header, its .muted and its .nav), which layout.test.ts asserts; the rules match this card, so it reads as built, not regressed; docs/screenshots/ui/title-board-phone.png predates them (it still shows the tagline and the links beside the brand), so it is not a picture of the current header
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
   in FEAT-BOARD
