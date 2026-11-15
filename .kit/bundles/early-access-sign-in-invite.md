@@ -1,6 +1,7 @@
 # Early access: invite-only username and password sign-in, GitHub connected after
 Work-item: early-access-sign-in-invite
 Flag: the two bare "Yes" notes have no question beside them, so I attached them here as confirmations of the sign-in questions; the 10-28 reinstall question is the owner's to answer; the 10-31 test-user question is also the owner's (level: low)
+Review: agreed — the cards and the corpus already record the "Yes" notes as the username and password choice (BEH-USERS-1, 10) and both owner questions as his to decide with defaults and no code change; BEH-USERS-1 and 10 are built, so the "new" tests are only for the gaps; BEH-USERS-11 paused until 2026-11-14, which has now passed, so recheck its pause before building
 Cards:
 - BEH-USERS-1
 - BEH-USERS-10
