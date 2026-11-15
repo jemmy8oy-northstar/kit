@@ -203,3 +203,9 @@ What is the home on this it isn’t marked as blocked
 ## 2026-11-15 12:48Z · BEH-ORCH-8
 
 I don’t understand what this is asking
+
+## 2026-11-15 12:50Z · BEH-LOVABLE-1
+
+<!-- from: chat -->
+
+Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo.
