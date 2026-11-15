@@ -854,3 +854,9 @@ Kit .kit specs live in the project repo not centrally in kit
 <!-- from: note-button -->
 
 When in chat you should see the state of the top of stack item that you are being shown
+
+## 2026-11-15 13:00Z
+
+<!-- from: note-button -->
+
+Too priority atm is splitting out the projects in kit and moving notes and specs into the projects repos
