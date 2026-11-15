@@ -1605,7 +1605,7 @@ public class PipelineTests
     }
 
     [Fact]
-    public void BEH_ORCH_16_a_ticket_whose_run_failed_keeps_its_state_and_is_tagged_blocked_with_why()
+    public void BEH_ORCH_11_a_ticket_whose_run_failed_is_stopped_with_why()
     {
         using var rig = new Rig();
         var spec = Triaged(rig);
