@@ -14,7 +14,6 @@ Cards:
 - FEAT-EPICS
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-19 16:44Z
-- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-19 17:21Z (line 123)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-19 17:25Z (line 131)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-20 07:12Z (line 151)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-21 15:52Z (line 181)
