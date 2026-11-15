@@ -622,7 +622,8 @@ behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   then sees region:KitOpenNotes
   contract newest written at the top, in Needs your answer and the open notes alike
   contract ten are shown and a button shows more, saying how many are hidden, as a board column does (BEH-BOARD-7)
-  contract the API still sends every open note; paging the request waits until a notes file is long enough to be slow
+  contract my assumption: the API sends the open notes ten at a time, and the button asks it for the next ten, so the whole list is not pulled into the UI (kit.notes.md#2026-10-16-0724, "we don't have to pull all into the ui"); today the panel still receives the full list and pages it on screen, which is the part this changes
+  contract my question: server paging is not built, and this is blocked. The server cannot tell an open note from an archived one, because the citations are read in the browser from the corpus, so a page of ten could hold only archived notes and the open count would be wrong. Default until you answer: keep the whole list and the on-screen cap. Which do you want: (a) the server reads the corpus too and pages only open notes, or (b) it pages every note and archived notes take places in the page
 
 behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready to dismiss"
   in FEAT-NOTES
@@ -672,6 +673,7 @@ behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
   contract an archived note can still be dismissed, which deletes it from the notes file as before
   contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
+  contract his approval (kit-ui.notes.md#2026-10-16-1153), read from his words: he approved BEH-NOTE-10 and asked whether folded notes could auto archive, with a show archived option and expiry for later. I read that as approval of this archive, and he can deny it. Built: the panel hides folded notes behind Show archived with a count, and dismissing an archived note deletes it from the notes file; the tests are mapped in kit-ui.tests.json
 
 # Was BEH-BOARD-8, "The board takes free text, and asks which project it is for", and
 # BEH-BOARD-9, "Typing a project's name in the board's box suggests it" (kit.notes.md#2026-10-16-0730).
@@ -3275,7 +3277,10 @@ behaviour BEH-NOTE-15 "A note carries a tag saying where it came from, shown on 
   contract my assumption: the origin is one line under the heading, an HTML comment `<!-- from: chat -->`, so the heading, and the anchor derived from it, are unchanged and older readers see only an invisible comment
   contract my assumption: an origin outside that list is ignored, not refused; the note still lands, untagged
   contract my assumption: the agent origin is for a note posted through the API with from set to agent; nothing in the UI sends it
-  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date; the Chat page sends chat and the floating button sends note-button; the Chat does not show the tag
+  contract stored: the origin is kept in the notes file itself, under the note's heading, so it is in git with the note and needs no other store
+  contract my assumption: an origin word other than the three is shown as no tag on the Notes page, as it is ignored when the file is read
+  contract conflict with BEH-CHAT-12, which shows a note's tag in the chat when he asks to see that note (his 2026-11-03 23:32Z note). This card says the Chat does not show the tag. I built both: an ordinary chat turn shows no tag, and a note the chat shows on request does. Review requested: approve to keep that, deny to hide the tag in the chat too
+  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date, and no tag for any other word; the Chat page sends chat and the floating button sends note-button; an ordinary chat turn shows no tag
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
