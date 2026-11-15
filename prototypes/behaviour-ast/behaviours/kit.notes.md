@@ -848,3 +848,9 @@ Kit projects are separated just like GitHub repos. You have to navigate to the p
 <!-- from: note-button -->
 
 Kit .kit specs live in the project repo not centrally in kit
+
+## 2026-11-15 12:50Z
+
+<!-- from: note-button -->
+
+When in chat you should see the state of the top of stack item that you are being shown
