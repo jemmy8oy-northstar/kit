@@ -1,6 +1,6 @@
 # Early access: invite-only username and password sign-in, GitHub connected after
 Work-item: early-access-sign-in-invite
-Flag: the two bare "Yes" notes have no question beside them, so I attached them here as confirmations of the sign-in questions (level: low)
+Flag: the two bare "Yes" notes have no question beside them, so I attached them here as confirmations of the sign-in questions; the 10-28 reinstall question is the owner's to answer (level: low)
 Cards:
 - BEH-USERS-1
 - BEH-USERS-10
@@ -14,6 +14,7 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-23 06:38Z ("Yes", first)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-23 06:38Z ("Can always change later if need be")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-23 06:38Z ("Yes", second)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-28 00:03Z ("it won't let me install it because it's already installed; uninstall and reinstall with OAuth to test?")
 Files:
 - prototypes/behaviour-ast/behaviours/kit-hosted.beh
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
@@ -26,3 +27,4 @@ Context:
 - Invite-only: the 06:35Z note asked how whitelisting GitHub accounts would work, then dropped the code word. The owner's 06:38Z answer is that he creates the accounts himself, so there is no self sign-up in early access. The new card records that default.
 - BEH-GATE-H1: nothing of Kit is read by anyone not signed in. Keep it for the new sign-in path.
 - "Can always change later" and the two bare "Yes" notes read as confirmations of the username and password choice. Treat that choice as the owner's decision, reversible.
+- 10-28 00:03Z: the owner cannot reinstall the installed app and asks whether to uninstall and reinstall to test the OAuth sign-in. This is a question for him, not build work. Default: he decides; no code change here. Test OAuth through BEH-USERS-10.
