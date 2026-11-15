@@ -34,7 +34,9 @@ Built:
 - board.test.ts: puts a child Kit drafted under an epic in Proposed, pending and not built (BEH-EPIC-6)
 - board.test.ts: moves the drafted child to the queue once he approves it, still pending (BEH-EPIC-5, BEH-EPIC-6)
 - board.test.ts: leaves a drafted child he denied on no column, so it is not work (BEH-EPIC-6)
-- The whole UI suite (prototypes/behaviour-ast/ui, npm test) ran 547 tests and all passed; lint and tsc are clean.
+- The whole UI suite (prototypes/behaviour-ast/ui, npm test) ran 561 tests and all passed; lint and tsc are clean.
+- Not built here: BEH-EPIC-2's "an epic block takes one `in PROJECT-…` line". The parser (backend/Balenthiran.Kit.Services/CorpusParser.cs) refuses any line under an epic, and the backend tests (EpicTests.cs) cannot run in this environment (no dotnet). Needs a C# run before the change.
+- Not in this repo: the wake sweep and the draft-to-review-request path for BEH-EPIC-6, and the split review request for BEH-EPIC-9 (claude-code-bot tools/kit-backlog.js).
 
 Test plan:
 - BEH-EPIC-1: a feature at any depth takes `in EPIC-…` and keeps its project and parent features; the project tree is unchanged
