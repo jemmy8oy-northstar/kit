@@ -280,6 +280,17 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
   })
 })
 
+describe('BEH-NOTE-15: the chat does not show a note\'s origin tag', () => {
+  it('CONTROL: an ordinary chat turn shows no "from" tag, even with a note that carries one in the project', async () => {
+    mockApi()
+    await open()
+    notesNow = [{ at: '2026-11-03 13:49Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.', from: 'chat' }]
+    await say('hello', 'reply 1')
+
+    expect(screen.queryByText(/from chat/)).not.toBeInTheDocument()
+  })
+})
+
 describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', () => {
   it('sends the item in hand with each turn, and the messages carry no post-as-answer buttons', async () => {
     mockApi()
@@ -312,6 +323,9 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
     const kit = await kitLine(/^Approved “.*”\. Reply to answer the next item, or we can define new spec or discuss alpha\.$/)
     expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
+    // The next item comes into the thread one effect after Kit's line; skipping before it lands can put Kit's
+    // second line ahead of it (flaked 1 in 2 under load, 2026-11-07).
+    await waitFor(() => expect(order()).toEqual(['item', 'kit', 'item']))
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     await kitLine(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)

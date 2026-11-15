@@ -257,6 +257,12 @@ public sealed record KitSettings(
     /// <summary><c>KIT_STAGE_MODEL_REVIEW</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelReview(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW", value, StageModels.DefaultReview);
 
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW_LOW</c> (BEH-ORCH-2): the model that reviews a flag marked "(level: low)". Unset is <see cref="StageModels.DefaultReviewLow"/>.</summary>
+    public string StageModelReviewLow { get; init; } = StageModels.DefaultReviewLow;
+
+    /// <summary><c>KIT_STAGE_MODEL_REVIEW_LOW</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelReviewLow(string? value) => StageModels.Parse("KIT_STAGE_MODEL_REVIEW_LOW", value, StageModels.DefaultReviewLow);
+
     /// <summary><c>KIT_STAGE_MODEL_SPEC</c> (BEH-ORCH-3): the model the spec stage runs on. Unset is <see cref="StageModels.DefaultWork"/>.</summary>
     public string StageModelSpec { get; init; } = StageModels.DefaultWork;
 
@@ -268,6 +274,30 @@ public sealed record KitSettings(
 
     /// <summary><c>KIT_STAGE_MODEL_BUILD</c>: a model name; unset is the default. Anything else THROWS.</summary>
     public static string ParseStageModelBuild(string? value) => StageModels.Parse("KIT_STAGE_MODEL_BUILD", value, StageModels.DefaultWork);
+
+    /// <summary><c>KIT_STAGE_TURNS_TRIAGE</c> (BEH-ORCH-5): the turn limit of a triage run. Unset is <see cref="StageTurnSettings.DefaultTriage"/>.</summary>
+    public int StageTurnsTriage { get; init; } = StageTurnSettings.DefaultTriage;
+
+    /// <summary><c>KIT_STAGE_TURNS_TRIAGE</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsTriage(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_TRIAGE", value, StageTurnSettings.DefaultTriage);
+
+    /// <summary><c>KIT_STAGE_TURNS_REVIEW</c> (BEH-ORCH-5): the turn limit of a review run. Unset is <see cref="StageTurnSettings.DefaultReview"/>.</summary>
+    public int StageTurnsReview { get; init; } = StageTurnSettings.DefaultReview;
+
+    /// <summary><c>KIT_STAGE_TURNS_REVIEW</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsReview(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_REVIEW", value, StageTurnSettings.DefaultReview);
+
+    /// <summary><c>KIT_STAGE_TURNS_SPEC</c> (BEH-ORCH-5): the turn limit of a spec run. Unset is <see cref="StageTurnSettings.DefaultSpec"/>.</summary>
+    public int StageTurnsSpec { get; init; } = StageTurnSettings.DefaultSpec;
+
+    /// <summary><c>KIT_STAGE_TURNS_SPEC</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsSpec(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_SPEC", value, StageTurnSettings.DefaultSpec);
+
+    /// <summary><c>KIT_STAGE_TURNS_BUILD</c> (BEH-ORCH-5): the turn limit of a build run. Unset is <see cref="StageTurnSettings.DefaultBuild"/>.</summary>
+    public int StageTurnsBuild { get; init; } = StageTurnSettings.DefaultBuild;
+
+    /// <summary><c>KIT_STAGE_TURNS_BUILD</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsBuild(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_BUILD", value, StageTurnSettings.DefaultBuild);
 
     /// <summary>
     /// <c>KIT_PIPELINE</c> (BEH-ORCH-3): <c>on</c> makes a note left in Kit queue a triage run on the runner pool,
@@ -282,6 +312,131 @@ public sealed record KitSettings(
         "on" => true,
         _ => throw new InvalidOperationException($"KIT_PIPELINE is \"{value}\": set it to on or off"),
     };
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_SCHEDULED</c> (BEH-ORCH-4): <c>on</c> lets the pipeline start the agent's scheduled cards at spec,
+    /// which spends the owner's subscription without a note from him. Unset or <c>off</c> is off.
+    /// </summary>
+    public bool PipelineScheduled { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_SCHEDULED</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineScheduled(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE_SCHEDULED is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_MERGE</c> (BEH-ORCH-10): <c>on</c> lets the pipeline merge the pull request of work it built once
+    /// its checks pass, which puts code no person has read into the base branch. Unset or <c>off</c> is off.
+    /// </summary>
+    public bool PipelineMerge { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_MERGE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineMerge(string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"KIT_PIPELINE_MERGE is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_CONTEXT</c> (BEH-ORCH-11): <c>on</c> makes a triaged item wait as a <c>new</c> ticket for the
+    /// context job, which takes the highest-priority one per project every few minutes and runs the context stage on it
+    /// before it chains to spec. It spends the owner's subscription. Unset or <c>off</c> is off: a triaged item goes
+    /// straight to spec, as before.
+    /// </summary>
+    public bool PipelineJobContext { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_CONTEXT</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobContext(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_CONTEXT", value);
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_PLAN</c> (BEH-ORCH-11, slice 4): <c>on</c> makes every queued spec item wait as a <c>ready</c>
+    /// ticket for the plan job, which takes the highest-priority one per project every few minutes and starts its spec
+    /// run. It spends the owner's subscription. Unset or <c>off</c> is off: a queued spec item starts as before.
+    /// </summary>
+    public bool PipelineJobPlan { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_PLAN</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobPlan(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_PLAN", value);
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_BUILD</c> (BEH-ORCH-11, slice 5): <c>on</c> makes every queued build item wait as a <c>planned</c>
+    /// ticket for the build job, which takes the highest-priority one per project every few minutes and starts its build
+    /// run. It spends the owner's subscription. Unset or <c>off</c> is off: a queued build item starts as before.
+    /// </summary>
+    public bool PipelineJobBuild { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_BUILD</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobBuild(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_BUILD", value);
+
+    /// <summary>
+    /// <c>KIT_PIPELINE_JOB_MERGE</c> (BEH-ORCH-11, slice 7): <c>on</c> moves the merge of built items' pull requests to the
+    /// merge job, which brings the oldest highest-priority one per project up to date with its base and merges it, one at
+    /// a time. Unset or <c>off</c> is off: <c>KIT_PIPELINE_MERGE</c> merges as before.
+    /// </summary>
+    public bool PipelineJobMerge { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_JOB_MERGE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineJobMerge(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_MERGE", value);
+
+    private static bool ParseJobSwitch(string name, string? value) => value?.Trim() switch
+    {
+        null or "" or "off" => false,
+        "on" => true,
+        _ => throw new InvalidOperationException($"{name} is \"{value}\": set it to on or off"),
+    };
+
+    /// <summary>The stages a job owns: one for each job switch that is on. What the pipeline takes as <c>jobs</c> and what registers a <see cref="PipelineJob"/> each.</summary>
+    public IReadOnlyList<PipelineStage> PipelineJobs =>
+        [.. (PipelineJobContext ? [PipelineStage.Context] : Array.Empty<PipelineStage>()), .. (PipelineJobPlan ? [PipelineStage.Spec] : Array.Empty<PipelineStage>()), .. (PipelineJobBuild ? [PipelineStage.Build] : Array.Empty<PipelineStage>()), .. (PipelineJobMerge ? [PipelineStage.Merge] : Array.Empty<PipelineStage>())];
+
+    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c> (BEH-ORCH-11): how often a pipeline job looks for a ticket waiting. Unset is <see cref="PipelineJob.DefaultInterval"/> (2 minutes).</summary>
+    public TimeSpan PipelineJobInterval { get; init; } = PipelineJob.DefaultInterval;
+
+    /// <summary><c>KIT_PIPELINE_JOB_MINUTES</c>: a whole number of minutes above zero; unset is 2. Anything else THROWS.</summary>
+    public static TimeSpan ParsePipelineJobInterval(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? PipelineJob.DefaultInterval
+        : int.TryParse(value.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var m) && m > 0 ? TimeSpan.FromMinutes(m)
+        : throw new InvalidOperationException($"KIT_PIPELINE_JOB_MINUTES is \"{value}\": set it to a whole number of minutes above zero, such as 2");
+
+    /// <summary><c>KIT_STAGE_MODEL_CONTEXT</c> (BEH-ORCH-11): the model the context job runs on. Unset is <see cref="StageModels.DefaultContext"/>.</summary>
+    public string StageModelContext { get; init; } = StageModels.DefaultContext;
+
+    /// <summary><c>KIT_STAGE_MODEL_CONTEXT</c>: a model name; unset is the default. Anything else THROWS.</summary>
+    public static string ParseStageModelContext(string? value) => StageModels.Parse("KIT_STAGE_MODEL_CONTEXT", value, StageModels.DefaultContext);
+
+    /// <summary><c>KIT_STAGE_TURNS_CONTEXT</c> (BEH-ORCH-11): the turn limit of a context run. Unset is <see cref="StageTurnSettings.DefaultContext"/>.</summary>
+    public int StageTurnsContext { get; init; } = StageTurnSettings.DefaultContext;
+
+    /// <summary><c>KIT_STAGE_TURNS_CONTEXT</c>: a whole number above zero; unset is the default. Anything else THROWS.</summary>
+    public static int ParseStageTurnsContext(string? value) => StageTurnSettings.Parse("KIT_STAGE_TURNS_CONTEXT", value, StageTurnSettings.DefaultContext);
+
+    /// <summary><c>KIT_STAGE_MODEL_RESOLVE</c> (BEH-ORCH-11, slice 7b): the model of a conflict-resolution run. Unset (null) is the build stage's model.</summary>
+    public string? StageModelResolve { get; init; }
+
+    /// <summary><c>KIT_STAGE_MODEL_RESOLVE</c>: a model name; unset is null (the build model). Anything else THROWS.</summary>
+    public static string? ParseStageModelResolve(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageModels.Parse("KIT_STAGE_MODEL_RESOLVE", value, "");
+
+    /// <summary><c>KIT_STAGE_TURNS_RESOLVE</c> (BEH-ORCH-11, slice 7b): the turn limit of a conflict-resolution run. Unset (null) is the build stage's.</summary>
+    public int? StageTurnsResolve { get; init; }
+
+    /// <summary><c>KIT_STAGE_TURNS_RESOLVE</c>: a whole number above zero; unset is null (the build limit). Anything else THROWS.</summary>
+    public static int? ParseStageTurnsResolve(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageTurnSettings.Parse("KIT_STAGE_TURNS_RESOLVE", value, 0);
+
+    /// <summary><c>KIT_STAGE_MODEL_TEST</c> (BEH-ORCH-12): the model of a test run of a private project's pull request. Unset (null) is triage's model.</summary>
+    public string? StageModelTest { get; init; }
+
+    /// <summary><c>KIT_STAGE_MODEL_TEST</c>: a model name; unset is null (the triage model). Anything else THROWS.</summary>
+    public static string? ParseStageModelTest(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageModels.Parse("KIT_STAGE_MODEL_TEST", value, "");
+
+    /// <summary><c>KIT_STAGE_TURNS_TEST</c> (BEH-ORCH-12): the turn limit of a test run. Unset (null) is the build stage's.</summary>
+    public int? StageTurnsTest { get; init; }
+
+    /// <summary><c>KIT_STAGE_TURNS_TEST</c>: a whole number above zero; unset is null (the build limit). Anything else THROWS.</summary>
+    public static int? ParseStageTurnsTest(string? value) => string.IsNullOrWhiteSpace(value) ? null : StageTurnSettings.Parse("KIT_STAGE_TURNS_TEST", value, 0);
 
     /// <summary>
     /// <c>KIT_PIPELINE_PROJECTS</c>: the only projects whose notes the pipeline triages, comma-separated; unset is every
@@ -392,11 +547,29 @@ public sealed record KitSettings(
             AgentRunMaxAge = ParseAgentRunMaxAge(env("KIT_AGENT_RUN_MAX_HOURS")),
             StageModelTriage = ParseStageModelTriage(env("KIT_STAGE_MODEL_TRIAGE")),
             StageModelReview = ParseStageModelReview(env("KIT_STAGE_MODEL_REVIEW")),
+            StageModelReviewLow = ParseStageModelReviewLow(env("KIT_STAGE_MODEL_REVIEW_LOW")),
             StageModelSpec = ParseStageModelSpec(env("KIT_STAGE_MODEL_SPEC")),
             StageModelBuild = ParseStageModelBuild(env("KIT_STAGE_MODEL_BUILD")),
+            StageTurnsTriage = ParseStageTurnsTriage(env("KIT_STAGE_TURNS_TRIAGE")),
+            StageTurnsReview = ParseStageTurnsReview(env("KIT_STAGE_TURNS_REVIEW")),
+            StageTurnsSpec = ParseStageTurnsSpec(env("KIT_STAGE_TURNS_SPEC")),
+            StageTurnsBuild = ParseStageTurnsBuild(env("KIT_STAGE_TURNS_BUILD")),
             RunnerPoolToken = env("KIT_RUNNER_POOL_TOKEN"),
             RunnerClaimWait = ParseRunnerClaimWait(env("KIT_RUNNER_CLAIM_WAIT_SECONDS")),
             Pipeline = ParsePipeline(env("KIT_PIPELINE")),
+            PipelineScheduled = ParsePipelineScheduled(env("KIT_PIPELINE_SCHEDULED")),
+            PipelineMerge = ParsePipelineMerge(env("KIT_PIPELINE_MERGE")),
+            PipelineJobContext = ParsePipelineJobContext(env("KIT_PIPELINE_JOB_CONTEXT")),
+            PipelineJobPlan = ParsePipelineJobPlan(env("KIT_PIPELINE_JOB_PLAN")),
+            PipelineJobBuild = ParsePipelineJobBuild(env("KIT_PIPELINE_JOB_BUILD")),
+            PipelineJobMerge = ParsePipelineJobMerge(env("KIT_PIPELINE_JOB_MERGE")),
+            PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
+            StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
+            StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
+            StageModelResolve = ParseStageModelResolve(env("KIT_STAGE_MODEL_RESOLVE")),
+            StageTurnsResolve = ParseStageTurnsResolve(env("KIT_STAGE_TURNS_RESOLVE")),
+            StageModelTest = ParseStageModelTest(env("KIT_STAGE_MODEL_TEST")),
+            StageTurnsTest = ParseStageTurnsTest(env("KIT_STAGE_TURNS_TEST")),
             PipelineProjects = ParsePipelineProjects(env("KIT_PIPELINE_PROJECTS")),
         };
     }

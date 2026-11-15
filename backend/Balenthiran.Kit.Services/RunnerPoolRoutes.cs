@@ -168,7 +168,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         {
             if (await github.MintForRepoAsync(repo[(repo.IndexOf('/') + 1)..],cancellationToken) is not { } minted)
             {
-                return Error(403, "repo-not-installed", $"the GitHub App installation does not reach {repo}");
+                return Error(403, "repo-not-installed", $"GitHub would not mint a token for {repo}: either the App installation does not reach it, or the App lacks Contents and Pull requests write permission");
             }
 
             return new KitResponse

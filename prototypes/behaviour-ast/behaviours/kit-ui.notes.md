@@ -46,10 +46,6 @@ Do you have any other suggestions here?
 
 Oh I haven’t heard of openbao or infiacal. I was thinking oci or hashicorp
 
-## 2026-10-31 01:01Z · BEH-GATE-H2
-
-What does this mean?
-
 ## 2026-10-31 01:07Z · BEH-USERS-6
 
 For all of these would it be better to let the user integrate their own account or spin up instances for the user? Which would be better for our pricing model as well? I guess we could price the user for what they use. Do you think neon would be good for us?
@@ -165,3 +161,37 @@ Migrate the spec out of the kit repo into each project's repo, under a hidden .k
 <!-- from: chat -->
 
 Under BEH-USERS-2 ("Kit lists a user's projects from their own GitHub, with no spec held centrally"): the owner says all spec currently lives centrally in the kit repo, not in each project's repo. So the card's "no spec held centrally" describes the target, not today's state. Please note this against BEH-USERS-2. The card also detects a project by a .beh file on the default branch, so once the migration to .kit/ lands, detection needs to find .kit/ too. Settle which the card should say, current or target, and what detection checks.
+
+## 2026-11-06 00:01Z
+
+<!-- from: chat -->
+
+Backlog idea: Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies. Not yet specified; to be backlogged for more detail later.
+
+## 2026-11-06 13:50Z
+
+<!-- from: chat -->
+
+Kit should be able to read the internal logs of the backend and service pods that Kit has run for a project. The user should not have to wire these up, since they come from pods Kit itself runs. This is wanted later, not now: keep it in the backlog, unscheduled.
+
+## 2026-11-06 18:01Z
+
+<!-- from: chat -->
+
+Add to FEAT-ARCH, as a new behaviour alongside BEH-ARCH-1 (which it extends, not changes): a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now. Open and left open: the exact layout, and whether anything from the spec is also drawn.
+
+## 2026-11-06 18:04Z
+
+<!-- from: chat -->
+
+EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works.
+
+## 2026-11-07 01:32Z
+
+<!-- from: chat -->
+
+Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT-PIPELINE and not a custom agent under BEH-AGENTS-1. It is an exception to the no-timer rule in BEH-ORCH-3: a cheap model still triages most tasks as the pipeline does now, and the Opus review runs on a timer. The review checks things like neglected tasks, a sample of completed work, and the architecture, to keep things in check. The user chooses how often it runs: daily, every two days, or weekly. Where that cadence setting lives is still open: a new setting on the Settings page, or under BEH-SETTINGS-5 or BEH-SETTINGS-6.
+
+## 2026-11-14 09:25Z · BEH-ORCH-3
+
+The pipeline approach has changed recently right

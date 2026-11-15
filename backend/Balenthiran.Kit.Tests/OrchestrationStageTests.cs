@@ -192,6 +192,49 @@ public class OrchestrationStageTests
     }
 
     [Fact]
+    public void BEH_ORCH_1_The_task_sends_a_note_that_asks_for_nothing_to_the_set_aside_item_with_a_flag()
+    {
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+
+        Assert.Contains($"work item \"{TriageStage.SetAside}\"", task);
+        Assert.Contains("with a Flag line saying why", task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_The_task_sends_an_idea_for_later_to_the_backlog_item_unbuilt()
+    {
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+
+        Assert.Contains($"work item \"{TriageStage.Backlog}\"", task);
+        Assert.Contains("idea for later", task);
+        Assert.True(task.Length <= KitRouter.MaxTask);
+    }
+
+    [Theory]
+    [InlineData("test", true)]
+    [InlineData("Test", true)]
+    [InlineData("This is a test.", true)]
+    [InlineData("  Testing!  ", true)]
+    [InlineData("ignore", true)]
+    [InlineData("", true)]
+    [InlineData("   ", true)]
+    [InlineData("test the login page", false)]
+    [InlineData("the list should sort by date", false)]
+    [InlineData("test 2", false)]
+    public void BEH_ORCH_1_The_noise_rule_catches_only_an_empty_or_test_word_note(string text, bool noise)
+    {
+        Assert.Equal(noise, NoteNoise.IsNoise(text));
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_new_work_branch_is_cut_from_the_branch_the_run_started_on_not_the_default()
+    {
+        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+
+        Assert.Contains("create it from the branch you started on (not the default branch)", task);
+    }
+
+    [Fact]
     public void BEH_ORCH_1_A_long_note_is_truncated_and_the_task_says_so()
     {
         var long_ = new string('x', TriageStage.MaxNoteChars + 500);
@@ -430,6 +473,50 @@ public class OrchestrationStageTests
         {
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelTriage(bad));
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelReview(bad));
+            Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelReviewLow(bad));
         }
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_The_low_review_model_defaults_to_sonnet_and_is_read_from_the_environment()
+    {
+        Assert.Equal("claude-sonnet-5-5", KitSettings.ParseStageModelReviewLow(null));
+        Assert.Equal("claude-sonnet-5-5", new KitSettings("d", "r", null, "dist").StageModelReviewLow);
+        Assert.Equal("claude-haiku-5-5", KitSettings.ParseStageModelReviewLow(" claude-haiku-5-5 "));
+    }
+
+    [Theory]
+    [InlineData("unsure (level: low)", FlagLevel.Low)]
+    [InlineData("unsure (level: high)", FlagLevel.High)]
+    [InlineData("unsure (LEVEL:  LOW) ", FlagLevel.Low)]
+    [InlineData("unsure", FlagLevel.High)]
+    [InlineData("unsure (level: mid)", FlagLevel.High)]
+    [InlineData("(level: low) but then more", FlagLevel.High)]
+    [InlineData("", FlagLevel.High)]
+    [InlineData(null, FlagLevel.High)]
+    public void BEH_ORCH_2_A_flags_level_is_read_from_its_end_and_anything_else_is_high(string? flag, FlagLevel expected)
+    {
+        Assert.Equal(expected, FlagLevels.Of(flag));
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_Only_a_low_flag_reviews_on_the_low_model()
+    {
+        var models = new StageModelSettings("m-triage", "m-review", "m-spec", "m-build", "m-low");
+
+        Assert.Equal("m-low", Orchestrator.ModelFor(PipelineStage.Review, models, "x (level: low)"));
+        Assert.Equal("m-review", Orchestrator.ModelFor(PipelineStage.Review, models, "x"));
+        Assert.Equal("m-spec", Orchestrator.ModelFor(PipelineStage.Spec, models, "x (level: low)"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_2_Each_stage_is_told_what_the_two_levels_mean()
+    {
+        Assert.Contains("(level: low)", FlagLevels.Guidance);
+        Assert.Contains("(level: high)", FlagLevels.Guidance);
+        var triage = TriageStage.BuildTask("kit", Notes, Cards).Text;
+        Assert.Contains("level: low", triage);
+        Assert.Contains("level: high", triage);
+        Assert.True(triage.Length <= 8000);
     }
 }
