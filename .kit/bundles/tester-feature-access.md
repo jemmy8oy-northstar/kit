@@ -1,14 +1,17 @@
-# Testers see projects, boards, inbox and settings
+# Testers can use the projects, boards, inbox and settings pages
 Work-item: tester-feature-access
-Flag: The note ends in "right?", so the owner is asking for confirmation of the four features as the starting set for testers (level: low)
+Flag: no existing card names tester access to these pages, so the card line is new (level: low)
 Cards:
-- BEH-FLAGS-1 "Settings lists Kit's features with one switch for him and one for testers"
-- BEH-FLAGS-2 "A feature switched off for a group is gone from that group's pages and navigation"
-- BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with no spec held centrally"
+- new: testers can open the projects, boards, inbox and settings pages, and they work for them
 Notes:
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:41Z
 Files:
-- prototypes/behaviour-ast/behaviours/kit.beh (the `# kit:switch FEAT-X operator|testers on|off` lines)
-- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-FLAGS-1 and -2 near lines 2305-2330; BEH-USERS-2 near line 1300)
+- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-USERS-* for tester accounts; BEH-SETTINGS-* for the Settings page; BEH-INBOX-* for the Inbox)
+- prototypes/behaviour-ast/behaviours/kit.notes.md (the source note)
 Context:
-The owner asks for four features to be on for testers: the projects page, the boards, the inbox and settings. He says the features need to work for testers as well, so these are the starting set. BEH-FLAGS-1 already records the set as on for testers in its contract line, so the switches may already be set; check before changing anything. The open gap is BEH-USERS-2: until a user's projects come from their own GitHub, testers see the operator's projects, which matters for what "working" means for them.
+- He asks to enable these four pages for testers now, and says they must also work for testers, not just show. He named them as the place to start.
+- Chat and the other features are not in this item.
+- A tester sees only their own projects, notes and memory (BEH-USERS-8); this item must keep that rule.
+- Testers doing many cards cost him real money (see the cost estimate in BEH-NOTIFY, around kit-ui.beh line 1787), so do not turn on agent work for testers here.
+- Record the guess as a "contract my assumption:" line in the corpus, so he can deny it.
+Next step toward the goal: the builder checks which of the four pages a tester account can reach today, then opens the missing ones.
