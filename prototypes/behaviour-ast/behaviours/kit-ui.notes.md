@@ -215,3 +215,9 @@ Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHu
 <!-- from: chat -->
 
 Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project.
+
+## 2026-11-15 12:52Z
+
+<!-- from: chat -->
+
+BEH-ARCH-4 (architecture page diagram, from kit-ui.notes.md#2026-11-06-1801): do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open.
