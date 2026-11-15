@@ -1375,7 +1375,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
-  needs-context "Merge kit#797 so Kit reads holiday-planning's spec from its own repo? The next step of this card waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copy, and I copy any edits made there into holiday-planning's .kit/ so the two copies stay the same."
+  needs-context "Merge kit#797 so Kit reads seven projects' specs from their own repos? Their copies are already on each repo's dev. Deleting kit's copies waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copies, and I copy any edits made there into each .kit/ so the two stay the same."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1392,6 +1392,10 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: "Propose edits for merging" after an edit to a project in its own repo opens the pull request in that repo, from its edits branch into the same base Kit's own edits go to (dev), and the project's pending list reads that branch too
   contract decided 2026-11-13 (kit#696, his question unanswered, so its default stands): every project repo is public and kit is private, so a move publishes that spec. Only holiday-planning moves, because his note (kit-ui.notes.md#2026-11-07-2121) expects its spec in its own repo. The other public projects keep theirs in kit until he says otherwise
   contract done 2026-11-13: holiday-planning's spec is in its own repo's .kit/ (holiday-planning#46) with an edits branch kit/hosted. The KIT_PROJECTS entry that makes Kit read it is kit#797, his as a helm change. Kit's old copy is deleted once that is live
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit .kit specs live in the project repo not centrally in kit"
+  contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
+  contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
+  contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
@@ -1665,6 +1669,19 @@ behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its ru
   contract my assumption: what was measured on 2026-11-14: notes-page-archive-tag-and-warning was specced at 17:31Z, and its branch had not moved by 19:47Z. Nothing bounded a run's time: the claimer's 2-hour limit acts only when its pod asks for the next run, which a hung run never lets it do, and a run on his subscription never meets the proxy's 6-hour token age. One hung run therefore held its pod and its project's pipeline until a restart
   contract my assumption: the runner ends the agent after KIT_RUN_MAX_SECONDS (default 6600, under the claimer's 7200), with every process the agent started (a test server it left running included), and the run fails at step "time", which Runs shows as "time exit 124". Whatever the agent started and left running when it ended, well or not, is killed too, so it cannot hold the pod
   contract my assumption: a kill inside the limit (out of memory) stays a "claude" failure, so Runs does not blame the limit for it; a limit that is not a whole number of seconds above zero refuses the run before the agent starts
+
+behaviour BEH-ORCH-15 "The pipeline is switched on and off per project, and starts off for every project except kit"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1247): "Pipelines are run on projects independently. Pipeline can be switched on and off for individual projects. Let's start with all off but on for kit"
+  contract my assumption: today the list is the KIT_PIPELINE_PROJECTS setting, which production sets to kit and kit-ui. This card moves it to a row per project on that project's Settings page, saved in Kit, with KIT_PIPELINE_PROJECTS read once as the starting values
+  contract my assumption: "kit" means kit and kit-ui, which both live in the kit repo; every other project starts off
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -2114,6 +2131,21 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   contract my assumption: on a narrow screen the brand and the account sit on one line, the links sit on a single line under them that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
+
+behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the board and Settings are global"
+  in FEAT-NAV
+  layer ux
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings."
+  contract his note (kit.notes.md#2026-11-15-1300): splitting out the projects is his top priority, together with BEH-USERS-12
+  contract my assumption: the global header keeps Projects, the board and Settings. Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
+  contract my assumption: the global board still shows every project's cards, each labelled with its project, and a project's own board view is the same board filtered to it
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
   in FEAT-BOARD
@@ -3063,6 +3095,19 @@ behaviour BEH-CHAT-18 "Kit keeps a rough sense of how technical each user is, an
   then sees region:KitMain
   contract "Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies."
   contract my assumption: the profile only changes how replies are worded (jargon, how much is explained), never what Kit will do for the user or what it shows them
+
+behaviour BEH-CHAT-19 "The chat shows the state of the item it is showing him"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-15-1250
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1250): "When in chat you should see the state of the top of stack item that you are being shown"
+  contract my assumption: the state is the one the board shows for that item (for example pending, approved, blocked, built), next to its id, and it updates when he answers the item from the chat
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
