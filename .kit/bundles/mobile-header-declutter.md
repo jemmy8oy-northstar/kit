@@ -1,6 +1,7 @@
 # Mobile header: one tidy line
 Work-item: mobile-header-declutter
 Flag: The card reads as built in the stylesheet, so there may be nothing to change, and the phone screenshot predates the fix; the owner should say whether to retake it or build something more. The card is in kit-ui.beh, not kit.beh as the brief said. (level: high)
+Review: escalated — confirmed: BEH-NAV-2 carries a built contract (119px to 93px) and a checked-against-index.css contract, and the phone screenshot still shows the tagline and links beside the brand, so it predates the fix; owner to decide whether this item closes as built with just a retaken phone screenshot, or whether the header still looks cluttered on their phone today and needs a new card saying what more to change.
 Cards:
 - BEH-NAV-2
 Notes:
