@@ -622,7 +622,8 @@ behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   then sees region:KitOpenNotes
   contract newest written at the top, in Needs your answer and the open notes alike
   contract ten are shown and a button shows more, saying how many are hidden, as a board column does (BEH-BOARD-7)
-  contract the API still sends every open note; paging the request waits until a notes file is long enough to be slow
+  contract my assumption: the API sends the open notes ten at a time, and the button asks it for the next ten, so the whole list is not pulled into the UI (kit.notes.md#2026-10-16-0724, "we don't have to pull all into the ui"); today the panel still receives the full list and pages it on screen, which is the part this changes
+  contract my question: server paging is not built, and this is blocked. The server cannot tell an open note from an archived one, because the citations are read in the browser from the corpus, so a page of ten could hold only archived notes and the open count would be wrong. Default until you answer: keep the whole list and the on-screen cap. Which do you want: (a) the server reads the corpus too and pages only open notes, or (b) it pages every note and archived notes take places in the page
 
 behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready to dismiss"
   in FEAT-NOTES
@@ -672,6 +673,7 @@ behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
   contract an archived note can still be dismissed, which deletes it from the notes file as before
   contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
+  contract his approval (kit-ui.notes.md#2026-10-16-1153), read from his words: he approved BEH-NOTE-10 and asked whether folded notes could auto archive, with a show archived option and expiry for later. I read that as approval of this archive, and he can deny it. Built: the panel hides folded notes behind Show archived with a count, and dismissing an archived note deletes it from the notes file; the tests are mapped in kit-ui.tests.json
 
 # Was BEH-BOARD-8, "The board takes free text, and asks which project it is for", and
 # BEH-BOARD-9, "Typing a project's name in the board's box suggests it" (kit.notes.md#2026-10-16-0730).
@@ -1130,8 +1132,9 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: the block is `epic EPIC-… "title"`, and a feature tags it with the `in EPIC-…` line it already uses for a parent feature, so no second tagging keyword is needed
   contract an `in` line naming an epic that does not exist is refused, as an unknown parent feature is
   contract the parser that reads `epic` reaches main before any corpus uses it: kit/hosted takes the corpus from dev, so a keyword on dev alone breaks production (it did on 10-19 with `stage`)
-  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes; an epic takes no lines yet, and a behaviour reaches an epic through its feature
-  contract a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead
+  contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
+  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
+  contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1163,6 +1166,7 @@ behaviour BEH-EPIC-5 "A new epic's children start pending"
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when you create an epic, all of its children and grand children will likely be created as pending or new"
+  contract my assumption: the note's "pending or new" is read as pending; children Kit infers go to Proposed instead (BEH-EPIC-6)
   contract built by the agent: EPIC-KIT-USERS's seven features came in at the problem stage, and all eight of its behaviours were written pending
 
 behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and proposes them"
@@ -1176,6 +1180,7 @@ behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and pr
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
   contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
+  contract my assumption: the questions half of the 22nd note is shipped by the questions work item (questions-board-and-sheet); this card only raises a question on the item
   contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's did until 2026-11-14
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
@@ -1233,13 +1238,13 @@ behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable ont
   in FEAT-ONBOARD-LOVABLE
   layer ux
   source defined kit-ui.notes.md#2026-11-06-1804
-  review unreviewed
+  review approved
   priority 4
   pending
-  needs-context "In scope, as you asked. Before I build: is the Lovable app already in the user's own GitHub (Lovable's GitHub sync), so onboarding starts from that repo? That is my assumption."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
+  contract his answer (kit-ui.notes.md#2026-11-15-1250): "Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo."
   contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
   contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
   contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
@@ -1370,7 +1375,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
-  needs-context "Merge kit#797 so Kit reads holiday-planning's spec from its own repo? The next step of this card waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copy, and I copy any edits made there into holiday-planning's .kit/ so the two copies stay the same."
+  needs-context "Merge kit#797 so Kit reads seven projects' specs from their own repos? Their copies are already on each repo's dev. Deleting kit's copies waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copies, and I copy any edits made there into each .kit/ so the two stay the same."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1387,6 +1392,10 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: "Propose edits for merging" after an edit to a project in its own repo opens the pull request in that repo, from its edits branch into the same base Kit's own edits go to (dev), and the project's pending list reads that branch too
   contract decided 2026-11-13 (kit#696, his question unanswered, so its default stands): every project repo is public and kit is private, so a move publishes that spec. Only holiday-planning moves, because his note (kit-ui.notes.md#2026-11-07-2121) expects its spec in its own repo. The other public projects keep theirs in kit until he says otherwise
   contract done 2026-11-13: holiday-planning's spec is in its own repo's .kit/ (holiday-planning#46) with an edits branch kit/hosted. The KIT_PROJECTS entry that makes Kit read it is kit#797, his as a helm change. Kit's old copy is deleted once that is live
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit .kit specs live in the project repo not centrally in kit"
+  contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
+  contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
+  contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
@@ -1424,7 +1433,6 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   source defined kit#672
   review approved
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1438,6 +1446,8 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
   contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
   contract built: FlagLevels.Of reads a trailing "(level: low|high)" off the Flag line (case and spacing ignored; none, unreadable or mid-text is high); the review run is created on KIT_STAGE_MODEL_REVIEW_LOW (default claude-sonnet-5-5) for low and KIT_STAGE_MODEL_REVIEW for high; the triage, spec and build tasks say what each level means (kit#751)
+  contract his question (kit-ui.notes.md#2026-11-15-1245): "What is the home on this it isn't marked as blocked", read as "the hold"
+  contract my answer: nothing held it, which is why it was not Blocked. It was built and live, and I had left it pending only until a flagged item was reviewed live. That was a check I owed, not a reason to keep it in his Queue. It is done now, and the first live review it runs is checked from Runs once the bot's read key (BEH-ORCH-6) is merged
 
 behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
   in FEAT-AGENT-PIPELINE
@@ -1455,7 +1465,7 @@ behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit i
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
   pending
   actor engineer
@@ -1544,7 +1554,8 @@ behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a r
   contract built, slice 2: Pipeline.RunEnded schedules a retry of a project's triage Pipeline.RetryAfter (1 hour) after a triage run that did not finish, on the pipeline's TimeProvider, so a note left when his subscription's limit is reached is sorted once the limit resets. A project has at most one retry pending; a triage that works clears the count and the pending retry; it is tried again at most 12 times in a row (Pipeline.MaxRetries), so the failure after the 12th retry schedules none; a retry timer that fires after it was replaced does nothing. The retry queues an ordinary triage, which reads only the notes still unsorted. My assumption stands for the rest: a run that fails on the limit spends nothing (not checked here)
   contract measured 2026-11-14 from the code: a run in flight when Kit restarts (a promotion, a pod move) cannot push. The runner asks Kit's /api/runs/github-token each time git needs a token, and Kit answers only for a run its RunnerPool handed out since it started (repoByRun is memory only), so after a restart the run's push is refused and its work is lost. A triage is tried again (slice 2), but a spec or build run is not
   contract my assumption: the fix is to keep each handed-out run's repo with the run in the store, so a token request after a restart is answered for that one repo, as before it. That changes what a run's token may reach across a restart, so it is his call. If he stays silent I build it as a pull request for him to merge; meanwhile I avoid promoting while a run is in flight, which I can see only from work-branch pushes until the bot key (BEH-ORCH-6) lets me read Runs
-  needs-context "A Kit restart mid-run loses that run's push (repo-per-run is in memory). Should a run's repo be kept in the database so its token still works after a restart? If you stay silent I build it as a PR for you to merge."
+  contract his note (kit-ui.notes.md#2026-11-15-1248): "I don't understand what this is asking". Asked again in plain words below
+  needs-context "When Kit restarts (a deploy) while an agent is mid-task, the agent can no longer save its work to GitHub, and the work is lost. The fix: Kit remembers which repo each task works on in its database. Changes who can push, so it's yours. Silence: I build it, you merge."
 
 behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags and who reviewed them, and what each stage of a past item cost"
   in FEAT-AGENT-PIPELINE
@@ -1633,10 +1644,9 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
   source defined kit-ui.notes.md#2026-11-07-0132
-  review unreviewed
+  review approved
   priority 4
   pending
-  needs-context "Where does the cadence setting live? My pick is its own row on Settings, next to the pipeline. Say if you'd rather it sat under BEH-SETTINGS-5 or 6."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1644,6 +1654,8 @@ behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user
   contract his note: a cheap model still triages most tasks; the review checks neglected tasks, a sample of completed work and the architecture; the user chooses daily, every two days or weekly
   contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
   contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
+  contract his answer (kit-ui.notes.md#2026-11-15-1251): "Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project."
+  contract my assumption: the row lists each project with its own cadence (off, daily, every two days, weekly), and every project starts off
 
 behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its runner, so one hung run cannot hold the pipeline"
   in FEAT-AGENT-PIPELINE
@@ -1657,6 +1669,19 @@ behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its ru
   contract my assumption: what was measured on 2026-11-14: notes-page-archive-tag-and-warning was specced at 17:31Z, and its branch had not moved by 19:47Z. Nothing bounded a run's time: the claimer's 2-hour limit acts only when its pod asks for the next run, which a hung run never lets it do, and a run on his subscription never meets the proxy's 6-hour token age. One hung run therefore held its pod and its project's pipeline until a restart
   contract my assumption: the runner ends the agent after KIT_RUN_MAX_SECONDS (default 6600, under the claimer's 7200), with every process the agent started (a test server it left running included), and the run fails at step "time", which Runs shows as "time exit 124". Whatever the agent started and left running when it ended, well or not, is killed too, so it cannot hold the pod
   contract my assumption: a kill inside the limit (out of memory) stays a "claude" failure, so Runs does not blame the limit for it; a limit that is not a whole number of seconds above zero refuses the run before the agent starts
+
+behaviour BEH-ORCH-15 "The pipeline is switched on and off per project, and starts off for every project except kit"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1247): "Pipelines are run on projects independently. Pipeline can be switched on and off for individual projects. Let's start with all off but on for kit"
+  contract my assumption: today the list is the KIT_PIPELINE_PROJECTS setting, which production sets to kit and kit-ui. This card moves it to a row per project on that project's Settings page, saved in Kit, with KIT_PIPELINE_PROJECTS read once as the starting values
+  contract my assumption: "kit" means kit and kit-ui, which both live in the kit repo; every other project starts off
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -2107,6 +2132,21 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
 
+behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the board and Settings are global"
+  in FEAT-NAV
+  layer ux
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings."
+  contract his note (kit.notes.md#2026-11-15-1300): splitting out the projects is his top priority, together with BEH-USERS-12
+  contract my assumption: the global header keeps Projects, the board and Settings. Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
+  contract my assumption: the global board still shows every project's cards, each labelled with its project, and a project's own board view is the same board filtered to it
+
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
   in FEAT-BOARD
   source defined kit.notes.md#2026-10-25-1233
@@ -2504,16 +2544,16 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   in FEAT-ARCH
   layer technical
   source defined kit-ui.notes.md#2026-11-06-1801
-  review unreviewed
+  review approved
   priority 5
   pending
-  needs-context "Backlogged, not for now, as you asked. Left open, as you said: the layout, and whether anything from the spec is drawn too."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract his note (kit-ui.notes.md#2026-11-06-1801): "a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now"
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
+  contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
@@ -3056,6 +3096,19 @@ behaviour BEH-CHAT-18 "Kit keeps a rough sense of how technical each user is, an
   contract "Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies."
   contract my assumption: the profile only changes how replies are worded (jargon, how much is explained), never what Kit will do for the user or what it shows them
 
+behaviour BEH-CHAT-19 "The chat shows the state of the item it is showing him"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-15-1250
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1250): "When in chat you should see the state of the top of stack item that you are being shown"
+  contract my assumption: the state is the one the board shows for that item (for example pending, approved, blocked, built), next to its id, and it updates when he answers the item from the chat
+
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
 
@@ -3169,7 +3222,7 @@ behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent,
   in FEAT-CUSTOM-AGENTS
   layer ux
   source defined kit.notes.md#2026-11-02-1857
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "Custom agents spend on every run and start from the security agent (BEH-SECAGENT-1); both wait on your spend cap."
@@ -3275,7 +3328,10 @@ behaviour BEH-NOTE-15 "A note carries a tag saying where it came from, shown on 
   contract my assumption: the origin is one line under the heading, an HTML comment `<!-- from: chat -->`, so the heading, and the anchor derived from it, are unchanged and older readers see only an invisible comment
   contract my assumption: an origin outside that list is ignored, not refused; the note still lands, untagged
   contract my assumption: the agent origin is for a note posted through the API with from set to agent; nothing in the UI sends it
-  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date; the Chat page sends chat and the floating button sends note-button; the Chat does not show the tag
+  contract stored: the origin is kept in the notes file itself, under the note's heading, so it is in git with the note and needs no other store
+  contract my assumption: an origin word other than the three is shown as no tag on the Notes page, as it is ignored when the file is read
+  contract conflict with BEH-CHAT-12, which shows a note's tag in the chat when he asks to see that note (his 2026-11-03 23:32Z note). This card says the Chat does not show the tag. I built both: an ordinary chat turn shows no tag, and a note the chat shows on request does. Review requested: approve to keep that, deny to hide the tag in the chat too
+  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date, and no tag for any other word; the Chat page sends chat and the floating button sends note-button; an ordinary chat turn shows no tag
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
