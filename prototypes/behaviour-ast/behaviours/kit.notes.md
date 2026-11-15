@@ -842,3 +842,9 @@ I thought you were going to get the pipeline running Howcome u paused until 8
 <!-- from: note-button -->
 
 Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings. Pipelines are run on projects independently. Pipeline can be switched on and off for individual projects. Let’s start with all off but on for kit
+
+## 2026-11-15 12:47Z
+
+<!-- from: note-button -->
+
+Kit .kit specs live in the project repo not centrally in kit
