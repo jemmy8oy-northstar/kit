@@ -2018,6 +2018,8 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
   contract my assumption: like his private projects (BEH-GATE-H1), the feed is served only to a signed-in session, because it comes from a private repo; another user's feed is empty (BEH-USERS-8)
   contract my assumption: KIT_AGENT_FEED names the file as owner/repo@branch:path, and Kit reads it again when the page asks and the last read is older than KIT_PROJECTS_POLL
   contract his confirmation on claude-code-bot#120, 2026-10-24 22:49Z: "Notification page is functional", so the App can read the feed
+  contract my assumption: the agent's wakes and sleeps are feed entries like any message, in the same newest-first order, so its own wake and sleep show without being asked for
+  contract my assumption: the feed's design is to be refined later (his 2026-10-24 14:00Z note: "Ay be we refine this experience later but this seems right"), so only the kinds, the order and the reading rules above are fixed; the layout is a first cut
 
 behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an app"
   in FEAT-NOTIFICATIONS
@@ -2030,6 +2032,7 @@ behaviour BEH-NOTIFY-2 "Kit can be saved to his home screen and opens like an ap
   contract my assumption: Kit serves a web app manifest and a home-screen icon under its own path, so Safari's Add to Home Screen opens Kit full screen with its name and icon
   contract my assumption: Kit had no icon, so it is a white K on the professional theme's primary blue, the same blue as the Kit wordmark in the header; deny it for a designed one
   contract the installed app's scope is Kit's own path, never the shared host's root, which is another app
+  contract my assumption: every iPhone push test (BEH-NOTIFY-3) runs first on a Home Screen install of this app, since iOS sends no web push to a Safari tab
 
 behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notification"
   in FEAT-NOTIFICATIONS
@@ -2045,6 +2048,7 @@ behaviour BEH-NOTIFY-3 "A new notification reaches his phone as a push notificat
   contract "not getting notifications on kit as a iphone web app" (kit.notes.md#2026-10-25-1232): right, because nothing pushes yet. This card is the missing piece, so it moves to priority 2 and I build it now, against a stand-in key, instead of on 2026-11-07
   contract my assumption: built 2026-10-25 against a stand-in: with no kit-push secret the page says push is not switched on and nothing polls; Kit reads the feed every 60 seconds, pushes each entry newer than the last pushed once, and on a restart starts from the newest entry without pushing it
   contract my assumption: a phone that the push service says is gone is forgotten; turning off is a POST to /api/push/subscriptions/remove, because Kit serves GET and POST only
+  contract my assumption: the 2026-10-25 12:32Z report ("not getting notifications on kit as a iphone web app") is a BEH-NOTIFY-3 bug only as far as the Safari tab goes: a Safari tab cannot receive web push, so the fix to test is the Home Screen install (BEH-NOTIFY-2), not a change to the push code
   contract his question (kit.notes.md#2026-10-25-1601), "Still not getting phone notifications how do I enable": the code is live, but it needs a key pair only he can create. Open Notifications in Kit. If it says "Push is not switched on yet on the server", the kit-push secret is missing (the steps are on this card). If it says "Add Kit to your Home Screen", open Kit from the Home Screen icon, not Safari. Otherwise tap Turn on notifications and allow
   contract he created the kit-push secret on 2026-10-26 (kit#454: "Added secret, btw kit is in balenthiran namespace"). It stays Blocked, not Done, until a push has reached his phone (BEH-BOARD-23)
   contract his note (kit-ui.notes.md#2026-10-27-1128): "This is working". A push reached his phone, so the needs-context line is gone and the card is Done (BEH-BOARD-23)
@@ -2069,6 +2073,7 @@ behaviour BEH-NOTIFY-4 "The agent wakes five minutes after his last action in Ki
   contract his 2026-10-26 notes (kit.notes.md#2026-10-26-2309, "Kit hasn't seemed to wake after my chanegs", and kit.notes.md#2026-10-26-2313, "suspend supersedes an action walking it should be the other way round"): the suspend was not the cause, since an action already overrides my own suspend. He acted every few minutes from 22:50Z to 23:13Z, so no 5-minute look ever saw five quiet minutes
   contract my assumption: an action that has waited 10 minutes wakes the agent even while he is still acting (claude-code-bot#125, his to merge and promote); five minutes after his last action stays the rule when he stops
   contract he merged claude-code-bot#126 on 2026-10-28, so #124 and #125 are live and nothing here waits on him. It stays pending only because its test lives in claude-code-bot
+  contract my assumption: Kit has no wake timer. The five-minute wake is the agent's scheduler in claude-code-bot, so the 2026-10-26 23:09Z report is reproduced and tested there; PushPoller.cs is only the 60-second push poll (BEH-NOTIFY-3) and never wakes the agent
 
 behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   in FEAT-NOTIFICATIONS
@@ -2082,6 +2087,7 @@ behaviour BEH-NOTIFY-6 "Kit shows when the agent is working"
   then sees region:KitMain
   contract "Kit shows when it is working - backlog if too high of a cost now"
   contract on the Backlog because he said so: no plan to build it until he unpauses it
+  contract my assumption: the pause's date, 2026-11-14, has passed, so the Inbox asks again (BEH-BOARD-26); the card stays paused, since his 2026-10-26 note said backlog and nothing newer changes that
 
 # His note of 2026-10-24 22:50Z, minutes after the feed went live.
 behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
@@ -2097,6 +2103,32 @@ behaviour BEH-NOTIFY-5 "The notifications page says when the agent next wakes"
   contract a pause he set himself says so, and that Kit actions do not cut it short, because the scheduler never overrides his own pause
   contract my assumption: the agent's own reason for sleeping is shown under it, as plain text
   contract a schedule Kit cannot read says why, and is never shown as an agent that is awake
+
+behaviour BEH-NOTIFY-7 "A request to work overrides the agent's own suspend"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-26-2313
+  review unreviewed
+  priority 4
+  actor engineer
+  when opens page:KitNotifications
+  then sees region:KitNextWake
+  contract "Currently it seems like suspend supersedes an action walking it should be the other way round"
+  contract my assumption: a request to work (a note, an approval or any other action of his in Kit) wakes the agent even while its own suspend is in force, because that suspend is the agent's and only defers its own sleep
+  contract my assumption: his own pause (set_by is not bot, BEH-NOTIFY-5) still wins over a request, and the indicator keeps saying so
+  contract my assumption: the request is the commit BEH-NOTIFY-4 already counts, so Kit records nothing new; the change is in what the agent does with a request during its own suspend, and its check is claude-code-bot's
+
+behaviour BEH-NOTIFY-8 "The agent does not sleep to save usage unless he chose that in Settings"
+  in FEAT-NOTIFICATIONS
+  source defined kit.notes.md#2026-10-28-1505
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract "Kit you decided to sleep to conserve following usage limit hit. I didn't ask you to do that."
+  contract my assumption: a usage limit is never by itself a reason for the agent to sleep; it sleeps when the Queue is empty and every idle item is off (BEH-SETTINGS-6), or when he pauses it, the same rule as BEH-SETTINGS-5
+  contract my assumption: a sleep the agent chooses is written to the feed as a sleep entry with its reason (BEH-NOTIFY-1), so he can see why it stopped
+  contract my assumption: no new setting is stored; the choice is the existing idle order line (BEH-SETTINGS-6), and the churn-rate question of the same note is answered there, not here
 
 # His notes of 2026-10-25 12:32-12:34Z, left from his phone while using the board.
 # The iPhone push note is answered on BEH-NOTIFY-3; the other three are below.
