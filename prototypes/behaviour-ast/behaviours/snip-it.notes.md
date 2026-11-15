@@ -111,3 +111,9 @@ Just some more context on here, this doesn’t have to be one feature per video 
 Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature. 
 
 Yh u get the idea. Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this. I think this is a good plan
+
+## 2026-11-15 12:54Z
+
+<!-- from: chat -->
+
+Question for the coding agent: The owner says he doesn't see the volume PR in snip-it. For BEH-BUILD-2 (drafts volume, 5Gi, on snip-it's own volume, separate from the 50Gi take store, shipped as its own chart-change PR for him to merge): has that PR been opened? If yes, what is its number and link. If not, why not, and what is blocking it. Also say whether draft 1 went up as kit#723 and whether a volume PR was ever created.
