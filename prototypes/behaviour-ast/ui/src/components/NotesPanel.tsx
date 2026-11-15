@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { dismissNote, fetchNotes, leaveNote, replyToNote } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import type { Note } from '../api/types'
+import type { Note, NoteOrigin } from '../api/types'
 import { CAP } from '../board'
 import { foldedBy, type Citation } from '../notes'
 import Count from './Count'
@@ -12,6 +12,9 @@ import PublishedHint from './PublishedHint'
 import ResourceView from './Resource'
 import { useWrite } from './useWrite'
 import WriteResultNote from './WriteResultNote'
+
+/** BEH-NOTE-15: the origins a tag may name. Any other word is ignored, so the note shows untagged. */
+const NOTE_ORIGINS: readonly NoteOrigin[] = ['chat', 'note-button', 'agent']
 
 /**
  * BEH-NOTE-1..3 (kit#118): his "less structured input … where you can just
@@ -294,7 +297,7 @@ function NoteCard({
         {note.kind === 'bell' && <Badge tone="warning">🔔 rung</Badge>}
         {note.behaviour && <Badge tone="primary">{note.behaviour}</Badge>}
         {/* BEH-NOTE-15: where it came from; a note that did not say shows nothing. */}
-        {note.from && <span className="muted">from {note.from.replace('-', ' ')}</span>}
+        {note.from && NOTE_ORIGINS.includes(note.from) && <span className="muted">from {note.from.replace('-', ' ')}</span>}
       </div>
       {note.text && <p className="note-body">{note.text}</p>}
       {folded.length > 0 && (
