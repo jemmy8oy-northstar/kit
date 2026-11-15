@@ -1238,7 +1238,7 @@ behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable ont
   in FEAT-ONBOARD-LOVABLE
   layer ux
   source defined kit-ui.notes.md#2026-11-06-1804
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "In scope, as you asked. Before I build: is the Lovable app already in the user's own GitHub (Lovable's GitHub sync), so onboarding starts from that repo? That is my assumption."
