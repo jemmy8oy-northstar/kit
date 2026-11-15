@@ -33,3 +33,9 @@ Test plan:
 - BEH-CHAT-15: an item id known to Kit, in chat text or on an action card, renders as a link to its item page; an unknown id stays plain text.
 - BEH-CHAT-7: the help line lists the can and cannot items; asking for a cannot item leaves a note for the coding agent and does not claim the change was made.
 - BEH-CHAT-17: with a coarse pointer, Enter adds a new line and does not send; with a fine pointer, Enter sends and Shift+Enter adds a new line.
+
+Built:
+- BEH-CHAT-7 (Chat.test.tsx): the help line lists what Kit can do and what it cannot
+- BEH-CHAT-7 (Chat.test.tsx): asked for a change Kit cannot make, it leaves a note for the coding agent and does not post an answer
+- BEH-CHAT-7 (TriageTests.cs): The_chat_instructions_say_what_kit_cannot_do_and_leave_such_a_request_as_a_note
+Whole suite: UI 563 of 563 passed (vitest, 49 files); backend 1991 of 1994 passed, the 3 that fail (ReportConformanceTests x2, ClaimerSidecarTests x1) fail the same on the base commit in this sandbox (run with DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 because libicu is missing, and the sidecar test needs a `kill` binary that is not on the PATH), so the suite is not fully green here.

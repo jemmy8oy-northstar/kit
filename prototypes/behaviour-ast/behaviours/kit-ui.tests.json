@@ -915,7 +915,10 @@
   ],
   "BEH-CHAT-7": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the header button and a typed help or /help add the help line and never call the agent" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the help line lists what Kit can do and what it cannot" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked for a change Kit cannot make, it leaves a note for the coding agent and does not post an answer" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_cannot_do_and_leave_such_a_request_as_a_note" }
   ],
   "BEH-CHAT-8": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Both_chats_hand_the_model_a_reader_of_their_own_projects_spec" },
