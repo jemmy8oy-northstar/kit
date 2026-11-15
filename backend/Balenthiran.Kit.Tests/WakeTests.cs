@@ -43,9 +43,9 @@ public class WakeTests
         return (dir, router, clock);
     }
 
-    private static string? RequestedOf(KitRouter router)
+    private static string? RequestedOf(KitRouter router, string? cookie = null)
     {
-        var r = router.Route("GET", "/api/settings/wake");
+        var r = router.Route("GET", "/api/settings/wake", cookie);
         Assert.Equal(200, r.Status);
         return Assert.IsType<WakeSetting>(r.Body).Requested;
     }
@@ -121,7 +121,7 @@ public class WakeTests
 
         var him = SignIn(router, null, Operator);
         Assert.Equal(200, router.Route("POST", "/api/settings/wake", him).Status);
-        Assert.Equal("2026-11-07T02:15:00Z", RequestedOf(router));
+        Assert.Equal("2026-11-07T02:15:00Z", RequestedOf(router, him));
     }
 
     [Fact]

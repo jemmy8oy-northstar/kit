@@ -356,19 +356,24 @@ behaviour BEH-COMMIT-6 "A spec merged into dev reaches the board on the next rea
 # localhost. His words: "Since I have set up the secret you should now be able
 # to set up kit as a proper full stack app."
 
-behaviour BEH-GATE-H1 "A read is served to anyone, and that stays true in every configuration"
+behaviour BEH-GATE-H1 "Nothing of Kit is read by anyone who has not signed in"
   in FEAT-LOCK
   layer technical
-  source defined docs/design/process.md
+  source inferred kit#795
+  review approved
   priority 5
   actor engineer
   given request:Anonymous
   when runs command:KitServe
-  then reports status:Ok
-  contract kit is a public repo, so a corpus served to an unauthenticated caller
-  contract discloses nothing that `git clone` does not
-  contract gating reads would cost the thing he wants — glancing at a spec from a
-  contract phone — to protect data that is already public
+  then reports status:Unauthorized
+  contract until 2026-11-14 this said "a read is served to anyone": kit was a public repo, so a corpus served to an unauthenticated caller disclosed nothing that `git clone` did not
+  contract kit went private to protect the IP (kit#663), and that reasoning stopped holding: production Kit served kit's whole spec and his notes to anyone signed out (kit#795, found by Northstar Review #8)
+  contract his words on kit#795, 2026-11-14 08:38Z: "none of kit should be accessible to anyone that's not signed in. Viewable kit specs should be determined by the projects in your github"
+  contract this replaces the morning's assumption (kit#800) that a project in a public repo was read by anyone: whether a repo is public no longer matters to Kit
+  contract signed out, every API read answers 401 not-signed-in before anything is looked up: the project list, every per-project read, activity, notifications, features and wake. An unknown project answers the same, so a stranger cannot tell which exist
+  contract another user is refused each of the operator's projects with 403 not-yours, and their list holds only their own (BEH-USERS-2, BEH-USERS-8)
+  contract my assumption: still open signed out are health and session (the sign-in page needs them), the idle setting (the agent reads it with no session) and the dev process (each run fetches it with no session); the UI bundle and the splash are pages, not data
+  contract on a Kit with no password, loopback reads everything, as it writes everything; any other interface reads nothing
 
 behaviour BEH-GATE-H2 "A write is refused unless the caller proved they are the operator"
   in FEAT-LOCK

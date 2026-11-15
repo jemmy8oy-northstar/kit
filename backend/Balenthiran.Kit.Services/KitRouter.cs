@@ -175,6 +175,27 @@ public sealed partial class KitRouter(
             return Process();
         }
 
+        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; open, as the agent reads it signed out (kit#795).
+        if (pathname == "/api/settings/idle")
+        {
+            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
+                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
+                : [IdleDirective.Default];
+            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
+        }
+
+        // BEH-GATE-H1 (kit#795): his words, "none of kit should be accessible to anyone that's not
+        // signed in". Every read below needs a session, before anything is looked up, so a stranger
+        // learns nothing, not even which projects exist.
+        if (SignedOut(cookie))
+        {
+            return Json(401, new ApiError
+            {
+                Error = "not-signed-in",
+                Reason = "Kit is served only to a signed-in session (or to loopback on a Kit with no password)",
+            });
+        }
+
         // BEH-USERS-4: the signed-in user's own memory; the id comes from the session, never the request.
         if (pathname == "/api/me/memory")
         {
@@ -203,15 +224,6 @@ public sealed partial class KitRouter(
                 : UsersProjects(UserOf(cookie), corpora.Corpora().Select(viewer.Summary).ToList());
         }
 
-        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; a read like the rest (BEH-GATE-H1).
-        if (pathname == "/api/settings/idle")
-        {
-            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
-                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
-                : [IdleDirective.Default];
-            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
-        }
-
         // BEH-SETTINGS-7: when he last asked the agent to wake; a read like the rest.
         if (pathname == "/api/settings/wake")
         {
@@ -229,26 +241,15 @@ public sealed partial class KitRouter(
             return Json(200, FeaturesFor(cookie));
         }
 
-        // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
+        // BEH-ACTIVITY-1: recent commits across every project.
         if (pathname == "/api/activity")
         {
             return Json(200, IsOtherUser(cookie) ? new ActivityFeed { Entries = [], NoHistory = [] } : activity.Recent());
         }
 
-        // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
-        // covers projects, which live in a public repo; the feed comes from a private one). Gated as
-        // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
+        // BEH-NOTIFY-1: the agent's messages. A user's feed is empty (BEH-USERS-8).
         if (pathname is "/api/notifications" or "/api/push" or "/api/triage")
         {
-            if (lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host))
-            {
-                return Json(401, new ApiError
-                {
-                    Error = "not-signed-in",
-                    Reason = "the agent's notifications are served only to a signed-in session (or to loopback on a Kit with no password), because they come from a private repository",
-                });
-            }
-
             // BEH-NOTIFY-3: whether this Kit can push to his phone, behind the same gate as the feed it announces.
             if (pathname == "/api/push")
             {
@@ -262,6 +263,13 @@ public sealed partial class KitRouter(
             }
 
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
+        }
+
+        // BEH-USERS-8 (kit#795): every project this Kit serves is the operator's, so another user is
+        // refused each per-project read before it is looked up, and learns nothing of which exist.
+        if (IsProjectRead(pathname) && IsOtherUser(cookie))
+        {
+            return Json(403, new ApiError { Error = "not-yours", Reason = "this project is not in your GitHub" });
         }
 
         // BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub.
@@ -314,7 +322,7 @@ public sealed partial class KitRouter(
         }
 
         // BEH-COMMIT-5: this project's edits that have not reached the base, and the pull request
-        // they wait in. A read like the rest, so it is served to anyone (BEH-GATE-H1).
+        // they wait in. A read like the rest, so it is gated as the project is (BEH-GATE-H1).
         var pm = PendingRoute.Match(pathname);
         if (pm.Success)
         {
@@ -372,6 +380,16 @@ public sealed partial class KitRouter(
 
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
     }
+
+    /// <summary>
+    /// The caller is no one in particular: no session on a locked Kit, or not loopback on one with
+    /// no password. The same test the agent's feed and every write use.
+    /// </summary>
+    private bool SignedOut(string? cookie) => lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host);
+
+    /// <summary>A per-project GET, whatever app it names, even one that does not decode.</summary>
+    private static bool IsProjectRead(string pathname) =>
+        new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute }.Any(route => route.IsMatch(pathname));
 
     /// <summary>
     /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull

@@ -190,7 +190,8 @@
   ],
   "BEH-NOTE-11": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "hides archived notes again, and counts them on the button (BEH-NOTE-11)" },
-    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" }
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "moves a note a behaviour cites out of the open notes, links what it became, and dismisses the right one" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "an archived note can still be dismissed, and the notes file no longer lists it (BEH-NOTE-11)" }
   ],
   "BEH-NOTE-12": [
     { "file": "prototypes/behaviour-ast/ui/src/components/NoteFab.test.tsx", "title": "leaves a note on the project of the page it was opened from, and tells the page's notes to re-read" },
@@ -432,7 +433,7 @@
   "BEH-USERS-8": [
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_write_to_the_operators_projects" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_users_project_list_and_activity_hold_nothing_of_his" },
-    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_may_still_read_one_of_his_projects_by_its_url" },
+    { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_user_cannot_read_one_of_his_projects_by_its_url" },
     { "file": "backend/Balenthiran.Kit.Tests/AccountsTests.cs", "title": "A_signed_token_names_its_user_and_a_pre_accounts_token_is_his" }
   ],
   "BEH-LOADING-1": [
@@ -623,7 +624,7 @@
   ],
   "BEH-FLAGS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_tester_is_served_what_is_off_for_testers_and_not_the_table" },
-    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_a_tester" },
+    { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_refused" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 leaves the navigation entry of a feature that is off for testers out of their bar" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 shows the same feature in his bar when it is on for him" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-2 answers a direct visit to a switched-off page with a short message, not the page" },
@@ -880,7 +881,9 @@
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "links to the project's notes, and follows the project the chat is about" }
   ],
   "BEH-NOTE-15": [
-    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows a muted \"from\" tag for a note that carries an origin, and none for one that does not" }
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "shows a muted \"from\" tag for a note that carries an origin, and none for one that does not" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx", "title": "a note whose origin is not one of the three is shown untagged, not as \"from …\"" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "CONTROL: an ordinary chat turn shows no \"from\" tag, even with a note that carries one in the project" }
   ],
   "BEH-SPECAGENT-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "Design this project asks the agent to lead, and every turn on that project stays in design until he stops it" },
@@ -920,6 +923,41 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_reads_the_cards_asked_for_and_asks_again_with_them" },
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once" }
   ],
+  "BEH-ORCH-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error" }
+  ],
+  "BEH-ORCH-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flag_with_its_reason_survives_the_round_trip" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flag_without_a_reason_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_survives_the_round_trip_straight_after_the_flag" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_without_the_flag_it_answers_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_with_an_unknown_outcome_word_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_outside_the_enum_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_note_that_is_empty_or_spans_lines_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_line_with_no_note_is_refused_when_read_back" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_task_needs_a_flagged_bundle_nobody_has_reviewed" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_review_task_carries_the_flag_the_branch_the_path_and_the_bundle" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_bundle_too_long_to_carry_is_read_from_its_branch_and_the_task_still_fits_a_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_tally_counts_flagged_bundles_by_outcome_and_ignores_unflagged_ones" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Stage_models_default_to_haiku_for_triage_and_opus_for_review" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_stage_model_is_read_from_the_environment_or_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_low_review_model_defaults_to_sonnet_and_is_read_from_the_environment" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flags_level_is_read_from_its_end_and_anything_else_is_high" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Only_a_low_flag_reviews_on_the_low_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Each_stage_is_told_what_the_two_levels_mean" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_A_low_level_flag_is_reviewed_on_the_cheaper_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_A_high_unlevelled_or_unreadable_flag_is_reviewed_on_the_review_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_The_spec_and_build_tasks_say_what_the_levels_mean" }
+  ],
+  "BEH-ORCH-14": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_A_process_the_agent_left_running_is_killed_when_the_agent_ends" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_A_limit_that_is_not_a_whole_number_of_seconds_refuses_the_run_before_the_agent_starts" }
+  ],
   "BEH-ORCH-4": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_with_the_switch_off_a_scheduled_card_is_not_queued" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_the_first_scheduled_card_starts_at_spec_with_a_bundle_kit_wrote_and_no_triage" },
@@ -929,7 +967,7 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_4_KIT_PIPELINE_SCHEDULED_is_off_unless_it_says_on_and_a_typo_throws" }
   ],
   "BEH-ORCH-5": [
-    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_15_20_30_and_100" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Stage_turn_limits_default_to_30_20_30_and_100" },
     { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_Each_stage_runs_on_its_own_turn_limit" },
     { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ORCH_5_A_turn_limit_is_read_from_the_environment_or_refused" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_5_Each_stages_run_is_claimed_with_that_stages_turn_limit" },

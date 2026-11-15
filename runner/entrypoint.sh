@@ -14,6 +14,7 @@
 #   KIT_BASE_BRANCH   optional  branch to start from (default: the repo's default branch)
 #   KIT_MODEL         optional  model for the run (default: sonnet)
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
+#   KIT_RUN_MAX_SECONDS optional  wall-clock limit on the agent, in seconds (default: 6600, under the claimer's 7200)
 #   KIT_STAGE         optional  the pipeline stage; "test" (BEH-ORCH-12) makes the script check the agent's verdict line and never push
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
@@ -60,6 +61,10 @@ case "$KIT_REPO" in
 esac
 case "$KIT_RUN_ID" in
   *[!A-Za-z0-9._-]*) echo "kit-run: KIT_RUN_ID has characters a branch name cannot" >&2; exit 64 ;;
+esac
+max_seconds="${KIT_RUN_MAX_SECONDS:-6600}"
+case "$max_seconds" in
+  ''|*[!0-9]*|0*) echo "kit-run: KIT_RUN_MAX_SECONDS must be a whole number of seconds above zero" >&2; exit 64 ;;
 esac
 
 unset ANTHROPIC_AUTH_TOKEN
@@ -152,12 +157,23 @@ echo "kit-run[$KIT_RUN_ID]: working"
 # JSON, so the usage can be read; the agent's final message is still printed for the log.
 result="$work/result.json"
 status=0
-claude -p "$KIT_TASK" \
+# BEH-ORCH-14: nothing else bounds a run's time. The claimer's limit acts only when pool.sh asks for the next run, which a
+# hung agent never lets it do, and a subscription run never meets the proxy's token age. timeout signals the agent's whole
+# process group, so a test server it left running dies with it rather than holding the pod.
+# Whether its final SIGKILL reaches that whole group differs between coreutils versions (it did not on CI's Ubuntu), so
+# once timeout has returned, whatever is left in its group is killed here. timeout leads that group, so its id is the pgid.
+# The same goes for a run that ended well: a server the agent left behind would otherwise outlive it.
+started=$SECONDS
+kill_after="${KIT_RUN_KILL_AFTER:-30}" # overridable only so a test can reach the SIGKILL path quickly
+timeout --kill-after="$kill_after" "$max_seconds" claude -p "$KIT_TASK" \
   --append-system-prompt "$(cat "$process")" \
   --model "${KIT_MODEL:-sonnet}" \
   --max-turns "${KIT_MAX_TURNS:-100}" \
   --permission-mode bypassPermissions \
-  --output-format json > "$result" || status=$?
+  --output-format json > "$result" &
+agent=$!
+wait "$agent" || status=$?
+kill -KILL -- "-$agent" 2>/dev/null || true
 # A failed run spent tokens too, so its usage is written before the exit status is acted on.
 node -e '
   const [file, usageFile] = process.argv.slice(1);
@@ -172,9 +188,30 @@ node -e '
     require("fs").writeFileSync(usageFile, JSON.stringify(u));
   }
 ' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}"
+# 137 is also a kill from elsewhere (out of memory), so it counts as the limit only once the limit has passed.
+if [ "$status" -eq 124 ] || { [ "$status" -eq 137 ] && [ $((SECONDS - started)) -ge "$max_seconds" ]; }; then
+  step=time
+  echo "kit-run[$KIT_RUN_ID]: claude ran out of time (${max_seconds}s)" >&2
+  exit 124
+fi
 if [ "$status" -ne 0 ]; then
   echo "kit-run[$KIT_RUN_ID]: claude exited $status" >&2
   exit "$status"
+fi
+
+# BEH-ORCH-1: an error result (running out of --max-turns above all) can still exit 0, so the run would end finished with
+# nothing pushed and nothing said. Its subtype is read instead, and only a fixed step word goes out: "turns" or "result".
+ended="$(node -e '
+  let r;
+  try { r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch { process.exit(0); }
+  const sub = typeof r.subtype === "string" ? r.subtype : "";
+  if (sub === "error_max_turns") process.stdout.write("turns");
+  else if (r.is_error === true || sub.startsWith("error")) process.stdout.write("result");
+' "$result")" || ended=""
+if [ -n "$ended" ]; then
+  step="$ended"
+  echo "kit-run[$KIT_RUN_ID]: claude ended with an error result ($ended, max turns ${KIT_MAX_TURNS:-100})" >&2
+  exit 3
 fi
 
 # BEH-ORCH-12: a test run's verdict is checked here, not taken from claude's exit code (an agent that saw failures and
