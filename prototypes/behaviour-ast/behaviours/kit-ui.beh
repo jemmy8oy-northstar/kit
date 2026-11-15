@@ -1241,10 +1241,10 @@ behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable ont
   review approved
   priority 4
   pending
-  needs-context "In scope, as you asked. Before I build: is the Lovable app already in the user's own GitHub (Lovable's GitHub sync), so onboarding starts from that repo? That is my assumption."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
+  contract his answer (kit-ui.notes.md#2026-11-15-1250): "Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo."
   contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
   contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
   contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
@@ -1429,7 +1429,6 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   source defined kit#672
   review approved
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1443,6 +1442,8 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
   contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
   contract built: FlagLevels.Of reads a trailing "(level: low|high)" off the Flag line (case and spacing ignored; none, unreadable or mid-text is high); the review run is created on KIT_STAGE_MODEL_REVIEW_LOW (default claude-sonnet-5-5) for low and KIT_STAGE_MODEL_REVIEW for high; the triage, spec and build tasks say what each level means (kit#751)
+  contract his question (kit-ui.notes.md#2026-11-15-1245): "What is the home on this it isn't marked as blocked", read as "the hold"
+  contract my answer: nothing held it, which is why it was not Blocked. It was built and live, and I had left it pending only until a flagged item was reviewed live. That was a check I owed, not a reason to keep it in his Queue. It is done now, and the first live review it runs is checked from Runs once the bot's read key (BEH-ORCH-6) is merged
 
 behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
   in FEAT-AGENT-PIPELINE
@@ -1549,7 +1550,8 @@ behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a r
   contract built, slice 2: Pipeline.RunEnded schedules a retry of a project's triage Pipeline.RetryAfter (1 hour) after a triage run that did not finish, on the pipeline's TimeProvider, so a note left when his subscription's limit is reached is sorted once the limit resets. A project has at most one retry pending; a triage that works clears the count and the pending retry; it is tried again at most 12 times in a row (Pipeline.MaxRetries), so the failure after the 12th retry schedules none; a retry timer that fires after it was replaced does nothing. The retry queues an ordinary triage, which reads only the notes still unsorted. My assumption stands for the rest: a run that fails on the limit spends nothing (not checked here)
   contract measured 2026-11-14 from the code: a run in flight when Kit restarts (a promotion, a pod move) cannot push. The runner asks Kit's /api/runs/github-token each time git needs a token, and Kit answers only for a run its RunnerPool handed out since it started (repoByRun is memory only), so after a restart the run's push is refused and its work is lost. A triage is tried again (slice 2), but a spec or build run is not
   contract my assumption: the fix is to keep each handed-out run's repo with the run in the store, so a token request after a restart is answered for that one repo, as before it. That changes what a run's token may reach across a restart, so it is his call. If he stays silent I build it as a pull request for him to merge; meanwhile I avoid promoting while a run is in flight, which I can see only from work-branch pushes until the bot key (BEH-ORCH-6) lets me read Runs
-  needs-context "A Kit restart mid-run loses that run's push (repo-per-run is in memory). Should a run's repo be kept in the database so its token still works after a restart? If you stay silent I build it as a PR for you to merge."
+  contract his note (kit-ui.notes.md#2026-11-15-1248): "I don't understand what this is asking". Asked again in plain words below
+  needs-context "When Kit restarts (a deploy) while an agent is mid-task, the agent can no longer save its work to GitHub, and the work is lost. The fix: Kit remembers which repo each task works on in its database. Changes who can push, so it's yours. Silence: I build it, you merge."
 
 behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags and who reviewed them, and what each stage of a past item cost"
   in FEAT-AGENT-PIPELINE
@@ -1641,7 +1643,6 @@ behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user
   review approved
   priority 4
   pending
-  needs-context "Where does the cadence setting live? My pick is its own row on Settings, next to the pipeline. Say if you'd rather it sat under BEH-SETTINGS-5 or 6."
   actor engineer
   when opens page:KitSettings
   then sees region:KitMain
@@ -1649,6 +1650,8 @@ behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user
   contract his note: a cheap model still triages most tasks; the review checks neglected tasks, a sample of completed work and the architecture; the user chooses daily, every two days or weekly
   contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
   contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
+  contract his answer (kit-ui.notes.md#2026-11-15-1251): "Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project."
+  contract my assumption: the row lists each project with its own cadence (off, daily, every two days, weekly), and every project starts off
 
 behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its runner, so one hung run cannot hold the pipeline"
   in FEAT-AGENT-PIPELINE
@@ -2512,13 +2515,13 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   review approved
   priority 5
   pending
-  needs-context "Backlogged, not for now, as you asked. Left open, as you said: the layout, and whether anything from the spec is drawn too."
   actor engineer
   when opens page:KitProject
   then sees region:KitMain
   contract his note (kit-ui.notes.md#2026-11-06-1801): "a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now"
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
+  contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
