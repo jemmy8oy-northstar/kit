@@ -1705,9 +1705,9 @@ behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new in
   contract his note: "maybe the first agent can prioritise the new and ready backlog including prioritisation. This was ccb doesnt need to wake to a bell either"
   contract my assumption: the first agent sets a new ticket's priority from the cards it touches (BEH-ORCH-11 slice 6 already does this by rule) and may raise or lower it with a reason on the ticket; a separate priority agent waits until that proves not to be enough
   contract his note: "The job of ccb atm is to monitor the pipeline and get it into this working state. Ccb does not need to wake and respond to all new notes, ccb can be awoken by a button that I can click to wake it early, or it wakes on a schedule as normal"
-  contract my answer: that is claude-code-bot#137, built on 2026-11-07 and waiting for his merge: I wake at 07:30, 13:00 and 19:00 UK time or when he presses "Wake the agent" in Settings (BEH-SETTINGS-7), not on every note
+  contract my answer: that is claude-code-bot#137, which he merged on 2026-11-15: I wake at 07:30, 13:00 and 19:00 UK time or when he presses "Wake the agent" in Settings (BEH-SETTINGS-7), not on every note
   contract my assumption: built in this order, each slice merged before the next: (1) blocked as a tag, with questions as ticket comments; (2) triage writes the spec change on the ticket's branch; (3) his reply on a blocked ticket wakes the first agent; (4) the board shows tickets. The pipeline jobs stay switched off in production until he switches them on (BEH-ORCH-11), because they spend his subscription
-  needs-context "Your 15:20Z pipeline note: I agree, and it mostly builds on what exists. Answer in this card. Silence: I build it in the 4 slices listed, kit only, jobs off until you switch them on."
+  contract built (slice 1): a stopped run no longer gives its ticket a "stopped" state. The ticket keeps the state it reached and carries blocked_because, its reason, and kit posts "Blocked: <reason>" once as a comment on the ticket (pipeline_ticket_comments). After a restart a blocked ticket comes back stopped, so no job takes it, and the triage task does not list it
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
