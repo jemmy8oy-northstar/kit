@@ -172,9 +172,10 @@ behaviour BEH-SHEET-2 "The Questions tab leads with what Kit is asking him, and 
   contract "The questions tab doesn't really show questions at the moment it kind of just shows probelms" (kit.notes.md, 2026-10-22 22:46Z)
   contract "I think kit it is important that kit starts to raise the questions which helps guide the user in the right direction. Right now I'm not sure what ux ui or logic to define to unblock kit"
   contract first on the tab, under "Kit is asking you": every needs-context line on a card still to build and not paused (BEH-BOARD-17), and every review request whose note is a question (BEH-BOARD-11); the question is in bold, with the card it is about beneath it as a link
-  contract the old Question sheet heading reads "Problems in the spec": conflicts and never-adjudicated inferences are problems Kit found, not questions
+  contract my assumption: the rest sits under "Problems in the spec": the sheet's Decisions section (QuestionSheet.cs) lists conflicts and behaviours no documented screen displays, which are problems Kit found, not questions it asks; the sheet's Asked-by-the-author and Reviews sections sit there too
   contract the tab's count includes the questions, so a project with only questions still shows a count
   contract each needs-context line is one answerable question that ends with what the agent does if he never answers, so silence is a decision rather than a block (the agent's practice since kit#413)
+  contract my assumption: Kit raises the questions that guide the decisions it needs (kit.notes.md, 2026-10-22 22:48Z): each names the card it is about and offers the options Kit would take, as tappable choices (BEH-CHAT-10); the layout is his to set, so this card fixes what is asked and not how the tab looks
   contract he answers under the question itself (BEH-SHEET-3), or on the card as for any review
 
 behaviour BEH-SHEET-3 "He can answer what Kit is asking, under the question"
@@ -191,9 +192,27 @@ behaviour BEH-SHEET-3 "He can answer what Kit is asking, under the question"
   then sees heading:KitAsking
   contract "Kit is asking you needs a way to reply" (kit.notes.md, 2026-10-22 23:47Z)
   contract every question under "Kit is asking you" has an answer box and a Reply button; nothing is sent while the box is blank
+  contract my assumption: the reply box is on every path an ask takes, the Questions tab (this card), the board's review card (BEH-BOARD-11) and the Inbox card (BEH-INBOX-1), so the reply works wherever the ask shows; a question with a fixed set of answers offers them as tappable options first (BEH-CHAT-10)
   contract an answer is a plain note on the card the question is about, in the notes the page shows, so the agent reads and folds it like any other note
   contract until it is folded, his answer shows under the question, marked as waiting for Kit, and the box becomes "Add to your answer"
   contract my assumption: the question stays on the tab until the agent acts on his answer and edits or removes the card's needs-context line, so an answer is never lost between his reply and the agent's next wake
+
+behaviour BEH-SHEET-4 "He can go through what Kit is asking one item at a time, unseen first"
+  in FEAT-PROJECT
+  layer ux
+  source defined kit.notes.md#2026-10-27-2131
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  when activates tab:KitProjectQuestionsTab
+  then sees heading:KitAsking
+  contract "A page which shows item by item which are mine to address maybe ordered by highest priority but not seen yet then back to just normal highest priority" (kit.notes.md, 2026-10-27 21:31Z)
+  contract "a card style, tinder style feature where you answer question or add a comment approve deny pause or dismiss this kind of thing. Maybe even an option to deprioritise"
+  contract my assumption: the cards are the items the Questions tab already lists (BEH-SHEET-2), one at a time; no new kind of item is added
+  contract my assumption: the choices are approve, deny, pause, dismiss, comment and deprioritise, and answer on a question (BEH-SHEET-3); a choice an item cannot take is not offered on it
+  contract my assumption: order is items he has not opened yet first, highest priority first, then the rest by priority; "seen" is kept in this browser, as BEH-INBOX-1 keeps it
+  contract my assumption: BEH-INBOX-1 puts the same items on the Inbox page; both stand until he says which is the page, so one is not built as a copy of the other
 
 behaviour BEH-PAIR-1 "A behaviour and the test Kit generates from it are on one screen"
   in FEAT-BEHAVIOUR
@@ -370,6 +389,7 @@ behaviour BEH-NOTE-8 "A decision on the question sheet is resolved in free text"
   when activates button:KitResolve
   then sees region:KitOpenNotes
   contract it leaves a note tagged with the decision's key; the conflict stays on the sheet until the note is folded
+  contract my assumption: a decision with a fixed set of answers offers them as tappable options (BEH-CHAT-10), with free text still open, so the free-text path stays; it is not the comment path (BEH-COMMENT-2), so the note it leaves gets no reply of its own
   contract no corpus keyword is invented to record it — the fold is what edits the behaviours
 
 behaviour BEH-TITLE-1 "A behaviour is shown by its title, its id kept small"
@@ -896,6 +916,7 @@ behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   contract "questions should probably appear on the board as well"
   contract my assumption: a question is a `review requested` line that asks him something, and it sits at the top of the review column, worded as the question, so it is not missed among cards that only want a look
   contract my assumption: "asks him something" means the request's note ends in a question mark; the card carries a question badge, and only a rung card sits above it
+  contract my assumption: a question with a fixed set of answers offers them as tappable options (BEH-CHAT-10), and names the card it is about; an answer on the card is a plain note there (BEH-SHEET-3)
 
 behaviour BEH-LOOK-1 "Kit looks like a professional tool: one spacing scale, quiet greys, one accent"
   in FEAT-NAV
@@ -1087,6 +1108,19 @@ behaviour BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done 
   contract my assumption: Done leaves a feature's written stage line alone; it only decides where the card is shown, so a behaviour added later or un-built moves the card back to its stage
   contract my assumption: Done keeps corpus order, not most recently completed first (BEH-BOARD-4), because that order needs each project's commit history, which this page does not read
   contract built: the Done column after UI requirements, from the same columnOf the behaviour board uses
+
+behaviour BEH-STAGE-13 "When the agent lacks the context to draft a feature's behaviours or an epic's features, it asks on the item rather than guessing"
+  in FEAT-STAGES
+  source defined kit.notes.md#2026-10-22-1639
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitStages
+  then sees region:KitStagesBoard
+  contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context" (kit.notes.md, 2026-10-22 16:39Z)
+  contract my assumption: the drafting stays with BEH-STAGE-5 (a feature from a note), BEH-EPIC-6 (an epic's children) and BEH-EPIC-9 (a split); this card is only the question half, and adds no drafting of its own
+  contract my assumption: a draft it cannot make without him is a review request on the item the draft is for, worded as the question and naming the context it lacks, rather than a guess; it sits at the top of his board (BEH-BOARD-11)
+  contract my assumption: epics stay in kit/work/epics (BEH-EPIC-1 to BEH-EPIC-9); this card builds no epic tag, epic page or epic view
 
 behaviour BEH-STAGE-8 "The board has two views, features and behaviours, and one tap switches between them"
   in FEAT-STAGES
@@ -1951,6 +1985,20 @@ behaviour BEH-COMMENT-2 "The agent reads every comment and answers the ones that
   contract built 2026-10-31: on a behaviour, feature or epic page each comment says "Picked up — answered by" the card that cites it, or "Not picked up yet"; a cited comment stays on its item's page rather than moving to Archived
   contract my assumption: "picked up" means a card cites the comment, which is also what the agent's own sweep requires before it marks a comment read
 
+behaviour BEH-COMMENT-3 "Kit answers a comment that asks it something, and leaves the other comments alone"
+  in FEAT-COMMENTS
+  layer technical
+  source defined kit.notes.md#2026-10-31-0948
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitBehaviour
+  then sees region:KitMain
+  contract "Kit reads comments to see if it needs to respond to them" (kit.notes.md, 2026-10-31 09:48Z)
+  contract my assumption: the trigger is a comment that asks Kit a question, or is addressed to Kit by name; the reply is a review request on the card the comment is about, as BEH-COMMENT-2 gives it
+  contract my assumption: any other comment is still read and cited as BEH-COMMENT-2 says, and gets no reply of its own
+  contract my assumption: BEH-COMMENT-2 gives a comment addressed to Kit that only tells it what to do no reply; this card replies to it, so the two conflict on that case, and the reading built is this card's (kit.beh sets no kit:conflicts line, so build), with BEH-COMMENT-2 raised as a review request naming both
+
 behaviour BEH-NOTE-12 "A note can be added from any page with a floating button"
   in FEAT-NOTES
   source inferred kit.notes.md#2026-10-19-1933
@@ -2233,6 +2281,19 @@ behaviour BEH-INBOX-4 "He can filter his Inbox by project"
 
 feature FEAT-HEALTH "Kit health: how much of each spec has tests"
   stage development
+
+behaviour BEH-INBOX-5 "A reply to a question he asked as a note comes up after that question in his Inbox"
+  in FEAT-INBOX
+  layer ux
+  source defined kit.notes.md#2026-10-31-0055
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitInbox
+  then sees region:KitMain
+  contract "If direct questions are asked as notes replies can come up in the inbox maybe before the questions asked to the user" (kit.notes.md, 2026-10-31 00:55Z)
+  contract my assumption: the question is shown first and the reply sits under it on the same card; a reply never comes up as a card of its own ahead of the question it answers
+  contract my assumption: this conflicts with BEH-INBOX-3, whose title puts the answer first; kit.beh sets no kit:conflicts line, so the reading built is this card's (question first), and BEH-INBOX-3 is raised as a review request on its card naming both
 
 behaviour BEH-HEALTH-1 "A health page shows, per project and in total, the share of behaviours a test names"
   in FEAT-HEALTH
@@ -2952,6 +3013,7 @@ behaviour BEH-CHAT-10 "When the agent asks a yes/no or multiple-choice question,
   contract built: on the Chat page only, the model is offered one more tool, offer_options, with up to five short answers; the reply carries them as options and the page shows each as a button under that message
   contract built: tapping one sends its words as his message, as if he had typed them; the buttons go once he sends anything, and typing freely is always open
   contract my assumption: the Inbox's Talk it through is offered no such tool, as with the CHAT-6 tools; an option that is empty, repeated or over 80 characters is dropped, and a reply that also acts shows none
+  contract my assumption: the same options are offered on a Kit question on the Questions tab (BEH-SHEET-2) and on the board's review card (BEH-BOARD-11) when the question has a fixed set of answers; a tap is sent as his answer (BEH-SHEET-3), and free text stays open
 
 behaviour BEH-CHAT-11 "One chat covers every app of a project, rather than one chat per app"
   in FEAT-CHAT

@@ -7,10 +7,10 @@ Cards:
 - BEH-BOARD-11
 - BEH-NOTE-8
 - BEH-CHAT-10
-- new: the AI proposes behaviours for a feature and features for an epic, and asks when it lacks context
-- new: a page that shows items one at a time, the ones mine to address first, with approve, deny, pause, dismiss, comment and deprioritise as choices
-- new: a reply to a direct question asked as a note appears after that question in the inbox, not before it
-- new: Kit reads the comments on an item and responds when a comment asks something of it
+- BEH-STAGE-13
+- BEH-SHEET-4
+- BEH-INBOX-5
+- BEH-COMMENT-3
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-22 22:46Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-22 22:48Z
@@ -32,3 +32,13 @@ Context:
 - 21:31Z (10-27): the owner imagines a tinder-style page of items mine to address, ordered by priority but unseen first, where each item can be approved, denied, paused, dismissed, commented on or deprioritised. This is a design sketch. Default: build the one-at-a-time page on the same items the Questions tab already lists, and record the choice set as an unreviewed assumption. Do not invent new item kinds.
 - 10-31 00:55Z: when a direct question is asked as a note, the reply can show in the inbox before the question does. Default: show the question first, then the reply under it. Check how the inbox orders the two before changing it.
 - 10-31 09:48Z: Kit should read comments and decide whether it needs to respond. Default: respond to comments addressed to Kit or asking it a question, and leave other comments alone. Check whether the comment path already does this (BEH-NOTE-8, BEH-CHAT-10) before building, and record the trigger as an unreviewed assumption.
+Test plan:
+- BEH-SHEET-2: the Questions tab lists each needs-context line and each question review request above "Problems in the spec", with its card linked beneath it, and a project with only questions shows a count
+- BEH-SHEET-3: every Kit question on the tab has an answer box and Reply; a blank box sends nothing; a reply becomes a plain note on the card and shows as waiting for Kit
+- BEH-BOARD-11: a review request whose note ends in a question mark sits at the top of the review column with the question badge, and names its card
+- BEH-NOTE-8: a free-text resolution of a sheet decision leaves a note tagged with the decision key, and the conflict stays on the sheet until the note is folded
+- BEH-CHAT-10: a Kit question with a fixed set of answers shows them as buttons on the tab and on the board's review card; a tap sends its words as his answer, and free text stays open
+- BEH-STAGE-13: a feature or epic draft that needs a fact he has not given leaves a review request on that item naming the missing context, and no drafted child
+- BEH-SHEET-4: the one-at-a-time page shows the Questions tab's items only, unseen first then by priority, with approve, deny, pause, dismiss, comment, deprioritise and answer offered only where the item allows them
+- BEH-INBOX-5: given a question note and Kit's reply to it, the Inbox shows the question first and the reply under it, and the conflict with BEH-INBOX-3 is raised as a review request
+- BEH-COMMENT-3: a comment that asks Kit something, or is addressed to it by name, gets a review request on its card; any other comment is read and cited with no reply
