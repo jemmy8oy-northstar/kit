@@ -25,3 +25,10 @@ Chat and action-card changes from the owner's review of 2026-11-03, plus his cha
 - BEH-CHAT-15: an item ID written in the chat or on an action card (e.g. BEH-USERS-5) is a link that opens that item.
 - BEH-CHAT-7: the chat knows what Kit can do. Can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; read whole spec cards. Cannot: reorder, pause, schedule or change the priority of items, or edit the spec. For those it leaves a note and the coding agent makes the change.
 - BEH-CHAT-17: on a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends and Shift+Enter adds a new line. The card currently says only "on a desktop, Enter sends", so check for the Shift+Enter part.
+Test plan:
+- BEH-CHAT-12: asking the Chat for a posted answer or a note shows its text, answer and tag in the thread, and the note is not opened.
+- BEH-CHAT-13: after an answer is posted to a note on an action card, the card shows the answer's full text.
+- BEH-CHAT-14: after an item is dealt with, no "Next up in Kit" text appears, and the next item still comes up in the thread.
+- BEH-CHAT-15: an item id known to Kit, in chat text or on an action card, renders as a link to its item page; an unknown id stays plain text.
+- BEH-CHAT-7: the help line lists the can and cannot items; asking for a cannot item leaves a note for the coding agent and does not claim the change was made.
+- BEH-CHAT-17: with a coarse pointer, Enter adds a new line and does not send; with a fine pointer, Enter sends and Shift+Enter adds a new line.
