@@ -1460,7 +1460,7 @@ behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit i
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
   pending
   actor engineer
