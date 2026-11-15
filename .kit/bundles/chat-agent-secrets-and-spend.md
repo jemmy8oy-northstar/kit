@@ -1,6 +1,6 @@
 # Triage chat: API key, model and spend
 Work-item: chat-agent-secrets-and-spend
-Flag: The three notes are about the chat agent's key, model and spend rather than a feature, and the 10-31 23:53Z desk-time note has no concrete ask. A stronger model should decide whether this stays a separate bundle or folds into kit-chat-assistant.
+Flag: The three notes are about the chat agent's key, model and spend rather than a feature, and the 10-31 23:53Z desk-time note has no concrete ask. A stronger model should decide whether this stays a separate bundle or folds into kit-chat-assistant. (level: low)
 Cards:
 - BEH-SPECAGENT-4 "The coding agent's blockers go on the same board, and the spec agent talks each one through with the user" (its built contract already names the claude-haiku-5-5 chat, the kit-anthropic key and the daily cap)
 - new: Kit shows how much of the Anthropic credit the chat has used, so the $10 credit's life can be read
