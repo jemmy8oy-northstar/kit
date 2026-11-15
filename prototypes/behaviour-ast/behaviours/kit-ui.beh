@@ -1683,6 +1683,32 @@ behaviour BEH-ORCH-15 "The pipeline is switched on and off per project, and star
   contract my assumption: today the list is the KIT_PIPELINE_PROJECTS setting, which production sets to kit and kit-ui. This card moves it to a row per project on that project's Settings page, saved in Kit, with KIT_PIPELINE_PROJECTS read once as the starting values
   contract my assumption: "kit" means kit and kit-ui, which both live in the kit repo; every other project starts off
 
+behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new input into a spec change on a branch and one ticket, and asks its questions on that ticket"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-15-1520
+  review unreviewed
+  priority 1
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1520): "a few input mechanisms, writing a note, speaking to chat, leaving a comment, approving rejecting. This is the input surface"
+  contract his note: "the first agent in the pipeline which picks up all of these loose items and inspects the existing spec and figures out what needs to change / by deleted / be created… These updates go in a new feature branch. A ticket needs to be created to represent the change (this ticket will be in the new state) and this is where questions will be posted… If there are any questions this ticket get marked as blocked… This agent will also handle blocked items where there is extra discussion until there is no extra discussion and this ticket gets moved to ready"
+  contract his note: "previously spec was a ticket. Now a ticket is different from spec… Tickets appear on the board, spec is part of the feature. Thoughts?"
+  contract my answer: yes. It is the right split, and half of it exists. BEH-ORCH-11 already keeps tickets apart from cards (pipeline_tickets: new, ready, planned, built, merged, stopped) with one job per state taking the highest-priority ticket. What changes is where the spec is written and what the board shows. Today triage writes only a bundle and the plan job writes the cards; in this card the first agent writes the spec change itself, so his questions come up before any design is paid for
+  contract my assumption: the input surface is notes, chat (BEH-CHAT-3), comments (FEAT-COMMENTS) and his approve or deny on a card; each reaches the first agent as a note, as chat does now
+  contract my assumption: the first agent is today's triage, given the spec writer's job: on branch kit/work/<slug> it adds, changes or deletes cards (new ones unreviewed) and opens or updates one ticket at new. A question goes on the ticket as a comment and tags it blocked. His reply wakes the same agent on that ticket, which answers or changes the spec, and clears the tag when nothing is left open; the ticket then moves to ready
+  contract my assumption: the later agents are BEH-ORCH-11's jobs renamed to his words: design (ready to planned, today's plan job, writing the technical design and test plan), implement (planned to built, today's build job, opening the pull request), and merge. The separate context job goes, as the first agent now gathers that context
+  contract his note: "maybe we have blocked as a tag rather than a ticket state - this way an item can be new but blocked or ready but blocked or planned but blocked or implemented but blocked"
+  contract my assumption: yes. blocked is a tag with the question that set it, on a ticket in any state, and a job never takes a blocked ticket. A stopped ticket (a failed run, a conflict an agent could not resolve) becomes its state plus the blocked tag with that reason, so his Blocked column is one list
+  contract my assumption: the board's cards are tickets; a ticket names its feature and links the cards its branch changes, and a feature's page keeps showing its spec. This is the board change, so it is built last, after the agents work end to end
+  contract his note: "maybe the first agent can prioritise the new and ready backlog including prioritisation. This was ccb doesnt need to wake to a bell either"
+  contract my assumption: the first agent sets a new ticket's priority from the cards it touches (BEH-ORCH-11 slice 6 already does this by rule) and may raise or lower it with a reason on the ticket; a separate priority agent waits until that proves not to be enough
+  contract his note: "The job of ccb atm is to monitor the pipeline and get it into this working state. Ccb does not need to wake and respond to all new notes, ccb can be awoken by a button that I can click to wake it early, or it wakes on a schedule as normal"
+  contract my answer: that is claude-code-bot#137, built on 2026-11-07 and waiting for his merge: I wake at 07:30, 13:00 and 19:00 UK time or when he presses "Wake the agent" in Settings (BEH-SETTINGS-7), not on every note
+  contract my assumption: built in this order, each slice merged before the next: (1) blocked as a tag, with questions as ticket comments; (2) triage writes the spec change on the ticket's branch; (3) his reply on a blocked ticket wakes the first agent; (4) the board shows tickets. The pipeline jobs stay switched off in production until he switches them on (BEH-ORCH-11), because they spend his subscription
+  needs-context "Your 15:20Z pipeline note: I agree, and it mostly builds on what exists. Answer in this card. Silence: I build it in the 4 slices listed, kit only, jobs off until you switch them on."
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
