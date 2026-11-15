@@ -16,3 +16,10 @@ Context:
 - 18:08Z (today's state): all spec lives centrally in the kit repo. BEH-USERS-2's "no spec held centrally" describes the target, not today. Note this against BEH-USERS-2.
 - Detection: today a project is found by a .beh file on the default branch. After the move, detection must also find .kit/. Keep the .beh-anywhere fallback until the move lands, so no project drops off the list mid-migration (BEH-USERS-12). BEH-LIST-1 is touched only if the detection rule changes.
 - Open for the owner: whether BEH-USERS-2 should state the target or today's state. He asked for it to be settled. Default if he stays silent: the card states the target, with today's state beside it, and the owner is asked to confirm.
+Test plan:
+- BEH-USERS-2: a repo whose default branch has .kit/ holding a .beh file is listed as a project
+- BEH-USERS-2: a repo with a .beh file anywhere on its default branch (no .kit/) is still listed, until BEH-USERS-12 lands
+- BEH-USERS-2: a repo with neither .kit/ nor any .beh file on its default branch is not listed
+- BEH-USERS-12: holiday-planning's spec is read from its own repo's .kit/, and the old copy in kit is ignored while both exist
+- BEH-USERS-12: a project's .kit/ holds every file of its spec under today's names, and a write names the blob last read (refused if changed)
+- BEH-LIST-1: a corpus found by the BEH-USERS-2 detection rule is listed, and one that will not parse is listed as an error, not as zero behaviours
