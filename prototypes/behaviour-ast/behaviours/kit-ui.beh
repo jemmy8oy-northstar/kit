@@ -1638,7 +1638,7 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
   source defined kit-ui.notes.md#2026-11-07-0132
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where does the cadence setting live? My pick is its own row on Settings, next to the pipeline. Say if you'd rather it sat under BEH-SETTINGS-5 or 6."
