@@ -285,7 +285,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             _ => stage switch
             {
                 PipelineStage.Spec => TicketState.Ready,
-                PipelineStage.Build => item.Status == WorkItemStatus.Done ? TicketState.Built : TicketState.Planned,
+                // A stopped item is no longer Done, so its pull request is what says it was built (a refused merge).
+                PipelineStage.Build => item.Status == WorkItemStatus.Done || item.PullRequest is not null ? TicketState.Built : TicketState.Planned,
                 PipelineStage.Merge => TicketState.Built, // its conflict-resolution run is in flight (slice 7b)
                 PipelineStage.Test => TicketState.Built, // its test run is in flight (BEH-ORCH-12)
                 _ => TicketState.New, // Context, or a triage under review
@@ -295,14 +296,23 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         try
         {
             ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, priorities.GetValueOrDefault((item.Project, item.Slug), DefaultPriority), bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug)), blocked));
-            if (blocked is not null && !wasBlocked)
-            {
-                ticketStore.Comment(new TicketComment(item.Project, item.Slug, "kit", $"Blocked: {blocked}", (clock ?? TimeProvider.System).GetUtcNow()));
-            }
         }
         catch (Exception e)
         {
             Console.Error.WriteLine($"kit: writing the ticket {item.Project} {item.Slug} threw {e.GetType().Name}");
+        }
+
+        // Apart from the row, so a row that could not be written does not also lose the only comment saying why.
+        if (blocked is not null && !wasBlocked)
+        {
+            try
+            {
+                ticketStore.Comment(new TicketComment(item.Project, item.Slug, "kit", $"Blocked: {blocked}", (clock ?? TimeProvider.System).GetUtcNow()));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: commenting on the ticket {item.Project} {item.Slug} threw {e.GetType().Name}");
+            }
         }
     }
 

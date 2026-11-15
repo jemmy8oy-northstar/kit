@@ -2828,6 +2828,8 @@ public class PipelineTests
         var stopped = ItemOf(rig, "b");
         Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it has a conflict with its base branch"), (stopped.Status, stopped.StoppedBecause));
         Assert.Equal([PullOf(2)], rig.Merges.Asked);
+        var ticket = Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "b");
+        Assert.Equal((TicketState.Built, stopped.StoppedBecause), (ticket.State, ticket.BlockedBecause)); // BEH-ORCH-16: built but blocked
 
         rig.Merges.Answer = new PullRequestMerge { Merged = true };
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
