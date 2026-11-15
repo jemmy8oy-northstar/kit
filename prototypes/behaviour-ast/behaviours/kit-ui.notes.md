@@ -195,3 +195,7 @@ Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT
 ## 2026-11-14 09:25Z · BEH-ORCH-3
 
 The pipeline approach has changed recently right
+
+## 2026-11-15 12:45Z · BEH-ORCH-2
+
+What is the home on this it isn’t marked as blocked
