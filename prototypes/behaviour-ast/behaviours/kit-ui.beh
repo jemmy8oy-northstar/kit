@@ -2509,7 +2509,7 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   in FEAT-ARCH
   layer technical
   source defined kit-ui.notes.md#2026-11-06-1801
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "Backlogged, not for now, as you asked. Left open, as you said: the layout, and whether anything from the spec is drawn too."
