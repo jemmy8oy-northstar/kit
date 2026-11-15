@@ -1,6 +1,6 @@
 # Feature board Done column
 Work-item: board-done-column
-Flag: Likely already built. BEH-STAGE-12 records "built: the Done column after UI requirements", and the note may just restate it. The note's column meaning (spec still to provide, development, done) may not match the five stages in BEH-STAGE-1. A stronger model should confirm before any change.
+Flag: Likely already built. BEH-STAGE-12 records "built: the Done column after UI requirements", and the note may just restate it. The note's column meaning (spec still to provide, development, done) may not match the five stages in BEH-STAGE-1. A stronger model should confirm before any change. (level: low)
 Cards:
 - BEH-STAGE-12 "A feature whose behaviours are all built sits in a Done column at the end of the feature board"
 - BEH-STAGE-1 "A separate board takes every feature through five stages: problem, UX, logic, development, UI"
