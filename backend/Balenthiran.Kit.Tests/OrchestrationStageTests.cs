@@ -182,13 +182,16 @@ public class OrchestrationStageTests
     }
 
     [Fact]
-    public void BEH_ORCH_1_The_task_tells_the_run_to_stop_after_pushing_and_not_to_write_specs()
+    public void BEH_ORCH_16_The_triage_task_writes_the_spec_change_unreviewed_deletes_no_card_and_stops_after_pushing()
     {
-        var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
+        var task = TriageStage.BuildTask("kit", Notes, Cards, specPath: "kit.beh").Text;
 
         Assert.Contains("push", task);
         Assert.Contains("STOP", task);
-        Assert.Contains("Do NOT write or edit any card", task);
+        Assert.Contains("Edit the spec at kit.beh", task);
+        Assert.Contains("\"review unreviewed\"", task);
+        Assert.Contains("Delete no card", task);
+        Assert.Contains("Do not edit any note", task);
     }
 
     [Fact]
@@ -231,7 +234,7 @@ public class OrchestrationStageTests
     {
         var task = TriageStage.BuildTask("kit", Notes, Cards).Text;
 
-        Assert.Contains("create it from the branch you started on (not the default branch)", task);
+        Assert.Contains("create it from the branch you started on, not the default branch", task);
     }
 
     [Fact]

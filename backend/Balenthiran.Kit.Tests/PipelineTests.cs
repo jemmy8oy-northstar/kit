@@ -795,7 +795,7 @@ public class PipelineTests
         Assert.Equal(("someone/demo", "dev", "claude-haiku-5-5"), (spec.Repo, spec.BaseBranch, spec.Model));
         Assert.Contains("You are the spec stage for project \"demo\"", spec.Task);
         Assert.Contains("Check out branch kit/work/list-sorting", spec.Task);
-        Assert.Contains("Edit the spec at demo.beh", spec.Task);
+        Assert.Contains("Read the cards under Cards in the spec at demo.beh", spec.Task);
         Assert.Contains("Work-item: list-sorting", spec.Task);
         Assert.Contains("Write no tests and no code", spec.Task);
         var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
@@ -1642,6 +1642,16 @@ public class PipelineTests
         var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
         Assert.Equal((WorkItemStatus.Stopped, "the spec run failed"), (item.Status, item.StoppedBecause));
         Assert.Single(restarted.Tickets.Comments("demo", "list-sorting"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_the_triage_run_is_told_where_the_project_spec_is()
+    {
+        using var rig = new Rig();
+
+        var task = TriageClaim(rig).Task;
+
+        Assert.Contains("Edit the spec at demo.beh", task);
     }
 
     [Fact]
