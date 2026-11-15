@@ -209,3 +209,9 @@ I don’t understand what this is asking
 <!-- from: chat -->
 
 Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo.
+
+## 2026-11-15 12:51Z · BEH-ORCH-13
+
+<!-- from: chat -->
+
+Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project.
