@@ -1688,6 +1688,7 @@ behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new in
   source defined kit.notes.md#2026-11-15-1520
   review unreviewed
   priority 1
+  pending
   actor engineer
   when opens page:KitBoard
   then sees region:KitMain
