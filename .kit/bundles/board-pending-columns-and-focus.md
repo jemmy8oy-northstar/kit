@@ -1,6 +1,7 @@
 # Board: Queue and Blocked columns, no Scheduled, focus kept on return, wider columns
 Work-item: board-pending-columns-and-focus
 Flag: "Kit approving" is unclear: it may mean the owner approving a card Kit raised, or Kit approving its own work; I read it as the owner's approval of a paused card (level: low)
+Review: agreed — BEH-BOARD-25 already settles it: "approving" is the owner's approval of a paused card (SetReview), and the Queue default is recorded as an assumption on BEH-BOARD-18; no decision needed.
 Cards:
 - BEH-BOARD-18
 - BEH-BOARD-16
