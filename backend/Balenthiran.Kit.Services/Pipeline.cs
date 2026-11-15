@@ -220,6 +220,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     continue;
                 }
 
+                // BEH-ORCH-16: a blocked ticket comes back still stopped, so no job takes it and he still sees why.
+                if (ticket.BlockedBecause is not null)
+                {
+                    item = item with { Status = WorkItemStatus.Stopped, StoppedBecause = ticket.BlockedBecause, PullRequest = ticket.PullRequest };
+                }
+
                 bundles[(ticket.Project, ticket.Slug)] = bundle;
                 priorities[(ticket.Project, ticket.Slug)] = ticket.Priority;
                 if (ticket.Scheduled)
@@ -235,8 +241,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>Puts <paramref name="item"/> at <paramref name="index"/> and writes its ticket.</summary>
     private void Set(int index, WorkItem item)
     {
+        var wasBlocked = items[index].Status == WorkItemStatus.Stopped;
         items[index] = item;
-        Persist(item);
+        Persist(item, wasBlocked);
     }
 
     /// <summary>Appends <paramref name="item"/> and writes its ticket.</summary>
@@ -250,7 +257,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// Writes <paramref name="item"/>'s ticket (the mapping is at the top of the class). A store that cannot be written
     /// costs the ticket its restart, not the pipeline its run. Called with the gate held.
     /// </summary>
-    private void Persist(WorkItem item)
+    private void Persist(WorkItem item, bool wasBlocked = false)
     {
         // "#" is never in a bundle slug: a triage's own item is no ticket, nor are the pseudo-items of notes set aside.
         if (item.Slug.Contains('#') || item.Slug is TriageStage.SetAside or TriageStage.Backlog)
@@ -269,11 +276,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // A bundle that will not render is kept out of the row; the ticket is still written.
         }
 
+        // BEH-ORCH-16: a stopped item keeps the state it reached and is tagged blocked with its reason, so the ticket is
+        // "ready but blocked" rather than a state of its own.
         var stage = item.Stage == PipelineStage.Review ? item.ReviewedStage ?? PipelineStage.Spec : item.Stage;
         var state = item switch
         {
             { Merged: true } => TicketState.Merged,
-            { Status: WorkItemStatus.Stopped } => TicketState.Stopped,
             _ => stage switch
             {
                 PipelineStage.Spec => TicketState.Ready,
@@ -283,9 +291,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 _ => TicketState.New, // Context, or a triage under review
             },
         };
+        var blocked = item.Status == WorkItemStatus.Stopped && !item.Merged ? item.StoppedBecause ?? "stopped" : null;
         try
         {
-            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, priorities.GetValueOrDefault((item.Project, item.Slug), DefaultPriority), bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug))));
+            ticketStore.Save(new PipelineTicket(item.Project, item.Slug, bundle?.Title ?? item.Slug, state, priorities.GetValueOrDefault((item.Project, item.Slug), DefaultPriority), bundle?.Cards ?? [], text, item.PullRequest, item.StoppedBecause, scheduledSlugs.Contains((item.Project, item.Slug)), blocked));
+            if (blocked is not null && !wasBlocked)
+            {
+                ticketStore.Comment(new TicketComment(item.Project, item.Slug, "kit", $"Blocked: {blocked}", (clock ?? TimeProvider.System).GetUtcNow()));
+            }
         }
         catch (Exception e)
         {
@@ -1014,6 +1027,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return usable is not null;
         }
 
+        var wasBlocked = at >= 0 && items[at].Status == WorkItemStatus.Stopped;
         if (at < 0)
         {
             items.Add(item);
@@ -1034,7 +1048,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         // After the bundle is recorded, as the ticket carries it (and its priority).
-        Persist(item);
+        Persist(item, wasBlocked);
         return usable is not null;
     }
 
