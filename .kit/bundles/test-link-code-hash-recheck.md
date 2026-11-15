@@ -1,6 +1,7 @@
 # Record a hash of the code each test link exercises, and flag links when that code changes
 Work-item: test-link-code-hash-recheck
 Flag: records hashes in the spec and shows flagged links to the owner, so it changes what Kit stores and shows (level: high)
+Review: agreed — the owner asked for exactly this in the 2026-11-03 23:44Z note; BEH-HEALTH-4 matches it, and the only gap, keeping hashes in <app>.tests.json rather than in the .beh, is already an unreviewed contract he can deny
 Cards:
 - BEH-HEALTH-4
 - BEH-HEALTH-1
