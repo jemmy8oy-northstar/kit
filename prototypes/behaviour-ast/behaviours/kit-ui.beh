@@ -2345,6 +2345,25 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   contract my assumption: the table maps only features that own a page or navigation entry; every other feature has a switch with no visible effect yet, and Settings says so beside it
   contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
+behaviour BEH-FLAGS-3 "Testers can open the projects, boards, inbox and settings pages, and they work for them"
+  in FEAT-FLAGS
+  depends-on BEH-FLAGS-1
+  depends-on BEH-USERS-2
+  depends-on BEH-USERS-8
+  layer ux
+  source defined kit.notes.md#2026-11-02-1741
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract my assumption: BEH-FLAGS-1 already turns these four features on for testers, so this card is the other half of the 17:41Z note: the pages must work for a tester, not only show
+  contract my assumption: a tester's Projects page lists only the repos of their own GitHub (BEH-USERS-2), and their boards and Inbox show only items in those projects; nothing of the operator's is listed or counted for them
+  contract my assumption: "work" means a tester may also act on their own items (approve, deny, answer, pause, lower priority) on the Board and in the Inbox; every other write stays operator-only, and a write to a project the tester does not own is refused (BEH-USERS-8)
+  contract my assumption: a tester's Settings shows their account and their GitHub (BEH-SETTINGS-1) and nothing else; the operator's sections (promotion, idle, depth, conflicts, features) stay operator-only
+  contract my assumption: no tester action starts an agent run; the agent that works for testers is BEH-USERS-9, not yet built, so a tester's cards cost nothing until it is approved
+  contract my assumption: a feature switched off for testers still shows "Not available" on its page (BEH-FLAGS-2), so turning a page off stays one switch
+
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
   stage development
 
