@@ -1613,7 +1613,46 @@ public class PipelineTests
         rig.Finish(spec, status: "failed");
 
         var ticket = Ticket(rig);
-        Assert.Equal((TicketState.Stopped, "the spec run failed"), (ticket.State, ticket.StoppedBecause));
+        Assert.Equal((TicketState.Ready, "the spec run failed", "the spec run failed"), (ticket.State, ticket.StoppedBecause, ticket.BlockedBecause));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_blocked_ticket_gets_its_reason_as_one_comment()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+
+        rig.Finish(spec, status: "failed");
+
+        var comment = Assert.Single(rig.Tickets.Comments("demo", "list-sorting"));
+        Assert.Equal(("kit", "Blocked: the spec run failed"), (comment.Author, comment.Body));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_after_a_restart_a_blocked_ticket_stays_stopped_and_no_job_takes_it()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        rig.Finish(spec, status: "failed");
+
+        using var restarted = rig.Restart(tickets: rig.Tickets);
+        restarted.Pipeline!.Resume();
+
+        Assert.Null(restarted.Claim());
+        var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "the spec run failed"), (item.Status, item.StoppedBecause));
+        Assert.Single(restarted.Tickets.Comments("demo", "list-sorting"));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_the_triage_task_does_not_list_a_blocked_ticket()
+    {
+        using var rig = new Rig();
+
+        var task = TriageClaim(rig, Seeded("list-sorting"), Seeded("stuck", TicketState.Ready) with { BlockedBecause = "the spec run failed" }).Task;
+
+        Assert.Contains("## Open tickets (1)\n- list-sorting [ready]", task);
+        Assert.DoesNotContain("stuck", task);
     }
 
     [Fact]
@@ -1668,7 +1707,7 @@ public class PipelineTests
         using var afterStop = stopped.Restart(tickets: stopped.Tickets);
         afterStop.Pipeline!.Resume();
         Assert.Null(afterStop.Claim());
-        Assert.Empty(afterStop.Pipeline.Items());
+        Assert.Equal(WorkItemStatus.Stopped, Assert.Single(afterStop.Pipeline.Items()).Status); // BEH-ORCH-16: kept, blocked
 
         using var merged = await BuiltRig(merge: true);
         await merged.Pipeline!.MergeReadyAsync(CancellationToken.None);
@@ -2045,7 +2084,7 @@ public class PipelineTests
         Assert.Equal(200, rig.Routes.Finished(context.Token, body).Status);
 
         Assert.Equal((WorkItemStatus.Stopped, why), (ItemOf(rig, "list-sorting").Status, ItemOf(rig, "list-sorting").StoppedBecause));
-        Assert.Equal((TicketState.Stopped, why), (Ticket(rig).State, Ticket(rig).StoppedBecause));
+        Assert.Equal((TicketState.New, why), (Ticket(rig).State, Ticket(rig).BlockedBecause));
         Assert.Null(rig.Claim());
     }
 
@@ -2789,6 +2828,8 @@ public class PipelineTests
         var stopped = ItemOf(rig, "b");
         Assert.Equal((WorkItemStatus.Stopped, "its pull request was not merged: it has a conflict with its base branch"), (stopped.Status, stopped.StoppedBecause));
         Assert.Equal([PullOf(2)], rig.Merges.Asked);
+        var ticket = Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "b");
+        Assert.Equal((TicketState.Built, stopped.StoppedBecause), (ticket.State, ticket.BlockedBecause)); // BEH-ORCH-16: built but blocked
 
         rig.Merges.Answer = new PullRequestMerge { Merged = true };
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
@@ -2931,7 +2972,7 @@ public class PipelineTests
 
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "the conflict-resolution run failed"), (item.Status, item.StoppedBecause));
-        Assert.Equal(TicketState.Stopped, rig.Tickets.Read("demo").Single().State);
+        Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
     }
 
     [Fact]
@@ -3077,7 +3118,7 @@ public class PipelineTests
 
         var item = ItemOf(rig, "a");
         Assert.Equal((WorkItemStatus.Stopped, "the project's tests failed at abc1234"), (item.Status, item.StoppedBecause));
-        Assert.Equal(TicketState.Stopped, rig.Tickets.Read("demo").Single().State);
+        Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
 
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
 

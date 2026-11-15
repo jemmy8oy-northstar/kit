@@ -155,7 +155,7 @@ public static class TriageStage
     {
         var open = tickets
             .Select((t, i) => (Ticket: t, Order: i))
-            .Where(x => x.Ticket.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+            .Where(x => x.Ticket.State is TicketState.New or TicketState.Ready or TicketState.Planned && x.Ticket.BlockedBecause is null)
             .OrderBy(x => x.Ticket.Priority)
             .ThenByDescending(x => x.Order)
             .Select(x => x.Ticket)
