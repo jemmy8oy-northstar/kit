@@ -191,7 +191,7 @@ describe('stage reading', () => {
   // features, would pass both tests above while checking nothing.
   it('reads the real projects and skips the ideas and trial corpora', () => {
     expect(real).toContain('kit-ui.beh')
-    expect(real).toContain('snip-it.beh')
+    expect(real).toContain('macro-metrics.beh') // snip-it.beh was this example until it moved to its own repo (BEH-USERS-12)
     expect(real).not.toContain('ideas.beh')
     expect(real).not.toContain('trial-lend.beh')
     expect(real).not.toContain('trial-habits-a.beh')
