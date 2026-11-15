@@ -1,14 +1,17 @@
-# Feedback on Kit from its users, through the free-text box
+# Ideas for later: user feedback box, working status, and a user technical-level profile
 Work-item: backlog
-Flag: both are ideas for later, marked so by the owner: the feedback box waits for real users, and the working-status display is backlog if its cost is too high now (level: low)
+Flag: all three are ideas for later: the owner marked the first two so; the technical-level profile is noted as "to be backlogged for more detail later" (level: low)
 Cards:
 - BEH-FEEDBACK-1
 - new: Kit shows when it is working
+- BEH-CHAT-18
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:30Z ("Oo a backlog idea for when we have real users")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 23:12Z ("Kit shows when it is working - backlog if too high of a cost now")
+- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-06 00:01Z
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
 Context:
-Idea only, not to be specced or built now. BEH-FEEDBACK-1 already holds the idea as a card. It waits until Kit has users other than the owner (see BEH-EPIC-7, the kit-supports-users epic). Nothing in this bundle should be picked up until the owner moves it out of backlog.
+Ideas only, not to be specced or built now. BEH-FEEDBACK-1 already holds the feedback idea as a card. It waits until Kit has users other than the owner (see BEH-EPIC-7, the kit-supports-users epic). Nothing in this bundle should be picked up until the owner moves it out of backlog.
 The working-status note (10-26 23:12Z) is a backlog idea by the owner's own words. Pick it up only if the cost of showing Kit's working state is judged low; otherwise leave it here.
+The technical-level profile (11-06 00:01Z): Kit keeps a rough profile of each user's technical level, from signs such as whether they hand-edit the repo and how technical their prompts are, to set the tone of replies. BEH-CHAT-18 already holds the idea. Not specified yet; it waits for more detail from the owner.
