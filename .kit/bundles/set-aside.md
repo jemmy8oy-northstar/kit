@@ -1,6 +1,6 @@
 # Set aside: a question to the owner, nothing to build
 Work-item: set-aside
-Flag: Notes that ask for no build: approvals, praise, status reports, a merge instruction with no PR named, and two identical questions whose referent is unclear (level: low)
+Flag: Notes that ask for no build: approvals, praise, status reports, a merge instruction with no PR named, a question about the pipeline, and questions whose referent the text does not name (level: low)
 Cards:
 - new: nothing to build
 Notes:
@@ -12,6 +12,9 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-03 08:57Z ("Merged")
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-03 09:17Z ("Merged to main")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-28 23:55Z ("This inbox card feature is incredibly successful. No need to navigate a board.")
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-14 09:25Z ("The pipeline approach has changed recently right")
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-15 12:45Z ("What is the home on this it isn't marked as blocked")
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-15 12:48Z ("I don't understand what this is asking")
 Files:
 - prototypes/behaviour-ast/behaviours/kit.notes.md
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
@@ -19,3 +22,5 @@ Context:
 Not built. The owner asks whether the notes are folded into the kit spec. The notes file header says each note is folded into the spec or the code and deleted in the same pull request, so the answer is yes in intent; a person should confirm it.
 The 2026-10-16 11:45Z note approves a filter already built. The 2026-10-27 21:16Z pair asks “What does this mean”, with no referent in the text; the owner should say which item it means. The 2026-11-03 08:23Z, 08:57Z and 09:17Z notes are a merge instruction and status reports. Merges are done by the pipeline (BEH-ORCH-10) or by the owner, not by a build. Nothing here is built.
 The 2026-10-28 23:55Z note is praise for the inbox card feature. Its “no need to navigate a board” remark is not a request; if the owner wants the board changed, that belongs to board-notes-declutter-and-fab-apps or board-pending-columns-and-focus, and he should say so. Nothing here is built.
+The 2026-11-14 09:25Z note asks whether the pipeline approach has changed recently. It is a question for the owner, not work; a person answers it. Nothing here is built.
+The 2026-11-15 12:45Z and 12:48Z notes ("What is the home on this it isn't marked as blocked"; "I don't understand what this is asking") do not name the item they mean. They may be replies about a question on the sheet. The owner should say which item, the same as the 10-27 pair. Nothing here is built.
