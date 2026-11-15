@@ -195,3 +195,29 @@ Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT
 ## 2026-11-14 09:25Z · BEH-ORCH-3
 
 The pipeline approach has changed recently right
+
+## 2026-11-15 12:45Z · BEH-ORCH-2
+
+What is the home on this it isn’t marked as blocked
+
+## 2026-11-15 12:48Z · BEH-ORCH-8
+
+I don’t understand what this is asking
+
+## 2026-11-15 12:50Z · BEH-LOVABLE-1
+
+<!-- from: chat -->
+
+Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo.
+
+## 2026-11-15 12:51Z · BEH-ORCH-13
+
+<!-- from: chat -->
+
+Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project.
+
+## 2026-11-15 12:52Z
+
+<!-- from: chat -->
+
+BEH-ARCH-4 (architecture page diagram, from kit-ui.notes.md#2026-11-06-1801): do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open.

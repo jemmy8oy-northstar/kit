@@ -824,3 +824,33 @@ Later when we r making money I can pay for github
 <!-- from: note-button -->
 
 Can I get a button to flag for a ccb wake for my personal kit only. Sometimes I want it to wake but have to wait or write a note
+
+## 2026-11-14 13:44Z
+
+<!-- from: note-button -->
+
+Please continue with the pipeline enhancements!
+
+## 2026-11-14 17:25Z
+
+<!-- from: note-button -->
+
+I thought you were going to get the pipeline running Howcome u paused until 8
+
+## 2026-11-15 12:47Z
+
+<!-- from: note-button -->
+
+Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings. Pipelines are run on projects independently. Pipeline can be switched on and off for individual projects. Let’s start with all off but on for kit
+
+## 2026-11-15 12:47Z
+
+<!-- from: note-button -->
+
+Kit .kit specs live in the project repo not centrally in kit
+
+## 2026-11-15 12:50Z
+
+<!-- from: note-button -->
+
+When in chat you should see the state of the top of stack item that you are being shown
