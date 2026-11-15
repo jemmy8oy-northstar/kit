@@ -1336,6 +1336,7 @@ behaviour BEH-USERS-14 "Early access accounts are made by the operator for invit
   contract my assumption: early access is invite-only; James makes each account himself inside Kit (BEH-USERS-1), so there is no open sign-up, no sign-up page and no code word to try
   contract my assumption: the GitHub-account whitelist he asked about (kit.notes.md#2026-10-23-0635) is not built in early access; a GitHub account signs in only when James has made the user it belongs to (BEH-USERS-10)
   contract my assumption: a stranger who opens Kit's sign-in page finds no way to create an account, and a sign-up request is answered as not found
+  contract my assumption, as built: a sign-up request from a stranger is answered 401 not-signed-in, not 404, because the sign-in gate answers before routing (BEH-GATE-H1), so it reveals no route; a signed-in user is answered 403 not-yours (BEH-USERS-8); neither creates an account
   contract my assumption: this is the default; he can open self sign-up later, which would be a new card
 
 feature FEAT-USER-REPOS "A user's projects live in their own repos"

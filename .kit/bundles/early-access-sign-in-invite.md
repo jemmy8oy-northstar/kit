@@ -31,6 +31,12 @@ Context:
 - "Can always change later" and the two bare "Yes" notes read as confirmations of the username and password choice. Treat that choice as the owner's decision, reversible.
 - 10-28 00:03Z: the owner cannot reinstall the installed app and asks whether to uninstall and reinstall to test the OAuth sign-in. This is a question for him, not build work. Default: he decides; no code change here. Test OAuth through BEH-USERS-10.
 - 10-31 00:55Z: asks whether the owner can act as a test user himself by signing in with another organisation or a personal account. Default: yes, by signing in through BEH-USERS-10 with a second GitHub account. No code change. This is his decision to confirm.
+- Already built, so no new test: the BEH-USERS-1 and BEH-USERS-10 "new" items (AccountsTests, GitHubConnectTests), and the BEH-GATE-H1 item (ReadGateTests.Locked_every_read_needs_a_session). The BEH-USERS-14 unknown-username item is AccountsTests.A_wrong_password_and_an_unknown_user_answer_alike.
+- Not built: BEH-USERS-11. Its header pause (2026-11-14) has passed, but its body says "it stays paused" until the owner answers the 10-28 reinstall question, which is still open. No reset route exists. Left for the owner to unpause.
+- Flag-worthy, for the reviewer: BEH-USERS-14 says a sign-up request "is answered as not found". Built: a stranger gets 401 not-signed-in and a signed-in user gets 403 not-yours, because both gates answer before routing. Kept the gates; recorded as a contract on BEH-USERS-14 in kit-ui.beh. Changing it to a literal 404 would change the answer for every unknown path.
+Built:
+- BEH_USERS_14_no_sign_up_route_exists_and_a_sign_up_request_is_not_found (4 cases: /api/signup, /api/sign-up, /api/register, /api/accounts) in backend/Balenthiran.Kit.Tests/AccountsTests.cs
+Whole suite: 1997 tests ran, all passed (dotnet test backend/Balenthiran.Kit.slnx, with ICU and procps kill from Debian packages on PATH, since this sandbox has neither).
 Test plan:
 - BEH-USERS-1: AuthConformanceTests.Every_step_answers_as_ui_js_does (existing) — each recorded sign-in step answers as the UI does.
 - BEH-USERS-1: AuthConformanceTests.Every_scenario_replays_over_a_real_socket (existing) — every recorded scenario replays against a real server.
