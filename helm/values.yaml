@@ -152,11 +152,13 @@ apps:
       # clone. Writes still go to the clone above and are pushed to kit/hosted, so
       # this names the SAME branch — another branch here would serve a corpus the
       # edits never reach. Remove the entry to read the clone, as before.
-      # BEH-USERS-12 (kit#696): holiday-planning's spec lives in its own repo's
-      # .kit/. That copy wins over the one still in kit (kit#694), and Kit writes
-      # it through the Contents API to that repo's kit/hosted, its edits branch.
+      # BEH-USERS-12 (kit#696; his 2026-11-15 13:00Z note made it top priority): each
+      # project with a repo keeps its spec and notes in that repo's .kit/. That copy
+      # wins over the one still in kit (kit#694), and Kit writes it through the
+      # Contents API to that repo's kit/hosted, its edits branch. kit's own spec
+      # moves last, with the CI path change.
       - name: KIT_PROJECTS
-        value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours jemmy8oy-northstar/holiday-planning@kit/hosted:.kit"
+        value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours jemmy8oy-northstar/holiday-planning@kit/hosted:.kit jemmy8oy-northstar/balenthiran.co.uk@kit/hosted:.kit jemmy8oy-northstar/language-vocab@kit/hosted:.kit jemmy8oy-northstar/tracks@kit/hosted:.kit jemmy8oy-northstar/whos-accountable@kit/hosted:.kit jemmy8oy-northstar/earnyourbeers@kit/hosted:.kit jemmy8oy-northstar/snip-it@kit/hosted:.kit"
       # BEH-NOTIFY-1 (claude-code-bot#118): the agent's notifications, which replaced
       # Telegram. A FILE in the agent's PRIVATE repo, read with the same App token as
       # KIT_PROJECTS, so the App needs read access to claude-code-bot; until it has
