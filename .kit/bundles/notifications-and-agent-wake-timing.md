@@ -1,6 +1,6 @@
 # Notifications: home-screen app, feed, five-minute wake, next-wake indicator, iPhone push
 Work-item: notifications-and-agent-wake-timing
-Flag: the feed design is to be refined later and the churn-rate options are the owner's call, not yet decided; build only the cards and record the rest as unreviewed assumptions (level: high)
+Flag: the feed design is to be refined later and the churn-rate options are the owner's call, not yet decided; build only the cards and record the rest as unreviewed assumptions; the paused-item reask rule is my reading of 10-31 09:46Z (level: high)
 Cards:
 - BEH-NOTIFY-2
 - BEH-NOTIFY-1
@@ -13,6 +13,7 @@ Cards:
 - new: a request to work overrides a suspend, not the other way round
 - new: the agent does not sleep on its own to save usage unless the owner chose that in settings
 - new: settings choose the agent's churn rate: wake on change, work tech debt when idle, suggest ideas when idle, or sit idle until told (owner to decide the options)
+- new: a paused item stays out of the inbox until its reask date, and the bell can show it anyway
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-24 13:59Z (save to home screen, notifications)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-24 14:00Z (notification feed)
@@ -23,6 +24,7 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 23:09Z (Kit did not wake after changes)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 23:13Z (suspend supersedes an action)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-28 15:05Z (Kit slept to conserve usage; asks for a churn-rate setting)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-31 09:46Z (paused Kit keeps reappearing in the inbox; reask date; bell may override)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
 - backend/Balenthiran.Kit.Services/PushNotifier.cs
@@ -42,3 +44,4 @@ Context:
 - 10-25 13:12Z: an activity entry should link to the item it refers to. Add it to the feed.
 - 10-26 23:13Z: a request to work should win over a suspend. Check the suspend check on the poller path before changing it.
 - 10-28 15:05Z: Kit went to sleep to save the usage limit without being asked. The owner wants the churn rate configurable in Settings. Do not pick the options. Default until he decides: wake on change, no idle work, and record the open options as a question in the corpus.
+- 10-31 09:46Z: a paused Kit should not keep appearing in the inbox. The owner suggests a reask-date tag, and that the bell can override the pause. The reask-date format is not decided: default to a reask date the owner sets when pausing, record it as an unreviewed assumption, and check how the inbox lists paused items before changing it.
