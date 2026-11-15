@@ -1,12 +1,14 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
-Flag: "next waiting" in the 17:50Z note may mean the Inbox, not the chat, and the ChatGPT/Claude-style look has no card yet (level: low)
+Flag: "next waiting" in the 17:50Z note may mean the Inbox, not the chat, and the ChatGPT/Claude-style look has no card yet; the 18:54Z capabilities, 18:55Z read-spec and 19:04Z stack/approve notes were already filed on main and marked built, so this run changed no spec (level: low)
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
 - BEH-CHAT-3
 - BEH-CHAT-4
 - BEH-CHAT-6
+- BEH-CHAT-7
+- BEH-CHAT-8
 - BEH-CHAT-9
 - BEH-CHAT-14
 - BEH-CHAT-19
@@ -20,6 +22,9 @@ Notes:
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:52Z
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:53Z
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:54Z
+- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:54Z (chat knows its capabilities)
+- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:55Z (chat reads the project spec)
+- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 19:04Z (stack order, approve, post-as buttons)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-1 to BEH-CHAT-19, around lines 2852-3140)
 - prototypes/behaviour-ast/behaviours/kit.notes.md (the source notes)
@@ -31,5 +36,8 @@ Context:
 - Approve, deny, answer and undo from the chat (BEH-CHAT-6). After acting, the chat says "here is the next item", or offers to discuss new spec.
 - A reply to, or a Show again of, the item in hand moves that item to the foot of the chat, because the chat is chronological.
 - Constraint from the 12:56Z note: "talk it through" and the Inbox stay exactly as they are. Do not change them in this item.
+- 18:54Z (capabilities): BEH-CHAT-7 says the agent knows what Kit is and what it can do, with a help line. Already on main, marked built.
+- 18:55Z (read spec): BEH-CHAT-8 gives the agent read_spec, which returns whole cards on demand. Already on main, marked built. Its backlog-scale question (index the spec) sits in kit-ui.beh near line 3200.
+- 19:04Z (stack order, approve, buttons): the item in hand is in the thread in message order; the per-message "Post as my answer" and "Save as a note" buttons are replaced by one "Ask Kit to note this" button; the agent approves, denies or answers via tools (BEH-CHAT-6), and show_item brings the item back. Already on main, marked built.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
-Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls.
+Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls. Before rebuilding any card above, check its "contract built" lines on main.
