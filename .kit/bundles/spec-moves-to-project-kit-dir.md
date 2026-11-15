@@ -18,6 +18,12 @@ Context:
 - Detection: today a project is found by a .beh file on the default branch. After the move, detection must also find .kit/. Keep the .beh-anywhere fallback until the move lands, so no project drops off the list mid-migration (BEH-USERS-12). BEH-LIST-1 is touched only if the detection rule changes.
 - Fallback end: BEH-USERS-12 moves only the specs Kit holds centrally. BEH-USERS-3 still starts a user's repo with behaviours/<name>.beh, outside .kit/, so dropping the .beh-anywhere rule when BEH-USERS-12 lands would drop those projects. Keep the fallback until BEH-USERS-3's starter file is also in .kit/ (BEH-USERS-3 is touched only if the owner wants that changed now).
 - Open for the owner: whether BEH-USERS-2 should state the target or today's state. He asked for it to be settled. Default if he stays silent: the card states the target, with today's state beside it, and the owner is asked to confirm.
+Built:
+- BEH-USERS-2: A_repo_whose_kit_dir_holds_a_beh_file_is_listed_as_a_project (UserProjectsTests.cs)
+- BEH-USERS-2: A_repo_with_a_beh_file_outside_kit_dir_is_still_listed_until_BEH_USERS_12_lands (UserProjectsTests.cs)
+- BEH-USERS-2: A_repo_started_by_BEH_USERS_3_is_still_listed_after_BEH_USERS_12_lands (UserProjectsTests.cs)
+- BEH-USERS-2: A_repo_with_neither_a_kit_dir_holding_a_beh_file_nor_any_beh_file_is_not_listed (UserProjectsTests.cs)
+Suite not run: no .NET SDK in this environment (`dotnet` is not installed), so the whole suite count and result are unknown and the new tests were neither compiled nor seen to fail. Test plan items 4, 5 and 6 were not written: existing tests cover them (GitHubCorpusDirectoryTests "A_project_moved_into_its_own_repos_kit_dir", GitHubCorpusReaderTests "A_refused_put_says_whether_it_was_stale", Projects.test.tsx "reports a corpus that will not parse").
 Test plan:
 - BEH-USERS-2: a repo whose default branch has .kit/ holding a .beh file is listed as a project
 - BEH-USERS-2: a repo with a .beh file anywhere on its default branch (no .kit/) is still listed, until BEH-USERS-12 lands
