@@ -10,9 +10,12 @@ Cards:
 - BEH-STAGE-11
 - BEH-STAGE-12
 - BEH-ARCH-2
+- BEH-STAGE-7
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-19 16:16Z
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-19 16:19Z
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-20 07:13Z (unstaged column so features can be found and staged; BEH-STAGE-7)
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-28 23:53Z (the placement question, not the vault one; placed by stage; BEH-STAGE-9 to BEH-STAGE-11)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh
 - prototypes/behaviour-ast/ui/src/stages.ts
@@ -39,3 +42,4 @@ Test plan:
 - BEH-STAGE-11: a feature with no behaviour built shows in the column its stage line names (problem, ux, logic or architecture); the page does not compute the column from the spec's content
 - BEH-STAGE-12: a feature whose live behaviours are all in the behaviour board's Done column shows in Done, after ui; a paused, blocked, proposed or in-review behaviour keeps it in its stage column; a denied behaviour is ignored; a feature with no live behaviours is never Done; the written stage line is unchanged. The ui-column reading against BEH-STAGE-10 is held until the review request is answered
 - BEH-ARCH-2: a feature whose stage line is architecture shows in the architecture column, between logic and development; no other feature moves
+The 2026-10-20 07:13Z note asks for an Unstaged column, so a feature with no stage line can be found and staged. BEH-STAGE-7 already specifies it and the Stages page shows Unstaged first: verify, do not rebuild. The 2026-10-28 23:53Z placement question is answered by the stage line: a feature sits in the stage it is at, not by how much of it is written (BEH-STAGE-9 to BEH-STAGE-11). Answer it on the card; do not change placement.
