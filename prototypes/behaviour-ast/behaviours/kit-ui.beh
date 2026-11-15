@@ -1686,7 +1686,7 @@ behaviour BEH-ORCH-15 "The pipeline is switched on and off per project, and star
 behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new input into a spec change on a branch and one ticket, and asks its questions on that ticket"
   in FEAT-AGENT-PIPELINE
   source defined kit.notes.md#2026-11-15-1520
-  review unreviewed
+  review approved
   priority 1
   pending
   actor engineer
