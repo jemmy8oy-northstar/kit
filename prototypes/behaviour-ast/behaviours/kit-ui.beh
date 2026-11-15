@@ -1132,8 +1132,9 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: the block is `epic EPIC-… "title"`, and a feature tags it with the `in EPIC-…` line it already uses for a parent feature, so no second tagging keyword is needed
   contract an `in` line naming an epic that does not exist is refused, as an unknown parent feature is
   contract the parser that reads `epic` reaches main before any corpus uses it: kit/hosted takes the corpus from dev, so a keyword on dev alone breaks production (it did on 10-19 with `stage`)
-  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes; an epic takes no lines yet, and a behaviour reaches an epic through its feature
-  contract a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead
+  contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
+  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
+  contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1165,6 +1166,7 @@ behaviour BEH-EPIC-5 "A new epic's children start pending"
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when you create an epic, all of its children and grand children will likely be created as pending or new"
+  contract my assumption: the note's "pending or new" is read as pending; children Kit infers go to Proposed instead (BEH-EPIC-6)
   contract built by the agent: EPIC-KIT-USERS's seven features came in at the problem stage, and all eight of its behaviours were written pending
 
 behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and proposes them"
@@ -1178,6 +1180,7 @@ behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and pr
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
   contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
+  contract my assumption: the questions half of the 22nd note is shipped by the questions work item (questions-board-and-sheet); this card only raises a question on the item
   contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's did until 2026-11-14
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
