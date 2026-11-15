@@ -3174,7 +3174,7 @@ behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent,
   in FEAT-CUSTOM-AGENTS
   layer ux
   source defined kit.notes.md#2026-11-02-1857
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "Custom agents spend on every run and start from the security agent (BEH-SECAGENT-1); both wait on your spend cap."
