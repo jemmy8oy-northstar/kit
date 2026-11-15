@@ -1,6 +1,7 @@
 # Testers can use the projects, boards, inbox and settings pages
 Work-item: tester-feature-access
 Flag: the 17:41Z switches are already built (BEH-FLAGS-1), so BEH-FLAGS-3 is only the "they work for testers" half; open whether testers may act on their own items, since writes are operator-only today and BEH-USERS-8 lets anyone open a public project by URL, which the tester rule forbids (level: high)
+Review: revised — no decision needed: FLAGS-1's "every write stays operator-only" held only until BEH-USERS-2, and FLAGS-3 already records tester writes on own items as an unreviewed assumption; fixed the test that contradicted BEH-USERS-8's public read by URL
 Cards:
 - BEH-FLAGS-3
 Notes:
@@ -11,14 +12,15 @@ Files:
 Context:
 - He asks to enable these four pages for testers now, and says they must also work for testers, not just show. He named them as the place to start.
 - Chat and the other features are not in this item.
-- A tester sees only their own projects, notes and memory (BEH-USERS-8); this item must keep that rule.
+- A tester sees only their own projects, notes and memory (BEH-USERS-8); this item must keep that rule. BEH-USERS-8 also lets anyone open a project in a public repo by its URL (as BEH-GATE-H1 does); keep that: a tester's lists, counts and Inbox hold only their own projects, a project in a private repo is served to its owner only, and every write to a project they do not own is refused.
+- Writes: BEH-FLAGS-1 says "every write stays operator-only" only until a tester sees their own projects (BEH-USERS-2, which FLAGS-3 depends on). FLAGS-3 already records, as an unreviewed assumption, that a tester may approve, deny, answer, pause and lower priority on their own items; build that reading and leave the assumption for him to deny. Do not edit either card to settle it.
 - Testers doing many cards cost him real money (see the cost estimate in BEH-USERS-9, kit-ui.beh line 1479), so do not turn on agent work for testers here.
-- Record the guess as a "contract my assumption:" line in the corpus, so he can deny it.
+- The guesses are already "contract my assumption:" lines on BEH-FLAGS-3; record any new guess the same way, so he can deny it.
 - The switches themselves (FEAT-PROJECTS, FEAT-PROJECT, FEAT-BOARD, FEAT-STAGES, FEAT-EPICS, FEAT-INBOX, FEAT-SETTINGS on for testers in kit.beh) are already in place; BEH-FLAGS-1 records that.
 Next step toward the goal: the builder checks which of the four pages a tester account can reach today, then opens the missing ones.
 Test plan:
 - BEH-FLAGS-3: a tester's Projects page lists only the repos of their own GitHub, and none of the operator's projects.
-- BEH-FLAGS-3: a tester opens a board of their own project and sees its cards; a board of another user's project is refused.
+- BEH-FLAGS-3: a tester opens a board of their own project and sees its cards; a board of another user's project in a private repo is refused, and one in a public repo can be read by URL but never appears in their lists and accepts no write from them (BEH-USERS-8).
 - BEH-FLAGS-3: a tester's Inbox lists only items in their own projects, and approving one writes to that project's repo only.
 - BEH-FLAGS-3: a tester's write (approve, deny, answer, pause, lower priority) to a project they do not own is refused, and each operator-only write (promotion, idle, depth, conflicts, features) is refused for them.
 - BEH-FLAGS-3: a tester's Settings shows their account and GitHub only, with no operator section in the page or in the responses it reads.
