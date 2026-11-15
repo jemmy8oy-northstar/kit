@@ -1708,6 +1708,9 @@ behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new in
   contract my answer: that is claude-code-bot#137, which he merged on 2026-11-15: I wake at 07:30, 13:00 and 19:00 UK time or when he presses "Wake the agent" in Settings (BEH-SETTINGS-7), not on every note
   contract my assumption: built in this order, each slice merged before the next: (1) blocked as a tag, with questions as ticket comments; (2) triage writes the spec change on the ticket's branch; (3) his reply on a blocked ticket wakes the first agent; (4) the board shows tickets. The pipeline jobs stay switched off in production until he switches them on (BEH-ORCH-11), because they spend his subscription
   contract built (slice 1): a stopped run no longer gives its ticket a "stopped" state. The ticket keeps the state it reached and carries blocked_because, its reason, and kit posts "Blocked: <reason>" once as a comment on the ticket (pipeline_ticket_comments). After a restart a blocked ticket comes back stopped, so no job takes it, and the triage task does not list it
+  contract built (slice 2): the triage task now edits the spec on kit/work/<slug> itself (contract lines on the cards the notes touch; new cards "review unreviewed"; every line "contract my assumption:") and lists the card ids in its bundle. The spec stage after it only reads those cards and writes the test plan, still writing a card for an older bundle's "new:" line
+  contract my assumption: the first agent deletes no card. When a note says one should go, it adds "contract my assumption: delete this card, because …" to it, so the deletion is his to approve
+  contract my assumption: a triage with no Flag line has no question, so its ticket goes straight to ready, as today; a flagged one waits at new for its review
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS

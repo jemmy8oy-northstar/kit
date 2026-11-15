@@ -1150,7 +1150,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         TriageTask task;
         try
         {
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), OpenTickets(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), OpenTickets(item.Project), corpora.RelativePath(item.Project));
         }
         catch (InvalidOperationException e)
         {
