@@ -31,6 +31,12 @@ Stage notes (spec stage, 2026-11-15):
 - BEH-BOARD-15 decision: the card link is an in-app react-router Link (a reroute); the board re-reads its data on mount, so its state is lost. The column and card are carried in the url, and the build restores them. Scroll: the card is centred, or the column is brought to its start when the card has moved.
 - The 2026-10-22 22:37Z note means BEH-BOARD-12's ordering applies to the Queue, not Backlog; the card's contract now says so, and its title and region line are unchanged.
 
+Built:
+- puts a card that waits on him in Blocked, not In progress, even with a needs-context line and nothing else (BEH-BOARD-18)
+- an approved card that was paused lands in the Queue, not In progress or Backlog (BEH-BOARD-18, BEH-BOARD-25)
+- centres the card it comes back to on screen, and brings the column to its start when the card has moved (BEH-BOARD-15)
+- The UI suite (`npx vitest run` in prototypes/behaviour-ast/ui) ran 564 tests, all passed; `tsc -b` is clean.
+
 Test plan:
 - BEH-BOARD-18: the board shows Backlog, Queue, Blocked and In progress in that order with no Scheduled region; a Blocked card sits before In progress; an approved paused card lands in the Queue, not In progress.
 - BEH-BOARD-16: a paused card sits at the foot of Backlog under a Paused heading with a "paused" badge; its page offers Pause and Resume beside Approve and Deny; the wake sweep does not list it as work.
