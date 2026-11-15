@@ -1,6 +1,7 @@
 # Each project says what it is working towards, and the agent asks when it has no goal
 Work-item: project-narrative-goals
 Flag: Much of the note is already contracted as built (kit-ui.beh near lines 2375 and 2388); confirm what is left before a spec is written. The 2026-11-03 10:58Z note does not name the item it calls complete, so ask which one (level: high).
+Review: escalated — the owner must say which finished item the 2026-11-03 10:58Z note calls complete; otherwise confirmed: BEH-NARR-1 and BEH-NARR-3 are contracted built (agent.md has all three steering rules), and only BEH-NARR-2 (the Inbox goal question, `# kit:goal maintained`) has no built contract, so that is what is left
 Cards:
 - FEAT-NARRATIVE
 - BEH-NARR-1
