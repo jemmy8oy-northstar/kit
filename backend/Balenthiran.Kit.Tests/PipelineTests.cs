@@ -1648,6 +1648,95 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_16_his_reply_on_a_blocked_ticket_wakes_triage_on_it_and_its_update_clears_the_tag()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        var r = rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by the date column, newest first" }));
+
+        Assert.Equal(200, r.Status);
+        Assert.True(Assert.IsType<TicketReplyResult>(r.Body).Woke);
+        Assert.Equal(["Blocked: the spec run failed", "sort by the date column, newest first"], rig.Tickets.Comments("demo", "list-sorting").Select(c => c.Body));
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("replied on ticket list-sorting (\"Sort the list\"), which is blocked because: the spec run failed", triage.Task);
+        Assert.Contains("Report this note under THAT ticket's slug, list-sorting, on its branch kit/work/list-sorting", triage.Task);
+        Assert.Contains("The reply: sort by the date column, newest first", triage.Task);
+        Assert.Contains("- list-sorting [ready] Sort the list", triage.Task); // listed, though blocked, so the update has a ticket to name
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+        var next = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage for project \"demo\"", next.Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_reply_a_finished_triage_has_read_is_not_read_again()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        rig.Finish(rig.Claim()!, status: "failed"); // blocked again, by its next spec run
+
+        rig.Note("an unrelated note");
+
+        Assert.DoesNotContain("The reply: sort by date", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_failed_triage_reads_the_reply_again()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+        rig.Finish(rig.Claim()!, status: "failed");
+
+        rig.Note("an unrelated note");
+
+        Assert.Contains("The reply: sort by date", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_reply_on_a_ticket_that_is_not_blocked_goes_on_its_thread_and_wakes_nothing()
+    {
+        using var rig = new Rig();
+        Triaged(rig); // its spec run is claimed and running, so the ticket is ready and not blocked
+
+        var r = rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "looks right" }));
+
+        Assert.False(Assert.IsType<TicketReplyResult>(r.Body).Woke);
+        Assert.Equal("looks right", Assert.Single(rig.Tickets.Comments("demo", "list-sorting")).Body);
+        Assert.Null(rig.Claim());
+    }
+
+    [Theory]
+    [InlineData("/api/projects/demo/tickets/no-such/comments", "{\"body\":\"hi\"}", 404)]
+    [InlineData("/api/projects/nope/tickets/list-sorting/comments", "{\"body\":\"hi\"}", 404)]
+    [InlineData("/api/projects/demo/tickets/list-sorting/comments", "{\"body\":\"   \"}", 400)]
+    [InlineData("/api/projects/demo/tickets/list-sorting/comments", "{}", 400)]
+    public void BEH_ORCH_16_a_reply_with_no_ticket_or_no_text_is_refused(string path, string body, int status)
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        Assert.Equal(status, rig.Router.Route("POST", path, body: JsonDocument.Parse(body).RootElement).Status);
+        Assert.Single(rig.Tickets.Comments("demo", "list-sorting")); // only Kit's own Blocked comment
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_reply_longer_than_the_limit_is_refused()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+
+        var r = rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = new string('x', KitRouter.MaxReply + 1) }));
+
+        Assert.Equal(400, r.Status);
+    }
+
+    [Fact]
     public void BEH_ORCH_16_after_a_restart_a_blocked_ticket_stays_stopped_and_no_job_takes_it()
     {
         using var rig = new Rig();
