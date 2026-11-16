@@ -380,6 +380,7 @@ behaviour BEH-ROUTE-1 "A backlog item is found by a cheap check, and triage skip
   review unreviewed
   contract my assumption: the check reads the item's own card and its backlog state only, with no model call, so finding it costs nothing
   contract my assumption: an item not yet in the backlog still goes through triage in full
+  contract my assumption: triage stays on the hook, a note or a chat message, as he asked (kit.notes.md#2026-11-08 22:06Z); the check only decides whether a backlog item skips it
 
 behaviour BEH-ROUTE-2 "The pipeline wakes for a backlog item that the opus agent marks ready to schedule"
   priority 5
@@ -389,6 +390,7 @@ behaviour BEH-ROUTE-2 "The pipeline wakes for a backlog item that the opus agent
   then reports wake:Scheduled
   review unreviewed
   contract my assumption: the opus agent's mark is written into the corpus, so the wake reads the corpus and not chat
+  contract his note (kit.notes.md#2026-11-08 22:06Z): "actioning will take place based off priority not based off a hook". My assumption: once the pipeline is woken for a scheduled backlog item, the stages after triage take the waiting ticket with the highest priority, not whichever note hooked in last, so existing tickets are actioned as well as new ones
 
 behaviour BEH-ROUTE-3 "A review goes to the model its uncertainty flag's level asks for, so a low flag never takes opus"
   priority 5
