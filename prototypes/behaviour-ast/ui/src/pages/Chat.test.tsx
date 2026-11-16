@@ -379,21 +379,30 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
 })
 
 describe('BEH-CHAT-7: help, with no model call', () => {
-  it('the header button and a typed help or /help add the help line and never call the agent', async () => {
+  it('the "What can Kit do?" header button puts the help line in the thread with no model call', async () => {
     mockApi()
     await open()
     fireEvent.click(screen.getByRole('button', { name: 'What can Kit do?' }))
     expect(screen.getByText(/this chat changes no code/)).toBeTruthy()
+    // The help line says what it cannot do, and offers the note route for it.
+    expect(screen.getByText(/cannot reorder, pause, schedule or change the priority of items, or edit the spec/)).toBeTruthy()
+    expect(chats()).toEqual([])
+  })
+
+  it('a message that is just help or /help puts the help line in the thread with no model call, and the agent is not told', async () => {
+    mockApi()
+    await open()
 
     fireEvent.change(box(), { target: { value: ' /Help ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(screen.getAllByText(/this chat changes no code/)).toHaveLength(2)
-    expect(order()).toEqual(['item', 'kit', 'user', 'kit'])
+    expect(screen.getAllByText(/this chat changes no code/)).toHaveLength(1)
+    expect(order()).toEqual(['item', 'user', 'kit'])
     expect(box().value).toBe('')
 
     fireEvent.change(box(), { target: { value: 'help' } })
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(screen.getAllByText(/this chat changes no code/)).toHaveLength(3)
+    expect(screen.getAllByText(/this chat changes no code/)).toHaveLength(2)
+    expect(order()).toEqual(['item', 'user', 'kit', 'user', 'kit'])
     expect(chats()).toEqual([])
     // Not a message to the agent: the next real one still carries the item it has not been told of.
     await say('hello', 'reply 1')

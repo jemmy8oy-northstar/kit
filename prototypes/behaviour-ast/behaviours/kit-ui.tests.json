@@ -914,8 +914,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "A_reply_with_no_text_block_is_a_failure_not_an_empty_answer" }
   ],
   "BEH-CHAT-7": [
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the header button and a typed help or /help add the help line and never call the agent" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the \"What can Kit do?\" header button puts the help line in the thread with no model call" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "a message that is just help or /help puts the help line in the thread with no model call, and the agent is not told" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_give_the_can_and_cannot_lists_and_offer_a_note_for_a_cannot_item" }
   ],
   "BEH-CHAT-8": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Both_chats_hand_the_model_a_reader_of_their_own_projects_spec" },

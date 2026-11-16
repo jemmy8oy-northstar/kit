@@ -370,6 +370,18 @@ public class TriageTests
 
     // ---- it knows what it can do (BEH-CHAT-7), reads the spec (BEH-CHAT-8), shows and notes (BEH-CHAT-6) ---
 
+    // BEH-CHAT-7: asked what it can do, the agent gives the can and cannot lists; for a cannot item it offers
+    // to leave a note rather than claiming it made the change.
+    [Fact]
+    public void The_chat_instructions_give_the_can_and_cannot_lists_and_offer_a_note_for_a_cannot_item()
+    {
+        var text = TriageContext.ChatInstructions;
+        Assert.Contains("Asked what you can do, give the can list and the cannot list above plainly.", text, StringComparison.Ordinal);
+        Assert.Contains("What you cannot do: reorder, pause, schedule or change the priority of items, or edit the spec.", text, StringComparison.Ordinal);
+        Assert.Contains("do not say it is done: offer to leave it as a note for the coding agent to make the change", text, StringComparison.Ordinal);
+        Assert.Contains("call save_note when they agree", text, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void A_note_needs_no_item_in_hand_but_showing_the_item_does()
     {
@@ -569,6 +581,9 @@ public class TriageTests
     [Fact]
     public void The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything()
     {
+        // BEH-CHAT-7: what Kit is, that the chat changes no code, that a coding agent builds in the background, every tool.
+        Assert.Contains("What Kit is: it keeps each project's spec", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("You write no code and change no spec yourself.", TriageContext.ChatInstructions, StringComparison.Ordinal);
         Assert.Contains("a coding agent works in the background", TriageContext.ChatInstructions, StringComparison.Ordinal);
         Assert.Contains("only a tool call does it", TriageContext.ChatInstructions, StringComparison.Ordinal);
         Assert.Contains("offer to save it as a note, and call save_note", TriageContext.ChatInstructions, StringComparison.Ordinal);
