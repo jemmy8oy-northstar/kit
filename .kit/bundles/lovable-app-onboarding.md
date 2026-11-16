@@ -1,6 +1,7 @@
 # Onboard an existing Lovable app onto Kit from its GitHub repo
 Work-item: lovable-app-onboarding
 Flag: this brings EPIC-ONBOARD out of "backlog, out of scope" into scope, a scope change for the owner to see (level: high)
+Review: agreed — the scope change is the owner's own instruction (note 11-06 18:04Z), already applied: EPIC-ONBOARD's title carries no "out of scope" since 2026-11-14 and BEH-LOVABLE-1 (approved) is the one card, so nothing waits on him; the "repo not owned is refused" and "export not accepted" tests go past his words and need recording as contract my assumption when built
 Cards:
 - EPIC-ONBOARD
 - BEH-LOVABLE-1
