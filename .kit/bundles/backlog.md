@@ -1,6 +1,6 @@
 # Ideas for later: user feedback box, working status, user technical-level profile, Kit reading pod logs, chat transcripts, security and custom agents, external integrations and data, onboarding tour, project integrations and secrets, lite hosting, project spaces, market research, hosted coding agent and token-credit pricing, reading the queue from CLAUDE.md
 Work-item: backlog
-Flag: the ideas from the 2026-11-02 and 11-03 notes already have cards in kit-ui.beh, so nothing new is specced; BEH-TOUR-1 says built though the owner asked to backlog onboarding, and BEH-SPACE-1 is partly built; the 11-04 pricing notes and the 11-03 queue question are for the owner to answer, not build; the 2026-11-07 notes are ideas for later and are not built; the .beh rename touches how Kit stores files (level: high)
+Flag: the ideas from the 2026-11-02 and 11-03 notes already have cards in kit-ui.beh, so nothing new is specced; BEH-TOUR-1 says built though the owner asked to backlog onboarding, and BEH-SPACE-1 is partly built; the 11-04 pricing notes and the 11-03 queue question are for the owner to answer, not build; the 2026-11-07 notes are ideas for later and are not built; the .beh rename touches how Kit stores files; the 2026-11-12 and 11-14 GitHub-minutes notes ask a paid-plan question and a look at minimising minutes, for the owner, not built (level: high)
 Cards:
 - BEH-FEEDBACK-1
 - new: Kit shows when it is working
@@ -24,6 +24,9 @@ Cards:
 - new: Pipeline runs as C# async instead of a node script
 - new: Rename the spec file extension from .beh (owner leans to .kit)
 - new: Design the spec structure per project; one file per project is not structured
+- BEH-ORCH-12
+- new: Compare a paid plan and self-hosting with the free Actions minutes
+- new: Promotion pipeline that deploys from main, apart from the dev gate
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:30Z ("Oo a backlog idea for when we have real users")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 23:12Z ("Kit shows when it is working - backlog if too high of a cost now")
@@ -42,10 +45,14 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 02:11Z (pipeline as a node script; C# async suggested)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:13Z (rename the .beh extension; owner leans to .kit)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:14Z (design the spec structure properly; one file per project is not structured)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-12 08:08Z (minutes used up; is a paid plan worth it, is self-hosting viable, back to the free tier?)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-12 08:37Z (use the pipeline for deployment to cut costs; a promotion pipeline that deploys from main)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-14 08:27Z (minimising credit usage while kit is private; paying for GitHub later)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (lines ~3205 onward: FEAT-CHAT-TRANSCRIPTS, FEAT-SECURITY-AGENT, FEAT-CUSTOM-AGENTS, FEAT-HOOKS-OUT, FEAT-HOOKS-IN, FEAT-EXTERNAL-DATA)
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-18, BEH-FEEDBACK-1, BEH-TOUR-1, BEH-PROJCONF-1, BEH-PROJCONF-2, BEH-LITE-1, BEH-LITE-2, BEH-SPACE-1, BEH-SPECAGENT-5)
-- prototypes/behaviour-ast/behaviours/kit.notes.md (the 2026-11-02, 11-03 and 11-04 notes listed above)
+- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-ORCH-12, the private-project minutes card on main)
+- prototypes/behaviour-ast/behaviours/kit.notes.md (the 2026-11-02, 11-03, 11-04, 11-12 and 11-14 notes listed above)
 Context:
 Ideas only, not to be specced or built now. Each card above already holds its idea on main, in kit-ui.beh. This run edited no spec. BEH-FEEDBACK-1 holds the feedback idea, and the feedback and working-status cards wait until Kit has users other than the owner (see BEH-EPIC-7). Nothing in this bundle should be picked up until the owner moves it out of backlog.
 The working-status note (10-26 23:12Z) is a backlog idea by the owner's own words. Pick it up only if the cost of showing Kit's working state is judged low; otherwise leave it here.
@@ -62,3 +69,4 @@ The 2026-11-03 11:17Z note asks whether reading the queue must be built into CLA
 The 2026-11-04 00:52Z and 00:57Z notes are the same pricing idea (the second restates the first in full). They ask how a hosted coding agent would run (a runtime, a checkout of the repo, the dev process as instructions, Kit's commands as tools, per-user memory), whether it needs its own volume or a temporary clone per job, and how to price it: a base subscription with monthly credits that expire, a premium on token cost so most of the fee funds the volume and pod, bought credits that do not expire, and a refund path. It is design thinking, not a decision, and no card holds it yet; the owner should decide before any card is written.
 Next step toward the goal: none from this bundle; the goal is the open chat and tester work, and these wait.
 2026-11-16: three more ideas for later from the 2026-11-07 notes. Not built and not specced; the owner may want them scheduled.
+2026-11-16: three GitHub-minutes notes, filed here rather than under record-session-cost, because they are about Actions minutes, not Claude session cost. The 2026-11-12 08:08Z note asks whether a paid plan (said to be 50% more) would still run out, what other options exist, whether self-hosting is viable, and whether to go back to the free tier. That is a question for the owner, and its answer needs research; nothing is built. The 08:37Z note asks to use the pipeline for deployment to cut costs, with a promotion pipeline that deploys from main so promotions are deliberate. BEH-ORCH-12 on main already covers part of it: a private project's tests run on the runner pool, not as Actions, and deploys build only from main. A separate promotion step is on no card, so it is a new card for later. The 2026-11-14 08:27Z note asks to look at minimising credit use while kit is private; BEH-ORCH-12 already quotes it, and the owner has said paying for GitHub waits until the project makes money.
