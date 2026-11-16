@@ -366,3 +366,24 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+# ── the pipeline's run visibility (triage note of 2026-11-07) ───────────────
+# Internal to the owner for now: the run page is not shown to testers.
+
+behaviour BEH-VIS-1 "The run page shows each running agent, its stage, and any review it flagged and by which agent"
+  priority 5
+  actor engineer
+  given run:Running
+  when runs command:KitUi
+  then reports run:Stages
+  review unreviewed
+  contract my assumption: the page is for the owner only, and is not shown on any tester's pages
+
+behaviour BEH-VIS-2 "A historic run shows what each stage cost, and which reviews it requested"
+  priority 5
+  actor engineer
+  given run:Finished
+  when runs command:KitUi
+  then reports run:Costs
+  review unreviewed
+  contract my assumption: the costs come from the per-session record of BEH-COST-1 when it exists, and a stage with no recorded cost shows as unknown, never as zero
