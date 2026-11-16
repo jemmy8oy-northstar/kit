@@ -4,6 +4,7 @@ Flag: Notes that ask for no build: approvals, praise, status reports, a merge in
 Cards:
 - new: nothing to build
 Notes:
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-14 17:25Z (asks why the pipeline paused until 8: a question, nothing to build)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:14Z ("Just to confirm - these notes are being wrapped into kit spec right?")
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-16 11:45Z (approves the filter; nothing to build)
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-10-27 21:16Z ("What does this mean", first of two identical notes)
@@ -31,3 +32,5 @@ The 2026-11-15 12:45Z and 12:48Z notes ("What is the home on this it isn't marke
 The 2026-11-02 19:05Z note says notes should stay alongside chat, not be replaced by it. BEH-NOTE-14 already records that decision on main and it is built. Nothing new is asked, so nothing here is built.
 2026-11-16: the 2026-11-06 18:07Z and 18:16Z notes are tests. Nothing to build; a person should decide whether to discard them.
 2026-11-16: the 2026-11-14 12:50Z note asks for a button to wake the agent for the operator's kit only. BEH-SETTINGS-7 in kit-ui.beh on main is that button ("Wake the agent" on Settings, operator only), and its contract quotes this note. Nothing to build; a person should confirm the button works, because the card records it as never pressed when it was written.
+
+2026-11-16 update: the 2026-11-14 17:25Z note asks the owner's question why the pipeline paused until 8. It asks for no build and names no card, so it is set aside for a person to answer. Running the pipeline per project is in the projects item, spec-moves-to-project-kit-dir (level: low).
