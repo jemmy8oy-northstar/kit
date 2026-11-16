@@ -1,6 +1,7 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
 Flag: "next waiting" in the 17:50Z note may mean the Inbox, not the chat, and the ChatGPT/Claude-style look has no card yet; the 18:54Z capabilities, 18:55Z read-spec and 19:04Z stack/approve notes were already filed on main and marked built, so this run changed no spec (level: low)
+Review: revised — BEH-CHAT-19 already exists as its own card for the 12:50Z note, so the 11-16 update was corrected; the "skip to next item" card is dropped because BEH-CHAT-3 already has it as "contract built" (17:48Z); the chat-app look has no card in kit-ui.beh yet, so that new card stays
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
@@ -13,7 +14,6 @@ Cards:
 - BEH-CHAT-14
 - BEH-CHAT-19
 - new: the chat page looks like a chat app (ChatGPT or Claude style), not a form
-- new: the skip control is labelled "skip to next item", not "skip" (it reads as dismiss)
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-15 12:50Z (when in chat, see the state of the top-of-stack item being shown)
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 12:56Z
@@ -43,4 +43,4 @@ Context:
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
 Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls. Before rebuilding any card above, check its "contract built" lines on main.
 
-2026-11-16 update: note of 2026-11-15 12:50Z adds a contract line to BEH-CHAT-1 in kit-ui.beh: the chat shows the state of the top-of-stack item it is showing. Not a new card: BEH-CHAT-1 already opens on the next item, so the state is a line on that card. Unsure whether it needs its own card instead (level: low).
+2026-11-16 update: the 2026-11-15 12:50Z note (state of the top-of-stack item) is already its own card, BEH-CHAT-19 (unreviewed, pending), listed above. It is not a line on BEH-CHAT-1, so no new card is needed.
