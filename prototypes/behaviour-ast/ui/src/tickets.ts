@@ -14,6 +14,9 @@ export async function loadTickets(app: string): Promise<TicketList | null> {
   }
 }
 
+/** The longest reply on a ticket, as the server's MaxReply. */
+export const MAX_REPLY = 1000
+
 /** Blocked first, as they are waiting on him; then top priority first; merged ones are done, so off the list. */
 export function openTickets(tickets: Ticket[]): Ticket[] {
   return tickets

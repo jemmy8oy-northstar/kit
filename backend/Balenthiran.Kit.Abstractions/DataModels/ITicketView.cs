@@ -36,6 +36,13 @@ public interface ITicketView
     IReadOnlyList<ITicketCommentView> Comments { get; }
 }
 
+/// <summary>The answer to <c>POST /api/projects/:project/tickets/:slug/comments</c> (BEH-ORCH-16 slice 3).</summary>
+public interface ITicketReplyResult
+{
+    /// <summary>True when the reply woke the first agent on the ticket; false when it is only on the thread.</summary>
+    bool Woke { get; }
+}
+
 /// <summary>The body of <c>GET /api/projects/:project/tickets</c>: whether the pipeline is on, and the project's tickets, oldest first.</summary>
 public interface ITicketList
 {

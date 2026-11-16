@@ -510,6 +510,12 @@ public sealed partial class KitRouter(
             return StartRun(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, runs.Groups[1].Value, body);
         }
 
+        // BEH-ORCH-16 slice 3: his reply on a ticket, behind the same gate; it writes no corpus.
+        if (TicketCommentRoute.Match(pathname) is { Success: true } reply)
+        {
+            return TicketReply(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, reply.Groups[1].Value, reply.Groups[2].Value, body);
+        }
+
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.
         if (pathname == "/api/commit")
         {

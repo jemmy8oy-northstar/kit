@@ -131,6 +131,11 @@ export function fetchPipeline(): Promise<PipelineItemList> {
   return get<PipelineItemList>('/api/pipeline')
 }
 
+/** His reply on a ticket (BEH-ORCH-16 slice 3); `woke` is true when it woke the first agent on a blocked ticket. */
+export function replyOnTicket(app: string, slug: string, body: string): Promise<{ woke: boolean }> {
+  return post<{ woke: boolean }>(`/api/projects/${encodeURIComponent(app)}/tickets/${encodeURIComponent(slug)}/comments`, { body })
+}
+
 /** A project's tickets and their comment threads (BEH-ORCH-16); the operator's only. */
 export function fetchTickets(app: string): Promise<TicketList> {
   return get<TicketList>(`/api/projects/${encodeURIComponent(app)}/tickets`)
