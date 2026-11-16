@@ -1,7 +1,7 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
 Flag: "next waiting" in the 17:50Z note may mean the Inbox, not the chat, and the ChatGPT/Claude-style look has no card yet; the 18:54Z capabilities, 18:55Z read-spec and 19:04Z stack/approve notes were already filed on main and marked built, so this run changed no spec (level: low)
-Review: revised — BEH-CHAT-19 already exists as its own card for the 12:50Z note, so the 11-16 update was corrected; the "skip to next item" card is dropped because BEH-CHAT-3 already has it as "contract built" (17:48Z); the chat-app look has no card in kit-ui.beh yet, so that new card stays
+Review: revised — BEH-CHAT-19 already exists as its own card for the 12:50Z note, so the 11-16 update was corrected; the "skip to next item" card is dropped because BEH-CHAT-3 already has it as "contract built" (17:48Z); the chat-app look has no card in kit-ui.beh yet, so that new card stays. Stage check (this run): that premise is wrong; the look is BEH-CHAT-1's 14:12Z contract built, so no card is added. Also: BEH-CHAT-1 line "contract my assumption: the chat shows the state of the top-of-stack item" duplicates BEH-CHAT-19, and BEH-CHAT-5 ("Forget the chat before x") is marked built and is in ui/src/pages/Chat.tsx, though Context says it is parked; the ../home/app/kit/ note paths do not exist here, the notes are prototypes/behaviour-ast/behaviours/kit.notes.md
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
@@ -13,7 +13,7 @@ Cards:
 - BEH-CHAT-9
 - BEH-CHAT-14
 - BEH-CHAT-19
-- new: the chat page looks like a chat app (ChatGPT or Claude style), not a form
+- none new: the chat-app look is already BEH-CHAT-1's 14:12Z contract built (messages left and right, docked box), so no card is added
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-15 12:50Z (when in chat, see the state of the top-of-stack item being shown)
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 12:56Z
@@ -41,6 +41,18 @@ Context:
 - 18:55Z (read spec): BEH-CHAT-8 gives the agent read_spec, which returns whole cards on demand. Already on main, marked built. Its backlog-scale question (index the spec) sits in kit-ui.beh near line 3200.
 - 19:04Z (stack order, approve, buttons): the item in hand is in the thread in message order; the per-message "Post as my answer" and "Save as a note" buttons are replaced by one "Ask Kit to note this" button; the agent approves, denies or answers via tools (BEH-CHAT-6), and show_item brings the item back. Already on main, marked built.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
+Test plan:
+- BEH-CHAT-1: picking a project in the select box puts "Now talking about <project>" in the thread and keeps the earlier history; a message naming exactly one other project moves the chat before it is sent; naming two, or the current one too, does not
+- BEH-CHAT-2: opening the page with an item waiting shows that item in the thread above the message box with no click and no request sent; with nothing waiting it says so and offers "<project>: next waiting is “<title>”", which switches project when taken
+- BEH-CHAT-3: Approve and "Skip to next item" make the Inbox's own review write, Skip leaves the item waiting, and the next item comes up; "Post as my answer" and "Save as a note" are gone and "Ask Kit to note this chat" is the one note control
+- BEH-CHAT-4: an off-topic message gets the agent's question naming other projects from its context, and the agent does not change project itself
+- BEH-CHAT-6: the Chat page offers approve_item, deny_item, answer_item, undo_last, show_item and save_note while Talk it through offers none; an action with no item in hand is dropped and Kit says so; a refused write shows "That did not go through, so nothing was done"; Undo restores the review and brings the item back to the thread; Approve and Skip wait while a reply is pending
+- BEH-CHAT-7: the "What can Kit do?" button and a message of "help" or "/help" put the fixed help line in the thread with no model call and no reply spent; the agent's instructions carry the can and cannot list
+- BEH-CHAT-8: read_spec returns whole cards by id, at most ten ids and 20,000 characters a call, at most two reads per reply; it is offered on the Chat page and in Talk it through
+- BEH-CHAT-9: "Show again" puts the item in hand at the foot of the thread with its question, sends no request, and waits while a reply is on its way
+- BEH-CHAT-14: the line after an action reads "Approved “title”. Reply to answer the next item, or we can define new spec or discuss x.", never says "Next up" or repeats the next item's title, and the dock's jump to another project's waiting item still works
+- BEH-CHAT-19: the chat shows the board state (pending, approved, blocked, built) of the item in hand beside its id, and it updates after an answer or approval from the chat
+
 Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls. Before rebuilding any card above, check its "contract built" lines on main.
 
 2026-11-16 update: the 2026-11-15 12:50Z note (state of the top-of-stack item) is already its own card, BEH-CHAT-19 (unreviewed, pending), listed above. It is not a line on BEH-CHAT-1, so no new card is needed.
