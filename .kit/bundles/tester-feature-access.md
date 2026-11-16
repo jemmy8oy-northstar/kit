@@ -30,4 +30,9 @@ Test plan:
 - BEH-FLAGS-3: a tester's Settings shows their account and GitHub only, with no operator section in the page or in the responses it reads.
 - BEH-FLAGS-3: no tester action starts or records an agent run.
 - BEH-FLAGS-3: a page switched off for testers still shows "Not available" (BEH-FLAGS-2), and the pages still on for them keep working.
+- BEH-SCOPE-1: a proposed project made by a tester is stored against that tester, and a second tester signed in to the same Kit never lists it; the operator's proposals are not listed for a tester.
+- BEH-SCOPE-1: a proposal with no connected repo is kept in the database against its owner, and is never written to a repo the tester is not a contributor on.
+- BEH-SCOPE-2: a connected repo that carries a corpus and names the tester as a contributor is listed for that tester, and for no other user.
+- BEH-SCOPE-2: a connected repo that does not name the tester as a contributor is not listed for them, and a repo the tester contributes to that is not yet connected does not appear.
+- BEH-SCOPE-2: a connected repo the tester contributes to, but with no .beh spec files, is not listed as a project.
 2026-11-16: two more notes on tester visibility of projects. BEH-SCOPE-1 (proposed projects per user) and BEH-SCOPE-2 (projects found by contributor) are new in kit.beh, because this item may edit only kit.beh. They overlap BEH-USERS-8 and BEH-FLAGS-3 in kit-ui.beh, which were not edited; the owner should say whether the scope cards replace them or sit beside them. Assumptions are contract lines on the new cards.
