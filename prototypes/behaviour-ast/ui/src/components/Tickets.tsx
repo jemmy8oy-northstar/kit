@@ -1,33 +1,13 @@
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@jemmy8oy-northstar/design-system'
-import { ApiError, fetchTickets } from '../api/client'
-import type { Ticket, TicketList } from '../api/types'
 import { useResource } from '../hooks/useResource'
+import { loadTickets, openTickets } from '../tickets'
 import ResourceView from './Resource'
 
 /**
  * A project's open tickets (BEH-ORCH-16 slice 4): what the pipeline is working on, which ones are blocked and why,
- * and each one's thread, where Kit asks its questions. The operator's only: anyone else is refused, and sees nothing,
- * as does a filter naming no project Kit has.
+ * and each one's thread, where Kit asks its questions. The operator's only: anyone else is refused, and sees nothing.
  */
-export async function loadTickets(app: string): Promise<TicketList | null> {
-  try {
-    return await fetchTickets(app)
-  } catch (e) {
-    if (e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 404)) return null
-    throw e
-  }
-}
-
-/** Blocked first, as they are waiting on him; then top priority first; merged ones are done, so off the list. */
-export function openTickets(tickets: Ticket[]): Ticket[] {
-  return tickets
-    .filter((t) => t.state !== 'merged')
-    .map((t, i) => ({ t, i }))
-    .sort((x, y) => Number(!!y.t.blockedBecause) - Number(!!x.t.blockedBecause) || x.t.priority - y.t.priority || x.i - y.i)
-    .map(({ t }) => t)
-}
-
 export default function Tickets({ app }: { app: string }) {
   const resource = useResource(() => loadTickets(app), [app])
   return (
