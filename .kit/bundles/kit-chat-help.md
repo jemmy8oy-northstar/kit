@@ -1,6 +1,7 @@
 # Kit chat help: what Kit is, and that the chat makes no changes
 Work-item: kit-chat-help
 Flag: BEH-CHAT-7 already holds this and its contract says built, so there is nothing to build and no spec was edited (level: low)
+Review: agreed — BEH-CHAT-7 in kit-ui.beh carries the 19:28Z note as a contract and has built contracts for the help text and the help button; nothing to build.
 Cards:
 - BEH-CHAT-7
 Notes:
