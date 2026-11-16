@@ -93,6 +93,8 @@ feature FEAT-SERVER "Local server"
   stage ui
 feature FEAT-WRITER "Writer"
   stage ui
+feature FEAT-COST "Cost"
+  stage ui
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   in FEAT-GATE
@@ -366,3 +368,15 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+behaviour BEH-COST-1 "Kit records what each Claude Code session it runs costs, so weekly spend can be set against the subscription"
+  in FEAT-COST
+  actor engineer
+  source defined kit.notes.md#2026-11-04-1058
+  priority 5
+  review unreviewed
+  pending
+  contract my assumption: each session Kit starts keeps its cost, its date, its project and its model, so a week's cost is a sum
+  contract my assumption: the cost is read from the session records Claude Code writes under ~/.claude/, so sessions already run count as well as new ones
+  contract my assumption: the record is written outside the project's repo, so no user cost data enters a corpus
+  contract my assumption: Kit stores the cost Claude Code reports, not an estimate; the subscription price is not stored by Kit
