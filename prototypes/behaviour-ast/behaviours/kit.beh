@@ -366,3 +366,14 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+# ── input kept when the pipeline cannot run (triage note of 2026-11-07) ─────
+
+behaviour BEH-KEEP-1 "Chat and note input is kept when credits run out and the pipeline cannot start"
+  priority 5
+  actor engineer
+  given input:Typed
+  when runs command:KitUi
+  then reports input:Kept
+  review unreviewed
+  contract my assumption: "chart" in the note means chat; the typed text stays on the device until the pipeline runs, and is never dropped
