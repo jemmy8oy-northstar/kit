@@ -29,3 +29,12 @@ Test plan:
 - BEH-HEALTH-4: a link recorded against a repo not checked out on Kit's disk reads "not checked" in words and is never counted as all holding.
 - BEH-HEALTH-4: the Health page shows the flagged links under its main region, so the owner sees them without opening the file.
 - BEH-HEALTH-1: a behaviour with a test that names it counts as covered whether or not it has a recorded hash, and whether or not its link is flagged; the N/M percentage is unchanged by adding or flagging hashes.
+Built:
+- VerifyLinksTests: The_hash_of_the_same_unchanged_source_is_the_same_every_time (BEH-HEALTH-4)
+- VerifyLinksTests: Changing_one_byte_of_a_touched_source_file_flags_the_link (BEH-HEALTH-4)
+- VerifyLinksTests: Changing_a_source_file_the_coverage_run_does_not_touch_leaves_the_link_verified (BEH-HEALTH-4)
+- VerifyLinksTests: After_a_re_check_and_re_record_the_link_reads_verified_again_with_its_hash_date_and_files (BEH-HEALTH-4)
+- LinkHealthTests: A_one_byte_change_to_a_touched_file_lists_the_link_on_the_project_view (BEH-HEALTH-4)
+- CoverageTests: BEH_HEALTH_1_A_test_names_its_behaviour_whether_or_not_its_link_is_hashed_or_flagged, two cases: unhashed and flagged with a stale hash (BEH-HEALTH-1)
+- Existing tests already covering the other plan lines: CRLF/LF and file order (VerifyLinksTests), test-file edit flags, lost hash on failed record, not-checked other repo (LinkHealthTests), Health page flagged list and not-checked wording (Health.test.tsx).
+- Whole suite: .NET 2000 tests passed (Balenthiran.Kit.slnx); UI 561 tests passed (npm test). Both passed.
