@@ -1248,6 +1248,7 @@ behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable ont
   contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
   contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
   contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
+  contract question, blocks the other five tests: where the onboarding entry leads, how a Lovable repo is told from other repos (no marker in the GitHub data Kit reads today), and whether the first spec is written by reading the repo's code. Default until he answers: the entry opens a picker of his own GitHub repos, a repo counts as Lovable once Lovable's GitHub sync has written to it, and the first spec is unreviewed cards written from the repo's code
 
 # ═══ EPIC-KIT-USERS, drafted (BEH-EPIC-7) ═════════════════════════════════════
 # His 17:21Z list, split into features by the agent. Every behaviour here is
