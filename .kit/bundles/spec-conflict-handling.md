@@ -1,6 +1,7 @@
 # Spec conflicts: build one reading, let him confirm, and set what happens per project
 Work-item: spec-conflict-handling
 Flag: the indexing of the spec for finding similar behaviours is an idea he marked backlog and said needs design; it is not for this item (level: high)
+Review: revised — agreed: CONFLICT-4 indexing is parked (needs design) and stays out of Cards; corrected the kit-ui.beh line range to 2785-2850
 Cards:
 - BEH-CONFLICT-1
 - BEH-CONFLICT-2
@@ -8,7 +9,7 @@ Cards:
 Notes:
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:47Z
 Files:
-- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CONFLICT-1 to BEH-CONFLICT-4, around lines 3148-3200)
+- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CONFLICT-1 to BEH-CONFLICT-4, around lines 2785-2850)
 - prototypes/behaviour-ast/behaviours/kit.beh (BEH-RESOLVE-2: a conflict is two behaviours that cannot both hold)
 - prototypes/behaviour-ast/behaviours/kit.notes.md (the source note)
 Context:
