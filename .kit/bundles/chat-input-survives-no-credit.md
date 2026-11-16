@@ -12,3 +12,8 @@ Context:
 New card in kit.beh only. It has no test yet, so kit check kit fails BEH-GATE-1 until a builder maps it.
 The existing chat cards (BEH-CHAT-* in kit-ui.beh) were not read; the owner should say whether this belongs on one of them.
 Next step toward the goal: a builder keeps typed input across a failed pipeline start.
+
+Test plan:
+- BEH-KEEP-1: with typed text in the note box and credits exhausted, a failed pipeline start leaves the note text in the box (input:Kept).
+- BEH-KEEP-1: with typed text in the chat box and credits exhausted, a failed pipeline start leaves the chat text in the box (input:Kept).
+- BEH-KEEP-1: after a failed start the kept note or chat text is not cleared or sent anywhere until the user submits it again once the pipeline can run.
