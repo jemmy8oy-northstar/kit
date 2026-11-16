@@ -1659,9 +1659,8 @@ public class PipelineTests
         Assert.True(Assert.IsType<TicketReplyResult>(r.Body).Woke);
         Assert.Equal(["Blocked: the spec run failed", "sort by the date column, newest first"], rig.Tickets.Comments("demo", "list-sorting").Select(c => c.Body));
         var triage = Assert.IsType<PoolClaim>(rig.Claim());
-        Assert.Contains("replied on ticket list-sorting (\"Sort the list\"), which is blocked because: the spec run failed", triage.Task);
+        Assert.Contains("The reply: sort by the date column, newest first\nIt is @operator's reply on ticket list-sorting (\"Sort the list\"), blocked because: the spec run failed", triage.Task);
         Assert.Contains("Report this note under THAT ticket's slug, list-sorting, on its branch kit/work/list-sorting", triage.Task);
-        Assert.Contains("The reply: sort by the date column, newest first", triage.Task);
         Assert.Contains("- list-sorting [ready] Sort the list", triage.Task); // listed, though blocked, so the update has a ticket to name
 
         rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
@@ -1683,6 +1682,48 @@ public class PipelineTests
         rig.Note("an unrelated note");
 
         Assert.DoesNotContain("The reply: sort by date", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_triage_that_read_his_reply_but_left_the_ticket_says_so_on_its_thread()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+
+        rig.FinishWith(rig.Claim()!, new { slug = "something-else", text = BundleText("something-else") });
+
+        Assert.Equal("the spec run failed", Ticket(rig).BlockedBecause);
+        var last = rig.Tickets.Comments("demo", "list-sorting")[^1];
+        Assert.Equal(Pipeline.KitAuthor, last.Author);
+        Assert.StartsWith("Read your reply. The triage did not update this ticket, so it is still blocked", last.Body);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_triage_that_updated_the_ticket_adds_no_unchanged_comment()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = "sort by date" }));
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        Assert.DoesNotContain(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.StartsWith("Read your reply", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_the_longest_reply_reaches_the_triage_whole()
+    {
+        using var rig = new Rig();
+        rig.Finish(Triaged(rig), status: "failed");
+        var reply = string.Concat(Enumerable.Repeat("date! ", KitRouter.MaxReply / 6)) + "END";
+        Assert.True(reply.Length <= KitRouter.MaxReply);
+
+        rig.Router.Route("POST", "/api/projects/demo/tickets/list-sorting/comments", body: Json(new { body = reply }));
+        var task = Assert.IsType<PoolClaim>(rig.Claim()).Task;
+
+        Assert.Contains(reply, task);
+        Assert.DoesNotContain("[truncated", task);
     }
 
     [Fact]

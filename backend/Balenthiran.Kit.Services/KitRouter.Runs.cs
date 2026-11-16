@@ -20,7 +20,7 @@ public sealed partial class KitRouter
     private static readonly Regex TicketCommentRoute = new(@"^/api/projects/([^/]+)/tickets/([^/]+)/comments\z", RegexOptions.Compiled);
 
     /// <summary>The longest reply on a ticket: it goes into a triage task, which is at most <see cref="MaxTask"/>.</summary>
-    public const int MaxReply = 2000;
+    public const int MaxReply = 1000;
     private static readonly Regex RunsRoute = new(@"^/api/projects/([^/]+)/runs\z", RegexOptions.Compiled);
     private static readonly Regex RepoName = new(@"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+\z", RegexOptions.Compiled);
     private static readonly Regex BranchName = new(@"^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._/-]{0,99}\z", RegexOptions.Compiled);
@@ -146,6 +146,7 @@ public sealed partial class KitRouter
         return pipeline.Replied(project, slug, author, text) switch
         {
             Pipeline.Reply.NoTicket => Json(404, new ApiError { Error = "no-such-ticket", Reason = $"{project} has no ticket '{slug}'" }),
+            Pipeline.Reply.NotSaved => Json(503, new ApiError { Error = "store-unavailable", Reason = "the ticket store could not be reached, so the reply was not saved; try again" }),
             var r => Json(200, new TicketReplyResult { Woke = r == Pipeline.Reply.Woke }),
         };
     }
