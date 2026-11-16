@@ -20,6 +20,7 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-06 18:07Z ("This is just a test please discard it")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-06 18:16Z ("This is a test (I need Claude code bot to wake)")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-14 12:50Z ("Can I get a button to flag for a ccb wake for my personal kit only"; already BEH-SETTINGS-7 on main)
+- prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-16 22:56Z ("I think this is ready now"; names no item, nothing to build)
 Files:
 - prototypes/behaviour-ast/behaviours/kit.notes.md
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
@@ -34,3 +35,5 @@ The 2026-11-02 19:05Z note says notes should stay alongside chat, not be replace
 2026-11-16: the 2026-11-14 12:50Z note asks for a button to wake the agent for the operator's kit only. BEH-SETTINGS-7 in kit-ui.beh on main is that button ("Wake the agent" on Settings, operator only), and its contract quotes this note. Nothing to build; a person should confirm the button works, because the card records it as never pressed when it was written.
 
 2026-11-16 update: the 2026-11-14 17:25Z note asks the owner's question why the pipeline paused until 8. It asks for no build and names no card, so it is set aside for a person to answer. Running the pipeline per project is in the projects item, spec-moves-to-project-kit-dir (level: low).
+
+2026-11-16 update: the 2026-11-16 22:56Z note ("I think this is ready now") names no feature, card or change, so there is nothing to build. A person should say what is ready, if anything. Flag level high because it is unclear what the owner wants.
