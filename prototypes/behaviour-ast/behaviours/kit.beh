@@ -377,6 +377,7 @@ behaviour BEH-SCOPE-1 "A proposed project is kept per user, and a tester sees on
   then reports project:OwnProposedOnly
   review unreviewed
   contract my assumption: a proposed project is stored in the database against its owner until a repo is connected for it, and another user's proposal is never listed
+  contract built (tester-feature-access): a tester's list is found through the installation their own GitHub is linked to, so another tester's repos are never in it; the database proposal store is not built, as no proposal flow exists to write to it
 
 behaviour BEH-SCOPE-2 "A project the user is a contributor on is found and listed for that user"
   priority 5
@@ -387,3 +388,4 @@ behaviour BEH-SCOPE-2 "A project the user is a contributor on is found and liste
   review unreviewed
   contract my assumption: discovery reads the contributor list of each connected repo, so a project appears only once its repo is connected
   contract my assumption: the project's spec files must sit in that repo, so the tester's holiday planner shows once they are moved there
+  contract built (tester-feature-access): a repo is listed for the one user whose installation reaches it, and for no other user, and a repo with no .beh file is not listed; naming a tester as a contributor in the repo is not built, so a repo the tester contributes to through another installation does not appear

@@ -21,6 +21,19 @@ Context:
 - Testers doing many cards cost him real money (see the cost estimate in BEH-USERS-9, kit-ui.beh line 1479), so do not turn on agent work for testers here.
 - The guesses are already "contract my assumption:" lines on BEH-FLAGS-3; record any new guess the same way, so he can deny it.
 - The switches themselves (FEAT-PROJECTS, FEAT-PROJECT, FEAT-BOARD, FEAT-STAGES, FEAT-EPICS, FEAT-INBOX, FEAT-SETTINGS on for testers in kit.beh) are already in place; BEH-FLAGS-1 records that.
+Built:
+- BEH_FLAGS_3_a_tester_list_holds_their_own_repos_and_none_of_the_operators
+- BEH_FLAGS_3_a_tester_with_no_link_sees_no_projects_at_all
+- BEH_FLAGS_3_a_tester_reads_an_operator_project_by_url_but_it_is_never_in_their_list
+- BEH_FLAGS_3_a_tester_write_to_a_project_they_do_not_own_is_refused
+- BEH_FLAGS_3_each_operator_only_write_is_refused_for_a_tester
+- BEH_FLAGS_3_no_tester_action_starts_or_lists_an_agent_run
+- BEH_FLAGS_3_a_tester_settings_name_their_account_and_no_operator_section
+- BEH_FLAGS_3_a_page_switched_off_for_testers_is_listed_off_and_the_pages_on_are_not
+- BEH_FLAGS_3_a_tester_inbox_feed_holds_no_operator_items
+- BEH_SCOPE_1_a_second_tester_never_lists_the_first_testers_projects
+- BEH_SCOPE_2_a_repo_with_a_corpus_is_listed_for_the_user_it_is_connected_to_and_no_other
+Suite: 1769 backend tests (dotnet test) and 540 UI tests (vitest) ran, all passed; UI lint and build pass, and the kit and kit-ui Stage-0 gates pass.
 Next step toward the goal: the builder checks which of the four pages a tester account can reach today, then opens the missing ones.
 Test plan:
 - BEH-FLAGS-3: a tester's Projects page lists only the repos of their own GitHub, and none of the operator's projects.
