@@ -1,6 +1,7 @@
 # Kitstudio splash page with a register-interest flow, served from the preprod cluster
 Work-item: kitstudio-splash-register-interest
 Flag: BEH-SPLASH-1 already holds both notes and is built and approved; it is pending only because its test lives in balenthiran.co.uk, so no spec was edited (level: low)
+Review: agreed — BEH-SPLASH-1 holds all three notes, is built and approved, and the www fix is balenthiran.co.uk#42 (promotion of #40); nothing to build, no spec edit.
 Cards:
 - BEH-SPLASH-1
 Notes:
