@@ -94,6 +94,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private int count;
 
+    /// <summary>BEH-ORCH-16: every ticket of <paramref name="project"/>, oldest first, each with its comments, oldest first.</summary>
+    public IReadOnlyList<(PipelineTicket Ticket, IReadOnlyList<TicketComment> Comments)> Tickets(string project) =>
+        ticketStore.Read(project).Select(t => (t, ticketStore.Comments(project, t.Slug))).ToList();
+
     /// <summary>Every work item, oldest first.</summary>
     public IReadOnlyList<WorkItem> Items()
     {

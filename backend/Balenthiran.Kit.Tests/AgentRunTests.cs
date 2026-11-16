@@ -752,6 +752,17 @@ public class AgentRunTests
     }
 
     [Fact]
+    public void BEH_ORCH_16_a_projects_tickets_are_listed_to_the_operator_alone()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+
+        Assert.Equal(401, router.Route("GET", "/api/projects/kit/tickets").Status);
+        Assert.Equal(403, router.Route("GET", "/api/projects/kit/tickets", SignIn(router, "ann")).Status);
+        Assert.Equal(200, router.Route("GET", "/api/projects/kit/tickets", cookie).Status);
+        Assert.Equal(404, router.Route("GET", "/api/projects/no-such/tickets", cookie).Status);
+    }
+
+    [Fact]
     public void With_no_password_runs_are_served_to_loopback_only()
     {
         var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);

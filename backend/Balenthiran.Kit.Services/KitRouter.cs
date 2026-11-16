@@ -214,6 +214,12 @@ public sealed partial class KitRouter(
             return PipelineList(cookie);
         }
 
+        // BEH-ORCH-16: a project's tickets and their comment threads, for the operator only, as the pipeline is.
+        if (TicketsRoute.Match(pathname) is { Success: true } tickets)
+        {
+            return TicketList(cookie, tickets.Groups[1].Value);
+        }
+
         if (pathname == "/api/projects")
         {
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
