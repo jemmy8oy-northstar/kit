@@ -1,6 +1,7 @@
 # Pipeline skips triage for backlog items and sends reviews to the model their flag level asks for
 Work-item: pipeline-routing-by-cost
 Flag: notes of 2026-11-08 and 2026-11-14 add the triage-stays-on-the-hook and priority-order contracts to BEH-ROUTE-1 and -2; the stage-merge and hosting questions of the 11-08 note are already answered by BEH-ORCH-11 in kit-ui.beh on main (level: low)
+Review: agreed — cards match the 11-08/11-14 notes and kit.beh (ROUTE-1/2 carry the contract lines, ROUTE-3 defaults medium to sonnet); BEH-ORCH-11 in kit-ui.beh already covers the stage-merge and hosting points; "review unreviewed" is used on other cards in kit.beh
 Cards:
 - BEH-ROUTE-1
 - BEH-ROUTE-2
