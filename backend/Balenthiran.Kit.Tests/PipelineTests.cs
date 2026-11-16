@@ -1629,6 +1629,25 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_16_a_projects_tickets_are_served_with_their_state_blocked_tag_and_thread()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        rig.Finish(spec, status: "failed");
+
+        var r = rig.Router.Route("GET", "/api/projects/demo/tickets");
+
+        Assert.Equal(200, r.Status);
+        var list = Assert.IsType<TicketList>(r.Body);
+        Assert.True(list.On);
+        var ticket = Assert.Single(list.Tickets);
+        Assert.Equal(("list-sorting", "ready", "the spec run failed"), (ticket.Slug, ticket.State, ticket.BlockedBecause));
+        var comment = Assert.Single(ticket.Comments);
+        Assert.Equal(("kit", "Blocked: the spec run failed"), (comment.Author, comment.Body));
+        Assert.Matches(@"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z", comment.At);
+    }
+
+    [Fact]
     public void BEH_ORCH_16_after_a_restart_a_blocked_ticket_stays_stopped_and_no_job_takes_it()
     {
         using var rig = new Rig();
