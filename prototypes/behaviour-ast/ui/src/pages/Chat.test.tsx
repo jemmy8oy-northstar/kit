@@ -941,3 +941,40 @@ describe('BEH-CHAT-17: Enter sends on a desktop and adds a new line on a phone',
     await screen.findByText('reply 1')
   })
 })
+
+describe('BEH-KEEP-1: typed input is kept when the pipeline cannot start', () => {
+  const CREDITS = "Subscription credits are used up, so the pipeline cannot start."
+
+  it('with typed text in the chat box and credits exhausted, a failed pipeline start leaves the chat text in the box', async () => {
+    mockApi(undefined, () => ({ ok: false, status: 402, body: { error: 'credits-exhausted', reason: CREDITS } }))
+    await open()
+    fireEvent.change(box(), { target: { value: 'keep this chat line' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain(CREDITS)
+    expect(box().value).toBe('keep this chat line')
+    expect(screen.queryByText(/^You:/)).toBeNull()
+  })
+
+  it('after a failed start the kept chat text is not cleared, sent again, or dropped until he sends it again once the pipeline can run', async () => {
+    let credits = false
+    mockApi(undefined, () => (credits ? { ok: true, status: 200, body: { reply: 'got it', remaining: 8 } } : { ok: false, status: 402, body: { error: 'credits-exhausted', reason: CREDITS } }))
+    await open()
+    fireEvent.change(box(), { target: { value: 'kept chat text' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('alert')
+
+    // Nothing retries on its own: the text stays put and no second turn goes out.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(box().value).toBe('kept chat text')
+    expect(chats()).toHaveLength(1)
+
+    // Once the pipeline can run, only his next send carries it.
+    credits = true
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByText('got it')
+    expect(chats()).toHaveLength(2)
+    expect(chats()[1][1].messages?.at(-1)?.text).toContain('kept chat text')
+    expect(box().value).toBe('')
+  })
+})

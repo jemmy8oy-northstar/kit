@@ -422,3 +422,59 @@ describe('BEH-NOTE-15: a note says where it came from', () => {
     expect(screen.queryByText(/^from /, { selector: 'span' })).not.toBeInTheDocument()
   })
 })
+
+describe('BEH-KEEP-1: typed input is kept when the pipeline cannot start', () => {
+  const CREDITS = 'Subscription credits are used up, so the pipeline cannot start.'
+
+  it('with typed text in the note box and credits exhausted, a failed pipeline start leaves the note text in the box', async () => {
+    const posts = server([], CREDITS)
+    render(<NotesPanel app="demo" />)
+    await screen.findByText('No open notes.')
+
+    fireEvent.change(screen.getByLabelText('Leave a note'), { target: { value: 'keep this until the pipeline runs' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain(CREDITS)
+    expect((screen.getByLabelText('Leave a note') as HTMLTextAreaElement).value).toBe('keep this until the pipeline runs')
+    expect(posts).toHaveLength(1)
+  })
+
+  it('after a failed start the kept note is not cleared, sent again, or dropped until he submits it again once the pipeline can run', async () => {
+    let credits = false
+    const sent: string[] = []
+    let notes: Note[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          const body = JSON.parse(String(init.body)) as { text: string }
+          sent.push(body.text)
+          if (!credits) return { ok: false, status: 402, statusText: 'Payment Required', json: async () => ({ reason: CREDITS }) }
+          notes = [...notes, note('2026-11-16 10:00Z', null, body.text)]
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'demo', file: 'behaviours/demo.notes.md', committed: true, pushed: true, commit: 'abc1234', branch: 'kit/hosted', note: 'x' }) }
+        }
+        expect(url).toMatch(/\/api\/projects\/demo\/notes$/)
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'demo', file: 'behaviours/demo.notes.md', notes: [...notes] }) }
+      }),
+    )
+    render(<NotesPanel app="demo" />)
+    await screen.findByText('No open notes.')
+    const box = () => screen.getByLabelText('Leave a note') as HTMLTextAreaElement
+
+    fireEvent.change(box(), { target: { value: 'kept text' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+    await screen.findByRole('alert')
+
+    // Nothing retries on its own: the text stays put and no second request goes out.
+    await new Promise((r) => setTimeout(r, 50))
+    expect(box().value).toBe('kept text')
+    expect(sent).toEqual(['kept text'])
+
+    // Once the pipeline can run, only his next submit sends it.
+    credits = true
+    fireEvent.click(screen.getByRole('button', { name: 'Leave note' }))
+    expect(await within(region()).findByText('kept text', { selector: 'p' })).toBeInTheDocument()
+    expect(sent).toEqual(['kept text', 'kept text'])
+    expect(box().value).toBe('')
+  })
+})
