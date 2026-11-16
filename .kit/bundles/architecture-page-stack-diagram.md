@@ -1,6 +1,7 @@
 # Architecture page draws a deterministic diagram of the project's stack
 Work-item: architecture-page-stack-diagram
 Flag: this adds a diagram to a page the owner reads, and its layout is still open (level: high)
+Review: agreed — the bundle matches BEH-ARCH-4 and both owner notes; the open layout and spec-drawing questions are already left to unreviewed assumptions at build time, as the owner asked, so no person needs to decide now
 Cards:
 - BEH-ARCH-4
 Notes:
