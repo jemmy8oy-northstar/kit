@@ -1,6 +1,7 @@
 # Chat and note input is kept when subscription credits run out
 Work-item: chat-input-survives-no-credit
 Flag: the note says "chart", most likely a typo for chat, and which chat card it belongs to is unsure (level: low)
+Review: agreed — card BEH-KEEP-1 already records the chart→chat reading as an unreviewed contract the owner can deny; placement under a BEH-CHAT-* card is a later refinement, not a blocker
 Cards:
 - BEH-KEEP-1
 Notes:
