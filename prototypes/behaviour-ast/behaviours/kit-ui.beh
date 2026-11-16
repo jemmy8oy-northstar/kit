@@ -1402,6 +1402,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
   contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
   contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
+  contract my assumption: notes move with the spec, so each project keeps its notes in its own repo under .kit/ and the kit repo holds none of them (kit.notes.md#2026-11-15-1300)
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
