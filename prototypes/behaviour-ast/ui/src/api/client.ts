@@ -1,6 +1,6 @@
 import type {
   ActivityFeed, AgentRunList, Binding, BindResult, CompletionList, ConflictMode, DepthMode, FeatureSwitches, IdleItem, IdleSetting, NewBehaviour, NoteList, NoteOrigin, NoteResult, NotificationFeed, PipelineItemList, ProjectDetail, ProjectListBody, WakeSetting,
-  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
+  PendingView, ProposeResult, PushStatus, TriageAnswer, TriageMessage, TriageStatus, ReviewState, ReviewCadence, ReviewSetting, ScheduleList, SessionState, SummaryCoverage, SwitchGroup, WriteResult,
 } from './types'
 
 // One fetcher, one rule: a failed request must produce a message, never an
@@ -338,6 +338,16 @@ export function setDepth(project: string, mode: DepthMode): Promise<WriteResult>
  */
 export function setMaintained(project: string, maintained: boolean): Promise<WriteResult> {
   return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/goal`, { maintained })
+}
+
+/** Whether the scheduled review is switched on, and each project's cadence (BEH-ORCH-13). */
+export function fetchReview(): Promise<ReviewSetting> {
+  return get<ReviewSetting>('/api/settings/review')
+}
+
+/** Set one project's review cadence (BEH-ORCH-13): named, not toggled. Operator only. */
+export function setReviewCadence(project: string, cadence: ReviewCadence): Promise<WriteResult> {
+  return post<WriteResult>(`/api/projects/${encodeURIComponent(project)}/review`, { cadence })
 }
 
 /** How busy the agent should be when nothing is asked of it (BEH-SETTINGS-5). */

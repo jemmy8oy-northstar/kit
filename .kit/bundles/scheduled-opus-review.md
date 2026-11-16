@@ -32,3 +32,24 @@ Test plan:
 - BEH-ORCH-3: the timer starts only the review run; triage, spec and build still start only when a user's action queues them.
 - BEH-SETTINGS-5: the idle choice and GET /api/settings/idle are unchanged by the new row.
 - BEH-SETTINGS-6: the ordered idle list keeps its items and switches, and the review row is not added to it.
+
+Built:
+- BEH-ORCH-13: with the cadence off, no review run starts however long the timer runs (ReviewSweepTests.BEH_ORCH_13_With_the_cadence_off_no_review_run_starts_however_long_the_timer_runs)
+- BEH-ORCH-13: with the review switch unset, no run starts on any project whatever its cadence (ReviewSweepTests.BEH_ORCH_13_With_the_review_switch_unset_no_run_starts_on_any_project_whatever_its_cadence)
+- BEH-ORCH-13: daily, every-two-days and weekly each start one run per interval and never more often, over 30 days (ReviewSweepTests.BEH_ORCH_13_A_project_on_a_cadence..., 3 cases)
+- BEH-ORCH-13: setting one project's cadence changes no other's, and a project never set starts off (ReviewSweepTests.BEH_ORCH_13_Setting_the_cadence_on_one_project_changes_no_other_and_a_new_project_starts_off)
+- BEH-ORCH-13: the run uses the review model and asks for neglected tickets, a sample of finished work and the architecture (ReviewSweepTests.BEH_ORCH_13_The_review_run_uses_the_review_model_and_asks_for_neglected_tickets_a_sample_and_the_architecture)
+- BEH-ORCH-13: the run pushes no kit/work/* branch, changes no code, and writes its findings as notes on the project (ReviewSweepTests.BEH_ORCH_13_The_review_run_pushes_no_work_branch_and_changes_no_code_and_writes_its_findings_as_notes)
+- BEH-ORCH-13: a note the review writes is picked up by the next triage like any other (ReviewSweepTests.BEH_ORCH_13_A_note_the_review_writes_is_picked_up_by_the_next_triage_like_any_other)
+- BEH-ORCH-13: the review is a pipeline stage on the pool, not a custom agent (ReviewSweepTests.BEH_ORCH_13_The_review_is_a_stage_of_the_pipeline_run_on_the_pool_and_not_a_custom_agent)
+- BEH-ORCH-13: the settings route reads the switch and each project's cadence (ReviewSweepTests.BEH_ORCH_13_The_settings_page_reads_each_project_cadence_and_the_switch)
+- BEH-ORCH-13: an unknown cadence is refused and changes nothing (ReviewSweepTests.BEH_ORCH_13_An_unknown_cadence_is_refused_and_changes_nothing)
+- BEH-ORCH-13: Settings shows one cadence row per project, off unless set, with the four choices (Settings.test.tsx, Review by a stronger model)
+- BEH-ORCH-13: Settings says when the review switch is off (Settings.test.tsx)
+- BEH-ORCH-13: a cadence row posts the named cadence and says so (Settings.test.tsx)
+- BEH-ORCH-13: a refused cadence shows the server reason (Settings.test.tsx)
+- BEH-ORCH-13: the row is not shown to anyone but the operator (Settings.test.tsx)
+- BEH-ORCH-3: the timer starts only the review run; no triage, spec or build starts with no note or action (ReviewSweepTests.BEH_ORCH_3_The_timer_starts_only_the_review_run_and_queues_no_triage_spec_or_build)
+- BEH-SETTINGS-5: the idle choice and GET /api/settings/idle are unchanged by the new row (ReviewSweepTests.BEH_SETTINGS_5_The_idle_choice_and_its_endpoint_are_unchanged_by_the_review_row)
+- BEH-SETTINGS-6: the ordered idle list keeps its items and switches and gains no review row (ReviewSweepTests.BEH_SETTINGS_6_The_ordered_idle_list_keeps_its_items_and_switches_and_gains_no_review_row)
+Whole suite: backend 2,008 tests ran, 2,005 passed, 3 failed (ReportConformanceTests x2 and ClaimerSidecarTests x1, which fail the same on the base commit here: no ICU and no kill binary in this sandbox, so the run used invariant globalization); UI 566 tests in 49 files all passed; typecheck and lint clean. Not passed: the 3 backend failures above.

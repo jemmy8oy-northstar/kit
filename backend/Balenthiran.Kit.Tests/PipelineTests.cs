@@ -28,12 +28,12 @@ public class PipelineTests
           actor engineer
         """;
 
-    private sealed class Rig : IDisposable
+    internal sealed class Rig : IDisposable
     {
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false, bool review = false)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,11 +50,14 @@ public class PipelineTests
             Pool = new RunnerPool(Store);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob), review: review) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
         }
+
+        // The data directory: the corpus files, and the notes file beside them.
+        public string Root => root;
 
         public MemoryAgentRunStore Store { get; }
 
@@ -124,7 +127,7 @@ public class PipelineTests
     }
 
     // Records each pull request asked for and answers with Answer: a page, or GitHub's reason for none.
-    private sealed class Opener : IPullRequestOpener
+    internal sealed class Opener : IPullRequestOpener
     {
         public List<(string Head, string Base, string Title, string Body, string? Repository)> Asked { get; } = [];
 
@@ -138,7 +141,7 @@ public class PipelineTests
     }
 
     // Records each pull request asked to be merged and answers with Answer (BEH-ORCH-10); OnAsk runs once, during the first ask.
-    private sealed class Merger : IPullRequestMerger
+    internal sealed class Merger : IPullRequestMerger
     {
         public List<string> Asked { get; } = [];
 
@@ -177,13 +180,13 @@ public class PipelineTests
         }
     }
 
-    private sealed class Clock : TimeProvider
+    internal sealed class Clock : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 11, 5, 12, 30, 0, TimeSpan.Zero);
     }
 
     // A clock whose timers fire only when the test moves it on, so a retry's hour costs no wait.
-    private sealed class Ticking : TimeProvider
+    internal sealed class Ticking : TimeProvider
     {
         private readonly List<Tick> ticks = [];
         private DateTimeOffset now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);
@@ -249,9 +252,9 @@ public class PipelineTests
         }
     }
 
-    private static readonly StageModelSettings Models = new("claude-haiku-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-haiku-5-5");
+    internal static readonly StageModelSettings Models = new("claude-haiku-5-5", "claude-opus-5-5", "claude-haiku-5-5", "claude-haiku-5-5");
 
-    private static JsonElement Json(object value) => JsonSerializer.SerializeToElement(value);
+    internal static JsonElement Json(object value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
     public void A_note_queues_a_triage_run_of_the_projects_notes_on_the_repo_its_spec_names()

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, fetchWake, requestWake, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
-import type { ConflictMode, DepthMode, IdleItem, SessionState, SwitchGroup } from '../api/types'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, fetchReview, fetchWake, requestWake, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, setReviewCadence, signOut } from '../api/client'
+import type { ConflictMode, DepthMode, IdleItem, ReviewCadence, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { FEATURE_PAGES, useFlags } from '../components/flags'
 import { githubNavigation } from '../components/githubNavigation'
@@ -362,6 +362,78 @@ function DepthSetting() {
   )
 }
 
+const REVIEW_CADENCES: { cadence: ReviewCadence; label: string; said: string }[] = [
+  { cadence: 'off', label: 'Off', said: 'run no review' },
+  { cadence: 'daily', label: 'Daily', said: 'review it once a day' },
+  { cadence: 'every-two-days', label: 'Every two days', said: 'review it every two days' },
+  { cadence: 'weekly', label: 'Weekly', said: 'review it once a week' },
+]
+
+/**
+ * BEH-ORCH-13: how often a stronger model reviews each project's pipeline (neglected tickets, a sample of finished work
+ * and the architecture). Each choice is kept by Kit, not in the corpus; off is the start state. One row per project (its
+ * primary file), ideas and trials left out. The review spends the owner's subscription, so the row says when Kit's
+ * switch for it is off, and then nothing runs whatever is chosen here.
+ */
+function ReviewCadenceSetting() {
+  const { resource, reload } = useReloadableResource(async () => {
+    const [{ projects }, review] = await Promise.all([fetchProjects(), fetchReview()])
+    return {
+      on: review.on,
+      rows: projects
+        .filter((p) => !p.error && !isIdea(p) && !isTrial(p) && projectOf(p) === p.app)
+        .map((p) => ({ app: p.app, cadence: (review.cadence[p.app] ?? 'off') as ReviewCadence }))
+        .sort((a, b) => a.app.localeCompare(b.app)),
+    }
+  }, [])
+  const [busy, setBusy] = useState<string | null>(null)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function change(app: string, cadence: ReviewCadence) {
+    setBusy(app)
+    setOutcome(null)
+    setReviewCadence(app, cadence)
+      .then(() => {
+        setOutcome({ ok: true, text: `For ${app}, Kit will ${REVIEW_CADENCES.find((c) => c.cadence === cadence)!.said}.` })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(null))
+  }
+
+  return (
+    <section aria-labelledby="review-cadence">
+      <h2 id="review-cadence">Review by a stronger model</h2>
+      <p>
+        A stronger model reviews the pipeline on this timer: neglected tickets, a sample of finished work and the
+        architecture. It writes what it finds as notes and changes no code.
+      </p>
+      <ResourceView resource={resource}>
+        {(view) => (
+          <>
+            {view.on ? null : <p className="muted">The review switch is off on this server, so no review runs whatever is chosen here.</p>}
+            <div>
+              {view.rows.map((r) => (
+                <p key={r.app}>
+                  <label>
+                    {r.app}{' '}
+                    <select aria-label={`${r.app}: review cadence`} value={r.cadence} disabled={busy === r.app}
+                      onChange={(e) => change(r.app, e.target.value as ReviewCadence)}>
+                      {REVIEW_CADENCES.map((c) => <option key={c.cadence} value={c.cadence}>{c.label}</option>)}
+                    </select>
+                  </label>
+                </p>
+              ))}
+            </div>
+            <p className="muted">Every project starts off until you set it.</p>
+          </>
+        )}
+      </ResourceView>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
 const IDLE_ITEMS: { item: IdleItem; label: string }[] = [
   { item: 'health', label: 'Work on test health' },
   { item: 'ideas', label: 'Suggest ideas' },
@@ -584,6 +656,7 @@ export default function Settings() {
       {session?.operator && accounts ? <PromotionSetting /> : null}
       {session?.operator && accounts ? <ConflictSetting /> : null}
       {session?.operator && accounts ? <DepthSetting /> : null}
+      {session?.operator && accounts ? <ReviewCadenceSetting /> : null}
       {session?.operator && accounts ? <IdleSettingSection /> : null}
       {session?.operator && accounts ? <WakeSettingSection /> : null}
       {session?.operator && accounts ? <FeatureSwitchesSection /> : null}

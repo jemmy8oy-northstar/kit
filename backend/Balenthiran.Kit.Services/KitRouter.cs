@@ -122,6 +122,7 @@ public sealed partial class KitRouter(
     private static readonly Regex GoalRoute = new(@"^/api/projects/([^/]+)/goal\z", RegexOptions.Compiled);
     private static readonly Regex ConflictsRoute = new(@"^/api/projects/([^/]+)/conflicts\z", RegexOptions.Compiled);
     private static readonly Regex DepthRoute = new(@"^/api/projects/([^/]+)/depth\z", RegexOptions.Compiled);
+    private static readonly Regex ReviewRoute = new(@"^/api/projects/([^/]+)/review\z", RegexOptions.Compiled);
     // BEH-ARCH-1 slice B1: a decision is adjudicated exactly as a behaviour is, at its own address.
     private static readonly Regex DecisionReview = new(@"^/api/projects/([^/]+)/decisions/([^/]+)/review\z", RegexOptions.Compiled);
     private static readonly Regex Behaviours =new(@"^/api/projects/([^/]+)/behaviours(?:/([^/]+)/(steps|review|remove|title|paused|priority)(?:/([^/]+))?)?\z", RegexOptions.Compiled);
@@ -212,6 +213,16 @@ public sealed partial class KitRouter(
         if (pathname == "/api/pipeline")
         {
             return PipelineList(cookie);
+        }
+
+        // BEH-ORCH-13: whether the review switch is on, and each project's cadence (a project not listed is off), for the Settings page.
+        if (pathname == "/api/settings/review")
+        {
+            return Json(200, new
+            {
+                on = pipeline?.ReviewOn ?? false,
+                cadence = (pipeline?.ReviewCadenceList() ?? new Dictionary<string, ReviewCadence>()).ToDictionary(kv => kv.Key, kv => ReviewCadences.Name(kv.Value), StringComparer.Ordinal),
+            });
         }
 
         if (pathname == "/api/projects")
@@ -550,7 +561,8 @@ public sealed partial class KitRouter(
         var cm = ChatRoute.Match(pathname);
         var km = ConflictsRoute.Match(pathname);
         var xm = DepthRoute.Match(pathname);
-        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : km.Success ? km : xm.Success ? xm : dm.Success ? dm : tm.Success ? tm : cm.Success ? cm : Behaviours.Match(pathname);
+        var rv = ReviewRoute.Match(pathname);
+        var m = bm.Success ? bm : nm.Success ? nm : na.Success ? na : sm.Success ? sm : pm.Success ? pm : gm.Success ? gm : km.Success ? km : xm.Success ? xm : dm.Success ? dm : tm.Success ? tm : cm.Success ? cm : rv.Success ? rv : Behaviours.Match(pathname);
         if (!m.Success)
         {
             return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing accepts a POST at {pathname}" });
@@ -601,6 +613,7 @@ public sealed partial class KitRouter(
                 : gm.Success ? SetGoal(app, b)
                 : km.Success ? SetConflictMode(app, b)
                 : xm.Success ? SetDepth(app, b)
+                : rv.Success ? SetReview(app, b)
                 : dm.Success ? ReviewDecision(app, dm.Groups[2].Value, b)
                 : Edit(app, m, b);
         }
@@ -1006,6 +1019,47 @@ public sealed partial class KitRouter(
             .ToList();
 
         return new ScheduleList { App = app, File = corpora.RelativeSchedulePath(app), Scheduled = scheduled, Backlog = backlog };
+    }
+
+    /// <summary>
+    /// BEH-ORCH-13: sets one project's review cadence to off, daily, every-two-days or weekly. Operator-only, by the gate every
+    /// write sits behind. Named, not toggled, so a double press is a no-op. With no pipeline (KIT_PIPELINE off) nothing can run,
+    /// so the choice is refused, saying why, rather than kept.
+    /// </summary>
+    private KitResponse SetReview(string app, JsonElement body)
+    {
+        if (pipeline is null)
+        {
+            return Json(409, new ApiError { Error = "not-switched-on", Reason = "the agent pipeline is off (KIT_PIPELINE), so no review can run" });
+        }
+
+        if (Field(body, "cadence") is not { ValueKind: JsonValueKind.String } name
+            || !TryReviewCadence(name.GetString(), out var cadence))
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "cadence must be off, daily, every-two-days or weekly" });
+        }
+
+        if (!corpora.Corpora().Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{app}'" });
+        }
+
+        pipeline.SetReviewCadence(app, cadence);
+        return Json(200, new { app, cadence = ReviewCadences.Name(cadence) });
+    }
+
+    private static bool TryReviewCadence(string? value, out ReviewCadence cadence)
+    {
+        try
+        {
+            cadence = ReviewCadences.Parse(value);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            cadence = ReviewCadence.Off;
+            return false;
+        }
     }
 
     /// <summary>

@@ -1656,6 +1656,14 @@ behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user
   contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
   contract his answer (kit-ui.notes.md#2026-11-15-1251): "Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project."
   contract my assumption: the row lists each project with its own cadence (off, daily, every two days, weekly), and every project starts off
+  contract his note (kit-ui.notes.md#2026-11-07-0132): "It is an exception to the no-timer rule in BEH-ORCH-3". So the timer is the one exception to BEH-ORCH-3: only the review run starts on it. Triage, spec and build still start only when a user's action queues them. BEH-ORCH-3's own contracts are unchanged
+  contract built, switched off: KIT_PIPELINE_REVIEW=on turns the timer on, and with it unset no review runs whatever the cadence. A timer look every 15 minutes starts one review run per project whose cadence is due: one interval (a day, two days or a week) after its last start, and never while one of its runs is in flight
+  contract built: a review run is a stage of FEAT-AGENT-PIPELINE on the review model (KIT_STAGE_MODEL_REVIEW, Opus) with its own turn limit (KIT_STAGE_TURNS_REVIEW), queued on the project's pool like every other run, and not registered under BEH-AGENTS-1. It changes no work item, so its end only frees its project
+  contract built: the review's task asks for neglected tickets, a sample of finished work and the architecture, and tells it to append each finding as a plain note under a "## <date>" heading to the project's notes file on the branch its spec names, commit and push that one file, and push no kit/work/* branch, change no code and open no pull request
+  contract my assumption, built: the findings are notes on the project's own branch, because triage reads only that branch's notes file; a note the review writes is then triaged like any other on the next triage run
+  contract my assumption, built: the cadence is kept in Kit's memory, as the work items are, so a restart puts every project back to off. Where it is stored for good is not decided
+  contract my assumption, built: a review runs for a project whose pipeline is off (BEH-ORCH-15 is pending): the switch and the cadence are the only gates, so the open question is answered by "yes" until he says otherwise
+  contract built: Settings shows "Review by a stronger model" with one cadence select per project, before the idle work. There is no pipeline row on Settings yet (BEH-ORCH-15 is pending), so the row sits beside the idle work instead, and says when the review switch is off
 
 behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its runner, so one hung run cannot hold the pipeline"
   in FEAT-AGENT-PIPELINE

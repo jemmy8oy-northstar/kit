@@ -23,9 +23,16 @@ namespace Balenthiran.Kit.Services;
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
 /// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
 /// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
+/// <param name="review"><c>KIT_PIPELINE_REVIEW</c> (BEH-ORCH-13): <see cref="ReviewTick"/> starts the scheduled reviews the projects' cadences ask for. Off by default: each review spends the owner's subscription.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null, bool review = false)
 {
     private readonly object gate = new();
+
+    // BEH-ORCH-13: each project's review cadence and when its review last started, and the review runs in flight, by run id to project.
+    // A review run is not a work item: it changes no ticket, and RunEnded only frees its project. In memory only.
+    private readonly ReviewSchedule reviews = new();
+
+    private readonly Dictionary<string, string> sweeps = new(StringComparer.Ordinal);
 
     // BEH-ORCH-11, slice 1: every work item that has a bundle is also a ticket row, written whenever the item changes
     // and reloaded by Resume. A work item's stage and status map onto a ticket's state like this. Each job's switch takes
@@ -443,6 +450,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         (int Index, WorkItem Item, ContextBundle Bundle, string RepoAt)? built = null;
         lock (gate)
         {
+            if (sweeps.Remove(runId, out var swept))
+            {
+                // BEH-ORCH-13: a scheduled review. Its findings are the notes it pushed; it changes no work item, so only its project is freed.
+                reviews.Ended(swept);
+                return;
+            }
+
             if (!started.Remove(runId, out var run))
             {
                 return;
@@ -857,6 +871,103 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
             StartReady();
         }
+    }
+
+    /// <summary>BEH-ORCH-13: whether the review switch (<c>KIT_PIPELINE_REVIEW</c>) is on. With it off, <see cref="ReviewTick"/> starts nothing.</summary>
+    public bool ReviewOn => review;
+
+    /// <summary><paramref name="app"/>'s review cadence (BEH-ORCH-13); off for a project never set.</summary>
+    public ReviewCadence ReviewCadenceOf(string app)
+    {
+        lock (gate)
+        {
+            return reviews.CadenceOf(app);
+        }
+    }
+
+    /// <summary>Every project whose review cadence is not off, with it (BEH-ORCH-13).</summary>
+    public IReadOnlyDictionary<string, ReviewCadence> ReviewCadenceList()
+    {
+        lock (gate)
+        {
+            return reviews.NotOff();
+        }
+    }
+
+    /// <summary>Sets <paramref name="app"/>'s review cadence (BEH-ORCH-13). Changes no other project's.</summary>
+    public void SetReviewCadence(string app, ReviewCadence cadence)
+    {
+        lock (gate)
+        {
+            reviews.Set(app, cadence);
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-13: one look of the review timer. With the review switch on, starts one scheduled review for each project
+    /// whose cadence says one is due now (see <see cref="ReviewSchedule.Due"/>). With it off, nothing happens. Starts no triage,
+    /// spec or build: only the review run.
+    /// </summary>
+    public void ReviewTick()
+    {
+        if (!review)
+        {
+            return;
+        }
+
+        lock (gate)
+        {
+            var now = (clock ?? TimeProvider.System).GetUtcNow();
+            foreach (var app in reviews.Due(now))
+            {
+                StartReview(app, now);
+            }
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-13: queues a scheduled review of <paramref name="app"/> on the review model and its turn limit, on the repo its
+    /// spec names. A project with no repo, or one whose run the pool will not take, is not started, so the next look tries again.
+    /// Called with the gate held.
+    /// </summary>
+    private void StartReview(string app, DateTimeOffset now)
+    {
+        string repoAt;
+        try
+        {
+            var (named, problem) = RepoDirective.Read(corpora.ReadText(app));
+            if (named is null)
+            {
+                Console.Error.WriteLine($"kit: {app} names no repo, so its scheduled review waits for one ({problem ?? "no repo line"})");
+                return;
+            }
+
+            repoAt = named;
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app} for its scheduled review threw {e.GetType().Name}");
+            return;
+        }
+
+        var split = repoAt.LastIndexOf('@');
+        var branch = repoAt[(split + 1)..];
+        var token = AgentTokens.Mint();
+        var run = runs.Create(owner, app, models.Review, AgentTokens.Hash(token), now, null, "review");
+        try
+        {
+            pool.Enqueue(run, token, repoAt[..split], ReviewSweepStage.BuildTask(app, corpora.RelativeNotesPath(app), branch, now), branch, turns?.Review ?? StageTurnSettings.Defaults.Review);
+        }
+        catch (Exception e)
+        {
+            // The type only, as Enqueue logs it: the exception may carry what the pool was told, and the token is in it.
+            Console.Error.WriteLine($"kit: queuing a scheduled review threw {e.GetType().Name}");
+            runs.SetStatus(run.Id, AgentRunStatus.Failed, now);
+            return;
+        }
+
+        sweeps[run.Id] = app;
+        reviews.Started(app, now);
     }
 
     /// <summary>

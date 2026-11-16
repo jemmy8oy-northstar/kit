@@ -16,7 +16,7 @@ import { githubNavigation } from '../components/githubNavigation'
 type Posted = { path: string; body: unknown }
 
 /** A session that answers GET with `sessions` in turn (last one repeats) and records every POST. */
-function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], order: string[] = ['health'], wake: string | null = null) {
+function server(sessions: unknown[], reply?: { status: number; body: unknown }, projects: unknown[] = [], order: string[] = ['health'], wake: string | null = null, review: { on: boolean; cadence: Record<string, string> } = { on: false, cadence: {} }) {
   const posted: Posted[] = []
   let gets = 0
   const fn = vi.fn((path: string, init?: RequestInit) => {
@@ -39,6 +39,9 @@ function server(sessions: unknown[], reply?: { status: number; body: unknown }, 
     }
     if (path === '/api/settings/idle') {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ idle: order[0] ?? 'idle', order }) } as Response)
+    }
+    if (path === '/api/settings/review') {
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(review) } as Response)
     }
     if (path === '/api/settings/wake') {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ requested: wake }) } as Response)
@@ -573,5 +576,60 @@ describe('Connect your GitHub (BEH-USERS-1)', () => {
     render(<SignIn>{app}</SignIn>)
     expect(await screen.findByRole('alert')).toHaveTextContent('connect again')
     expect(window.location.search).toBe('')
+  })
+})
+
+describe('Review by a stronger model (BEH-ORCH-13)', () => {
+  const james = { required: true, signedIn: true, accounts: true, user: 'james', operator: true }
+  const projects = [
+    { app: 'kit', project: 'kit' },
+    { app: 'kit-ui', project: 'kit' },
+    { app: 'snip-it', project: 'snip-it' },
+    { app: 'ideas', project: 'ideas', idea: true },
+  ]
+
+  it('shows the operator one cadence row per project, off unless set, and names the review', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects, ['health'], null, { on: true, cadence: { kit: 'daily' } }).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByRole('heading', { name: 'Review by a stronger model' })).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: 'kit: review cadence' })).toHaveValue('daily')
+    expect(screen.getByRole('combobox', { name: 'snip-it: review cadence' })).toHaveValue('off')
+    expect(screen.queryByRole('combobox', { name: 'kit-ui: review cadence' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'ideas: review cadence' })).not.toBeInTheDocument()
+    const options = within(screen.getByRole('combobox', { name: 'snip-it: review cadence' })).getAllByRole('option').map((o) => o.textContent)
+    expect(options).toEqual(['Off', 'Daily', 'Every two days', 'Weekly'])
+    expect(screen.getByText(/neglected tickets, a sample of finished work and the architecture/)).toBeInTheDocument()
+    expect(screen.getByText(/Every project starts off until you set it/)).toBeInTheDocument()
+  })
+
+  it('says so when Kit\'s review switch is off, so a cadence set here is not taken for a run', async () => {
+    vi.stubGlobal('fetch', server([james], undefined, projects, ['health'], null, { on: false, cadence: {} }).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText(/review switch is off on this server/)).toBeInTheDocument()
+  })
+
+  it('posts the named cadence when a row is changed, and says so', async () => {
+    const s = server([james], { status: 200, body: { app: 'snip-it', cadence: 'weekly' } }, projects, ['health'], null, { on: true, cadence: {} })
+    vi.stubGlobal('fetch', s.fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: review cadence' }), { target: { value: 'weekly' } })
+    expect(await screen.findByText('For snip-it, Kit will review it once a week.')).toBeInTheDocument()
+    expect(s.posted).toEqual([{ path: '/api/projects/snip-it/review', body: { cadence: 'weekly' } }])
+  })
+
+  it('shows the server reason when the cadence is refused', async () => {
+    const refused = { status: 409, body: { error: 'not-switched-on', reason: 'the agent pipeline is off (KIT_PIPELINE), so no review can run' } }
+    vi.stubGlobal('fetch', server([james], refused, projects, ['health'], null, { on: true, cadence: {} }).fn)
+    render(<SignIn>{app}</SignIn>)
+    fireEvent.change(await screen.findByRole('combobox', { name: 'snip-it: review cadence' }), { target: { value: 'daily' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('the agent pipeline is off')
+  })
+
+  it('does not show the row to anyone but the operator', async () => {
+    vi.stubGlobal('fetch', server([{ required: true, signedIn: true, accounts: true, user: 'sam' }], undefined, projects, ['health'], null, { on: true, cadence: {} }).fn)
+    render(<SignIn>{app}</SignIn>)
+    expect(await screen.findByText('Signed in as sam')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Review by a stronger model' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'snip-it: review cadence' })).not.toBeInTheDocument()
   })
 })

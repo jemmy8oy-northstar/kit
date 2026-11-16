@@ -148,6 +148,15 @@ export interface WakeSetting {
 /** The agent's kinds of idle work (BEH-SETTINGS-6). One not in the order is switched off. */
 export type IdleItem = 'health' | 'ideas'
 
+/** How often a project's scheduled review runs (BEH-ORCH-13). `off` is the start state of every project. */
+export type ReviewCadence = 'off' | 'daily' | 'every-two-days' | 'weekly'
+
+/** Whether Kit's review switch is on, and each project's cadence; a project not listed is off (BEH-ORCH-13). */
+export interface ReviewSetting {
+  on: boolean
+  cadence: Record<string, ReviewCadence>
+}
+
 export interface IdleSetting {
   /** The first item on, or `idle` when none is (BEH-SETTINGS-5's field, still served). */
   idle: string

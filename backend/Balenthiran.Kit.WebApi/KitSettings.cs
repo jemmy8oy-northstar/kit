@@ -382,6 +382,15 @@ public sealed record KitSettings(
     /// <summary><c>KIT_PIPELINE_JOB_MERGE</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
     public static bool ParsePipelineJobMerge(string? value) => ParseJobSwitch("KIT_PIPELINE_JOB_MERGE", value);
 
+    /// <summary>
+    /// <c>KIT_PIPELINE_REVIEW</c> (BEH-ORCH-13): <c>on</c> lets each project's scheduled review run; unset or <c>off</c> is off,
+    /// so no review starts whatever the cadence. Each review spends the owner's subscription, so it is his to switch on.
+    /// </summary>
+    public bool PipelineReview { get; init; }
+
+    /// <summary><c>KIT_PIPELINE_REVIEW</c>: <c>on</c> or <c>off</c>; unset is off. Anything else THROWS, so a typo is not silently off.</summary>
+    public static bool ParsePipelineReview(string? value) => ParseJobSwitch("KIT_PIPELINE_REVIEW", value);
+
     private static bool ParseJobSwitch(string name, string? value) => value?.Trim() switch
     {
         null or "" or "off" => false,
@@ -563,6 +572,7 @@ public sealed record KitSettings(
             PipelineJobPlan = ParsePipelineJobPlan(env("KIT_PIPELINE_JOB_PLAN")),
             PipelineJobBuild = ParsePipelineJobBuild(env("KIT_PIPELINE_JOB_BUILD")),
             PipelineJobMerge = ParsePipelineJobMerge(env("KIT_PIPELINE_JOB_MERGE")),
+            PipelineReview = ParsePipelineReview(env("KIT_PIPELINE_REVIEW")),
             PipelineJobInterval = ParsePipelineJobInterval(env("KIT_PIPELINE_JOB_MINUTES")),
             StageModelContext = ParseStageModelContext(env("KIT_STAGE_MODEL_CONTEXT")),
             StageTurnsContext = ParseStageTurnsContext(env("KIT_STAGE_TURNS_CONTEXT")),
