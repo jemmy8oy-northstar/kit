@@ -884,3 +884,9 @@ The agents pick up top priority work from features in the appropriate state. The
 Maybe it is worth having a priority agents which wakes when the bell gets hit and it can reprioritise work or something like this, maybe the first agent can prioritise the new and ready backlog including prioritisation. This was ccb doesnt need to wake to a bell either.
 
 Get to this state where the pipeline is handling new and backlog tasks by itself and ccb is just a watcher.
+
+## 2026-11-16 22:56Z
+
+<!-- from: note-button -->
+
+Kit pipeline has a component that monitors blocked items and untags them if a blocker changes
