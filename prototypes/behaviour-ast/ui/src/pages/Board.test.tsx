@@ -225,11 +225,45 @@ describe('Board', () => {
     tickets = {}
   })
 
-  it('shows no Tickets section on the all-projects board, nor when the pipeline is off', async () => {
+  it('shows no Tickets section on the all-projects board, even with tickets to show', async () => {
+    mockApi()
+    tickets = { alpha: { on: true, tickets: [] } }
+    renderBoard('/board')
+    await loaded()
+    expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+    tickets = {}
+  })
+
+  it('shows no Tickets section when the pipeline is off', async () => {
     mockApi()
     renderBoard('/board?project=beta')
     await loaded()
     expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+  })
+
+  it('says a project with the pipeline on and no open ticket has none', async () => {
+    mockApi()
+    tickets = { alpha: { on: true, tickets: [] } }
+    renderBoard('/board?project=alpha')
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByText('No open tickets.')).toBeInTheDocument()
+    tickets = {}
+  })
+
+  it('shows no Tickets section, and no error, to someone the tickets are refused to', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        path.endsWith('/tickets')
+          ? { ok: false, status: 403, statusText: 'Forbidden', json: async () => ({ error: 'not-yours', reason: 'no' }) }
+          : { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) },
+      ),
+    )
+    renderBoard('/board?project=alpha')
+    await loaded()
+    await column('Done').findByText('A-DONE')
+    expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/403/)).not.toBeInTheDocument()
   })
 
   it('links a card to its behaviour page and names its project', async () => {

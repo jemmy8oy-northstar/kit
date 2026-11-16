@@ -7,13 +7,14 @@ import ResourceView from './Resource'
 
 /**
  * A project's open tickets (BEH-ORCH-16 slice 4): what the pipeline is working on, which ones are blocked and why,
- * and each one's thread, where Kit asks its questions. The operator's only: anyone else is refused, and sees nothing.
+ * and each one's thread, where Kit asks its questions. The operator's only: anyone else is refused, and sees nothing,
+ * as does a filter naming no project Kit has.
  */
 export async function loadTickets(app: string): Promise<TicketList | null> {
   try {
     return await fetchTickets(app)
   } catch (e) {
-    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) return null
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403 || e.status === 404)) return null
     throw e
   }
 }
@@ -63,7 +64,7 @@ export default function Tickets({ app }: { app: string }) {
                         ))}
                       </p>
                     )}
-                    {t.pullRequest && (
+                    {t.pullRequest?.startsWith('https://') && (
                       <p>
                         <a href={t.pullRequest}>Pull request</a>
                       </p>
