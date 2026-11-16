@@ -16,3 +16,13 @@ Context:
 Two owner decisions. Record them as his, not as Kit's guesses.
 - Vault (23:37Z): OCI Vault for now. Kit writes secrets to OCI Vault and the cluster reads them; Kit can write a value but never read it back. Keep the storage choice behind a seam, so a move to another vault (e.g. HashiCorp Vault) can happen later. Record this on BEH-USERS-5. Nothing else was decided in that note. It unblocks BEH-USERS-5, BEH-PROJCONF-1 (integrations page) and the secrets part of BEH-USERS-9.
 - Priority (23:39Z): lower BEH-USERS-5's priority and reorder the schedule so BEH-USERS-9 (the agent Kit runs for users) is built ahead of it. The owner's reason: getting users the coding agent matters more than secrets right now. The vault decision stays recorded against BEH-USERS-5.
+Card check (cards not changed, the owner's two decisions are already in them and in kit-ui.schedule on main, commit 14fbe9e5):
+- BEH-USERS-5 already records the OCI Vault answer (kit-ui.notes.md#2026-11-03-2337), the write-only rule and the seam, and has priority 3 with BEH-USERS-9 (priority 2) ahead of it on the schedule. Stale: its line "paused until 2026-11-14" has passed (today is 2026-11-16).
+- BEH-PROJCONF-1 and BEH-EXTDATA-1 still say they "wait on your vault choice", which is now made.
+- The notes say the vault unblocks "the secrets part of BEH-USERS-9", but BEH-USERS-9 has no secrets contract; only BEH-USERS-5 says other users' secrets come with it.
+
+Test plan:
+- BEH-USERS-5: the card records the OCI Vault answer with its source note, that Kit writes a value but never reads it back, and that the storage choice sits behind a seam.
+- BEH-USERS-5: its priority is 3, below BEH-USERS-9's 2, as the owner asked at 23:39Z.
+- BEH-USERS-9: it is pending at priority 2 and stands before BEH-USERS-5 on kit-ui.schedule.
+- BEH-SCHED-2: the schedule reorder changes only order; the set of ids on kit-ui.schedule is the same before and after, with none added, dropped or duplicated, and BEH-USERS-9 still ahead of BEH-USERS-5 (already true on main, so the change is expected to be a no-op).
