@@ -27,3 +27,14 @@ Test plan:
 - BEH-USERS-5: its priority is 3, below BEH-USERS-9's 2, as the owner asked at 23:39Z.
 - BEH-USERS-9: it is pending at priority 2 and stands before BEH-USERS-5 on kit-ui.schedule.
 - BEH-SCHED-2: the schedule reorder changes only order; the set of ids on kit-ui.schedule is the same before and after, with none added, dropped or duplicated, and BEH-USERS-9 still ahead of BEH-USERS-5 (already true on main, so the change is expected to be a no-op).
+
+Built:
+- BEH_USERS_5_records_the_OCI_Vault_answer_with_its_source_note (backend/Balenthiran.Kit.Tests/CommittedArtefactTests.cs)
+- BEH_USERS_5_says_Kit_writes_a_secret_but_can_never_read_it_back
+- BEH_USERS_5_keeps_the_storage_choice_behind_a_seam
+- BEH_USERS_5_is_pending_at_priority_3_below_BEH_USERS_9_as_the_owner_asked
+- BEH_USERS_9_is_pending_at_priority_2_and_stands_before_BEH_USERS_5_on_the_schedule
+- BEH_SCHED_2_the_schedule_lists_each_id_once_and_each_is_a_behaviour_in_the_corpus
+- BEH_SCHED_2_a_reorder_of_the_real_schedule_keeps_the_same_ids (action "up")
+- BEH_SCHED_2_a_reorder_of_the_real_schedule_keeps_the_same_ids (action "down")
+- Whole suite: backend 2001 tests, 1998 passed, 3 failed (ReportConformanceTests x2, ClaimerSidecarTests x1; the same 3 fail without this change: no ICU library and no kill binary in this sandbox); UI vitest 561 tests, all passed; kit check kit-ui passes.
