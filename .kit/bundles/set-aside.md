@@ -1,6 +1,6 @@
 # Set aside: a question to the owner, nothing to build
 Work-item: set-aside
-Flag: Notes that ask for no build: approvals, praise, status reports, a merge instruction with no PR named, a question about the pipeline, questions whose referent the text does not name, and a view that notes should stay (already recorded as BEH-NOTE-14) (level: low)
+Flag: Notes that ask for no build: approvals, praise, status reports, a merge instruction with no PR named, a question about the pipeline, questions whose referent the text does not name, and a view that notes should stay (already recorded as BEH-NOTE-14); the 2026-11-06 18:07Z and 18:16Z notes are tests with nothing to build (level: low)
 Cards:
 - new: nothing to build
 Notes:
@@ -16,6 +16,8 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-15 12:45Z ("What is the home on this it isn't marked as blocked")
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md#2026-11-15 12:48Z ("I don't understand what this is asking")
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 19:05Z ("getting rid of notes in favour of chat"; notes stay, already BEH-NOTE-14 on main)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-06 18:07Z ("This is just a test please discard it")
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-06 18:16Z ("This is a test (I need Claude code bot to wake)")
 Files:
 - prototypes/behaviour-ast/behaviours/kit.notes.md
 - prototypes/behaviour-ast/behaviours/kit-ui.notes.md
@@ -26,3 +28,4 @@ The 2026-10-28 23:55Z note is praise for the inbox card feature. Its "no need to
 The 2026-11-14 09:25Z note asks whether the pipeline approach has changed recently. It is a question for the owner, not work; a person answers it. Nothing here is built.
 The 2026-11-15 12:45Z and 12:48Z notes ("What is the home on this it isn't marked as blocked"; "I don't understand what this is asking") do not name the item they mean. They may be replies about a question on the sheet. The owner should say which item, the same as the 10-27 pair. Nothing here is built.
 The 2026-11-02 19:05Z note says notes should stay alongside chat, not be replaced by it. BEH-NOTE-14 already records that decision on main and it is built. Nothing new is asked, so nothing here is built.
+2026-11-16: the 2026-11-06 18:07Z and 18:16Z notes are tests. Nothing to build; a person should decide whether to discard them.
