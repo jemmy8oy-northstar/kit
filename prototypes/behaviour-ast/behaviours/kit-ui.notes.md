@@ -221,3 +221,7 @@ Yes, on Settings as its own row, next to the pipeline. The cadence can be set pe
 <!-- from: chat -->
 
 BEH-ARCH-4 (architecture page diagram, from kit-ui.notes.md#2026-11-06-1801): do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open.
+
+## 2026-11-16 22:56Z · BEH-USERS-12
+
+I think this is ready now
