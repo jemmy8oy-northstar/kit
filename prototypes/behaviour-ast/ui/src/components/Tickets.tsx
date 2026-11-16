@@ -1,15 +1,53 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Card } from '@jemmy8oy-northstar/design-system'
-import { useResource } from '../hooks/useResource'
-import { loadTickets, openTickets } from '../tickets'
+import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
+import { replyOnTicket } from '../api/client'
+import { useReloadableResource } from '../hooks/useResource'
+import { loadTickets, MAX_REPLY, openTickets } from '../tickets'
 import ResourceView from './Resource'
+
+/** BEH-ORCH-16 slice 3: his answer to what blocked a ticket, which wakes the first agent on it. */
+function ReplyForm({ app, slug, onSent }: { app: string; slug: string; onSent: () => void }) {
+  const [draft, setDraft] = useState('')
+  const [state, setState] = useState<{ sending: boolean; said?: string; error?: string }>({ sending: false })
+
+  async function send() {
+    setState({ sending: true })
+    try {
+      const { woke } = await replyOnTicket(app, slug, draft.trim())
+      setDraft('')
+      setState({ sending: false, said: woke ? 'Sent. The first agent reads it next and updates the ticket.' : 'Added to the thread.' })
+      onSent()
+    } catch (e) {
+      setState({ sending: false, error: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  return (
+    <form
+      className="ticket-reply"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (draft.trim()) void send()
+      }}
+    >
+      <textarea aria-label={`Reply on ${slug}`} rows={2} maxLength={MAX_REPLY} value={draft} onChange={(e) => setDraft(e.target.value)} />
+      <Button type="submit" size="sm" disabled={state.sending || !draft.trim()}>
+        Reply
+      </Button>
+      {state.said && <p role="status">{state.said}</p>}
+      {state.error && <p role="alert">{state.error}</p>}
+    </form>
+  )
+}
 
 /**
  * A project's open tickets (BEH-ORCH-16 slice 4): what the pipeline is working on, which ones are blocked and why,
  * and each one's thread, where Kit asks its questions. The operator's only: anyone else is refused, and sees nothing.
+ * A blocked ticket takes his reply under its thread (slice 3).
  */
 export default function Tickets({ app }: { app: string }) {
-  const resource = useResource(() => loadTickets(app), [app])
+  const { resource, reload } = useReloadableResource(() => loadTickets(app), [app])
   return (
     <ResourceView resource={resource}>
       {(list) => {
@@ -67,6 +105,7 @@ export default function Tickets({ app }: { app: string }) {
                         </ol>
                       </details>
                     )}
+                    {t.blockedBecause && <ReplyForm app={app} slug={t.slug} onSent={reload} />}
                   </Card>
                 </li>
               ))}

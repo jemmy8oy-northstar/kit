@@ -225,6 +225,34 @@ describe('Board', () => {
     tickets = {}
   })
 
+  it('takes his reply under a blocked ticket, posts it to that ticket, and says the first agent will read it (BEH-ORCH-16 slice 3)', async () => {
+    const blocked = { slug: 'move-spec', title: 'Move the spec', state: 'new', priority: 3, cards: [], pullRequest: null, blockedBecause: 'which title?', comments: [] }
+    const ready = { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] }
+    tickets = { alpha: { on: true, tickets: [blocked, ready] } }
+    const posted: { path: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posted.push({ path, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ woke: true }) }
+        }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) }
+      }),
+    )
+    renderBoard('/board?project=alpha')
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+
+    // Only the blocked ticket asks for a reply.
+    expect(section.getAllByRole('textbox')).toHaveLength(1)
+    fireEvent.change(section.getByRole('textbox', { name: 'Reply on move-spec' }), { target: { value: '  keep the target  ' } })
+    fireEvent.click(section.getByRole('button', { name: 'Reply' }))
+
+    expect(await section.findByRole('status')).toHaveTextContent('The first agent reads it next')
+    expect(posted).toEqual([{ path: expect.stringMatching(/\/api\/projects\/alpha\/tickets\/move-spec\/comments$/), body: { body: 'keep the target' } }])
+    tickets = {}
+  })
+
   it('shows no Tickets section on the all-projects board, even with tickets to show', async () => {
     mockApi()
     tickets = { alpha: { on: true, tickets: [] } }
