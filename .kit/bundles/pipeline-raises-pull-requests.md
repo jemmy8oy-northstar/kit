@@ -1,6 +1,7 @@
 # Pipeline raises pull requests for finished work and completes them only where allowed
 Work-item: pipeline-raises-pull-requests
 Flag: "complete" may mean merge, which the process forbids without a corpus line; the owner should say which (level: high)
+Review: agreed — the safe reading is already an unreviewed contract on BEH-PR-2 (merge only where the corpus allows, else leave open), so the owner can deny it without holding up BEH-PR-1
 Cards:
 - BEH-PR-1
 - BEH-PR-2
