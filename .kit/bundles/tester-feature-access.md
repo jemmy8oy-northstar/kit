@@ -4,8 +4,12 @@ Flag: the 17:41Z switches are already built (BEH-FLAGS-1), so BEH-FLAGS-3 is onl
 Review: revised — no decision needed: FLAGS-1's "every write stays operator-only" held only until BEH-USERS-2, and FLAGS-3 already records tester writes on own items as an unreviewed assumption; fixed the test that contradicted BEH-USERS-8's public read by URL
 Cards:
 - BEH-FLAGS-3
+- BEH-SCOPE-1
+- BEH-SCOPE-2
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:41Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:21Z (first tester sees my proposed projects; proposed projects should be per user, stored in the db until a fit repo exists)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:21Z (tester can't see their own holiday-planner project as a contributor; spec files not in this repo; find projects where users are contributors)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-USERS-* for tester accounts; BEH-SETTINGS-* for the Settings page; BEH-INBOX-* for the Inbox)
 - prototypes/behaviour-ast/behaviours/kit.notes.md (the source note)
@@ -26,3 +30,4 @@ Test plan:
 - BEH-FLAGS-3: a tester's Settings shows their account and GitHub only, with no operator section in the page or in the responses it reads.
 - BEH-FLAGS-3: no tester action starts or records an agent run.
 - BEH-FLAGS-3: a page switched off for testers still shows "Not available" (BEH-FLAGS-2), and the pages still on for them keep working.
+2026-11-16: two more notes on tester visibility of projects. BEH-SCOPE-1 (proposed projects per user) and BEH-SCOPE-2 (projects found by contributor) are new in kit.beh, because this item may edit only kit.beh. They overlap BEH-USERS-8 and BEH-FLAGS-3 in kit-ui.beh, which were not edited; the owner should say whether the scope cards replace them or sit beside them. Assumptions are contract lines on the new cards.
