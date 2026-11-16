@@ -366,3 +366,36 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+# ── the pipeline's routing (triage notes of 2026-11-07) ─────────────────────
+# A backlog item is not re-triaged, and a review goes to the model its flag
+# asks for. Both are cost decisions, so each is named here, not left to code.
+
+behaviour BEH-ROUTE-1 "A backlog item is found by a cheap check, and triage skips it"
+  priority 5
+  actor engineer
+  given item:Backlog
+  when runs command:KitTriage
+  then reports triage:Skipped
+  review unreviewed
+  contract my assumption: the check reads the item's own card and its backlog state only, with no model call, so finding it costs nothing
+  contract my assumption: an item not yet in the backlog still goes through triage in full
+
+behaviour BEH-ROUTE-2 "The pipeline wakes for a backlog item that the opus agent marks ready to schedule"
+  priority 5
+  actor engineer
+  given item:ReadyToSchedule
+  when runs command:KitPipeline
+  then reports wake:Scheduled
+  review unreviewed
+  contract my assumption: the opus agent's mark is written into the corpus, so the wake reads the corpus and not chat
+
+behaviour BEH-ROUTE-3 "A review goes to the model its uncertainty flag's level asks for, so a low flag never takes opus"
+  priority 5
+  actor engineer
+  given flag:Uncertain
+  when runs command:KitReview
+  then reports model:ByLevel
+  review unreviewed
+  contract my assumption: a flag at level low is reviewed by sonnet, and a flag at level high by opus
+  contract my assumption: a flag at level medium is reviewed by sonnet until the owner says otherwise
