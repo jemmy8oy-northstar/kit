@@ -15,6 +15,7 @@ Cards:
 - new: the chat page looks like a chat app (ChatGPT or Claude style), not a form
 - new: the skip control is labelled "skip to next item", not "skip" (it reads as dismiss)
 Notes:
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-15 12:50Z (when in chat, see the state of the top-of-stack item being shown)
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 12:56Z
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 14:12Z
 - ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:48Z
@@ -41,3 +42,5 @@ Context:
 - 19:04Z (stack order, approve, buttons): the item in hand is in the thread in message order; the per-message "Post as my answer" and "Save as a note" buttons are replaced by one "Ask Kit to note this" button; the agent approves, denies or answers via tools (BEH-CHAT-6), and show_item brings the item back. Already on main, marked built.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
 Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls. Before rebuilding any card above, check its "contract built" lines on main.
+
+2026-11-16 update: note of 2026-11-15 12:50Z adds a contract line to BEH-CHAT-1 in kit-ui.beh: the chat shows the state of the top-of-stack item it is showing. Not a new card: BEH-CHAT-1 already opens on the next item, so the state is a line on that card. Unsure whether it needs its own card instead (level: low).

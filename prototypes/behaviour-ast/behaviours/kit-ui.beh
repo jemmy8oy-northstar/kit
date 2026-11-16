@@ -2867,6 +2867,7 @@ behaviour BEH-CHAT-1 "A Chat page talks with the spec agent about the project pi
   contract "Maybe start with defaulted to x project. Tap to change or explicitly mention the project that you are talking about in your message. Also this doesn't really look like a chat at the moment. Think chat gpt think Claude" (kit.notes.md#2026-11-02-1412)
   contract built (14:12Z note): it opens on the project of the top item waiting on him, shown as "Talking about <project>" at the top, tap to change. His messages sit on the right, the agent's on the left, and the message box is docked at the foot; Enter sends, Shift+Enter is a new line
   contract my assumption: a message that names exactly one other project (its app name, or its project's name when that project has one app) moves the chat there before it is sent; a message naming two, or naming the current one too, does not
+  contract my assumption: the chat shows the state of the top-of-stack item it is showing (where that item stands now, such as blocked, ready or waiting on him) beside the item, so he sees what he is acting on before he replies (kit.notes.md#2026-11-15-1250)
 
 behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already in view, and he just starts typing"
   in FEAT-CHAT
