@@ -890,3 +890,9 @@ Get to this state where the pipeline is handling new and backlog tasks by itself
 <!-- from: note-button -->
 
 Kit pipeline has a component that monitors blocked items and untags them if a blocker changes
+
+## 2026-11-16 22:58Z
+
+<!-- from: note-button -->
+
+The pipeline stages are scheduled via separate jobs, they wake and deterministicly check for changes and then sleep if no changes. Overtime we can fine tune the wake frequencies
