@@ -1,6 +1,6 @@
 # Ideas for later: user feedback box, working status, user technical-level profile, Kit reading pod logs, chat transcripts, security and custom agents, external integrations and data, onboarding tour, project integrations and secrets, lite hosting, project spaces, market research, hosted coding agent and token-credit pricing, reading the queue from CLAUDE.md
 Work-item: backlog
-Flag: the ideas from the 2026-11-02 and 11-03 notes already have cards in kit-ui.beh, so nothing new is specced; BEH-TOUR-1 says built though the owner asked to backlog onboarding, and BEH-SPACE-1 is partly built; the 11-04 pricing notes and the 11-03 queue question are for the owner to answer, not build (level: high)
+Flag: the ideas from the 2026-11-02 and 11-03 notes already have cards in kit-ui.beh, so nothing new is specced; BEH-TOUR-1 says built though the owner asked to backlog onboarding, and BEH-SPACE-1 is partly built; the 11-04 pricing notes and the 11-03 queue question are for the owner to answer, not build; the 2026-11-07 notes are ideas for later and are not built; the .beh rename touches how Kit stores files (level: high)
 Cards:
 - BEH-FEEDBACK-1
 - new: Kit shows when it is working
@@ -21,6 +21,9 @@ Cards:
 - BEH-SPECAGENT-5
 - new: Hosted coding agent and token-credit pricing
 - new: Agent reads the queue from its instructions
+- new: Pipeline runs as C# async instead of a node script
+- new: Rename the spec file extension from .beh (owner leans to .kit)
+- new: Design the spec structure per project; one file per project is not structured
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-16 07:30Z ("Oo a backlog idea for when we have real users")
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-10-26 23:12Z ("Kit shows when it is working - backlog if too high of a cost now")
@@ -36,6 +39,9 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-03 11:17Z (question: does reading the queue need to be built into CLAUDE.md)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-04 00:52Z (hosting the user's coding agent; volume or clone per job; base subscription with monthly and bought credits; refunds; the note is cut short, read the source for the rest)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-04 00:57Z (the same pricing idea, restated in full; a duplicate of 00:52Z, filed once here)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 02:11Z (pipeline as a node script; C# async suggested)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:13Z (rename the .beh extension; owner leans to .kit)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-07 21:14Z (design the spec structure properly; one file per project is not structured)
 Files:
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (lines ~3205 onward: FEAT-CHAT-TRANSCRIPTS, FEAT-SECURITY-AGENT, FEAT-CUSTOM-AGENTS, FEAT-HOOKS-OUT, FEAT-HOOKS-IN, FEAT-EXTERNAL-DATA)
 - prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-18, BEH-FEEDBACK-1, BEH-TOUR-1, BEH-PROJCONF-1, BEH-PROJCONF-2, BEH-LITE-1, BEH-LITE-2, BEH-SPACE-1, BEH-SPECAGENT-5)
@@ -55,3 +61,4 @@ The 2026-11-03 10:19Z note asks for Kit to help with market research and a revie
 The 2026-11-03 11:17Z note asks whether reading the queue must be built into CLAUDE.md. It is a question for the owner, not work: the card line is new and unspecced, and it waits for his answer.
 The 2026-11-04 00:52Z and 00:57Z notes are the same pricing idea (the second restates the first in full). They ask how a hosted coding agent would run (a runtime, a checkout of the repo, the dev process as instructions, Kit's commands as tools, per-user memory), whether it needs its own volume or a temporary clone per job, and how to price it: a base subscription with monthly credits that expire, a premium on token cost so most of the fee funds the volume and pod, bought credits that do not expire, and a refund path. It is design thinking, not a decision, and no card holds it yet; the owner should decide before any card is written.
 Next step toward the goal: none from this bundle; the goal is the open chat and tester work, and these wait.
+2026-11-16: three more ideas for later from the 2026-11-07 notes. Not built and not specced; the owner may want them scheduled.
