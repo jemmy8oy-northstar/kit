@@ -23,3 +23,13 @@ Assumed: flag level low goes to sonnet review and level high to opus review. The
 Not added: the rest of the 11-08 note (stages kept separate and merges decided from what Runs shows; the jobs live in Kit's C# backend, triage on the hook) is already in BEH-ORCH-11 in kit-ui.beh on main, so nothing was repeated here. Those cards are not in this branch's kit.beh, so a builder should read kit-ui.beh before mapping BEH-ROUTE-1 to tests, to avoid two cards for one rule.
 The 2026-11-14 13:44Z note asks to continue the pipeline work. It names no card; the next unbuilt slice is the one BEH-ORCH-11 leaves open.
 Next step toward the goal: a builder maps BEH-ROUTE-1 to 3 to tests and reads the flag level in the reviewer's pick.
+Test plan:
+- BEH-ROUTE-1: KitTriage on a backlog item reports triage:Skipped, and the check makes no model call (it reads only the item's card and backlog state)
+- BEH-ROUTE-1: KitTriage on an item not yet in the backlog runs triage in full and does not report triage:Skipped
+- BEH-ROUTE-1: a note on a backlog item still needs a note or chat message to reach triage; the skip check never starts triage on its own
+- BEH-ROUTE-2: KitPipeline on an item marked ReadyToSchedule in the corpus reports wake:Scheduled
+- BEH-ROUTE-2: the wake reads the corpus mark, so a ReadyToSchedule said only in chat does not wake the pipeline
+- BEH-ROUTE-2: once woken, the stages after triage take the highest-priority waiting ticket, including existing tickets, not the most recently hooked note
+- BEH-ROUTE-3: KitReview on a flag at level low reports model:ByLevel with sonnet, and never opus
+- BEH-ROUTE-3: KitReview on a flag at level high reports opus
+- BEH-ROUTE-3: KitReview on a flag at level medium reports sonnet (the assumed default, to be confirmed by the owner)
