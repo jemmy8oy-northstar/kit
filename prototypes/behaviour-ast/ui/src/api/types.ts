@@ -667,6 +667,35 @@ export interface PipelineItemList {
   items: PipelineItem[]
 }
 
+/** One comment on a ticket (BEH-ORCH-16): a question, a block reason, or a reply. */
+export interface TicketComment {
+  /** "kit" for a comment Kit posted. */
+  author: string
+  body: string
+  /** ISO 8601 UTC. */
+  at: string
+}
+
+/** One ticket on `GET /api/projects/:project/tickets` (BEH-ORCH-16). */
+export interface Ticket {
+  slug: string
+  title: string
+  /** new, ready, planned, built, merged, or stopped (a row from before BEH-ORCH-16). */
+  state: string
+  priority: number
+  cards: string[]
+  pullRequest?: string | null
+  /** The blocked tag's reason; null when the ticket is not blocked. */
+  blockedBecause?: string | null
+  /** Oldest first. */
+  comments: TicketComment[]
+}
+
+export interface TicketList {
+  on: boolean
+  tickets: Ticket[]
+}
+
 /** One message from the agent (BEH-NOTIFY-1). */
 export interface AgentNotification {
   /** ISO 8601 UTC, as the agent wrote it. */

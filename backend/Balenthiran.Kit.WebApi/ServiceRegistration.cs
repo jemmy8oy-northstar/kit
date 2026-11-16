@@ -14,7 +14,7 @@ public static class ServiceRegistration
     public static IServiceCollection AddKitServices(this IServiceCollection services, KitSettings settings)
     {
         services.AddSingleton(settings);
-        var disk = new CorpusDirectory(settings.Dir, settings.RepoRoot);
+        var disk = new CorpusDirectory(settings.Dir, settings.CorpusRoot);
         if (settings.Projects.Count == 0)
         {
             services.AddSingleton<ICorpusDirectory>(disk);

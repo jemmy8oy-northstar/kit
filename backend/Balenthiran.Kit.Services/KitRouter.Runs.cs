@@ -16,6 +16,11 @@ public sealed partial class KitRouter
     /// <summary>The model a run uses when the request names none: Sonnet, half Opus's price per token.</summary>
     public const string DefaultRunModel = "claude-sonnet-5-5";
 
+    private static readonly Regex TicketsRoute = new(@"^/api/projects/([^/]+)/tickets\z", RegexOptions.Compiled);
+    private static readonly Regex TicketCommentRoute = new(@"^/api/projects/([^/]+)/tickets/([^/]+)/comments\z", RegexOptions.Compiled);
+
+    /// <summary>The longest reply on a ticket: it goes into a triage task, which is at most <see cref="MaxTask"/>.</summary>
+    public const int MaxReply = 1000;
     private static readonly Regex RunsRoute = new(@"^/api/projects/([^/]+)/runs\z", RegexOptions.Compiled);
     private static readonly Regex RepoName = new(@"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+\z", RegexOptions.Compiled);
     private static readonly Regex BranchName = new(@"^(?!.*\.\.)[A-Za-z0-9][A-Za-z0-9._/-]{0,99}\z", RegexOptions.Compiled);
@@ -65,6 +70,85 @@ public sealed partial class KitRouter
             };
         }).ToList();
         return Json(200, new PipelineItemList { On = pipeline is not null, Items = items });
+    }
+
+    /// <summary>
+    /// <c>GET /api/projects/:project/tickets</c> (BEH-ORCH-16): the project's tickets oldest first, each with its state,
+    /// its blocked tag and its comment thread. Operator only, as the pipeline is; with the pipeline off, <c>on</c> is
+    /// false and none are listed.
+    /// </summary>
+    private KitResponse TicketList(string? cookie, string rawProject)
+    {
+        if (RunsRefusal(cookie) is { } refused)
+        {
+            return refused;
+        }
+
+        if (DecodeUriComponent(rawProject) is not { } project)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the project name is not valid percent-encoding" });
+        }
+
+        var known = corpora.Corpora();
+        if (!known.Contains(project, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{project}'", Known = known.ToList() });
+        }
+
+        var tickets = (pipeline?.Tickets(project) ?? []).Select(t => (ITicketView)new TicketView
+        {
+            Slug = t.Ticket.Slug,
+            Title = t.Ticket.Title,
+            State = t.Ticket.State.ToString().ToLowerInvariant(),
+            Priority = t.Ticket.Priority,
+            Cards = t.Ticket.Cards,
+            PullRequest = t.Ticket.PullRequest,
+            BlockedBecause = t.Ticket.BlockedBecause,
+            Comments = t.Comments.Select(c => (ITicketCommentView)new TicketCommentView
+            {
+                Author = c.Author,
+                Body = c.Body,
+                At = c.At.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture),
+            }).ToList(),
+        }).ToList();
+        return Json(200, new TicketList { On = pipeline is not null, Tickets = tickets });
+    }
+
+    /// <summary>
+    /// <c>POST /api/projects/:project/tickets/:slug/comments</c> with <c>{ body }</c> (BEH-ORCH-16 slice 3), past the write
+    /// gates (so the operator only): puts his reply on the ticket's thread and, when the ticket is blocked where the first
+    /// agent can act, wakes it. Answers <c>{ woke }</c>.
+    /// </summary>
+    private KitResponse TicketReply(string author, string rawProject, string rawSlug, JsonElement? body)
+    {
+        if (DecodeUriComponent(rawProject) is not { } project || DecodeUriComponent(rawSlug) is not { } slug)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = "the project or ticket is not valid percent-encoding" });
+        }
+
+        var known = corpora.Corpora();
+        if (!known.Contains(project, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"no corpus named '{project}'", Known = known.ToList() });
+        }
+
+        if (body is not { ValueKind: JsonValueKind.Object } b || Field(b, "body") is not { ValueKind: JsonValueKind.String } given
+            || given.GetString()!.Trim() is not { Length: > 0 and <= MaxReply } text)
+        {
+            return Json(400, new ApiError { Error = "bad-request", Reason = $"send {{ body }}: the reply, 1 to {MaxReply} characters" });
+        }
+
+        if (pipeline is null)
+        {
+            return Json(409, new ApiError { Error = "pipeline-off", Reason = "the pipeline is off on this Kit, so it keeps no tickets to reply on" });
+        }
+
+        return pipeline.Replied(project, slug, author, text) switch
+        {
+            Pipeline.Reply.NoTicket => Json(404, new ApiError { Error = "no-such-ticket", Reason = $"{project} has no ticket '{slug}'" }),
+            Pipeline.Reply.NotSaved => Json(503, new ApiError { Error = "store-unavailable", Reason = "the ticket store could not be reached, so the reply was not saved; try again" }),
+            var r => Json(200, new TicketReplyResult { Woke = r == Pipeline.Reply.Woke }),
+        };
     }
 
     private KitResponse? RunsRefusal(string? cookie)

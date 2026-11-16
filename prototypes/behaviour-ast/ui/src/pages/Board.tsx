@@ -6,6 +6,7 @@ import { loadBoard } from '../boardLoad'
 import BoardViews from '../components/BoardViews'
 import LayerChips from '../components/LayerChips'
 import ResourceView from '../components/Resource'
+import Tickets from '../components/Tickets'
 import { byCompletion, byPriorityAcrossProjects, CAP, columnOf, hueOf, isDenied, isIdea, isQuestion, isRung, isTrial, LAYERS, ownerOf, pausedLast, projectOf, questionsFirst, RANKED, rungFirst, tierCounts, tierOf, type Column } from '../board'
 
 const COLUMNS: { id: Column; title: string }[] = [
@@ -97,6 +98,8 @@ export default function Board() {
         </p>
       )}
       <BoardViews />
+      {/* BEH-ORCH-16 slice 4: a project's own board leads with its tickets, where Kit asks its questions. */}
+      {selected.length === 1 && <Tickets app={selected[0]} />}
       <p className="muted">
         Every behaviour by where it stands: an inference nobody has adjudicated is proposed; a
         pending one is in the queue, ready to build, unless it is paused (backlog) or waiting on

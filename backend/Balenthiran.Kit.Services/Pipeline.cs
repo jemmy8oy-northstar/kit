@@ -94,6 +94,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private int count;
 
+    /// <summary>BEH-ORCH-16: every ticket of <paramref name="project"/>, oldest first, each with its comments, oldest first.</summary>
+    public IReadOnlyList<(PipelineTicket Ticket, IReadOnlyList<TicketComment> Comments)> Tickets(string project) =>
+        ticketStore.Read(project).Select(t => (t, ticketStore.Comments(project, t.Slug))).ToList();
+
     /// <summary>Every work item, oldest first.</summary>
     public IReadOnlyList<WorkItem> Items()
     {
@@ -155,7 +159,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 bool waiting;
                 try
                 {
-                    waiting = Untriaged(app).Count > 0;
+                    waiting = Untriaged(app).Count > 0 || Replies(app).Count > 0;
                 }
                 catch (Exception e)
                 {
@@ -307,7 +311,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         {
             try
             {
-                ticketStore.Comment(new TicketComment(item.Project, item.Slug, "kit", $"Blocked: {blocked}", (clock ?? TimeProvider.System).GetUtcNow()));
+                ticketStore.Comment(new TicketComment(item.Project, item.Slug, KitAuthor, $"Blocked: {blocked}", (clock ?? TimeProvider.System).GetUtcNow()));
             }
             catch (Exception e)
             {
@@ -515,9 +519,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             else
             {
                 var usable = 0;
+                var took = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var b in reported ?? [])
                 {
-                    usable += Took(item.Project, b) ? 1 : 0;
+                    if (Took(item.Project, b))
+                    {
+                        usable++;
+                        took.Add(b.Slug);
+                    }
                 }
 
                 // Every note goes in a bundle, so a triage with none usable sorted nothing: its notes are read again by
@@ -529,6 +538,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 else
                 {
                     Set(run.Index, item with { Status = WorkItemStatus.Done });
+                    SayUnchanged(item.Project, run.Notes, took);
                     MarkSorted(item.Project, run.Notes);
                     ClearRetries(item.Project);
 
@@ -1130,7 +1140,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return Enqueue(index, item, repoAt, text, [], bundle);
         }
 
-        var notes = Untriaged(item.Project);
+        // BEH-ORCH-16 slice 3: his replies on blocked tickets first, so a long run of notes cannot crowd them out.
+        var replies = Replies(item.Project);
+        var notes = replies.Select(r => (r.Ref, r.Text, r.Key)).Concat(Untriaged(item.Project)).ToList();
 
         // The plain rule first (BEH-ORCH-1): a note that asks for nothing is set aside here, with no run, and counts as sorted.
         var noise = notes.Where(n => NoteNoise.IsNoise(n.Text)).ToList();
@@ -1150,7 +1162,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         TriageTask task;
         try
         {
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), OpenTickets(item.Project), corpora.RelativePath(item.Project));
+            // A blocked ticket is left out of the list, so no note updates it, except one he has replied on: that reply is its
+            // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
+            var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
+            var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1219,6 +1235,122 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text)))
             .Where(n => !Sorted(app).Contains(n.Key))
             .ToList();
+    }
+
+    /// <summary>
+    /// BEH-ORCH-16 slice 3: his replies on <paramref name="app"/>'s blocked tickets that no finished triage has read, oldest
+    /// first, each as a note for the triage task: (ticket slug, ref, text, key). Only a ticket the first agent can still
+    /// change counts (new, ready or planned): a built one's block is a pull request's, which a spec change does not clear.
+    /// A reply is keyed like a note, in the same store, so a failed triage reads it again and a finished one never does.
+    /// A store that cannot be read gives none.
+    /// </summary>
+    private List<(string Slug, string Ref, string Text, string Key)> Replies(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app)
+                .Where(t => t.BlockedBecause is not null && t.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+                .SelectMany(t => ticketStore.Comments(app, t.Slug)
+                    .Where(c => c.Author != KitAuthor)
+                    .Select(c => (Ticket: t, Comment: c, Key: KeyOf($"ticket {t.Slug} {c.At:O}", c.Body))))
+                .Where(r => !Sorted(app).Contains(r.Key))
+                .OrderBy(r => r.Comment.At)
+                .Select(r => (
+                    r.Ticket.Slug,
+                    $"ticket {r.Ticket.Slug}, reply of {r.Comment.At.UtcDateTime:yyyy-MM-dd HH:mm}Z",
+                    // His words first, and the rest short: a note is cut at TriageStage.MaxNoteChars, and a reply's
+                    // ref is no file the agent could read the cut part from (MaxReply keeps the whole within it).
+                    $"The reply: {r.Comment.Body}\n"
+                        + $"It is {r.Comment.Author}'s reply on ticket {r.Ticket.Slug} (\"{Short(r.Ticket.Title, 80)}\"), blocked because: {Short(r.Ticket.BlockedBecause!, 200)}\n"
+                        + $"Report this note under THAT ticket's slug, {r.Ticket.Slug}, on its branch {TriageStage.Branch(r.Ticket.Slug)}: change the spec as the reply says and update the bundle. Add a Flag line only if a question is still open.",
+                    r.Key))
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s ticket replies threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
+    private static string Short(string text, int max) => text.Length <= max ? text : text[..(max - 1)] + "…";
+
+    /// <summary>
+    /// BEH-ORCH-16 slice 3: after a finished triage of <paramref name="app"/>, a reply it read whose ticket it reported no
+    /// bundle for is still marked read, as every note in a finished triage is, so Kit says on the thread that nothing
+    /// changed: otherwise his reply would sit, read and unanswered, under a ticket still blocked. Called before the run's
+    /// notes are marked sorted, while the replies are still pending.
+    /// </summary>
+    private void SayUnchanged(string app, IReadOnlyList<string> read, IReadOnlySet<string> reported)
+    {
+        foreach (var slug in Replies(app).Where(r => read.Contains(r.Key) && !reported.Contains(r.Slug)).Select(r => r.Slug).Distinct())
+        {
+            try
+            {
+                ticketStore.Comment(new TicketComment(app, slug, KitAuthor, "Read your reply. The triage did not update this ticket, so it is still blocked: leave another reply, or a note, to try again.", (clock ?? TimeProvider.System).GetUtcNow()));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: commenting on the ticket {app} {slug} threw {e.GetType().Name}");
+            }
+        }
+    }
+
+    /// <summary>The author of every comment Kit posts itself.</summary>
+    public const string KitAuthor = "kit";
+
+    /// <summary>What <see cref="Replied"/> did.</summary>
+    public enum Reply
+    {
+        /// <summary>No ticket of that project has that slug.</summary>
+        NoTicket,
+
+        /// <summary>The comment is on the thread; the ticket is not blocked where the first agent can act, so nothing runs.</summary>
+        Commented,
+
+        /// <summary>The comment is on the thread, and a triage is queued to read it.</summary>
+        Woke,
+
+        /// <summary>The ticket store could not be read or written, so the reply is not saved.</summary>
+        NotSaved,
+    }
+
+    /// <summary>
+    /// BEH-ORCH-16 slice 3: <paramref name="author"/> replied <paramref name="body"/> on <paramref name="app"/>'s ticket
+    /// <paramref name="slug"/>. The reply goes on its thread; on a blocked ticket the first agent can still change, it
+    /// wakes a triage, as a note does, which reads it and updates the ticket. A project not in <c>projects</c> wakes nothing.
+    /// </summary>
+    public Reply Replied(string app, string slug, string author, string body)
+    {
+        lock (gate)
+        {
+            PipelineTicket? ticket;
+            try
+            {
+                ticket = ticketStore.Read(app).FirstOrDefault(t => t.Slug == slug);
+                if (ticket is null)
+                {
+                    return Reply.NoTicket;
+                }
+
+                ticketStore.Comment(new TicketComment(app, slug, author, body, (clock ?? TimeProvider.System).GetUtcNow()));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: replying on the ticket {app} {slug} threw {e.GetType().Name}");
+                return Reply.NotSaved;
+            }
+            if (ticket.BlockedBecause is null
+                || ticket.State is not (TicketState.New or TicketState.Ready or TicketState.Planned)
+                || (projects is not null && !projects.Contains(app)))
+            {
+                return Reply.Commented;
+            }
+
+            QueueTriage(app);
+            StartReady();
+            return Reply.Woke;
+        }
     }
 
     /// <summary>A note's key: the SHA-256 of its date and text, so the store keeps no copy of what he wrote.</summary>
