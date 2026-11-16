@@ -15,6 +15,10 @@ BEH-SPLASH-1 in kit-ui.beh holds both notes. Its contracts say kitstudio.dev is 
 Still open: the card stays pending only because its test is in balenthiran.co.uk. Unless the owner says otherwise by 2026-11-09, the card moves to balenthiran's spec. The www.kitstudio.dev fix is balenthiran.co.uk#42, which goes live when he merges it. The wording stays unpublished until he approves it.
 Nothing to build here. A builder should not change the splash page unless the owner asks.
 2026-11-16: the owner reports www.kitstudio.dev broken and asks what to change. Answer from this bundle: the fix already in hand is balenthiran.co.uk#42, which goes live when he merges it. No spec change; kit.beh is not edited, and BEH-SPLASH-1 stays as it is.
+Built:
+- none: no test written in this repo. All four Test plan items name balenthiran.co.uk tests (frontend/e2e/kitstudio.spec.ts and its register-interest API), which are not in this repo, and the splash was already built there (#33, #34). No code changed.
+- Whole suite run: `npm test` in prototypes/behaviour-ast/ui (vitest): 567 tests in 49 files, all passed. `dotnet test ./backend` was not run because dotnet is not installed in this environment.
+
 Test plan:
 - BEH-SPLASH-1: kitstudio.dev serves the splash and its register-interest page (balenthiran.co.uk frontend/e2e/kitstudio.spec.ts; read by its live check, not by kit-ui's check)
 - BEH-SPLASH-1: www.kitstudio.dev serves the same splash with no redirect and no Cloudflare 526, once balenthiran.co.uk#42 is merged
