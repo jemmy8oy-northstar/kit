@@ -18,6 +18,9 @@ Context:
 - The chat agent spots conflicts while he is proposing spec, so they are settled before anything is built (BEH-CONFLICT-3). The code agent gives the triage/chat agent context to help him resolve.
 - BEH-CONFLICT-4 (index the spec so similar behaviours are found quickly at scale; vectorise per snapshot, or verb and meaning matching) is parked. Do not build it here.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
+Built:
+- No new tests this run: every test in the Test plan already exists on this branch, carries its card id, and passes (ConflictModeTests, UserMemoryTests BEH_CONFLICT_1, TriageTests BEH-CONFLICT-3, Settings.test.tsx "When specs conflict"). No code was changed.
+- Whole suite: backend 1758 ran, 1756 passed, 2 failed (ReportConformanceTests: Report_reproduces_Node_on_the_branches_the_goldens_miss and Globalization_is_ICU_so_locale_order_is_reachable). Both fail only because this sandbox has no ICU library, so .NET ran in invariant globalization; they are not related to conflict handling. UI suite: 540 ran, all passed. The whole suite did not fully pass here.
 Test plan:
 - BEH-CONFLICT-1: UserMemoryTests BEH_CONFLICT_1: the shared process (GET /api/process, agent.md) has a "## When two specs conflict" section.
 - BEH-CONFLICT-2: ConflictModeTests: "ask" and "wait" are read from the project's # kit:conflicts line into the summary; no line means build.
