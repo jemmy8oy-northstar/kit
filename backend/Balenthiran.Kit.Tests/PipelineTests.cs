@@ -47,13 +47,13 @@ public class PipelineTests
             }
 
             Store = new MemoryAgentRunStore();
-            Pool = new RunnerPool(Store);
+            Pool = new RunnerPool(Store, clock);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
             Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
-            Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, pipeline: Pipeline);
+            Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock: clock, pipeline: Pipeline);
         }
 
         public MemoryAgentRunStore Store { get; }
@@ -270,6 +270,50 @@ public class PipelineTests
         Assert.Contains("- BEH-B: A user adds an item", claim.Task);
         var item = Assert.Single(rig.Pipeline!.Items());
         Assert.Equal((PipelineStage.Triage, WorkItemStatus.Running), (item.Stage, item.Status));
+    }
+
+    [Fact]
+    public void A_run_whose_runner_never_reports_fails_as_lost_after_the_lease_and_frees_its_project()
+    {
+        // BEH-ORCH-14: his 2026-11-16 22:56Z and 22:58Z notes waited until a restart at 07:30Z the next day.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+
+        clock.Advance(RunnerPool.Lease - TimeSpan.FromMinutes(1));
+        Assert.Null(rig.Claim());
+        Assert.Equal(AgentRunStatus.Running, rig.Store.List().Single(r => r.Id == lost.Id).Status);
+
+        clock.Advance(TimeSpan.FromMinutes(2));
+        rig.Claim();
+        var run = rig.Store.List().Single(r => r.Id == lost.Id);
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (run.Status, run.Failure));
+        Assert.Equal(409, rig.Routes.Finished(lost.Token, Json(new { status = "finished" })).Status);
+        Assert.Empty(rig.Pool.Lost());
+
+        // The project is free: the failed triage's retry is handed out, and it reads the note again.
+        clock.Advance(Pipeline.RetryAfter);
+        var retry = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.NotEqual(lost.Id, retry.Id);
+        Assert.Contains("the list should sort by date", retry.Task);
+    }
+
+    [Fact]
+    public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
+    {
+        // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+        clock.Advance(RunnerPool.Lease + TimeSpan.FromMinutes(1));
+
+        Assert.Equal(lost.Id, Assert.Single(rig.Pool.Lost()));
+        Assert.Empty(rig.Pool.Lost());
+
+        rig.Pool.StillLost(lost.Id);
+        Assert.Equal(lost.Id, Assert.Single(rig.Pool.Lost()));
     }
 
     [Fact]

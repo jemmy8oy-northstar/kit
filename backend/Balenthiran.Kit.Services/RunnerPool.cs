@@ -10,10 +10,21 @@ namespace Balenthiran.Kit.Services;
 /// stay queued until the operator starts them again. One live run per project: a run waits while another on its
 /// project has been handed out and is not over; other projects are not held up.
 /// </summary>
-public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
+public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null) : IAgentRunLauncher
 {
     /// <summary>What the operator is told when a run went to the pool.</summary>
     public const string QueuedNote = "queued for the runner pool";
+
+    /// <summary>
+    /// BEH-ORCH-14: how long after it was handed out a run may go without reporting before Kit counts its runner lost.
+    /// The runner ends its agent at KIT_RUN_MAX_SECONDS (6600) and its claimer gives up at two hours, so a run still
+    /// silent at two and a half has a runner that died without a word (its pod killed or evicted), and nothing else
+    /// would ever free its project.
+    /// </summary>
+    public static readonly TimeSpan Lease = TimeSpan.FromMinutes(150);
+
+    /// <summary>The failure a lost run is recorded with (BEH-ORCH-14).</summary>
+    public const string LostFailure = "lost";
 
     private sealed record Item(string RunId, string Token, string Repo, string Task, string? BaseBranch, int? MaxTurns);
 
@@ -23,6 +34,8 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
     // Run id -> repo for runs handed out and not yet over, so Kit knows which ONE repo a run's GitHub token may
     // reach. Memory only, like the queue: a restart forgets it and the run's next token request is refused.
     private readonly Dictionary<string, string> repoByRun = new(StringComparer.Ordinal);
+    // Run id -> when it was handed out, for the lease (BEH-ORCH-14). Memory only, like repoByRun, and cleared with it.
+    private readonly Dictionary<string, DateTimeOffset> handedOutAt = new(StringComparer.Ordinal);
     private TaskCompletionSource signal = NewSignal();
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -114,6 +127,7 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
                 if (OverOrGone(runId))
                 {
                     repoByRun.Remove(runId);
+                    handedOutAt.Remove(runId);
                 }
             }
 
@@ -140,6 +154,7 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
 
                 handedOut[run.Project] = run.Id;
                 repoByRun[run.Id] = item.Repo;
+                handedOutAt[run.Id] = Now;
                 return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage);
             }
 
@@ -160,12 +175,52 @@ public sealed class RunnerPool(IAgentRunStore store) : IAgentRunLauncher
             if (OverOrGone(runId))
             {
                 repoByRun.Remove(runId);
+                handedOutAt.Remove(runId);
                 return null;
             }
 
             return repo;
         }
     }
+
+    /// <summary>
+    /// BEH-ORCH-14: the runs this pool handed out more than <see cref="Lease"/> ago that are still not over, oldest
+    /// first. Their runners are lost; the caller fails them, which frees their projects. A run handed out before a
+    /// restart is not here: the restart already forgot it, and its project with it. Each is given out once, so two
+    /// claims at the same moment cannot both fail it.
+    /// </summary>
+    public IReadOnlyList<string> Lost()
+    {
+        lock (gate)
+        {
+            var now = Now;
+            var lost = handedOutAt
+                .Where(h => now - h.Value > Lease && !OverOrGone(h.Key))
+                .OrderBy(h => h.Value)
+                .Select(h => h.Key)
+                .ToList();
+            foreach (var id in lost)
+            {
+                handedOutAt.Remove(id);
+            }
+
+            return lost;
+        }
+    }
+
+    /// <summary>Gives back a run from <see cref="Lost"/> that could not be failed, so the next <see cref="Lost"/> returns it again.</summary>
+    public void StillLost(string runId)
+    {
+        lock (gate)
+        {
+            if (repoByRun.ContainsKey(runId))
+            {
+                handedOutAt[runId] = DateTimeOffset.MinValue;
+            }
+        }
+    }
+
+    private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
 
     private IAgentRun? Find(string id) => store.List().FirstOrDefault(r => r.Id == id);
 
