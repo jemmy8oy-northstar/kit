@@ -41,12 +41,28 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(401, "not-a-runner", "the runner pool header is missing or wrong");
         }
 
+        FailLost();
         if (await pool.ClaimAsync(claimWait, cancellationToken) is not { } claim)
         {
             return new KitResponse { Status = 204, ContentType = "application/json", CacheControl = "no-store" };
         }
 
         return new KitResponse { Status = 200, ContentType = "application/json", CacheControl = "no-store", Body = claim };
+    }
+
+    /// <summary>
+    /// BEH-ORCH-14: fails each run whose runner is lost (<see cref="RunnerPool.Lost"/>) as if it had reported failing,
+    /// so its project is free for the next run. Done on every claim, because a runner asking for work is when a
+    /// freed project can be used. A report that comes after all is then refused as already over.
+    /// </summary>
+    private void FailLost()
+    {
+        foreach (var id in pool.Lost())
+        {
+            store.SetStatus(id, AgentRunStatus.Failed, (clock ?? TimeProvider.System).GetUtcNow(), RunnerPool.LostFailure);
+            pool.Signal();
+            pipeline?.RunEnded(id, false);
+        }
     }
 
     /// <summary>
