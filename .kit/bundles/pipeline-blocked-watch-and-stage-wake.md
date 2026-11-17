@@ -1,6 +1,7 @@
 # Pipeline untags blocked cards and wakes each stage only on change
 Work-item: pipeline-blocked-watch-and-stage-wake
 Flag: The new cards are written into kit.beh as the triage brief asks, but the pipeline cards (BEH-ORCH-1 to -16) and the Blocked cards (BEH-BOARD-17, -18, -23) live in kit-ui.beh, so the owner may want these moved there; the untag rule also changes when a Blocked card returns to the agent (level: high)
+Review: escalated — BEH-ORCH-17 untags cards by their needs-context line, but BEH-BOARD-18 defines Blocked as having that line (there is no separate tag), and BEH-ORCH-16 (approved) already makes blocked a ticket tag that is cleared when his reply wakes triage (slice 3 is built). He must say which the monitor clears: BEH-ORCH-16's ticket tag, deterministically, replacing the clear done by a triage run; or a card's needs-context line, in which case the line goes rather than stays. He must also say whether both cards move into kit-ui.beh under FEAT-AGENT-PIPELINE instead of a second ORCH feature (FEAT-ORCH) in kit.beh
 Cards:
 - BEH-ORCH-17
 - BEH-ORCH-18
