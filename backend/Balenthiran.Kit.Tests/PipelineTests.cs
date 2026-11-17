@@ -298,6 +298,21 @@ public class PipelineTests
     }
 
     [Fact]
+    public void A_note_left_on_a_card_reaches_triage_with_the_card_it_was_left_on()
+    {
+        // His 2026-11-16 22:56Z note on BEH-USERS-12, "I think this is ready now", was set aside as naming no card.
+        using var onCard = new Rig();
+        onCard.Note("I think this is ready now", behaviour: "BEH-A");
+        Assert.Contains("(Left on card BEH-A.)\nI think this is ready now", Assert.IsType<PoolClaim>(onCard.Claim()).Task);
+
+        using var onProject = new Rig();
+        onProject.Note("I think this is ready now");
+        var task = Assert.IsType<PoolClaim>(onProject.Claim()).Task;
+        Assert.Contains("I think this is ready now", task);
+        Assert.DoesNotContain("(Left on card", task);
+    }
+
+    [Fact]
     public void Notes_left_while_triage_runs_queue_one_more_run_which_reads_only_the_new_notes()
     {
         using var rig = new Rig();
