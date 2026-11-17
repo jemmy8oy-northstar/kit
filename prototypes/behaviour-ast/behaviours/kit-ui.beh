@@ -1375,7 +1375,6 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
-  needs-context "Merge kit#797 so Kit reads seven projects' specs from their own repos? Their copies are already on each repo's dev. Deleting kit's copies waits on it. If it isn't merged by 2026-11-20, Kit keeps serving kit's copies, and I copy any edits made there into each .kit/ so the two stay the same."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1396,6 +1395,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
   contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
   contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
+  contract his note on this card (kit-ui.notes.md, 2026-11-16 22:56Z): "I think this is ready now". Triage set it aside as naming no card, a defect fixed under BEH-ORCH-1, so it is recorded here for the work item spec-moves-to-project-kit-dir to read. Its needs-context question (merge kit#797) is removed: he merged it on 2026-11-15
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
@@ -1427,6 +1427,8 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract his note (kit.notes.md#2026-11-14-1344): "Please continue with the pipeline enhancements!" The live defect is this card, so it comes first
   contract measured 2026-11-14 17:35Z from git, after kit#807 went live at 14:29Z: triage pushes again. Between 17:27Z and 17:31Z eight triage commits landed on four work items (project-navigation-and-tags, notes-page-archive-tag-and-warning, epics, set-aside), and notes-page-archive-tag-and-warning went on through review and spec. So the turn limit was the cause, and this card's defect is fixed
   contract his note (kit.notes.md#2026-11-14-1725): "I thought you were going to get the pipeline running Howcome u paused until 8". My answer: that was my mistake. The wake before his 13:44Z note had set a sleep to 19:00Z, and the wake his note started fixed this card but did not clear that sleep, so nothing watched the fix go live. The sleep is cleared, and I am watching the run through to build
+  contract measured 2026-11-17 from git: his 2026-11-16 22:56Z note on BEH-USERS-12, "I think this is ready now", was set aside at 22:56:32Z as naming "no feature, card or change". The card was in the note's heading, but the triage task carried only the note's date and text
+  contract my assumption: a note left on a card reaches triage with "(Left on card <id>.)" as its first line, so a note need not name the card it is about. A note on the project reads as before. Whether a note was sorted is still keyed on its date and text alone, so no note already sorted is triaged again
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
