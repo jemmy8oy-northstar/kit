@@ -15,3 +15,15 @@ New cards in kit.beh only, because this item may edit only that spec. The file's
 The input surface is writing a note, speaking to chat, leaving a comment, and approving or rejecting; BEH-TICKET-2 covers all four.
 The owner asked whether blocked should be a tag rather than a ticket; BEH-TICKET-3 takes the tag reading as the default.
 Next step toward the goal: a builder maps BEH-TICKET-1 to 4 to tests once the owner has read this item.
+Test plan:
+- BEH-TICKET-1: a ticket on the board shows its status and its open questions, and the board shows no spec text; the spec of the change is read from that change's feature branch.
+- BEH-TICKET-1: a ticket is one change to the spec, so two changes give two tickets, each with its own feature branch.
+- BEH-TICKET-2: a note, a chat message, a comment, an approval and a rejection each reach triage, and each produces a ticket in the new state (four cases).
+- BEH-TICKET-2: triage makes its spec change on a new feature branch and never on the default branch.
+- BEH-TICKET-2: a card triage removes is marked to be deleted, with the reason written beside it, and is not deleted outright.
+- BEH-TICKET-3: a ticket with an open question for him carries the blocked tag and stays the same ticket; no second ticket is created for the block.
+- BEH-TICKET-3: blocked combines with the state tags new, ready, planned and implemented, and the state is unchanged by the tag.
+- BEH-TICKET-3: triage's discussion of a blocked ticket is recorded on that ticket, and the ticket moves to ready once no question is open.
+- BEH-TICKET-3: if he stays silent on a blocked ticket, triage acts on the default written on that ticket.
+- BEH-TICKET-4: a ready ticket goes to technical design, then to implementation, in that order.
+- BEH-TICKET-4: technical design and implementation can each set the blocked tag with a question, the same way triage does, and clear it when no question is open.
