@@ -300,6 +300,23 @@ public class PipelineTests
     }
 
     [Fact]
+    public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
+    {
+        // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+        clock.Advance(RunnerPool.Lease + TimeSpan.FromMinutes(1));
+
+        Assert.Equal(lost.Id, Assert.Single(rig.Pool.Lost()));
+        Assert.Empty(rig.Pool.Lost());
+
+        rig.Pool.StillLost(lost.Id);
+        Assert.Equal(lost.Id, Assert.Single(rig.Pool.Lost()));
+    }
+
+    [Fact]
     public void With_the_pipeline_off_a_note_starts_nothing()
     {
         using var rig = new Rig(on: false);

@@ -461,7 +461,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>
     /// Run <paramref name="runId"/> ended. A triage that worked marks its notes triaged and queues another, which
     /// reads any notes left for a later run; one that failed stops its item. A run the pipeline did not start is
-    /// ignored. A run that never reports holds its project, as it holds the pool's, until Kit restarts.
+    /// ignored. A run that never reports holds its project, as it holds the pool's, until the pool counts its runner
+    /// lost (<see cref="RunnerPool.Lease"/>, BEH-ORCH-14) and ends it here as failed.
     /// <paramref name="reported"/> are the bundles a triage run says it pushed: each becomes a work item queued for
     /// the stage after triage (review when it is flagged), or a stopped one saying why it could not be used.
     /// </summary>

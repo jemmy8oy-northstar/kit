@@ -208,6 +208,18 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
         }
     }
 
+    /// <summary>Gives back a run from <see cref="Lost"/> that could not be failed, so the next <see cref="Lost"/> returns it again.</summary>
+    public void StillLost(string runId)
+    {
+        lock (gate)
+        {
+            if (repoByRun.ContainsKey(runId))
+            {
+                handedOutAt[runId] = DateTimeOffset.MinValue;
+            }
+        }
+    }
+
     private DateTimeOffset Now => (clock ?? TimeProvider.System).GetUtcNow();
 
     private IAgentRun? Find(string id) => store.List().FirstOrDefault(r => r.Id == id);

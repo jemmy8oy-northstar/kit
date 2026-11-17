@@ -53,15 +53,34 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     /// <summary>
     /// BEH-ORCH-14: fails each run whose runner is lost (<see cref="RunnerPool.Lost"/>) as if it had reported failing,
     /// so its project is free for the next run. Done on every claim, because a runner asking for work is when a
-    /// freed project can be used. A report that comes after all is then refused as already over.
+    /// freed project can be used. A report that comes after all is then refused as already over. A run the store
+    /// would not fail goes back to the pool, so the next claim tries it again; one failure never stops the rest.
     /// </summary>
     private void FailLost()
     {
         foreach (var id in pool.Lost())
         {
-            store.SetStatus(id, AgentRunStatus.Failed, (clock ?? TimeProvider.System).GetUtcNow(), RunnerPool.LostFailure);
+            try
+            {
+                store.SetStatus(id, AgentRunStatus.Failed, (clock ?? TimeProvider.System).GetUtcNow(), RunnerPool.LostFailure);
+            }
+            catch (Exception e)
+            {
+                // The type only, as StartRun logs it.
+                Console.Error.WriteLine($"kit: failing a lost run threw {e.GetType().Name}");
+                pool.StillLost(id);
+                continue;
+            }
+
             pool.Signal();
-            pipeline?.RunEnded(id, false);
+            try
+            {
+                pipeline?.RunEnded(id, false);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: ending a lost run's work item threw {e.GetType().Name}");
+            }
         }
     }
 
