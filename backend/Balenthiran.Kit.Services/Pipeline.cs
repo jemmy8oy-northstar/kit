@@ -1142,7 +1142,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         // BEH-ORCH-16 slice 3: his replies on blocked tickets first, so a long run of notes cannot crowd them out.
         var replies = Replies(item.Project);
-        var notes = replies.Select(r => (r.Ref, r.Text, r.Key)).Concat(Untriaged(item.Project)).ToList();
+        var notes = replies.Select(r => (r.Ref, r.Text, r.Key, Card: (string?)null)).Concat(Untriaged(item.Project)).ToList();
 
         // The plain rule first (BEH-ORCH-1): a note that asks for nothing is set aside here, with no run, and counts as sorted.
         var noise = notes.Where(n => NoteNoise.IsNoise(n.Text)).ToList();
@@ -1166,7 +1166,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
             var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
             var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1224,15 +1224,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     /// <summary>
     /// The plain notes and behaviour requests on <paramref name="app"/> no finished triage has read, oldest first,
-    /// as (ref, text, key). A note's date is to the minute, so two left in one minute share a ref: the triaged
-    /// set is keyed on the date AND the text, or the second would be counted read with the first.
+    /// as (ref, text, key, card). A note's date is to the minute, so two left in one minute share a ref: the triaged
+    /// set is keyed on the date AND the text, or the second would be counted read with the first. The card is the
+    /// behaviour a note was left on, null for a note on the project: its text alone may not name it ("I think this is
+    /// ready now", 2026-11-16 22:56Z on BEH-USERS-12, was set aside as naming no card).
     /// </summary>
-    private List<(string Ref, string Text, string Key)> Untriaged(string app)
+    private List<(string Ref, string Text, string Key, string? Card)> Untriaged(string app)
     {
         var file = corpora.RelativeNotesPath(app);
         return Notes.Parse(corpora.ReadNotesText(app))
             .Where(n => n.Kind is Notes.NoteKind or Notes.RequestKind)
-            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text)))
+            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text), Card: n.Behaviour))
             .Where(n => !Sorted(app).Contains(n.Key))
             .ToList();
     }
