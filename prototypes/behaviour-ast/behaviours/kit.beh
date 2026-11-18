@@ -293,6 +293,17 @@ behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never z
   contract project.js's rule, carried through the transport — a UI that cannot tell
   contract "no mapping exists" from "nothing is covered" renders the second
 
+behaviour BEH-UI-5 "An agents page shows an agent's recent work and its queue, with unblocked items marked"
+  in FEAT-SERVER
+  priority 3
+  actor engineer
+  given agent:Picked
+  when runs command:KitUi
+  then reports page:AgentActivity
+  review unreviewed
+  contract my assumption: the page is served by the local server and reads the same project data the project view reads, and it writes nothing
+  contract my assumption: the owner picks one agent from a list; the page then shows that agent's recent work, and its queue split into unblocked items and items still waiting
+
 # ── the corpus writer (writer.js) ───────────────────────────────────────────
 # Decision 2 in docs/design/ui.md lapsed 2026-09-08 and its default became the
 # decision: write the file, never touch git. These are the rules that decision
