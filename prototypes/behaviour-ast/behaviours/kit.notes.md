@@ -926,3 +926,9 @@ Can we have an agents page which lets you pick the agent and see what it has don
 <!-- from: note-button -->
 
 Pipeline runs page should show most recent runs first
+
+## 2026-11-18 08:14Z
+
+<!-- from: note-button -->
+
+Pipeline stage agents should as agents or workers instead of as pipeline stages. The workers should be woken using a Kubernetes job schedule, kind of like ccb. Idk whether we should have one backend which just gets pinged when the job wakes.
