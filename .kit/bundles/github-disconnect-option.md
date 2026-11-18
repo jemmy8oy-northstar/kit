@@ -1,6 +1,7 @@
 # Let a user disconnect their GitHub account
 Work-item: github-disconnect-option
 Flag: new card has no matching feature in kit.beh (it describes the command line), so it may belong in the hosted app's corpus; the change removes a stored GitHub token (level: high)
+Review: escalated — card is a hosted-app Settings screen placed in kit.beh, the command-line corpus (kit:layer technical; its header says not to add browser behaviours) which defines no FEAT-SETTINGS; owner to decide where BEH-ACCOUNT-1 lives (kit-ui.beh or the hosted corpus) and confirm that deleting the stored GitHub token is wanted
 Cards:
 - BEH-ACCOUNT-1
 Notes:
