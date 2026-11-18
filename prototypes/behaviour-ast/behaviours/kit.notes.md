@@ -950,3 +950,9 @@ Triage and merge agent run sequentially. I feel like for now plan and implement 
 <!-- from: note-button -->
 
 A setting to configure whether the developer gets assigned to all PRs or not (do they appear on inbox)
+
+## 2026-11-18 21:10Z
+
+<!-- from: note-button -->
+
+Tickets still have states and should still have state columns. Tickets also have priority and are organised in their column board by priority. Within priority blocked tickets appear at the top
