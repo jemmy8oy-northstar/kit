@@ -11,3 +11,7 @@ Files:
 - docs/design/ui.md
 Context:
 Tickets keep their state columns. Each column is ordered by priority (1 to 5, as in BEH-PARSE-3). Within one priority, blocked tickets sit at the top. BEH-UI-5 is new and unreviewed; its three contract lines are assumptions for the owner to confirm or deny. No existing card was changed.
+Test plan:
+- BEH-UI-5: reading the board reports column:State, and each ticket stays in the state column it is in
+- BEH-UI-5: within one column, tickets are ordered by priority from 1 (first) to 5 (last)
+- BEH-UI-5: within one priority, a blocked ticket is listed above the unblocked tickets of that priority
