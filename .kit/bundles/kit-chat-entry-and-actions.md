@@ -1,6 +1,7 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
 Flag: the owner's reply "Surely it can live in The db for the user" is read as: the chat's look and per-user state live in the database for that user, not in a repo card; "it" is not explicit (level: high)
+Review: escalated — the reading is unlikely, since a look is code and cannot be kept in a database; "it" most likely means the chat history, which BEH-CHAT-1 says is forgotten when he leaves the page. Owner to decide: keep each user's chat history in Kit's database (a new behaviour, not in this item), or did "it" mean something else? Default if silent: build the cards as listed, keep the history in the page, and record per-user history in the database as a parked unreviewed suggestion
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
