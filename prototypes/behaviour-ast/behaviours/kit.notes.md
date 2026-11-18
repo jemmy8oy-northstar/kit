@@ -944,3 +944,9 @@ The merge agent should be merging open PRs into dev and also should manage for t
 <!-- from: note-button -->
 
 Triage and merge agent run sequentially. I feel like for now plan and implement agents can run in parallel
+
+## 2026-11-18 18:27Z
+
+<!-- from: note-button -->
+
+A setting to configure whether the developer gets assigned to all PRs or not (do they appear on inbox)
