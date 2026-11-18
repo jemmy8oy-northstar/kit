@@ -956,3 +956,11 @@ A setting to configure whether the developer gets assigned to all PRs or not (do
 <!-- from: note-button -->
 
 Tickets still have states and should still have state columns. Tickets also have priority and are organised in their column board by priority. Within priority blocked tickets appear at the top
+
+## 2026-11-18 22:51Z
+
+<!-- from: note-button -->
+
+Blocked: the build run left the bundle unchanged
+
+If this is intentional I guess we need to know why or if it’s not it needs to rerun
