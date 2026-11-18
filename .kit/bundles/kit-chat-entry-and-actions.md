@@ -1,7 +1,6 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
-Flag: "next waiting" in the 17:50Z note may mean the Inbox, not the chat, and the ChatGPT/Claude-style look has no card yet; the 18:54Z capabilities, 18:55Z read-spec and 19:04Z stack/approve notes were already filed on main and marked built, so this run changed no spec (level: low)
-Review: revised — BEH-CHAT-19 already exists as its own card for the 12:50Z note, so the 11-16 update was corrected; the "skip to next item" card is dropped because BEH-CHAT-3 already has it as "contract built" (17:48Z); the chat-app look has no card in kit-ui.beh yet, so that new card stays. Stage check (this run): that premise is wrong; the look is BEH-CHAT-1's 14:12Z contract built, so no card is added. Also: BEH-CHAT-1 line "contract my assumption: the chat shows the state of the top-of-stack item" duplicates BEH-CHAT-19, and BEH-CHAT-5 ("Forget the chat before x") is marked built and is in ui/src/pages/Chat.tsx, though Context says it is parked; the ../home/app/kit/ note paths do not exist here, the notes are prototypes/behaviour-ast/behaviours/kit.notes.md
+Flag: the owner's reply "Surely it can live in The db for the user" is read as: the chat's look and per-user state live in the database for that user, not in a repo card; "it" is not explicit (level: high)
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
@@ -13,21 +12,21 @@ Cards:
 - BEH-CHAT-9
 - BEH-CHAT-14
 - BEH-CHAT-19
-- none new: the chat-app look is already BEH-CHAT-1's 14:12Z contract built (messages left and right, docked box), so no card is added
 Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-15 12:50Z (when in chat, see the state of the top-of-stack item being shown)
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 12:56Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 14:12Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:48Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:50Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:52Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:53Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:54Z
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:54Z (chat knows its capabilities)
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:55Z (chat reads the project spec)
-- ../home/app/kit/prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 19:04Z (stack order, approve, post-as buttons)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 12:56Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 14:12Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:48Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:50Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:52Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:53Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 17:54Z
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:54Z (chat knows its capabilities)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:55Z (chat reads the project spec)
+- prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 19:04Z (stack order, approve, post-as buttons)
+- ticket kit-chat-entry-and-actions, reply of 2026-11-18 21:22Z ("Surely it can live in The db for the user")
 Files:
-- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-1 to BEH-CHAT-19, around lines 2852-3140)
+- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-1 to BEH-CHAT-19, around lines 2852-3140; BEH-CHAT-1 gained the reply contract)
 - prototypes/behaviour-ast/behaviours/kit.notes.md (the source notes)
 Context:
 - Owner wants the chat to open already showing the next item that needs him, with no click first. It offers three routes in one line: address the next item, define a new spec, or discuss a project. The AI infers the route from what he types.
@@ -40,6 +39,8 @@ Context:
 - 18:54Z (capabilities): BEH-CHAT-7 says the agent knows what Kit is and what it can do, with a help line. Already on main, marked built.
 - 18:55Z (read spec): BEH-CHAT-8 gives the agent read_spec, which returns whole cards on demand. Already on main, marked built. Its backlog-scale question (index the spec) sits in kit-ui.beh near line 3200.
 - 19:04Z (stack order, approve, buttons): the item in hand is in the thread in message order; the per-message "Post as my answer" and "Save as a note" buttons are replaced by one "Ask Kit to note this" button; the agent approves, denies or answers via tools (BEH-CHAT-6), and show_item brings the item back. Already on main, marked built.
+- Malformed-bundle fix (2026-11-18): the card line "none new: ..." was removed from Cards because Cards takes ids only. The reason it gave is kept here: the chat-app look is already BEH-CHAT-1's 14:12Z contract built (messages left and right, docked box), so no card is added.
+- Owner reply (2026-11-18 21:22Z): "Surely it can live in The db for the user". Recorded as an unreviewed contract on BEH-CHAT-1. The reading is open: the owner should confirm what "it" is.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
 Test plan:
 - BEH-CHAT-1: picking a project in the select box puts "Now talking about <project>" in the thread and keeps the earlier history; a message naming exactly one other project moves the chat before it is sent; naming two, or the current one too, does not
@@ -54,5 +55,3 @@ Test plan:
 - BEH-CHAT-19: the chat shows the board state (pending, approved, blocked, built) of the item in hand beside its id, and it updates after an answer or approval from the chat
 
 Next step toward the goal: the builder takes BEH-CHAT-2 and the select box first, then the look, then the acting controls. Before rebuilding any card above, check its "contract built" lines on main.
-
-2026-11-16 update: the 2026-11-15 12:50Z note (state of the top-of-stack item) is already its own card, BEH-CHAT-19 (unreviewed, pending), listed above. It is not a line on BEH-CHAT-1, so no new card is needed.
