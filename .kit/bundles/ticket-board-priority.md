@@ -11,6 +11,12 @@ Files:
 - docs/design/ui.md
 Context:
 Tickets keep their state columns. Each column is ordered by priority (1 to 5, as in BEH-PARSE-3). Within one priority, blocked tickets sit at the top. BEH-UI-5 is new and unreviewed; its three contract lines are assumptions for the owner to confirm or deny. No existing card was changed.
+Built:
+- BEH-UI-5: keeps each ticket in the column of its state, and leaves merged tickets off the board (prototypes/behaviour-ast/ui/src/tickets.test.ts)
+- BEH-UI-5: orders each column by priority, 1 first and 5 last (prototypes/behaviour-ast/ui/src/tickets.test.ts)
+- BEH-UI-5: within one priority lists a blocked ticket above the unblocked ones, and never above a higher priority (prototypes/behaviour-ast/ui/src/tickets.test.ts)
+- BEH-UI-5: shows the open tickets in one column per state, each column by priority with blocked first within a priority (prototypes/behaviour-ast/ui/src/pages/Board.test.tsx)
+Whole suite: 571 tests in the UI's vitest run (50 files), all passed; the C# backend suite was not run because dotnet is not installed here, and backend is unchanged.
 Test plan:
 - BEH-UI-5: reading the board reports column:State, and each ticket stays in the state column it is in
 - BEH-UI-5: within one column, tickets are ordered by priority from 1 (first) to 5 (last)

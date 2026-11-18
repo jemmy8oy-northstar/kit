@@ -225,6 +225,29 @@ describe('Board', () => {
     tickets = {}
   })
 
+  it('shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-5)', async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'p5', title: 'Five', state: 'ready', priority: 5, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'p1', title: 'One', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'blk1', title: 'Blocked one', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: 'which?', comments: [] },
+          { slug: 'n2', title: 'Newer', state: 'new', priority: 2, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    const ready = within(section.getByRole('region', { name: 'ready' }))
+    expect(ready.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Blocked one blk1', 'One p1', 'Five p5'])
+    const fresh = within(section.getByRole('region', { name: 'new' }))
+    expect(fresh.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Newer n2'])
+    tickets = {}
+  })
+
   it('takes his reply under a blocked ticket, posts it to that ticket, and says the first agent will read it (BEH-ORCH-16 slice 3)', async () => {
     const blocked = { slug: 'move-spec', title: 'Move the spec', state: 'new', priority: 3, cards: [], pullRequest: null, blockedBecause: 'which title?', comments: [] }
     const ready = { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] }
