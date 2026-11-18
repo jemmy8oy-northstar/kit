@@ -1,6 +1,7 @@
 # Setting to assign the developer to all PRs, and whether they appear in the inbox
 Work-item: pr-assignment-setting
 Flag: unsure which feature the setting belongs to and whether the owner wants inbox contents changed; it touches what the inbox shows (level: high)
+Review: escalated — owner must decide whether to auto-assign the developer to every PR (per developer or per project, default off) since it changes the inbox; also BEH-ASSIGN-1 sits in kit.beh, the command-line-only layer, where FEAT-SETTINGS is not declared, so it likely belongs in the screen-layer file
 Cards:
 - BEH-ASSIGN-1
 Notes:
