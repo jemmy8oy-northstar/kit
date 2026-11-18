@@ -1200,6 +1200,10 @@
       }
     }
   ],
+  "BEH-SCHED-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes" }
+  ],
   "BEH-WRITE-6": [
     {
       "file": "backend/Balenthiran.Kit.Tests/HostConformanceTests.cs",

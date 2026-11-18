@@ -93,6 +93,8 @@ feature FEAT-SERVER "Local server"
   stage ui
 feature FEAT-WRITER "Writer"
   stage ui
+feature FEAT-SCHEDULE "Schedule"
+  stage ui
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   in FEAT-GATE
@@ -378,3 +380,5 @@ behaviour BEH-SCHED-1 "Each pipeline stage runs on its own schedule, independent
   then reports wake:Independent
   contract my assumption: each pipeline stage has its own wake schedule and runs when that schedule fires, not when another stage runs
   contract my assumption: an idle or slow stage does not delay or skip the other stages
+  contract built: the wake of each stage is its own start. A note starts triage, and each job of BEH-ORCH-11 starts its stage on its own tick, so a build waits as a planned ticket until its tick (switch KIT_PIPELINE_JOB_BUILD on; off by default, so production still chains triage to spec and build)
+  review requested conflict between this card's second assumption and BEH-ORCH-3 and BEH-ORCH-14 in kit-ui.beh: those keep one live run per project, so a triage waits while a build on its project runs. Built the one-run-per-project reading, which is what runs live; the slow-stage clause is not built and not tested. Approve to keep that; deny to say this card is right and I will rebuild triage to start beside a running build
