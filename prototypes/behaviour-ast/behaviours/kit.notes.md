@@ -896,3 +896,9 @@ Kit pipeline has a component that monitors blocked items and untags them if a bl
 <!-- from: note-button -->
 
 The pipeline stages are scheduled via separate jobs, they wake and deterministicly check for changes and then sleep if no changes. Overtime we can fine tune the wake frequencies
+
+## 2026-11-18 00:10Z
+
+<!-- from: note-button -->
+
+There should be an option to disconnect your GitHub
