@@ -15,6 +15,14 @@ Files:
 Context:
 The owner asks for an Agents page: pick an agent from a list, then see what it has done recently, what is unblocked in its queue, and what is in its queue. BEH-UI-5 was written as a new card in kit.beh's FEAT-SERVER, and its contract lines are unreviewed assumptions. A builder should first find how agents and their queues are recorded and read today, since the page should reuse that data rather than add a store. The page must not write anything.
 Placement (review): kit.beh is the technical, command-line layer. Its header says not to add browser behaviours there, and that kit-ui.beh holds the UI. In kit-ui.beh each page is its own feature (FEAT-ACTIVITY, FEAT-INBOX, FEAT-HEALTH, ...). So the builder moves BEH-UI-5 out of kit.beh into kit-ui.beh under a new feature such as FEAT-AGENTS "Agents", writes it with that file's browser verbs, and keeps its two contract lines as unreviewed assumptions. Its id may change to match kit-ui.beh's numbering; say so in the PR. Before adding new reads, check the Activity and Runs pages, which may already show agent work.
+Built:
+- BEH-AGENTPAGE-1: the Agents page lists the agents it knows, one per entry, and shows no recent work or queue until one is picked
+- BEH-AGENTPAGE-1: picking an agent shows its runs from GET /api/runs, newest first, with status, stage and cost, for that project only
+- BEH-AGENTPAGE-1: the queue marks approved, pending cards with no needs-context line as unblocked, in board order, and the rest as waiting on him
+- BEH-AGENTPAGE-1: an agent with no runs says "No recent work", and an empty queue says "Nothing in the queue"
+- BEH-AGENTPAGE-1: browsing the page issues only GET requests and writes no corpus file
+- BEH-AGENTPAGE-1: the card sits in kit-ui.beh under FEAT-AGENTS with browser verbs, not in kit.beh FEAT-SERVER
+- The whole UI suite (vitest run) ran 573 tests across 50 files and all passed; lint and tsc are clean.
 
 Test plan:
 - BEH-UI-5: the Agents page lists the agents it knows, one per entry, and shows no recent work or queue until one is picked

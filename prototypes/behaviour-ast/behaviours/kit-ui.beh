@@ -2234,6 +2234,27 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
 
+# An agents page: the agents Kit knows, and for the one picked, its recent runs and its queue.
+# Moved here from kit.beh's FEAT-SERVER as BEH-UI-5 (kit.beh is the command-line layer). Its id
+# becomes BEH-AGENTPAGE-1, since BEH-UI-* is kit.beh's and BEH-AGENTS-1 is custom agents.
+feature FEAT-AGENTS "Agents"
+  stage development
+
+behaviour BEH-AGENTPAGE-1 "An agents page shows an agent's recent work and its queue, with unblocked items marked"
+  in FEAT-AGENTS
+  in FEAT-NAV
+  priority 3
+  actor engineer
+  review unreviewed
+  when opens page:KitAgents
+  then sees region:KitMain
+  contract my assumption: an agent is a project. Kit records no agent of its own: each project's runs and queue belong to the one agent that works it, so the list is the projects Kit reads (BEH-LIST-1)
+  contract my assumption: the page reads the same project data the project view reads, and recent runs from the operator's GET /api/runs. It writes nothing, and every request it makes is a GET
+  contract my assumption: the owner picks one agent from a list; until he does, no work or queue is shown. The picked agent's recent runs are newest first, each with its status, stage and cost, and only runs for that agent's project
+  contract my assumption: the queue reads approved and pending cards with no needs-context line as unblocked, in board order (priority, then corpus order), and pending cards with a needs-context line as waiting on him
+  contract my assumption: the navbar link is shown where Runs is, since the runs it reads are the operator's (BEH-USERS-9)
+  contract my assumption: a paused card counts as unblocked here, as the card reads; the board keeps it under Backlog
+
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.
 feature FEAT-INBOX "His items, one at a time"
