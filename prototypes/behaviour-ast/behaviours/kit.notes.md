@@ -920,3 +920,9 @@ Maybe kit should show hints when it isn’t taking action of what the user needs
 <!-- from: note-button -->
 
 Can we have an agents page which lets you pick the agent and see what it has done recently, what’s unblocked in its queue and what’s in its queue?
+
+## 2026-11-18 08:12Z
+
+<!-- from: note-button -->
+
+Pipeline runs page should show most recent runs first
