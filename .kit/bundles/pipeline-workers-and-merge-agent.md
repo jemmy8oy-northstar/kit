@@ -1,6 +1,7 @@
 # Pipeline stages as scheduled workers, and the merge agent
 Work-item: pipeline-workers-and-merge-agent
 Flag: Whether one backend is pinged by every scheduled job, or each stage has its own endpoint, is an open owner question that changes how Kit runs work; BEH-WORKER-3 takes one backend as the default (level: high)
+Review: escalated — owner must decide whether every scheduled job pings one backend or each stage has its own endpoint (BEH-WORKER-3 assumes one); also the three cited 2026-11-18 notes are not in kit.notes.md on this branch or main, so the six cards cannot be checked against their source
 Cards:
 - BEH-WORKER-1
 - BEH-WORKER-2
