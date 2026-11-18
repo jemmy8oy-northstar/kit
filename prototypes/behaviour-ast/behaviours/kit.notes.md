@@ -932,3 +932,9 @@ Pipeline runs page should show most recent runs first
 <!-- from: note-button -->
 
 Pipeline stage agents should as agents or workers instead of as pipeline stages. The workers should be woken using a Kubernetes job schedule, kind of like ccb. Idk whether we should have one backend which just gets pinged when the job wakes.
+
+## 2026-11-18 08:14Z
+
+<!-- from: note-button -->
+
+The merge agent should be merging open PRs into dev and also should manage for the allowed repos promotion to main
