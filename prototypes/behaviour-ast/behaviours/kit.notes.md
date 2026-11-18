@@ -908,3 +908,9 @@ There should be an option to disconnect your GitHub
 <!-- from: note-button -->
 
 Each pipeline stage independently runs on a schedule
+
+## 2026-11-18 00:14Z
+
+<!-- from: note-button -->
+
+Maybe kit should show hints when it isn’t taking action of what the user needs to do. Eg. Pipeline not running items in states: new, ready, planning, development need action. Or something like this
