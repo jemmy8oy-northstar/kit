@@ -366,3 +366,16 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+behaviour BEH-ACCOUNT-1 "A signed-in user can disconnect their GitHub account from Kit"
+  in FEAT-SETTINGS
+  actor engineer
+  source defined
+  priority 3
+  given account:GitHubConnected
+  when runs command:Disconnect
+  then reports status:Disconnected
+  contract my assumption: disconnecting removes Kit's stored GitHub token for this user only
+  contract my assumption: disconnecting does not change repositories, branches or pull requests already opened on GitHub
+  contract my assumption: the option lives in Settings and asks the user to confirm before the token is removed
+  contract my assumption: a disconnected user can connect GitHub again at any time
