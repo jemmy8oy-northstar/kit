@@ -293,6 +293,19 @@ behaviour BEH-UI-4 "Coverage that could not be read is null in the list, never z
   contract project.js's rule, carried through the transport — a UI that cannot tell
   contract "no mapping exists" from "nothing is covered" renders the second
 
+behaviour BEH-UI-5 "The pipeline runs page lists the most recent run first"
+  in FEAT-SERVER
+  priority 3
+  actor engineer
+  review unreviewed
+  given repo:Present
+  when runs command:KitUi
+  then reports order:NewestFirst
+  contract my assumption: the runs page is ordered by when each run started, newest
+  contract at the top; the older runs follow, and paging does not reverse that order
+  contract my assumption: this card is placed under the server area because the spec
+  contract for the runs page is not in this file; check with the owner
+
 # ── the corpus writer (writer.js) ───────────────────────────────────────────
 # Decision 2 in docs/design/ui.md lapsed 2026-09-08 and its default became the
 # decision: write the file, never touch git. These are the rules that decision
