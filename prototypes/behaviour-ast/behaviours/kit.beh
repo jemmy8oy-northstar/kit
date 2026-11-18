@@ -366,3 +366,64 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+behaviour BEH-WORKER-1 "A pipeline stage runs as a worker that a scheduled Kubernetes job wakes"
+  actor engineer
+  source defined
+  priority 3
+  given stage:Pipeline
+  when schedule:Fires
+  then runs worker:Stage
+  review unreviewed
+  contract my assumption: pipeline stages are agents or workers, not always-on pipeline stages; each stage is woken by a job on a schedule, the way ccb wakes its workers
+
+behaviour BEH-WORKER-2 "A worker that its schedule woke does one unit of work, then exits"
+  actor engineer
+  source defined
+  priority 3
+  given worker:Woken
+  when worker:Runs
+  then reports status:Done
+  review unreviewed
+  contract my assumption: a worker keeps no state between wakes; everything it needs is read from the repo and the corpus
+
+behaviour BEH-WORKER-3 "The scheduled job pings one backend, which starts the worker it names"
+  actor engineer
+  source defined
+  priority 3
+  given job:Woken
+  when job:Pings backend
+  then starts worker:Named
+  review unreviewed
+  contract my assumption: one backend receives every job's ping, not one endpoint per stage; the owner has not decided this, so this is the default
+  contract my assumption: a ping names the worker to start and carries no work of its own
+
+behaviour BEH-MERGE-1 "The merge agent merges open pull requests into dev"
+  actor engineer
+  source defined
+  priority 3
+  given pullRequest:Open
+  when mergeAgent:Runs
+  then merges pullRequest:IntoDev
+  review unreviewed
+  contract my assumption: the merge agent merges only pull requests whose project checks have passed
+
+behaviour BEH-MERGE-2 "The merge agent promotes dev to main only for repos the project allows"
+  actor engineer
+  source defined
+  priority 3
+  given repo:Allowed
+  when mergeAgent:Runs
+  then promotes branch:DevToMain
+  review unreviewed
+  contract my assumption: a repo missing from the allowed list is never promoted, and the list is set by the owner
+
+behaviour BEH-MERGE-3 "Triage and merge never run at the same time; plan and implement may run in parallel"
+  actor engineer
+  source defined
+  priority 3
+  given stage:Triage
+  when stage:Merge is due
+  then waits for stage:Triage to finish
+  review unreviewed
+  contract my assumption: plan and implement are not ordered against each other for now and may run in parallel
