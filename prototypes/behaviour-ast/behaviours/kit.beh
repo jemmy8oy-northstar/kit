@@ -366,3 +366,15 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+behaviour BEH-SCHED-1 "Each pipeline stage runs on its own schedule, independent of the others"
+  in FEAT-SCHEDULE
+  actor engineer
+  source defined
+  review unreviewed
+  priority 3
+  given stage:Triage
+  when runs schedule:Own
+  then reports wake:Independent
+  contract my assumption: each pipeline stage has its own wake schedule and runs when that schedule fires, not when another stage runs
+  contract my assumption: an idle or slow stage does not delay or skip the other stages
