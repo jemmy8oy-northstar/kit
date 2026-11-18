@@ -1,6 +1,7 @@
 # Pipeline runs page shows most recent runs first
 Work-item: pipeline-runs-recent-first
 Flag: the pipeline runs page's own spec is not in kit.beh, so BEH-UI-5 is placed under FEAT-SERVER as a guess; the card may belong to the ORCH area in another file (level: low)
+Review: agreed — BEH-UI-5 is a self-contained UI card (actor engineer, runs command:KitUi) and its FEAT-SERVER placement is harmless; the ORCH file was outside this review, so the builder still confirms placement per Context
 Cards:
 - BEH-UI-5
 Notes:
