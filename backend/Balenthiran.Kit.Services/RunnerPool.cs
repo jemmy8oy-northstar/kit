@@ -23,10 +23,19 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     /// </summary>
     public static readonly TimeSpan Lease = TimeSpan.FromMinutes(150);
 
+    /// <summary>
+    /// BEH-ORCH-17: for a run with its own time limit, how long past that limit Kit waits for its report before counting
+    /// its runner lost. The runner ends the agent at the limit and reports at once, so ten minutes covers a slow report.
+    /// </summary>
+    public static readonly TimeSpan LeaseMargin = TimeSpan.FromMinutes(10);
+
+    /// <summary>The lease of a run with time limit <paramref name="maxSeconds"/>: the limit plus <see cref="LeaseMargin"/>, or <see cref="Lease"/> with none.</summary>
+    public static TimeSpan LeaseFor(int? maxSeconds) => maxSeconds is { } s ? TimeSpan.FromSeconds(s) + LeaseMargin : Lease;
+
     /// <summary>The failure a lost run is recorded with (BEH-ORCH-14).</summary>
     public const string LostFailure = "lost";
 
-    private sealed record Item(string RunId, string Token, string Repo, string Task, string? BaseBranch, int? MaxTurns);
+    private sealed record Item(string RunId, string Token, string Repo, string Task, string? BaseBranch, int? MaxTurns, int? MaxSeconds);
 
     private readonly object gate = new();
     private readonly List<Item> queue = [];
@@ -36,6 +45,8 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     private readonly Dictionary<string, string> repoByRun = new(StringComparer.Ordinal);
     // Run id -> when it was handed out, for the lease (BEH-ORCH-14). Memory only, like repoByRun, and cleared with it.
     private readonly Dictionary<string, DateTimeOffset> handedOutAt = new(StringComparer.Ordinal);
+    // Run id -> its time limit in seconds, null for none (BEH-ORCH-17). Kept and cleared with handedOutAt.
+    private readonly Dictionary<string, int?> limitOf = new(StringComparer.Ordinal);
     private TaskCompletionSource signal = NewSignal();
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -46,13 +57,14 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
 
     /// <summary>
     /// Holds <paramref name="run"/> for the next runner that asks. Memory only. <paramref name="maxTurns"/> (BEH-ORCH-5)
-    /// is the run's turn limit; none means the runner keeps its own.
+    /// is the run's turn limit and <paramref name="maxSeconds"/> (BEH-ORCH-17) its time limit; none means the runner
+    /// keeps its own.
     /// </summary>
-    public void Enqueue(IAgentRun run, string token, string repo, string task, string? baseBranch, int? maxTurns = null)
+    public void Enqueue(IAgentRun run, string token, string repo, string task, string? baseBranch, int? maxTurns = null, int? maxSeconds = null)
     {
         lock (gate)
         {
-            queue.Add(new Item(run.Id, token, repo, task, baseBranch, maxTurns));
+            queue.Add(new Item(run.Id, token, repo, task, baseBranch, maxTurns, maxSeconds));
         }
 
         Signal();
@@ -128,6 +140,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
                 {
                     repoByRun.Remove(runId);
                     handedOutAt.Remove(runId);
+                    limitOf.Remove(runId);
                 }
             }
 
@@ -155,7 +168,8 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
                 handedOut[run.Project] = run.Id;
                 repoByRun[run.Id] = item.Repo;
                 handedOutAt[run.Id] = Now;
-                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage);
+                limitOf[run.Id] = item.MaxSeconds;
+                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage, item.MaxSeconds);
             }
 
             return null;
@@ -176,6 +190,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
             {
                 repoByRun.Remove(runId);
                 handedOutAt.Remove(runId);
+                limitOf.Remove(runId);
                 return null;
             }
 
@@ -184,7 +199,28 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     }
 
     /// <summary>
-    /// BEH-ORCH-14: the runs this pool handed out more than <see cref="Lease"/> ago that are still not over, oldest
+    /// BEH-ORCH-17: each run this pool handed out that is not over, with when a runner took it, when its runner ends it
+    /// (null with no limit of its own) and when Kit counts its runner lost, oldest first. What a restart forgot is not
+    /// here, as for <see cref="Lost"/>.
+    /// </summary>
+    public IReadOnlyList<(string RunId, DateTimeOffset ClaimedAt, DateTimeOffset? GivesUpAt, DateTimeOffset LostAt)> Claimed()
+    {
+        lock (gate)
+        {
+            return handedOutAt
+                .Where(h => !OverOrGone(h.Key))
+                .OrderBy(h => h.Value)
+                .Select(h =>
+                {
+                    var limit = limitOf.GetValueOrDefault(h.Key);
+                    return (h.Key, h.Value, limit is { } s ? h.Value + TimeSpan.FromSeconds(s) : (DateTimeOffset?)null, h.Value + LeaseFor(limit));
+                })
+                .ToList();
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-14: the runs this pool handed out longer ago than their lease (<see cref="LeaseFor"/>) that are still not over, oldest
     /// first. Their runners are lost; the caller fails them, which frees their projects. A run handed out before a
     /// restart is not here: the restart already forgot it, and its project with it. Each is given out once, so two
     /// claims at the same moment cannot both fail it.
@@ -195,7 +231,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
         {
             var now = Now;
             var lost = handedOutAt
-                .Where(h => now - h.Value > Lease && !OverOrGone(h.Key))
+                .Where(h => now - h.Value > LeaseFor(limitOf.GetValueOrDefault(h.Key)) && !OverOrGone(h.Key))
                 .OrderBy(h => h.Value)
                 .Select(h => h.Key)
                 .ToList();

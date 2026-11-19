@@ -300,6 +300,67 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_17_The_runs_list_says_when_a_runner_took_each_run_still_going_and_when_it_counts_as_lost()
+    {
+        // BEH-ORCH-17: his 2026-11-19 19:29Z note: "how long does a test run actually take atm".
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        Assert.Empty(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+
+        clock.Advance(TimeSpan.FromMinutes(3));
+        var taken = Assert.IsType<PoolClaim>(rig.Claim());
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Equal(taken.Id, claim.RunId);
+        Assert.Equal(clock.GetUtcNow(), claim.ClaimedAt);
+        Assert.Equal(claim.ClaimedAt + RunnerPool.Lease, claim.LostAt);
+
+        // Once it reports, it is over and no longer claimed.
+        rig.FinishWith(taken, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        Assert.DoesNotContain(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims, c => c.RunId == taken.Id);
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150()
+    {
+        // BEH-ORCH-17: kit#768's test run went 90 minutes without a word on 2026-11-19, on a suite that takes 6.
+        Assert.Equal(1800, Orchestrator.SecondsFor(PipelineStage.Test));
+        Assert.Null(Orchestrator.SecondsFor(PipelineStage.Build));
+
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var test = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+        var taken = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(1800, taken.MaxSeconds);
+
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(30), claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + TimeSpan.FromMinutes(40), claim.LostAt);
+
+        clock.Advance(TimeSpan.FromMinutes(39));
+        Assert.Empty(rig.Pool.Lost());
+        clock.Advance(TimeSpan.FromMinutes(2));
+        Assert.Equal(test.Id, Assert.Single(rig.Pool.Lost()));
+    }
+
+    [Fact]
+    public void BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "list-sorting", "build");
+        rig.Pool.Enqueue(build, "tok", "o/r", "t", "dev", 15);
+        Assert.Null(Assert.IsType<PoolClaim>(rig.Claim()).MaxSeconds);
+
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Null(claim.GivesUpAt);
+        Assert.Equal(clock.GetUtcNow() + RunnerPool.Lease, claim.LostAt);
+        clock.Advance(TimeSpan.FromMinutes(41));
+        Assert.Empty(rig.Pool.Lost());
+    }
+
+    [Fact]
     public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
     {
         // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.
