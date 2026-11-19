@@ -69,6 +69,25 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Replaced whole at the end of each merge look, so a want the merge job no longer has lasts at most one look.
     private HashSet<string> mergeWants = new(StringComparer.Ordinal);
 
+    // BEH-ORCH-18: the merge train of each repo and base ("owner/repo@branch"), from when it is built until its riders are
+    // merged or it fails. In memory only: a restart forgets it, and the next look builds another.
+    private readonly Dictionary<string, Train> trains = new(StringComparer.Ordinal);
+
+    // Tickets that rode a train that failed, or that could not join one: they go the single way from then on. In memory only.
+    private readonly HashSet<(string App, string Slug)> offTrain = [];
+
+    // Repos found to be public: their pull requests have Actions CI, so they get no train.
+    private readonly HashSet<string> publicRepos = new(StringComparer.Ordinal);
+
+    /// <summary>BEH-ORCH-18: the most pull requests one train carries.</summary>
+    public const int TrainCars = 5;
+
+    /// <summary>BEH-ORCH-18: a train's branch is this and its base branch, so kit/train/dev.</summary>
+    public const string TrainPrefix = "kit/train/";
+
+    // Each rider with its pull request and the head commit that went onto the train; Lead is the ticket whose test run tests it.
+    private sealed record Train(string Sha, string BaseSha, IReadOnlyList<((string App, string Slug) Key, string Url, string HeadSha)> Riders, (string App, string Slug) Lead, bool Passed = false);
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -497,7 +516,24 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 // pass is remembered for that commit and the item is built again, so the next merge look merges exactly it.
                 var key = (item.Project, item.Slug);
                 testing.Remove(key, out var sha);
-                if (succeeded && sha is not null)
+
+                // BEH-ORCH-18: a train's test run. A pass lets the next look merge its riders; a fail stops no ticket, it sends
+                // every rider the single way, where each is tested alone. Either way the lead is a built ticket again.
+                if (trains.FirstOrDefault(t => t.Value.Lead == key && t.Value.Sha == sha && !t.Value.Passed) is { Value: { } ridden } entry)
+                {
+                    if (succeeded)
+                    {
+                        trains[entry.Key] = ridden with { Passed = true };
+                    }
+                    else
+                    {
+                        trains.Remove(entry.Key);
+                        offTrain.UnionWith(ridden.Riders.Select(r => r.Key));
+                    }
+
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else if (succeeded && sha is not null)
                 {
                     tested[key] = sha;
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
@@ -648,12 +684,20 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return;
         }
 
+        var wants = new HashSet<string>(StringComparer.Ordinal);
+        if (merger is IMergeTrain train)
+        {
+            await TrainTickAsync(train, wants, cancellationToken);
+        }
+
         List<WorkItem> top;
         lock (gate)
         {
-            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends.
+            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends,
+            // nor does one with a ticket on a merge train (BEH-ORCH-18).
             var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
                 .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
+                .Where(app => !trains.Values.Any(t => t.Riders.Any(r => r.Key.App == app)))
                 .ToList();
             top = [];
             foreach (var app in apps)
@@ -669,7 +713,6 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
         }
 
-        var wants = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in top)
         {
             await MergeOneAsync(item, true, cancellationToken, wants);
@@ -680,6 +723,179 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             mergeWants = wants;
         }
     }
+
+    /// <summary>
+    /// BEH-ORCH-18, slice 1: one look at the merge trains. A train whose test run passed is merged rider by rider, each
+    /// through its own pull request at the head commit it rode at, but only while the base is still where the train was
+    /// built, because only then is the result the tree that was tested. Then, for each repo and base with no train and at
+    /// least two built tickets that may ride, a train is built and its first rider's ticket starts one test run of it.
+    /// A rider that conflicts goes the single way. A public repo gets no train.
+    /// </summary>
+    private async Task TrainTickAsync(IMergeTrain train, HashSet<string> wants, CancellationToken cancellationToken)
+    {
+        List<(string RepoAt, Train Train)> passed;
+        lock (gate)
+        {
+            passed = trains.Where(t => t.Value.Passed).Select(t => (t.Key, t.Value)).ToList();
+        }
+
+        foreach (var (repoAt, t) in passed)
+        {
+            var (repo, baseBranch) = SplitRepoAt(repoAt);
+            var merged = new List<(string App, string Slug)>();
+            var head = await train.HeadOfAsync(repo, baseBranch, cancellationToken);
+            var moved = head != t.BaseSha;
+            string? why = null;
+            if (!moved)
+            {
+                foreach (var rider in t.Riders)
+                {
+                    why = await train.MergeAtAsync(rider.Url, rider.HeadSha, cancellationToken);
+                    if (why is not null)
+                    {
+                        break;
+                    }
+
+                    merged.Add(rider.Key);
+                }
+            }
+
+            lock (gate)
+            {
+                trains.Remove(repoAt);
+                foreach (var key in merged)
+                {
+                    var index = items.FindIndex(i => i.Project == key.App && i.Slug == key.Slug && IsBuilt(i));
+                    if (index >= 0)
+                    {
+                        Set(index, items[index] with { Merged = true });
+                    }
+                }
+
+                // A base that moved builds the train again at the next look. A rider that would not merge sends the rest the single way.
+                if (why is not null)
+                {
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} stopped merging: {why}");
+                    offTrain.UnionWith(t.Riders.Select(r => r.Key).Except(merged));
+                }
+            }
+        }
+
+        List<(string RepoAt, List<WorkItem> Cars)> wanted;
+        lock (gate)
+        {
+            var repoOf = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
+                .ToDictionary(app => app, app => RepoAtOf(app), StringComparer.Ordinal);
+            wanted = items.Where(i => IsBuilt(i) && !offTrain.Contains((i.Project, i.Slug)) && repoOf[i.Project] is not null)
+                .Where(i => !items.Any(o => o.Project == i.Project && o.Stage is PipelineStage.Merge or PipelineStage.Test && o.Status == WorkItemStatus.Running))
+                .GroupBy(i => repoOf[i.Project]!, StringComparer.Ordinal)
+                .Where(g => !trains.ContainsKey(g.Key) && !publicRepos.Contains(g.Key))
+                .Select(g =>
+                {
+                    foreach (var app in g.Select(i => i.Project).Distinct(StringComparer.Ordinal))
+                    {
+                        RefreshPriorities(app);
+                    }
+
+                    return (g.Key, g.OrderBy(i => priorities.GetValueOrDefault((i.Project, i.Slug), DefaultPriority)).ThenBy(i => items.IndexOf(i)).Take(TrainCars).ToList());
+                })
+                .Where(g => g.Item2.Count >= 2)
+                .ToList();
+        }
+
+        foreach (var (repoAt, cars) in wanted)
+        {
+            var (repo, baseBranch) = SplitRepoAt(repoAt);
+            var built = await train.BuildAsync(repo, baseBranch, TrainPrefix + baseBranch, cars.Select(c => c.PullRequest!).ToList(), cancellationToken);
+            lock (gate)
+            {
+                if (built.NotPrivate)
+                {
+                    publicRepos.Add(repoAt);
+                    continue;
+                }
+
+                if (built is not { Sha: { } sha, BaseSha: { } baseSha })
+                {
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} could not be built: {built.Reason}");
+                    continue;
+                }
+
+                foreach (var url in built.Conflicted)
+                {
+                    if (cars.FirstOrDefault(c => c.PullRequest == url) is { } left)
+                    {
+                        offTrain.Add((left.Project, left.Slug));
+                    }
+                }
+
+                var riders = built.Riders
+                    .Select(r => (Car: cars.FirstOrDefault(c => c.PullRequest == r.Url), r.Url, r.HeadSha))
+                    .Where(r => r.Car is not null)
+                    .Select(r => ((r.Car!.Project, r.Car.Slug), r.Url, r.HeadSha))
+                    .ToList();
+                if (riders.Count < 2)
+                {
+                    continue;
+                }
+
+                var lead = riders[0].Item1;
+                var index = items.FindIndex(i => i.Project == lead.Project && i.Slug == lead.Slug && IsBuilt(i));
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                // Its test run needs the lead's project free; until it is, no new ticket starts there (mergeWants).
+                if (items.Any(i => i.Project == lead.Project && i.Status == WorkItemStatus.Running))
+                {
+                    wants.Add(lead.Project);
+                    continue;
+                }
+
+                trains[repoAt] = new Train(sha, baseSha, riders, lead);
+                testing[lead] = sha;
+                try
+                {
+                    Set(index, Begin(index, items[index] with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    trains.Remove(repoAt);
+                    testing.Remove(lead);
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} could not start its test run ({e.GetType().Name})");
+                }
+
+                if (items[index].Status != WorkItemStatus.Running)
+                {
+                    trains.Remove(repoAt);
+                }
+            }
+        }
+    }
+
+    // "owner/repo@branch", or null when the project names no repo or cannot be read. Called with the gate held.
+    private string? RepoAtOf(string app)
+    {
+        try
+        {
+            var (repoAt, _) = RepoDirective.Read(corpora.ReadText(app));
+            return repoAt;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // The branch and riders of the train whose test run <paramref name="lead"/> starts, or null when it leads none. Called with the gate held.
+    private (string Branch, IReadOnlyList<string> Riders)? TrainLedBy((string App, string Slug) lead, string repoAt) =>
+        trains.TryGetValue(repoAt, out var t) && t.Lead == lead && !t.Passed
+            ? (TrainPrefix + SplitRepoAt(repoAt).Base, t.Riders.Select(r => r.Url).ToList())
+            : null;
+
+    private static (string Repo, string Base) SplitRepoAt(string repoAt) =>
+        (repoAt[..repoAt.LastIndexOf('@')], repoAt[(repoAt.LastIndexOf('@') + 1)..]);
 
     private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken, HashSet<string>? wants = null)
     {
@@ -1143,7 +1359,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
                     PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
-                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)]),
+                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)], TrainLedBy((item.Project, item.Slug), repoAt)),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }

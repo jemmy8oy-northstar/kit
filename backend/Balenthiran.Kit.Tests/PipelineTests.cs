@@ -33,7 +33,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false, IPullRequestMerger? merger = null)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,7 +50,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store, clock);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: merger ?? Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock: clock, pipeline: Pipeline);
@@ -3535,6 +3535,162 @@ public class PipelineTests
 
         Assert.Empty(rig.Merges.Asked);
         Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    // ---- BEH-ORCH-18: the merge train --------------------------------------------------------------------------
+
+    private const string TrainHead = "7a1n0000000000000000000000000000000000aa";
+
+    private const string BaseHead = "ba5e0000000000000000000000000000000000bb";
+
+    // A merger that can also build trains: GitHub's side of BEH-ORCH-18, with the head each pull request rode at named after it.
+    private sealed class TrainMerger : IPullRequestMerger, IMergeTrain
+    {
+        // The rig's own merger, for the single way.
+        public Merger Single { get; set; } = new();
+
+        public bool Private { get; set; } = true;
+
+        public HashSet<string> Conflicts { get; } = [];
+
+        public string Base { get; set; } = BaseHead;
+
+        public List<(string Repository, string Base, string Branch, IReadOnlyList<string> Pulls)> Built { get; } = [];
+
+        public List<(string Url, string Sha)> MergedAt { get; } = [];
+
+        public Task<IPullRequestMerge> MergeIfGreenAsync(string pullRequestUrl, string? repository, CancellationToken cancellationToken, bool updateFirst = false, string? testedSha = null) =>
+            Single.MergeIfGreenAsync(pullRequestUrl, repository, cancellationToken, updateFirst, testedSha);
+
+        public Task<TrainBuilt> BuildAsync(string repository, string baseBranch, string trainBranch, IReadOnlyList<string> pullRequestUrls, CancellationToken cancellationToken)
+        {
+            Built.Add((repository, baseBranch, trainBranch, pullRequestUrls));
+            return Task.FromResult(Private
+                ? new TrainBuilt(TrainHead, Base, pullRequestUrls.Where(u => !Conflicts.Contains(u)).Select(u => (u, HeadAt(u))).ToList(), pullRequestUrls.Where(Conflicts.Contains).ToList())
+                : new TrainBuilt(null, null, [], [], NotPrivate: true));
+        }
+
+        public Task<string?> MergeAtAsync(string pullRequestUrl, string headSha, CancellationToken cancellationToken)
+        {
+            MergedAt.Add((pullRequestUrl, headSha));
+            return Task.FromResult<string?>(null);
+        }
+
+        public Task<string?> HeadOfAsync(string repository, string branch, CancellationToken cancellationToken) => Task.FromResult<string?>(Base);
+
+        public static string HeadAt(string url) => "head-of-" + url[(url.LastIndexOf('/') + 1)..];
+    }
+
+    private static (Rig Rig, TrainMerger Train) TrainRig(params PipelineTicket[] seeded)
+    {
+        var store = new MemoryTicketStore();
+        foreach (var ticket in seeded)
+        {
+            store.Save(ticket);
+        }
+
+        var train = new TrainMerger();
+        var rig = new Rig(PriorityCorpus(), mergeJob: true, tickets: store, merger: train);
+        train.Single = rig.Merges;
+        rig.Merges.Answer = NeedsTest(HeadA);
+        rig.AddProject("other");
+        rig.Pipeline!.Resume();
+        return (rig, train);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_built_tickets_on_one_private_repo_ride_one_train_and_one_test_run_tests_it()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("c", 3, "demo", "BEH-B"));
+        using var _ = rig;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var built = Assert.Single(train.Built);
+        Assert.Equal(("someone/demo", "dev", "kit/train/dev"), (built.Repository, built.Base, built.Branch));
+        Assert.Equal(3, built.Pulls.Count);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", claim.Stage);
+        Assert.Contains("kit/train/dev", claim.Task);
+        Assert.Contains(TrainHead, claim.Task);
+        Assert.Single(rig.Store.List(), r => r.Stage == "test");
+
+        // While it runs, nothing of the project is merged or tested alone, and the train is not built again.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Single(train.Built);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_train_that_passed_merges_each_pull_request_in_order_at_the_commit_it_rode_at()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var order = train.Built[0].Pulls;
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(order.Select(u => (u, TrainMerger.HeadAt(u))).ToList(), train.MergedAt);
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.True(ItemOf(rig, "b").Merged);
+        Assert.All(rig.Tickets.Read("demo"), t => Assert.Equal(TicketState.Merged, t.State));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_base_that_moved_after_the_train_was_built_merges_nothing_and_the_train_is_built_again()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+        train.Base = "m0ved000000000000000000000000000000000cc";
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Empty(train.MergedAt);
+        Assert.False(ItemOf(rig, "a").Merged);
+        Assert.Equal(2, train.Built.Count);
+        Assert.Equal("test", Assert.IsType<PoolClaim>(rig.Claim()).Stage);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_train_that_failed_stops_no_ticket_and_its_riders_go_the_single_way()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), false);
+
+        Assert.All(new[] { ItemOf(rig, "a"), ItemOf(rig, "b") }, i => Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (i.Stage, i.Status)));
+        rig.Merges.Asked.Clear();
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Single(train.Built);
+        Assert.Single(rig.Merges.Asked);
+        var alone = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains(HeadA, alone.Task);
+        Assert.DoesNotContain("kit/train/", alone.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_rider_that_conflicts_leaves_the_train_and_a_public_repo_gets_none()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), BuiltSeed("c", 3, "demo", "BEH-B"));
+        using var _ = rig;
+        train.Conflicts.Add(PullOf(3));
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(PullOf(3), Assert.IsType<PoolClaim>(rig.Claim()).Task.Split('\n').First(l => l.StartsWith("This branch is a merge train", StringComparison.Ordinal)));
+
+        var (open, publicTrain) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var __ = open;
+        publicTrain.Private = false;
+        await open.Pipeline!.MergeTickAsync(CancellationToken.None);
+        await open.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Single(publicTrain.Built);
+        Assert.DoesNotContain("kit/train/", Assert.IsType<PoolClaim>(open.Claim()).Task);
     }
 
     [Fact]
