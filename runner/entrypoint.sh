@@ -16,6 +16,9 @@
 #   KIT_MAX_TURNS     optional  turn limit (default: 100)
 #   KIT_RUN_MAX_SECONDS optional  wall-clock limit on the agent, in seconds (default: 6600, under the claimer's 7200)
 #   KIT_STAGE         optional  the pipeline stage; "test" (BEH-ORCH-12) makes the script check the agent's verdict line and never push
+#   KIT_TEST_COMMAND  optional  with KIT_STAGE=test, the project's own suite command (BEH-ORCH-18): run instead of the agent
+#   KIT_TEST_SHA      optional  the commit a script test checks out (required with KIT_TEST_COMMAND)
+#   KIT_TEST_BRANCH   optional  the branch it is fetched from (required with KIT_TEST_COMMAND)
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
 #   KIT_BUNDLES_FILE  optional  where to write the bundles of the kit/work/* branches the run pushed (BEH-ORCH-3)
@@ -142,6 +145,45 @@ if [ -n "${KIT_BASE_BRANCH:-}" ]; then
 fi
 branch="kit/run-${KIT_RUN_ID}"
 git checkout --quiet -b "$branch"
+
+# BEH-ORCH-18 slice 2: a test run of a project that names its suite ("# kit:test <command>") runs that command with no model
+# call. It fetches the branch, checks out exactly KIT_TEST_SHA, runs the command under the run's time limit, and passes on
+# exit 0 only, with HEAD still at that commit. The command is the project's own, from its spec. It sees no model credential
+# and no run token, and nothing is ever pushed or reported as a bundle.
+if [ "${KIT_STAGE:-}" = test ] && [ -n "${KIT_TEST_COMMAND:-}" ]; then
+  case "${KIT_TEST_SHA:-}" in
+    *[!0-9a-f]*|'') echo "kit-run: KIT_TEST_SHA must be a 40-character lowercase commit hash" >&2; exit 64 ;;
+  esac
+  if [ "${#KIT_TEST_SHA}" -ne 40 ] || [ -z "${KIT_TEST_BRANCH:-}" ]; then
+    echo "kit-run: a script test needs KIT_TEST_SHA (40 hex) and KIT_TEST_BRANCH" >&2
+    exit 64
+  fi
+  git fetch --quiet origin "$KIT_TEST_BRANCH"
+  git checkout --quiet --detach "$KIT_TEST_SHA"
+  step=test
+  echo "kit-run[$KIT_RUN_ID]: testing $KIT_TEST_SHA with the project's own command"
+  status=0
+  started=$SECONDS
+  timeout --kill-after="${KIT_RUN_KILL_AFTER:-30}" "$max_seconds" \
+    env -u CLAUDE_CODE_OAUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_BASE_URL -u KIT_RUN_TOKEN -u GITHUB_TOKEN \
+    bash -c "$KIT_TEST_COMMAND" &
+  suite=$!
+  wait "$suite" || status=$?
+  kill -KILL -- "-$suite" 2>/dev/null || true
+  if [ "$status" -eq 124 ] || { [ "$status" -eq 137 ] && [ $((SECONDS - started)) -ge "$max_seconds" ]; }; then
+    step=time
+    echo "kit-run[$KIT_RUN_ID]: the suite ran out of time (${max_seconds}s)" >&2
+    exit 124
+  fi
+  if [ "$status" -ne 0 ]; then
+    echo "kit-run[$KIT_RUN_ID]: the suite failed at $KIT_TEST_SHA (exit $status)" >&2
+    exit "$status"
+  fi
+  step=verdict
+  [ "$(git rev-parse HEAD)" = "$KIT_TEST_SHA" ] || exit 1
+  echo "kit-run[$KIT_RUN_ID]: tests passed at $KIT_TEST_SHA; nothing pushed"
+  exit 0
+fi
 
 step=process
 # The process is served by Kit so a fix reaches every run at once. The route is public, so
