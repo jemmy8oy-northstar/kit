@@ -379,3 +379,5 @@ behaviour BEH-ACCOUNT-1 "A signed-in user can disconnect their GitHub account fr
   contract my assumption: disconnecting does not change repositories, branches or pull requests already opened on GitHub
   contract my assumption: the option lives in Settings and asks the user to confirm before the token is removed
   contract my assumption: a disconnected user can connect GitHub again at any time
+  contract my assumption: he confirmed on 2026-11-19 16:53Z that deleting the stored GitHub token is what the disconnect should do
+  contract my assumption: he left where this card lives to triage (reply 2026-11-19 16:53Z), so it stays in kit.beh beside the other FEAT-SETTINGS cards, the file this work item may edit
