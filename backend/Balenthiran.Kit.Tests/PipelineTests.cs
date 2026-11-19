@@ -361,6 +361,39 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_17_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_the_lease()
+    {
+        // BEH-ORCH-17: his 2026-11-19 20:28Z screenshot of Runs → Now: runs "waiting for a runner · 306h" and "running since
+        // before Kit last started", left going for ever by earlier restarts.
+        var clock = new Ticking();
+        var store = new MemoryAgentRunStore();
+        var queued = store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), null, "triage");
+        var running = store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "list-sorting", "build");
+        Assert.True(store.StartIfQueued(running.Id));
+        clock.Advance(TimeSpan.FromHours(3));
+
+        // Kit starts again: a new pool over the same store.
+        var pool = new RunnerPool(store, clock);
+        var routes = new RunnerPoolRoutes(pool, store, PoolToken, TimeSpan.Zero, clock: clock);
+        var fresh = store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), null, "triage");
+        Assert.Equal(204, routes.ClaimAsync(PoolToken).GetAwaiter().GetResult().Status);
+
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == queued.Id).Status, store.List().Single(r => r.Id == queued.Id).Failure));
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
+        Assert.Empty(pool.Claimed());
+
+        // Its runner may still report until the lease, counted from the restart, runs out.
+        clock.Advance(RunnerPool.Lease - TimeSpan.FromMinutes(1));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == running.Id).Status, store.List().Single(r => r.Id == running.Id).Failure));
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
+    }
+
+    [Fact]
     public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
     {
         // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.
@@ -3447,6 +3480,43 @@ public class PipelineTests
         Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (item.Stage, item.Status));
         Assert.Null(rig.Claim());
         Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_test_the_merge_job_could_not_start_gets_the_projects_next_free_slot_before_another_build()
+    {
+        // His 2026-11-19 21:07Z comment on claude-code-bot#145: "I don't see the merge runners at all". The build job took
+        // a freed project at once, while the merge look was still asking GitHub, so with tickets planned no test ever ran.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, buildJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+
+        // The build ends: the build job, looking first, leaves the project for the merge job's test.
+        EndRun(rig, build, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+
+        // Once the test is going, the merge job wants nothing more: when it ends, the build job takes the project again.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, test, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
     }
 
     [Fact]
