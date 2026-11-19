@@ -1209,7 +1209,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             item.Stage == PipelineStage.Triage ? null : item.Slug, stage);
         try
         {
-            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));
+            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults), Orchestrator.SecondsFor(item.Stage));
         }
         catch (Exception e)
         {

@@ -954,7 +954,11 @@
   "BEH-ORCH-17": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_The_runs_list_says_when_a_runner_took_each_run_still_going_and_when_it_counts_as_lost" },
     { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows each run still going: how long it has run and when it counts as lost, or how long it has waited" },
-    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows no Now section when nothing is going" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows no Now section when nothing is going" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 says when a run with its own time limit gives up" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_17_The_pool_gives_a_run_the_claims_time_limit_and_none_when_the_claim_has_none" }
   ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },

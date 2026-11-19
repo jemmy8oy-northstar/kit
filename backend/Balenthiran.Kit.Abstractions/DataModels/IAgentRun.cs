@@ -77,7 +77,10 @@ public interface IRunClaim
     /// <summary>When a runner took the run from the pool: the moment it began to run.</summary>
     DateTimeOffset ClaimedAt { get; }
 
-    /// <summary>When Kit counts its runner lost if it has still not reported (BEH-ORCH-14): <see cref="ClaimedAt"/> plus the lease.</summary>
+    /// <summary>When its runner ends it for running too long: <see cref="ClaimedAt"/> plus its stage's time limit; null when it has none of its own.</summary>
+    DateTimeOffset? GivesUpAt { get; }
+
+    /// <summary>When Kit counts its runner lost if it has still not reported (BEH-ORCH-14): <see cref="ClaimedAt"/> plus the lease, which follows the time limit when there is one.</summary>
     DateTimeOffset LostAt { get; }
 }
 

@@ -53,7 +53,7 @@ function Now({ runs, claims, now }: { runs: AgentRun[]; claims: RunClaim[]; now:
               {r.status === 'queued'
                 ? `waiting for a runner · ${minutes(now - Date.parse(r.started))}`
                 : c
-                  ? `running ${minutes(now - Date.parse(c.claimedAt))} · ${over ? 'overdue: counted lost at the next claim' : `counted lost at ${clock(c.lostAt)}`}`
+                  ? `running ${minutes(now - Date.parse(c.claimedAt))} · ${over ? 'overdue: counted lost at the next claim' : c.givesUpAt ? `gives up at ${clock(c.givesUpAt)}` : `counted lost at ${clock(c.lostAt)}`}`
                   : 'running since before Kit last started'}
             </li>
           )
