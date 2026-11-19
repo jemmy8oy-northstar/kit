@@ -47,10 +47,10 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
 
-  # Eight NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
+  # Nine NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
   if ! node -e '
     const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-    for (const k of ["id", "token", "repo", "task", "baseBranch", "model", "maxTurns", "stage"]) process.stdout.write(String(c[k] ?? "") + "\0");
+    for (const k of ["id", "token", "repo", "task", "baseBranch", "model", "maxTurns", "stage", "maxSeconds"]) process.stdout.write(String(c[k] ?? "") + "\0");
   ' "$tmp/claim.json" > "$tmp/fields"; then
     echo "kit-pool: could not read the claim, retrying in 10s" >&2
     rm -f "$tmp/claim.json" "$tmp/fields"
@@ -58,7 +58,7 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
   rm -f "$tmp/claim.json"
-  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; read -r -d '' run_turns; read -r -d '' run_stage; } < "$tmp/fields" || true
+  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; read -r -d '' run_turns; read -r -d '' run_stage; read -r -d '' run_seconds; } < "$tmp/fields" || true
   rm -f "$tmp/fields"
 
   runs_left=$((runs_left - 1))
@@ -73,6 +73,8 @@ while [ "$runs_left" -gt 0 ]; do
     if [ -n "$run_turns" ]; then export KIT_MAX_TURNS="$run_turns"; fi
     # BEH-ORCH-12: the stage, so kit-run can check a test run's verdict itself; a run started by hand has none.
     if [ -n "$run_stage" ]; then export KIT_STAGE="$run_stage"; fi
+    # BEH-ORCH-17: a stage's own time limit (a test run's is half an hour); none keeps kit-run's default.
+    if [ -n "$run_seconds" ]; then export KIT_RUN_MAX_SECONDS="$run_seconds"; fi
     exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
