@@ -300,6 +300,27 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_17_The_runs_list_says_when_a_runner_took_each_run_still_going_and_when_it_counts_as_lost()
+    {
+        // BEH-ORCH-17: his 2026-11-19 19:29Z note: "how long does a test run actually take atm".
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        rig.Note("the list should sort by date");
+        Assert.Empty(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+
+        clock.Advance(TimeSpan.FromMinutes(3));
+        var taken = Assert.IsType<PoolClaim>(rig.Claim());
+        var claim = Assert.Single(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims);
+        Assert.Equal(taken.Id, claim.RunId);
+        Assert.Equal(clock.GetUtcNow(), claim.ClaimedAt);
+        Assert.Equal(claim.ClaimedAt + RunnerPool.Lease, claim.LostAt);
+
+        // Once it reports, it is over and no longer claimed.
+        rig.FinishWith(taken, new { slug = "list-sorting", text = BundleText("list-sorting") });
+        Assert.DoesNotContain(Assert.IsType<AgentRunList>(rig.Router.Route("GET", "/api/runs").Body).Claims, c => c.RunId == taken.Id);
+    }
+
+    [Fact]
     public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
     {
         // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.

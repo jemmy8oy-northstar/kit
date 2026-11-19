@@ -184,6 +184,22 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     }
 
     /// <summary>
+    /// BEH-ORCH-17: each run this pool handed out that is not over, with when a runner took it, oldest first. What
+    /// a restart forgot is not here, as for <see cref="Lost"/>.
+    /// </summary>
+    public IReadOnlyList<(string RunId, DateTimeOffset ClaimedAt)> Claimed()
+    {
+        lock (gate)
+        {
+            return handedOutAt
+                .Where(h => !OverOrGone(h.Key))
+                .OrderBy(h => h.Value)
+                .Select(h => (h.Key, h.Value))
+                .ToList();
+        }
+    }
+
+    /// <summary>
     /// BEH-ORCH-14: the runs this pool handed out more than <see cref="Lease"/> ago that are still not over, oldest
     /// first. Their runners are lost; the caller fails them, which frees their projects. A run handed out before a
     /// restart is not here: the restart already forgot it, and its project with it. Each is given out once, so two
