@@ -3483,6 +3483,43 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_12_a_test_the_merge_job_could_not_start_gets_the_projects_next_free_slot_before_another_build()
+    {
+        // His 2026-11-19 21:07Z comment on claude-code-bot#145: "I don't see the merge runners at all". The build job took
+        // a freed project at once, while the merge look was still asking GitHub, so with tickets planned no test ever ran.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, buildJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+
+        // The build ends: the build job, looking first, leaves the project for the merge job's test.
+        EndRun(rig, build, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+
+        // Once the test is going, the merge job wants nothing more: when it ends, the build job takes the project again.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, test, true);
+        rig.Pipeline.JobTick(PipelineStage.Build);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_12_no_other_ticket_of_the_project_merges_while_its_test_run_is_in_flight()
     {
         // b (priority 1) is the top item and needs a test; a waits behind it. Another project is not held.
