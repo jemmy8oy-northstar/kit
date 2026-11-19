@@ -1747,6 +1747,25 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract his comment (claude-code-bot#145, 2026-11-19 20:29Z), on a screenshot of Now listing runs "waiting for a runner · 306h" and "running since before Kit last started": "Ok now I need some help digesting this"
   contract my assumption: slice 3, built. A restart no longer leaves runs going for ever. At the first claim after Kit starts, each run created before it started that is still queued is failed as "lost", because its token and task went with the restart and no runner can ever take it. Each one still running is given the lease from when Kit started (RunnerPool.Forgotten), because its runner may yet report, and is failed as "lost" when that runs out, like any lost run. Such a run still has no claim, so Now keeps saying "running since before Kit last started" until then
 
+behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a train: one test run for several pull requests"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-19): "maybe we can think about how we can speed up a big stack of merges. Maybe grouping and creating stacked PRs would be useful?"
+  contract his answer (claude-code-bot#145, 2026-11-19 20:30Z): "Merge train sounds like a good approach, I feel like a lot of this can be deterministic let's do it"
+  contract measured 2026-11-19: kit had 22 kit/work pull requests open. Each merge moves dev, so the next one must be brought up to date and tested again. One at a time, that is one test run of about 10 minutes per pull request, back to back, plus a wait for the project to be free
+  contract my assumption: a train belongs to a repo and its base branch, not to a project, because kit and kit-ui both merge into jemmy8oy-northstar/kit@dev, and two trains on one branch would each make the other stale. It applies only where Kit tests the pull requests itself (a private repo, BEH-ORCH-12). A public repo's Actions CI already tests each one for free
+  contract my assumption: slice 1. A merge look takes up to 5 built, unblocked, unmerged tickets on that repo and branch, top priority first, and builds the branch kit/train/<base> from the base head through GitHub's API, with no agent: it merges each pull request's head in turn. One that conflicts leaves the train and goes the single way (update, resolve run, BEH-ORCH-11 slice 7b). The rest get one test run at the train's head, the same test stage as BEH-ORCH-12 on another branch
+  contract my assumption: slice 1, on a pass. Kit moves the base branch to the train's head as a fast-forward only (never forced). GitHub then marks every pull request in it merged, because each head is now in the base. If the base moved meanwhile, the fast-forward is refused and the next look builds the train again. This is the one step where Kit writes the base branch directly rather than pressing merge on a pull request, and it is the part to deny if that is not wanted
+  contract my assumption: slice 1, on a fail. No ticket is stopped on the train's say-so. Its tickets go back to the single way, where each is tested alone and only the one whose own test fails is stopped, as now. Halving the train to find the culprit is slice 3, if failures turn out to be common
+  contract my assumption: slice 2, the deterministic half. A project may name its suite as a "# kit:test <command>" directive. A test run on such a project runs that command on the runner with no model call and passes on exit 0. That is faster, free, and decided by the exit code rather than by an agent's last line. A project with no directive keeps the agent test run
+  contract my assumption: Runs → Now shows a train's test run as stage test with its work item "train: <slug>, <slug>, …", so he can see what is riding on it
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714
