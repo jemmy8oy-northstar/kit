@@ -48,6 +48,7 @@ Context:
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
 Test plan:
 - BEH-CHAT-1: picking a project in the select box puts "Now talking about <project>" in the thread and keeps the earlier history; a message naming exactly one other project moves the chat before it is sent; naming two, or the current one too, does not
+- BEH-CHAT-1: a run's row in agent_runs (BEH-ORCH-6) names the user who started the run; if it has no user column, one is added and the run's cost is written against that user, and chat history is not written to the database
 - BEH-CHAT-2: opening the page with an item waiting shows that item in the thread above the message box with no click and no request sent; with nothing waiting it says so and offers "<project>: next waiting is “<title>”", which switches project when taken
 - BEH-CHAT-3: Approve and "Skip to next item" make the Inbox's own review write, Skip leaves the item waiting, and the next item comes up; "Post as my answer" and "Save as a note" are gone and "Ask Kit to note this chat" is the one note control
 - BEH-CHAT-4: an off-topic message gets the agent's question naming other projects from its context, and the agent does not change project itself
