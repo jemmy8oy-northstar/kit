@@ -1,6 +1,7 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
 Flag: the owner's 2026-11-19 correction says his earlier reply was about where a run's cost is stored; the per-user cost row in agent_runs is not checked yet (level: low)
+Review: agreed — the 2026-11-19 correction is applied (chat stays in the page, run cost goes to the DB per user); the corpus lists only work_item and stage on agent_runs, no user column, so the builder checks the schema and adds one per the contract at kit-ui.beh:2873
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
