@@ -64,6 +64,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private readonly Dictionary<(string App, string Slug), string> testing = [];
 
+    // BEH-ORCH-11: the projects whose merge job, at its last look, needed a run (a test or a resolve) but found the
+    // project busy. No job starts a ticket on them, so the next free slot goes to finishing a ticket, not starting one.
+    // Replaced whole at the end of each merge look, so a want the merge job no longer has lasts at most one look.
+    private HashSet<string> mergeWants = new(StringComparer.Ordinal);
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -664,13 +669,19 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
         }
 
+        var wants = new HashSet<string>(StringComparer.Ordinal);
         foreach (var item in top)
         {
-            await MergeOneAsync(item, true, cancellationToken);
+            await MergeOneAsync(item, true, cancellationToken, wants);
+        }
+
+        lock (gate)
+        {
+            mergeWants = wants;
         }
     }
 
-    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken)
+    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken, HashSet<string>? wants = null)
     {
         IPullRequestMerge? result = null;
         string? reason = null;
@@ -723,9 +734,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     return;
                 }
 
-                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
                 if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
                 {
+                    wants?.Add(item.Project);
                     return;
                 }
 
@@ -746,9 +758,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // commit: a head that moves is asked about again, and a pass is remembered for the commit it passed at.
             if (updateFirst && result is { Merged: false, NeedsTest: true, HeadSha: { Length: > 0 } sha })
             {
-                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
                 if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
                 {
+                    wants?.Add(item.Project);
                     return;
                 }
 
@@ -860,7 +873,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         lock (gate)
         {
-            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
+            // A project the merge job is waiting on for a test or resolve run starts nothing new (mergeWants).
+            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).Where(app => !mergeWants.Contains(app)).ToList())
             {
                 RefreshPriorities(app);
                 // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
