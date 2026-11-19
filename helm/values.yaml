@@ -214,6 +214,13 @@ apps:
       # project's repo, and every project repo but kit's is public (kit#714). Remove to triage all.
       - name: KIT_PIPELINE_PROJECTS
         value: "kit,kit-ui"
+      # BEH-ORCH-11 slice 7: the merge job. Every 2 minutes, per project, it takes the built ticket with
+      # the lowest priority number, brings its pull request up to date with dev, has an agent resolve a
+      # conflict, runs the suite on the runner pool where there is no Actions run, and merges that exact
+      # commit. Switched on at James's ask (kit.notes.md, 2026-11-19 16:57Z: "the merge agent needs to be
+      # merging"). Each resolve or test run spends his subscription. Remove to switch off.
+      - name: KIT_PIPELINE_JOB_MERGE
+        value: "on"
     resources: {}
     nodeSelector: {}
     tolerations: []
