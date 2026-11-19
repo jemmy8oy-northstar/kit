@@ -42,7 +42,7 @@ public sealed partial class KitRouter
         }
 
         var claims = (runnerPool?.Claimed() ?? [])
-            .Select(c => (IRunClaim)new RunClaim { RunId = c.RunId, ClaimedAt = c.ClaimedAt, LostAt = c.ClaimedAt + RunnerPool.Lease })
+            .Select(c => (IRunClaim)new RunClaim { RunId = c.RunId, ClaimedAt = c.ClaimedAt, GivesUpAt = c.GivesUpAt, LostAt = c.LostAt })
             .ToList();
         return Json(200, new AgentRunList { CapUsd = agentRunCap, Runs = agentRuns.List(), Claims = claims });
     }

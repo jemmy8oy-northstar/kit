@@ -214,6 +214,26 @@ describe('Runs', () => {
     expect(rows[2]).toContain('waiting for a runner · 12 min')
   })
 
+  it('BEH-ORCH-17 says when a run with its own time limit gives up', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-19T19:30:00Z'))
+    mockBoth(
+      {
+        capUsd: 5,
+        runs: [{ ...run, id: 't', stage: 'test', workItem: 'list-sorting', status: 'running', started: '2026-11-19T19:20:00Z', ended: null }],
+        claims: [{ runId: 't', claimedAt: '2026-11-19T19:20:00Z', givesUpAt: '2026-11-19T19:50:00Z', lostAt: '2026-11-19T20:00:00Z' }],
+      },
+      { on: true, items: [] },
+    )
+    renderRuns()
+
+    const now = await screen.findByRole('list', { name: 'Runs going now' })
+    const row = within(now).getByRole('listitem').textContent
+    vi.useRealTimers()
+    expect(row).toContain('running 10 min · gives up at')
+    expect(row).not.toContain('counted lost')
+  })
+
   it('BEH-ORCH-17 shows no Now section when nothing is going', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: true, items: [] })
     renderRuns()

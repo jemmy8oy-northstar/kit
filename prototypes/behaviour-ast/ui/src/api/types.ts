@@ -641,6 +641,8 @@ export interface RunClaim {
   runId: string
   /** ISO 8601 UTC: when a runner took it, the moment it began to run. */
   claimedAt: string
+  /** ISO 8601 UTC: when its runner ends it for running too long; absent or null when its stage has no limit of its own. */
+  givesUpAt?: string | null
   /** ISO 8601 UTC: when Kit counts its runner lost if it has still not reported (BEH-ORCH-14). */
   lostAt: string
 }

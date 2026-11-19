@@ -13,5 +13,8 @@ public sealed class RunClaim : IRunClaim
     public required DateTimeOffset ClaimedAt { get; init; }
 
     [JsonPropertyOrder(3)]
+    public DateTimeOffset? GivesUpAt { get; init; }
+
+    [JsonPropertyOrder(4)]
     public required DateTimeOffset LostAt { get; init; }
 }
