@@ -245,6 +245,18 @@ behaviour BEH-ADJ-1 "An inference is included by default and marked unreviewed"
   then reports review:Unreviewed
   contract James's call on claude-code-bot#68 — default-include, marked
 
+behaviour BEH-ADJ-2 "A behaviour a pipeline agent assumed is merged marked as assumed, and an owner-defined one quietly supersedes it"
+  in FEAT-RESOLVER
+  priority 4
+  actor engineer
+  given corpus:AssumedBehaviour
+  when runs command:KitResolve
+  then reports review:Assumed
+  review unreviewed
+  contract my assumption: a pipeline agent may merge a behaviour it assumed without owner approval, and the merged line is marked with the existing "contract my assumption:" prefix, so a later reader knows it was a guess
+  contract my assumption: an owner-defined behaviour on the same thing supersedes the assumed line quietly: it is not a conflict under BEH-RESOLVE-2, and the assumed line is replaced rather than kept beside it
+  contract my assumption: he asked for this on 2026-11-19 16:55Z (kit.notes.md), as claude-code-bot allowed; the marker is the only new thing, and it reuses BEH-ADJ-1's unreviewed flag
+
 # ── the read API (docs/design/ui.md) ────────────────────────────────────────
 # The first behaviours here that describe something with a NETWORK surface, and
 # the first two are security properties. A security property asserted only in a
