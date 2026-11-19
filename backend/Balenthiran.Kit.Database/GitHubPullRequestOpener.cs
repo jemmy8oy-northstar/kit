@@ -424,7 +424,8 @@ public sealed partial class GitHubPullRequestOpener(
         foreach (var url in pullRequestUrls)
         {
             var page = PullPage().Match(url);
-            var pull = page.Success ? await SendAsync(HttpMethod.Get, new Uri(root, $"pulls/{page.Groups["number"].Value}"), token, null, cancellationToken) : default;
+            // A pull request of another repo, or one that cannot be read, cannot ride: it is left out like a conflict.
+            var pull = page.Success && page.Groups["repo"].Value == repository ? await SendAsync(HttpMethod.Get, new Uri(root, $"pulls/{page.Groups["number"].Value}"), token, null, cancellationToken) : default;
             if (pull.Json is not { ValueKind: JsonValueKind.Object } pj
                 || !pj.TryGetProperty("head", out var head) || head.ValueKind != JsonValueKind.Object
                 || !head.TryGetProperty("sha", out var hs) || hs.ValueKind != JsonValueKind.String)
@@ -435,15 +436,11 @@ public sealed partial class GitHubPullRequestOpener(
 
             var headSha = hs.GetString()!;
             var merged = await SendAsync(HttpMethod.Post, new Uri(root, "merges"), token, JsonSerializer.Serialize(new { @base = trainBranch, head = headSha, commit_message = $"kit: merge train takes {url}" }), cancellationToken);
-            if (merged.Status == 409)
+            // 409 is a conflict. Any other refusal leaves this one out too, so one bad pull request cannot stop every train.
+            if (merged.Reason is not null)
             {
                 conflicted.Add(url);
                 continue;
-            }
-
-            if (merged.Reason is not null)
-            {
-                return Failed($"merging {url} onto the train failed: {merged.Reason}");
             }
 
             // 201 is a new merge commit; 204 means the base already holds that head, so the train is unchanged.

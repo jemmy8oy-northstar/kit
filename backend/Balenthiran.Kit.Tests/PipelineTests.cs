@@ -3656,6 +3656,33 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_18_a_passed_train_whose_base_cannot_be_read_waits_and_one_whose_rider_changed_merges_nothing()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        // GitHub could not say where the base is: nothing is merged, nothing is rebuilt, and no test is paid for again.
+        train.Base = null!;
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Empty(train.MergedAt);
+        Assert.Single(train.Built);
+        Assert.Null(rig.Claim());
+
+        // A triage rewrote a rider's bundle meanwhile, so it is no longer built: the train without it was never tested, and
+        // none of it is merged.
+        train.Base = BaseHead;
+        rig.Note("b should also sort by name");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal(200, rig.FinishWith(triage, new { slug = "b", text = BundleText("b") }).Status);
+        Assert.False(rig.Pipeline.Items().Any(i => i.Project == "demo" && i.Slug == "b" && i is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done }));
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Empty(train.MergedAt);
+        Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_18_a_train_that_failed_stops_no_ticket_and_its_riders_go_the_single_way()
     {
         var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));

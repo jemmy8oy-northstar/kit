@@ -45,8 +45,8 @@ public interface IMergeTrain
 {
     /// <summary>
     /// Points <paramref name="trainBranch"/> at <paramref name="baseBranch"/>'s head in <paramref name="repository"/>
-    /// (<c>owner/name</c>) and merges each pull request's head commit onto it, in order. One that conflicts is left out
-    /// and the rest go on. Never throws for a GitHub or network failure.
+    /// (<c>owner/name</c>) and merges each pull request's head commit onto it, in order. One that conflicts, cannot be read,
+    /// is in another repository or that GitHub will not merge is left out, and the rest go on. Never throws for a GitHub or network failure.
     /// </summary>
     Task<TrainBuilt> BuildAsync(string repository, string baseBranch, string trainBranch, IReadOnlyList<string> pullRequestUrls, CancellationToken cancellationToken);
 

@@ -697,7 +697,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // nor does one with a ticket on a merge train (BEH-ORCH-18).
             var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
                 .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
-                .Where(app => !trains.Values.Any(t => t.Riders.Any(r => r.Key.App == app)))
+                .Where(app => !trains.Values.Any(t => t.Riders.Any(r => r.Key.App == app)) && (trains.Count == 0 || RepoAtOf(app) is not { } at || !trains.ContainsKey(at)))
                 .ToList();
             top = [];
             foreach (var app in apps)
@@ -736,6 +736,19 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         List<(string RepoAt, Train Train)> passed;
         lock (gate)
         {
+            // A train still being tested whose lead is no longer in its test run (stopped or ended elsewhere) will never pass.
+            foreach (var orphan in trains.Where(t => !t.Value.Passed && !items.Any(i => (i.Project, i.Slug) == t.Value.Lead && i is { Stage: PipelineStage.Test, Status: WorkItemStatus.Running })).Select(t => t.Key).ToList())
+            {
+                trains.Remove(orphan);
+            }
+
+            // A passed train whose riders are not all still built tickets (one was stopped, rebuilt or merged) is not the tree
+            // that was tested without it, so it is dropped, merging nothing, and the next look builds another.
+            foreach (var changed in trains.Where(t => t.Value.Passed && !t.Value.Riders.All(r => items.Any(i => (i.Project, i.Slug) == r.Key && IsBuilt(i)))).Select(t => t.Key).ToList())
+            {
+                trains.Remove(changed);
+            }
+
             passed = trains.Where(t => t.Value.Passed).Select(t => (t.Key, t.Value)).ToList();
         }
 
@@ -744,6 +757,12 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             var (repo, baseBranch) = SplitRepoAt(repoAt);
             var merged = new List<(string App, string Slug)>();
             var head = await train.HeadOfAsync(repo, baseBranch, cancellationToken);
+            if (head is null)
+            {
+                // Could not look: the train stays passed and the next look asks again, rather than paying for another test.
+                continue;
+            }
+
             var moved = head != t.BaseSha;
             string? why = null;
             if (!moved)
@@ -869,6 +888,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 if (items[index].Status != WorkItemStatus.Running)
                 {
                     trains.Remove(repoAt);
+                    testing.Remove(lead);
                 }
             }
         }
