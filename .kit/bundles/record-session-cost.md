@@ -1,5 +1,6 @@
 # Record what each Kit session costs
 Work-item: record-session-cost
+Flag: BEH-COST-1 says sessions already run count, but a runner's ~/.claude/ is gone when its run ends, so past runner sessions may not be recoverable; and its contracts assume Claude Code reports a dollar cost, which the bundle says may not hold (token usage only) (level: high)
 Cards:
 - BEH-COST-1
 Notes:
@@ -15,3 +16,10 @@ Claude Code keeps session records under ~/.claude/ on the machine that runs it. 
 Card BEH-COST-1 is new, in a new FEAT-COST feature (stage ui, copied from its siblings in kit.beh). The contract lines are unreviewed assumptions: one record per session with date, project and model; the record lives in the database on Kit's server, outside the project's repo; Kit stores the reported cost, not an estimate, and not the subscription price.
 The card is written in the pending shape used in ideas.beh because no spec noun yet binds a session. A builder should add given/when/then only once the nouns exist.
 Next step toward the goal: the open chat and tester work come first; this card is a cost check for the pricing question, so it can follow them.
+Test plan:
+- BEH-COST-1: a session Kit starts writes one record holding its date, project, model and the cost Claude Code reports for it, and no estimate
+- BEH-COST-1: the record is in the database on Kit's server before the runner exits, and still exists after the runner's ~/.claude/ is removed
+- BEH-COST-1: the record is in no project repo; no file is written to the project's repo for it
+- BEH-COST-1: sessions already run on a dev machine are read from ~/.claude/ and summed by week, matching the reported costs
+- BEH-COST-1: a session record that holds token usage with no dollar cost is refused and raised, and no cost is priced from the tokens
+- BEH-COST-1: the subscription price is never stored in the record
