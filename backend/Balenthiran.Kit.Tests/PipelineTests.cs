@@ -361,6 +361,39 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_17_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_the_lease()
+    {
+        // BEH-ORCH-17: his 2026-11-19 20:28Z screenshot of Runs → Now: runs "waiting for a runner · 306h" and "running since
+        // before Kit last started", left going for ever by earlier restarts.
+        var clock = new Ticking();
+        var store = new MemoryAgentRunStore();
+        var queued = store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), null, "triage");
+        var running = store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "list-sorting", "build");
+        Assert.True(store.StartIfQueued(running.Id));
+        clock.Advance(TimeSpan.FromHours(3));
+
+        // Kit starts again: a new pool over the same store.
+        var pool = new RunnerPool(store, clock);
+        var routes = new RunnerPoolRoutes(pool, store, PoolToken, TimeSpan.Zero, clock: clock);
+        var fresh = store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), null, "triage");
+        Assert.Equal(204, routes.ClaimAsync(PoolToken).GetAwaiter().GetResult().Status);
+
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == queued.Id).Status, store.List().Single(r => r.Id == queued.Id).Failure));
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
+        Assert.Empty(pool.Claimed());
+
+        // Its runner may still report until the lease, counted from the restart, runs out.
+        clock.Advance(RunnerPool.Lease - TimeSpan.FromMinutes(1));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == running.Id).Status, store.List().Single(r => r.Id == running.Id).Failure));
+        Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
+    }
+
+    [Fact]
     public void A_lost_run_is_given_out_once_and_again_only_when_it_could_not_be_failed()
     {
         // BEH-ORCH-14: two claims at once cannot both fail it, and a store error on failing it does not forget it.
