@@ -232,6 +232,74 @@ public class GitHubPullRequestOpenerTests
     private static string Run(string status, string? conclusion, string name = "ci") =>
         $$"""{"name":"{{name}}","status":"{{status}}","conclusion":{{(conclusion is null ? "null" : $"\"{conclusion}\"")}}}""";
 
+    // ---- BEH-ORCH-18: building a merge train and merging its riders -------------------------------------
+
+    private static string PullUrl(int n) => $"https://github.com/someone/demo/pull/{n}";
+
+    private static Func<HttpRequestMessage, HttpResponseMessage> PullAt(string sha) =>
+        FakeGitHub.Json(HttpStatusCode.OK, $$$"""{"state":"open","head":{"sha":"{{{sha}}}"}}""");
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_train_is_the_base_head_with_each_pull_requests_head_merged_on_and_a_conflict_left_out()
+    {
+        var gh = new FakeGitHub(
+            FakeGitHub.Json(HttpStatusCode.OK, """{"private":true}"""),
+            FakeGitHub.Json(HttpStatusCode.OK, """{"object":{"sha":"base1"}}"""),
+            FakeGitHub.Json(HttpStatusCode.UnprocessableEntity, """{"message":"Reference does not exist"}"""),
+            FakeGitHub.Json(HttpStatusCode.Created, """{"ref":"refs/heads/kit/train/dev"}"""),
+            PullAt("h1"), FakeGitHub.Json(HttpStatusCode.Created, """{"sha":"m1"}"""),
+            PullAt("h2"), FakeGitHub.Json(HttpStatusCode.Conflict, """{"message":"Merge conflict"}"""),
+            PullAt("h3"), FakeGitHub.Json(HttpStatusCode.Created, """{"sha":"m3"}"""));
+
+        var t = await Opener(gh).BuildAsync("someone/demo", "dev", "kit/train/dev", [PullUrl(1), PullUrl(2), PullUrl(3)], CancellationToken.None);
+
+        Assert.Null(t.Reason);
+        Assert.Equal(("m3", "base1"), (t.Sha, t.BaseSha));
+        Assert.Equal([(PullUrl(1), "h1"), (PullUrl(3), "h3")], t.Riders);
+        Assert.Equal([PullUrl(2)], t.Conflicted);
+        Assert.Equal("https://api.github.com/repos/someone/demo/git/ref/heads/dev", gh.Sent[1].Uri.AbsoluteUri);
+        Assert.Equal((HttpMethod.Patch, "https://api.github.com/repos/someone/demo/git/refs/heads/kit/train/dev"), (gh.Sent[2].Method, gh.Sent[2].Uri.AbsoluteUri));
+        using (var reset = JsonDocument.Parse(gh.Sent[2].Body!))
+        {
+            Assert.Equal(("base1", true), (reset.RootElement.GetProperty("sha").GetString(), reset.RootElement.GetProperty("force").GetBoolean()));
+        }
+
+        using (var created = JsonDocument.Parse(gh.Sent[3].Body!))
+        {
+            Assert.Equal("refs/heads/kit/train/dev", created.RootElement.GetProperty("ref").GetString());
+        }
+
+        Assert.Equal("https://api.github.com/repos/someone/demo/merges", gh.Sent[5].Uri.AbsoluteUri);
+        using var merge = JsonDocument.Parse(gh.Sent[5].Body!);
+        Assert.Equal(("kit/train/dev", "h1"), (merge.RootElement.GetProperty("base").GetString(), merge.RootElement.GetProperty("head").GetString()));
+        Assert.DoesNotContain(Token, string.Join(' ', gh.Sent.Select(s => s.Body)));
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_public_repo_gets_no_train_and_nothing_is_written()
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """{"private":false}"""));
+
+        var t = await Opener(gh).BuildAsync("someone/demo", "dev", "kit/train/dev", [PullUrl(1), PullUrl(2)], CancellationToken.None);
+
+        Assert.True(t.NotPrivate);
+        Assert.Null(t.Sha);
+        Assert.Single(gh.Sent);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_a_rider_is_merged_through_its_own_pull_request_at_the_commit_it_rode_at()
+    {
+        var gh = new FakeGitHub(FakeGitHub.Json(HttpStatusCode.OK, """{"merged":true}"""), FakeGitHub.Json(HttpStatusCode.Conflict, """{"message":"Head branch was modified"}"""));
+
+        Assert.Null(await Opener(gh).MergeAtAsync(PullUrl(7), "h7", CancellationToken.None));
+        Assert.NotNull(await Opener(gh).MergeAtAsync(PullUrl(7), "h7", CancellationToken.None));
+
+        Assert.Equal((HttpMethod.Put, "https://api.github.com/repos/someone/demo/pulls/7/merge"), (gh.Sent[0].Method, gh.Sent[0].Uri.AbsoluteUri));
+        using var sent = JsonDocument.Parse(gh.Sent[0].Body!);
+        Assert.Equal(("h7", "merge"), (sent.RootElement.GetProperty("sha").GetString(), sent.RootElement.GetProperty("merge_method").GetString()));
+    }
+
     [Fact]
     public async Task BEH_ORCH_10_merges_the_exact_head_commit_when_every_run_succeeded_and_it_is_mergeable()
     {
