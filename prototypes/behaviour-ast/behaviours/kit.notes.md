@@ -970,3 +970,9 @@ If this is intentional I guess we need to know why or if it’s not it needs to 
 <!-- from: note-button -->
 
 Kit pipeline agents need to be able to make assumptions in the same way that ccb was able to. It can merge features tied to behaviour which have not been approved. This indicates to future agents that this was an assumed behaviour and can be quietly superseded by new owner defined behaviour
+
+## 2026-11-19 16:57Z
+
+<!-- from: note-button -->
+
+Important: the merge agent needs to be merging I don’t see it merging so there are lots of PRs hanging
