@@ -1,7 +1,6 @@
 # Kit chat: start on the next item, project select box, act from the chat
 Work-item: kit-chat-entry-and-actions
-Flag: the owner's reply "Surely it can live in The db for the user" is read as: the chat's look and per-user state live in the database for that user, not in a repo card; "it" is not explicit (level: high)
-Review: escalated — the reading is unlikely, since a look is code and cannot be kept in a database; "it" most likely means the chat history, which BEH-CHAT-1 says is forgotten when he leaves the page. Owner to decide: keep each user's chat history in Kit's database (a new behaviour, not in this item), or did "it" mean something else? Default if silent: build the cards as listed, keep the history in the page, and record per-user history in the database as a parked unreviewed suggestion
+Flag: the owner's 2026-11-19 correction says his earlier reply was about where a run's cost is stored; the per-user cost row in agent_runs is not checked yet (level: low)
 Cards:
 - BEH-CHAT-1
 - BEH-CHAT-2
@@ -26,9 +25,11 @@ Notes:
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 18:55Z (chat reads the project spec)
 - prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-02 19:04Z (stack order, approve, post-as buttons)
 - ticket kit-chat-entry-and-actions, reply of 2026-11-18 21:22Z ("Surely it can live in The db for the user")
+- ticket kit-chat-entry-and-actions, reply of 2026-11-19 23:56Z (corrects the 2026-11-18 reading: "Sorry that last message was talking about where should we store the cost of a run. 'Surely it can live in The db for the user'")
 Files:
-- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-1 to BEH-CHAT-19, around lines 2852-3140; BEH-CHAT-1 gained the reply contract)
+- prototypes/behaviour-ast/behaviours/kit-ui.beh (BEH-CHAT-1 to BEH-CHAT-19, around lines 2852-3140; BEH-CHAT-1 holds both owner replies; the chat cards live here, not in kit.beh)
 - prototypes/behaviour-ast/behaviours/kit.notes.md (the source notes)
+- agent_runs, the per-run cost table (BEH-ORCH-6, BEH-ORCH-9): where a run's cost is recorded, to check it names the user who started the run
 Context:
 - Owner wants the chat to open already showing the next item that needs him, with no click first. It offers three routes in one line: address the next item, define a new spec, or discuss a project. The AI infers the route from what he types.
 - A project select box sits at the top, defaulting to the project in view. Changing it says "Now talking about <project>". He can also name a project in his message.
@@ -41,7 +42,8 @@ Context:
 - 18:55Z (read spec): BEH-CHAT-8 gives the agent read_spec, which returns whole cards on demand. Already on main, marked built. Its backlog-scale question (index the spec) sits in kit-ui.beh near line 3200.
 - 19:04Z (stack order, approve, buttons): the item in hand is in the thread in message order; the per-message "Post as my answer" and "Save as a note" buttons are replaced by one "Ask Kit to note this" button; the agent approves, denies or answers via tools (BEH-CHAT-6), and show_item brings the item back. Already on main, marked built.
 - Malformed-bundle fix (2026-11-18): the card line "none new: ..." was removed from Cards because Cards takes ids only. The reason it gave is kept here: the chat-app look is already BEH-CHAT-1's 14:12Z contract built (messages left and right, docked box), so no card is added.
-- Owner reply (2026-11-18 21:22Z): "Surely it can live in The db for the user". Recorded as an unreviewed contract on BEH-CHAT-1. The reading is open: the owner should confirm what "it" is.
+- Owner reply (2026-11-18 21:22Z): "Surely it can live in The db for the user". Read then as the chat's history. Withdrawn by the 2026-11-19 correction below.
+- Owner correction (2026-11-19 23:56Z): that reply was about where the cost of a run is stored, not the chat. So the chat stays in the page (BEH-CHAT-1 forgets it when he leaves), and each run's cost is kept in Kit's database for the user who started it. Chat history is not moved to the database in this item.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
 Test plan:
 - BEH-CHAT-1: picking a project in the select box puts "Now talking about <project>" in the thread and keeps the earlier history; a message naming exactly one other project moves the chat before it is sent; naming two, or the current one too, does not
