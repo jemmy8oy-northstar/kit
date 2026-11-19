@@ -378,5 +378,5 @@ behaviour BEH-COST-1 "Kit records what each Claude Code session it runs costs, s
   pending
   contract my assumption: each session Kit starts keeps its cost, its date, its project and its model, so a week's cost is a sum
   contract my assumption: the cost is read from the session records Claude Code writes under ~/.claude/, so sessions already run count as well as new ones
-  contract my assumption: the record is written outside the project's repo, so no user cost data enters a corpus
+  contract my assumption: the record is written to the database on Kit's server, outside the project's repo, so no user cost data enters a corpus
   contract my assumption: Kit stores the cost Claude Code reports, not an estimate; the subscription price is not stored by Kit
