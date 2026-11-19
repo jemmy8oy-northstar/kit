@@ -976,3 +976,9 @@ Kit pipeline agents need to be able to make assumptions in the same way that ccb
 <!-- from: note-button -->
 
 Important: the merge agent needs to be merging I don’t see it merging so there are lots of PRs hanging
+
+## 2026-11-19 19:02Z
+
+<!-- from: note-button -->
+
+Merge agent still doesn’t seem to be working
