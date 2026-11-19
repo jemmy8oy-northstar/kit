@@ -964,3 +964,9 @@ Tickets still have states and should still have state columns. Tickets also have
 Blocked: the build run left the bundle unchanged
 
 If this is intentional I guess we need to know why or if it’s not it needs to rerun
+
+## 2026-11-19 16:55Z
+
+<!-- from: note-button -->
+
+Kit pipeline agents need to be able to make assumptions in the same way that ccb was able to. It can merge features tied to behaviour which have not been approved. This indicates to future agents that this was an assumed behaviour and can be quietly superseded by new owner defined behaviour
