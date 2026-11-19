@@ -1582,6 +1582,9 @@ behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built onc
   when opens page:KitRuns
   then sees region:KitMain
   contract his note (kit.notes.md#2026-11-07-1128): "Pipeline can raise and complete PRs for completed work"
+  contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:02Z): "Merge agent still doesn't seem to be working"
+  contract my assumption: he means this card. The card is built, so the merge step is not doing what it says on his project. The builder finds the cause first, from GET /api/pipeline (merged, and the plain stop reason on each open item) and from whether KIT_PIPELINE_MERGE is on for kit, and fixes that cause. The checks above still hold for any merge it makes
+  contract my assumption: the note does not say what he saw. If the cause is that the merge is off, or that Kit's App lacks read access to Actions, the fix is to make that cause visible where he looks (the Runs page), not to switch the merge on
   contract my assumption: raising is built (BEH-ORCH-3's build slice opens the pull request). Completing means merging it into the branch the run started from, which is dev for kit, never main
   contract my assumption: Kit merges only when every Actions run at the pull request's head commit has succeeded and GitHub says it is mergeable, and it merges that exact commit, so a push after the check is not merged unseen. A failed check, or a conflict, stops the item with the reason and leaves the pull request open for a person
   contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
