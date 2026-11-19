@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Balenthiran.Kit.Database;
+using Balenthiran.Kit.Services;
 
 namespace Balenthiran.Kit.Tests;
 
@@ -128,6 +130,31 @@ public class RunnerScriptTests
     }
 
     // ── pool.sh ──────────────────────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(15)]
+    [InlineData(100)]
+    [InlineData(null)]
+    public void BEH_ORCH_5_The_pool_gives_a_run_the_claims_turn_limit_and_none_when_the_claim_has_none(int? maxTurns)
+    {
+        using var rig = new Rig();
+        // The claim body is what the server itself writes for this PoolClaim, not typed by hand.
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", maxTurns);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        if (maxTurns is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_MAX_TURNS"), "a run with no limit must not be given an empty one");
+        }
+        else
+        {
+            Assert.Equal(maxTurns.ToString(), seen["KIT_MAX_TURNS"]);
+        }
+    }
 
     [Fact]
     public void A_subscription_run_is_reported_finished_with_its_usage_and_never_sees_the_pool_token()
@@ -340,6 +367,133 @@ public class RunnerScriptTests
         Assert.Equal("claude exit 3\n", File.ReadAllText(failure));
     }
 
+    // BEH-ORCH-1: no triage pushed a bundle after the 15-turn limit went live. Running out of turns can still exit 0.
+    [Fact]
+    public void BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"error_max_turns\",\"is_error\":true,\"num_turns\":16}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_MAX_TURNS"] = "15" });
+
+        Assert.Equal(3, r.Status);
+        Assert.Equal("turns exit 3\n", File.ReadAllText(failure));
+        Assert.Contains("claude ended with an error result (turns, max turns 15)", r.Stderr);
+        Assert.DoesNotContain("pushed", r.Stdout);
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"is_error\":true}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal(3, r.Status);
+        Assert.Equal("result exit 3\n", File.ReadAllText(failure));
+    }
+
+    [Fact]
+    public void BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs("{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"done\"}", claudeExit: 0);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.False(File.Exists(failure));
+    }
+
+    // BEH-ORCH-14: a build that hangs held its pod and its project with nothing to end it; the claimer's limit acts only
+    // when the pod asks for the next run. The child sleep holds stderr open, so Run would wait it out if it survived.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "sleep 20 &", "sleep 20");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_RUN_MAX_SECONDS"] = "1" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal(124, r.Status);
+        Assert.Equal("time exit 124\n", File.ReadAllText(failure));
+        Assert.Contains("claude ran out of time (1s)", r.Stderr);
+        Assert.DoesNotContain("pushed", r.Stdout);
+    }
+
+    // BEH-ORCH-14: an agent that ignores SIGTERM is killed once the grace runs out; timeout then exits 137, not 124.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "trap '' TERM", "sleep 20");
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure, ["KIT_RUN_MAX_SECONDS"] = "1", ["KIT_RUN_KILL_AFTER"] = "1" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.Equal(124, r.Status);
+        Assert.Equal("time exit 124\n", File.ReadAllText(failure));
+    }
+
+    // BEH-ORCH-14: a run that ended well can leave a server behind; nothing signals it then, so only the group kill ends it.
+    // This is also the half that does not depend on how a coreutils version delivers timeout's SIGKILL.
+    [Fact]
+    public void BEH_ORCH_14_A_process_the_agent_left_running_is_killed_when_the_agent_ends()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        Executable(Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "sleep 20 &", "echo '{\"result\":\"done\"}'");
+        var clock = Stopwatch.StartNew();
+
+        var r = rig.Entrypoint(new() { ["KIT_RUN_MAX_SECONDS"] = "60" });
+
+        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"took {clock.Elapsed}");
+        Assert.True(r.Status == 0, r.Stderr);
+    }
+
+    // BEH-ORCH-14: 137 is what a kill from elsewhere (out of memory) looks like too; inside the limit it is the agent failing.
+    [Fact]
+    public void BEH_ORCH_14_An_agent_killed_inside_the_limit_is_a_claude_failure_not_a_timeout()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 137);
+        var failure = Path.Combine(rig.Rec, "failure.txt");
+
+        var r = rig.Entrypoint(new() { ["KIT_FAILURE_FILE"] = failure });
+
+        Assert.Equal(137, r.Status);
+        Assert.Equal("claude exit 137\n", File.ReadAllText(failure));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("00")] // timeout 0 is no limit at all
+    [InlineData("-5")]
+    [InlineData("1.5")]
+    [InlineData("soon")]
+    public void BEH_ORCH_14_A_limit_that_is_not_a_whole_number_of_seconds_refuses_the_run_before_the_agent_starts(string limit)
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+
+        var r = rig.Entrypoint(new() { ["KIT_RUN_MAX_SECONDS"] = limit });
+
+        Assert.Equal(64, r.Status);
+        Assert.Contains("KIT_RUN_MAX_SECONDS must be a whole number", r.Stderr);
+        Assert.False(File.Exists(Path.Combine(rig.Rec, "claude.env")));
+    }
+
     [Fact]
     public void A_missing_env_var_writes_the_setup_step_and_a_success_writes_nothing()
     {
@@ -497,6 +651,153 @@ public class RunnerScriptTests
         Assert.Empty(Directory.GetFiles(rig.Rec, "bundles*"));
     }
 
+    // ── entrypoint.sh: a test run's verdict is checked by the runner (BEH-ORCH-12) ────────────
+
+    private sealed record Tested(Ran Ran, string Sha, string Failure, string Pushed, bool BundlesWritten);
+
+    // Real git and a real origin (as BundleStubs); the stub claude prints message(sha) as its final message, then runs `leave`
+    // (shell, inside the clone) as the agent's leftovers. The task names the sha unless task says otherwise.
+    private static Tested TestRun_(Rig rig, string? stage, Func<string, string> message, string leave = "true", Func<string, string>? task = null)
+    {
+        rig.BundleStubs();
+        var origin = System.IO.Path.Combine(rig.Root, "origin.git");
+        var env = new Dictionary<string, string> { ["PATH"] = rig.Bin + ":" + Environment.GetEnvironmentVariable("PATH"), ["HOME"] = rig.Home };
+        var sha = Run("git", ["--git-dir", origin, "rev-parse", "main"], env).Stdout.Trim();
+        File.WriteAllText(System.IO.Path.Combine(rig.Rec, "claude.json"), JsonSerializer.Serialize(new { result = message(sha) }));
+        Executable(System.IO.Path.Combine(rig.Bin, "claude"), "#!/bin/sh", "cat '" + System.IO.Path.Combine(rig.Rec, "claude.json") + "'", leave);
+        var failure = System.IO.Path.Combine(rig.Rec, "failure.txt");
+        var bundles = System.IO.Path.Combine(rig.Rec, "bundles.json");
+        var extra = new Dictionary<string, string> { ["KIT_TASK"] = task?.Invoke(sha) ?? $"run the tests at {sha}", ["KIT_FAILURE_FILE"] = failure, ["KIT_BUNDLES_FILE"] = bundles };
+        if (stage is not null) extra["KIT_STAGE"] = stage;
+        var ran = rig.Entrypoint(extra);
+        var pushed = Run("git", ["--git-dir", origin, "for-each-ref", "refs/heads/kit/run-r1"], env).Stdout.Trim();
+        return new Tested(ran, sha, File.Exists(failure) ? File.ReadAllText(failure) : "", pushed, File.Exists(bundles));
+    }
+
+    private static string Pass(string sha) => $"Ran everything.\nKIT-TEST: PASS {sha}\n";
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_with_the_pass_line_at_the_named_commit_succeeds_and_pushes_nothing_even_from_a_dirty_tree()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", Pass, "echo left > dirty.txt");
+
+        Assert.True(t.Ran.Status == 0, t.Ran.Stderr);
+        Assert.Equal("", t.Pushed);
+        Assert.False(t.BundlesWritten, "a test run reports no bundles");
+        Assert.Equal("", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_whose_agent_said_FAIL_or_failures_in_prose_fails_at_the_verdict_step()
+    {
+        foreach (var message in new Func<string, string>[] { _ => "3 tests failed.\nKIT-TEST: FAIL\n", _ => "Ran the suite: 3 failures, sorry.\n" })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, "test", message);
+
+            Assert.Equal(1, t.Ran.Status);
+            Assert.Equal("verdict exit 1\n", t.Failure);
+            Assert.Equal("", t.Pushed);
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_line_that_is_not_the_last_or_not_exact_fails()
+    {
+        foreach (var message in new Func<string, string>[]
+        {
+            sha => $"KIT-TEST: PASS {sha}\nactually, one test failed.\n",
+            sha => $"KIT-TEST: PASS {sha} \n",
+            sha => $"kit-test: pass {sha}\n",
+            sha => $"KIT-TEST: PASS {sha[..39]}\n",
+            sha => $"KIT-TEST: PASS {sha.ToUpperInvariant()}\n",
+        })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, "test", message);
+
+            Assert.Equal(1, t.Ran.Status);
+            Assert.Equal("verdict exit 1\n", t.Failure);
+        }
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_for_a_commit_the_task_did_not_name_fails()
+    {
+        using var rig = new Rig();
+
+        // HEAD is that commit, but the agent was asked about another one.
+        var t = TestRun_(rig, "test", Pass, task: _ => "run the tests at " + new string('a', 40));
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_pass_while_the_working_directory_is_at_another_commit_fails_and_pushes_nothing()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", Pass, "git -c user.name=t -c user.email=t@t commit -q --allow-empty -m moved");
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+        Assert.Equal("", t.Pushed);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_test_run_with_no_result_text_fails()
+    {
+        using var rig = new Rig();
+
+        var t = TestRun_(rig, "test", _ => "");
+
+        Assert.Equal(1, t.Ran.Status);
+        Assert.Equal("verdict exit 1\n", t.Failure);
+    }
+
+    [Fact]
+    public void BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left()
+    {
+        foreach (var stage in new string?[] { "build", null })
+        {
+            using var rig = new Rig();
+
+            var t = TestRun_(rig, stage, Pass, "echo left > dirty.txt");
+
+            Assert.True(t.Ran.Status == 0, t.Ran.Stderr);
+            Assert.Contains("refs/heads/kit/run-r1", t.Pushed);
+            Assert.True(t.BundlesWritten);
+        }
+    }
+
+    [Theory]
+    [InlineData("test")]
+    [InlineData(null)]
+    public void BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one(string? stage)
+    {
+        using var rig = new Rig();
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", null, stage);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        if (stage is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_STAGE"), "a run started by hand must not be given an empty stage");
+        }
+        else
+        {
+            Assert.Equal(stage, seen["KIT_STAGE"]);
+        }
+    }
+
     // ── the rig ──────────────────────────────────────────────────────────────────────────────
 
     private sealed record Ran(int Status, string Stdout, string Stderr);
@@ -565,7 +866,7 @@ public class RunnerScriptTests
         /// <paramref name="answers"/> is what Kit says to the 1st, 2nd, ... finished report (the last repeats).
         /// The body is read from the <c>@file</c> given to <c>--data-binary</c>, as curl would send it.
         /// </summary>
-        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null)
+        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null, string? claimJson = null)
         {
             Executable(System.IO.Path.Combine(Bin, "kit-run"),
                 "#!/bin/sh",
@@ -593,10 +894,10 @@ public class RunnerScriptTests
                 "  shift",
                 "done",
                 "case \"$url\" in",
-                "  */api/runs/claim)",
-                "    printf '%s' '{\"id\":\"r1\",\"token\":\"tok\",\"repo\":\"o/r\",\"task\":\"t\",\"baseBranch\":\"\",\"model\":\"sonnet\"}' > \"$out\"",
+                "  */next)",
+                "    printf '%s' '" + (claimJson ?? "{\"id\":\"r1\",\"token\":\"tok\",\"repo\":\"o/r\",\"task\":\"t\",\"baseBranch\":\"\",\"model\":\"sonnet\"}") + "' > \"$out\"",
                 "    printf 200;;",
-                "  */api/runs/finished)",
+                "  */finished)",
                 "    printf '%s\\n' \"$data\" >> '" + System.IO.Path.Combine(Rec, "finished.log") + "'",
                 "    n=$(cat '" + counter + "' 2>/dev/null || echo 0); n=$((n+1)); echo $n > '" + counter + "'",
                 "    case $n in",
@@ -664,7 +965,8 @@ public class RunnerScriptTests
             ["PATH"] = Path_,
             ["HOME"] = Home,
             ["KIT_URL"] = "http://kit.test/kit",
-            ["KIT_RUNNER_POOL_TOKEN"] = "pool-secret",
+            // No pool token: the runner container does not have one (kit#701); the sidecar does.
+            ["KIT_CLAIMER_URL"] = "http://claimer.test",
             ["KIT_RUNS_PER_CONTAINER"] = "1",
             ["KIT_RUN_BIN"] = System.IO.Path.Combine(Bin, "kit-run"),
             // The loop deletes the contents of these; they must never default to /work or /home/runner.

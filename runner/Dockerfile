@@ -25,4 +25,9 @@ RUN chmod 0555 /usr/local/bin/kit-run
 COPY --chown=runner:runner pool.sh /usr/local/bin/kit-pool
 RUN chmod 0555 /usr/local/bin/kit-pool
 
+# The claimer sidecar (kit#701): the same image, run with `kit-claimer` as the command. It alone holds the pool
+# token, so a run in the runner container has no token to read.
+COPY --chown=runner:runner claimer.js /usr/local/bin/kit-claimer
+RUN chmod 0555 /usr/local/bin/kit-claimer
+
 ENTRYPOINT ["/usr/local/bin/kit-run"]

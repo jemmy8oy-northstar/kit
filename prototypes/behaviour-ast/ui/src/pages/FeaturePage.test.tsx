@@ -121,6 +121,23 @@ describe('the projects view', () => {
     expect(epic).toHaveAttribute('href', '/projects/snip-it/epics/EPIC-SHARE')
   })
 
+  it('draws an epic tag apart from the parent badges, so no badge tone or project colour is used (BEH-EPIC-3)', async () => {
+    const withEpic: ProjectDetail = {
+      ...tagged,
+      epics: [{ id: 'EPIC-SHARE', title: 'Share clips', at: 'snip-it.beh:1' }],
+      features: tagged.features.map((f) => (f.id === 'FEAT-CARD' ? { ...f, epics: ['EPIC-SHARE'] } : f)),
+    }
+    renderAt('/projects/snip-it/features/FEAT-CARD', withEpic)
+
+    const parents = await screen.findByRole('region', { name: 'In' })
+    const epic = within(parents).getByRole('link', { name: 'Share clips' })
+    expect(epic.querySelector('.ds-badge')).toBeNull()
+    // The feature parents are still badges; the epic is the other role.
+    const featureParents = within(parents).getAllByRole('link', { name: /Editor|Home/ })
+    expect(featureParents.length).toBe(2)
+    expect(featureParents.every((a) => a.querySelector('.ds-badge') !== null)).toBe(true)
+  })
+
   it('BEH-FEAT-2: one behaviour tagged into two features is listed under both', async () => {
     renderAt('/projects/snip-it/features/FEAT-HOME')
 

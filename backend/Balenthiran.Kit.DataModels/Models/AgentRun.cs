@@ -44,4 +44,10 @@ public sealed class AgentRun : IAgentRun
 
     [JsonPropertyOrder(13)]
     public string? Failure { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public string? WorkItem { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public string? Stage { get; init; }
 }

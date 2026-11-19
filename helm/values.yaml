@@ -22,7 +22,7 @@ apps:
       repository: lhr.ocir.io/lr7uc6l49odc/kit
       # Patched by `docker-build-push.yml` on every push to main — GitOps, so
       # ArgoCD reads the new tag out of this file rather than watching OCIR.
-      tag: 0.1.245
+      tag: 0.1.261
       pullPolicy: Always
     containerPort: 8080
     replicas: 1
@@ -152,8 +152,13 @@ apps:
       # clone. Writes still go to the clone above and are pushed to kit/hosted, so
       # this names the SAME branch — another branch here would serve a corpus the
       # edits never reach. Remove the entry to read the clone, as before.
+      # BEH-USERS-12 (kit#696; his 2026-11-15 13:00Z note made it top priority): each
+      # project with a repo keeps its spec and notes in that repo's .kit/. That copy
+      # wins over the one still in kit (kit#694), and Kit writes it through the
+      # Contents API to that repo's kit/hosted, its edits branch. kit's own spec
+      # moves last, with the CI path change.
       - name: KIT_PROJECTS
-        value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours"
+        value: "jemmy8oy-northstar/kit@kit/hosted:prototypes/behaviour-ast/behaviours jemmy8oy-northstar/holiday-planning@kit/hosted:.kit jemmy8oy-northstar/balenthiran.co.uk@kit/hosted:.kit jemmy8oy-northstar/language-vocab@kit/hosted:.kit jemmy8oy-northstar/tracks@kit/hosted:.kit jemmy8oy-northstar/whos-accountable@kit/hosted:.kit jemmy8oy-northstar/earnyourbeers@kit/hosted:.kit jemmy8oy-northstar/snip-it@kit/hosted:.kit"
       # BEH-NOTIFY-1 (claude-code-bot#118): the agent's notifications, which replaced
       # Telegram. A FILE in the agent's PRIVATE repo, read with the same App token as
       # KIT_PROJECTS, so the App needs read access to claude-code-bot; until it has
@@ -209,6 +214,13 @@ apps:
       # project's repo, and every project repo but kit's is public (kit#714). Remove to triage all.
       - name: KIT_PIPELINE_PROJECTS
         value: "kit,kit-ui"
+      # BEH-ORCH-11 slice 7: the merge job. Every 2 minutes, per project, it takes the built ticket with
+      # the lowest priority number, brings its pull request up to date with dev, has an agent resolve a
+      # conflict, runs the suite on the runner pool where there is no Actions run, and merges that exact
+      # commit. Switched on at James's ask (kit.notes.md, 2026-11-19 16:57Z: "the merge agent needs to be
+      # merging"). Each resolve or test run spends his subscription. Remove to switch off.
+      - name: KIT_PIPELINE_JOB_MERGE
+        value: "on"
     resources: {}
     nodeSelector: {}
     tolerations: []

@@ -2,7 +2,8 @@
 BEH-USERS-9, slice C: where a user's agent run is allowed to happen.
 
 A fixed pool of runner pods (James's choice, kit#672), built from the runner image (slice B).
-Each one asks Kit's public URL for the next queued run, does it in scratch disk, and asks again.
+Each one asks its claimer sidecar (which alone holds the pool token) for the next queued run,
+does it in scratch disk, and asks again.
 Kit starts nothing in the cluster, so Kit has no service account and no Kubernetes rights, and
 nothing here can create a pod or read a secret.
 
@@ -51,11 +52,8 @@ spec:
           env:
             - name: KIT_URL
               value: "https://balenthiran.co.uk/kit"
-            - name: KIT_RUNNER_POOL_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: kit-runner-pool
-                  key: token
+            # NO pool token here (kit#701): a run is this same user in this same container and could
+            # read it from /proc/1/environ. It lives only in the claimer container below.
             # James's subscription token (kit#708), from `claude setup-token`. OPTIONAL: unset, runs
             # reach the model through Kit's proxy and its key, as before. Created by hand, by him:
             #   kubectl create secret generic kit-claude-subscription -n kit-runs --from-literal=token=<token>
@@ -78,6 +76,31 @@ spec:
               mountPath: /work
             - name: home
               mountPath: /home/runner
+        # kit#701: the only container that holds the pool token. It claims ONE run when the runner
+        # asks (localhost:8787, no secret needed), refuses a second while that one is unreported,
+        # and forwards the finished report under the run's own token. Same image, other command.
+        # A claim never reported (the runner died) is reported failed on SIGTERM and after
+        # KIT_CLAIM_MAX_SECONDS, so its project is not held until the run token expires.
+        - name: claimer
+          image: {{ .Values.runner.image | quote }}
+          imagePullPolicy: Always
+          command: ["/usr/local/bin/kit-claimer"]
+          env:
+            - name: KIT_URL
+              value: "https://balenthiran.co.uk/kit"
+            - name: KIT_RUNNER_POOL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kit-runner-pool
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
       volumes:
         # Scratch only, and the loop empties both after every run. The user's repo is the
         # run's storage, so nothing survives a run but what it pushed.
