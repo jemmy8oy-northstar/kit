@@ -6,8 +6,8 @@ namespace Balenthiran.Kit.Services;
 /// <summary>
 /// BEH-USERS-9's runner pool: a fixed set of runner pods ask Kit for the next queued run, so Kit needs no
 /// cluster access and never starts anything. Queued runs wait here IN MEMORY ONLY: the run token and the task
-/// are never stored (the store keeps the token's SHA-256), so a restart forgets what was waiting and those runs
-/// stay queued until the operator starts them again. One live run per project: a run waits while another on its
+/// are never stored (the store keeps the token's SHA-256), so a restart forgets what was waiting, and those runs are
+/// failed at the first claim after it (<see cref="Forgotten"/>). One live run per project: a run waits while another on its
 /// project has been handed out and is not over; other projects are not held up.
 /// </summary>
 public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null) : IAgentRunLauncher
@@ -47,6 +47,10 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     private readonly Dictionary<string, DateTimeOffset> handedOutAt = new(StringComparer.Ordinal);
     // Run id -> its time limit in seconds, null for none (BEH-ORCH-17). Kept and cleared with handedOutAt.
     private readonly Dictionary<string, int?> limitOf = new(StringComparer.Ordinal);
+    // BEH-ORCH-17: when this pool began, and the runs still going then that a restart forgot (see Forgotten).
+    private readonly DateTimeOffset bornAt = (clock ?? TimeProvider.System).GetUtcNow();
+    private readonly HashSet<string> adopted = new(StringComparer.Ordinal);
+    private bool lookedForForgotten;
     private TaskCompletionSource signal = NewSignal();
 
     private static TaskCompletionSource NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -208,7 +212,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
         lock (gate)
         {
             return handedOutAt
-                .Where(h => !OverOrGone(h.Key))
+                .Where(h => !adopted.Contains(h.Key) && !OverOrGone(h.Key))
                 .OrderBy(h => h.Value)
                 .Select(h =>
                 {
@@ -249,10 +253,38 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     {
         lock (gate)
         {
-            if (repoByRun.ContainsKey(runId))
+            if (repoByRun.ContainsKey(runId) || adopted.Contains(runId))
             {
                 handedOutAt[runId] = DateTimeOffset.MinValue;
             }
+        }
+    }
+
+    /// <summary>
+    /// BEH-ORCH-17: the runs a restart forgot, looked for once. A run queued before this pool began can never be handed
+    /// out (its token went with the restart), so it is returned for the caller to fail. A run already going then may
+    /// still have a runner that reports, so it is not failed now: it gets the lease from when this pool began, and
+    /// <see cref="Lost"/> gives it out once that passes, as for any run. Without this, both stayed going for ever.
+    /// </summary>
+    public IReadOnlyList<string> Forgotten()
+    {
+        lock (gate)
+        {
+            if (lookedForForgotten)
+            {
+                return [];
+            }
+
+            var before = store.List().Where(r => r.Started < bornAt && !AgentRunStatus.IsOver(r.Status)).ToList();
+            lookedForForgotten = true;
+            foreach (var r in before.Where(r => r.Status == AgentRunStatus.Running && !handedOutAt.ContainsKey(r.Id)))
+            {
+                adopted.Add(r.Id);
+                handedOutAt[r.Id] = bornAt;
+                limitOf[r.Id] = null;
+            }
+
+            return before.Where(r => r.Status == AgentRunStatus.Queued && queue.All(i => i.RunId != r.Id)).Select(r => r.Id).ToList();
         }
     }
 
