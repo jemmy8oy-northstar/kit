@@ -12,6 +12,8 @@ namespace Balenthiran.Kit.Tests;
 /// </summary>
 public class CommittedArtefactTests
 {
+    private static string MovedCorpora => Path.Combine(RepoLayout.Fixtures, "MovedCorpora");
+
     /// <summary>
     /// Someone answers a question and edits the corpus, and the sheet in <c>docs/</c> keeps asking
     /// it — or the sheet is hand-edited and the corpus never learns. Either way it reads as current
@@ -25,7 +27,9 @@ public class CommittedArtefactTests
         var committed = Path.Combine(RepoLayout.Root, "docs", "sheets", $"{corpus}.md");
         var report = new KitReport(new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter(), new QuestionSheet(), new CheckFileSystem(RepoLayout.Root));
 
-        var run = report.Run([corpus, "--rev", rev, "--dir", RepoLayout.Behaviours], sheet: true);
+        // language-vocab's corpus moved to its own repo (BEH-USERS-12); a fixture copy keeps the sheet checkable.
+        var dir = File.Exists(Path.Combine(RepoLayout.Behaviours, $"{corpus}.beh")) ? RepoLayout.Behaviours : MovedCorpora;
+        var run = report.Run([corpus, "--rev", rev, "--dir", dir], sheet: true);
 
         Assert.Equal(0, run.ExitCode);
         Assert.True(File.ReadAllText(committed) == run.Stdout,
@@ -61,14 +65,16 @@ public class CommittedArtefactTests
     [Fact]
     public void Every_bindings_file_is_keyed_by_noun_and_belongs_to_a_corpus_beside_it()
     {
-        var files = Directory.GetFiles(RepoLayout.Behaviours, "*.bindings.json");
+        // snip-it's corpus moved to its own repo (BEH-USERS-12); its fixture copy stands in for it here.
+        var files = Directory.GetFiles(RepoLayout.Behaviours, "*.bindings.json")
+            .Concat(Directory.GetFiles(MovedCorpora, "*.bindings.json")).ToArray();
         Assert.True(files.Length >= 3, $"could not look: only {files.Length} bindings file(s)");
 
         var total = 0;
         foreach (var file in files)
         {
             var app = Path.GetFileName(file)[..^".bindings.json".Length];
-            Assert.True(File.Exists(Path.Combine(RepoLayout.Behaviours, $"{app}.beh")),
+            Assert.True(File.Exists(Path.Combine(Path.GetDirectoryName(file)!, $"{app}.beh")),
                 $"{app}.bindings.json has no corpus beside it — it binds nouns nothing can reference");
 
             var real = JsonNode.Parse(File.ReadAllText(file))!.AsObject().Where(kv => !kv.Key.StartsWith('_')).ToList();

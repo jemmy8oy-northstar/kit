@@ -88,7 +88,7 @@ public sealed class GitHubAppTokenSource : IGitHubTokenSource, IDisposable
     /// <summary>
     /// A fresh installation token for ONE repository (its name, without the owner) with contents:write and
     /// pull_requests:write only — never cached, never shared, so what a run holds is as narrow as GitHub can make
-    /// it. Null when the installation does not reach that repository (GitHub answers 404 or 422); any other
+    /// it. Null when the installation does not reach that repository or the App lacks a requested permission (GitHub answers 404 or 422); any other
     /// failure throws <see cref="GitHubTokenException"/>, whose message never holds a secret.
     /// </summary>
     public async Task<(string Token, DateTimeOffset ExpiresAt)?> MintForRepoAsync(string repoName, CancellationToken cancellationToken = default)

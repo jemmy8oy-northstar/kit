@@ -247,17 +247,19 @@ behaviour BEH-STEP-1 "A step can be added while the generated test is in view"
 # nothing generates from it. It is an inbox the engineer empties into the spec.
 # Built in the same stack as this spec; the shape is his to change (kit#118, default 10-11).
 
-behaviour BEH-GATE-H2 "Every note box warns that what you type is public"
+behaviour BEH-GATE-H2 "Every note box warns that what you type is saved to the project's repository, which may be public"
   in FEAT-NOTES
   source inferred claude-code-bot#35
-  review approved
+  review unreviewed
   priority 3
   actor engineer
   when opens page:KitProject
   then sees region:KitOpenNotes
-  contract reads are served to anyone by decision (BEH-GATE-H1), and a note is committed to a public repository, so the lock does not make a note private
+  contract a note is committed to the project's repository; when that repository is public, anyone can read the note there, and Kit serves it to anyone signed out (BEH-GATE-H1)
+  contract my assumption (kit#795, 2026-11-14): kit is private now, so "public" was wrong for kit's own notes and still right for a project in a public repo; the line says both until the box knows which it is. Back to Proposed because the wording he approved changed
+  contract my assumption: worded "Saved to this project's GitHub repository. If that repository is public, anyone can read it."
   contract one line under the note box, the ask-for-behaviour box on the project page, and the board's box; replies are not covered yet
-  contract my assumption: worded "Public: this is saved to Kit's GitHub repository, which anyone can read." He can deny the line or change the wording
+  contract the wording he approved, before kit#795: "Public: this is saved to Kit's GitHub repository, which anyone can read." He can deny the line or change the wording
   contract his question (kit-ui.notes.md#2026-10-31-0101), "What does this mean?": every note you write in Kit is saved as a file in the kit repo on GitHub, and that repo is public, so anyone can read it, even though Kit asks you to sign in to write. This card is the warning line already shown under each box you type a note into, so you never post something private by mistake. The title now says that plainly. Approve to keep the warning, deny if you'd rather not see it
 
 behaviour BEH-NOTE-1 "A note can be left on a project without writing a behaviour"
@@ -620,7 +622,8 @@ behaviour BEH-NOTE-9 "Notes are listed newest first, ten at a time"
   then sees region:KitOpenNotes
   contract newest written at the top, in Needs your answer and the open notes alike
   contract ten are shown and a button shows more, saying how many are hidden, as a board column does (BEH-BOARD-7)
-  contract the API still sends every open note; paging the request waits until a notes file is long enough to be slow
+  contract my assumption: the API sends the open notes ten at a time, and the button asks it for the next ten, so the whole list is not pulled into the UI (kit.notes.md#2026-10-16-0724, "we don't have to pull all into the ui"); today the panel still receives the full list and pages it on screen, which is the part this changes
+  contract my question: server paging is not built, and this is blocked. The server cannot tell an open note from an archived one, because the citations are read in the browser from the corpus, so a page of ten could hold only archived notes and the open count would be wrong. Default until you answer: keep the whole list and the on-screen cap. Which do you want: (a) the server reads the corpus too and pages only open notes, or (b) it pages every note and archived notes take places in the page
 
 behaviour BEH-NOTE-10 "A note the spec already cites is shown as folded, ready to dismiss"
   in FEAT-NOTES
@@ -670,6 +673,7 @@ behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   contract a note a behaviour cites (BEH-NOTE-10) is archived: hidden until he presses Show archived, which says how many there are
   contract an archived note can still be dismissed, which deletes it from the notes file as before
   contract nothing expires notes yet; deleting old ones on a timer waits until he asks for it
+  contract his approval (kit-ui.notes.md#2026-10-16-1153), read from his words: he approved BEH-NOTE-10 and asked whether folded notes could auto archive, with a show archived option and expiry for later. I read that as approval of this archive, and he can deny it. Built: the panel hides folded notes behind Show archived with a count, and dismissing an archived note deletes it from the notes file; the tests are mapped in kit-ui.tests.json
 
 # Was BEH-BOARD-8, "The board takes free text, and asks which project it is for", and
 # BEH-BOARD-9, "Typing a project's name in the board's box suggests it" (kit.notes.md#2026-10-16-0730).
@@ -1128,8 +1132,9 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: the block is `epic EPIC-… "title"`, and a feature tags it with the `in EPIC-…` line it already uses for a parent feature, so no second tagging keyword is needed
   contract an `in` line naming an epic that does not exist is refused, as an unknown parent feature is
   contract the parser that reads `epic` reaches main before any corpus uses it: kit/hosted takes the corpus from dev, so a keyword on dev alone breaks production (it did on 10-19 with `stage`)
-  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes; an epic takes no lines yet, and a behaviour reaches an epic through its feature
-  contract a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead
+  contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
+  contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
+  contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1161,6 +1166,7 @@ behaviour BEH-EPIC-5 "A new epic's children start pending"
   when opens page:KitStages
   then sees region:KitStagesBoard
   contract "when you create an epic, all of its children and grand children will likely be created as pending or new"
+  contract my assumption: the note's "pending or new" is read as pending; children Kit infers go to Proposed instead (BEH-EPIC-6)
   contract built by the agent: EPIC-KIT-USERS's seven features came in at the problem stage, and all eight of its behaviours were written pending
 
 behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and proposes them"
@@ -1174,7 +1180,8 @@ behaviour BEH-EPIC-6 "Kit drafts an epic's children from its description, and pr
   contract "when epics are created kit can injest them, create child features, nested, behaviours etc based on the initial description. Infer and propose new children"
   contract every drafted child is inferred, so it lands in Proposed for him to approve or deny, pending as BEH-EPIC-5 says
   contract "The ai is able to propose behaviours for features and features for epics as well as ask questions when it needs more context": the same drafting runs one level down, from a feature to its behaviours, and a draft it cannot make without him is a question on the item (`review requested`, which BEH-BOARD-11 puts at the top of his board) rather than a guess
-  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's does
+  contract my assumption: the questions half of the 22nd note is shipped by the questions work item (questions-board-and-sheet); this card only raises a question on the item
+  contract built: EPIC-KIT-USERS was drafted this way (BEH-EPIC-7), and the agent's wake sweep (claude-code-bot tools/kit-backlog.js) lists any epic with no feature in it and will not let the agent sleep over one; his "out of scope" in an epic's title parks it, as EPIC-ONBOARD's did until 2026-11-14
 
 behaviour BEH-EPIC-7 "The first epic is Kit supporting users other than James"
   in FEAT-EPICS
@@ -1217,10 +1224,30 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
 
-# His two epics (kit.notes.md 2026-10-19 17:21Z). EPIC-ONBOARD has no feature yet.
+# His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
 
-epic EPIC-ONBOARD "Onboard existing projects onto Kit (backlog, out of scope for now)"
+epic EPIC-ONBOARD "Onboard existing projects onto Kit"
+
+# His note (kit-ui.notes.md#2026-11-06-1804) brought EPIC-ONBOARD into scope, starting with Lovable.
+feature FEAT-ONBOARD-LOVABLE "An app built in Lovable can be brought onto Kit"
+  in EPIC-ONBOARD
+  stage problem
+
+behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable onto Kit"
+  in FEAT-ONBOARD-LOVABLE
+  layer ux
+  source defined kit-ui.notes.md#2026-11-06-1804
+  review approved
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract his answer (kit-ui.notes.md#2026-11-15-1250): "Yes. The Lovable app is already in the user's own GitHub through Lovable's GitHub sync, and onboarding starts from that repo."
+  contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
+  contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
+  contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
 
 # ═══ EPIC-KIT-USERS, drafted (BEH-EPIC-7) ═════════════════════════════════════
 # His 17:21Z list, split into features by the agent. Every behaviour here is
@@ -1313,6 +1340,10 @@ behaviour BEH-USERS-2 "Kit lists a user's projects from their own GitHub, with n
   contract my assumption: re-proposed with his correction folded in, so it shows as unreviewed rather than staying denied
   contract both of his steps are done: he added the App's keys to kit-github and merged kit#433, live since kit#503 (2026-10-27 21:39Z). He approved this card at 21:16Z
   contract built: GET /api/projects for a signed-in user with a connected GitHub lists the repos their installation reaches whose default branch holds a .beh file, read from GitHub on every request with a token minted for their own installation, and kept nowhere. The body gains gitHub (name, fullName, url, corpus paths); the Projects page lists them under "From your GitHub", each linking to the repo, with no page of its own yet. A GitHub that cannot be read answers 200 with gitHubError and no gitHub list, so a failure is never shown as "no projects". A user with no link, a Kit without the App's id and key, and the operator all get the list they had before
+  contract his note (kit.notes.md#2026-11-07-2121): "tester can't see their own project - holiday planner, they are a contributor to holiday planner  - I feel like maybe we haven't moved the spec files into this repo yet so we don't see it. We also need to make sure that kit finds projects where are users are added contributors"
+  contract my assumption: the list includes repos the user is a collaborator on, not only ones they own, wherever Kit's App is installed on the repo
+  contract my assumption: his guess is the likely cause: holiday-planner's spec is still in kit's behaviours, so its own repo has no .kit/ and is not listed; BEH-USERS-12 moves it, and until then the list falls back to the .beh-anywhere rule on BEH-USERS-3
+  contract my assumption: I check both causes against the tester's account before changing the list code, so I fix the one that is real
   contract my assumption: one level short of the spec, a repo whose tree GitHub truncates (about 100,000 entries) lists only the .beh files in the part it returned; and an organisation's installation is not read, as BEH-USERS-1 never records one
 
 behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
@@ -1344,7 +1375,6 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   review approved
   priority 2
   pending
-  needs-context "Every project repo is public, and kit is now private, so moving a spec into its repo's .kit/ publishes it: Kit's spec format and the quotes from your notes. Move them anyway? If you don't answer by 2026-11-08, public projects keep their spec in kit, and .kit/ is used only by private repos and new users' projects."
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1359,17 +1389,23 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract my assumption: the slices are: first the remote writer, proved on a project whose spec already lives in its own repo; then one project at a time moves into its .kit/, the smallest first; kit moves last, with the CI path change as his own PR
   contract my assumption: while a project moves, its spec is in two places for a while: the new .kit/ in its own repo and the old copy in kit. Kit reads and writes the .kit/ one and ignores the old copy until it is deleted, so the project stays on the list throughout. Any other spec found in two places still stops Kit re-reading, as today
   contract my assumption: "Propose edits for merging" after an edit to a project in its own repo opens the pull request in that repo, from its edits branch into the same base Kit's own edits go to (dev), and the project's pending list reads that branch too
+  contract decided 2026-11-13 (kit#696, his question unanswered, so its default stands): every project repo is public and kit is private, so a move publishes that spec. Only holiday-planning moves, because his note (kit-ui.notes.md#2026-11-07-2121) expects its spec in its own repo. The other public projects keep theirs in kit until he says otherwise
+  contract done 2026-11-13: holiday-planning's spec is in its own repo's .kit/ (holiday-planning#46) with an edits branch kit/hosted. The KIT_PROJECTS entry that makes Kit read it is kit#797, his as a helm change. Kit's old copy is deleted once that is live
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit .kit specs live in the project repo not centrally in kit"
+  contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
+  contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
+  contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
+  contract his note on this card (kit-ui.notes.md, 2026-11-16 22:56Z): "I think this is ready now". Triage set it aside as naming no card, a defect fixed under BEH-ORCH-1, so it is recorded here for the work item spec-moves-to-project-kit-dir to read. Its needs-context question (merge kit#797) is removed: he merged it on 2026-11-15
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
   in EPIC-KIT-USERS
-  stage logic
+  stage development
 
 behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a context bundle per work item, and the run ends"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
   review unreviewed
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1378,14 +1414,27 @@ behaviour BEH-ORCH-1 "New notes and chat are triaged by a cheap model into a con
   contract my assumption: the bundle is a markdown file on the work item's branch, naming the cards it touches, the notes it came from and the files a builder will need, so the next stage starts from it and need not search
   contract my assumption: each stage is its own short run with a fresh context, so Haiku stays under its 100K-token price tier
   contract my assumption, slice 1 (built switched off): the triage task text, the bundle's format at .kit/bundles/<slug>.md on branch kit/work/<slug>, and the stage-model settings (KIT_STAGE_MODEL_TRIAGE, default Haiku; KIT_STAGE_MODEL_REVIEW, default Opus) exist but start nothing. A task carries at most 1500 characters a note and 4000 in all, and says what it cut. The whole task fits a run's 8000-character task: notes that do not fit wait for the next triage run, and cards past the room left are counted and the run told to read the spec files. Starting the triage run waits on runs taking a repo and a task (kit#701)
-  needs-context "Built and switched on in main, with the orchestrator (BEH-ORCH-3). A real triage has not run yet, because production Kit has not deployed since kit went private: ArgoCD needs read access to the repo (kit#714 has the one secret). Once it deploys, I check a triage live."
+  contract his note (kit#714, 2026-11-07): "maybe we can let the pipeline decide if it can disregard a note and leave it for a more thorough review later"
+  contract my assumption: triage puts a note that asks for nothing (a test, an empty or accidental note) in a work item named set-aside, with a Flag line saying why. That item is never specced or built and no model reviews it then: it stops with "set aside: <reason>", for a person to look at later. Its notes count as sorted, so they are not triaged again
+  contract his notes of 2026-11-06 23:53Z, 23:54Z and 2026-11-07 01:23Z ("This is a test", "Test", "test") are the case it is for: on the first live run each one still paid for a whole triage run, a clone and a pushed bundle, to be set aside
+  contract his note (kit.notes.md#2026-11-07-0150): "Kit pipeline needs to quickly (and cheaply) identify when something is just for the backlog"
+  contract my assumption: before any agent run starts, a plain rule in Kit, with no model, sets aside a note that is empty or only a test word ("test", "testing", "this is a test"), so it costs nothing. A note the rule does not catch goes to triage as now
+  contract my assumption: triage, within its own turn limit (BEH-ORCH-5), may also put a note in a work item named backlog when it is an idea for later, naming the cards it would touch or "new: <title>". That item stops with "on the backlog: <reason>", so no spec or build run is paid for, and the bot writes its cards on its next wake and decides when to schedule them (BEH-ORCH-4). A Haiku API call could sort notes before any run starts, but it bills his API key rather than his subscription, against his kit#708 rule, so it is not used unless he says so
+  contract built: NoteNoise.IsNoise sets aside an empty or test-word note when a triage begins, before any run, as a stopped set-aside item; only the other notes reach the run, and none at all starts no run. A backlog bundle from triage stops as "on the backlog: <reason>" and is never specced or built (kit#751)
+  contract measured from his Runs screenshot (kit#803, 2026-11-14 09:20Z): triage has run live, 12 runs for $1.14 in all. The runs at 08:44Z (411,457 tokens) and 09:14Z (293,036 tokens) finished, but no kit/work/* branch has moved since 2026-11-07 11:32Z, so neither pushed a bundle, and the newest stopped with "the triage reported no usable bundle". Each such stop means the next note's triage reads its notes again and pays for them again
+  contract measured 2026-11-14 from git: the last kit/work/* push was 2026-11-07 11:32Z, and 0.1.253, which put triage on a 15-turn limit (BEH-ORCH-5), went live at 12:01Z that day. No triage has pushed since. Pushing one work item takes about four turns (checkout, write, commit, push), so a triage of several notes can run out before it pushes anything. And the runner took claude's exit code as the outcome, so a run that ran out of turns could end "finished" with nothing pushed and nothing said
+  contract my assumption: the likely cause is the turn limit, so triage gets 30 turns and is told to checkout, write, commit and push each work item in one shell command. The runner now fails a run whose result is an error even when claude exits 0, at step "turns" when it ran out of turns and "result" otherwise, so the next triage's Runs row says which. If it still stops with "no usable bundle" and no failed step, the cause is elsewhere and the run log (BEH-ORCH-6) is the next place to look. A triage that pushed some bundles and then ran out of turns now fails, and a failed report's bundles are not read, so its notes are triaged again; that retry finds those branches on origin and updates them rather than opening new ones
+  contract his note (kit.notes.md#2026-11-14-1344): "Please continue with the pipeline enhancements!" The live defect is this card, so it comes first
+  contract measured 2026-11-14 17:35Z from git, after kit#807 went live at 14:29Z: triage pushes again. Between 17:27Z and 17:31Z eight triage commits landed on four work items (project-navigation-and-tags, notes-page-archive-tag-and-warning, epics, set-aside), and notes-page-archive-tag-and-warning went on through review and spec. So the turn limit was the cause, and this card's defect is fixed
+  contract his note (kit.notes.md#2026-11-14-1725): "I thought you were going to get the pipeline running Howcome u paused until 8". My answer: that was my mistake. The wake before his 13:44Z note had set a sleep to 19:00Z, and the wake his note started fixed this card but did not clear that sleep, so nothing watched the fix go live. The sleep is cleared, and I am watching the run through to build
+  contract measured 2026-11-17 from git: his 2026-11-16 22:56Z note on BEH-USERS-12, "I think this is ready now", was set aside at 22:56:32Z as naming "no feature, card or change". The card was in the note's heading, but the triage task carried only the note's date and text
+  contract my assumption: a note left on a card reaches triage with "(Left on card <id>.)" as its first line, so a note need not name the card it is about. A note on the project reads as before. Whether a note was sorted is still keyed on its date and text alone, so no note already sorted is triaged again
 
 behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger model reviews it from the bundle without searching again"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
-  pending
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1394,12 +1443,31 @@ behaviour BEH-ORCH-2 "Any stage can flag its output for review, and a stronger m
   contract my assumption: a flag carries a one-line reason, and every flag and its review outcome is recorded, so which kinds of work need a stronger model is learned from the record rather than guessed
   contract my assumption: the model for each stage, and for review, is a setting, not code, so a newer or cheaper model is one change
   contract my assumption, slice 1 (built switched off): a review writes one line "Review: agreed|revised|escalated — <note>" straight after the bundle's Flag line, keeping the flag, so the merged bundles under .kit/bundles/ are the record of every flag and its outcome; ReviewStage builds the review task from the bundle alone and refuses one with no flag or already reviewed. Escalated stops the work item for a person (BEH-ORCH-3). Starting the review run waits on the orchestrator (BEH-ORCH-3)
-  needs-context "Built and wired to the orchestrator (BEH-ORCH-3) on dev, not yet promoted. No real review has run: production Kit has not deployed since kit went private (kit#714 has the one secret ArgoCD needs). Once a triage is seen live, I promote this and watch a flagged item."
+  contract approved by him 2026-11-14. It is on main and live since kit#794. No flagged item has been reviewed live yet, because no triage has pushed a bundle since 2026-11-07 (BEH-ORCH-1)
+  contract his note (kit.notes.md#2026-11-07-0210): "A kit pipeline uncertainty flag from haiku picks a model by complexity level can pick opus review or sonnet review - should cut costs"
+  contract my assumption: a Flag line may end with a level, "Flag: <reason> (level: low|high)"; low is reviewed on KIT_STAGE_MODEL_REVIEW_LOW (default Sonnet), high on KIT_STAGE_MODEL_REVIEW (Opus). A flag with no level, or one Kit cannot read, is high, so a doubt is never reviewed by a weaker model by accident
+  contract my assumption: the stage is told what each level means: low when it is unsure of a wording or which card a note belongs to, high when it is unsure what he wants or the change touches how Kit stores or shows his work
+  contract built: FlagLevels.Of reads a trailing "(level: low|high)" off the Flag line (case and spacing ignored; none, unreadable or mid-text is high); the review run is created on KIT_STAGE_MODEL_REVIEW_LOW (default claude-sonnet-5-5) for low and KIT_STAGE_MODEL_REVIEW for high; the triage, spec and build tasks say what each level means (kit#751)
+  contract his question (kit-ui.notes.md#2026-11-15-1245): "What is the home on this it isn't marked as blocked", read as "the hold"
+  contract my answer: nothing held it, which is why it was not Blocked. It was built and live, and I had left it pending only until a flagged item was reviewed live. That was a check I owed, not a reason to keep it in his Queue. It is done now, and the first live review it runs is checked from Runs once the bot's read key (BEH-ORCH-6) is merged
+
+behaviour BEH-ORCH-7 "The runner that takes Kit's runs is a C# program, as Kit is"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-0211
+  review approved
+  priority 4
+  pending
+  contract approved by him 2026-11-14, which answers the platform question: the runner's loop moves to C#. The runner image is packaging, so the change goes up as its own pull request for him to merge (claude-code-bot#83). At priority 4 it waits behind the pipeline's live defects (BEH-ORCH-1)
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-0211): "Running kit pipeline with a node script. Surely this is perfect application for csharp async"
+  contract my assumption: the loop that claims a run, starts the CLI, and reports usage, bundles and failure back to Kit moves into a small C# worker; the CLI run itself stays the same
 
 behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, then tests and code, and stops at a flag"
   in FEAT-AGENT-PIPELINE
   source defined kit#672
-  review unreviewed
+  review approved
   priority 2
   pending
   actor engineer
@@ -1409,6 +1477,7 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption: the stages are triage (BEH-ORCH-1), spec (formalise the cards and plan the tests), then build (tests first, then code, until they pass); each is one agent run (BEH-USERS-9)
   contract my assumption: the orchestrator is plain code in Kit, not a model, so starting and sequencing stages costs no tokens
   contract his note (kit#672, 2026-11-05): "instead of being jobs that wake and poll, we could have this triggered by a user taking an action. But this adds questions of timing. I think we only want one orchestrator live per repo or per user not sure yet maybe a user can configure that"
+  contract my assumption: superseded by BEH-ORCH-11 once its jobs are built: only triage stays on the hook, and each later stage is taken by its own job in priority order
   contract my assumption: a user's action in Kit (a note, a chat message, an approval) is what queues the next stage; nothing runs on a timer. A runner waits on Kit with a held-open request, so a queued stage starts within seconds and an idle pool makes no model calls
   contract my assumption: one orchestrator is live per project: a project's next stage waits while one of its stages is running, and other projects are not held up. Per user, and a user's own setting, can come later: once this runs Kit's own work, the bot that maintains the ecosystem wakes less often and reads the pipeline's notes, "just like a boss would". The same shape may later serve users as a periodic check by a stronger model
   contract my assumption, slice 1 (built switched off): the orchestrator is a pure state machine over work items (triage, review, spec, build; queued, running, stopped, done). A flagged stage goes to review, and an agreed or revised review resumes at the stage after the flagged one; an escalated review or a failed run stops the item with the reason. At most one item per project starts at a time. Spec and build run on KIT_STAGE_MODEL_SPEC and KIT_STAGE_MODEL_BUILD, default Haiku. Nothing calls it yet: wiring waits on runs taking a repo and a task
@@ -1419,7 +1488,254 @@ behaviour BEH-ORCH-3 "An orchestrator starts each stage in turn: triage, spec, t
   contract my assumption, projects (KIT_PIPELINE_PROJECTS): a triage pushes bundles quoting his notes to the project's repo, and every project repo but kit's is public, so the pipeline starts on kit and kit-ui only; unset, every project is triaged. He widens it
   contract my assumption, spec and review slice: a work item queued for spec or review starts a run on its kit/work/<slug> branch, given its bundle. Spec writes the cards the bundle names into the project's spec as "contract my assumption:" lines and new cards as unreviewed, adds a "Test plan:" to the bundle's Context, and writes no tests or code. It may add a Flag only when the bundle has none. The run must report its own bundle back changed, and a spec's must carry its test plan: an unchanged, missing or malformed bundle, a spec with no test plan, or a failed run, stops the item with the reason. A later triage that updates a bundle not yet running sends it back to spec with the new bundle. A queued triage starts before any later stage, so new notes can update a bundle before it is specced. An item that reaches build starts it (the build slice, below)
   contract my assumption, build slice: a specced work item starts a build run on its kit/work/<slug> branch, given its bundle. Build writes the tests its test plan names first and sees them fail, then the code until they and the project's whole suite pass, and adds a "Built:" list to the bundle's Context naming each test it wrote and the suite's result. It may add a Flag only when the bundle has none, and a flagged build is reviewed before it counts as built. A build, or a review of one, that reports its bundle without a Built list, unchanged, or failed stops the item with the reason. A waiting build starts before any waiting spec, so an item is built before the next item is specced. A built item is done, and Kit, not the run, opens a pull request from its branch into the branch the run started from, titled with the bundle's title and carrying the bundle as its body; GitHub refusing it, or Kit having no way to open one, stops the item with the reason. Nothing merges it: it is reviewed like any other pull request
-  needs-context "The pipeline is switched on in main (kit#714), but production Kit has not deployed since kit went private on 2026-11-04: ArgoCD most likely needs read access to the private repo (kit#714 has the steps). It triages kit and kit-ui notes only until you widen KIT_PIPELINE_PROJECTS."
+  contract his note (kit-ui.notes.md#2026-11-14-0925): "The pipeline approach has changed recently right"
+  contract my answer: yes. BEH-ORCH-11 replaces the chain this card describes with tickets and one job per stage (context, plan, build, merge), taken in priority order. It went live in kit#794 on 2026-11-14, but each job has its own switch (KIT_PIPELINE_JOB_CONTEXT, _PLAN, _BUILD, _MERGE), and production sets none of them, because each one spends his subscription. So production still runs this card's chain: a note queues a triage, and a triaged item goes straight on to spec and build
+  needs-context "Production is live and triages kit and kit-ui notes only, until you widen KIT_PIPELINE_PROJECTS. Switching on the BEH-ORCH-11 jobs is your call (kit#803)."
+
+behaviour BEH-ORCH-4 "A backlog card the agent schedules starts at spec, with no triage"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-0151
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-0151): "The opus agent needs to be able to identify what backlog items can be scheduled for action and kit pipeline needs to be able to wake for these items - these items probably can skip a few items, if they are already backlog they probably dont need a triage"
+  contract my assumption: the agent schedules a card as today, with its kit-ui.schedule line; the pipeline reads that file and queues the scheduled card straight at spec, with a bundle Kit writes from the card itself (its title, contracts and source notes), so no triage run is paid for
+  contract my assumption: one scheduled card is started per project at a time, after any queued triage, so notes still go first
+  contract my assumption: it is off until he sets KIT_PIPELINE_SCHEDULED=on, because a scheduled card starts runs on his subscription without a note from him
+  contract built: with KIT_PIPELINE_SCHEDULED=on and no triage queued, the pipeline queues the first unstarted scheduled card at spec with a bundle Kit writes from the card, one per project at a time (kit#751); a paused card is skipped (BEH-BOARD-16)
+  contract my assumption, a known gap before it is switched on: work items live in memory, so after Kit restarts a scheduled card still pending (its pull request not yet merged) is started again; it looks only when a note is left, a run ends or the schedule changes through Kit
+
+behaviour BEH-ORCH-5 "Each stage has its own turn limit, so a small item stays cheap"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#751
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his ask (kit#751): "50p feels quite expensive for some small tickets… figure out a reasonable way to keep things cheap", and "for some of them it is producing an entire feature… its for the ones that its not it needs to be cheaper"
+  contract my assumption: today every stage's run gets the runner's 100 turns, and on his subscription no dollar cap applies, so the turn limit is the only brake
+  contract my assumption: each stage has its own limit: triage 30 (15 until 2026-11-14, see BEH-ORCH-1), spec 30, review 20, build 100; each is a setting (KIT_STAGE_TURNS_TRIAGE and so on), so a limit is one change
+  contract my assumption: the limit travels with the run, the way its model does, so a run started by hand keeps the runner's 100
+  contract my assumption: a stage that runs out of turns fails as any run does, and its item stops with the reason, so a limit set too low shows on Runs rather than passing silently
+  contract built: KIT_STAGE_TURNS_TRIAGE, _REVIEW, _SPEC and _BUILD (defaults 15, 20, 30, 100; blank is the default; zero, negative or non-whole THROWS at startup); the pipeline queues each run with its stage's limit, the pool's claim carries it as `maxTurns` (null for a run started by hand), and pool.sh exports it as KIT_MAX_TURNS only when present, so the runner's own 100 applies otherwise
+
+behaviour BEH-ORCH-6 "When the bot wakes, it reads how the pipeline did and fixes its weakest stage"
+  in FEAT-AGENT-PIPELINE
+  source defined kit#714
+  review approved
+  priority 3
+  pending
+  contract approved by him 2026-11-14. I read that as yes to the question this card carried, whether the bot gets a read-only key for Runs. The key is an auth change, so I build it and he merges it. He can deny it
+  contract his Runs screenshot (kit#803, 2026-11-14) is the screenshot route this card offered until the key exists. The weakest stage it shows is triage: two runs today finished, pushed no bundle, and will be paid for again (BEH-ORCH-1)
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit#714, 2026-11-07): "we also probably need some kind of feedback loop so that we can ensure that the pipeline keeps improving in development, maybe even it reports back when things are not going well in production as well"
+  contract my assumption: at each scheduled wake the bot reads the items the pipeline stopped, its flags and how their reviews came out, and what each item cost, and fixes the stage that did worst, one change at a time
+  contract my assumption: a work item's runs are summed on Runs, so what an item cost is read in one place
+  contract my assumption: reports from production wait on the Backlog until the pipeline does the work of real users
+  contract built: each pipeline run records its work item (agent_runs.work_item, null for triage), and Runs sums an item's runs, tokens and cost in one row (kit#751)
+
+behaviour BEH-ORCH-8 "A note is never lost when the pipeline cannot run, and a restart does not pay to triage it twice"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1056
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1056): "The note and chart inputs do not get lost when subscription credits run out and the pipeline cannot activate"
+  contract my assumption: "chart" is chat. A chat message reaches the pipeline as a note (BEH-CHAT-3), so keeping notes keeps both
+  contract my assumption: what was measured on 2026-11-07: the set of notes a triage has sorted lived in memory, so the 07:47Z promotion's restart forgot it, and his 10:50Z note started a triage that read yesterday's notes again (kit#754's 11:01Z commit re-sorted the 16:44Z note). Nothing was lost, but each restart paid to triage every note in the file again
+  contract my assumption: the notes a triage has sorted are kept in Kit's database (pipeline_triaged_notes: project, a hash of the note's date and text, when), so a restart remembers them. Without a database they are kept in memory, as today
+  contract my assumption: when Kit starts, a project whose sorted notes are in the database and that has notes not yet sorted gets a triage, so a note left while Kit was down, or whose triage failed, is not waiting for his next note. A project with nothing recorded yet starts nothing, so the first deploy of this does not start runs without a note from him
+  contract built, slice 1: Pipeline keeps a note's key (SHA-256 of its date and text) in ITriagedNoteStore, Postgres pipeline_triaged_notes with KIT_DATABASE and memory without; a store that cannot be read or written is logged and costs a later triage, not the run's report. PipelineResume calls Pipeline.Resume once after start, which queues a triage only for a recorded project with unsorted notes
+  contract built, slice 2: Pipeline.RunEnded schedules a retry of a project's triage Pipeline.RetryAfter (1 hour) after a triage run that did not finish, on the pipeline's TimeProvider, so a note left when his subscription's limit is reached is sorted once the limit resets. A project has at most one retry pending; a triage that works clears the count and the pending retry; it is tried again at most 12 times in a row (Pipeline.MaxRetries), so the failure after the 12th retry schedules none; a retry timer that fires after it was replaced does nothing. The retry queues an ordinary triage, which reads only the notes still unsorted. My assumption stands for the rest: a run that fails on the limit spends nothing (not checked here)
+  contract measured 2026-11-14 from the code: a run in flight when Kit restarts (a promotion, a pod move) cannot push. The runner asks Kit's /api/runs/github-token each time git needs a token, and Kit answers only for a run its RunnerPool handed out since it started (repoByRun is memory only), so after a restart the run's push is refused and its work is lost. A triage is tried again (slice 2), but a spec or build run is not
+  contract my assumption: the fix is to keep each handed-out run's repo with the run in the store, so a token request after a restart is answered for that one repo, as before it. That changes what a run's token may reach across a restart, so it is his call. If he stays silent I build it as a pull request for him to merge; meanwhile I avoid promoting while a run is in flight, which I can see only from work-branch pushes until the bot key (BEH-ORCH-6) lets me read Runs
+  contract his note (kit-ui.notes.md#2026-11-15-1248): "I don't understand what this is asking". Asked again in plain words below
+  needs-context "When Kit restarts (a deploy) while an agent is mid-task, the agent can no longer save its work to GitHub, and the work is lost. The fix: Kit remembers which repo each task works on in its database. Changes who can push, so it's yours. Silence: I build it, you merge."
+
+behaviour BEH-ORCH-9 "An internal page shows each work item's stage, its flags and who reviewed them, and what each stage of a past item cost"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1050
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1050): "Some page that shows visibility into agents running, what stage of the pipeline they are at, whether they flagged for a review and by which agent. Maybe you can also view the pipeline run of historic runs and see which stage costed the money, what reviews were requested for. This is purely an internal feature for now"
+  contract my assumption: it is a Pipeline section on Runs, for the operator only, as Runs is. Each work item is one row: project, slug, stage, status, the reason it stopped, its pull request, and its Flag and Review lines, naming the model that reviewed it
+  contract my assumption: an item's row opens to its runs, one per stage, each with its model, turns, tokens and cost, so which stage spent the money is read off one list. The runs are already recorded per work item (BEH-ORCH-6)
+  contract my assumption: today work items live in memory, so the page shows only items since Kit last started; past items come from the runs recorded per work item, which do survive. Keeping the items themselves is a later slice
+  contract built, slice 1: each run records its stage (agent_runs.stage: triage, spec, build or review; null for a run by hand). GET /api/pipeline, behind the same operator-only gate as /api/runs, serves { on, items } with each item's project, slug, stage, status, stoppedBecause, pullRequest, flag, review and reviewNote. Runs shows a Pipeline section when it is on: the items oldest first, each with its own runs (stage · model · tokens · cost), then the cost of every recorded run by stage
+
+behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built once its checks pass"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-07-1128
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-1128): "Pipeline can raise and complete PRs for completed work"
+  contract my assumption: raising is built (BEH-ORCH-3's build slice opens the pull request). Completing means merging it into the branch the run started from, which is dev for kit, never main
+  contract my assumption: Kit merges only when every Actions run at the pull request's head commit has succeeded and GitHub says it is mergeable, and it merges that exact commit, so a push after the check is not merged unseen. A failed check, or a conflict, stops the item with the reason and leaves the pull request open for a person
+  contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
+  contract my assumption: it is behind KIT_PIPELINE_MERGE, off until he turns it on, because a merge puts code no person has read into dev; promotion to main stays the bot's, under BEH-SETTINGS-4
+  contract my assumption: Kit's GitHub App needs read access to Actions and write access to pull requests on the repo. If it has no read access to Actions, the item stops saying so rather than merging unchecked
+  contract built: with KIT_PIPELINE_MERGE=on a PipelineMerger looks every 2 minutes at each built item's pull request, and GitHubPullRequestOpener.MergeIfGreenAsync merges that exact head commit (merge method "merge") once every Actions run at it has succeeded and GitHub says it is mergeable, waits on running checks, no checks yet or unknown mergeability, and stops the item with a plain reason on a failed run, a conflict, a closed pull request or an unreadable Actions API (403/404), leaving the pull request open; GET /api/pipeline carries merged and the Runs page shows a "Merged" line under the pull request link
+
+behaviour BEH-ORCH-11 "A note goes on the backlog as a ticket, and a job per stage takes the highest-priority ticket waiting for it"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-08-2206
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-08-2206): "I don't think a note should immediately trigger a feature build. Instead I think just like everything else it should go on the backlog. Then we have a few different jobs monitoring different status' and waking agents to act on the tasks in various states"
+  contract his note (kit.notes.md#2026-11-08-2206): "1. chat adds notes 2. Hook to backend haiku agent which triages ensures there are no similar tickets and creates a ticket and or updates existing backlog tickets in new states 3. Another agent which goes through tickets in new state and adds more context and moves state to ready or something 4. Another one which runs through all items and plans them 5. Another one which runs through implements and raises the pr 6. Another one which is in charge of resolving conflicts and merging PRs"
+  contract his note (kit.notes.md#2026-11-08-2206): "I am thinking we start with them all as separate and then evaluate… Existing tickets will still get actioned currently only new tickets are getting actioned (and quite poorly). And also actioning will take place based off priority not based off a hook"
+  contract his note (kit.notes.md#2026-11-08-2206): "In terms of hosting I kinda of feel that we should host a cluster local csharp backend to handle this and then have jobs for everything that handles the border tasks but the triage stays acting on a hook. Seem reasonable?"
+  contract my assumption: yes. It also fixes what was measured on 2026-11-07: 44 work branches, 5 pull requests and none merged, because each note pushed a chain of stages straight through and nothing went back to older work
+  contract my assumption: a ticket is a row in Kit's database (pipeline_tickets: project, slug, title, state, priority, the cards it touches, its bundle, its pull request, why it stopped), so tickets survive a restart. Today's work items, held in memory, become tickets
+  contract my assumption: a ticket's states are new, ready, planned, built, merged, and stopped. A Flag still sends a stage's output to review (BEH-ORCH-2) before the ticket moves on
+  contract my assumption: triage stays on the hook (a note or a chat message, BEH-ORCH-1). It is given the project's open tickets and must update one that covers the same thing rather than open a second. It moves no ticket past new, and it starts no other stage
+  contract my assumption: the four jobs after triage are context (new to ready: gathers what a planner needs into the bundle), plan (ready to planned: writes the cards and the test plan, today's spec stage), build (planned to built: tests then code, and opens the pull request), and merge (built to merged: brings the branch up to date with dev, has an agent resolve a conflict, and merges once checks pass, BEH-ORCH-10). Each starts as its own job, as he said, so whether context and plan should merge is decided from what Runs shows they cost
+  contract my assumption: each job looks every few minutes, takes the waiting ticket with the highest priority (oldest first among equals), and runs one ticket at a time per project. A job with nothing waiting makes no model call
+  contract my assumption: priority is the card's priority (1 to 4). A ticket triage opens takes the highest priority of the cards it touches, or 3 when it touches none
+  contract my assumption: existing backlog cards enter as tickets at new when the agent schedules them (BEH-ORCH-4), so old work is taken in priority order alongside new notes
+  contract my assumption: the jobs live in Kit's own C# backend, which already runs in the cluster, as background services beside PipelineMerger. Moving them into a separate service is a platform choice, so it would wait for his word
+  contract my assumption: each job has its own switch (KIT_PIPELINE_JOB_CONTEXT and so on), off until he turns it on, because each one spends his subscription
+  contract my assumption: it is built in slices, each one merged before the next: tickets kept in the database; triage reading and updating open tickets; then one job at a time, in the order context, plan, build, merge
+  contract built: slice 1, tickets kept in the database: every pipeline work item that has a bundle is also a row of pipeline_tickets (project, slug, title, state, priority, cards, bundle, pull request, why it stopped, and whether Kit made it from a scheduled card), written by PostgresTicketStore with KIT_DATABASE or held in memory without, whenever the item is made or changes; a work item at spec is ready, one at build is planned, a built one is built, one whose pull request Kit merged is merged, and a stopped one is stopped with its reason (new is not written yet, and every priority is 3 here; slice 6 replaced that with the cards' priority); on start the pipeline reloads the open tickets (ready as a queued spec item, planned as a queued build item, built as a finished one with its pull request) and starts their stage again, while stopped and merged tickets stay as they were; triage, the hook and the runs are unchanged
+  contract built: slice 2, triage reading and updating open tickets: a triage task lists the project's tickets not yet built (new, ready, planned: a built ticket is left out, as an update would send it back to spec and strand its pull request, so follow-up work on it is a new ticket; highest priority first, newest first among equals; at most 50 lines and 2,500 characters, titles and cards cut to 60 characters, the rest counted) as `- slug [state] title (cards)` and tells triage to report a bundle with that ticket's slug when a note covers the same thing; a bundle reported under an open ticket's slug replaces that ticket's item and bundle, so there is one item and one row, while a new slug still opens a ticket; an update for an item running at that moment is dropped (it cannot happen until the jobs run beside triage); triaged items still queue for spec, and no job, switch or hook changed
+  contract built: slice 3, the context job: each job's switch takes over exactly one hop of today's chain, and with it off that hop chains as before. With KIT_PIPELINE_JOB_CONTEXT=on (off by default) a triaged item, or one whose triage review agreed, waits as a ticket at new (a Context work item, not queued for spec) and a PipelineJob for the context stage looks every KIT_PIPELINE_JOB_MINUTES (default 2) at each project with a ticket waiting: when the project has no run in flight it takes the waiting ticket with the lowest priority number (oldest first among equals) and starts a context run on KIT_STAGE_MODEL_CONTEXT with KIT_STAGE_TURNS_CONTEXT turns, one ticket at a time per project; with nothing waiting it starts no run. The context run reads the repo and the spec for the bundle's cards and adds to the bundle what a planner needs (files, existing behaviours and tests, constraints, open questions), writing no spec or code, and reports the bundle back under the same slug; a bundle it leaves unchanged, a missing bundle or a failed run stops the ticket with why, a Flag goes to review as for other stages, and a success makes the ticket ready and queues it for spec exactly as today. On start a new ticket resumes as waiting for the job when the switch is on and as a queued spec item when it is off; a ticket's priority is kept as it was read (3 until the jobs take it from the cards)
+  contract built: slice 4, the plan job: with KIT_PIPELINE_JOB_PLAN=on (off by default; anything but on or off throws) every item queued for spec waits as a ready ticket instead of StartReady starting it, however it got there (after context, straight after triage when the context switch is off, a scheduled card, or a resume), and the same PipelineJob, registered once for each job switch that is on and given its stage, takes it: every KIT_PIPELINE_JOB_MINUTES, at each project with no run in flight, it takes the waiting ready ticket with the lowest priority number (oldest first among equals) and starts its spec run, one at a time per project. Everything after the spec run (review, build queued after it) is unchanged, and with the switch off a queued spec item starts as before. The pipeline now takes the set of stages a job owns (jobs) in place of the context switch, so one rule, an item queued at an owned stage waits, and one tick, JobTick(stage), serve both jobs. A ready ticket resumes as a queued spec item whichever way the switch is, and waits if it is on
+  contract built: slice 5, the build job: with KIT_PIPELINE_JOB_BUILD=on (off by default; anything but on or off throws) every item queued for build waits as a planned ticket instead of StartReady starting it, however it got there (after a spec run or its review, or a resume), and the same PipelineJob, now also registered for the build stage, takes it: every KIT_PIPELINE_JOB_MINUTES, at each project with no run in flight, it takes the waiting planned ticket with the lowest priority number (oldest first among equals) and starts its build run, one at a time per project. A built or merged ticket is a done item, not a queued one, so a tick never takes it. A review of a build ends the item (done), so nothing sends work back to build, and a review of a spec queues build, which then waits. With the switch off a queued build item starts as before. A planned ticket resumes as a queued build item whichever way the switch is, and waits if it is on
+  contract built: slice 6, priorities from the cards: a ticket's priority is the lowest priority (1 to 4; a card's 5 counts as 4) among the cards its bundle lists, read from the project's spec; 3 when none of its cards in the spec has a priority, so a priority line he removes takes effect; a card not in the spec is ignored, and when none of them is in the spec (a new card, or a deleted one) the ticket keeps the priority it had, a resumed one included. It is set when triage makes or updates the ticket or a scheduled card makes it, so the saved row carries it, and read again at every job tick, so a card re-prioritised in Kit reorders the waiting tickets; triage's list of open tickets takes its priorities from the cards the same way. A spec that cannot be read in a tick leaves the priorities as they were and stops nothing. No new switch: with every job off only the stored priority changes
+  contract built: slice 7a, the merge job: with KIT_PIPELINE_JOB_MERGE=on (off by default; anything but on or off throws) the merge of a built item's pull request moves from the BEH-ORCH-10 look to a job, so MergeReadyAsync merges nothing whatever KIT_PIPELINE_MERGE says, and a PipelineJob for the Merge job (a new PipelineStage.Merge, only ever a job and never the stage of a work item) looks every KIT_PIPELINE_JOB_MINUTES. At each look, per project with a built item not yet merged, it reads the priorities again and takes only the one with the lowest priority number (oldest first among equals), so pull requests merge into the base branch one at a time in priority order and the others wait. It asks GitHubPullRequestOpener.MergeIfGreenAsync with updateFirst: when the open pull request's branch is behind its base (GitHub's compare, behind_by above 0) it calls update-branch with the head commit it read and waits ("brought up to date with dev") so the checks run on the updated head; GitHub's 422 on that update is a conflict and stops the item, a 409 waits, other 4xx stop it and 5xx or unreachable wait; a branch not behind goes on to the checks and the merge as in BEH-ORCH-10, whose path is unchanged without updateFirst. Merged marks the item merged and its ticket merged, waiting leaves it as the top item for the next look, refused stops it with the reason and the next look takes the next one. With the switch off the BEH-ORCH-10 look is as before. Nothing yet resolves a conflict (slice 7b)
+  contract built: slice 7b, a conflict goes to an agent: a merge result now says Conflict, set only on the two refusals GitHub gives for a branch that conflicts with its base (not mergeable, and the 422 on update-branch), with the reason text unchanged. With KIT_PIPELINE_JOB_MERGE=on, a Conflict at a merge look no longer stops the item: it gets one resolve run on the runner pool, shown in Runs as stage resolve, while the item is a PipelineStage.Merge item (running, a built ticket meanwhile, same pull request). The run starts from the project's repo and base branch and is told to check out the pull request's own branch kit/work/<slug> from origin, merge origin/<base> into it, resolve each conflict keeping the intent of both sides, run the project's whole test suite, and commit and push the merge to that same branch, with no new pull request, no other branch and no force-push (ResolveStage.BuildTask). Its model and turns are KIT_STAGE_MODEL_RESOLVE and KIT_STAGE_TURNS_RESOLVE, and unset they are the build stage's. A run that ends well makes the item built again (same pull request), so the next merge look reads the pull request, waits for the checks on the new head and merges; a failed run stops the ticket with "the conflict-resolution run failed". A second Conflict on a ticket that already had its run stops it ("it still conflicts with its base after an agent tried to resolve it"), so a ticket gets at most one run. That a ticket had its run is kept in memory only (the ticket row has no column for it), so a restart forgets it and a ticket may get one more run. While the run is in flight the merge job takes no other ticket of that project, and a project with any other run in flight waits for the next look. With the switch off a conflict still stops the item (BEH-ORCH-10)
+  contract my assumption: the resolve run's model and turns default to the build stage's, because resolving a conflict needs the same code judgement as building; whether a cheaper model will do is decided from what Runs shows it costs
+  contract my assumption: the context stage's model and turn limit default to triage's (claude-haiku-5-5, 30 turns): it reads and gathers as triage does and writes nothing but the bundle, so the cheapest model should do. Whether it needs more is decided from what Runs shows a context run costs and whether the planner is helped
+
+behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so merging into dev spends no Actions minutes"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-12-0837
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-12-0837): "Maybe to cut costs we can use the kit pipeline for deployment - it can run tests as well but only use it for those completed merge promotions. Maybe we should have some promotion pipeline as well like deploy from main rather than develop so that promotions can be purposeful. Then you can just make sure that tests are passing locally otherwise build will fail"
+  contract my assumption: what was measured on 2026-11-12: kit is private, so its Actions minutes come out of the org's 2,000 free a month, and kit alone billed 1,533 in the first 12 days (CI on PRs into dev 777, on pushes 665). CI stopped starting at 04:56Z that day. Deploys already build only from main
+  contract my assumption: the first step is the GitHub side, as kit#791: Actions CI runs only for pull requests into main and pushes to main, so a promotion still gets full CI before anything deploys, and work into dev is gated by the whole suite run before it merges
+  contract my assumption: then the merge job (BEH-ORCH-11) needs its own check for such a project, because a pull request into dev with no Actions run waits forever (it never merges unchecked). A test run on the runner pool, shown in Runs as stage test, checks out the pull request's exact head, runs the project's whole suite and reports pass or fail against that commit, and the merge job merges that exact commit only after a pass, as it does after a green Actions run today
+  contract my assumption: it applies only to a project whose repo is private; a public project's Actions minutes are free, so it keeps its CI as now
+  contract his note (kit.notes.md#2026-11-14-0827): "Made kit public temporarily to unblock us but we still need to look at minimising credit usage in our private usage. Later when we r making money I can pay for github". So while kit is public, its promotions use free minutes; this behaviour is what keeps it cheap once it goes private again
+  contract built: with KIT_PIPELINE_JOB_MERGE=on, when the pull request's base repo is private (GitHub's base.repo.private), MergeIfGreenAsync needs no successful Actions run at the head: a completed run that failed still refuses and one still running still waits, and a conflict still goes to the resolve run (slice 7b) before any test is paid for. It merges only when the head commit is the one a Kit test run passed at; otherwise it answers NeedsTest with that head commit. A public repo, and the BEH-ORCH-10 look, are unchanged
+  contract built: on NeedsTest the merge job starts one test run on the runner pool, shown in Runs as stage test (a new PipelineStage.Test, held only while the run is in flight; its ticket stays built), unless the project has a run in flight, in which case the next look asks again. The run is told to fetch kit/work/<slug>, check out exactly that commit, run the whole suite, change and push nothing, and end on the line "KIT-TEST: PASS <sha>" or "KIT-TEST: FAIL". A pass is remembered for that commit and the item is built again, so the next look merges exactly that commit (the merge names it, so a head that moved is tested again); a fail stops the ticket with "the project's tests failed at <sha7>". The passed commit is held in memory only, so a restart may cost one more test run. While a test runs the merge job takes nothing else of that project
+  contract built: the runner decides the pass, not the agent's exit code: the claim now carries the run's stage (pool.sh exports KIT_STAGE), and for stage test entrypoint.sh passes only when the agent's last line is exactly "KIT-TEST: PASS <40 hex>", that commit is named in the task and is HEAD; anything else fails the run at step verdict. A test run never reports bundles and never pushes, whatever it left in the tree
+  contract my assumption: a test run's model defaults to triage's (KIT_STAGE_MODEL_TEST, unset) because running a suite needs no code judgement, and its turns to build's (KIT_STAGE_TURNS_TEST, unset) because setting a suite up can take many steps; Runs shows what it costs
+  contract my assumption: a failed test stops the ticket rather than retrying, because a flaky suite should be seen, not hidden by a second run
+
+behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
+  in FEAT-AGENT-PIPELINE
+  source defined kit-ui.notes.md#2026-11-07-0132
+  review approved
+  priority 4
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-07-0132): "Add a scheduled Opus review to the agent pipeline, as its own part of FEAT-AGENT-PIPELINE and not a custom agent under BEH-AGENTS-1. It is an exception to the no-timer rule in BEH-ORCH-3"
+  contract his note: a cheap model still triages most tasks; the review checks neglected tasks, a sample of completed work and the architecture; the user chooses daily, every two days or weekly
+  contract my assumption: the review writes what it finds as notes on the project, so its findings enter the pipeline as tickets like any other note and it changes no code itself
+  contract my assumption: it has its own switch, off until he turns it on, because it spends his subscription, as each BEH-ORCH-11 job does
+  contract his answer (kit-ui.notes.md#2026-11-15-1251): "Yes, on Settings as its own row, next to the pipeline. The cadence can be set per project."
+  contract my assumption: the row lists each project with its own cadence (off, daily, every two days, weekly), and every project starts off
+
+behaviour BEH-ORCH-14 "A run that outlives its time limit fails and frees its runner, so one hung run cannot hold the pipeline"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-14-1725
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-14-1725): "I thought you were going to get the pipeline running"
+  contract my assumption: what was measured on 2026-11-14: notes-page-archive-tag-and-warning was specced at 17:31Z, and its branch had not moved by 19:47Z. Nothing bounded a run's time: the claimer's 2-hour limit acts only when its pod asks for the next run, which a hung run never lets it do, and a run on his subscription never meets the proxy's 6-hour token age. One hung run therefore held its pod and its project's pipeline until a restart
+  contract my assumption: the runner ends the agent after KIT_RUN_MAX_SECONDS (default 6600, under the claimer's 7200), with every process the agent started (a test server it left running included), and the run fails at step "time", which Runs shows as "time exit 124". Whatever the agent started and left running when it ended, well or not, is killed too, so it cannot hold the pod
+  contract my assumption: a kill inside the limit (out of memory) stays a "claude" failure, so Runs does not blame the limit for it; a limit that is not a whole number of seconds above zero refuses the run before the agent starts
+  contract measured 2026-11-17 from git: his kit.notes.md notes of 2026-11-16 22:56Z and 22:58Z were not triaged until 07:33Z the next day, 4 minutes after a promotion restarted Kit, while his kit-ui note of 22:56Z was triaged in 21 seconds. That fits a run on the kit project left "not over" all night (Runs was not read, so it is not proven). The runner's own limit cannot end a run whose runner pod has died, because then no report ever comes
+  contract my assumption: Kit counts a run's runner lost when the run has not reported 150 minutes after it was handed out, which is past the runner's 6600-second limit and the claimer's two hours. Kit then fails the run with "lost", exactly as if the runner had reported failing, so its project is free and a failed triage retries as usual. The check runs on every runner's claim. A report that arrives afterwards is refused as already over. A run handed out before a restart is not counted, because the restart has already freed its project
+
+behaviour BEH-ORCH-15 "The pipeline is switched on and off per project, and starts off for every project except kit"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1247): "Pipelines are run on projects independently. Pipeline can be switched on and off for individual projects. Let's start with all off but on for kit"
+  contract my assumption: today the list is the KIT_PIPELINE_PROJECTS setting, which production sets to kit and kit-ui. This card moves it to a row per project on that project's Settings page, saved in Kit, with KIT_PIPELINE_PROJECTS read once as the starting values
+  contract my assumption: "kit" means kit and kit-ui, which both live in the kit repo; every other project starts off
+
+behaviour BEH-ORCH-16 "A ticket is not a spec card: the first agent turns new input into a spec change on a branch and one ticket, and asks its questions on that ticket"
+  in FEAT-AGENT-PIPELINE
+  source defined kit.notes.md#2026-11-15-1520
+  review approved
+  priority 1
+  pending
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1520): "a few input mechanisms, writing a note, speaking to chat, leaving a comment, approving rejecting. This is the input surface"
+  contract his note: "the first agent in the pipeline which picks up all of these loose items and inspects the existing spec and figures out what needs to change / by deleted / be created… These updates go in a new feature branch. A ticket needs to be created to represent the change (this ticket will be in the new state) and this is where questions will be posted… If there are any questions this ticket get marked as blocked… This agent will also handle blocked items where there is extra discussion until there is no extra discussion and this ticket gets moved to ready"
+  contract his note: "previously spec was a ticket. Now a ticket is different from spec… Tickets appear on the board, spec is part of the feature. Thoughts?"
+  contract my answer: yes. It is the right split, and half of it exists. BEH-ORCH-11 already keeps tickets apart from cards (pipeline_tickets: new, ready, planned, built, merged, stopped) with one job per state taking the highest-priority ticket. What changes is where the spec is written and what the board shows. Today triage writes only a bundle and the plan job writes the cards; in this card the first agent writes the spec change itself, so his questions come up before any design is paid for
+  contract my assumption: the input surface is notes, chat (BEH-CHAT-3), comments (FEAT-COMMENTS) and his approve or deny on a card; each reaches the first agent as a note, as chat does now
+  contract my assumption: the first agent is today's triage, given the spec writer's job: on branch kit/work/<slug> it adds, changes or deletes cards (new ones unreviewed) and opens or updates one ticket at new. A question goes on the ticket as a comment and tags it blocked. His reply wakes the same agent on that ticket, which answers or changes the spec, and clears the tag when nothing is left open; the ticket then moves to ready
+  contract my assumption: the later agents are BEH-ORCH-11's jobs renamed to his words: design (ready to planned, today's plan job, writing the technical design and test plan), implement (planned to built, today's build job, opening the pull request), and merge. The separate context job goes, as the first agent now gathers that context
+  contract his note: "maybe we have blocked as a tag rather than a ticket state - this way an item can be new but blocked or ready but blocked or planned but blocked or implemented but blocked"
+  contract my assumption: yes. blocked is a tag with the question that set it, on a ticket in any state, and a job never takes a blocked ticket. A stopped ticket (a failed run, a conflict an agent could not resolve) becomes its state plus the blocked tag with that reason, so his Blocked column is one list
+  contract my assumption: the board's cards are tickets; a ticket names its feature and links the cards its branch changes, and a feature's page keeps showing its spec. This is the board change, so it is built last, after the agents work end to end
+  contract his note: "maybe the first agent can prioritise the new and ready backlog including prioritisation. This was ccb doesnt need to wake to a bell either"
+  contract my assumption: the first agent sets a new ticket's priority from the cards it touches (BEH-ORCH-11 slice 6 already does this by rule) and may raise or lower it with a reason on the ticket; a separate priority agent waits until that proves not to be enough
+  contract his note: "The job of ccb atm is to monitor the pipeline and get it into this working state. Ccb does not need to wake and respond to all new notes, ccb can be awoken by a button that I can click to wake it early, or it wakes on a schedule as normal"
+  contract my answer: that is claude-code-bot#137, which he merged on 2026-11-15: I wake at 07:30, 13:00 and 19:00 UK time or when he presses "Wake the agent" in Settings (BEH-SETTINGS-7), not on every note
+  contract my assumption: built in this order, each slice merged before the next: (1) blocked as a tag, with questions as ticket comments; (2) triage writes the spec change on the ticket's branch; (3) his reply on a blocked ticket wakes the first agent; (4) the board shows tickets. The pipeline jobs stay switched off in production until he switches them on (BEH-ORCH-11), because they spend his subscription
+  contract built (slice 1): a stopped run no longer gives its ticket a "stopped" state. The ticket keeps the state it reached and carries blocked_because, its reason, and kit posts "Blocked: <reason>" once as a comment on the ticket (pipeline_ticket_comments). After a restart a blocked ticket comes back stopped, so no job takes it, and the triage task does not list it
+  contract built (slice 2): the triage task now edits the spec on kit/work/<slug> itself (contract lines on the cards the notes touch; new cards "review unreviewed"; every line "contract my assumption:") and lists the card ids in its bundle. The spec stage after it only reads those cards and writes the test plan, still writing a card for an older bundle's "new:" line
+  contract my assumption: the first agent deletes no card. When a note says one should go, it adds "contract my assumption: delete this card, because …" to it, so the deletion is his to approve
+  contract my assumption: a triage with no Flag line has no question, so its ticket goes straight to ready, as today; a flagged one waits at new for its review
+  contract my assumption: slice 4 comes before slice 3, and its first half before either: he cannot reply on a ticket he cannot see, and no page showed tickets or their comments. So a project's own board (the board filtered to one project) leads with its open tickets first; the board's columns becoming tickets stays last
+  contract built (slice 4, first half): GET /api/projects/:project/tickets serves the project's tickets oldest first, each with state, priority, cards, pull request, blocked reason and comment thread, to the operator only (401 signed out, 403 another user, 404 an unknown project). A project's own board shows a "Tickets" section above its columns: every ticket not merged, blocked ones first and then top priority first, each with its blocked reason, state and priority badges, links to its cards, and its comments, open when it is blocked. The all-projects board and a non-operator show no section
+  contract built (slice 3): a blocked ticket on that section takes his reply (a box and a Reply button under its thread). POST /api/projects/:project/tickets/:slug/comments { body }, 1 to 1000 characters (so the whole reply fits a triage note), the operator's only, puts it on the thread and queues a triage of the project, as a note does. The triage task carries the reply as a note, ahead of other notes, naming the ticket, why it is blocked and its branch, and lists the ticket though it is blocked; its bundle under that slug replaces the stopped item, which clears the tag. A reply is keyed in the sorted-notes store like a note, so a failed triage reads it again and a finished one never does. A finished triage that read the reply but reported no bundle under that ticket says so on the thread ("Read your reply. The triage did not update this ticket…"), and the ticket stays blocked
+  contract my assumption: a reply wakes the first agent only on a ticket blocked at new, ready or planned. On a built ticket the block is its pull request's (a refused merge, a failed test run), which a spec change does not clear, so his reply there only goes on the thread; on an unblocked ticket too. Every reply that wakes it costs one triage run, even "ok", as a note does
+  contract my assumption: the reply's author on the thread is his sign-in name (@operator on a Kit with no password), and Kit's own comments are "kit"
+
+behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
+  in FEAT-SETTINGS
+  source defined kit#714
+  review unreviewed
+  priority 3
+  actor engineer
+  when opens page:KitSettings
+  then sees region:KitMain
+  contract his note (kit#714, 2026-11-07): "i would still like a way to wake ccb manually maybe at that as a me feature only in settings - an on next wake it wakes rather than stays asleep"
+  contract my assumption: a "Wake the agent" button on Settings, for the operator only, records the time he pressed it; the agent's scheduler looks every 5 minutes and wakes it when that time is newer than its last wake, even from a sleep it chose itself; his own pause still wins
+  contract my assumption: stored as a "# kit:wake <ISO time>" line in kit.beh, so a press is a commit he can see; GET /api/settings/wake serves { requested } and POST /api/settings/wake sets it to now, behind the operator-only gate
+  contract my assumption: it matters once the bot stops waking on every Kit action and wakes on a schedule instead (his kit#714 suggestion); the scheduler half lives in claude-code-bot and is his to merge
+  contract his note (kit.notes.md#2026-11-14-1250): "Can I get a button to flag for a ccb wake for my personal kit only. Sometimes I want it to wake but have to wait or write a note"
+  contract my answer: it is this card, live on main since 2026-11-07 and never pressed (kit.beh has no "# kit:wake" line). Settings, "Wake the agent": the press is a Kit commit, so the scheduler wakes the agent about 5 minutes later, the same as a note does but with nothing to write
+  contract built: a "Wake the agent" section on Settings, shown to the operator only, with a "Wake the agent" button, a "Last asked: <local time>" or "Never asked" line, and the sentence "The agent wakes at its next look, within about 5 minutes, unless you have paused it."; pressing it POSTs /api/settings/wake with no body, which replaces any "# kit:wake" line in kit.beh with exactly "# kit:wake <ISO 8601 UTC time>" (nothing after, so grep -E '^# kit:wake [0-9]' and the third field give the time) or adds one after the leading directives; GET serves { requested: <iso> | null }; both sit behind the same operator-only gate as every write
 
 feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its boundaries"
   in EPIC-KIT-USERS
@@ -1428,10 +1744,10 @@ feature FEAT-KIT-DEBT "Kit's backend carries less code: interfaces only at its b
 behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and its tests run through the host against a test database"
   in FEAT-KIT-DEBT
   source defined kit#671
-  review unreviewed
+  review approved
   priority 4
   pending
-  needs-context "Deleting about 145 interfaces is an architecture choice and a large deletion, so it is yours (kit#671). If no answer by 2026-11-11, I delete none, and new code adds interfaces only at boundaries."
+  paused until 2026-11-25
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
@@ -1439,7 +1755,8 @@ behaviour BEH-DEBT-1 "Kit's backend has interfaces only at its boundaries, and i
   contract his answer (kit#671): "I think tests should not run against the real db. Isn't there such thing as a test db?" So integration tests use a throwaway Postgres made per test run, never preprod's
   contract my assumption: no new interface is added from 2026-11-04 except at a boundary: GitHub, the database store, push, time, the model API
   contract my assumption, the migration plan: three PRs, data-model interfaces first, then internal services, keeping the boundaries; tests that mocked a deleted interface move to the in-memory host
-  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; priority 4 until then
+  contract his answer (kit#671, 2026-11-11 22:32Z): "Deleting all our interface create a backlog item and we can action this when we have addressed the cost issues". So the deletion is approved, and it waits on the cost work
+  contract my assumption: it starts only once the cost work (FEAT-AGENT-PIPELINE) frees capacity, as he said; it is paused, and on 2026-11-25 I check whether the cost work has landed and either start it or pause it again
 
 feature FEAT-USER-PROCESS "One shared dev process, with memory per user"
   in EPIC-KIT-USERS
@@ -1611,7 +1928,10 @@ behaviour BEH-USERS-8 "A user sees only their own projects, notes and memory, wh
   contract my proposal, answering "feel free to propose other items": today every signed-in visitor is James, so nothing checks whose project a URL names; with a second user, every read and write has to
   contract his answer (kit.notes.md#2026-10-23-0642): the check ships with the sign-up feature (BEH-USERS-1), so it is in place before the first user signs in
   contract my assumption: until a user connects their GitHub, every project Kit serves is James's; the user's project list and activity hold none of it, and every write to it is refused
-  contract my assumption: a user may still open one of his projects by its URL, as anyone may (BEH-GATE-H1), because its repo is public; a project in a private repo is served to its owner only
+  contract his words (kit#795, 2026-11-14): "Viewable kit specs should be determined by the projects in your github". So another user opening one of his projects by its URL gets 403 not-yours, whatever repo it is in, and a name that exists nowhere answers the same
+  contract his note (kit.notes.md#2026-11-07-2121): "First tester can see my proposed projects when they should not be able to, tester should only see work from there own space. Proposed projects should be per user, maybe this gets stored in the db until they create a fit repo for it"
+  contract my assumption: a tester sees only the projects from their own GitHub; none of James's projects, proposed ones included, unless they are a contributor on that repo (BEH-USERS-2)
+  contract my assumption: a user's proposed project, before it has a repo, is kept in Kit's database against that user and shown only to them; when they create the repo (BEH-USERS-3) it becomes a normal project and the database row is dropped
   contract built: kit#431 put every write behind one check of whose session it is and emptied a user's project list and activity; this change pins every write route and the read by URL in tests. Every corpus Kit serves today lives in the public kit repo, so no project is private yet; the owner-only read arrives with a user's own repos (FEAT-USER-REPOS)
 
 # His note of 2026-10-19 19:33Z: a "nudge", maybe a bell ("fits in with the cat theme"),
@@ -1753,7 +2073,7 @@ behaviour BEH-NOTIFY-1 "A notifications page lists the agent's messages, newest 
   contract my assumption: Kit reads that file with its own GitHub App, so it needs no new secret, account or write route; the agent never writes to Kit
   contract my assumption: each entry shows when, a kind (wake, sleep, pr, blocker, done or note) and the message, the newest 50, and the page is reached from the navbar as Notifications
   contract a feed Kit cannot read is shown as unreadable with GitHub's reason, never as an empty feed
-  contract my assumption: unlike his projects (BEH-GATE-H1), the feed is served only to a signed-in session, because it comes from a private repo; another user's feed is empty (BEH-USERS-8)
+  contract my assumption: like his private projects (BEH-GATE-H1), the feed is served only to a signed-in session, because it comes from a private repo; another user's feed is empty (BEH-USERS-8)
   contract my assumption: KIT_AGENT_FEED names the file as owner/repo@branch:path, and Kit reads it again when the page asks and the last read is older than KIT_PROJECTS_POLL
   contract his confirmation on claude-code-bot#120, 2026-10-24 22:49Z: "Notification page is functional", so the App can read the feed
 
@@ -1849,6 +2169,21 @@ behaviour BEH-NAV-2 "On a phone the header is one tidy line, with the links in a
   contract my assumption: on a narrow screen the brand and the account sit on one line, the links sit on a single line under them that scrolls sideways rather than wrapping to three, and the "writes the corpus file" tagline is hidden
   contract my assumption: the wide-screen header is unchanged, and every link stays one tap away on a phone; nothing moves into a menu
   contract built 2026-10-25: on a 390px phone the header went from 119px to 93px tall
+
+behaviour BEH-NAV-3 "Projects are separate, like GitHub repos: a project's views sit under that project, and only the board and Settings are global"
+  in FEAT-NAV
+  layer ux
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitNav
+  contract his note (kit.notes.md#2026-11-15-1247): "Kit projects are separated just like GitHub repos. You have to navigate to the project to see the views for a r project. There is also a global board and a global settings."
+  contract his note (kit.notes.md#2026-11-15-1300): splitting out the projects is his top priority, together with BEH-USERS-12
+  contract my assumption: the global header keeps Projects, the board and Settings. Opening a project shows that project's own row of views (its spec, notes, chat, runs, health and its own settings), and every link in that row stays inside the project
+  contract my assumption: the global board still shows every project's cards, each labelled with its project, and a project's own board view is the same board filtered to it
 
 behaviour BEH-BOARD-19 "On a wide screen the board uses the width of the window, and no column is narrower than a card can read"
   in FEAT-BOARD
@@ -2243,6 +2578,21 @@ behaviour BEH-ARCH-3 "A user chooses how involved to be, and Kit decides the res
   contract my assumption: the depth is per project, a `# kit:depth` line like the conflicts and promote switches, rather than per user, because a project has one user today and a per-user store would be a data-model change that is his to make
   contract my assumption: behaviours is the default and is stored as no line, as it is today, so a project that never chose behaves as it did
 
+behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack, the same picture every time for the same repo"
+  in FEAT-ARCH
+  layer technical
+  source defined kit-ui.notes.md#2026-11-06-1801
+  review approved
+  priority 5
+  pending
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract his note (kit-ui.notes.md#2026-11-06-1801): "a project's architecture page draws a diagram of its stack, generated deterministically, so the same repo always gives the same picture. The diagram's parts come from the repo: the databases, external APIs and the Helm chart. Backlog, not for now"
+  contract it extends BEH-ARCH-1 and does not change it
+  contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
+  contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
+
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
 
@@ -2336,7 +2686,7 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   actor engineer
   when opens page:KitProjects
   then sees region:KitMain
-  contract built: the UI asks GET /api/settings/features, which names the caller's group from the session (the operator, or anyone else, a caller with no session on a locked Kit included, as a tester) and the features switched off for it; a switched-off feature's navigation entry is left out, and visiting its route directly shows a "Not available" heading and one line instead of the page
+  contract built: the UI asks GET /api/settings/features, which names the caller's group from the session (the operator, or any other signed-in user, as a tester; with no session on a locked Kit it answers 401, BEH-GATE-H1) and the features switched off for it; a switched-off feature's navigation entry is left out, and visiting its route directly shows a "Not available" heading and one line instead of the page
   contract built: a small explicit table in the UI (components/flags.ts) maps features to the screens they own: FEAT-BOARD /board, FEAT-STAGES /stages, FEAT-EPICS /epics, FEAT-INBOX /inbox, FEAT-HEALTH /health, FEAT-ACTIVITY /activity, FEAT-NOTIFICATIONS /notifications; the Board link goes to the first of the three board views that is on, and is left out when none is
   contract built: while the switches load, or if they cannot be read, every screen shows
   contract my assumption: switched off means hidden, not greyed out, and a direct visit gets a short "not available" message rather than a blank page or a redirect, so a tester never meets half an experiment
@@ -2408,6 +2758,9 @@ behaviour BEH-WELCOME-1 "A new user connects their GitHub, then sees their Kit p
   when opens page:KitProjects
   then sees region:KitMain
   contract "The onboarding process takes me through setting integrating my git account. It shows any projects that I already have setup with kit and their test health. If there are no existing projects it asks if I would like to create a new project"
+  contract his note (kit.notes.md#2026-11-07-2121): "A new user as part of the onboarding has to sign in with git before they can use the app - currently a user can look around without having signed into git"
+  contract my assumption: until a user's GitHub is connected, every page other than "Welcome to Kit" and Settings' sign-out sends them back to "Connect your GitHub", and the API answers 403 to every read of a project
+  contract my assumption: this holds for users James made; the operator is not held to it
   contract my assumption: it joins what is built: connecting GitHub (BEH-USERS-1, BEH-USERS-10), the user's own projects (BEH-USERS-2), test health (BEH-HEALTH-1) and a new repo (BEH-USERS-3); the new part is the first-visit order and the empty state
   contract his question, a new web template for Kit users or the existing one: my default is web-template as it is, and a Kit-specific template only once the first tester's project shows what it lacks
   contract my assumption: setting up branches, branch rules and CI on the new repo stays as BEH-USERS-3 specifies; rules need the user to grant the App administration rights, so they are offered, not assumed
@@ -2483,7 +2836,7 @@ behaviour BEH-SPECAGENT-5 "In a new project's first analysis, the spec agent res
   in FEAT-SPEC-AGENT
   layer ux
   source defined kit.notes.md#2026-11-03-1019
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "It needs web search, which costs per query on top of the model; say if it may spend, and how much a design session may cost."
@@ -2781,6 +3134,19 @@ behaviour BEH-CHAT-18 "Kit keeps a rough sense of how technical each user is, an
   contract "Kit keeps a rough profile of each user's technical level, tracking signs such as whether they hand-edit the repo and how technical their prompts are. The profile is meant to set the tone of Kit's replies."
   contract my assumption: the profile only changes how replies are worded (jargon, how much is explained), never what Kit will do for the user or what it shows them
 
+behaviour BEH-CHAT-19 "The chat shows the state of the item it is showing him"
+  in FEAT-CHAT
+  layer ux
+  source defined kit.notes.md#2026-11-15-1250
+  review unreviewed
+  priority 3
+  pending
+  actor engineer
+  when opens page:KitChat
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-15-1250): "When in chat you should see the state of the top of stack item that you are being shown"
+  contract my assumption: the state is the one the board shows for that item (for example pending, approved, blocked, built), next to its id, and it updates when he answers the item from the chat
+
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).
 
@@ -2894,7 +3260,7 @@ behaviour BEH-AGENTS-1 "Custom agents, such as a Kit health agent or a QA agent,
   in FEAT-CUSTOM-AGENTS
   layer ux
   source defined kit.notes.md#2026-11-02-1857
-  review unreviewed
+  review approved
   priority 5
   pending
   needs-context "Custom agents spend on every run and start from the security agent (BEH-SECAGENT-1); both wait on your spend cap."
@@ -3000,7 +3366,10 @@ behaviour BEH-NOTE-15 "A note carries a tag saying where it came from, shown on 
   contract my assumption: the origin is one line under the heading, an HTML comment `<!-- from: chat -->`, so the heading, and the anchor derived from it, are unchanged and older readers see only an invisible comment
   contract my assumption: an origin outside that list is ignored, not refused; the note still lands, untagged
   contract my assumption: the agent origin is for a note posted through the API with from set to agent; nothing in the UI sends it
-  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date; the Chat page sends chat and the floating button sends note-button; the Chat does not show the tag
+  contract stored: the origin is kept in the notes file itself, under the note's heading, so it is in git with the note and needs no other store
+  contract my assumption: an origin word other than the three is shown as no tag on the Notes page, as it is ignored when the file is read
+  contract conflict with BEH-CHAT-12, which shows a note's tag in the chat when he asks to see that note (his 2026-11-03 23:32Z note). This card says the Chat does not show the tag. I built both: an ordinary chat turn shows no tag, and a note the chat shows on request does. Review requested: approve to keep that, deny to hide the tag in the chat too
+  contract built: POST /notes takes an optional from; a note lists back with from set when it carries one; the Notes panel shows a muted "from chat" or "from note button" or "from agent" beside the date, and no tag for any other word; the Chat page sends chat and the floating button sends note-button; an ordinary chat turn shows no tag
 
 feature FEAT-TOUR "An onboarding tour shows a new user around"
   in EPIC-KIT-USERS
@@ -3033,6 +3402,7 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   source defined kit-ui.notes.md#2026-11-03-0857
   source defined kit-ui.notes.md#2026-11-03-0917
   source defined kit-ui.notes.md#2026-11-03-1058
+  source defined kit.notes.md#2026-11-07-1422
   review approved
   priority 2
   pending
@@ -3051,6 +3421,8 @@ behaviour BEH-SPLASH-1 "Production Kit has a splash page with a register-interes
   contract my assumption: it stays marked pending only because `check kit-ui` can see tests in Kit's own repo and no other, so a test in balenthiran.co.uk cannot be mapped here
   contract his question, is it complete: yes. kitstudio.dev serves the splash and its register-interest flow, and the live check reads it green on 2026-11-03
   contract he approved it on 2026-11-03, so it is closed: it stays marked pending only for the reason above, and nothing on it is left for him or the agent
+  contract "www.kitstudio.dev seems to be broken what do i need to change"
+  contract my assumption: www.kitstudio.dev serves the same splash as the apex, without redirecting to it; it returned a Cloudflare 526 because the Ingress named only the apex, which balenthiran.co.uk#40 fixes on dev, and it goes live when he merges the promotion balenthiran.co.uk#42
 
 feature FEAT-PROJECT-CONFIG "A project's integrations and secrets are configured in Kit"
   in EPIC-KIT-USERS
@@ -3074,7 +3446,7 @@ behaviour BEH-PROJCONF-2 "Migrations against a user's production database are li
   in FEAT-PROJECT-CONFIG
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "It is your rule to set: whether migrations against a user's production database may run at all, or preprod only."
@@ -3093,7 +3465,7 @@ behaviour BEH-LITE-1 "A lite version of a user's app is hosted cheaply, with no 
   in FEAT-LITE-APPS
   layer technical
   source defined kit.notes.md#2026-11-02-2022
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58)."
@@ -3164,11 +3536,28 @@ behaviour BEH-SPACE-3 "Each project has its own board, and a button takes the us
   contract my assumption: the global board stays as it is today and is reached by a button on each project's board; the per-project board is the existing board filtered to that project
   contract built: a project's page links to "Its board" (/board?project=x); a board filtered to one project is headed "Board · x" and has "See every project", which clears the filter
 
+behaviour BEH-SPACE-4 "The structure of the spec is redesigned, as one file dump per project is not well structured"
+  in FEAT-PROJECT-SPACES
+  layer technical
+  source defined kit.notes.md#2026-11-07-2114
+  review approved
+  priority 4
+  pending
+  needs-context "What do you find wrong with one spec file per project: its size, finding things in it, or how it reads in a diff? Until you say, it stays on the Backlog and I build nothing."
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract his note (kit.notes.md#2026-11-07-2114): "Backlog: I want to do some proper work on designing the kit spec structure I think one file dump per project is not structured well at all"
+  contract my assumption: this is a design job for him and me together, not a build; no spec file is split or moved until he has said what the structure should be
+  contract my assumption: BEH-USERS-12 (the .kit/ directory) moves the files and does not change their shape, so it can go ahead without this
+  contract his note (kit.notes.md#2026-11-07-2113): "I think it would be worth changing the .beh extension to .kit or .spec or something. .beh is not intuitive it's not easy to say i don't really like it. Currently im leaning towards .kit"
+  contract my assumption: the extension change is part of this redesign, not done on its own, so the files are renamed once; .kit is his leaning and the default, and the parser, gh-sync and every path that names .beh move with it
+
 behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit and try it"
   in FEAT-USER-DATABASES
   layer ux
   source defined kit.notes.md#2026-10-31-1643
-  review unreviewed
+  review approved
   priority 4
   pending
   needs-context "Where users' apps run, and who pays for it, is a platform choice (claude-code-bot#58); it waits on that, as BEH-LITE-1 does."
