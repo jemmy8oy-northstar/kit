@@ -375,5 +375,6 @@ behaviour BEH-ASSIGN-1 "A setting decides whether the developer is assigned to e
   when runs command:KitUi
   then reports inbox:Shown
   review unreviewed
-  contract my assumption: the setting is per developer and is off by default, so
+  contract my assumption: the setting is per developer and is off by default; he confirmed default off on 2026-11-19 16:54Z
+  contract my assumption: per developer is still the working reading, because his reply did not say per developer or per project
   contract my assumption: an existing inbox does not change until the developer turns it on
