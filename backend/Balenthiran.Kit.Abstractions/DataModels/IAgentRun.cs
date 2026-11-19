@@ -60,6 +60,25 @@ public interface IAgentRunList
 
     /// <summary>Newest first.</summary>
     IReadOnlyList<IAgentRun> Runs { get; }
+
+    /// <summary>
+    /// BEH-ORCH-17: the runs a runner has taken from the pool and not yet reported, with when it took each. Kept in
+    /// memory only, so a run taken before Kit last started is not here. Empty without a runner pool.
+    /// </summary>
+    IReadOnlyList<IRunClaim> Claims { get; }
+}
+
+/// <summary>BEH-ORCH-17: a run a runner has taken and not yet reported, and when Kit will count that runner lost.</summary>
+public interface IRunClaim
+{
+    /// <summary>The run's id, as in <see cref="IAgentRun.Id"/>.</summary>
+    string RunId { get; }
+
+    /// <summary>When a runner took the run from the pool: the moment it began to run.</summary>
+    DateTimeOffset ClaimedAt { get; }
+
+    /// <summary>When Kit counts its runner lost if it has still not reported (BEH-ORCH-14): <see cref="ClaimedAt"/> plus the lease.</summary>
+    DateTimeOffset LostAt { get; }
 }
 
 /// <summary>
