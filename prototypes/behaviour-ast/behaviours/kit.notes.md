@@ -982,3 +982,9 @@ Important: the merge agent needs to be merging I don’t see it merging so there
 <!-- from: note-button -->
 
 Merge agent still doesn’t seem to be working
+
+## 2026-11-19 19:29Z
+
+<!-- from: note-button -->
+
+Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm
