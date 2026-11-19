@@ -55,10 +55,21 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     /// so its project is free for the next run. Done on every claim, because a runner asking for work is when a
     /// freed project can be used. A report that comes after all is then refused as already over. A run the store
     /// would not fail goes back to the pool, so the next claim tries it again; one failure never stops the rest.
+    /// BEH-ORCH-17: the first claim also fails the runs a restart left queued (<see cref="RunnerPool.Forgotten"/>).
     /// </summary>
     private void FailLost()
     {
-        foreach (var id in pool.Lost())
+        IReadOnlyList<string> forgotten = [];
+        try
+        {
+            forgotten = pool.Forgotten();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: looking for the runs a restart forgot threw {e.GetType().Name}");
+        }
+
+        foreach (var id in forgotten.Concat(pool.Lost()))
         {
             try
             {
