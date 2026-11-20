@@ -1127,6 +1127,7 @@ behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever fe
   contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
   contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
   contract built with BEH-EPIC-2: a feature at any depth takes `in EPIC-…`, its parents stay as they were, and a behaviour reaches the epic through its feature (kit#388)
+  contract my assumption: the 16:44Z note also asks for the epic tag on specs (behaviours) directly; as built a behaviour is refused that tag and reaches the epic through its feature, the open question in BEH-EPIC-2
 
 behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project, and a feature names it as one of its parents"
   in FEAT-EPICS
@@ -1142,6 +1143,7 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
   contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
   contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
+  contract my assumption: the 17:25Z note says features can have epics among their parents ("they can be other features projects or epics"); as built the epic is a tag beside the parents, not a parent in the navigation, and BEH-EPIC-1 keeps the project's navigation unchanged. Open for him to decide: whether an epic is a parent of a feature in the navigation, or only a tag
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1230,6 +1232,7 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract "Epics page shows an epic page just like behaviours and features"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
+  contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
