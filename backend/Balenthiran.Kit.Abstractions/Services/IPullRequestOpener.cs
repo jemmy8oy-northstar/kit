@@ -64,7 +64,7 @@ public interface IMergeTrain
 /// What <see cref="IMergeTrain.BuildAsync"/> made. <paramref name="Sha"/> is the train's head, null when it could not be
 /// built (<paramref name="Reason"/> says why). <paramref name="BaseSha"/> is the base head it started from.
 /// <paramref name="Riders"/> are the pull requests merged onto it, each with the head commit that was merged, in order.
-/// <paramref name="Conflicted"/> are those left out. <paramref name="NotPrivate"/>: the repository is public, so its
-/// pull requests have Actions CI and need no train.
+/// <paramref name="Conflicted"/> are those left out. <paramref name="NotPrivate"/>: the repository is public and a pull
+/// request has an Actions run at its head, so its pull requests have Actions CI and need no train.
 /// </summary>
 public sealed record TrainBuilt(string? Sha, string? BaseSha, IReadOnlyList<(string Url, string HeadSha)> Riders, IReadOnlyList<string> Conflicted, bool NotPrivate = false, string? Reason = null);
