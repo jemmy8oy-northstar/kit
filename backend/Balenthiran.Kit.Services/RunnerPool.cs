@@ -263,7 +263,7 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
     /// <summary>
     /// BEH-ORCH-17: the runs a restart forgot, looked for once. A run queued before this pool began can never be handed
     /// out (its token went with the restart), so it is returned for the caller to fail. A run already going then may
-    /// still have a runner that reports, so it is not failed now: it gets the lease from when this pool began, and
+    /// still have a runner that reports, so it is not failed now: it gets the lease from when this pool began (one made more than a lease earlier goes at once), and
     /// <see cref="Lost"/> gives it out once that passes, as for any run. Without this, both stayed going for ever.
     /// </summary>
     public IReadOnlyList<string> Forgotten()
@@ -280,7 +280,9 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
             foreach (var r in before.Where(r => r.Status == AgentRunStatus.Running && !handedOutAt.ContainsKey(r.Id)))
             {
                 adopted.Add(r.Id);
-                handedOutAt[r.Id] = bornAt;
+                // BEH-ORCH-19: a run made more than a lease before this pool began goes at once, else every restart (each release
+                // is one) gave a run days old a fresh lease. Started is when it was made, not taken, so a younger one keeps the restart's.
+                handedOutAt[r.Id] = bornAt - r.Started > Lease ? r.Started : bornAt;
                 limitOf[r.Id] = null;
             }
 
