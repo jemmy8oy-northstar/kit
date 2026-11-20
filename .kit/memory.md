@@ -32,3 +32,4 @@
 - The UI test suite is `npm test` in `prototypes/behaviour-ast/ui` (vitest, 571 tests). The C# backend tests need `dotnet`, which is not installed on the build runner, so they have not run here.
 - BEH-UI-6 (kit.beh) builds on tickets, not cards, and conflicts with the built BEH-ORCH-16 blocked-first ordering. It is under review; see its `review requested` line.
 - **BEH-UI-5 is taken by the agents page** (kit-ui.beh, renamed BEH-AGENTPAGE-1). `Agents.test.tsx` fails if `BEH-UI-5` appears in kit.beh, so the ticket-board card is BEH-UI-6 in kit.beh (merge of kit/work/ticket-board-priority with dev, 2026-11-20). The `.kit/bundles/ticket-board-priority.md` bundle still says BEH-UI-5.
+- **BEH-UI-7 (pipeline runs, kit.beh):** kit/work/pipeline-runs-recent-first took BEH-UI-5 before dev reserved it for the agents page, and dev's ticket card took BEH-UI-6. The runs card is BEH-UI-7 after the merge of dev on 2026-11-20 (its C# tests are BEH_UI_7_*).
