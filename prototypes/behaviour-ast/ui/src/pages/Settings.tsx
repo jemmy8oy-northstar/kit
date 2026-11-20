@@ -139,7 +139,8 @@ function AlreadyInstalled({ session }: { session: SessionState }) {
   return <> · <a href={session.gitHubAuthorize}>Already installed? Connect it</a></>
 }
 
-function ConnectGitHub({ session }: { session: SessionState }) {
+/** BEH-USERS-1 and BEH-AUTH-1: the connect step. SignIn shows it alone until a user's GitHub is connected. */
+export function ConnectGitHub({ session }: { session: SessionState }) {
   const { returning, outcome } = useGitHubReturn(session)
   if (!session.gitHubInstall) return null
 

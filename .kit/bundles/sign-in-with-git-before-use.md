@@ -14,6 +14,15 @@ Context:
 Resolves the escalated conflict with BEH-USERS-1 and BEH-USERS-10. The owner's reply keeps the password-first onboarding and makes GitHub connection the gate before any project page opens. The BEH-AUTH-1 title still reads "sign in with git"; only its contract lines were changed, as the triage rules require.
 Assumed: the landing page and the sign-in page are the only pages open before git sign-in.
 Next step toward the goal: a builder maps BEH-AUTH-1 to a test (BEH-GATE-1 fails until then) and finds which project pages open without GitHub connected today and closes them.
+Built:
+- BEH-AUTH-1: a signed-in user who has not connected GitHub gets the connect-GitHub step, not a project page, when opening KitProjects
+- BEH-AUTH-1: the landing page and the sign-in page load for a user who has not connected GitHub
+- BEH-AUTH-1: the password sign-in (BEH-USERS-1) still works for a new user and leads to the connect-GitHub step, not to a project page
+- BEH-AUTH-1: after GitHub is connected, the user’s project pages open
+- BEH-AUTH-1: a user who has connected GitHub signs in with Sign in with GitHub (BEH-USERS-10) and is not sent back to the connect step
+- BEH-AUTH-1: the operator is never sent to the connect step, which is optional for him
+- BEH-AUTH-1: a Kit that cannot offer GitHub connect does not lock a user out of their projects
+The whole UI suite (vitest run) ran 574 tests and all passed; the C# suite and `kit check` were not run because dotnet is not installed here.
 
 Test plan:
 - BEH-AUTH-1: a signed-in user who has not connected GitHub gets the connect-GitHub step, not a project page, when opening KitProjects
