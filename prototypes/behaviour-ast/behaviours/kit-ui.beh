@@ -402,6 +402,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   when activates link:KitNavBoard
   then sees heading:KitBoardTitle
   contract the navbar marks the view you are on; the projects link is the existing project list
+  contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
   in FEAT-BOARD
@@ -426,6 +427,7 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
   when activates button:KitBoardShowTrials
   then sees region:KitBoardBacklog
   contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
+  contract my assumption: a card's colour is its project's colour, the same colour as that project's filter button, so a card can be matched to its filter (kit.notes.md#2026-10-11-1239: "colour coded by project and you can also filter by project")
   contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
 
 behaviour BEH-BOARD-3 "An in-progress column sits before done"
@@ -543,6 +545,7 @@ behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and ev
   then sees region:KitFeatureParents
   contract a child is anything with an `in` line naming this feature; one thing tagged into two features is listed under both
   contract each parent links to its own feature page; none of them is the owner
+  contract my assumption: a behaviour tagged into two features shows both as tags on its own page, as a feature shows its parents, so a parent is a tag and not a single folder (kit.notes.md#2026-10-11-1239: "parents treated as tags")
 
 behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
   in FEAT-FEATURE
@@ -565,6 +568,7 @@ behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
   then sees region:KitProjectList
   contract `# kit:project <name>` groups files on the project list and the board; the card links to the project's one page and lists no file
   contract a file without the directive is its own project, as today; check and report still read one file at a time
+  contract my assumption: kit.beh, kit-ui.beh and kit-hosted.beh all carry `# kit:project kit`, so the project list shows one kit card and the one kit page holds the features of all three files; this answers why kit showed three projects (kit.notes.md#2026-10-11-1239), and it is not a new decision
 
 behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
   in FEAT-PROJECT
@@ -649,7 +653,9 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract the type is the existing `layer` line: ux unless a `layer` line or the file's `# kit:layer` says otherwise, so every behaviour has exactly one
   contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
+  contract my assumption: a feature shows as tags the layers of the behaviours beneath it, on its card and on its own page, so the layers read as tags on features as well as on cards (kit.notes.md#2026-10-16-0724: "are ui/ux/logic implementation even treated as tags")
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
+  contract my assumption: each card's layer is a visible word, ui, ux or technical, as written; the technical chip and badge also say "logic implementation" in a tooltip naming it the logic under both, because the 10-16 notes call it that (kit.notes.md#2026-10-16-0714, #2026-10-16-0724: "I am not seeing them anywhere")
 
 behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
@@ -662,6 +668,7 @@ behaviour BEH-KIND-2 "A project's features filter by layer too"
   contract the same three chips as the board (BEH-KIND-1), at the top of the Features tab, kept in the url as `?layer=`
   contract a feature card counts only the behaviours of the chosen layers beneath it, and a feature with none is hidden
   contract opening a feature keeps the filter, so its page lists the same layers
+  contract my assumption: with no `?layer=` all three layers show, so the Features tab reads as it did until a chip is pressed
 
 behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   in FEAT-NOTES
@@ -704,7 +711,8 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
   contract "order by (score, most recent)": within one priority, the most recently added card is first; added is the first commit holding the behaviour, read from git like BEH-BOARD-4, and one no commit holds yet is the newest
   contract equal scores still take each project in turn (BEH-BOARD-10); recency orders each project's own cards
   contract my assumption: a behaviour the agent writes from a new note comes in at priority 4, and the agent raises it only for a stated reason (something he is waiting on, or something broken)
-  contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note
+  contract my assumption: the agent picks its next work from the top of the Queue, not from the newest note
+  contract my assumption: since his 2026-10-22 22:37Z note, the ordering above is of the Queue (BEH-BOARD-18); Backlog holds only paused cards and is not worked, so its region is no longer where work is ranked
   contract "when the dev bells an item kit might choose to change priority of it": ringing the bell is how he lifts an old card (BEH-BELL-1/2)
 
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
@@ -740,6 +748,7 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   contract the agent's wake sweep never lists a paused card as work, so it can sleep over one
   contract ringing a paused card's bell asks the agent whether it should resume, and the agent answers as for any bell (BEH-BELL-2)
   contract my assumption: the paused line is a corpus language change (claude-code-bot#58), which his request for it approves
+  contract my assumption: a card the agent parks to think more is not paused and is not put on the Backlog by this card; that half of Backlog is open (BEH-BOARD-18)
   contract built: the `paused` line (bare, one per behaviour, a second is refused like a second `priority`), served as `paused` on the behaviour, the board's Paused heading and badge, and Pause and Resume on the behaviour page, which add or remove the line and commit it like any edit (POST /api/projects/<app>/behaviours/<id>/paused with { paused: true|false })
   contract built on the agent's side (claude-code-bot tools/kit-backlog.js, 2026-10-22): the wake sweep leaves a paused card out of its work list, counts his Pause and Resume as verdicts it must act on, and lists a rung bell first whether or not its card is paused, so the resume question is answered as any bell is (BEH-BELL-2)
   contract my assumption: a paused card stays in Backlog even if a schedule lists it, because paused is how he says "do not action", and Pause is offered only on a card still to be built
@@ -814,6 +823,7 @@ behaviour BEH-BOARD-18 "The board's pending columns are Backlog, Queue, Blocked 
   contract my assumption: the "ai needs to put more thought into it" half of Backlog has no line yet; until one exists the agent writes that as a review request or a needs-context line, and Backlog holds only what he paused
   contract my assumption: paused outranks needs-context, so a paused card is Backlog even with a needs-context line, because he has said not to build it
   contract my assumption: a card on a schedule but not its next waits in the Queue, ranked like any other, not in schedule order; In progress still reads the schedule's next (BEH-BOARD-3), and nothing is scheduled today
+  contract my assumption: approving a paused card (BEH-BOARD-25) moves it to the Queue, not In progress; it waits there ranked like any other card and does not run until the agent picks it from the top of the Queue
   contract built on the agent's side (claude-code-bot tools/kit-backlog.js): the wake sweep reads the Queue as its work list and counts Blocked as his
 
 behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not yet live says so"
@@ -885,6 +895,9 @@ behaviour BEH-BOARD-15 "Coming back from a card lands on that card's column, not
   contract opening a card writes its column and its id into the board's url, replacing the entry, so Back returns to them and the filter beside them survives
   contract my assumption: if the card has left that column (he approved it out of Proposed), he lands on the column, not on the card's new place, because he was working through that column
   contract a card past the "Show more" cap is drawn when he comes back to it, so he never has to page down to find his place
+  contract decided 2026-11-15 from the router: the card link is a react-router Link to the behaviour page, a reroute inside the app, not a full load; but the board's data is read again on mount, so its state is lost on return, and the column and card in the url are what carry his place
+  contract the column and scroll position survive the return: the card is brought to the centre of the screen, or, when it has left its column, the column is brought to its start, and the focus lands on the card
+  contract my assumption: the Back link returns him to the column he opened the card from even when the card has moved, and the column's own scroll is not kept beyond the card's place
 
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
@@ -1120,6 +1133,7 @@ behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever fe
   contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
   contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
   contract built with BEH-EPIC-2: a feature at any depth takes `in EPIC-…`, its parents stay as they were, and a behaviour reaches the epic through its feature (kit#388)
+  contract my assumption: the 16:44Z note also asks for the epic tag on specs (behaviours) directly; as built a behaviour is refused that tag and reaches the epic through its feature, the open question in BEH-EPIC-2
 
 behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project, and a feature names it as one of its parents"
   in FEAT-EPICS
@@ -1135,6 +1149,7 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
   contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
   contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
+  contract my assumption: the 17:25Z note says features can have epics among their parents ("they can be other features projects or epics"); as built the epic is a tag beside the parents, not a parent in the navigation, and BEH-EPIC-1 keeps the project's navigation unchanged. Open for him to decide: whether an epic is a parent of a feature in the navigation, or only a tag
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1223,6 +1238,7 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract "Epics page shows an epic page just like behaviours and features"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
+  contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
@@ -1248,6 +1264,7 @@ behaviour BEH-LOVABLE-1 "A user can onboard an existing app built in Lovable ont
   contract his note (kit-ui.notes.md#2026-11-06-1804): "EPIC-ONBOARD: drop the 'backlog, out of scope for now' label and bring it into scope. Add a behaviour under it: a user can onboard an existing app built in Lovable onto Kit. Other tech stacks come after, once that works."
   contract my assumption: onboarding starts from the app's GitHub repo, which Lovable syncs to, and Kit writes a first spec of what the app already does as unreviewed cards for the user to approve or deny
   contract my assumption: other stacks wait until a Lovable app has been onboarded end to end
+  contract question, blocks the other five tests: where the onboarding entry leads, how a Lovable repo is told from other repos (no marker in the GitHub data Kit reads today), and whether the first spec is written by reading the repo's code. Default until he answers: the entry opens a picker of his own GitHub repos, a repo counts as Lovable once Lovable's GitHub sync has written to it, and the first spec is unreviewed cards written from the repo's code
 
 # ═══ EPIC-KIT-USERS, drafted (BEH-EPIC-7) ═════════════════════════════════════
 # His 17:21Z list, split into features by the agent. Every behaviour here is
@@ -1645,6 +1662,11 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract built: the runner decides the pass, not the agent's exit code: the claim now carries the run's stage (pool.sh exports KIT_STAGE), and for stage test entrypoint.sh passes only when the agent's last line is exactly "KIT-TEST: PASS <40 hex>", that commit is named in the task and is HEAD; anything else fails the run at step verdict. A test run never reports bundles and never pushes, whatever it left in the tree
   contract my assumption: a test run's model defaults to triage's (KIT_STAGE_MODEL_TEST, unset) because running a suite needs no code judgement, and its turns to build's (KIT_STAGE_TURNS_TEST, unset) because setting a suite up can take many steps; Runs shows what it costs
   contract my assumption: a failed test stops the ticket rather than retrying, because a flaky suite should be seen, not hidden by a second run
+  contract his comment (claude-code-bot#145, 2026-11-19 21:07Z): "In the screenshot I sent above I don't see the merge runners at all"
+  contract my assumption: finishing a ticket goes before starting one. When a merge look needs a test or resolve run but the project is busy, it keeps the project. Until the next look, the context, plan and build jobs start nothing on it, so the merge job gets the next free slot. Before this, the build job took a freed project at once, while the merge look was still asking GitHub, so with tickets planned no test ever started. Triage is not held back, because his notes can change a bundle. The hold lasts one look, so a merge job that no longer needs a run frees the project within one interval (2 minutes)
+  contract his comment (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
+  contract my assumption: the hold covers every way a run starts, not only the jobs. Production runs the merge job alone, so a planned ticket's build starts the moment the run before it ends. The hold was read only by the jobs, so overnight seven pull requests were built and none was tested. A look that no longer holds the project starts what waited behind it at once
+  contract my assumption: "private" was standing in for "has no Actions run", and kit went public (his 2026-11-14 note) with CI still only for main, so its pull requests into dev waited for a run that never starts. On the merge job's path, a pull request with no Actions run at its head is tested by Kit whatever the repo's visibility. One that has a run is unchanged: a failed run refuses, a running one waits, a passed one merges with no Kit test. This supersedes "it applies only to a project whose repo is private" above. The cost is his subscription, not free Actions minutes; CI on pull requests into dev while kit is public would be cheaper, but that is a workflow change and his
 
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
@@ -1738,6 +1760,61 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract my assumption: slice 1. GET /api/runs also serves claims: each run a runner has taken and not yet reported, with claimedAt (when a runner took it, which is when it began to run; a run's started is when it was queued) and lostAt (claimedAt plus the lease). Claims live in memory, as the lease does, so a run taken before Kit last started has none. Runs leads with a "Now" section, shown only while a run is going: each run not over, oldest first, with its stage, project and work item, and either "running N min · counted lost at HH:MM", "overdue: counted lost at the next claim" once past lostAt, "waiting for a runner · N min" while queued, or "running since before Kit last started"
   contract my assumption: slice 2. A test run has a time limit of its own, 30 minutes (Orchestrator.TestSeconds), about three times the measured suite plus a cold restore; every other stage keeps the runner's 6600 seconds. The claim carries it as maxSeconds, beside maxTurns, and pool.sh gives it to kit-run as KIT_RUN_MAX_SECONDS, so the runner ends a hung test run at 30 minutes and reports it failed at step "time". A run with its own limit is counted lost 10 minutes after that limit (RunnerPool.LeaseMargin), so 40 minutes for a test run instead of 150; a run without one keeps the 150-minute lease. Each claim on GET /api/runs also carries givesUpAt (claimedAt plus the limit, null with none), and the Now section says "gives up at HH:MM" for such a run. A runner image older than this ignores maxSeconds, so until it is rebuilt a hung test run is still freed at 40 minutes, by the lease
   contract my assumption: built, slices 1 and 2. Which stages besides test should get a shorter limit is decided from what the Now section and Runs show they take
+  contract his comment (claude-code-bot#145, 2026-11-19 20:29Z), on a screenshot of Now listing runs "waiting for a runner · 306h" and "running since before Kit last started": "Ok now I need some help digesting this"
+  contract my assumption: slice 3, built. A restart no longer leaves runs going for ever. At the first claim after Kit starts, each run created before it started that is still queued is failed as "lost", because its token and task went with the restart and no runner can ever take it. Each one still running is given the lease from when Kit started (RunnerPool.Forgotten), because its runner may yet report, and is failed as "lost" when that runs out, like any lost run. Such a run still has no claim, so Now keeps saying "running since before Kit last started" until then
+
+behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a train: one test run for several pull requests"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 2
+  pending
+  actor engineer
+  when opens page:KitRuns
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-19): "maybe we can think about how we can speed up a big stack of merges. Maybe grouping and creating stacked PRs would be useful?"
+  contract his answer (claude-code-bot#145, 2026-11-19 20:30Z): "Merge train sounds like a good approach, I feel like a lot of this can be deterministic let's do it"
+  contract measured 2026-11-19: kit had 22 kit/work pull requests open. Each merge moves dev, so the next one must be brought up to date and tested again. One at a time, that is one test run of about 10 minutes per pull request, back to back, plus a wait for the project to be free
+  contract my assumption: a train belongs to a repo and its base branch, not to a project, because kit and kit-ui both merge into jemmy8oy-northstar/kit@dev, and two trains on one branch would each make the other stale. It applies only where Kit tests the pull requests itself (a private repo, BEH-ORCH-12). A public repo's Actions CI already tests each one for free
+  contract my assumption: a public repo rides too when none of the pull requests has an Actions run at its head, because then Kit tests them (BEH-ORCH-12), as it does kit's while kit is public with CI only for main (claude-code-bot#145). One with a run sends the repo the single way, as before
+  contract my assumption: slice 1. A merge look takes up to 5 built, unblocked, unmerged tickets on that repo and branch, top priority first, and builds the branch kit/train/<base> from the base head through GitHub's API, with no agent: it merges each pull request's head in turn. One that conflicts leaves the train and goes the single way (update, resolve run, BEH-ORCH-11 slice 7b). The rest get one test run at the train's head, the same test stage as BEH-ORCH-12 on another branch
+  contract my assumption: slice 1, on a pass. Kit merges each rider through its own pull request, in train order, at the exact head commit it rode at. It does this only while the base is still the commit the train was built on. Merging the same commits in the same order onto the same base gives the tree that was tested, so nothing reaches the base except through a pull request (kit#118), and Kit never writes the base branch itself. If the base moved, nothing is merged and the next look builds the train again. If a rider will not merge (its head moved, or it was closed), it and the riders after it go the single way
+  contract my assumption: slice 1, on a fail. No ticket is stopped on the train's say-so. Its tickets go back to the single way, where each is tested alone and only the one whose own test fails is stopped, as now. Halving the train to find the culprit is slice 3, if failures turn out to be common
+  contract my assumption: slice 2, the deterministic half. A project may name its suite as a "# kit:test <command>" directive. A test run on such a project runs that command on the runner with no model call and passes on exit 0. That is faster, free, and decided by the exit code rather than by an agent's last line. A project with no directive keeps the agent test run
+  contract built, slice 1 (Pipeline.TrainTickAsync, IMergeTrain over GitHub's REST API): with KIT_PIPELINE_JOB_MERGE=on, each merge look first merges any train whose test passed, then builds a train for each repo@base with no train and at least 2 built tickets that may ride. The test run is the lead rider's ticket (stage test), told the branch kit/train/<base>, the commit, and the pull requests riding. While a train is out, no project with a rider on it merges or tests anything alone. Trains, and the tickets sent the single way, are held in memory: a restart forgets them and the next look builds again
+  contract my assumption: slice 1 guards, from a blind review. A passed train is merged only if every rider is still a built ticket, because a train missing one was not the tested tree. A base that cannot be read keeps the train waiting, not rebuilt, so no test run is paid for twice. A train whose lead is no longer in its test run is dropped. While a train is out, every project on its repo holds its single merges. Known limits: the base is checked once before the riders are merged, not between them, and a rider that will not merge leaves the ones before it merged, a prefix of the train that was tested only as part of the whole
+  contract my assumption: Runs → Now shows a train's test run as stage test with its work item "train: <slug>, <slug>, …", so he can see what is riding on it
+
+behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried again before its ticket is blocked"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-19 23:57Z, with a screenshot of Blocked): "Almost every run is the bundle was unchanged or build failed. Please get this working for me overnight."
+  contract measured 2026-11-20: a ticket was blocked by the first run of its stage that failed, was lost or left its bundle unchanged, and only a reply from him unblocked it. Several were blocked within four minutes of each other on 2026-11-16 and had stayed blocked since
+  contract my assumption: a context, spec, build or review run that fails, is lost, reports no bundle or leaves the bundle unchanged is queued at the same stage again, up to 2 more times. After the third the ticket is blocked, and the block says where the last run stopped and how many ran: "the build run failed (claude exit 1), 3 runs in a row"
+  contract my assumption: a lost test run says nothing about the tests, so its ticket goes back to built and the merge job tests it again, rather than being blocked as "tests failed". After 3 lost in a row it is blocked, "the test run was lost, 3 runs in a row". A train whose test run was lost is built again; its riders are not sent the single way
+  contract my assumption: when Kit starts, a ticket blocked by a context, spec or build run (it failed, changed nothing or reported no bundle) or by a test run (failed or lost) gets one more go, with a comment saying so. A ticket blocked for a person to decide stays blocked until he replies. A review run's block is not retried, as the ticket comes back at the state it reached and its review would not be what ran
+  contract known cost: a pull request whose tests really fail is tested once more at each restart, and each release is a restart. A built ticket has no other way out of a block, as a reply wakes only new, ready and planned tickets
+  contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
+  contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
+
+behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
+  contract measured 2026-11-20: the train on kit was built at 06:52Z and merged at 07:40Z, 48 minutes for a test capped at 30, so its test sat queued for at least 18. Production has one runner pod, and the pool handed out the oldest queued run whatever its stage, so a test run could wait behind another project's build, which has no time limit of its own (up to 110 minutes), while every built pull request riding on it waited too
+  contract my assumption: when a runner asks, it gets the oldest queued test run or merge (resolve) run whose project is free. Only when there is none does it get the oldest of the rest. One live run per project still holds. A test run is capped at 30 minutes, so a build waits at most that long per test
+  contract my assumption: this is the half of his "reserve a slot for merge/triage" that holds however many runners there are. With one runner, a build already running is not stopped. Triage is not moved up, because nothing waits on it to merge
+  contract built (RunnerPool.GoesFirst, RunnerPool.Take): two passes over the queue, stage "test" or "resolve" first
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -2252,6 +2329,27 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
 
+# An agents page: the agents Kit knows, and for the one picked, its recent runs and its queue.
+# Moved here from kit.beh's FEAT-SERVER as BEH-UI-5 (kit.beh is the command-line layer). Its id
+# becomes BEH-AGENTPAGE-1, since BEH-UI-* is kit.beh's and BEH-AGENTS-1 is custom agents.
+feature FEAT-AGENTS "Agents"
+  stage development
+
+behaviour BEH-AGENTPAGE-1 "An agents page shows an agent's recent work and its queue, with unblocked items marked"
+  in FEAT-AGENTS
+  in FEAT-NAV
+  priority 3
+  actor engineer
+  review unreviewed
+  when opens page:KitAgents
+  then sees region:KitMain
+  contract my assumption: an agent is a project. Kit records no agent of its own: each project's runs and queue belong to the one agent that works it, so the list is the projects Kit reads (BEH-LIST-1)
+  contract my assumption: the page reads the same project data the project view reads, and recent runs from the operator's GET /api/runs. It writes nothing, and every request it makes is a GET
+  contract my assumption: the owner picks one agent from a list; until he does, no work or queue is shown. The picked agent's recent runs are newest first, each with its status, stage and cost, and only runs for that agent's project
+  contract my assumption: the queue reads approved and pending cards with no needs-context line as unblocked, in board order (priority, then corpus order), and pending cards with a needs-context line as waiting on him
+  contract my assumption: the navbar link is shown where Runs is, since the runs it reads are the operator's (BEH-USERS-9)
+  contract my assumption: a paused card counts as unblocked here, as the card reads; the board keeps it under Backlog
+
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.
 feature FEAT-INBOX "His items, one at a time"
@@ -2713,6 +2811,26 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   contract my assumption: the table maps only features that own a page or navigation entry; every other feature has a switch with no visible effect yet, and Settings says so beside it
   contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
+behaviour BEH-FLAGS-3 "Testers can open the projects, boards, inbox and settings pages, and they work for them"
+  in FEAT-FLAGS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1741
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract rests on BEH-FLAGS-1, BEH-USERS-2 and BEH-USERS-8 (written here, as depends-on takes only ADR ids)
+  contract my assumption: BEH-FLAGS-1 already turns these four features on for testers, so this card is the other half of the 17:41Z note: the pages must work for a tester, not only show
+  contract my assumption: a tester's Projects page lists only the repos of their own GitHub (BEH-USERS-2), and their boards and Inbox show only items in those projects; nothing of the operator's is listed or counted for them
+  contract my assumption: "work" means a tester may also act on their own items (approve, deny, answer, pause, lower priority) on the Board and in the Inbox; every other write stays operator-only, and a write to a project the tester does not own is refused (BEH-USERS-8)
+  contract my assumption (tester-feature-access merge): the item's test plan asks that a tester can read an operator project in a public repo by its URL; BEH-USERS-8 as revised on 2026-11-14 (kit#795) refuses it with 403 not-yours whatever repo it is in, so the built reading is the 403, and the test asserting it is TesterFeatureAccessTests.BEH_FLAGS_3_a_tester_is_refused_an_operator_project_by_url_and_it_is_never_in_their_list. Deny it and say which reading is true, and it is rebuilt to that
+  contract my assumption: a tester's Settings shows their account and their GitHub (BEH-SETTINGS-1) and nothing else; the operator's sections (promotion, idle, depth, conflicts, features) stay operator-only
+  contract my assumption: no tester action starts an agent run; the agent that works for testers is BEH-USERS-9, not yet built, so a tester's cards cost nothing until it is approved
+  contract my assumption: a feature switched off for testers still shows "Not available" on its page (BEH-FLAGS-2), so turning a page off stays one switch
+  contract built (tester-feature-access): a tester's Projects list, Board and Inbox hold none of the operator's projects, the Settings session and features responses carry no operator section, every project write and every operator-only write is refused to them, and no tester action starts or lists an agent run
+  contract not built (tester-feature-access): a tester's own GitHub project does not open as a board, and their approve, deny, answer, pause and priority on their own items are refused like every write; the Board and Inbox show a tester nothing yet, because they load only the operator's projects. Both need a write path to a user's repo, which Kit does not have
+
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
   stage development
 
@@ -3001,7 +3119,7 @@ behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explain
   contract built: a "What can Kit do?" button in the chat's header, or a message that is just "help" or "/help", puts Kit's own help line in the thread. It asks no model and spends no reply, and the agent is not told of it
   contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
   contract his list (kit-ui.notes.md#2026-11-03-2340): "Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change."
-  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and offers to leave the note, rather than claiming it did it
+  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and leaves a note for the coding agent to make the change, as the owner's note says, rather than claiming it did it
 
 behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
   in FEAT-CHAT
@@ -3125,7 +3243,7 @@ behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished
   contract my assumption: the limit rises to 4096, which a chat answer should rarely reach; a reply the model stops for length gets Kit's line "That reply was cut short. Ask me to go on." under it, so a cut is never silent
   contract built: AnthropicTriageChat.MaxTokens is 4096; when the Messages API answers stop_reason max_tokens the server's answer carries truncated: true (absent otherwise), and the Chat page puts Kit's line under that reply. It sends nothing to the model and the agent is not told of it
 
-behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends"
+behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends and Shift+Enter adds a new line"
   in FEAT-CHAT
   layer ux
   source defined kit-ui.notes.md#2026-11-04-1100
@@ -3584,3 +3702,24 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   then sees region:KitMain
   contract "From kit I am able to spin up a preprod version of my app and use the app and play around and evaluate the success of the agents. If I find any gaps I can discuss with the realtime spec agent"
   contract my assumption: it waits on deploying users' apps at all (BEH-USERS-6 databases, and where their apps run), which he set below AI support on 2026-10-31; until then a user deploys their own, and Kit links to it
+
+# ── the pipeline run page (moved from kit.beh, 2026-11-20: a screen, which kit.beh may not hold) ──
+# Internal to the owner for now: the run page is not shown to testers.
+
+behaviour BEH-VIS-1 "The run page shows each running agent, its stage, and any review it flagged and by which agent"
+  priority 5
+  actor engineer
+  given run:Running
+  when runs command:KitUi
+  then reports run:Stages
+  review unreviewed
+  contract my assumption: the page is for the owner only, and is not shown on any tester's pages
+
+behaviour BEH-VIS-2 "A historic run shows what each stage cost, and which reviews it requested"
+  priority 5
+  actor engineer
+  given run:Finished
+  when runs command:KitUi
+  then reports run:Costs
+  review unreviewed
+  contract my assumption: the costs come from the per-session record of BEH-COST-1 when it exists, and a stage with no recorded cost shows as unknown, never as zero
