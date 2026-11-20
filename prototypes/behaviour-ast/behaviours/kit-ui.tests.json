@@ -622,6 +622,17 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 posts the named switch when Testers is ticked" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 shows a tester no Features section" }
   ],
+  "BEH-FLAGS-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_list_holds_their_own_repos_and_none_of_the_operators" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_with_no_link_sees_no_projects_at_all" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_is_refused_an_operator_project_by_url_and_it_is_never_in_their_list" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_write_to_a_project_they_do_not_own_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_each_operator_only_write_is_refused_for_a_tester" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_no_tester_action_starts_or_lists_an_agent_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_settings_name_their_account_and_no_operator_section" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_page_switched_off_for_testers_is_listed_off_and_the_pages_on_are_not" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_inbox_feed_holds_no_operator_items" }
+  ],
   "BEH-FLAGS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_tester_is_served_what_is_off_for_testers_and_not_the_table" },
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_refused" },
@@ -974,6 +985,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease" }
   ],
+  "BEH-ORCH-20": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one" }
+  ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step" },
@@ -1153,5 +1168,18 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_test_run_with_no_result_text_fails" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one" }
+  ],
+  "BEH-VIS-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_running_run_lists_each_running_agent_with_its_current_stage" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_review_an_agent_flagged_shows_on_its_stage_with_the_agent_that_flagged_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_stage_with_no_flagged_review_shows_no_review_line_and_a_run_with_no_running_agent_shows_none" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_VIS_1_the_run_page_is_served_to_the_owner_alone" }
+  ],
+  "BEH-VIS-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_finished_run_shows_each_stage_with_the_cost_recorded_for_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_stage_with_no_recorded_cost_shows_as_unknown_never_as_zero" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_finished_run_lists_the_reviews_it_requested_with_the_stage_and_agent" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_VIS_2_with_no_session_cost_record_every_stage_cost_is_unknown_and_the_page_still_renders" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_the_page_only_reads_the_cost_record_and_writes_none" }
   ]
 }

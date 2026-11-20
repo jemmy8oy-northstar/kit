@@ -345,6 +345,43 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h1", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+        var resolve = rig.Store.Create("operator", "other", "m", "h2", clock.GetUtcNow(), "a-conflict", "resolve");
+        rig.Pool.Enqueue(resolve, "tok", "o/other", "t", "dev", 15);
+        var test = rig.Store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), "list-sorting", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+
+        // Oldest first among test and merge runs, and the build only once neither is left.
+        Assert.Equal(resolve.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(test.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+    }
+
+    [Fact]
+    public void BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var running = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "first", "build");
+        rig.Pool.Enqueue(running, "tok", "o/r", "t", "dev", 15);
+        Assert.Equal(running.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+
+        var test = rig.Store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "second", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h3", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.True(RunnerPool.GoesFirst("test") && RunnerPool.GoesFirst("resolve"));
+        Assert.False(RunnerPool.GoesFirst("build") || RunnerPool.GoesFirst("triage") || RunnerPool.GoesFirst(null));
+    }
+
+    [Fact]
     public void BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time()
     {
         var clock = new Ticking();
@@ -1430,6 +1467,57 @@ public class PipelineTests
         {
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParsePipelineScheduled(bad));
         }
+    }
+
+    // ---- BEH-PR-1: the pipeline raises a pull request for finished work, into the integration branch ----
+
+    [Fact]
+    public void BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Contains("Built:\n- BEH-A: ListTests.Sorts_by_date", asked.Body);
+    }
+
+    [Fact]
+    public void BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Equal("dev", asked.Base);
+        Assert.NotEqual("main", asked.Base);
+    }
+
+    [Fact]
+    public void BEH_PR_1_work_that_is_not_finished_raises_no_pull_request()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+        Assert.Empty(rig.Pulls.Asked);
+
+        Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed" })).Status);
+
+        Assert.Empty(rig.Pulls.Asked);
+    }
+
+    // ---- BEH-PR-2: the pipeline completes a pull request only when the corpus says it may merge -------
+
+    [Fact]
+    public async Task BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        var item = BuiltItem(rig);
+        Assert.Equal((WorkItemStatus.Done, "https://github.com/someone/demo/pull/7", false), (item.Status, item.PullRequest, item.Merged));
     }
 
     // ---- BEH-ORCH-10: the pipeline merges the pull request of what it built ---------------------------
