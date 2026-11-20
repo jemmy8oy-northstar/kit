@@ -129,6 +129,15 @@ public static class Orchestrator
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
+    /// <summary>
+    /// BEH-ORCH-17: a test run's time limit. kit's whole suite took 378 seconds on 2026-11-19 with a warm cache, so half an
+    /// hour leaves room for a cold restore and the agent's own turns, and a hung run frees its project in 40 minutes, not 150.
+    /// </summary>
+    public const int TestSeconds = 1800;
+
+    /// <summary>The time limit of <paramref name="stage"/>'s run (BEH-ORCH-17); null keeps the runner's own (6600 seconds).</summary>
+    public static int? SecondsFor(PipelineStage stage) => stage == PipelineStage.Test ? TestSeconds : null;
+
     /// <summary>The turn limit of <paramref name="stage"/>'s run (BEH-ORCH-5).</summary>
     public static int TurnsFor(PipelineStage stage, StageTurnSettings turns) => stage switch
     {
