@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Chat from './Chat'
 import { named, splitIds, toMessages, type Line } from '../chat'
@@ -44,7 +44,8 @@ let refuse: RegExp | null = null
 function mockApi(
   triage: unknown = { configured: true, model: 'claude-haiku-5-5', remaining: 9 },
   chat?: () => { ok: boolean; status: number; body: unknown } | Promise<{ ok: boolean; status: number; body: unknown }>,
-  projects: Record<string, Behaviour[]> = details,
+  // A copy, so a write one test makes to the board never reaches the next.
+  projects: Record<string, Behaviour[]> = structuredClone(details),
   // An app's `# kit:project` line, for apps grouped into one project (BEH-CHAT-11).
   groups: Record<string, string> = {},
 ) {
@@ -62,6 +63,13 @@ function mockApi(
           return { ok: r.ok, status: r.status, statusText: 'x', json: async () => r.body }
         }
         if (refuse?.test(path)) return { ok: false, status: 403, statusText: 'Forbidden', json: async () => ({ error: 'forbidden', reason: 'not yours to write' }) }
+        // A review write changes the board the page reads again, as the server would.
+        const review = /^\/api\/projects\/([^/]+)\/behaviours\/([^/]+)\/review$/.exec(path)
+        if (review) {
+          const b = projects[decodeURIComponent(review[1])]?.find((x) => x.id === decodeURIComponent(review[2]))
+          const body = posts.at(-1)![1] as unknown as { state?: Behaviour['review']['state']; note?: string | null }
+          if (b && body.state) b.review = { state: body.state, note: body.note ?? null }
+        }
         return { ...ok, json: async () => ({ ok: true }) }
       }
       if (path.endsWith('/api/triage')) return { ...ok, json: async () => triage }
@@ -70,7 +78,8 @@ function mockApi(
       if (rest.endsWith('/history')) return { ...ok, json: async () => ({ history: 'none', reason: 'no git', completed: [], added: [] }) }
       if (rest.endsWith('/notes')) return { ...ok, json: async () => ({ notes: notesNow }) }
       if (rest.endsWith('/schedule')) return { ...ok, json: async () => ({ scheduled: [], backlog: [] }) }
-      return { ...ok, json: async () => (rest ? { app: rest, behaviours: projects[rest] } : { projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained', ...(groups[app] ? { project: groups[app] } : {}) })) }) }
+      // Copied, as JSON from the server is: the page never shares an object with the mock's board.
+      return { ...ok, json: async () => (rest ? { app: rest, behaviours: structuredClone(projects[rest]) } :{ projects: Object.keys(projects).map((app) => ({ app, goal: 'maintained', ...(groups[app] ? { project: groups[app] } : {}) })) }) }
     }),
   )
 }
@@ -280,6 +289,50 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
   })
 })
 
+describe('BEH-CHAT-4: a message about something else is answered without moving the chat', () => {
+  it('an off-topic message gets the agent\'s question, and the chat stays on its project', async () => {
+    mockApi(undefined, () => ({
+      ok: true,
+      status: 200,
+      body: { reply: 'Are you talking about beta? Name it, or pick it above, or leave a note if it is a new project.', remaining: 8 },
+    }))
+    await open()
+
+    await say('what should we have for lunch?', 'Are you talking about beta? Name it, or pick it above, or leave a note if it is a new project.')
+
+    // The agent only asks: the page did not switch, and the turn went to the project it was on.
+    expect(screen.getByLabelText('Project')).toHaveProperty('value', 'alpha')
+    expect(order()).not.toContain('switch')
+    expect(chats()[0][0]).toBe('/api/projects/alpha/chat')
+    expect(chats()[0][1].messages!.at(-1)!.text).not.toMatch(/beta/)
+  })
+})
+
+describe('BEH-CHAT-19: the item in hand shows where it stands on the board', () => {
+  it('shows the board column of the item in hand beside its id, and the next item\'s when it comes up', async () => {
+    mockApi()
+    await open()
+    expect(within(screen.getByTestId('chat-in-hand')).getByText('Review requested')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+    expect(within(screen.getByTestId('chat-in-hand')).getByText('Blocked')).toBeTruthy()
+  })
+
+  it('after an approval from the chat is undone, the item comes back with the column the board now gives it', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
+    await kitLine(/^Approved “.*”/)
+    await waitFor(() => expect(inHandId()).toBe('A-NEEDS'))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Undo' }))
+    await waitFor(() => expect(inHandId()).toBe('A-ASK'))
+    // The review is back as it was, so the board reads it as requested again.
+    await waitFor(() => expect(within(screen.getByTestId('chat-in-hand')).getByText('Review requested')).toBeTruthy())
+  })
+})
+
 describe('BEH-NOTE-15: the chat does not show a note\'s origin tag', () => {
   it('CONTROL: an ordinary chat turn shows no "from" tag, even with a note that carries one in the project', async () => {
     mockApi()
@@ -314,6 +367,20 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     // His 17:48Z note: "Skip" alone read as dismissing it.
     fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     expect(screen.queryByTestId('chat-in-hand')).toBeNull()
+  })
+
+  it('Skip to next item writes nothing, so the skipped item stays waiting on him', async () => {
+    mockApi()
+    await open()
+    const id = inHandId()
+    const before = posts.length
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
+    await kitLine(/^Skipped for now: “.*”/)
+
+    // Only leaving the item out of this chat: no review write, and no note, reaches the server.
+    expect(posts.slice(before)).toEqual([])
+    expect(id).toBe('A-ASK')
   })
 
   it('after he acts on an item, Kit says so in the chat and offers what comes next, and the agent is told', async () => {

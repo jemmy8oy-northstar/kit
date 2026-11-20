@@ -9,7 +9,7 @@ import ResourceView from '../components/Resource'
 import { useWrite } from '../components/useWrite'
 import { WriteFeedback } from './BehaviourPage'
 import { loadBoard, type Entry } from '../boardLoad'
-import { isIdea, isTrial, projectOf } from '../board'
+import { columnOf, isIdea, isTrial, projectOf, type Column } from '../board'
 import { keyOf, mine, ordered, readSeen, type InboxCard } from '../inbox'
 
 
@@ -52,6 +52,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
   // Frozen at open, in the Inbox's own order, so marking items off never reshuffles the rest.
   const [queue] = useState(() => ordered<InboxCard>(mine(entries), readSeen()))
   const [handled, setHandled] = useState<ReadonlySet<string>>(new Set())
+  // BEH-CHAT-19: the board as last read, read again after each write the chat makes, so the item's column is current.
+  const [board, setBoard] = useState(entries)
   // The same set, current inside a write's callback, which may run after other items were marked off.
   const handledNow = useRef<ReadonlySet<string>>(handled)
   const undoing = useRef(new Set<Line>())
@@ -194,6 +196,8 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
     else now.delete(keyOf(card))
     handledNow.current = now
     setHandled(now)
+    // Read again, as the write has changed the board (BEH-CHAT-19). A failed read keeps the board as it was.
+    loadBoard().then(setBoard, () => undefined)
   }
 
   /** Runs a Kit line's undo, says so in the chat, and tells the agent. A refused undo says why. */
@@ -493,6 +497,7 @@ function Conversation({ entries, status }: { entries: Entry[]; status: TriageSta
           <Focus
             key={keyOf(focus)}
             card={focus}
+            column={columnNamed(board, focus)}
             onDone={(how, undo) => done(focus, how, undo)}
             // His 13:49Z note: the item again at the foot of the chat, with no model call and no reply spent.
             onShow={() => setLines((ls) => [...ls, itemLine(focus)])}
@@ -606,6 +611,26 @@ const CUT_SHORT = 'That reply was cut short. Ask me to go on.'
 const helpLine = (): Line => ({ from: 'kit', text: HELP, tell: '' })
 const asksHelp = (text: string) => /^\/?help$/i.test(text.trim())
 
+/** The board's column names, as Board shows them (Board.tsx). */
+const COLUMN_NAMES: Record<Column, string> = {
+  review: 'Review requested',
+  proposed: 'Proposed',
+  backlog: 'Backlog',
+  queue: 'Queue',
+  blocked: 'Blocked',
+  'in-progress': 'In progress',
+  done: 'Done',
+  denied: 'Denied',
+}
+
+/** BEH-CHAT-19: the column the board gives the item now, from the board as last read (its own card if it is not there). */
+function columnNamed(board: Entry[], card: InboxCard): string {
+  const entry = board.find((e) => e.summary.app === card.app)
+  const b = entry?.behaviours.find((x) => x.id === card.b.id) ?? card.b
+  // columnOf is null only for a denied card, which has no column of its own.
+  return COLUMN_NAMES[columnOf(b, entry?.places.get(b.id)) ?? 'denied']
+}
+
 /** What an item is asking him, in words. */
 function askOf({ b }: InboxCard): string | null {
   return b.review.note && b.review.state === 'requested'
@@ -624,11 +649,14 @@ function askOf({ b }: InboxCard): string | null {
  */
 function Focus({
   card,
+  column,
   onDone,
   onShow,
   busy,
 }: {
   card: InboxCard
+  /** Where the board puts the item now, by its column's name (BEH-CHAT-19). */
+  column: string
   onDone: (how: Acted, undo?: () => Promise<unknown>) => void
   onShow: () => void
   // While a reply is on its way the agent may act on this item itself, so its buttons wait (BEH-CHAT-6).
@@ -646,6 +674,8 @@ function Focus({
         <Link to={`/projects/${encodeURIComponent(app)}/behaviours/${encodeURIComponent(b.id)}`} className="muted id" title={b.title}>
           {b.id}
         </Link>
+        {/* BEH-CHAT-19 (his 2026-11-15 12:50Z note): the state the board shows for the item, beside its id. */}
+        <span className="chat-state muted">{column}</span>
         <Button type="button" size="sm" onClick={() => run(() => setReview(app, b.id, 'approved'))} disabled={saving || busy}>
           Approve
         </Button>

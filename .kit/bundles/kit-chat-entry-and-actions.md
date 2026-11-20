@@ -46,6 +46,14 @@ Context:
 - Owner reply (2026-11-18 21:22Z): "Surely it can live in The db for the user". Read then as the chat's history. Withdrawn by the 2026-11-19 correction below.
 - Owner correction (2026-11-19 23:56Z): that reply was about where the cost of a run is stored, not the chat. So the chat stays in the page (BEH-CHAT-1 forgets it when he leaves), and each run's cost is kept in Kit's database for the user who started it. Chat history is not moved to the database in this item.
 - Record each guess as a "contract my assumption:" line in the corpus, so he can deny it.
+Built:
+- BEH-CHAT-1: a run's row names the user who started it, and its cost is written against that user (AgentRunTests.cs, BEH_CHAT_1_a_run_names_the_user_who_started_it_and_its_cost_is_written_against_that_user); agent_runs already had the owner column, so no column was added
+- BEH-CHAT-8: a read asks for at most ten ids, and the ids past the tenth are not read (TriageTests.cs, BEH_CHAT_8_a_read_asks_for_at_most_ten_ids_and_the_rest_are_dropped)
+- BEH-CHAT-3: Skip to next item writes nothing, so the skipped item stays waiting on him (Chat.test.tsx)
+- BEH-CHAT-4: an off-topic message gets the agent's question, and the chat stays on its project (Chat.test.tsx)
+- BEH-CHAT-19: the item in hand shows its board column beside its id, and the next item's column when it comes up (Chat.test.tsx)
+- BEH-CHAT-19: after an approval from the chat is undone, the item comes back with the column the board now gives it (Chat.test.tsx)
+- Whole suite: UI 565 tests ran and all passed; backend 1999 tests ran, 1996 passed and 3 failed (ClaimerSidecarTests.A_claim_never_reported_is_reported_failed_when_the_pod_is_stopped, ReportConformanceTests.Report_reproduces_Node_on_the_branches_the_goldens_miss, ReportConformanceTests.Globalization_is_ICU_so_locale_order_is_reachable). The same 3 fail on the untouched branch here, because this machine has no `kill` binary and no ICU library, so the backend suite did not fully pass in this environment.
 Test plan:
 - BEH-CHAT-1: picking a project in the select box puts "Now talking about <project>" in the thread and keeps the earlier history; a message naming exactly one other project moves the chat before it is sent; naming two, or the current one too, does not
 - BEH-CHAT-1: a run's row in agent_runs (BEH-ORCH-6) names the user who started the run; if it has no user column, one is added and the run's cost is written against that user, and chat history is not written to the database

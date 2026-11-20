@@ -608,6 +608,19 @@ public class TriageTests
     }
 
     [Fact]
+    public void BEH_CHAT_8_a_read_asks_for_at_most_ten_ids_and_the_rest_are_dropped()
+    {
+        // BEH-CHAT-8: "at most ten ids ... a call". Ids past the tenth in one call are not read.
+        var ids = Enumerable.Range(1, AnthropicTriageChat.MaxReadIds + 2).Select(i => $"BEH-A-{i}").ToList();
+        var input = string.Join(",", ids.Select(i => $"\"{i}\""));
+        var reads = AnthropicTriageChat.Reads("""{"content":[{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":[""" + input + "]}}]}");
+
+        var asked = Assert.Single(reads!);
+        Assert.Equal(10, asked.Ids.Count);
+        Assert.Equal(ids.Take(10), asked.Ids);
+    }
+
+    [Fact]
     public async Task The_client_stops_reading_after_its_rounds_and_an_action_ends_the_turn_at_once()
     {
         const string reading = """{"content":[{"type":"text","text":"Still reading."},{"type":"tool_use","id":"r","name":"read_spec","input":{"ids":["BEH-A"]}}]}""";

@@ -2871,6 +2871,7 @@ behaviour BEH-CHAT-1 "A Chat page talks with the spec agent about the project pi
   contract my assumption: his reply on ticket kit-chat-entry-and-actions (2026-11-18 21:22Z), "Surely it can live in The db for the user", was a reply to a question about where the cost of a run is stored, not about the chat, so the chat's look and its history stay in the page as the line above says, and no card for the look is added
   contract my assumption: his reply on ticket kit-chat-entry-and-actions (2026-11-19 23:56Z) reads "Sorry that last message was talking about where should we store the cost of a run. 'Surely it can live in The db for the user'". So the cost of a run is kept in Kit's database for that user, and the 2026-11-18 reading above is withdrawn
   contract my assumption: each run's cost is recorded in Kit's database against the user who started it; runs already write their cost to agent_runs (BEH-ORCH-6), so the builder checks that the row names the user and adds that if it does not
+  contract built: agent_runs already has an owner column, the user who started the run, written on create and kept by the cost updates (PostgresAgentRunStore.cs), so no column was added; a test names it (AgentRunTests.cs)
 
 behaviour BEH-CHAT-2 "The chat opens with the next item that needs him already in view, and he just starts typing"
   in FEAT-CHAT
@@ -3141,6 +3142,8 @@ behaviour BEH-CHAT-19 "The chat shows the state of the item it is showing him"
   then sees region:KitMain
   contract his note (kit.notes.md#2026-11-15-1250): "When in chat you should see the state of the top of stack item that you are being shown"
   contract my assumption: the state is the one the board shows for that item (for example pending, approved, blocked, built), next to its id, and it updates when he answers the item from the chat
+  contract built: the item in hand shows the board's column for it beside its id (Review requested, Proposed, Backlog, Queue, Blocked, In progress, Done or Denied), worked out from the board as last read; the board is read again after each write the chat makes, so an Undo shows the column the board now gives
+  contract my assumption: the board's column names are the state he meant, rather than the owner's own words (pending, approved, blocked, built); "approved" alone would not tell him whether the item is ready to build
 
 # His 2026-11-02 17:47Z note: robustness when specs conflict. Backlog ideas only, in his
 # words: "priority is still getting ready for users". BEH-CONFLICT-3 is built (2026-11-03).

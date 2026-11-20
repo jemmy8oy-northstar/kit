@@ -405,6 +405,26 @@ public class AgentRunTests
         Assert.Equal(0.0156m, rig.Current.CostUsd);
     }
 
+    [Fact]
+    public async Task BEH_CHAT_1_a_run_names_the_user_who_started_it_and_its_cost_is_written_against_that_user()
+    {
+        // BEH-CHAT-1 (ticket kit-chat-entry-and-actions, 2026-11-19): each run's cost is kept in Kit's database for
+        // the user who started it. The run row already holds that user as its owner, so the cost lands on that row.
+        var answer = """{"id":"m","content":[],"usage":{"input_tokens":1000,"output_tokens":500}}""";
+        var store = new MemoryAgentRunStore();
+        var token = AgentTokens.Mint();
+        var run = store.Create("ann", "kit", Sonnet, AgentTokens.Hash(token), Noon);
+        var rig = new Rig(_ => Ok(answer), store: store, run: run, token: token);
+
+        await Call(rig.Proxy, token, Msg());
+
+        var row = Assert.Single(store.List());
+        Assert.Equal("ann", row.Owner);
+        Assert.Equal("ann", rig.Current.Owner);
+        // Sonnet: 1000 in x2 + 500 out x10, per million.
+        Assert.Equal(0.007m, row.CostUsd);
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(7)]
