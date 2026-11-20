@@ -14,7 +14,7 @@ public interface IAgentRunStore
     /// </summary>
     IAgentRun Create(string owner, string project, string model, string tokenHash, DateTimeOffset started, string? workItem = null, string? stage = null);
 
-    /// <summary>Every run, newest start first (BEH-UI-5).</summary>
+    /// <summary>Every run, newest start first (BEH-UI-7).</summary>
     IReadOnlyList<IAgentRun> List();
 
     /// <summary>The run a token's SHA-256 (lower-case hex) belongs to; null when none.</summary>

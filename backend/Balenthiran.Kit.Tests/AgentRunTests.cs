@@ -742,7 +742,7 @@ public class AgentRunTests
     }
 
     [Fact]
-    public void BEH_UI_5_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in()
+    public void BEH_UI_7_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in()
     {
         var (router, store, _, cookie) = OperatorRouter();
         var older = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(-30));
@@ -755,7 +755,7 @@ public class AgentRunTests
     }
 
     [Fact]
-    public void BEH_UI_5_a_run_still_running_is_placed_by_its_start_not_at_the_bottom()
+    public void BEH_UI_7_a_run_still_running_is_placed_by_its_start_not_at_the_bottom()
     {
         var (router, store, _, cookie) = OperatorRouter();
         var running = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(1));

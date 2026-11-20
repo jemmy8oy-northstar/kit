@@ -42,7 +42,7 @@ public sealed class MemoryAgentRunStore : IAgentRunStore
     {
         lock (gate)
         {
-            // By start, newest first, as the Postgres store orders it (BEH-UI-5); a tie keeps the later-recorded run first.
+            // By start, newest first, as the Postgres store orders it (BEH-UI-7); a tie keeps the later-recorded run first.
             return runs.AsEnumerable().Reverse().OrderByDescending(r => r.Started).ToList();
         }
     }
