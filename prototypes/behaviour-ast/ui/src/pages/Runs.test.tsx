@@ -49,6 +49,23 @@ describe('Runs', () => {
     expect(items[1]).toHaveTextContent('running')
   })
 
+  it('renders the runs in the order the API sends, with no client-side re-sort (BEH-UI-5)', async () => {
+    // Oldest first on purpose: if the page re-sorted by start time, the first row would be the 9:00 run.
+    mockApi({
+      capUsd: 5,
+      runs: [
+        { ...run, id: 'early', project: 'vocab', started: '2026-11-04T08:00:00Z' },
+        { ...run, id: 'late', project: 'kit', started: '2026-11-06T09:00:00Z' },
+      ],
+    })
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('vocab')
+    expect(items[1]).toHaveTextContent('kit')
+  })
+
   it('says why a failed run failed in plain words', async () => {
     mockApi({
       capUsd: 5,

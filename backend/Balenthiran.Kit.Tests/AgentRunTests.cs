@@ -742,6 +742,36 @@ public class AgentRunTests
     }
 
     [Fact]
+    public void BEH_UI_5_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in()
+    {
+        var (router, store, _, cookie) = OperatorRouter();
+        var older = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(-30));
+        var newest = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(10));
+        var middle = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(5));
+
+        var body = Assert.IsType<AgentRunList>(router.Route("GET", "/api/runs", cookie).Body);
+
+        Assert.Equal([newest.Id, middle.Id, older.Id], body.Runs.Select(r => r.Id).ToArray());
+    }
+
+    [Fact]
+    public void BEH_UI_5_a_run_still_running_is_placed_by_its_start_not_at_the_bottom()
+    {
+        var (router, store, _, cookie) = OperatorRouter();
+        var running = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(1));
+        Assert.True(store.StartIfQueued(running.Id));
+        var fiveMinutes = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(5));
+        store.SetStatus(fiveMinutes.Id, AgentRunStatus.Finished, Noon.AddMinutes(6));
+        var nineMinutes = store.Create(Operator, "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(9));
+        store.SetStatus(nineMinutes.Id, AgentRunStatus.Finished, Noon.AddMinutes(10));
+
+        var body = Assert.IsType<AgentRunList>(router.Route("GET", "/api/runs", cookie).Body);
+
+        Assert.Equal([nineMinutes.Id, fiveMinutes.Id, running.Id], body.Runs.Select(r => r.Id).ToArray());
+        Assert.Null(body.Runs[2].Ended);
+    }
+
+    [Fact]
     public void BEH_ORCH_9_the_pipeline_is_listed_to_the_operator_alone()
     {
         var (router, _, _, cookie) = OperatorRouter();

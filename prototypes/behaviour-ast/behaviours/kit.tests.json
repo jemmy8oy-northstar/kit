@@ -995,6 +995,16 @@
       }
     }
   ],
+  "BEH-UI-5": [
+    {
+      "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs",
+      "title": "BEH_UI_5_the_run_list_is_newest_start_first_whatever_order_the_runs_were_recorded_in"
+    },
+    {
+      "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs",
+      "title": "BEH_UI_5_a_run_still_running_is_placed_by_its_start_not_at_the_bottom"
+    }
+  ],
   "BEH-WRITE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
