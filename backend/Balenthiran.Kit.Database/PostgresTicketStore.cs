@@ -25,10 +25,19 @@ public sealed class PostgresTicketStore(string connectionString) : ITicketStore,
             created timestamptz NOT NULL DEFAULT now(),
             updated timestamptz NOT NULL DEFAULT now(),
             PRIMARY KEY (project, slug)
+        );
+        ALTER TABLE pipeline_tickets ADD COLUMN IF NOT EXISTS blocked_because text;
+        CREATE TABLE IF NOT EXISTS pipeline_ticket_comments (
+            id bigserial PRIMARY KEY,
+            project text NOT NULL,
+            slug text NOT NULL,
+            author text NOT NULL,
+            body text NOT NULL,
+            at timestamptz NOT NULL
         )
         """;
 
-    private const string Columns = "project, slug, title, state, priority, cards, bundle, pull_request, stopped_because, scheduled";
+    private const string Columns = "project, slug, title, state, priority, cards, bundle, pull_request, stopped_because, scheduled, blocked_because";
 
     private readonly NpgsqlDataSource source = NpgsqlDataSource.Create(connectionString);
     private readonly Lock gate = new();
@@ -38,9 +47,9 @@ public sealed class PostgresTicketStore(string connectionString) : ITicketStore,
     public void Save(PipelineTicket ticket)
     {
         using var cmd = Command(
-            "INSERT INTO pipeline_tickets (" + Columns + ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) "
+            "INSERT INTO pipeline_tickets (" + Columns + ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) "
             + "ON CONFLICT (project, slug) DO UPDATE SET title = $3, state = $4, priority = $5, cards = $6, bundle = $7, "
-            + "pull_request = $8, stopped_because = $9, scheduled = $10, updated = now()",
+            + "pull_request = $8, stopped_because = $9, scheduled = $10, blocked_because = $11, updated = now()",
             ticket.Project,
             ticket.Slug,
             ticket.Title,
@@ -50,8 +59,44 @@ public sealed class PostgresTicketStore(string connectionString) : ITicketStore,
             ticket.Bundle,
             ticket.PullRequest,
             ticket.StoppedBecause,
-            ticket.Scheduled);
+            ticket.Scheduled,
+            ticket.BlockedBecause);
         cmd.ExecuteNonQuery();
+    }
+
+    /// <inheritdoc />
+    public void Comment(TicketComment comment)
+    {
+        using var cmd = Command(
+            "INSERT INTO pipeline_ticket_comments (project, slug, author, body, at) VALUES ($1, $2, $3, $4, $5)",
+            comment.Project,
+            comment.Slug,
+            comment.Author,
+            comment.Body,
+            comment.At);
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<TicketComment> Comments(string project, string slug)
+    {
+        using var cmd = Command(
+            "SELECT project, slug, author, body, at FROM pipeline_ticket_comments WHERE project = $1 AND slug = $2 ORDER BY at, id",
+            project,
+            slug);
+        using var rows = cmd.ExecuteReader();
+        var found = new List<TicketComment>();
+        while (rows.Read())
+        {
+            found.Add(new TicketComment(
+                rows.GetString(0),
+                rows.GetString(1),
+                rows.GetString(2),
+                rows.GetString(3),
+                rows.GetFieldValue<DateTimeOffset>(4)));
+        }
+
+        return found;
     }
 
     /// <inheritdoc />
@@ -82,7 +127,8 @@ public sealed class PostgresTicketStore(string connectionString) : ITicketStore,
                 rows.IsDBNull(6) ? null : rows.GetString(6),
                 rows.IsDBNull(7) ? null : rows.GetString(7),
                 rows.IsDBNull(8) ? null : rows.GetString(8),
-                rows.GetBoolean(9)));
+                rows.GetBoolean(9),
+                rows.IsDBNull(10) ? null : rows.GetString(10)));
         }
 
         return tickets;

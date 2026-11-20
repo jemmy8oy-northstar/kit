@@ -214,6 +214,18 @@ public sealed partial class KitRouter(
             return PipelineList(cookie);
         }
 
+        // BEH-VIS-1, BEH-VIS-2: the run page's data (running agents, finished items with stage costs), for the operator only.
+        if (pathname == "/api/runs/visibility")
+        {
+            return RunVisibilityView(cookie);
+        }
+
+        // BEH-ORCH-16: a project's tickets and their comment threads, for the operator only, as the pipeline is.
+        if (TicketsRoute.Match(pathname) is { Success: true } tickets)
+        {
+            return TicketList(cookie, tickets.Groups[1].Value);
+        }
+
         if (pathname == "/api/projects")
         {
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
@@ -502,6 +514,12 @@ public sealed partial class KitRouter(
         if (RunsRoute.Match(pathname) is { Success: true } runs)
         {
             return StartRun(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, runs.Groups[1].Value, body);
+        }
+
+        // BEH-ORCH-16 slice 3: his reply on a ticket, behind the same gate; it writes no corpus.
+        if (TicketCommentRoute.Match(pathname) is { Success: true } reply)
+        {
+            return TicketReply(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, reply.Groups[1].Value, reply.Groups[2].Value, body);
         }
 
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.

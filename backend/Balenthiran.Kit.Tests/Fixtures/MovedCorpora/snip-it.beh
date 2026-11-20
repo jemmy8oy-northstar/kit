@@ -487,12 +487,16 @@ behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, s
   review unreviewed
   priority 3
   pending
-  needs-context "The drafts volume is a chart change, which is yours to merge, and more drafts wait on your view of draft 1 (kit#723). Until then drafts go up as pull requests, as kit#723 did."
+  needs-context "No volume PR was ever opened. Drafts 1 to 3 all went up on kit#723. Then you paused drafts there on 11-06 to save tokens for the pipeline. A volume alone also shows you nothing: it needs a Drafts page and an upload route as well, and OCI's smallest volume is 50Gi, a few dollars a month. Want it now? If you stay silent, it stays paused behind the pipeline."
   actor creator
   contract "Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this"
   contract my assumption: the drafts volume is snip-it's (as BEH-EDITION-3 has it: the volume is on snip-it, not Kit), small to start (5Gi), and separate from the 50Gi take store BEH-EDITION-3 waits on; adding it is a chart change, so it goes up as its own pull request for him to merge
   contract my assumption: the place he looks is a Drafts page on snip-it listing each draft, its size, and the volume's used and free space, so a draft and the space it takes are seen together
   contract my assumption: no video is committed to a repo, as renders would grow it for good; until the volume exists, the first draft is shown to him as its script and stills in a pull request
+  contract his question (snip-it.notes.md#2026-11-15-1254): "he doesn't see the volume PR in snip-it… has that PR been opened? If yes, what is its number and link. If not, why not, and what is blocking it. Also say whether draft 1 went up as kit#723 and whether a volume PR was ever created"
+  contract my answer: no volume pull request was ever opened, in snip-it or anywhere else. Draft 1 went up as kit#723 (2026-11-02), and drafts 2 and 3 went onto the same pull request (draft 3 on 2026-11-06). The renders are kept on the bot's own volume, outside every repo. Two things held the volume back. This card waited on his view of draft 1, and then on kit#723 he wrote "Stop churning this for now conserve tokens for resolving the kit pipeline", so all draft work paused
+  contract found 2026-11-15: the 5Gi in my assumption above was wrong. snip-it#22 found OCI's smallest block volume is 50Gi, and snip-it's chart has no volume at all, on purpose (helm/values.yaml). A volume is a new PVC template, and with one pod writing to it, the deploy needs Recreate. It also costs a small monthly sum, and spending money is his call. A volume alone shows him nothing: my pod cannot write to snip-it's volume, so drafts also need an upload route and the Drafts page this card names
+  contract my assumption: it stays paused until the pipeline work he put first is settled. When it starts, the chart change (a 50Gi PVC) goes up as its own pull request for him to merge, then the upload route and the Drafts page
 
 behaviour BEH-BUILD-3 "Some videos are compilations: how an app grew from its start, or a milestone, told through many of his notes, chats and features"
   in FEAT-BUILD-CHANNEL

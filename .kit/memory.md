@@ -9,3 +9,9 @@
 
 ## Sign-in gates
 - The sign-in gate answers before routing, for every method. A signed-out request to any path, even one that does not exist, gets 401 `not-signed-in`. A signed-in non-operator gets 403 `not-yours` on any write. Only a signed-in operator reaches the 404 `no-such-route`. See BEH-GATE-H1 and BEH-USERS-8.
+
+## Pipeline PRs (BEH-PR-1/2, bundle pipeline-raises-pull-requests)
+- Raising a pull request after a build is already shipped as BEH-ORCH-3 (`Pipeline.OpenPullRequestAsync`), and merge-off is BEH-ORCH-10 with `KIT_PIPELINE_MERGE` off by default. BEH-PR-2's "merge only with a corpus line" conflicts with BEH-ORCH-10's "merge on green checks when the switch is on". Raised as a review request on BEH-PR-2 in kit.beh; the built reading is BEH-ORCH-10 as shipped. Owner's answer on "complete means merge" is still open.
+
+## Stage-0 gate
+- `dotnet run --project backend/Balenthiran.Kit.Cli --no-build -- check kit --repo . --dir prototypes/behaviour-ast/behaviours`. `--configuration Release` has no build output here, so leave it out.

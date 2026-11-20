@@ -752,6 +752,55 @@ public class AgentRunTests
     }
 
     [Fact]
+    public void BEH_VIS_1_the_run_page_is_served_to_the_owner_alone()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+
+        Assert.Equal(401, router.Route("GET", "/api/runs/visibility").Status);
+        Assert.Equal(403, router.Route("GET", "/api/runs/visibility", SignIn(router, "ann")).Status);
+        Assert.Equal(200, router.Route("GET", "/api/runs/visibility", cookie).Status);
+    }
+
+    [Fact]
+    public void BEH_VIS_2_with_no_session_cost_record_every_stage_cost_is_unknown_and_the_page_still_renders()
+    {
+        var (router, store, _, cookie) = OperatorRouter();
+        var triage = store.Create("james", "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon, "slug-a", "triage");
+        store.SetStatus(triage.Id, AgentRunStatus.Finished, Noon.AddMinutes(1));
+        var spec = store.Create("james", "kit", Sonnet, AgentTokens.Hash(AgentTokens.Mint()), Noon.AddMinutes(2), "slug-a", "spec");
+        store.SetStatus(spec.Id, AgentRunStatus.Finished, Noon.AddMinutes(3));
+
+        var r = router.Route("GET", "/api/runs/visibility", cookie);
+
+        Assert.Equal(200, r.Status);
+        var page = Assert.IsAssignableFrom<IRunVisibility>(r.Body);
+        Assert.Equal(2, page.Finished.Single().Stages.Count);
+        Assert.All(page.Finished.Single().Stages, s => Assert.Null(s.CostUsd));
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_projects_tickets_are_listed_to_the_operator_alone()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+
+        Assert.Equal(401, router.Route("GET", "/api/projects/kit/tickets").Status);
+        Assert.Equal(403, router.Route("GET", "/api/projects/kit/tickets", SignIn(router, "ann")).Status);
+        Assert.Equal(200, router.Route("GET", "/api/projects/kit/tickets", cookie).Status);
+        Assert.Equal(404, router.Route("GET", "/api/projects/no-such/tickets", cookie).Status);
+    }
+
+    [Fact]
+    public void BEH_ORCH_16_a_reply_on_a_ticket_is_the_operators_alone_and_needs_the_pipeline()
+    {
+        var (router, _, _, cookie) = OperatorRouter();
+        var body = JsonDocument.Parse("{\"body\":\"hi\"}").RootElement;
+
+        Assert.Equal(401, router.Route("POST", "/api/projects/kit/tickets/x/comments", body: body).Status);
+        Assert.Equal(403, router.Route("POST", "/api/projects/kit/tickets/x/comments", SignIn(router, "ann"), body: body).Status);
+        Assert.Equal(409, router.Route("POST", "/api/projects/kit/tickets/x/comments", cookie, body: body).Status); // this router runs no pipeline
+    }
+
+    [Fact]
     public void With_no_password_runs_are_served_to_loopback_only()
     {
         var corpora = new CorpusDirectory(RepoLayout.FrozenBehaviours, RepoLayout.FrozenRoot);

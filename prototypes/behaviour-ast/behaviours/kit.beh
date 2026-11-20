@@ -366,3 +366,24 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
+
+# ── the pipeline's pull requests (triage note of 2026-11-07) ────────────────
+
+behaviour BEH-PR-1 "The pipeline raises a pull request for finished work, into the integration branch"
+  priority 5
+  actor engineer
+  given work:Finished
+  when runs command:KitPipeline
+  then reports pullRequest:Raised
+  review unreviewed
+  contract my assumption: the pull request names the card it builds and targets the project's integration branch, never the default branch
+
+behaviour BEH-PR-2 "The pipeline completes a pull request only when the corpus says it may merge"
+  priority 5
+  actor engineer
+  given pullRequest:Raised
+  when runs command:KitPipeline
+  then reports pullRequest:Left
+  review unreviewed
+  contract my assumption: complete means merge, so a pull request is merged only where the corpus allows it, and otherwise is left open for the owner
+  contract my question (review request, conflicts with BEH-ORCH-10 in kit-ui.beh): BEH-ORCH-10 merges a built pull request once its Actions checks are green whenever KIT_PIPELINE_MERGE=on, with no corpus line, and this card says it never merges on green checks alone without one. Both cannot hold. Built reading: BEH-ORCH-10 as shipped, unchanged, so nothing merges unless the switch is turned on; no test for this card's merge-without-corpus-line reading is written. Deny it and say which reading is true, and it is rebuilt to that. Default if silent: the built reading stays
