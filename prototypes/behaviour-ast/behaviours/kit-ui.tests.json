@@ -915,7 +915,10 @@
   ],
   "BEH-CHAT-7": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the header button and a typed help or /help add the help line and never call the agent" },
-    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" }
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "the help line lists what Kit can do and what it cannot" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx", "title": "asked for a change Kit cannot make, it leaves a note for the coding agent and does not post an answer" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_is_and_that_only_a_tool_call_does_anything" },
+    { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "The_chat_instructions_say_what_kit_cannot_do_and_leave_such_a_request_as_a_note" }
   ],
   "BEH-CHAT-8": [
     { "file": "backend/Balenthiran.Kit.Tests/TriageTests.cs", "title": "Both_chats_hand_the_model_a_reader_of_their_own_projects_spec" },
@@ -927,6 +930,49 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_An_agent_that_ran_out_of_turns_but_exited_0_fails_the_run_at_the_turns_step" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_Any_other_error_result_that_exited_0_fails_the_run_at_the_result_step" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_1_A_success_result_is_not_mistaken_for_an_error" }
+  ],
+  "BEH-ORCH-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flag_with_its_reason_survives_the_round_trip" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flag_without_a_reason_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_survives_the_round_trip_straight_after_the_flag" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_without_the_flag_it_answers_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_with_an_unknown_outcome_word_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_outside_the_enum_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_note_that_is_empty_or_spans_lines_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_line_with_no_note_is_refused_when_read_back" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_review_task_needs_a_flagged_bundle_nobody_has_reviewed" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_review_task_carries_the_flag_the_branch_the_path_and_the_bundle" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_bundle_too_long_to_carry_is_read_from_its_branch_and_the_task_still_fits_a_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_tally_counts_flagged_bundles_by_outcome_and_ignores_unflagged_ones" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Stage_models_default_to_haiku_for_triage_and_opus_for_review" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_stage_model_is_read_from_the_environment_or_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_The_low_review_model_defaults_to_sonnet_and_is_read_from_the_environment" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_A_flags_level_is_read_from_its_end_and_anything_else_is_high" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Only_a_low_flag_reviews_on_the_low_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestrationStageTests.cs", "title": "BEH_ORCH_2_Each_stage_is_told_what_the_two_levels_mean" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_A_low_level_flag_is_reviewed_on_the_cheaper_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_A_high_unlevelled_or_unreadable_flag_is_reviewed_on_the_review_model" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_2_The_spec_and_build_tasks_say_what_the_levels_mean" }
+  ],
+  "BEH-ORCH-17": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_The_runs_list_says_when_a_runner_took_each_run_still_going_and_when_it_counts_as_lost" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows each run still going: how long it has run and when it counts as lost, or how long it has waited" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 shows no Now section when nothing is going" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Runs.test.tsx", "title": "BEH-ORCH-17 says when a run with its own time limit gives up" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_test_run_has_half_an_hour_and_is_counted_lost_ten_minutes_after_that_not_at_150" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_17_The_pool_gives_a_run_the_claims_time_limit_and_none_when_the_claim_has_none" }
+  ],
+  "BEH-ORCH-19": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_build_run_that_fails_is_run_again_twice_and_then_blocked_saying_where_it_stopped" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_build_run_that_changed_nothing_is_run_again_and_a_good_one_then_opens_the_pull_request" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_with_no_retries_a_lost_build_run_blocks_at_once_and_says_it_was_lost" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_after_a_restart_a_ticket_a_run_blocked_is_tried_again_and_one_waiting_on_a_person_is_not" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_only_a_block_a_run_made_is_retryable" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_test_run_lost_three_times_in_a_row_blocks_the_ticket_rather_than_testing_for_ever" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease" }
   ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
@@ -1086,7 +1132,8 @@
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_head_that_moved_since_the_kit_test_asks_for_a_new_test_and_merges_nothing" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_private_repos_failed_or_running_actions_run_still_refuses_or_waits" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_private_repos_conflicting_or_unknown_mergeability_is_settled_before_any_test_is_asked_for" },
-    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_public_repo_or_one_that_does_not_say_is_unchanged_and_waits_for_an_actions_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_public_repos_pull_request_with_no_actions_run_is_tested_by_kit_as_a_private_ones_is" },
+    { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_public_repos_pull_request_with_an_actions_run_is_unchanged_and_needs_no_kit_test" },
     { "file": "backend/Balenthiran.Kit.Tests/GitHubPullRequestOpenerTests.cs", "title": "BEH_ORCH_12_a_private_repo_on_the_path_without_updateFirst_is_unchanged" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_12_a_merge_look_that_needs_a_test_starts_one_test_run_at_that_commit_on_the_pull_requests_branch" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_12_a_test_run_that_passed_is_remembered_and_the_next_merge_look_merges_that_commit" },

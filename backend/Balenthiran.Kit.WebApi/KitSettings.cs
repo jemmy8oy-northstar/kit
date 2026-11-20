@@ -42,6 +42,20 @@ public sealed record KitSettings(
     internal string? Token() => gitToken;
 
     /// <summary>
+    /// The checkout <see cref="Dir"/> sits in, which a corpus path is relative to. Deployed, the entrypoint points
+    /// <c>KIT_DIR</c> at its write-back clone (/home/app/kit), not the image (/app): relative to the image, a path
+    /// read off the clone came out as ../home/app/kit/prototypes/…, and the pipeline handed that to its agents
+    /// (kit#832). Unset, it is <see cref="RepoRoot"/>.
+    /// </summary>
+    public string CorpusRoot
+    {
+        get => corpusRoot ?? RepoRoot;
+        init => corpusRoot = value;
+    }
+
+    private readonly string? corpusRoot;
+
+    /// <summary>
     /// <c>KIT_GITHUB_APP_ID</c> and <c>KIT_GITHUB_INSTALLATION_ID</c>: with the key below, the GitHub
     /// App installation process.md settles on (kit#88). All three or none — <see cref="FromEnvironment"/>
     /// throws for a partial set, because quietly falling back to <c>KIT_GIT_TOKEN</c> would hide the
@@ -510,6 +524,7 @@ public sealed record KitSettings(
         }
 
         var dir = env("KIT_DIR") is { Length: > 0 } d ? Path.GetFullPath(d) : Path.Combine(root, "prototypes", "behaviour-ast", "behaviours");
+        var corpusRoot = env("KIT_DIR") is { Length: > 0 } ? CheckoutHolding(dir) : null;
         return new KitSettings(
             dir,
             root,
@@ -523,6 +538,7 @@ public sealed record KitSettings(
             env("KIT_GIT_BRANCH") is { Length: > 0 } b ? b : null)
         {
             GitToken = env("KIT_GIT_TOKEN") is { Length: > 0 } t ? t : null,
+            CorpusRoot = corpusRoot ?? root,
             GitRepository = GitHubPullRequestOpener.RepositoryFromRemote(env("KIT_GIT_CLONE")),
             GitOffReason = env("KIT_GIT_OFF_REASON") is { Length: > 0 } why ? why : null,
             GitBase = env("KIT_GIT_BASE") is { Length: > 0 } g ? g : "dev",
@@ -612,6 +628,14 @@ public sealed record KitSettings(
         _ when value.Equals("false", StringComparison.OrdinalIgnoreCase) => false,
         _ => throw new InvalidOperationException($"KIT_GIT is \"{value}\": set it to 1 or true to commit and push every write, or 0, false or unset for none"),
     };
+
+    // The checkout whose prototypes/behaviour-ast/behaviours IS dir, or null for a KIT_DIR laid out any other way.
+    private static string? CheckoutHolding(string dir)
+    {
+        var root = Path.GetFullPath(Path.Combine(dir, "..", "..", ".."));
+        return Path.GetFullPath(Path.Combine(root, "prototypes", "behaviour-ast", "behaviours")).TrimEnd('/', '\\')
+            == dir.TrimEnd('/', '\\') ? root : null;
+    }
 
     private static string FindRoot(string from)
     {

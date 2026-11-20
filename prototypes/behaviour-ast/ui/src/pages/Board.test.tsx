@@ -67,6 +67,9 @@ let histories: Record<string, CompletionList> = {}
 /** Each app's unanswered bells (BEH-BELL-3): the item ids rung. One not named has none. */
 let bells: Record<string, string[]> = {}
 
+/** Each app's tickets (BEH-ORCH-16), as GET /api/projects/:app/tickets answers. */
+let tickets: Record<string, object> = {}
+
 /** The read API: the project list, a project's detail, its schedule (BEH-SCHED-1) or its history. */
 function answer(path: string, projects: object[] = summaries) {
   const rest = decodeURIComponent(path.split('/api/projects/')[1] ?? '')
@@ -78,6 +81,10 @@ function answer(path: string, projects: object[] = summaries) {
     const app = rest.slice(0, -'/notes'.length)
     const notes = (bells[app] ?? []).map((id) => ({ at: '2026-10-21 06:50Z', kind: 'bell', behaviour: id, resolves: null, text: '', thread: [], questions: [] }))
     return { app, file: `${app}.notes.md`, notes }
+  }
+  if (rest.endsWith('/tickets')) {
+    // BEH-ORCH-16: a project with none named answers as a Kit with the pipeline off.
+    return tickets[rest.slice(0, -'/tickets'.length)] ?? { on: false, tickets: [] }
   }
   if (rest.endsWith('/schedule')) {
     const app = rest.slice(0, -'/schedule'.length)
@@ -184,6 +191,107 @@ describe('Board', () => {
 
     await column('Done').findByText('B-DONE')
     expect(column('Denied').queryByText('A-DENIED')).not.toBeInTheDocument()
+  })
+
+  it("leads a project's own board with its open tickets, blocked first, each with its thread (BEH-ORCH-16)", async () => {
+    mockApi()
+    tickets = {
+      alpha: {
+        on: true,
+        tickets: [
+          { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: ['A-1'], pullRequest: null, blockedBecause: null, comments: [] },
+          { slug: 'gone', title: 'Already merged', state: 'merged', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] },
+          {
+            slug: 'move-spec',
+            title: 'Move the spec',
+            state: 'new',
+            priority: 3,
+            cards: ['A-2'],
+            pullRequest: null,
+            blockedBecause: 'which title should the card keep?',
+            comments: [{ author: 'kit', body: 'Blocked: which title should the card keep?', at: '2026-11-16T07:50:00Z' }],
+          },
+        ],
+      },
+    }
+    renderBoard('/board?project=alpha')
+
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByRole('heading', { level: 2 })).toHaveTextContent('Tickets 2')
+    expect(section.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual(['Move the spec move-spec', 'Sort the list sorting'])
+    expect(section.getByTestId('blocked-because')).toHaveTextContent('which title should the card keep?')
+    expect(section.getByText('Blocked: which title should the card keep?')).toBeVisible()
+    expect(section.getByRole('link', { name: 'A-2' })).toHaveAttribute('href', '/projects/alpha/behaviours/A-2')
+    tickets = {}
+  })
+
+  it('takes his reply under a blocked ticket, posts it to that ticket, and says the first agent will read it (BEH-ORCH-16 slice 3)', async () => {
+    const blocked = { slug: 'move-spec', title: 'Move the spec', state: 'new', priority: 3, cards: [], pullRequest: null, blockedBecause: 'which title?', comments: [] }
+    const ready = { slug: 'sorting', title: 'Sort the list', state: 'ready', priority: 1, cards: [], pullRequest: null, blockedBecause: null, comments: [] }
+    tickets = { alpha: { on: true, tickets: [blocked, ready] } }
+    const posted: { path: string; body: unknown }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          posted.push({ path, body: JSON.parse(String(init.body)) })
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ woke: true }) }
+        }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) }
+      }),
+    )
+    renderBoard('/board?project=alpha')
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+
+    // Only the blocked ticket asks for a reply.
+    expect(section.getAllByRole('textbox')).toHaveLength(1)
+    fireEvent.change(section.getByRole('textbox', { name: 'Reply on move-spec' }), { target: { value: '  keep the target  ' } })
+    fireEvent.click(section.getByRole('button', { name: 'Reply' }))
+
+    expect(await section.findByRole('status')).toHaveTextContent('The first agent reads it next')
+    expect(posted).toEqual([{ path: expect.stringMatching(/\/api\/projects\/alpha\/tickets\/move-spec\/comments$/), body: { body: 'keep the target' } }])
+    tickets = {}
+  })
+
+  it('shows no Tickets section on the all-projects board, even with tickets to show', async () => {
+    mockApi()
+    tickets = { alpha: { on: true, tickets: [] } }
+    renderBoard('/board')
+    await loaded()
+    expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+    tickets = {}
+  })
+
+  it('shows no Tickets section when the pipeline is off', async () => {
+    mockApi()
+    renderBoard('/board?project=beta')
+    await loaded()
+    expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+  })
+
+  it('says a project with the pipeline on and no open ticket has none', async () => {
+    mockApi()
+    tickets = { alpha: { on: true, tickets: [] } }
+    renderBoard('/board?project=alpha')
+    const section = within(await screen.findByRole('region', { name: /Tickets/ }))
+    expect(section.getByText('No open tickets.')).toBeInTheDocument()
+    tickets = {}
+  })
+
+  it('shows no Tickets section, and no error, to someone the tickets are refused to', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string) =>
+        path.endsWith('/tickets')
+          ? { ok: false, status: 403, statusText: 'Forbidden', json: async () => ({ error: 'not-yours', reason: 'no' }) }
+          : { ok: true, status: 200, statusText: 'OK', json: async () => answer(path) },
+      ),
+    )
+    renderBoard('/board?project=alpha')
+    await loaded()
+    await column('Done').findByText('A-DONE')
+    expect(screen.queryByRole('region', { name: /Tickets/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/403/)).not.toBeInTheDocument()
   })
 
   it('links a card to its behaviour page and names its project', async () => {

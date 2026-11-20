@@ -584,6 +584,35 @@ public sealed class GitHubCorpusDirectoryTests : IDisposable
         Assert.Null(app.Services.GetService<GitHubCorpusDirectory>());
     }
 
+    /// <summary>
+    /// kit#832: deployed, KIT_DIR is the write-back clone's behaviours, outside the image Kit runs from. A path read
+    /// off the clone is relative to the clone, as GitHub's are, not ../home/app/kit/prototypes/… from the image.
+    /// </summary>
+    [Fact]
+    public async Task A_corpus_path_read_off_a_clone_elsewhere_is_relative_to_that_clone()
+    {
+        var clone = Path.Combine(root, "home", "app", "kit");
+        Directory.CreateDirectory(Path.Combine(clone, "prototypes", "behaviour-ast", "behaviours"));
+        var env = new Dictionary<string, string?> { ["KIT_DIR"] = Path.Combine(clone, "prototypes", "behaviour-ast", "behaviours") };
+        var settings = KitSettings.FromEnvironment(k => env.GetValueOrDefault(k), RepoLayout.Root);
+        await using var app = KitServer.Build(["--urls", "http://127.0.0.1:0"], settings);
+        var corpora = app.Services.GetRequiredService<ICorpusDirectory>();
+
+        Assert.Equal("prototypes/behaviour-ast/behaviours/kit-ui.beh", corpora.RelativePath("kit-ui"));
+        Assert.Equal("prototypes/behaviour-ast/behaviours/kit-ui.notes.md", corpora.RelativeNotesPath("kit-ui"));
+        Assert.Equal(Path.GetFullPath(RepoLayout.Root), Path.GetFullPath(settings.RepoRoot));
+    }
+
+    /// <summary>A KIT_DIR that is not a checkout's prototypes/behaviour-ast/behaviours keeps its paths relative to Kit's own checkout, as before.</summary>
+    [Fact]
+    public void A_KIT_DIR_laid_out_any_other_way_keeps_paths_relative_to_Kits_checkout()
+    {
+        var env = new Dictionary<string, string?> { ["KIT_DIR"] = Path.Combine(root, "behaviours") };
+        var settings = KitSettings.FromEnvironment(k => env.GetValueOrDefault(k), RepoLayout.Root);
+
+        Assert.Equal(settings.RepoRoot, settings.CorpusRoot);
+    }
+
     private static CorpusSnapshot Snap(IProjectSource source, params (string Name, string Sha, string Text)[] files) => new()
     {
         Source = source,
