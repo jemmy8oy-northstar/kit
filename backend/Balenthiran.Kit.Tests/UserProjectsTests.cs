@@ -196,8 +196,8 @@ public class UserProjectsTests
         Assert.Equal((true, 1, 1), (health.Available, health.Covered, health.Uncovered));
         Assert.Equal([(42L, "ann-gh/app")], gh.Read);
 
-        // Signed out, or the operator with no personal GitHub: no installation, so nothing is read.
-        Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/app/health").Status);
+        // Signed out, nothing is read (BEH-GATE-H1); the operator with no personal GitHub has no installation.
+        Assert.Equal(401, router.Route("GET", "/api/github/ann-gh/app/health").Status);
         Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/app/health", SignIn(router, null, Operator)).Status);
         Assert.Equal(404, router.Route("GET", "/api/github/ann-gh/a%2Fb/health", ann).Status);
         Assert.Equal(400, router.Route("GET", "/api/github/ann-gh/../health", ann).Status);

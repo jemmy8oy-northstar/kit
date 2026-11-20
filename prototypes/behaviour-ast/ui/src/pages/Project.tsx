@@ -5,11 +5,11 @@ import { askForBehaviour, fetchNotes, leaveNote, resolveDecision } from '../api/
 import { filesOf } from '../projectFiles'
 import { useReloadableResource } from '../hooks/useResource'
 import type { Behaviour, Conflict, Feature, Note, ProjectDetail, Question } from '../api/types'
-import { behavioursUnder, featureHref, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
+import { behavioursUnder, featureHref, layersUnder, ofLayers, topLevel, withAnyUnder, type Tagged } from '../features'
 import { citationsOf } from '../notes'
 import { asksOf, type Ask } from '../asks'
 import CoverageBadge from '../components/CoverageBadge'
-import LayerChips from '../components/LayerChips'
+import LayerChips, { LayerTags } from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
 import Count from '../components/Count'
 import NotesPanel from '../components/NotesPanel'
@@ -748,6 +748,8 @@ function FeatureCard({
         <Count n={behavioursUnder(project, feature.id).size} one="behaviour" tone="primary" />
         <span className="muted id">{feature.id}</span>
       </div>
+      {/* BEH-KIND-1: the layers beneath it, as tags. */}
+      <LayerTags layers={layersUnder(project, feature.id)} />
     </Card>
   )
 }

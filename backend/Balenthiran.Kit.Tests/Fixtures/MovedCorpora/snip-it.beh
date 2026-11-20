@@ -1,0 +1,511 @@
+# snip-it's SIX REAL e2e tests, re-expressed as behaviour trees.
+#
+# Not invented. Every step below corresponds to a line that exists today in
+# snip-it frontend/e2e/editor.spec.ts on origin/dev. The point of encoding the
+# real suite rather than a toy is that the generated output can be compared
+# against hand-written code that a person actually wrote and CI actually runs.
+#
+# `contract` steps are the honest part: they are assertions the tree CANNOT
+# express, kept in so the coverage number is not flattered by omitting them.
+#
+# kit:repo jemmy8oy-northstar/snip-it@dev
+#   BEH-HEALTH-1: where this app's tests live. Hosted Kit reads them from there to count coverage.
+
+# His answer to "what is it working towards?" (BEH-NARR-2), snip-it.notes.md#2026-11-02-1137:
+#   "Struggling with uploading and finding time to create. Snip it is me experimenting with ways
+#   to speed up this process"
+# Every feature below serves that goal, so all of them sit in it.
+epic EPIC-SNIP-CREATE "Speed up making and uploading videos, so there is time to create"
+
+# ── features (snip-it.notes.md#2026-10-20-2242: "snip it needs feature organisation") ──
+# The grouping is the agent's reading of that note: deny it if it is the wrong cut.
+feature FEAT-EDITOR "The web editor: upload a take, transcribe it, cut words and pauses, export"
+  in EPIC-SNIP-CREATE
+  stage ui
+feature FEAT-TELEPROMPTER "The iPhone teleprompter app: read the script, record the take, send it to snip-it"
+  in EPIC-SNIP-CREATE
+  stage development
+
+behaviour BEH-HOME-1 "The landing page renders"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  when opens page:Home
+  then sees region:Main
+
+behaviour BEH-EDIT-1 "The editor loads a transcript and offers its toolbar"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  then sees button:SelectAll
+  then sees button:RemoveFillerWords
+  then sees button:SendForExport
+  then shows region:WordTrack "transcribe"
+
+behaviour BEH-EDIT-2 "The editor can be switched to dark mode"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  then sees button:SelectAll
+  when activates button:ToggleTheme
+
+behaviour BEH-CUT-1 "Sending for export submits a cut and surfaces the finished job"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  when activates button:RemoveFillerWords
+  when activates button:SendForExport
+  then shows region:CutStatus "is complete"
+  then sees link:Download
+  contract POST /api/cuts is sent exactly once
+  contract the body carries transcriptionJobId
+  contract the body carries every word
+  contract at least one word is marked not kept
+
+behaviour BEH-UP-1 "Uploading a file transcribes it and opens the editor"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  when opens page:Upload
+  then sees heading:TranscribeAVideo
+  when fills form:Upload with ?fields
+  when activates button:Transcribe
+  then sees button:SelectAll
+  then lands on page:TranscriptEditor
+  contract the upload is multipart/form-data
+  contract the request path is /snipit/api/transcriptions
+
+behaviour BEH-FILL-1 "Removing filler words leaves the editor interactive"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  given transcription:Completed
+  when opens page:TranscriptEditor
+  when activates button:RemoveFillerWords
+  then sees button:SendForExport
+
+# ── the unknowns mechanism, on real material ──
+# BEH-UP-1 above says "fills the upload form" and glosses over WHICH fields —
+# exactly James's "user fills out x form. This is ok but this creates unknowns."
+# It is answered not by asking the author, but by a DIFFERENT behaviour that
+# happens to name the field. That is the whole cross-resolution idea, and the
+# field name below is the real one from editor.spec.ts (`getByLabel(...)`).
+
+behaviour BEH-UP-2 "The upload form takes a single video or audio file"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  when opens page:Upload
+  when attaches file:talk_mp4 to field:VideoOrAudioFile
+  provides form:Upload.fields = VideoOrAudioFile
+
+# The editor's route carries an id. That is a hole too, and the generator refuses
+# to emit `./editor/` rather than quietly produce a test that navigates nowhere.
+# Supplying it is the same mechanism as any other unknown — one symbol table.
+behaviour BEH-EDIT-0 "The editor addresses one transcription by id"
+  in FEAT-EDITOR
+  priority 5
+  actor visitor
+  provides page:TranscriptEditor.transcriptionId = 11111111-1111-1111-1111-111111111111
+
+# ── the video pipeline (claude-code-bot#114, 2026-10-18) ──
+# James: "i want that video pipeline software that we envisioned… even if it is just
+# beginning to plan videos and scripts there or reviewing what the pipeline / boards
+# look like". Nothing had been specced for it, so everything below is INFERRED and
+# unreviewed: a proposal for him to approve or deny in Kit, not a decision.
+
+feature FEAT-PIPELINE "The video pipeline: every video from idea to published, on one board"
+  in EPIC-SNIP-CREATE
+  stage development
+
+behaviour BEH-PIPE-1 "A board shows every video as a card in one of five stages: Idea, Scripted, Recorded, Cut, Published"
+  in FEAT-PIPELINE
+  layer ux
+  source inferred claude-code-bot#114
+  review approved
+  priority 2
+  actor creator
+  contract "reviewing what the pipeline / boards look like": the board is the first screen, so the pipeline is visible before any content exists
+  contract the five stages are a guess at his flow, from note to upload; he can rename, add or drop a stage
+  contract the board is saved in the creator's browser, like the footage (snip-it#22): snip-it has no sign-in, so a server-side board would be readable by anyone with the link
+
+behaviour BEH-PIPE-2 "A creator adds a video idea as a card with a working title and a few lines of notes"
+  in FEAT-PIPELINE
+  layer ux
+  source inferred claude-code-bot#114
+  review approved
+  priority 2
+  actor creator
+  contract "beginning to plan videos": an idea needs only a title, so capturing one takes seconds
+  contract a new card lands in Idea
+
+behaviour BEH-PIPE-3 "A creator writes a video's script on its card, and the card moves to Scripted"
+  in FEAT-PIPELINE
+  layer ux
+  source inferred claude-code-bot#114
+  review approved
+  priority 2
+  actor creator
+  contract "plan videos and scripts there": the script is plain text, edited in the browser and saved with the card
+  contract a card moves stage by the creator's choice; nothing moves it behind his back
+
+behaviour BEH-PIPE-4 "The teleprompter app opens a card's script, so the words are written once"
+  in FEAT-PIPELINE
+  in FEAT-TELEPROMPTER
+  layer technical
+  source inferred claude-code-bot#114
+  review approved
+  priority 3
+  pending
+  needs-context "The app would have to sign in to snip-it to fetch a card's script, and sign-in is yours to choose. Until you do, scripts stay typed in the app, which is already how it works with Studio off."
+  actor creator
+  contract the iPhone teleprompter (claude-code-bot#105) reads the script from the card instead of a pasted copy
+  contract a take recorded against a card moves it to Recorded
+  contract his correction (snip-it.notes.md#2026-10-29-0805): "Only as an experimental feature should scripts come from snip it. For general access it's just written in the app". So this is a Studio feature (BEH-EDITION-1): with Studio off, the script is typed in the app and nothing is fetched (BEH-EDITION-2)
+
+behaviour BEH-PIPE-5 "A recorded take is cut in the editor from its card, and the card moves to Cut"
+  in FEAT-PIPELINE
+  layer ux
+  source inferred claude-code-bot#114
+  review approved
+  priority 3
+  actor creator
+  contract the card links to the existing upload, transcribe and cut flow (BEH-UP-1, BEH-CUT-1) rather than rebuilding it
+  contract the browser holds the video (snip-it#22), so the card keeps only the take's transcript id: never the footage, nor the export link (single-use, deleted as it streams), nor the edits (the editor reloads every word kept)
+  contract a transcribed take moves the card to Recorded and a finished export moves it to Cut; neither ever moves a card backwards
+
+behaviour BEH-PIPE-6 "A creator marks a video Published with its link, so the board records what shipped"
+  in FEAT-PIPELINE
+  layer ux
+  source inferred claude-code-bot#114
+  review approved
+  priority 3
+  actor creator
+  contract publishing stays manual (a pasted YouTube link); posting to YouTube for him is out of scope
+
+# ── the teleprompter app (snip-it.notes.md, 2026-10-20 22:43–22:45Z) ──
+# James, on the first TestFlight build: "it looks incredible as a tele prompter but
+# currently the speach models arent loading". Every behaviour below is from those
+# notes; the contracts are the agent's reading of them, unreviewed.
+
+behaviour BEH-TELE-1 "Speech models are managed in Settings: listed, downloaded with progress, and deleted"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 1
+  actor creator
+  contract "model management in settings rather than it just trying to download when you hit prompt": the prompter never starts a download
+  contract each model shows its state: not downloaded, downloading with a percentage, preparing, ready, or failed with the reason
+  contract the list is the English models (tiny, base, small) that WhisperKit says this iPhone can run
+  contract a ready model can be deleted to free space, and the chosen model is the one the prompter uses
+
+behaviour BEH-TELE-2 "When the speech model cannot load, the prompter says why and still works by hand"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 1
+  actor creator
+  contract "some errors messages when this happens": the message names the step that failed (download, preparing, listening) and carries the engine's own reason
+  contract with no model downloaded, the prompter points to Settings instead of downloading
+  contract recording and tapping a line to move on keep working without speech
+
+behaviour BEH-TELE-3 "A take can be watched in the app"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2245
+  review unreviewed
+  priority 2
+  actor creator
+  contract "in app video viewing": tapping a take plays it full screen with the system player, original or cut
+
+behaviour BEH-TELE-4 "The prompter has camera controls: zoom, tap to focus and expose, front or back camera"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2244
+  review unreviewed
+  priority 2
+  actor creator
+  contract "I would like some camera controls": which controls is the agent's guess; he can add or drop any
+  contract built in snip-it#56: a switch-camera button (not while recording), pinch to zoom up to 5x, tap the preview to focus and expose
+
+behaviour BEH-TELE-5 "On an iPhone 17, the front camera records a landscape take while the phone is held upright"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2244
+  review unreviewed
+  priority 2
+  actor creator
+  contract "use the iphone 17s landscape selfie video recording": the square Center Stage sensor is cropped to 16:9 through AVFoundation's dynamic aspect ratio (iOS 26)
+  contract on a phone without that camera the choice is hidden, not shown disabled
+  contract the script stays at the top of the upright screen, nearest the lens, in both shapes (the default until BEH-TELE-9 moved it to the centre on the front camera)
+  contract built in snip-it#62: a shape button above switch-camera; it measures the buffer after setting the ratio and says on screen if neither ratio gives landscape. Unverified on a real iPhone 17
+
+behaviour BEH-TELE-6 "TestFlight builds come from a release branch, not from every push to dev"
+  in FEAT-TELEPROMPTER
+  layer technical
+  source defined snip-it.notes.md#2026-10-20-2243
+  review unreviewed
+  priority 2
+  actor creator
+  contract "maybe we need a ios release branch": Codemagic builds pushes to ios-release that change ios/; dev keeps the unsigned compile check only
+  contract a Codemagic change is a platform change (claude-code-bot#83), so it goes up as its own pull request for James to merge
+  contract built in snip-it#53; the agent releases, fast-forwarding ios-release when a complete iOS feature is on dev (James on snip-it#53, 2026-10-20)
+
+# ── the teleprompter, second round (snip-it.notes.md, 2026-10-20 23:52Z to 10-21 00:01Z) ──
+
+behaviour BEH-TELE-7 "The script moves on by itself as the creator reads it aloud"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2352
+  review unreviewed
+  priority 1
+  actor creator
+  contract "the teleprompter should auto progress as the user speaks": the line in focus follows the words heard, with no tap
+  contract it only moves forward by itself, waits through pauses and ad-libs, and a tap on a line is the way back (ScriptFollower, snip-it#34)
+  contract built since snip-it#34; the 10-20 builds could not show it, because the speech model never loaded until snip-it#51
+
+behaviour BEH-TELE-8 "The prompter shows what it hears: words light up as they are spoken, and a meter shows the microphone"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-20-2353
+  review unreviewed
+  priority 1
+  actor creator
+  contract "highlight words that it has heard being spoken in a take": on the current line, each word turns yellow once the follower has passed it
+  contract "I can['t] tell if it's hearing me at all": a level meter shows the microphone's loudness against the mark below which the speech engine ignores sound, with the last few words heard beneath it
+  contract the meter's colours and placement (above the record button) are the agent's guess
+
+behaviour BEH-TELE-9 "Settings choose where the script sits on screen, how big it is and how wide it runs"
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0708
+  review unreviewed
+  priority 2
+  actor creator
+  contract "Settings to change teleprompting location and size … the screen width that it uses … on which point of the screen it shows"
+  contract "When close up you can see my eyes flickering as I read": a narrower column keeps the eyes still, so width is its own setting, not a side effect of size
+  contract "when recording in a selfie camera it can look more natural to be looking at yourself. So maybe we move the focus down to the centre": position is top, centre or bottom, and my assumption is centre by default on the front camera and top on the back
+  contract this replaces BEH-TELE-5's "the script stays at the top of the upright screen" as the default; top stays one tap away
+  contract changes show live behind the settings sheet, so he can set them while looking at himself
+  contract built in snip-it#63: a size button above close opens a short sheet (Auto, Top, Centre, Bottom; size 20 to 48 pt; width 40 to 100%), and Settings has the same controls. Unverified on a phone
+
+feature FEAT-PRODUCTIONS "Productions: a script and its takes kept together, so several videos can be worked on at once"
+  in EPIC-SNIP-CREATE
+  stage ui
+
+behaviour BEH-PROD-1 "The teleprompter opens on a list of productions, with New production at the top"
+  in FEAT-PRODUCTIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0001
+  review unreviewed
+  priority 2
+  actor creator
+  contract "enter and click new production or select an existing one": the first screen lists productions, newest first, and New production asks for a name
+  contract "production", not "video", because "videos might get confused with takes": a production is one script plus every take recorded against it
+  contract opening a production shows its script and its takes, and only that production's takes
+  contract the script and takes already on the phone become one production, named "My first production", so nothing is lost
+  contract a production can be renamed, and deleted with its takes after a confirmation
+
+feature FEAT-SCRIPT "The script as a plan: sections that fold, move and clear, and a record of which takes covered which lines"
+  in EPIC-SNIP-CREATE
+  stage ui
+
+behaviour BEH-SCRIPT-1 "A script is split into sections by markdown-style markers, and the prompter reads straight through them"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  actor creator
+  contract "use a simple # for names or —- for unnamed break": a line starting # begins a named section, and a line of --- (or an em dash and a hyphen) begins an unnamed one
+  contract "they should be able to teleprompt seamlessly": marker lines are never shown or listened for in the prompter, so a take runs across sections without a pause
+  contract text before the first marker is a section of its own, unnamed
+  contract the script is still stored as plain text, so pasting a whole script in keeps working
+
+behaviour BEH-SCRIPT-2 "Script sections fold one at a time, or all at once"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0003
+  review unreviewed
+  priority 2
+  actor creator
+  contract "fold script sections or have an option to fold all sections": each section has a disclosure arrow, and the toolbar has Fold all and Unfold all
+  contract a folded section shows its name, or "Untitled section", and its line count
+
+behaviour BEH-SCRIPT-3 "Sections can be rearranged, cleared and deleted, and every delete asks first"
+  in FEAT-SCRIPT
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0005
+  review unreviewed
+  priority 2
+  actor creator
+  contract "section management where u can rearrange sections": a Manage sections screen lists them and reorders by dragging
+  contract "a clear section button": clearing empties a section's lines and keeps its name; deleting removes the section and its marker
+  contract "a delete all sections button" sits in Manage sections, and "all delete buttons should have confirmation": clear, delete and delete all each confirm first
+
+behaviour BEH-SCRIPT-4 "The script shows which lines a production's takes have covered"
+  in FEAT-SCRIPT
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-0002
+  review unreviewed
+  priority 3
+  actor creator
+  contract "show from a script what text has been covered by what cuts": each take records the script lines the prompter followed while it was recording
+  contract the script marks each covered line with how many takes covered it, and a take's row says which lines it covers
+  contract coverage is by line, not by word: a take covers the lines the prompter was on between Record and Stop, whether it got there by hearing or by a tap
+
+# ── editions (snip-it.notes.md, 2026-10-21 16:47Z to 16:52Z, and snip-it#65 "Distribute Yours, Studio?") ──
+# His answer to #65 is in the notes: one app, a configurable UI. The cut below is the agent's reading.
+
+feature FEAT-EDITIONS "One app, two editions: a general release that runs only on the phone, and Studio features he can switch on"
+  in EPIC-SNIP-CREATE
+  stage ui
+
+behaviour BEH-EDITION-1 "Studio features are switched on and off in Settings"
+  in FEAT-EDITIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-1647
+  review unreviewed
+  priority 2
+  actor creator
+  contract "for now this experience can be toggled in settings but later this can be configured by accounts or build args": one Studio switch in Settings, stored on the phone; accounts and build flags are later and not built here
+  contract "whenever it is in premium/experimental mode for me I can always optionally toggle it off": the switch works both ways, and turning it off hides Studio features without deleting anything they made
+  contract my assumption: the switch is off on a fresh install, so the general release is what a stranger gets
+  contract my assumption: every feature that talks to a server is a Studio feature (BEH-EDITION-2), and so is anything he calls experimental
+  contract built in snip-it#67: the switch tops Settings; a phone already signed in to snip-it starts with it on, so the update took nothing away. Unverified on a phone
+
+behaviour BEH-EDITION-2 "With Studio off, the app runs entirely on the phone"
+  in FEAT-EDITIONS
+  layer technical
+  source defined snip-it.notes.md#2026-10-21-1649
+  review unreviewed
+  priority 2
+  actor creator
+  contract "base general release version: for now no api integration, fully on device": speech, recording, playback, productions and the script all work with no network
+  contract with Studio off nothing offers to send a take anywhere, and the app makes no request to snip-it or Kit
+  contract my assumption: the speech model download (BEH-TELE-1) is not an API integration, so the general release keeps it
+  contract built in snip-it#67: Studio off hides the snip-it settings and Cut pauses, the only server call the app makes
+
+behaviour BEH-EDITION-3 "Studio: a take can be saved to snip-it's server, and never is by default"
+  in FEAT-EDITIONS
+  layer technical
+  source defined snip-it.notes.md#2026-10-22-0727
+  review approved
+  priority 3
+  pending
+  needs-context "You merged snip-it#69, so saving is built but switched off. Turn it on, which adds a 50Gi volume to snip-it in the cluster? I leave it off."
+  paused until 2026-11-14
+  contract his word (snip-it.notes.md#2026-10-31-0108): "Let's pause for now I don't have any footage to add yet. But when I do we can add it". So saving stays off and the card stays paused until he has footage and resumes it
+  actor creator
+  contract "integrates with kit, kit has a volume on which it takes can be saved to - not saved by default" (snip-it.notes.md, 2026-10-21 16:49Z): a take leaves the phone only when he chooses Save on it
+  contract "I didn't mean the volume is on kit I meant the volume is on snip it": a saved take is stored on a volume belonging to snip-it's server, not Kit's
+  contract "kit can then operate on the videos on server with low friction": Kit's agent reads a saved take from snip-it, beside the production it came from
+  contract my assumption: Kit reaches a take through snip-it's API, not by mounting snip-it's volume, so the two apps share no disk
+  contract adding the volume reverses snip-it#22, which removed it on purpose, and it is a cluster and storage change, so it is his: nothing here is built until he approves this behaviour
+
+behaviour BEH-EDITION-4 "A take shows its transcript, made on the phone"
+  in FEAT-EDITIONS
+  in FEAT-TELEPROMPTER
+  layer ux
+  source defined snip-it.notes.md#2026-10-21-1652
+  review unreviewed
+  priority 3
+  actor creator
+  contract "Kit shows transcript with take locally": my reading is that the take's own screen shows what was said, transcribed on the phone, in both editions
+  contract the other reading is that Kit's web view shows a saved take with its transcript; deny this one if that is what he meant, and it moves under BEH-EDITION-3
+  contract my assumption: the words come from the speech engine that already moves the script, kept from Record to Stop, so there is no second transcription pass and no wait
+  contract a take recorded while the speech model was not listening says so, rather than showing an empty transcript as if nothing was said
+  contract built in snip-it#68: the transcript sits under the video in the take's player, saved beside the take and shared with its cut. Unverified on a phone
+
+# ── an idea, not yet work (snip-it#66, his conversation about a teleprompter that helps when you stumble) ──
+
+behaviour BEH-TELE-10 "When the creator stalls mid-sentence, the prompter offers a simpler line to read"
+  in FEAT-TELEPROMPTER
+  in FEAT-EDITIONS
+  layer ux
+  source defined snip-it#66
+  review unreviewed
+  priority 4
+  pending
+  needs-context "Is the simpler-line prompt work now, or still an idea? I leave it as an idea."
+  paused until 2026-11-14
+  actor creator
+  contract "detect a break in speech and if you aren't pausing at a line break or punctuation it shows that it is rephrasing … cancel or continue": a pause away from punctuation or a line break is a stall; a pause at one is a breath and does nothing
+  contract a rephrase appears beside the current line, marked as a suggestion; Continue reads it, Cancel keeps the script, and the script itself is only changed if he keeps the suggestion
+  contract "line break and punctuation frequency detection to identify if the user is actually using segmented text": a script with too few breaks to tell a stall from a breath turns this off and says why
+  contract my assumption: it is a Studio feature (BEH-EDITION-1), and the rewrite runs on the phone, so it does not break BEH-EDITION-2
+
+# His 2026-11-02 18:50Z note: a second channel that posts more often, made from his work with Kit.
+# Ideas only, in his words: "Let's try produce something quality before we post anything".
+
+feature FEAT-BUILD-CHANNEL "A second channel whose videos are made from his Kit notes and chats: what he asked, the spec it became, and the feature built"
+  in EPIC-SNIP-CREATE
+  stage problem
+
+behaviour BEH-BUILD-1 "A video shows one of his Kit notes typed out, the spec it became, and the feature being built, ending on the screen it made"
+  in FEAT-BUILD-CHANNEL
+  layer ux
+  source defined snip-it.notes.md#2026-11-02-1850
+  review unreviewed
+  priority 3
+  pending
+  needs-context "Draft 3 is on kit#723 (2026-11-06): a 34s Short, private. Your verdict goes into the playbook before the next cut."
+  actor creator
+  contract "I am thinking we can keep the current channel as a more personal channel where I post videos when I have time or have something significant that I want to update on. And then create a new channel where the posting frequency is higher and we can use my interactions with kit to form the videos"
+  contract "Using messages from kit chat or from kit notes and show maybe show them being typed out. And then show the spec generated if applicable and then some visual showing the feature being implemented. I am thinking some rendered visuals of the ui maybe some code being written or something like that"
+  contract "I think first step is identifying some good candidates for this style of video. Let's try produce something quality before we post anything. I think this can help well with our kit marketing as well"
+  contract my view: yes. Each candidate already has every part on record, with nothing to film: his note's words with their time, the spec lines that quote it, the pull request's diff, the screenshots taken before merging, and the time it went live. A note-to-live time measured in minutes is the hook, and it is true
+  contract my assumption, the first three candidates, all from 2026-11-02: (1) "I don't like the initial entry point for the chat… think chat gpt think Claude" (14:12Z), with Chat before and after, live by 17:39Z (kit#628); (2) "Kit chat needs the capability to approve answer deny… maybe an undo button" (17:53Z), with the agent approving on his word and an Undo, live by 18:41Z (kit#633); (3) "could we add a new chat feature" (12:56Z), a whole page live by 13:47Z the same day (kit#624)
+  contract my assumption: I make the first one as a private draft he watches before anything is posted; posting, the new channel itself and anything public stay his
+  contract my assumption: this is the format the first-video outline I offered on claude-code-bot#131 (default 2026-11-06) now takes, so that offer becomes candidate (2) drafted this way rather than a separate script
+  contract "this doesn't have to be one feature per video specifically, it could be a collection and then all grind implemented together" (snip-it.notes.md#2026-11-02-1913)
+  contract "You are also given (within reason) a bit of creative license to edit the messages to cut down fluff or improve wording etc. We will probably also need some disclaimer to show not actual kit use or not exact example or something but these could go in the description" (snip-it.notes.md#2026-11-02-1913)
+  contract my assumption: an edited message keeps its meaning and never gains a claim he did not make; every video whose messages were edited says so in its description
+  contract "I'm going to be brutally honest. I don't like it… mainly the fonts. The text looks really bad… I think the headline note to live in 48 minutes is not that impressive… A stronger message would be something like bringing engineering tools to non engineers. And this sort of message will become the message that we use to make kit" (kit#723, on draft 1)
+  contract "we definitely need to be using opus for this… it is worth researching workflows and skills used to make the best videos and follow that. Do not be afraid to use inspiration from online" (kit#723)
+  contract "it is worth recording what my feedback is on a video and including it in the video creation playbook/loop… in the create stage and the review stage… in the return stage as well make it clear that you need to update the playbook with my feedback otherwise u won't improve" (kit#723): docs/video-playbook.md is that loop, and his feedback log in it is read at create and review and appended at return
+  contract "Yh shorts works tbh. We can have some long form content later" (kit#723): build-channel videos are YouTube Shorts, vertical, 30 to 45 seconds
+  contract my assumption: draft 2 tells "Engineers don't just write code. They write specs. Tests. Reviews. Now so can you." on a real note of his, and never sells speed
+  contract my assumption: drafts are rendered with Remotion (free for one person or a company of up to three; it brings its own ffmpeg, which the pod's broken one needed), installed in a scratch directory on the bot's volume, never into a repo; if Northstar grows past three people, its licence is re-checked first
+
+behaviour BEH-BUILD-2 "The agent drafts build-channel videos for him to watch, stored on snip-it's own volume, with its usage shown where he can see it"
+  in FEAT-BUILD-CHANNEL
+  layer technical
+  source defined snip-it.notes.md#2026-11-02-1913
+  review unreviewed
+  priority 3
+  pending
+  needs-context "No volume PR was ever opened. Drafts 1 to 3 all went up on kit#723. Then you paused drafts there on 11-06 to save tokens for the pipeline. A volume alone also shows you nothing: it needs a Drafts page and an upload route as well, and OCI's smallest volume is 50Gi, a few dollars a month. Want it now? If you stay silent, it stays paused behind the pipeline."
+  actor creator
+  contract "Also it would be good for you to put some drafts together for me. Feel free to provision a volume for snipit to make this easier for yourself and store this for yourself. Keep an eye on the volume usage. Maybe give me some location to give me visibility into this"
+  contract my assumption: the drafts volume is snip-it's (as BEH-EDITION-3 has it: the volume is on snip-it, not Kit), small to start (5Gi), and separate from the 50Gi take store BEH-EDITION-3 waits on; adding it is a chart change, so it goes up as its own pull request for him to merge
+  contract my assumption: the place he looks is a Drafts page on snip-it listing each draft, its size, and the volume's used and free space, so a draft and the space it takes are seen together
+  contract my assumption: no video is committed to a repo, as renders would grow it for good; until the volume exists, the first draft is shown to him as its script and stills in a pull request
+  contract his question (snip-it.notes.md#2026-11-15-1254): "he doesn't see the volume PR in snip-it… has that PR been opened? If yes, what is its number and link. If not, why not, and what is blocking it. Also say whether draft 1 went up as kit#723 and whether a volume PR was ever created"
+  contract my answer: no volume pull request was ever opened, in snip-it or anywhere else. Draft 1 went up as kit#723 (2026-11-02), and drafts 2 and 3 went onto the same pull request (draft 3 on 2026-11-06). The renders are kept on the bot's own volume, outside every repo. Two things held the volume back. This card waited on his view of draft 1, and then on kit#723 he wrote "Stop churning this for now conserve tokens for resolving the kit pipeline", so all draft work paused
+  contract found 2026-11-15: the 5Gi in my assumption above was wrong. snip-it#22 found OCI's smallest block volume is 50Gi, and snip-it's chart has no volume at all, on purpose (helm/values.yaml). A volume is a new PVC template, and with one pod writing to it, the deploy needs Recreate. It also costs a small monthly sum, and spending money is his call. A volume alone shows him nothing: my pod cannot write to snip-it's volume, so drafts also need an upload route and the Drafts page this card names
+  contract my assumption: it stays paused until the pipeline work he put first is settled. When it starts, the chart change (a 50Gi PVC) goes up as its own pull request for him to merge, then the upload route and the Drafts page
+
+behaviour BEH-BUILD-3 "Some videos are compilations: how an app grew from its start, or a milestone, told through many of his notes, chats and features"
+  in FEAT-BUILD-CHANNEL
+  layer ux
+  source defined snip-it.notes.md#2026-11-02-1913
+  review unreviewed
+  priority 4
+  pending
+  needs-context "A compilation uses the style of draft 1 (kit#723), so it waits on your view of that draft. If no answer by 2026-11-09, I follow draft 1's style."
+  actor creator
+  contract "Also we could have some other videos which are more like a compilation showing how an app has evolved from the start or a significant milestone with a load of examples of notes and or chats and or feature"
+  contract my assumption: Kit's git history already dates every note and the pull request that built it, so a compilation is assembled from the record rather than filmed

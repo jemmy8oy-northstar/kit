@@ -7,8 +7,9 @@ The Owner's feedback log at the bottom is part of the loop. Read it at the start
 
 ## 0. Defaults (change only via RETURN)
 
-- **Model:** the creative pass (concept, script, storyboard, type and motion choices) runs on **Opus**. Cheaper models may do mechanical work only: rendering, frame extraction, file shuffling.
+- **Model:** the creative pass (concept, script, storyboard, type and motion choices) runs on **Fable while his plan includes it (to 2026-11-16), and on Opus after that**: it is less defined work, the one place his claude-code-bot#138 (2026-11-11, "use opus and selectively use fable when we r doing less defined work such as the video creation") keeps Fable. Review runs on Opus. Cheaper models may do mechanical work only: rendering, frame extraction, file shuffling.
 - **Tool:** Remotion (React, frame-driven), using the official `remotion-best-practices` agent skill rules. HyperFrames (HTML + GSAP, Apache-2.0) is the fallback. See Research notes §2.
+- **Start from the template, not a blank project:** `video-templater/remotion/` on its `dev` branch (the shared Remotion kit: `lib.mjs`, `render-stills.mjs`, `render-video.mjs`) and `video-templater/videos/kit-build-channel-short/` (the first Short made with it). Copy, don't fork it into kit; a tool improved for one video goes back into video-templater by PR, so the next one starts from it (his #138: "pushing the tools you use to make videos to git so that they can be reused").
 - **Format:** 1080×1920 vertical, 30 fps, 30–45 s. Make a 16:9 cut only as a derivative. His word (kit#723, 2026-11-06): "Yh shorts works tbh. We can have some long form content later".
 - **Message spine:** *engineering tools for people who aren't engineers.* Kit gives a non-engineer the things engineers rely on: a spec, tests, review and a safe release. **Don't sell speed.** "Note to live in 48 minutes" was rejected as unimpressive.
 - **Type system** (one family, two weights max):
@@ -23,7 +24,7 @@ The Owner's feedback log at the bottom is part of the loop. Read it at the start
 
 Before writing anything:
 - [ ] Re-read the **Owner's feedback log**, every entry. Write the 3 most relevant lessons at the top of the storyboard file.
-- [ ] Confirm the creative session is on Opus. Record the model in the storyboard header.
+- [ ] Confirm the creative session is on the model §0 names for today's date (never Sonnet or Haiku). Record the model in the storyboard header.
 - [ ] Pick a true story from Kit's real history: a real note, the real spec it became, real tests, the real live URL. Nothing staged that didn't happen.
 
 Script:

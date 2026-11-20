@@ -231,11 +231,12 @@ public class PendingEditsTests
     }
 
     [Fact]
-    public void It_is_a_read_so_a_locked_Kit_serves_it_without_a_session()
+    public void It_is_a_read_so_a_locked_Kit_refuses_it_without_a_session()
     {
         var reader = new ScriptedReader(new PendingEdits());
 
-        Assert.Equal(200, Router(reader, password: "pw").Route("GET", "/api/projects/snip-it/pending").Status);
+        // BEH-GATE-H1 (kit#795): nothing of Kit is read signed out.
+        Assert.Equal(401, Router(reader, password: "pw").Route("GET", "/api/projects/snip-it/pending").Status);
     }
 
     [Fact]

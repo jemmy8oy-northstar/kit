@@ -102,7 +102,7 @@ public class AccountsTests
             "/api/projects/kit/schedule", "/api/projects/kit/bindings", "/api/projects/kit/behaviours",
             "/api/projects/kit/behaviours/BEH-1/title", "/api/projects/kit/behaviours/BEH-1/review",
             "/api/projects/kit/behaviours/BEH-1/paused", "/api/projects/kit/behaviours/BEH-1/remove",
-            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote", "/api/projects/kit/conflicts", "/api/projects/kit/depth","/api/settings/idle",
+            "/api/projects/kit/behaviours/BEH-1/priority", "/api/projects/kit/promote", "/api/projects/kit/conflicts", "/api/projects/kit/depth","/api/settings/idle", "/api/settings/wake",
             "/api/projects/kit/behaviours/BEH-1/steps/0", "/api/projects/kit/triage", "/api/projects/kit/chat",
         };
 
@@ -112,7 +112,13 @@ public class AccountsTests
             Assert.Equal(403, refused.Status);
             Assert.Equal("not-yours", Assert.IsType<ApiError>(refused.Body).Error);
 
-            // The same request from him passes the gate, whatever the route then makes of it.
+            // The same request from him passes the gate, whatever the route then makes of it. The wake
+            // route needs no body, so from him it would really write; WakeTests covers his side of it.
+            if (path == "/api/settings/wake")
+            {
+                continue;
+            }
+
             var his = router.Route("POST", path, him, body: Json(new { }));
             Assert.NotEqual(401, his.Status);
             Assert.NotEqual(403, his.Status);
@@ -129,9 +135,8 @@ public class AccountsTests
         Assert.Empty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", ann).Body).Projects);
         Assert.Empty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", ann).Body).Entries);
 
-        // Not an empty Kit: he, and an anonymous reader (BEH-GATE-H1), still see the projects.
+        // Not an empty Kit: he still sees the projects.
         Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", him).Body).Projects);
-        Assert.NotEmpty(Assert.IsType<ProjectList>(router.Route("GET", "/api/projects").Body).Projects);
         Assert.NotEmpty(Assert.IsType<ActivityFeed>(router.Route("GET", "/api/activity", him).Body).Entries);
     }
 
@@ -149,28 +154,31 @@ public class AccountsTests
         Assert.Null(hers.Schedule); // BEH-NOTIFY-5: nor when it next wakes
         Assert.NotEmpty(Assert.IsType<NotificationFeed>(router.Route("GET", "/api/notifications", him).Body).Entries);
 
-        // Unlike the projects (BEH-GATE-H1), the feed comes from a private repo: no session, no feed.
+        // No session, no feed (BEH-GATE-H1).
         var anonymous = router.Route("GET", "/api/notifications");
         Assert.Equal(401, anonymous.Status);
         Assert.Equal("not-signed-in", Assert.IsType<ApiError>(anonymous.Body).Error);
     }
 
     [Fact]
-    public void A_user_may_still_read_one_of_his_projects_by_its_url()
+    public void A_user_cannot_read_one_of_his_projects_by_its_url()
     {
-        // His projects live in a public repo, so a URL serves them to a user as to anyone (BEH-GATE-H1).
+        // His words (kit#795): "Viewable kit specs should be determined by the projects in your github".
         var router = Router(Seeded());
         var ann = Cookie(SignIn(router, "ann", AnnPassword));
+        var him = Cookie(SignIn(router, null, Operator));
 
-        foreach (var path in new[] { "/api/projects/kit", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/pending" })
+        foreach (var path in new[] { "/api/projects/snip-it", "/api/projects/kit/notes", "/api/projects/kit/schedule", "/api/projects/kit/pending", "/api/projects/kit/history" })
         {
             var hers = router.Route("GET", path, ann);
-            var anyone = router.Route("GET", path);
-            Assert.Equal(anyone.Status, hers.Status);
-            Assert.Equal(JsonSerializer.Serialize(anyone.Body), JsonSerializer.Serialize(hers.Body));
+            Assert.Equal(403, hers.Status);
+            Assert.Equal("not-yours", Assert.IsType<ApiError>(hers.Body).Error);
+            Assert.Equal(200, router.Route("GET", path, him).Status);
         }
 
-        Assert.Equal(200, router.Route("GET", "/api/projects/kit", ann).Status);
+        // A name that exists nowhere, or does not even decode, answers the same, so she cannot tell which of his exist.
+        Assert.Equal(403, router.Route("GET", "/api/projects/no-such-app", ann).Status);
+        Assert.Equal(403, router.Route("GET", "/api/projects/%zz/notes", ann).Status);
     }
 
     [Fact]

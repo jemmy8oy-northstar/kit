@@ -121,6 +121,23 @@ describe('the projects view', () => {
     expect(epic).toHaveAttribute('href', '/projects/snip-it/epics/EPIC-SHARE')
   })
 
+  it('draws an epic tag apart from the parent badges, so no badge tone or project colour is used (BEH-EPIC-3)', async () => {
+    const withEpic: ProjectDetail = {
+      ...tagged,
+      epics: [{ id: 'EPIC-SHARE', title: 'Share clips', at: 'snip-it.beh:1' }],
+      features: tagged.features.map((f) => (f.id === 'FEAT-CARD' ? { ...f, epics: ['EPIC-SHARE'] } : f)),
+    }
+    renderAt('/projects/snip-it/features/FEAT-CARD', withEpic)
+
+    const parents = await screen.findByRole('region', { name: 'In' })
+    const epic = within(parents).getByRole('link', { name: 'Share clips' })
+    expect(epic.querySelector('.ds-badge')).toBeNull()
+    // The feature parents are still badges; the epic is the other role.
+    const featureParents = within(parents).getAllByRole('link', { name: /Editor|Home/ })
+    expect(featureParents.length).toBe(2)
+    expect(featureParents.every((a) => a.querySelector('.ds-badge') !== null)).toBe(true)
+  })
+
   it('BEH-FEAT-2: one behaviour tagged into two features is listed under both', async () => {
     renderAt('/projects/snip-it/features/FEAT-HOME')
 
@@ -208,6 +225,27 @@ describe('BEH-KIND-2: a project filters by layer', () => {
     const contents = await screen.findByRole('region', { name: 'Contents' })
     expect(within(contents).getByRole('link', { name: 'Editor' })).toBeInTheDocument()
     expect(within(contents).getByRole('link', { name: 'Home' })).toBeInTheDocument()
+  })
+
+  // The app has ui, technical and ux beneath it. Editor has technical (b1) and, through Clip card
+  // (a child of both Editor and Home), ui and ux. Home has ui and ux only, through Clip card.
+  const tagsOf = (group: HTMLElement) => within(group).getAllByText(/^(ui|ux|technical)$/).map((e) => e.textContent)
+
+  it('BEH-KIND-1: a feature card on the project page shows the layers beneath it as tags', async () => {
+    renderAt('/projects/snip-it', layered)
+    const features = await screen.findByRole('region', { name: 'Features' })
+    const appCard = within(features).getByRole('link', { name: 'The app' }).closest('li')!
+    expect(tagsOf(within(appCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux', 'technical'])
+  })
+
+  it('BEH-KIND-1: a feature page shows its own layers, and each child feature card its own', async () => {
+    renderAt('/projects/snip-it/features/FEAT-APP', layered)
+    const contents = await screen.findByRole('region', { name: 'Contents' })
+    const editorCard = within(contents).getByRole('link', { name: 'Editor' }).closest('li')!
+    expect(tagsOf(within(editorCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux', 'technical'])
+    const homeCard = within(contents).getByRole('link', { name: 'Home' }).closest('li')!
+    expect(tagsOf(within(homeCard).getByRole('group', { name: 'Layers' }))).toEqual(['ui', 'ux'])
+    expect(tagsOf(screen.getByRole('group', { name: 'Layers of this feature' }))).toEqual(['ui', 'ux', 'technical'])
   })
 })
 

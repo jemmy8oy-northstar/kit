@@ -30,11 +30,18 @@ name: CI
 # check over any OTHER app's corpus: `kit check <app> --repo <path>` needs that
 # app's repository, and wiring one in would pin kit's CI to its HEAD.
 
+# 💸 Only promotions run here (kit#663). Kit is private, so every minute comes out
+# of the org's 2,000 free a month, and running on every PR into `dev` and every
+# push to it spent 1,533 by 12 November. Deploys already build from `main` only,
+# so the gate that protects production is the PR into `main`, and that still
+# runs. Work into `dev` is gated by the full suite run locally (verify.js) before
+# it merges. `workflow_dispatch` runs this on any branch when that is in doubt.
 on:
   pull_request:
-    branches: ["**"]
+    branches: [main]
   push:
-    branches: [main, dev]
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

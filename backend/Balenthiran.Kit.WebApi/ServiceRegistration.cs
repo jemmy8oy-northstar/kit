@@ -14,7 +14,7 @@ public static class ServiceRegistration
     public static IServiceCollection AddKitServices(this IServiceCollection services, KitSettings settings)
     {
         services.AddSingleton(settings);
-        var disk = new CorpusDirectory(settings.Dir, settings.RepoRoot);
+        var disk = new CorpusDirectory(settings.Dir, settings.CorpusRoot);
         if (settings.Projects.Count == 0)
         {
             services.AddSingleton<ICorpusDirectory>(disk);
@@ -93,14 +93,39 @@ public static class ServiceRegistration
                 throw new InvalidOperationException("KIT_PIPELINE is on but KIT_RUNNER_POOL_TOKEN is not set: the pipeline's runs need the runner pool");
             }
 
+            // BEH-ORCH-8: the notes a triage sorted are the accounts' database when there is one; without, they die with the pod.
+            services.TryAddSingleton<ITriagedNoteStore>(_ => settings.Accounts ? new PostgresTriagedNoteStore(settings.ConnectionString()!) : new MemoryTriagedNoteStore());
+            // BEH-ORCH-11: so are the tickets, which hold the pipeline's work items across a restart.
+            services.TryAddSingleton<ITicketStore>(_ => settings.Accounts ? new PostgresTicketStore(settings.ConnectionString()!) : new MemoryTicketStore());
             services.TryAddSingleton(sp => new Pipeline(
                 sp.GetRequiredService<ICorpusDirectory>(),
                 sp.GetRequiredService<RunnerPool>(),
                 sp.GetRequiredService<IAgentRunStore>(),
-                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild),
+                new StageModelSettings(settings.StageModelTriage, settings.StageModelReview, settings.StageModelSpec, settings.StageModelBuild, settings.StageModelReviewLow, settings.StageModelContext, settings.StageModelResolve, settings.StageModelTest),
                 clock: sp.GetService<TimeProvider>(),
                 projects: settings.PipelineProjects,
-                pulls: sp.GetService<IPullRequestOpener>()));
+                pulls: sp.GetService<IPullRequestOpener>(),
+                turns: new StageTurnSettings(settings.StageTurnsTriage, settings.StageTurnsReview, settings.StageTurnsSpec, settings.StageTurnsBuild, settings.StageTurnsContext, settings.StageTurnsResolve, settings.StageTurnsTest),
+                scheduled: settings.PipelineScheduled,
+                sorted: sp.GetRequiredService<ITriagedNoteStore>(),
+                merger: sp.GetService<IPullRequestMerger>(),
+                merge: settings.PipelineMerge,
+                tickets: sp.GetRequiredService<ITicketStore>(),
+                jobs: settings.PipelineJobs.ToHashSet(),
+                runRetries: Pipeline.RunRetries));
+            services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
+
+            // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD, KIT_PIPELINE_JOB_MERGE) exists to take a waiting ticket to its run (or, for merge, its pull request to a merge).
+            foreach (var stage in settings.PipelineJobs)
+            {
+                services.AddSingleton<IHostedService>(sp => new PipelineJob(sp.GetRequiredService<Pipeline>(), stage, settings.PipelineJobInterval));
+            }
+
+            // BEH-ORCH-10: only with KIT_PIPELINE_MERGE=on does anything look at the built pull requests.
+            if (settings.PipelineMerge)
+            {
+                services.AddHostedService(sp => new PipelineMerger(sp.GetRequiredService<Pipeline>()));
+            }
         }
 
         services.TryAddSingleton<IAgentRunLauncher>(_ => new NoRunnerLauncher());
@@ -158,6 +183,10 @@ public static class ServiceRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton(sp => TokenSource(settings, GitHubClient(sp), sp.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<IPullRequestOpener>(sp => new GitHubPullRequestOpener(
+            GitHubClient(sp),
+            sp.GetRequiredService<IGitHubTokenSource>(),
+            settings.GitRepository));
+        services.TryAddSingleton<IPullRequestMerger>(sp => new GitHubPullRequestOpener(
             GitHubClient(sp),
             sp.GetRequiredService<IGitHubTokenSource>(),
             settings.GitRepository));
