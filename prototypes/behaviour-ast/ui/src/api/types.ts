@@ -14,6 +14,8 @@
 // signal unavailable differently: the list sends `covered: null`, the detail
 // endpoint omits the key. Neither ever means zero.
 
+import type { RepoFile } from '../stackDiagram'
+
 export interface CoverageCountsAvailable {
   available: true
   covered: number
@@ -342,6 +344,8 @@ export interface ProjectDetail {
   goal?: 'maintained'
   /** BEH-HEALTH-4: whether its recorded test links still hold. Absent when no link has a hash recorded. */
   links?: LinkHealth
+  /** BEH-ARCH-4: the repo's own files the stack diagram is drawn from. Absent until the server serves them. */
+  repoFiles?: RepoFile[]
 }
 
 /** A test link whose recorded hash no longer matches the code it exercises. */

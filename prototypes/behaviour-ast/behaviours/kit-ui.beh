@@ -2756,6 +2756,13 @@ behaviour BEH-ARCH-4 "A project's architecture page draws a diagram of its stack
   contract it extends BEH-ARCH-1 and does not change it
   contract my assumption: the diagram is drawn by plain code from what the repo declares, with no model, so it costs nothing and cannot vary between runs
   contract his note (kit-ui.notes.md#2026-11-15-1252): "do not backlog it. Keep it as a pending behaviour at low priority, so higher-priority work is built first. The layout and whether anything from the spec is drawn stay open." So it is in the Queue at priority 5, the lowest, and the layout and what is drawn are decided when it is built
+  contract built: stackDiagram.ts is plain code over the repo's files (RepoFile: path and text). Files are read in path order, so the same files give the same diagram whatever order they arrive in; no model or network is touched
+  contract built: the parts are declared in the repo: a `.kit/stack` file with `database <name> <engine>` and `external-api <name> <url>` lines, and any `Chart.yaml` is the Helm chart, named by its `name:` line (or its directory). Blank lines and # comments are skipped, and an unknown line declares nothing
+  contract my assumption: the `.kit/stack` file and its two keywords are my choice of where a repo declares its databases and external APIs; the owner has not named one, so it is to be confirmed or replaced
+  contract my assumption: a repo that declares none of the three draws no diagram and says so in words, rather than an empty picture
+  contract built: the Architecture tab draws the diagram under the decisions as a plain grouped list (Databases, External APIs, Helm chart), each with the file it came from. The layout is left open by the owner, so this is the simplest form that can be replaced
+  contract my assumption: the diagram is drawn only from what the repo declares; nothing from the spec (behaviours, features) is drawn
+  contract my assumption: the Architecture tab shows the diagram from the project's repoFiles, which the server does not serve yet; until it does, the tab shows the decisions alone, as before
 
 # Kit's own architecture decisions (BEH-ARCH-1 slice A), read off the repo as it stands. Every one is
 # my reading, so every one is unreviewed until he rules on it.
