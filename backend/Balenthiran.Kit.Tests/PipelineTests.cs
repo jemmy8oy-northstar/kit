@@ -345,6 +345,43 @@ public class PipelineTests
     }
 
     [Fact]
+    public void BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h1", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+        var resolve = rig.Store.Create("operator", "other", "m", "h2", clock.GetUtcNow(), "a-conflict", "resolve");
+        rig.Pool.Enqueue(resolve, "tok", "o/other", "t", "dev", 15);
+        var test = rig.Store.Create("operator", "kit", "m", "h3", clock.GetUtcNow(), "list-sorting", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+
+        // Oldest first among test and merge runs, and the build only once neither is left.
+        Assert.Equal(resolve.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(test.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+    }
+
+    [Fact]
+    public void BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one()
+    {
+        var clock = new Ticking();
+        using var rig = new Rig(clock: clock);
+        var running = rig.Store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), "first", "build");
+        rig.Pool.Enqueue(running, "tok", "o/r", "t", "dev", 15);
+        Assert.Equal(running.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+
+        var test = rig.Store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "second", "test");
+        rig.Pool.Enqueue(test, "tok", "o/r", "t", "dev", 15, Orchestrator.TestSeconds);
+        var build = rig.Store.Create("operator", "kit-ui", "m", "h3", clock.GetUtcNow(), "a-page", "build");
+        rig.Pool.Enqueue(build, "tok", "o/ui", "t", "dev", 15);
+
+        Assert.Equal(build.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
+        Assert.True(RunnerPool.GoesFirst("test") && RunnerPool.GoesFirst("resolve"));
+        Assert.False(RunnerPool.GoesFirst("build") || RunnerPool.GoesFirst("triage") || RunnerPool.GoesFirst(null));
+    }
+
+    [Fact]
     public void BEH_ORCH_17_A_run_with_no_limit_of_its_own_keeps_the_150_minute_lease_and_no_give_up_time()
     {
         var clock = new Ticking();
