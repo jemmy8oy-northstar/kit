@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card } from '@jemmy8oy-northstar/design-system'
 import { replyOnTicket } from '../api/client'
 import { useReloadableResource } from '../hooks/useResource'
-import { loadTickets, MAX_REPLY, openTickets } from '../tickets'
+import { loadTickets, MAX_REPLY, openTickets, ticketColumns } from '../tickets'
 import ResourceView from './Resource'
 
 /** BEH-ORCH-16 slice 3: his answer to what blocked a ticket, which wakes the first agent on it. */
@@ -53,14 +53,18 @@ export default function Tickets({ app }: { app: string }) {
       {(list) => {
         if (!list || !list.on) return null
         const open = openTickets(list.tickets)
+        const columns = ticketColumns(list.tickets)
         return (
           <section aria-labelledby="board-tickets" className="tickets">
             <h2 id="board-tickets">
               Tickets <span className="board-count">{open.length}</span>
             </h2>
             {open.length === 0 && <p className="muted">No open tickets.</p>}
-            <ul className="cards">
-              {open.map((t) => (
+            {columns.map((column) => (
+              <section key={column.state} aria-label={column.state} data-state={column.state} className="ticket-column">
+                <h4 className="muted">{column.state}</h4>
+                <ul className="cards">
+              {column.tickets.map((t) => (
                 <li key={t.slug} data-ticket={t.slug}>
                   <Card className="board-card">
                     <h3>
@@ -109,7 +113,9 @@ export default function Tickets({ app }: { app: string }) {
                   </Card>
                 </li>
               ))}
-            </ul>
+                </ul>
+              </section>
+            ))}
           </section>
         )
       }}
