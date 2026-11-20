@@ -49,6 +49,23 @@ describe('Runs', () => {
     expect(items[1]).toHaveTextContent('running')
   })
 
+  it('renders the runs in the order the API sends, with no client-side re-sort (BEH-UI-7)', async () => {
+    // Oldest first on purpose: if the page re-sorted by start time, the first row would be the 9:00 run.
+    mockApi({
+      capUsd: 5,
+      runs: [
+        { ...run, id: 'early', project: 'vocab', started: '2026-11-04T08:00:00Z' },
+        { ...run, id: 'late', project: 'kit', started: '2026-11-06T09:00:00Z' },
+      ],
+    })
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Agent runs' })).getAllByRole('listitem')
+    expect(items).toHaveLength(2)
+    expect(items[0]).toHaveTextContent('vocab')
+    expect(items[1]).toHaveTextContent('kit')
+  })
+
   it('says why a failed run failed in plain words', async () => {
     mockApi({
       capUsd: 5,
@@ -164,6 +181,25 @@ describe('Runs', () => {
     const items = within(await screen.findByRole('list', { name: 'Pipeline work items' })).getAllByRole('listitem')
     expect(items.find((li) => li.textContent?.includes('merged-one'))).toHaveTextContent('Merged')
     expect(items.find((li) => li.textContent?.includes('open-one'))).not.toHaveTextContent('Merged')
+  })
+
+  it('BEH-ORCH-10 shows why a built pull request is not merged yet, under its link', async () => {
+    mockBoth(
+      { capUsd: 5, runs: [run] },
+      {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'off-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/1', mergeNote: 'not merged: KIT_PIPELINE_MERGE is off, so Kit does not look at this pull request' },
+          { project: 'kit', slug: 'waiting-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/2', mergeNote: 'waiting for its checks to pass, or for GitHub to say whether it can merge' },
+        ],
+      },
+    )
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Pipeline work items' })).getAllByRole('listitem')
+    expect(items.find((li) => li.textContent?.includes('off-one'))).toHaveTextContent('not merged: KIT_PIPELINE_MERGE is off')
+    expect(items.find((li) => li.textContent?.includes('waiting-one'))).toHaveTextContent('waiting for its checks to pass')
+    expect(items.find((li) => li.textContent?.includes('waiting-one'))).not.toHaveTextContent('Merged')
   })
 
   it('BEH-ORCH-9 shows no pipeline section when the pipeline is off', async () => {

@@ -667,6 +667,8 @@ export interface PipelineItem {
   pullRequest?: string | null
   /** Kit merged the pull request (BEH-ORCH-10). */
   merged?: boolean
+  /** Why a built pull request is not merged yet: merging is off, or what it still waits for (BEH-ORCH-10). */
+  mergeNote?: string | null
   /** The bundle's Flag line, without "Flag: ". */
   flag?: string | null
   /** agreed, revised or escalated; null when it was not reviewed. */
