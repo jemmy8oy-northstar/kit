@@ -278,9 +278,11 @@ public sealed partial class GitHubPullRequestOpener(
 
         // BEH-ORCH-12: a private repo's pull request into the base has no Actions run (CI runs only for main), so on the
         // merge job's path none is required; Kit's own test run stands in for it below. A run that exists still counts.
-        var kitTests = updateFirst && p.TryGetProperty("base", out var baseObj) && baseObj.ValueKind == JsonValueKind.Object
+        // A public repo's pull request with no Actions run at its head is tested by Kit too: kit went public with CI
+        // still running only for main (claude-code-bot#145), and waiting for a run that never starts merges nothing.
+        var kitTests = updateFirst && (list.GetArrayLength() == 0 || (p.TryGetProperty("base", out var baseObj) && baseObj.ValueKind == JsonValueKind.Object
             && baseObj.TryGetProperty("repo", out var baseRepo) && baseRepo.ValueKind == JsonValueKind.Object
-            && baseRepo.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == JsonValueKind.True;
+            && baseRepo.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == JsonValueKind.True));
         var waiting = !kitTests && list.GetArrayLength() == 0;
         var succeeded = false;
         foreach (var run in list.EnumerateArray())
@@ -396,9 +398,33 @@ public sealed partial class GitHubPullRequestOpener(
             return Failed(repo.Reason ?? $"GitHub answered {repo.Status} with JSON that is not a repository");
         }
 
+        // A public repo rides only when no pull request has an Actions run at its head: kit went public with CI still
+        // running only for main (claude-code-bot#145), so Kit tests its pull requests, and one train saves a test each.
         if (!r.TryGetProperty("private", out var p) || p.ValueKind != JsonValueKind.True)
         {
-            return new TrainBuilt(null, null, [], [], NotPrivate: true);
+            foreach (var url in pullRequestUrls)
+            {
+                var page = PullPage().Match(url);
+                var pull = page.Success && page.Groups["repo"].Value == repository ? await SendAsync(HttpMethod.Get, new Uri(root, $"pulls/{page.Groups["number"].Value}"), token, null, cancellationToken) : default;
+                if (pull.Json is not { ValueKind: JsonValueKind.Object } pj
+                    || !pj.TryGetProperty("head", out var head) || head.ValueKind != JsonValueKind.Object
+                    || !head.TryGetProperty("sha", out var hs) || hs.ValueKind != JsonValueKind.String)
+                {
+                    return Failed($"whether {url} has its own checks could not be read");
+                }
+
+                var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(hs.GetString()!)}&per_page=1"), token, null, cancellationToken);
+                if (runs.Reason is not null || runs.Json is not { ValueKind: JsonValueKind.Object } rj
+                    || !rj.TryGetProperty("workflow_runs", out var list) || list.ValueKind != JsonValueKind.Array)
+                {
+                    return Failed($"whether {url} has its own checks could not be read");
+                }
+
+                if (list.GetArrayLength() > 0)
+                {
+                    return new TrainBuilt(null, null, [], [], NotPrivate: true);
+                }
+            }
         }
 
         if (await HeadAsync(root, baseBranch, token, cancellationToken) is not { } baseSha)

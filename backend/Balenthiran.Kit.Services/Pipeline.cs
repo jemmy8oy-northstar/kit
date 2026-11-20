@@ -77,9 +77,6 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // Tickets that rode a train that failed, or that could not join one: they go the single way from then on. In memory only.
     private readonly HashSet<(string App, string Slug)> offTrain = [];
 
-    // Repos found to be public: their pull requests have Actions CI, so they get no train.
-    private readonly HashSet<string> publicRepos = new(StringComparer.Ordinal);
-
     /// <summary>BEH-ORCH-18: the most pull requests one train carries.</summary>
     public const int TrainCars = 5;
 
@@ -792,7 +789,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// through its own pull request at the head commit it rode at, but only while the base is still where the train was
     /// built, because only then is the result the tree that was tested. Then, for each repo and base with no train and at
     /// least two built tickets that may ride, a train is built and its first rider's ticket starts one test run of it.
-    /// A rider that conflicts goes the single way. A public repo gets no train.
+    /// A rider that conflicts goes the single way. A public repo whose pull requests have Actions runs gets no train.
     /// </summary>
     private async Task TrainTickAsync(IMergeTrain train, HashSet<string> wants, CancellationToken cancellationToken)
     {
@@ -871,7 +868,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             wanted = items.Where(i => IsBuilt(i) && !offTrain.Contains((i.Project, i.Slug)) && repoOf[i.Project] is not null)
                 .Where(i => !items.Any(o => o.Project == i.Project && o.Stage is PipelineStage.Merge or PipelineStage.Test && o.Status == WorkItemStatus.Running))
                 .GroupBy(i => repoOf[i.Project]!, StringComparer.Ordinal)
-                .Where(g => !trains.ContainsKey(g.Key) && !publicRepos.Contains(g.Key))
+                .Where(g => !trains.ContainsKey(g.Key))
                 .Select(g =>
                 {
                     foreach (var app in g.Select(i => i.Project).Distinct(StringComparer.Ordinal))
@@ -891,9 +888,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             var built = await train.BuildAsync(repo, baseBranch, TrainPrefix + baseBranch, cars.Select(c => c.PullRequest!).ToList(), cancellationToken);
             lock (gate)
             {
+                // Its pull requests have their own CI, so the single way takes them. Not remembered: the answer is about
+                // these pull requests, and the next look's may have none (claude-code-bot#145).
                 if (built.NotPrivate)
                 {
-                    publicRepos.Add(repoAt);
                     continue;
                 }
 
