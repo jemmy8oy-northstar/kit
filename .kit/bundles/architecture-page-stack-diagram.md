@@ -22,3 +22,11 @@ Test plan:
 - BEH-ARCH-4: the diagram is produced by code and makes no model call, so it works with the model unavailable (new CONTROL-style check of the "plain code" assumption on the card)
 - BEH-ARCH-4: opening the project's Architecture tab still lists the BEH-ARCH-1 decisions and their approve and deny buttons unchanged (existing BEH-ARCH-1 slice A and B1 tests; BEH-ARCH-4 must not change them)
 - BEH-ARCH-4: the test does not assert the exact layout or whether spec items are drawn, since the owner left both open (no test; recorded here so the builder does not pin them by accident)
+
+Built:
+- BEH-ARCH-4: generating the diagram twice for the same repo gives byte-identical output, and a repo whose files are read in a different order gives the same output too (stackDiagram.test.ts)
+- BEH-ARCH-4: a repo that declares a database, an external API and a Helm chart shows each one as a part, taken from the repo's own files (stackDiagram.test.ts)
+- BEH-ARCH-4: a repo with none of the three shows no diagram and draws no invented part (stackDiagram.test.ts)
+- BEH-ARCH-4: the diagram is produced by code and makes no model call, so it works with the model unavailable (stackDiagram.test.ts)
+- BEH-ARCH-4: a repo with none of the three shows the page without error and draws no invented part (components/StackDiagram.test.tsx)
+- Whole UI suite (prototypes/behaviour-ast/ui, `npx vitest run`): 566 tests, all passed. The existing BEH-ARCH-1 tests (DecisionsList and Project) pass unchanged. The C# backend suite was not run: dotnet is not installed here.
