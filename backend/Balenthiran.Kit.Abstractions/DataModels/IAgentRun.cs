@@ -127,6 +127,9 @@ public interface IPipelineItem
     string? Review { get; }
 
     string? ReviewNote { get; }
+
+    /// <summary>Why a built item is not merged yet (BEH-ORCH-10): merging is off, or what its pull request still waits for; null otherwise.</summary>
+    string? MergeNote { get; }
 }
 
 /// <summary>The body of <c>GET /api/pipeline</c>: whether the pipeline is on, and its items since Kit last started, oldest first.</summary>

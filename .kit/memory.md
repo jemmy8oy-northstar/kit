@@ -17,6 +17,15 @@
 ## Spec conflicts (BEH-CONFLICT-1 to 3)
 - The branch carried the conflict code and tests already (`ConflictModeTests.cs`, `ConflictsDirective.cs`, `agent.md` "When two specs conflict", Settings "When specs conflict"). A build of this item is verification, not new code, unless a test in the plan is missing.
 
+## Session cost (BEH-COST-1)
+
+- A run's dollar cost is the `total_cost_usd` of its `claude -p --output-format json` result. kit-run writes it to `KIT_COST_FILE`, pool.sh sends it as `costUsd` in the finished report, and the server records it in the `session_cost` table before it answers.
+- The list-price estimate the proxy stores (`AddUsage`) is a different number. Never store it as a session cost.
+
 ## Tickets and the pipeline
 - The blocked tag is `BlockedBecause` on the ticket row. A question for him is an escalated review; its note may end with `Silence: <default>`, which triage acts on if he stays silent (BEH-TICKET-3).
 - `kit.beh` cards may not tag `in FEAT-*` for a feature that lives in `kit-ui.beh`; the parser refuses it (CommittedArtefactTests).
+- The board's Tickets section (pipeline tickets, BEH-ORCH-16) is `prototypes/behaviour-ast/ui/src/components/Tickets.tsx`, with ordering in `ui/src/tickets.ts`. Cards (behaviours) on the board are `ui/src/board.ts`. They are different things.
+- The UI test suite is `npm test` in `prototypes/behaviour-ast/ui` (vitest, 571 tests). The C# backend tests need `dotnet`, which is not installed on the build runner, so they have not run here.
+- BEH-UI-6 (kit.beh) builds on tickets, not cards, and conflicts with the built BEH-ORCH-16 blocked-first ordering. It is under review; see its `review requested` line.
+- **BEH-UI-5 is taken by the agents page** (kit-ui.beh, renamed BEH-AGENTPAGE-1). `Agents.test.tsx` fails if `BEH-UI-5` appears in kit.beh, so the ticket-board card is BEH-UI-6 in kit.beh (merge of kit/work/ticket-board-priority with dev, 2026-11-20). The `.kit/bundles/ticket-board-priority.md` bundle still says BEH-UI-5.

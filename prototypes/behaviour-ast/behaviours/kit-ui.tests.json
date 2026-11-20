@@ -342,6 +342,14 @@
   "BEH-ACTIVITY-1": [
     { "file": "prototypes/behaviour-ast/ui/src/pages/Activity.test.tsx", "title": "lists commits newest first and says which projects have no history here (BEH-ACTIVITY-1)" }
   ],
+  "BEH-AGENTPAGE-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 lists the agents it knows, one per entry, and shows no work or queue until one is picked" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 picking an agent shows its runs from GET /api/runs, newest first, with status, stage and cost, for that project only" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 the queue marks approved, pending cards without a needs-context line as unblocked, in board order, and the rest as waiting on him" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 an agent with no runs says \"No recent work\", and an empty queue says \"Nothing in the queue\"" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 browsing the page issues only GET requests and writes no corpus file" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Agents.test.tsx", "title": "BEH-AGENTPAGE-1 the card sits in kit-ui.beh under FEAT-AGENTS with browser verbs, not in kit.beh FEAT-SERVER" }
+  ],
   "BEH-NOTIFY-2": [
     { "file": "prototypes/behaviour-ast/ui/src/test/homeScreen.test.ts", "title": "links a manifest and a home-screen icon that open Kit full screen" },
     { "file": "prototypes/behaviour-ast/ui/src/test/homeScreen.test.ts", "title": "keeps the installed app inside Kit's own path on the shared host" }

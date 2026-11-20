@@ -1615,6 +1615,59 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_10_with_merging_off_the_built_item_says_why_it_is_not_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Equal(("build", "done"), (item.Stage, item.Status));
+        Assert.Contains("KIT_PIPELINE_MERGE is off", item.MergeNote);
+        Assert.Null(item.StoppedBecause);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_a_built_item_still_waiting_says_what_it_waits_for_and_is_not_stopped()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Null(item.StoppedBecause);
+        Assert.Equal("waiting for its checks to pass, or for GitHub to say whether it can merge", item.MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_the_reason_a_look_is_waiting_is_the_one_shown()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true, Reason = "brought up to date with dev" };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal("brought up to date with dev", Assert.Single(Listed(rig), i => i.Slug == "list-sorting").MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_once_merged_the_waiting_note_is_gone()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.True(item.Merged);
+        Assert.Null(item.MergeNote);
+    }
+
+    private static IReadOnlyList<IPipelineItem> Listed(Rig rig) =>
+        Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Items;
+
+    [Fact]
     public void BEH_ORCH_10_KIT_PIPELINE_MERGE_is_off_unless_it_says_on_and_a_typo_throws()
     {
         Assert.False(KitSettings.ParsePipelineMerge(null));
@@ -2880,6 +2933,44 @@ public class PipelineTests
         Assert.Single(Jobs(baseline with { PipelineJobPlan = true }));
         Assert.Equal(2, Jobs(baseline with { PipelineJobContext = true, PipelineJobPlan = true }).Count);
         Assert.Empty(Jobs(new KitSettings("d", "r", null, "dist") with { PipelineJobPlan = true }));
+    }
+
+    // ---- BEH-SCHED-1 (kit.beh): each pipeline stage runs on its own schedule ----------------------------
+    // A stage's wake is what starts it: a note for triage, its own job tick for build (BEH-ORCH-11). The
+    // conflict in kit.beh BEH-SCHED-1 (a slow build on the same project against one live run per project,
+    // BEH-ORCH-3) is not tested here: it is raised for review, and the reading built keeps one run per project.
+
+    [Fact]
+    public void BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Triage's wake is a note left in Kit: triage runs, and its bundle makes the spec stage the next run.
+        var spec = Triaged(rig);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "list-sorting").Status);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        // The build's wake has not fired, so the specced item waits as a planned ticket and no build runs.
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+
+        // Only its own wake starts the build.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Build's wake fires with nothing waiting for it: it makes no model call.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Null(rig.Claim());
+
+        // Triage's wake, a note, runs triage at once, without another tick.
+        rig.Note("the list should sort by date");
+        Assert.Contains("You are the triage stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
     }
 
     // ---- BEH-ORCH-11, slice 5: the build job -------------------------------------------------------------
