@@ -262,7 +262,7 @@ public sealed partial class GitHubPullRequestOpener(
         var runs = await SendAsync(HttpMethod.Get, new Uri(root, $"actions/runs?head_sha={Uri.EscapeDataString(sha)}&per_page={PageSize}"), token, null, cancellationToken);
         if (runs.Status is 401 or 403 or 404)
         {
-            return Refuse($"Kit cannot read the checks of this pull request ({runs.Reason}), so it will not merge it unchecked");
+            return Refuse($"Kit cannot read Actions for this pull request ({runs.Reason}), so it will not merge it unchecked");
         }
 
         if (runs.Reason is not null)
