@@ -1411,6 +1411,30 @@ public class PipelineTests
         Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Stage == PipelineStage.Triage);
     }
 
+    // ---- BEH-ROUTE-2: the pipeline wakes for a backlog card the agent marks ready to schedule ----------
+
+    [Fact]
+    public void BEH_ROUTE_2_a_card_marked_ready_to_schedule_in_the_corpus_wakes_the_pipeline_at_spec()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true, schedule: "BEH-A\n");
+
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        var item = Assert.Single(rig.Pipeline.Items());
+        Assert.Equal(("beh-a", PipelineStage.Spec, WorkItemStatus.Running), (item.Slug, item.Stage, item.Status));
+    }
+
+    [Fact]
+    public void BEH_ROUTE_2_a_ready_to_schedule_said_only_in_a_note_does_not_wake_the_pipeline()
+    {
+        using var rig = new Rig(ScheduledCorpus, scheduled: true);
+
+        rig.Note("BEH-A is ready to schedule, start it now");
+        rig.Pipeline!.ScheduleChanged("demo");
+
+        Assert.DoesNotContain(rig.Pipeline.Items(), i => i.Stage == PipelineStage.Spec || i.Slug == "beh-a");
+    }
+
     [Fact]
     public void BEH_ORCH_4_a_queued_triage_goes_before_the_scheduled_card()
     {

@@ -1295,6 +1295,15 @@
       }
     }
   ],
+  "BEH-ROUTE-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ROUTE_2_a_card_marked_ready_to_schedule_in_the_corpus_wakes_the_pipeline_at_spec" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ROUTE_2_a_ready_to_schedule_said_only_in_a_note_does_not_wake_the_pipeline" }
+  ],
+  "BEH-ROUTE-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_low_reports_model_by_level_on_sonnet_and_never_opus" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_high_reports_opus" },
+    { "file": "backend/Balenthiran.Kit.Tests/OrchestratorTests.cs", "title": "BEH_ROUTE_3_a_flag_at_level_medium_reports_sonnet" }
+  ],
   "BEH-KEEP-1": [
     {
       "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx",

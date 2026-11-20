@@ -16,3 +16,6 @@
 
 ## Spec conflicts (BEH-CONFLICT-1 to 3)
 - The branch carried the conflict code and tests already (`ConflictModeTests.cs`, `ConflictsDirective.cs`, `agent.md` "When two specs conflict", Settings "When specs conflict"). A build of this item is verification, not new code, unless a test in the plan is missing.
+
+## Pipeline routing (BEH-ROUTE-*)
+- A flag's level is read by `FlagLevels.Of`: low and medium go to the review-low model (sonnet by default), high or unreadable goes to opus. Medium's model is an assumption until the owner confirms it.
