@@ -1469,6 +1469,57 @@ public class PipelineTests
         }
     }
 
+    // ---- BEH-PR-1: the pipeline raises a pull request for finished work, into the integration branch ----
+
+    [Fact]
+    public void BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Contains("Built:\n- BEH-A: ListTests.Sorts_by_date", asked.Body);
+    }
+
+    [Fact]
+    public void BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main()
+    {
+        using var rig = new Rig();
+
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        var asked = Assert.Single(rig.Pulls.Asked);
+        Assert.Equal("dev", asked.Base);
+        Assert.NotEqual("main", asked.Base);
+    }
+
+    [Fact]
+    public void BEH_PR_1_work_that_is_not_finished_raises_no_pull_request()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+        Assert.Empty(rig.Pulls.Asked);
+
+        Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed" })).Status);
+
+        Assert.Empty(rig.Pulls.Asked);
+    }
+
+    // ---- BEH-PR-2: the pipeline completes a pull request only when the corpus says it may merge -------
+
+    [Fact]
+    public async Task BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Empty(rig.Merges.Asked);
+        var item = BuiltItem(rig);
+        Assert.Equal((WorkItemStatus.Done, "https://github.com/someone/demo/pull/7", false), (item.Status, item.PullRequest, item.Merged));
+    }
+
     // ---- BEH-ORCH-10: the pipeline merges the pull request of what it built ---------------------------
 
     private static async Task<Rig> BuiltRig(bool merge = true)
