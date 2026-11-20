@@ -60,6 +60,22 @@ public class CoverageTests
         Assert.Empty(counted.Pending);
     }
 
+    [Theory]
+    [InlineData("""{"file": "ThingTests.cs", "title": "It_works"}""")]
+    [InlineData("""{"file": "ThingTests.cs", "title": "It_works", "verified": {"hash": "stale", "files": ["ThingTests.cs"], "on": "2026-11-01"}}""")]
+    public void BEH_HEALTH_1_A_test_names_its_behaviour_whether_or_not_its_link_is_hashed_or_flagged(string link)
+    {
+        var map = JsonNode.Parse($$"""{"BEH-1": [{{link}}]}""")!.AsObject();
+
+        var counted = Counter.Count(Behaviours(), map, Reading().Titles, "app.tests.json");
+
+        Assert.Null(counted.Refusal);
+        Assert.Empty(counted.Errors);
+        Assert.Equal(["BEH-1"], counted.Covered.Select(b => b.Id));
+        Assert.Equal(["BEH-2"], counted.Uncovered.Select(b => b.Id));
+        Assert.Equal(["BEH-3"], counted.Pending.Select(b => b.Id));
+    }
+
     [Fact]
     public void A_mapping_entry_that_names_no_test_rots_loudly_and_covers_nothing()
     {

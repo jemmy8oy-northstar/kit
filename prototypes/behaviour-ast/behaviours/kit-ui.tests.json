@@ -622,6 +622,17 @@
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 posts the named switch when Testers is ticked" },
     { "file": "prototypes/behaviour-ast/ui/src/components/FeatureGate.test.tsx", "title": "BEH-FLAGS-1 shows a tester no Features section" }
   ],
+  "BEH-FLAGS-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_list_holds_their_own_repos_and_none_of_the_operators" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_with_no_link_sees_no_projects_at_all" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_is_refused_an_operator_project_by_url_and_it_is_never_in_their_list" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_write_to_a_project_they_do_not_own_is_refused" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_each_operator_only_write_is_refused_for_a_tester" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_no_tester_action_starts_or_lists_an_agent_run" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_settings_name_their_account_and_no_operator_section" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_page_switched_off_for_testers_is_listed_off_and_the_pages_on_are_not" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_inbox_feed_holds_no_operator_items" }
+  ],
   "BEH-FLAGS-2": [
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_tester_is_served_what_is_off_for_testers_and_not_the_table" },
     { "file": "backend/Balenthiran.Kit.Tests/FlagsTests.cs", "title": "BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_refused" },
