@@ -109,6 +109,17 @@ public sealed class LinkHealthTests : IDisposable
     }
 
     [Fact]
+    public void A_one_byte_change_to_a_touched_file_lists_the_link_on_the_project_view()
+    {
+        var link = Link();
+        Write("src/a.cs", "class B {}\n"); // A -> B: one byte
+
+        var links = Assert.IsType<AvailableLinkHealth>(View(link, checkout: new SourceCheckout(_root, "o/kit")).Links);
+
+        Assert.Equal("BEH-X-1", Assert.Single(links.Broken).BehaviourId);
+    }
+
+    [Fact]
     public void A_project_with_no_recorded_hash_has_no_links_key()
     {
         var view = View(Link(recorded: false));

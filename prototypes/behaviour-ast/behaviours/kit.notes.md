@@ -860,3 +860,27 @@ When in chat you should see the state of the top of stack item that you are bein
 <!-- from: note-button -->
 
 Too priority atm is splitting out the projects in kit and moving notes and specs into the projects repos
+
+## 2026-11-15 15:20Z
+
+<!-- from: note-button -->
+
+Just wanted to write a large note to explain my current target goal for kit pipeline so that we can continue on the correct path.
+
+So a few input mechanisms, writing a note, speaking to chat, leaving a comment, approving rejecting. This is the input surface.
+
+Then we have the first agent in the pipeline which picks up all of these loose items and inspects the existing spec and figures out what needs to change / by deleted / be created to accomadate for the new inputs. This bot will create new spec, update existing tickets and ask questions about spec and even removing spec that does not align with the new behaviour. These updates go in a new feature branch. A ticket needs to be created to represent the change (this ticket will be in the new state) and this is where questions will be posted if this agent wants to clarify anything with the user. If there are any questions this ticket get marked as blocked for the user to act on. This agent will also handle blocked items where there is extra discussion until there is no extra discussion and this ticket gets moved to ready. There is a distinction here, previously spec was a ticket. Now a ticket is different from spec. I think this is a strong improvement. Tickets appear on the board, spec is part of the feature. Thoughts?
+
+The next agent takes the ready ticket and begins technical design.
+
+Then onto an agent that performs the implementation.
+
+These agents can also ask questions maybe we have blocked as a tag rather than a ticket state - this way an item can be new but blocked or ready but blocked or planned but blocked or implemented but blocked.
+
+Etc.
+
+The agents pick up top priority work from features in the appropriate state. The job of ccb atm is to monitor the pipeline and get it into this working state. Ccb does not need to wake and respond to all new notes, ccb can be awoken by a button that I can click to wake it early, or it wakes on a schedule as normal.
+
+Maybe it is worth having a priority agents which wakes when the bell gets hit and it can reprioritise work or something like this, maybe the first agent can prioritise the new and ready backlog including prioritisation. This was ccb doesnt need to wake to a bell either.
+
+Get to this state where the pipeline is handling new and backlog tasks by itself and ccb is just a watcher.
