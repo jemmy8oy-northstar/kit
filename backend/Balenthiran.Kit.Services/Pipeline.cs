@@ -781,7 +781,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         lock (gate)
         {
+            // A project no longer wanted starts what waited behind its reservation now, not at some later run's end.
             mergeWants = wants;
+            StartReady();
         }
     }
 
@@ -1416,7 +1418,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         do
         {
             again = false;
-            var ready = items.Where(i => !IsWaiting(i)).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
+            // A project the merge job is waiting on starts nothing here either (mergeWants): with no job owning a stage, this
+            // is where its next run starts, the moment the one before it ends, so the merge job would never find it free.
+            // Triage is not held back, as in JobTick's case: his notes can change a bundle.
+            var ready = items.Where(i => !IsWaiting(i) && (i.Stage == PipelineStage.Triage || !mergeWants.Contains(i.Project))).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
