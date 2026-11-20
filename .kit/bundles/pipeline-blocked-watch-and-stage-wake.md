@@ -1,6 +1,7 @@
 # Pipeline untags blocked cards and wakes each stage only on change
 Work-item: pipeline-blocked-watch-and-stage-wake
 Flag: Open question: should BEH-ORCH-17 and -18 move into kit-ui.beh under FEAT-AGENT-PIPELINE, instead of a second ORCH feature (FEAT-ORCH) in kit.beh? The reply settled the tag question but not this one. Both IDs are already taken on origin/main in kit-ui.beh (BEH-ORCH-17 Runs now, BEH-ORCH-18 merge train, both built), and main's kit.beh has no ORCH cards, so this branch (49 commits behind main) needs new ids (BEH-ORCH-20 on) or a rebase before these cards land; and BEH-ORCH-16 (approved) says the first agent clears the tag when nothing is left open, which conflicts with 17 untagging on any reply (level: high)
+Review: escalated — flag checked and holds: on origin/main BEH-ORCH-17/-18 are taken in kit-ui.beh (Runs now, merge train) and -19 too, so after a rebase these cards need BEH-ORCH-20/-21; he must decide (1) whether they go under FEAT-AGENT-PIPELINE in kit-ui.beh (default: yes, drop FEAT-ORCH) and (2) whether a reply untags the ticket at once (this 17) or the first agent clears it only when nothing is left open (approved BEH-ORCH-16, already built as slice 3: a reply queues a triage that clears the tag); default: keep 16 and narrow 17 to waking triage, not untagging
 Cards:
 - BEH-ORCH-17
 - BEH-ORCH-18
