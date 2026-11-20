@@ -23,7 +23,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
 /// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
 /// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
+/// <param name="runRetries">BEH-ORCH-19: how many more times a context, spec, build or review run that failed, was lost or changed nothing is tried at the same stage before its ticket is blocked. 0 blocks at once.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null, int runRetries = 0)
 {
     private readonly object gate = new();
 
@@ -64,6 +65,27 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     private readonly Dictionary<(string App, string Slug), string> testing = [];
 
+    // BEH-ORCH-11: the projects whose merge job, at its last look, needed a run (a test or a resolve) but found the
+    // project busy. No job starts a ticket on them, so the next free slot goes to finishing a ticket, not starting one.
+    // Replaced whole at the end of each merge look, so a want the merge job no longer has lasts at most one look.
+    private HashSet<string> mergeWants = new(StringComparer.Ordinal);
+
+    // BEH-ORCH-18: the merge train of each repo and base ("owner/repo@branch"), from when it is built until its riders are
+    // merged or it fails. In memory only: a restart forgets it, and the next look builds another.
+    private readonly Dictionary<string, Train> trains = new(StringComparer.Ordinal);
+
+    // Tickets that rode a train that failed, or that could not join one: they go the single way from then on. In memory only.
+    private readonly HashSet<(string App, string Slug)> offTrain = [];
+
+    /// <summary>BEH-ORCH-18: the most pull requests one train carries.</summary>
+    public const int TrainCars = 5;
+
+    /// <summary>BEH-ORCH-18: a train's branch is this and its base branch, so kit/train/dev.</summary>
+    public const string TrainPrefix = "kit/train/";
+
+    // Each rider with its pull request and the head commit that went onto the train; Lead is the ticket whose test run tests it.
+    private sealed record Train(string Sha, string BaseSha, IReadOnlyList<((string App, string Slug) Key, string Url, string HeadSha)> Riders, (string App, string Slug) Lead, bool Passed = false);
+
     // Only ever appended to, so an index names the same item for the life of the pipeline.
     private readonly List<WorkItem> items = [];
 
@@ -91,6 +113,23 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private readonly Dictionary<string, (int Failures, ITimer? Pending, int Generation)> retries = new(StringComparer.Ordinal);
 
     private int retryGeneration;
+
+    /// <summary>BEH-ORCH-19: the retries Kit itself gives a run that failed, was lost or changed nothing, so three runs in all.</summary>
+    public const int RunRetries = 2;
+
+    // BEH-ORCH-19: per ticket, the runs of its current stage that failed, were lost or changed nothing. In memory only: a
+    // restart forgets them, and Resume gives a ticket blocked that way one more go.
+    private readonly Dictionary<(string App, string Slug), int> tries = [];
+
+    // BEH-ORCH-19: a block a run made, not a decision: the run failed or was lost, changed nothing, or reported no bundle; or
+    // a test run failed or was lost. Resume tries such a ticket again rather than waiting for a reply. Not a review run's: a
+    // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
+    // tested once more per restart; a built ticket has no other way out of a block (a reply wakes only new, ready, planned).
+    private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
+        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost)");
+
+    /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
+    public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
 
     private int count;
 
@@ -224,8 +263,15 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     continue;
                 }
 
+                // BEH-ORCH-19: unless a run made the block (it failed, was lost or changed nothing): that ticket gets one more go,
+                // and says so. It comes back unblocked, so the job of its state takes it.
+                var again = Retryable(ticket.BlockedBecause);
+                if (again)
+                {
+                    item = item with { PullRequest = ticket.PullRequest };
+                }
                 // BEH-ORCH-16: a blocked ticket comes back still stopped, so no job takes it and he still sees why.
-                if (ticket.BlockedBecause is not null)
+                else if (ticket.BlockedBecause is not null)
                 {
                     item = item with { Status = WorkItemStatus.Stopped, StoppedBecause = ticket.BlockedBecause, PullRequest = ticket.PullRequest };
                 }
@@ -237,7 +283,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     scheduledSlugs.Add((ticket.Project, ticket.Slug));
                 }
 
-                items.Add(item);
+                if (!again)
+                {
+                    items.Add(item);
+                    continue;
+                }
+
+                // Written at once, so the board shows the ticket unblocked, with a comment saying why.
+                Add(item);
+                try
+                {
+                    ticketStore.Comment(new TicketComment(ticket.Project, ticket.Slug, KitAuthor, $"Trying again after a restart: the block was a run's, not a decision ({ticket.BlockedBecause})", (clock ?? TimeProvider.System).GetUtcNow()));
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"kit: commenting on the ticket {ticket.Project} {ticket.Slug} threw {e.GetType().Name}");
+                }
             }
         }
     }
@@ -461,11 +522,14 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <summary>
     /// Run <paramref name="runId"/> ended. A triage that worked marks its notes triaged and queues another, which
     /// reads any notes left for a later run; one that failed stops its item. A run the pipeline did not start is
-    /// ignored. A run that never reports holds its project, as it holds the pool's, until Kit restarts.
+    /// ignored. A run that never reports holds its project, as it holds the pool's, until the pool counts its runner
+    /// lost (<see cref="RunnerPool.Lease"/>, BEH-ORCH-14) and ends it here as failed.
     /// <paramref name="reported"/> are the bundles a triage run says it pushed: each becomes a work item queued for
     /// the stage after triage (review when it is flagged), or a stopped one saying why it could not be used.
     /// </summary>
-    public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null)
+    /// <paramref name="failure"/> is where a failed run stopped, as its runner reported it ("claude exit 1"), or
+    /// <see cref="RunnerPool.LostFailure"/>; a block names it (BEH-ORCH-19).
+    public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null, string? failure = null)
     {
         (int Index, WorkItem Item, ContextBundle Bundle, string RepoAt)? built = null;
         lock (gate)
@@ -491,10 +555,46 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 // pass is remembered for that commit and the item is built again, so the next merge look merges exactly it.
                 var key = (item.Project, item.Slug);
                 testing.Remove(key, out var sha);
-                if (succeeded && sha is not null)
+
+                // BEH-ORCH-18: a train's test run. A pass lets the next look merge its riders; a fail stops no ticket, it sends
+                // every rider the single way, where each is tested alone. Either way the lead is a built ticket again.
+                if (trains.FirstOrDefault(t => t.Value.Lead == key && t.Value.Sha == sha && !t.Value.Passed) is { Value: { } ridden } entry)
+                {
+                    if (succeeded)
+                    {
+                        trains[entry.Key] = ridden with { Passed = true };
+                    }
+                    else
+                    {
+                        trains.Remove(entry.Key);
+                        // BEH-ORCH-19: a lost run said nothing about the riders, so they may ride the next train.
+                        if (failure != RunnerPool.LostFailure)
+                        {
+                            offTrain.UnionWith(ridden.Riders.Select(r => r.Key));
+                        }
+                    }
+
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else if (succeeded && sha is not null)
                 {
                     tested[key] = sha;
+                    tries.Remove(key);
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
+                else if (failure == RunnerPool.LostFailure)
+                {
+                    // BEH-ORCH-19: a lost test run says nothing about the tests, so the ticket is built again and the next look
+                    // tests it, up to RunRetries times in a row; a runner lost every time must not cost a test run for ever.
+                    var lost = tries.GetValueOrDefault(key) + 1;
+                    tries[key] = lost;
+                    Set(run.Index, lost <= RunRetries
+                        ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                        : Stop(item with { Stage = PipelineStage.Build }, $"the test run was lost, {lost} runs in a row"));
+                    if (lost > RunRetries)
+                    {
+                        tries.Remove(key);
+                    }
                 }
                 else
                 {
@@ -503,7 +603,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
             else if (item.Stage != PipelineStage.Triage)
             {
-                Set(run.Index, Ended(item, run.Given!, succeeded, reported));
+                Set(run.Index, Ended(item, run.Given!, succeeded, reported, failure));
 
                 // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
                 if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
@@ -642,12 +742,20 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return;
         }
 
+        var wants = new HashSet<string>(StringComparer.Ordinal);
+        if (merger is IMergeTrain train)
+        {
+            await TrainTickAsync(train, wants, cancellationToken);
+        }
+
         List<WorkItem> top;
         lock (gate)
         {
-            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends.
+            // A project whose ticket is having a conflict resolved (slice 7b) or tested (BEH-ORCH-12) merges nothing else until that run ends,
+            // nor does one with a ticket on a merge train (BEH-ORCH-18).
             var apps = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
                 .Where(app => !items.Any(i => i.Project == app && i.Stage is PipelineStage.Merge or PipelineStage.Test && i.Status == WorkItemStatus.Running))
+                .Where(app => !trains.Values.Any(t => t.Riders.Any(r => r.Key.App == app)) && (trains.Count == 0 || RepoAtOf(app) is not { } at || !trains.ContainsKey(at)))
                 .ToList();
             top = [];
             foreach (var app in apps)
@@ -665,11 +773,212 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         foreach (var item in top)
         {
-            await MergeOneAsync(item, true, cancellationToken);
+            await MergeOneAsync(item, true, cancellationToken, wants);
+        }
+
+        lock (gate)
+        {
+            // A project no longer wanted starts what waited behind its reservation now, not at some later run's end.
+            mergeWants = wants;
+            StartReady();
         }
     }
 
-    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken)
+    /// <summary>
+    /// BEH-ORCH-18, slice 1: one look at the merge trains. A train whose test run passed is merged rider by rider, each
+    /// through its own pull request at the head commit it rode at, but only while the base is still where the train was
+    /// built, because only then is the result the tree that was tested. Then, for each repo and base with no train and at
+    /// least two built tickets that may ride, a train is built and its first rider's ticket starts one test run of it.
+    /// A rider that conflicts goes the single way. A public repo whose pull requests have Actions runs gets no train.
+    /// </summary>
+    private async Task TrainTickAsync(IMergeTrain train, HashSet<string> wants, CancellationToken cancellationToken)
+    {
+        List<(string RepoAt, Train Train)> passed;
+        lock (gate)
+        {
+            // A train still being tested whose lead is no longer in its test run (stopped or ended elsewhere) will never pass.
+            foreach (var orphan in trains.Where(t => !t.Value.Passed && !items.Any(i => (i.Project, i.Slug) == t.Value.Lead && i is { Stage: PipelineStage.Test, Status: WorkItemStatus.Running })).Select(t => t.Key).ToList())
+            {
+                trains.Remove(orphan);
+            }
+
+            // A passed train whose riders are not all still built tickets (one was stopped, rebuilt or merged) is not the tree
+            // that was tested without it, so it is dropped, merging nothing, and the next look builds another.
+            foreach (var changed in trains.Where(t => t.Value.Passed && !t.Value.Riders.All(r => items.Any(i => (i.Project, i.Slug) == r.Key && IsBuilt(i)))).Select(t => t.Key).ToList())
+            {
+                trains.Remove(changed);
+            }
+
+            passed = trains.Where(t => t.Value.Passed).Select(t => (t.Key, t.Value)).ToList();
+        }
+
+        foreach (var (repoAt, t) in passed)
+        {
+            var (repo, baseBranch) = SplitRepoAt(repoAt);
+            var merged = new List<(string App, string Slug)>();
+            var head = await train.HeadOfAsync(repo, baseBranch, cancellationToken);
+            if (head is null)
+            {
+                // Could not look: the train stays passed and the next look asks again, rather than paying for another test.
+                continue;
+            }
+
+            var moved = head != t.BaseSha;
+            string? why = null;
+            if (!moved)
+            {
+                foreach (var rider in t.Riders)
+                {
+                    why = await train.MergeAtAsync(rider.Url, rider.HeadSha, cancellationToken);
+                    if (why is not null)
+                    {
+                        break;
+                    }
+
+                    merged.Add(rider.Key);
+                }
+            }
+
+            lock (gate)
+            {
+                trains.Remove(repoAt);
+                foreach (var key in merged)
+                {
+                    var index = items.FindIndex(i => i.Project == key.App && i.Slug == key.Slug && IsBuilt(i));
+                    if (index >= 0)
+                    {
+                        Set(index, items[index] with { Merged = true });
+                    }
+                }
+
+                // A base that moved builds the train again at the next look. A rider that would not merge sends the rest the single way.
+                if (why is not null)
+                {
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} stopped merging: {why}");
+                    offTrain.UnionWith(t.Riders.Select(r => r.Key).Except(merged));
+                }
+            }
+        }
+
+        List<(string RepoAt, List<WorkItem> Cars)> wanted;
+        lock (gate)
+        {
+            var repoOf = items.Where(IsBuilt).Select(i => i.Project).Distinct(StringComparer.Ordinal)
+                .ToDictionary(app => app, app => RepoAtOf(app), StringComparer.Ordinal);
+            wanted = items.Where(i => IsBuilt(i) && !offTrain.Contains((i.Project, i.Slug)) && repoOf[i.Project] is not null)
+                .Where(i => !items.Any(o => o.Project == i.Project && o.Stage is PipelineStage.Merge or PipelineStage.Test && o.Status == WorkItemStatus.Running))
+                .GroupBy(i => repoOf[i.Project]!, StringComparer.Ordinal)
+                .Where(g => !trains.ContainsKey(g.Key))
+                .Select(g =>
+                {
+                    foreach (var app in g.Select(i => i.Project).Distinct(StringComparer.Ordinal))
+                    {
+                        RefreshPriorities(app);
+                    }
+
+                    return (g.Key, g.OrderBy(i => priorities.GetValueOrDefault((i.Project, i.Slug), DefaultPriority)).ThenBy(i => items.IndexOf(i)).Take(TrainCars).ToList());
+                })
+                .Where(g => g.Item2.Count >= 2)
+                .ToList();
+        }
+
+        foreach (var (repoAt, cars) in wanted)
+        {
+            var (repo, baseBranch) = SplitRepoAt(repoAt);
+            var built = await train.BuildAsync(repo, baseBranch, TrainPrefix + baseBranch, cars.Select(c => c.PullRequest!).ToList(), cancellationToken);
+            lock (gate)
+            {
+                // Its pull requests have their own CI, so the single way takes them. Not remembered: the answer is about
+                // these pull requests, and the next look's may have none (claude-code-bot#145).
+                if (built.NotPrivate)
+                {
+                    continue;
+                }
+
+                if (built is not { Sha: { } sha, BaseSha: { } baseSha })
+                {
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} could not be built: {built.Reason}");
+                    continue;
+                }
+
+                foreach (var url in built.Conflicted)
+                {
+                    if (cars.FirstOrDefault(c => c.PullRequest == url) is { } left)
+                    {
+                        offTrain.Add((left.Project, left.Slug));
+                    }
+                }
+
+                var riders = built.Riders
+                    .Select(r => (Car: cars.FirstOrDefault(c => c.PullRequest == r.Url), r.Url, r.HeadSha))
+                    .Where(r => r.Car is not null)
+                    .Select(r => ((r.Car!.Project, r.Car.Slug), r.Url, r.HeadSha))
+                    .ToList();
+                if (riders.Count < 2)
+                {
+                    continue;
+                }
+
+                var lead = riders[0].Item1;
+                var index = items.FindIndex(i => i.Project == lead.Project && i.Slug == lead.Slug && IsBuilt(i));
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                // Its test run needs the lead's project free; until it is, no new ticket starts there (mergeWants).
+                if (items.Any(i => i.Project == lead.Project && i.Status == WorkItemStatus.Running))
+                {
+                    wants.Add(lead.Project);
+                    continue;
+                }
+
+                trains[repoAt] = new Train(sha, baseSha, riders, lead);
+                testing[lead] = sha;
+                try
+                {
+                    Set(index, Begin(index, items[index] with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
+                }
+                catch (Exception e)
+                {
+                    trains.Remove(repoAt);
+                    testing.Remove(lead);
+                    Console.Error.WriteLine($"kit: a merge train on {repoAt} could not start its test run ({e.GetType().Name})");
+                }
+
+                if (items[index].Status != WorkItemStatus.Running)
+                {
+                    trains.Remove(repoAt);
+                    testing.Remove(lead);
+                }
+            }
+        }
+    }
+
+    // "owner/repo@branch", or null when the project names no repo or cannot be read. Called with the gate held.
+    private string? RepoAtOf(string app)
+    {
+        try
+        {
+            var (repoAt, _) = RepoDirective.Read(corpora.ReadText(app));
+            return repoAt;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    // The branch and riders of the train whose test run <paramref name="lead"/> starts, or null when it leads none. Called with the gate held.
+    private (string Branch, IReadOnlyList<string> Riders)? TrainLedBy((string App, string Slug) lead, string repoAt) =>
+        trains.TryGetValue(repoAt, out var t) && t.Lead == lead && !t.Passed
+            ? (TrainPrefix + SplitRepoAt(repoAt).Base, t.Riders.Select(r => r.Url).ToList())
+            : null;
+
+    private static (string Repo, string Base) SplitRepoAt(string repoAt) =>
+        (repoAt[..repoAt.LastIndexOf('@')], repoAt[(repoAt.LastIndexOf('@') + 1)..]);
+
+    private async Task MergeOneAsync(WorkItem item, bool updateFirst, CancellationToken cancellationToken, HashSet<string>? wants = null)
     {
         IPullRequestMerge? result = null;
         string? reason = null;
@@ -722,9 +1031,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     return;
                 }
 
-                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
                 if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
                 {
+                    wants?.Add(item.Project);
                     return;
                 }
 
@@ -745,9 +1055,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // commit: a head that moves is asked about again, and a pass is remembered for the commit it passed at.
             if (updateFirst && result is { Merged: false, NeedsTest: true, HeadSha: { Length: > 0 } sha })
             {
-                // A project with a run in flight is busy: the item stays built and the next look asks again.
+                // A project with a run in flight is busy: the item stays built, the project is kept for it, and the next look asks again.
                 if (items.Any(i => i.Project == item.Project && i.Status == WorkItemStatus.Running))
                 {
+                    wants?.Add(item.Project);
                     return;
                 }
 
@@ -774,18 +1085,18 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// A spec or review run of <paramref name="item"/> ended: it must report its own bundle back, changed, and that
     /// bundle moves the item on. Bundles it reports for other work items are not its business.
     /// </summary>
-    private WorkItem Ended(WorkItem item, ContextBundle given, bool succeeded, IReadOnlyList<ReportedBundle>? reported)
+    private WorkItem Ended(WorkItem item, ContextBundle given, bool succeeded, IReadOnlyList<ReportedBundle>? reported, string? failure = null)
     {
         var stage = item.Stage.ToString().ToLowerInvariant();
         if (!succeeded)
         {
-            return Stop(item, $"the {stage} run failed");
+            return TryAgain(item, $"the {stage} run failed", failure);
         }
 
         var own = reported?.FirstOrDefault(b => b.Slug == item.Slug);
         if (own is null)
         {
-            return Stop(item, $"the {stage} run reported no bundle for its work item");
+            return TryAgain(item, $"the {stage} run reported no bundle for its work item");
         }
 
         var parsed = own.Text is null ? null : ContextBundle.Parse(own.Text);
@@ -807,7 +1118,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         // A branch the run checked out and left alone is reported as it was: a stage that changed nothing did nothing.
         if (bundle.Render() == given.Render())
         {
-            return Stop(item, $"the {stage} run left the bundle unchanged");
+            return TryAgain(item, $"the {stage} run left the bundle unchanged");
         }
 
         // A spec that only flagged itself would reach build after its review with nothing planned.
@@ -825,7 +1136,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
+        tries.Remove((item.Project, item.Slug));
         return AfterTriage(item, Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null)));
+    }
+
+    /// <summary>
+    /// BEH-ORCH-19: a run of <paramref name="item"/> failed, was lost or changed nothing. With tries left it is queued at
+    /// the same stage again (a job's next look, or StartReady, takes it); without, it is stopped saying why, where the
+    /// last run stopped and how many runs were tried.
+    /// </summary>
+    private WorkItem TryAgain(WorkItem item, string because, string? failure = null)
+    {
+        var key = (item.Project, item.Slug);
+        var tried = tries.GetValueOrDefault(key) + 1;
+        if (tried <= runRetries)
+        {
+            tries[key] = tried;
+            Console.Error.WriteLine($"kit: pipeline retries {item.Project} {item.Slug} ({tried} of {runRetries}): {because}{(failure is null ? "" : $" ({failure})")}");
+            return item with { Status = WorkItemStatus.Queued };
+        }
+
+        tries.Remove(key);
+        var why = failure is null ? because : $"{because} ({failure})";
+        return Stop(item, tried > 1 ? $"{why}, {tried} runs in a row" : why);
     }
 
     /// <summary>
@@ -859,7 +1192,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         lock (gate)
         {
-            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).ToList())
+            // A project the merge job is waiting on for a test or resolve run starts nothing new (mergeWants).
+            foreach (var app in items.Where(i => i.Stage == stage && IsWaiting(i)).Select(i => i.Project).Distinct(StringComparer.Ordinal).Where(app => !mergeWants.Contains(app)).ToList())
             {
                 RefreshPriorities(app);
                 // Begin returns Running or Stopped, never Queued, so each pass takes a ticket off the waiting list.
@@ -1082,7 +1416,10 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         do
         {
             again = false;
-            var ready = items.Where(i => !IsWaiting(i)).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
+            // A project the merge job is waiting on starts nothing here either (mergeWants): with no job owning a stage, this
+            // is where its next run starts, the moment the one before it ends, so the merge job would never find it free.
+            // Triage is not held back, as in JobTick's case: his notes can change a bundle.
+            var ready = items.Where(i => !IsWaiting(i) && (i.Stage == PipelineStage.Triage || !mergeWants.Contains(i.Project))).OrderBy(i => i.Stage switch { PipelineStage.Triage => 0, PipelineStage.Build => 1, _ => 2 });
             foreach (var next in Orchestrator.Startable(ready))
             {
                 var index = items.IndexOf(next);
@@ -1128,7 +1465,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     PipelineStage.Spec => SpecStage.BuildTask(item.Project, corpora.RelativePath(item.Project), bundle, scheduledSlugs.Contains((item.Project, item.Slug))),
                     PipelineStage.Build => BuildStage.BuildTask(item.Project, bundle),
                     PipelineStage.Merge => ResolveStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..]),
-                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)]),
+                    PipelineStage.Test => TestStage.BuildTask(item.Project, bundle, repoAt[(repoAt.LastIndexOf('@') + 1)..], testing[(item.Project, item.Slug)], TrainLedBy((item.Project, item.Slug), repoAt)),
                     _ => ReviewStage.BuildTask(item.Project, bundle),
                 };
             }
@@ -1142,7 +1479,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         // BEH-ORCH-16 slice 3: his replies on blocked tickets first, so a long run of notes cannot crowd them out.
         var replies = Replies(item.Project);
-        var notes = replies.Select(r => (r.Ref, r.Text, r.Key)).Concat(Untriaged(item.Project)).ToList();
+        var notes = replies.Select(r => (r.Ref, r.Text, r.Key, Card: (string?)null)).Concat(Untriaged(item.Project)).ToList();
 
         // The plain rule first (BEH-ORCH-1): a note that asks for nothing is set aside here, with no run, and counts as sorted.
         var noise = notes.Where(n => NoteNoise.IsNoise(n.Text)).ToList();
@@ -1166,7 +1503,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
             var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
             var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, n.Text)).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1208,7 +1545,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             item.Stage == PipelineStage.Triage ? null : item.Slug, stage);
         try
         {
-            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults));
+            pool.Enqueue(run, token, repoAt[..at], task, repoAt[(at + 1)..], Orchestrator.TurnsFor(item.Stage, turns ?? StageTurnSettings.Defaults), Orchestrator.SecondsFor(item.Stage));
         }
         catch (Exception e)
         {
@@ -1224,15 +1561,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
     /// <summary>
     /// The plain notes and behaviour requests on <paramref name="app"/> no finished triage has read, oldest first,
-    /// as (ref, text, key). A note's date is to the minute, so two left in one minute share a ref: the triaged
-    /// set is keyed on the date AND the text, or the second would be counted read with the first.
+    /// as (ref, text, key, card). A note's date is to the minute, so two left in one minute share a ref: the triaged
+    /// set is keyed on the date AND the text, or the second would be counted read with the first. The card is the
+    /// behaviour a note was left on, null for a note on the project: its text alone may not name it ("I think this is
+    /// ready now", 2026-11-16 22:56Z on BEH-USERS-12, was set aside as naming no card).
     /// </summary>
-    private List<(string Ref, string Text, string Key)> Untriaged(string app)
+    private List<(string Ref, string Text, string Key, string? Card)> Untriaged(string app)
     {
         var file = corpora.RelativeNotesPath(app);
         return Notes.Parse(corpora.ReadNotesText(app))
             .Where(n => n.Kind is Notes.NoteKind or Notes.RequestKind)
-            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text)))
+            .Select(n => (Ref: $"{file}#{n.At}", n.Text, Key: KeyOf(n.At, n.Text), Card: n.Behaviour))
             .Where(n => !Sorted(app).Contains(n.Key))
             .ToList();
     }

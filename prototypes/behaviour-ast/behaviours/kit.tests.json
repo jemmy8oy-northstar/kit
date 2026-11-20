@@ -2,6 +2,23 @@
   "_": "behaviour -> the test(s) that name it. Option C (docs/design/tagging.md): the corpus carries the mapping, so no test file is edited. Keyed on file + title, the same as snip-it.tests.json.",
   "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml (since kit#119 the C# `kit check kit --repo .`, and the tests named below are C#). Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. Nothing here checks the test body. That limit is C's and it is not fixable by parsing; it is stated in docs/design/tagging.md and repeated in check.js's output, because a gate quoted second-hand loses its caveats first.",
+  "BEH-AUTH-1": [
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: a signed-in user who has not connected GitHub gets the connect-GitHub step, not a project page, when opening KitProjects" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: the landing page and the sign-in page load for a user who has not connected GitHub" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: the password sign-in (BEH-USERS-1) still works for a new user and leads to the connect-GitHub step, not to a project page" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: after GitHub is connected, the user’s project pages open" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: a user who has connected GitHub signs in with Sign in with GitHub (BEH-USERS-10) and is not sent back to the connect step" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: the operator is never sent to the connect step, which is optional for him" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/SignIn.test.tsx", "title": "BEH-AUTH-1: a Kit that cannot offer GitHub connect does not lock a user out of their projects" }
+  ],
+  "BEH-SCOPE-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_SCOPE_1_a_second_tester_never_lists_the_first_testers_projects" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_list_holds_their_own_repos_and_none_of_the_operators" }
+  ],
+  "BEH-SCOPE-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_SCOPE_2_a_repo_with_a_corpus_is_listed_for_the_user_it_is_connected_to_and_no_other" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_project_is_a_repo_with_a_beh_file_on_its_default_branch" }
+  ],
   "BEH-GATE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
@@ -1310,5 +1327,31 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_a_ready_ticket_goes_to_technical_design_then_to_implementation_in_that_order" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_technical_design_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_implementation_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open" }
+  ],
+  "BEH-KEEP-1": [
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx",
+      "title": "with typed text in the note box and credits exhausted, a failed pipeline start leaves the note text in the box"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx",
+      "title": "with typed text in the chat box and credits exhausted, a failed pipeline start leaves the chat text in the box"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx",
+      "title": "after a failed start the kept note is not cleared, sent again, or dropped until he submits it again once the pipeline can run"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx",
+      "title": "after a failed start the kept chat text is not cleared, sent again, or dropped until he sends it again once the pipeline can run"
+    }
+  ],
+  "BEH-PR-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_work_that_is_not_finished_raises_no_pull_request" }
+  ],
+  "BEH-PR-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged" }
   ]
 }

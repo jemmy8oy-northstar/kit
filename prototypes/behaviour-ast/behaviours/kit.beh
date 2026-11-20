@@ -408,3 +408,70 @@ behaviour BEH-TICKET-4 "A ready ticket goes next to technical design and then to
   when opens page:KitBoard
   then sees region:KitMain
   contract my assumption: technical design and implementation use the same blocked tag and ready state as triage
+# ── sign-in before use (triage note of 2026-11-07) ──────────────────────────
+
+behaviour BEH-AUTH-1 "A new user must sign in with git before any project page opens"
+  priority 5
+  actor engineer
+  given user:New
+  when runs command:KitUi
+  then reports access:SignInRequired
+  review unreviewed
+  contract my assumption: looking around counts as use, so only the landing page and the sign-in page are open before git sign-in
+  contract my assumption: per the owner's reply of 2026-11-19 (ticket sign-in-with-git-before-use), a new user's first sign-in is the username and password he made (BEH-USERS-1), and then the user must connect their GitHub before any project page opens; this card does not replace the password-first onboarding
+  contract my assumption: this gate applies only until the user has connected GitHub; after that every sign-in is "Sign in with GitHub" (BEH-USERS-10)
+
+# ── input kept when the pipeline cannot run (triage note of 2026-11-07) ─────
+
+behaviour BEH-KEEP-1 "Chat and note input is kept when credits run out and the pipeline cannot start"
+  priority 5
+  actor engineer
+  given input:Typed
+  when runs command:KitUi
+  then reports input:Kept
+  review unreviewed
+  contract my assumption: "chart" in the note means chat; the typed text stays on the device until the pipeline runs, and is never dropped
+
+# ── tester scope: proposed and contributor projects (triage notes of 2026-11-07) ──
+
+behaviour BEH-SCOPE-1 "A proposed project is kept per user, and a tester sees only their own"
+  priority 5
+  actor engineer
+  given user:Tester
+  when runs command:KitUi
+  then reports project:OwnProposedOnly
+  review unreviewed
+  contract my assumption: a proposed project is stored in the database against its owner until a repo is connected for it, and another user's proposal is never listed
+  contract built (tester-feature-access): a tester's list is found through the installation their own GitHub is linked to, so another tester's repos are never in it; the database proposal store is not built, as no proposal flow exists to write to it
+
+behaviour BEH-SCOPE-2 "A project the user is a contributor on is found and listed for that user"
+  priority 5
+  actor engineer
+  given repo:ContributorListed
+  when runs command:KitUi
+  then reports project:Listed
+  review unreviewed
+  contract my assumption: discovery reads the contributor list of each connected repo, so a project appears only once its repo is connected
+  contract my assumption: the project's spec files must sit in that repo, so the tester's holiday planner shows once they are moved there
+  contract built (tester-feature-access): a repo is listed for the one user whose installation reaches it, and for no other user, and a repo with no .beh file is not listed; naming a tester as a contributor in the repo is not built, so a repo the tester contributes to through another installation does not appear
+
+# ── the pipeline's pull requests (triage note of 2026-11-07) ────────────────
+
+behaviour BEH-PR-1 "The pipeline raises a pull request for finished work, into the integration branch"
+  priority 5
+  actor engineer
+  given work:Finished
+  when runs command:KitPipeline
+  then reports pullRequest:Raised
+  review unreviewed
+  contract my assumption: the pull request names the card it builds and targets the project's integration branch, never the default branch
+
+behaviour BEH-PR-2 "The pipeline completes a pull request only when the corpus says it may merge"
+  priority 5
+  actor engineer
+  given pullRequest:Raised
+  when runs command:KitPipeline
+  then reports pullRequest:Left
+  review unreviewed
+  contract my assumption: complete means merge, so a pull request is merged only where the corpus allows it, and otherwise is left open for the owner
+  contract my question (review request, conflicts with BEH-ORCH-10 in kit-ui.beh): BEH-ORCH-10 merges a built pull request once its Actions checks are green whenever KIT_PIPELINE_MERGE=on, with no corpus line, and this card says it never merges on green checks alone without one. Both cannot hold. Built reading: BEH-ORCH-10 as shipped, unchanged, so nothing merges unless the switch is turned on; no test for this card's merge-without-corpus-line reading is written. Deny it and say which reading is true, and it is rebuilt to that. Default if silent: the built reading stays

@@ -57,6 +57,13 @@ public static class TriageStage
     public static string BundlePath(string slug) => $".kit/bundles/{slug}.md";
 
     /// <summary>
+    /// A note's text as the triage reads it: one left on a card says which, on its own first line, so the text need not
+    /// name the card it is about. A note on the project (null card) is its text unchanged.
+    /// </summary>
+    public static string OnCard(string? card, string text) =>
+        card is null ? text : $"(Left on card {card}.)\n{text}";
+
+    /// <summary>
     /// The task for a triage run of <paramref name="project"/>: notes are (source ref, text) in the order to triage
     /// them, cards are (id, title). The first <see cref="TriageTask.NotesTaken"/> notes are in it; the rest wait for
     /// the next run. THROWS when not even the first note fits.
