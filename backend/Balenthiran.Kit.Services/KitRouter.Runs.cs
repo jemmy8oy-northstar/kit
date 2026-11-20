@@ -73,6 +73,24 @@ public sealed partial class KitRouter
     }
 
     /// <summary>
+    /// <c>GET /api/runs/visibility</c> (BEH-VIS-1, BEH-VIS-2): the agents running now with their stage and any flagged review,
+    /// and the finished work items with each stage's cost and the reviews they requested. Operator only, as runs are. No
+    /// session cost record exists yet (BEH-COST-1), so every stage cost is null: unknown, never zero.
+    /// </summary>
+    private KitResponse RunVisibilityView(string? cookie)
+    {
+        if (RunsRefusal(cookie) is { } refused)
+        {
+            return refused;
+        }
+
+        return Json(200, RunVisibilityBuilder.Build(
+            agentRuns.List(),
+            (project, slug) => pipeline?.Bundle(project, slug)?.Flag,
+            NoStageCostRecord.Instance));
+    }
+
+    /// <summary>
     /// <c>GET /api/projects/:project/tickets</c> (BEH-ORCH-16): the project's tickets oldest first, each with its state,
     /// its blocked tag and its comment thread. Operator only, as the pipeline is; with the pipeline off, <c>on</c> is
     /// false and none are listed.

@@ -1129,5 +1129,18 @@
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_test_run_with_no_result_text_fails" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_a_run_of_another_stage_or_none_is_unchanged_and_still_pushes_what_it_left" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_12_The_pool_gives_a_run_its_stage_only_when_the_claim_has_one" }
+  ],
+  "BEH-VIS-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_running_run_lists_each_running_agent_with_its_current_stage" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_review_an_agent_flagged_shows_on_its_stage_with_the_agent_that_flagged_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_1_a_stage_with_no_flagged_review_shows_no_review_line_and_a_run_with_no_running_agent_shows_none" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_VIS_1_the_run_page_is_served_to_the_owner_alone" }
+  ],
+  "BEH-VIS-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_finished_run_shows_each_stage_with_the_cost_recorded_for_it" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_stage_with_no_recorded_cost_shows_as_unknown_never_as_zero" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_a_finished_run_lists_the_reviews_it_requested_with_the_stage_and_agent" },
+    { "file": "backend/Balenthiran.Kit.Tests/AgentRunTests.cs", "title": "BEH_VIS_2_with_no_session_cost_record_every_stage_cost_is_unknown_and_the_page_still_renders" },
+    { "file": "backend/Balenthiran.Kit.Tests/RunVisibilityTests.cs", "title": "BEH_VIS_2_the_page_only_reads_the_cost_record_and_writes_none" }
   ]
 }
