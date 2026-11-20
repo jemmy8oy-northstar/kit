@@ -367,6 +367,19 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
 
+# ── sign-in before use (triage note of 2026-11-07) ──────────────────────────
+
+behaviour BEH-AUTH-1 "A new user must sign in with git before any project page opens"
+  priority 5
+  actor engineer
+  given user:New
+  when runs command:KitUi
+  then reports access:SignInRequired
+  review unreviewed
+  contract my assumption: looking around counts as use, so only the landing page and the sign-in page are open before git sign-in
+  contract my assumption: per the owner's reply of 2026-11-19 (ticket sign-in-with-git-before-use), a new user's first sign-in is the username and password he made (BEH-USERS-1), and then the user must connect their GitHub before any project page opens; this card does not replace the password-first onboarding
+  contract my assumption: this gate applies only until the user has connected GitHub; after that every sign-in is "Sign in with GitHub" (BEH-USERS-10)
+
 # ── input kept when the pipeline cannot run (triage note of 2026-11-07) ─────
 
 behaviour BEH-KEEP-1 "Chat and note input is kept when credits run out and the pipeline cannot start"
