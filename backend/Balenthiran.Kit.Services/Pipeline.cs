@@ -1503,7 +1503,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
             var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
             var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1608,6 +1608,26 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         catch (Exception e)
         {
             Console.Error.WriteLine($"kit: reading {app}'s ticket replies threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// BEH-TICKET-3: <paramref name="app"/>'s blocked tickets whose question carries a default and that have no comment from
+    /// him, so he has stayed silent on them and triage acts on the default. A store that cannot be read gives none.
+    /// </summary>
+    private IReadOnlyList<PipelineTicket> Silent(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app)
+                .Where(t => TriageStage.DefaultOf(t.BlockedBecause) is not null && t.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+                .Where(t => !ticketStore.Comments(app, t.Slug).Any(c => c.Author != KitAuthor))
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s silent tickets for triage threw {e.GetType().Name}");
             return [];
         }
     }
