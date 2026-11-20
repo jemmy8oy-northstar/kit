@@ -6,10 +6,10 @@ import { useResource } from '../hooks/useResource'
 import type { ProjectDetail } from '../api/types'
 import BellButton from '../components/BellButton'
 import ItemNotes from '../components/ItemNotes'
-import LayerChips from '../components/LayerChips'
+import LayerChips, { LayerTags } from '../components/LayerChips'
 import { useLayers } from '../hooks/useLayers'
 import ResourceView from '../components/Resource'
-import { childrenOf, epicHref, featureHref, ofLayers, pathFrom, withAnyUnder } from '../features'
+import { childrenOf, epicHref, featureHref, layersUnder, ofLayers, pathFrom, withAnyUnder } from '../features'
 import { BehaviourRow, FeatureCards } from './Project'
 
 /** One feature (kit#237): what is tagged into it, and every feature it is tagged into. */
@@ -56,6 +56,8 @@ function Detail({ project, id }: { project: ProjectDetail; id: string }) {
         {feature.id} · {feature.at}
       </p>
       <BellButton app={app} item={feature.id} />
+      {/* BEH-KIND-1: the layers of the behaviours beneath this feature, as tags. */}
+      <LayerTags layers={layersUnder(shown, id)} label="Layers of this feature" />
 
       {/* BEH-FEAT-2: every parent, as a tag. None of them is the owner, so none is
           singled out — the crumbs above are only the way you happened to come. */}

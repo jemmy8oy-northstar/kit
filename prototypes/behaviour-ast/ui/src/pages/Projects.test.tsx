@@ -1,5 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Projects from './Projects'
 import { SessionContext } from '../components/session'
@@ -339,5 +341,27 @@ describe('BEH-WELCOME-1: a new user connects their GitHub, then sees their proje
     expect(await screen.findByRole('link', { name: 'snip-it' })).toBeInTheDocument()
     expect(screen.queryByTestId('welcome-steps')).not.toBeInTheDocument()
     expect(screen.getByText(/Every behaviour corpus Kit can read/)).toBeInTheDocument()
+  })
+})
+
+describe('BEH-FEAT-4: the three files of kit are one project', () => {
+  // The directive is what groups the files; a file without it would be a card of its own.
+  const behaviours = path.resolve(process.cwd(), '..', 'behaviours')
+
+  it.each(['kit.beh', 'kit-ui.beh', 'kit-hosted.beh'])('%s names the kit project', (file) => {
+    expect(fs.readFileSync(path.join(behaviours, file), 'utf8')).toMatch(/^# kit:project kit\s*$/m)
+  })
+
+  it('lists the three files as one kit card, linking to the one kit page', async () => {
+    const file = (app: string) => ({ ...projectsFixture.projects[0], app, project: 'kit' })
+    mockFetch({ projects: [file('kit'), file('kit-ui'), file('kit-hosted'), { ...projectsFixture.projects[0], app: 'snip-it', project: 'snip-it' }] })
+    renderProjects()
+
+    const card = (await screen.findByRole('heading', { name: 'kit', level: 2 })).closest('li')!
+    expect(within(card).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/projects/kit'])
+    expect(screen.queryByRole('link', { name: 'kit-ui' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'kit-hosted' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'snip-it' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(2)
   })
 })
