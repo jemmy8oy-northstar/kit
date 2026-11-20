@@ -1,5 +1,6 @@
 # Let a user disconnect their GitHub account
 Work-item: github-disconnect-option
+Flag: precondition failed, nothing built: Kit stores no GitHub token to delete. GitHubConnect revokes the user token (backend/Balenthiran.Kit.Database/GitHubConnect.cs), and kit_users keeps only github_installation and github_account (PostgresUserStore.cs:20, GitHubLink.cs); owner to say whether disconnect should clear that installation link instead, and what a connected user's password sign-in does then (BEH-USERS-10 blocks it once connected) (level: high)
 Flag: new card has no matching feature in kit.beh (it describes the command line), so it may belong in the hosted app's corpus; the change removes a stored GitHub token (level: high)
 Review: escalated — card is a hosted-app Settings screen placed in kit.beh, the command-line corpus (kit:layer technical; its header says not to add browser behaviours) which defines no FEAT-SETTINGS; owner to decide where BEH-ACCOUNT-1 lives (kit-ui.beh or the hosted corpus) and confirm that deleting the stored GitHub token is wanted
 Cards:
@@ -19,3 +20,7 @@ Test plan:
 - BEH-ACCOUNT-1: disconnect makes no GitHub write; the repositories, branches and pull requests on GitHub are the same before and after
 - BEH-ACCOUNT-1: after a disconnect the command reports status Disconnected, and the user can connect GitHub again
 - BEH-ACCOUNT-1: the disconnect option is on the Settings page (FEAT-SETTINGS, defined in kit-ui.beh)
+
+Built:
+- none. The BEH-ACCOUNT-1 precondition test fails on the code as it is: a connected user has no stored GitHub token, only a stored installation link (github_installation, github_account on kit_users), so there is nothing to remove. Build stopped there, as the test plan says; no test or code was written.
+- Suite not run: no code changed.
