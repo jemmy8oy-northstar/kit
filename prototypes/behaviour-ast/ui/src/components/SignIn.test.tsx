@@ -169,3 +169,120 @@ describe('SignIn', () => {
     })
   })
 })
+
+/**
+ * BEH-AUTH-1: a signed-in user who has not connected GitHub gets the connect
+ * step where the project pages would be. `serve` is a small server: GET reads
+ * the session object, and a POST in `posts` changes that same object, as the
+ * real server would change what the next read says.
+ */
+describe('BEH-AUTH-1: connect GitHub before project pages', () => {
+  const INSTALL = 'https://github.example/install'
+  const AUTHORISE = 'https://github.example/authorize?state=1.ab'
+  const SIGNED_IN = { required: true, signedIn: true, accounts: true, user: 'ana' }
+  const NOT_CONNECTED = { ...SIGNED_IN, gitHubInstall: INSTALL, gitHubAuthorize: AUTHORISE }
+  const CONNECTED = { ...NOT_CONNECTED, gitHub: 'ana-gh' }
+  const projects = <p>the project pages</p>
+
+  function serve(state: Record<string, unknown>, posts: Record<string, () => unknown> = {}) {
+    return vi.fn((path: string, init?: RequestInit) => {
+      let data: unknown
+      if (init?.method === 'POST' && path in posts) data = posts[path]()
+      else if (path === '/api/session') data = state
+      else throw new Error(`unexpected fetch to ${path}`)
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(data) } as Response)
+    })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('BEH-AUTH-1: a signed-in user who has not connected GitHub gets the connect-GitHub step, not a project page, when opening KitProjects', async () => {
+    vi.stubGlobal('fetch', serve({ ...NOT_CONNECTED }))
+    render(<SignIn>{projects}</SignIn>)
+    expect(await screen.findByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', INSTALL)
+    expect(screen.queryByText('the project pages')).not.toBeInTheDocument()
+  })
+
+  it('BEH-AUTH-1: the landing page and the sign-in page load for a user who has not connected GitHub', async () => {
+    // Signed out, so the sign-in page is what loads; the GitHub gate must not
+    // stand in front of it with a connect step the user cannot yet reach.
+    vi.stubGlobal('fetch', serve({ required: true, signedIn: false, accounts: true, gitHubInstall: INSTALL, gitHubSignIn: AUTHORISE }))
+    render(<SignIn>{projects}</SignIn>)
+    expect(await screen.findByLabelText('Password')).toBeInTheDocument()
+    expect(screen.getByLabelText('User name')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Connect your GitHub' })).not.toBeInTheDocument()
+    expect(screen.queryByText('the project pages')).not.toBeInTheDocument()
+  })
+
+  it('BEH-AUTH-1: the password sign-in (BEH-USERS-1) still works for a new user and leads to the connect-GitHub step, not to a project page', async () => {
+    const state = { ...NOT_CONNECTED, signedIn: false }
+    vi.stubGlobal('fetch', serve(state, {
+      '/api/session': () => { state.signedIn = true; return { ok: true, signedIn: true } },
+    }))
+    render(<SignIn>{projects}</SignIn>)
+    fireEvent.change(await screen.findByLabelText('User name'), { target: { value: 'ana' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-long-password' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByRole('link', { name: 'Connect your GitHub' })).toHaveAttribute('href', INSTALL)
+    expect(screen.queryByText('the project pages')).not.toBeInTheDocument()
+  })
+
+  it('BEH-AUTH-1: after GitHub is connected, the user’s project pages open', async () => {
+    const state: Record<string, unknown> = { ...NOT_CONNECTED }
+    // The connect is held open until the test lets it finish, so the step is seen while it runs.
+    let finishConnect = () => {}
+    const fetch = serve(state, {
+      '/api/github/connected': () => new Promise((resolve) => {
+        finishConnect = () => { Object.assign(state, CONNECTED); resolve(CONNECTED) }
+      }),
+    })
+    vi.stubGlobal('fetch', fetch)
+    // GitHub hands the code back to Kit's root. jsdom cannot navigate, so the
+    // reload is simulated by mounting the page again, as the browser would.
+    window.history.replaceState(null, '', '/?code=c0de&state=1.ab')
+    let view = render(<SignIn>{projects}</SignIn>)
+    vi.spyOn(githubNavigation, 'reload').mockImplementation(() => {
+      // As the real reload: the page loads again without the GitHub query.
+      window.history.replaceState(null, '', window.location.pathname)
+      view.unmount()
+      view = render(<SignIn>{projects}</SignIn>)
+    })
+    expect(await screen.findByText('Connecting your GitHub…')).toBeInTheDocument()
+    expect(screen.queryByText('the project pages')).not.toBeInTheDocument()
+    finishConnect()
+    expect(await screen.findByText('the project pages')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Connect your GitHub' })).not.toBeInTheDocument()
+  })
+
+  it('BEH-AUTH-1: a user who has connected GitHub signs in with Sign in with GitHub (BEH-USERS-10) and is not sent back to the connect step', async () => {
+    const state: Record<string, unknown> = { ...CONNECTED, signedIn: false, gitHubSignIn: 'https://github.example/authorize?state=in.1.ab' }
+    vi.stubGlobal('fetch', serve(state, {
+      '/api/session/github': () => { state.signedIn = true; return { ok: true, signedIn: true } },
+    }))
+    window.history.replaceState(null, '', '/?code=c0de&state=in.1.ab')
+    let view = render(<SignIn>{projects}</SignIn>)
+    vi.spyOn(githubNavigation, 'reload').mockImplementation(() => {
+      window.history.replaceState(null, '', window.location.pathname)
+      view.unmount()
+      view = render(<SignIn>{projects}</SignIn>)
+    })
+    expect(await screen.findByText('the project pages')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Connect your GitHub' })).not.toBeInTheDocument()
+  })
+
+  // The two cases the gate must not turn into a lock-out.
+  it('BEH-AUTH-1: the operator is never sent to the connect step, which is optional for him', async () => {
+    vi.stubGlobal('fetch', serve({ ...NOT_CONNECTED, operator: true }))
+    render(<SignIn>{projects}</SignIn>)
+    expect(await screen.findByText('the project pages')).toBeInTheDocument()
+  })
+
+  it('BEH-AUTH-1: a Kit that cannot offer GitHub connect does not lock a user out of their projects', async () => {
+    vi.stubGlobal('fetch', serve({ ...SIGNED_IN }))
+    render(<SignIn>{projects}</SignIn>)
+    expect(await screen.findByText('the project pages')).toBeInTheDocument()
+  })
+})
