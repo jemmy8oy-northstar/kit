@@ -104,6 +104,29 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
   then sees heading:KitProjectsTitle
   then sees region:KitMain
   contract a corpus that will not parse is listed AS an error, not as zero behaviours
+  contract my assumption: a corpus is listed when its repo's default branch has a .kit/ directory holding a .beh file, or, until BEH-USERS-12 lands, a .beh file anywhere; this is the detection rule of BEH-USERS-2, and this card changes only in that it now also finds .kit/
+
+behaviour BEH-PROJ-1 "A project's pipeline runs only while its own switch is on, and every switch starts off"
+  in FEAT-PROJECTS
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract my assumption: the pipeline is switched on and off for each project on that project's own page, and a switch set off stops the pipeline for that project only
+  contract my assumption: kit's switch is the only one on at first; every other project starts off until he turns it on
+
+behaviour BEH-PROJ-2 "Each project has its own views, as a GitHub repo does; the board and the settings are global, shared by all projects"
+  in FEAT-PROJECTS
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract my assumption: a project's notes, specs and pipeline show one project at a time, and the global board and global settings sit outside any project and show all of them
+  contract my assumption: a project's notes and specs are read from its own repo, so one project's cards never appear in another project's view
 
 # ═══ Scheduled vs backlog (kit#118) ══════════════════════════════════════════
 # "maybe there is a point where things are scheduled vs backlogged and the
@@ -1382,8 +1405,11 @@ behaviour BEH-USERS-3 "A new Kit project gets a new repo in the user's GitHub"
   contract my assumption: a client id and secret are what a user token needs, so they serve the half above that is his call (Kit creating the repo itself). Reading them is auth, so they stay unused until he approves that half; the link-based first build stands
   contract my assumption: a name is normalised by turning whitespace runs into - and dropping anything outside letters, digits, . _ -, and the links are withheld while the result is empty
   contract his note (kit-ui.notes.md#2026-11-04-1808): "all spec currently lives centrally in the kit repo, not in each project's repo. So the card's 'no spec held centrally' describes the target, not today's state"
-  contract my assumption: the title stays the target, and today's state is this line: James's own projects' specs still live in kit's prototypes/behaviour-ast/behaviours, while a user's project is read from their own repo. BEH-USERS-12 moves his there too
+  contract my assumption: the title stays the target, and today's state is this line, as of 2026-11-15: holiday-planning's spec is in its own repo's .kit/ (BEH-USERS-12, done 2026-11-13) and Kit reads it once kit#797 is live; every other spec, kit's own included, still lives centrally in prototypes/behaviour-ast/behaviours in the kit repo. A user's project is read from their own repo
+  contract my assumption: noted against this card, per kit-ui.notes.md#2026-11-04-1808: the "no spec held centrally" in the title describes the target. kit.notes.md#2026-11-15-1247 ("Kit .kit specs live in the project repo not centrally in kit") is newer and does not say whether kit's own spec has moved, so today's state above is unconfirmed on that point
+  contract my assumption: the owner is asked to confirm whether the title states the target or today's state (kit-ui.notes.md#2026-11-04-1808 asks for it settled). Default until he answers: the title stays the target, with today's state beside it, as above
   contract my assumption: a repo is a Kit project when its default branch has a .kit/ directory holding a .beh file, or, until BEH-USERS-12 lands, a .beh file anywhere, so no project drops off the list mid-migration
+  contract my assumption: the detection built today (see "contract built" above) is the .beh-anywhere rule on the default branch; the .kit/ rule is not built yet, so the .kit/ check is the target and must be added before BEH-USERS-12's kit move
 
 behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in its own repo, Kit's own included"
   in FEAT-USER-REPOS
@@ -1396,6 +1422,8 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   when opens page:KitProjects
   then sees region:KitMain
   contract "Migrate the spec out of the kit repo into each project's repo, under a hidden .kit/ directory. Each project's spec lives in .kit/ in its own repo, the same way for every project, including kit: kit's own spec moves out of the kit repo into kit's .kit/. Consistent with BEH-USERS-2 (no spec held centrally)."
+  contract my assumption: the shape is the same for every project: .kit/ holds every file the project's spec is made of today, under today's names (.beh, .notes.md, .schedule, .tests.json and .bindings.json where they exist), and nothing else. The lines above name only the first three, so this line adds the rest
+  contract my assumption: the 2026-11-04 18:07Z target is the same for every project, so the 2026-11-13 hold on the other public projects (kit#696) pauses their move and does not change the target. Publishing a public project's spec stays his call, and until he answers those projects keep their spec in kit
   contract my assumption: a project's .kit/ holds its .beh, .notes.md and .schedule files under the names they have today, and Kit reads and writes them through the project's own repo, as it already does for a user's project
   contract my assumption: one project moves per PR, the smallest first, and its tests' behaviour links move with it, so test health never reads a project as unspecified mid-move
   contract kit's CI runs `check` against prototypes/behaviour-ast/behaviours today. Pointing it at .kit/ is a workflow change, so that part is his: an isolated PR for him to review
@@ -1412,6 +1440,7 @@ behaviour BEH-USERS-12 "Each project's spec lives in a hidden .kit/ directory in
   contract his note (kit.notes.md#2026-11-15-1300): "Top priority atm is splitting out the projects in kit and moving notes and specs into the projects repos"
   contract decided 2026-11-15 by his two notes above, replacing the 2026-11-13 default: every project with a repo moves, public or not, notes included. macro-metrics has no `# kit:repo` line, so it stays in kit until it has one
   contract done 2026-11-15: balenthiran.co.uk, language-vocab, tracks, whos-accountable, earnyourbeers and snip-it each have their spec in .kit/ on dev, copied unchanged from kit/hosted. kit#797 now lists all seven repos in KIT_PROJECTS; it is his as a helm change. Before kit's copies are deleted, each .kit/ is re-synced from kit/hosted in case he left a note in kit's copy meanwhile
+  contract my assumption: notes move with the spec, so each project keeps its notes in its own repo under .kit/ and the kit repo holds none of them (kit.notes.md#2026-11-15-1300)
   contract his note on this card (kit-ui.notes.md, 2026-11-16 22:56Z): "I think this is ready now". Triage set it aside as naming no card, a defect fixed under BEH-ORCH-1, so it is recorded here for the work item spec-moves-to-project-kit-dir to read. Its needs-context question (merge kit#797) is removed: he merged it on 2026-11-15
 
 feature FEAT-AGENT-PIPELINE "A cheap model does the work in short stages, and a stronger model only reviews what it flags"
