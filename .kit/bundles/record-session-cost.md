@@ -20,6 +20,24 @@ Where the cost comes from (revised at review):
 Card BEH-COST-1 is new, in a new FEAT-COST feature (stage ui, copied from its siblings in kit.beh). The contract lines are unreviewed assumptions: one record per session with date, project and model; the record lives in the database on Kit's server, outside the project's repo; Kit stores the reported cost, not an estimate, and not the subscription price.
 The card is written in the pending shape used in ideas.beh because no spec noun yet binds a session. A builder should add given/when/then only once the nouns exist.
 Next step toward the goal: the open chat and tester work come first; this card is a cost check for the pricing question, so it can follow them.
+Built:
+- BEH_COST_1_a_finished_run_writes_one_record_with_its_date_project_model_and_the_reported_cost_and_no_estimate (SessionCostTests)
+- BEH_COST_1_the_record_is_in_the_store_before_the_report_is_answered_and_still_exists_once_claude_home_is_removed (SessionCostTests)
+- BEH_COST_1_no_file_is_written_under_the_project_repo_for_a_cost_record (SessionCostTests)
+- BEH_COST_1_a_new_sessions_cost_is_the_one_the_run_reported_and_claude_home_is_never_read (SessionCostTests)
+- BEH_COST_1_a_failed_run_that_reports_a_cost_is_recorded_too (SessionCostTests)
+- BEH_COST_1_a_cost_that_is_not_a_non_negative_number_is_refused_and_nothing_is_recorded (SessionCostTests, two cases)
+- BEH_COST_1_a_run_reported_twice_is_recorded_once (SessionCostTests)
+- BEH_COST_1_the_subscription_price_is_not_a_field_of_the_record (SessionCostTests)
+- BEH_COST_1_the_postgres_store_keeps_one_record_per_run (SessionCostTests; passes without a database, runs only with KIT_TEST_DATABASE set, not run here)
+- BEH_COST_1_past_sessions_with_a_reported_cost_are_summed_by_week_and_match_those_costs (SessionCostTests)
+- BEH_COST_1_a_past_session_with_only_token_usage_is_skipped_and_counted_and_never_priced_from_its_tokens (SessionCostTests)
+- BEH_COST_1_no_import_of_past_runner_sessions_is_attempted_by_the_runner_or_the_server (SessionCostTests)
+- BEH_COST_1_the_run_writes_the_dollar_cost_its_own_result_reports_and_not_what_is_under_home (RunnerScriptTests)
+- BEH_COST_1_a_result_with_no_reported_cost_writes_no_cost_file (RunnerScriptTests)
+- BEH_COST_1_the_pool_reports_the_run_cost_with_its_usage_and_bundles (RunnerScriptTests)
+Whole backend suite (dotnet test, 2030 tests): 2027 passed, 3 failed; the 3 failures are environmental and also fail on the untouched branch here (no ICU library, no `kill` binary in this sandbox): ClaimerSidecarTests.A_claim_never_reported_is_reported_failed_when_the_pod_is_stopped, ReportConformanceTests.Globalization_is_ICU_so_locale_order_is_reachable, ReportConformanceTests.Report_reproduces_Node_on_the_branches_the_goldens_miss.
+
 Test plan:
 - BEH-COST-1: a session Kit starts writes one record holding its date, project, model and the cost Claude Code reports for it, and no estimate
 - BEH-COST-1: the record is in the database on Kit's server before the runner exits, and still exists after the runner's ~/.claude/ is removed

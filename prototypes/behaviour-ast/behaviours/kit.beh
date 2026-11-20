@@ -376,7 +376,10 @@ behaviour BEH-COST-1 "Kit records what each Claude Code session it runs costs, s
   priority 5
   review unreviewed
   pending
+  needs-context "Price past token-only sessions at API rates as a marked estimate, or skip them? Until you answer, they are skipped and counted, never priced from their tokens."
   contract my assumption: each session Kit starts keeps its cost, its date, its project and its model, so a week's cost is a sum
-  contract my assumption: the cost is read from the session records Claude Code writes under ~/.claude/, so sessions already run count as well as new ones
+  contract my assumption: a new session's cost is the dollar cost its run's own result reports (total_cost_usd), one record per run, written to the database before the runner exits; a failed run's reported cost is kept too
+  contract my assumption: past sessions on a dev machine count only where the session record carries a reported dollar cost (costUSD); a session with token usage and no reported cost is skipped and counted, and is not read from ~/.claude/ by the runner or the server
+  contract my assumption: weeks run Monday to Sunday, in UTC, and a session counts in the week it started
   contract my assumption: the record is written to the database on Kit's server, outside the project's repo, so no user cost data enters a corpus
   contract my assumption: Kit stores the cost Claude Code reports, not an estimate; the subscription price is not stored by Kit

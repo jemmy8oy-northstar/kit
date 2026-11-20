@@ -20,7 +20,7 @@ namespace Balenthiran.Kit.Services;
 /// <param name="github">Mints a run's repo-scoped token; null when no GitHub App is configured.</param>
 /// <param name="maxAge">How long after its start a run may still ask for a GitHub token; null is <see cref="AgentProxy.DefaultMaxAge"/>.</param>
 /// <param name="pipeline">Told when a run ends, so its next stage can start (BEH-ORCH-3); null when <c>KIT_PIPELINE</c> is off.</param>
-public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null, GitHubAppTokenSource? github = null, TimeSpan? maxAge = null, Pipeline? pipeline = null)
+public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, string? poolToken, TimeSpan claimWait, TimeProvider? clock = null, GitHubAppTokenSource? github = null, TimeSpan? maxAge = null, Pipeline? pipeline = null, ISessionCostStore? costs = null)
 {
     /// <summary>The header a runner pod authenticates a claim with.</summary>
     public const string PoolHeader = "x-kit-runner-pool";
@@ -50,7 +50,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
     }
 
     /// <summary>
-    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, bundles?, failure? }</c>,
+    /// Answers a runner's report that its run ended: <c>{ status: "finished" | "failed", usage?, costUsd?, bundles?, failure? }</c>,
     /// authenticated by the run token. <c>bundles</c> are what a triage run pushed (<see cref="ReadBundles"/>), handed
     /// to the pipeline. <c>usage</c> is Claude Code's own count, with its field names (<c>input_tokens</c>,
     /// <c>output_tokens</c>, <c>cache_creation_input_tokens</c>, <c>cache_read_input_tokens</c>). A run on James's
@@ -85,6 +85,18 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             usage = read;
         }
 
+        // BEH-COST-1: the dollar cost the run's own result reported. Only that is kept as a session's cost, never an estimate.
+        decimal? reportedCost = null;
+        if (b.TryGetProperty("costUsd", out var c) && c.ValueKind != JsonValueKind.Null)
+        {
+            if (c.ValueKind != JsonValueKind.Number || !c.TryGetDecimal(out var dollars) || dollars < 0)
+            {
+                return Error(400, "bad-cost", "costUsd must be the dollar cost the run reported: a number of zero or more");
+            }
+
+            reportedCost = dollars;
+        }
+
         // Only a failed report may say why, and only as a step and an exit code: nothing a run could write beyond that is kept.
         string? failure = null;
         if (b.TryGetProperty("failure", out var f) && f.ValueKind != JsonValueKind.Null)
@@ -117,7 +129,14 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             store.AddUsage(run.Id, x, AgentPrices.Cost(run.Model, x.Input, x.Output, x.CacheWrite, 0, x.CacheRead));
         }
 
-        store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow(), failure);
+        var ended = (clock ?? TimeProvider.System).GetUtcNow();
+        // BEH-COST-1: written before the answer, so the record exists before the runner is let go.
+        if (reportedCost is { } spent && costs is not null)
+        {
+            costs.Record(new SessionCost { RunId = run.Id, Date = ended, Project = run.Project, Model = run.Model, CostUsd = spent });
+        }
+
+        store.SetStatus(run.Id, s.GetString()!, ended, failure);
         pool.Signal();
         pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
         return new KitResponse

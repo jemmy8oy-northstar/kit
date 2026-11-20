@@ -18,6 +18,7 @@
 #   KIT_STAGE         optional  the pipeline stage; "test" (BEH-ORCH-12) makes the script check the agent's verdict line and never push
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token (`claude setup-token`); see below
 #   KIT_USAGE_FILE    optional  where to write Claude Code's usage JSON when the run is on the subscription
+#   KIT_COST_FILE     optional  where to write the dollar cost the run's result reports (total_cost_usd), a JSON number (BEH-COST-1)
 #   KIT_BUNDLES_FILE  optional  where to write the bundles of the kit/work/* branches the run pushed (BEH-ORCH-3)
 #
 # Two ways to reach the model. Without CLAUDE_CODE_OAUTH_TOKEN, only through Kit: ANTHROPIC_BASE_URL
@@ -175,8 +176,9 @@ agent=$!
 wait "$agent" || status=$?
 kill -KILL -- "-$agent" 2>/dev/null || true
 # A failed run spent tokens too, so its usage is written before the exit status is acted on.
+# BEH-COST-1: the dollar cost the result reports (total_cost_usd) is written to KIT_COST_FILE the same way, and only that.
 node -e '
-  const [file, usageFile] = process.argv.slice(1);
+  const [file, usageFile, costFile] = process.argv.slice(1);
   let r;
   try { r = JSON.parse(require("fs").readFileSync(file, "utf8")); } catch { process.exit(0); }
   if (typeof r.result === "string") console.log(r.result);
@@ -187,7 +189,11 @@ node -e '
     }
     require("fs").writeFileSync(usageFile, JSON.stringify(u));
   }
-' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}"
+  const cost = r.total_cost_usd;
+  if (costFile && typeof cost === "number" && Number.isFinite(cost) && cost >= 0) {
+    try { require("fs").writeFileSync(costFile, JSON.stringify(cost)); } catch {}
+  }
+' "$result" "${CLAUDE_CODE_OAUTH_TOKEN:+${KIT_USAGE_FILE:-}}" "${KIT_COST_FILE:-}"
 # 137 is also a kill from elsewhere (out of memory), so it counts as the limit only once the limit has passed.
 if [ "$status" -eq 124 ] || { [ "$status" -eq 137 ] && [ $((SECONDS - started)) -ge "$max_seconds" ]; }; then
   step=time
