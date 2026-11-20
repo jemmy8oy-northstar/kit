@@ -402,6 +402,7 @@ behaviour BEH-NAV-1 "Every page carries a navbar with the board and the projects
   when activates link:KitNavBoard
   then sees heading:KitBoardTitle
   contract the navbar marks the view you are on; the projects link is the existing project list
+  contract my assumption: the navbar is on every page, feature and behaviour pages included, not only the board and the project list (kit.notes.md#2026-10-11-1239: "a docker or navbar with two views")
 
 behaviour BEH-BOARD-1 "The board shows every behaviour in a column for where it stands"
   in FEAT-BOARD
@@ -426,6 +427,7 @@ behaviour BEH-BOARD-2 "Cards are coloured by project, and the board can be filte
   when activates button:KitBoardShowTrials
   then sees region:KitBoardBacklog
   contract a project keeps the same colour on every visit; the filter lives in the url so it can be shared
+  contract my assumption: a card's colour is its project's colour, the same colour as that project's filter button, so a card can be matched to its filter (kit.notes.md#2026-10-11-1239: "colour coded by project and you can also filter by project")
   contract trial corpora (not-a-real-app, duplicate-corpus) are hidden until asked for
 
 behaviour BEH-BOARD-3 "An in-progress column sits before done"
@@ -543,6 +545,7 @@ behaviour BEH-FEAT-2 "A feature shows its child features, its behaviours, and ev
   then sees region:KitFeatureParents
   contract a child is anything with an `in` line naming this feature; one thing tagged into two features is listed under both
   contract each parent links to its own feature page; none of them is the owner
+  contract my assumption: a behaviour tagged into two features shows both as tags on its own page, as a feature shows its parents, so a parent is a tag and not a single folder (kit.notes.md#2026-10-11-1239: "parents treated as tags")
 
 behaviour BEH-FEAT-3 "The breadcrumb is the path you came by"
   in FEAT-FEATURE
@@ -565,6 +568,7 @@ behaviour BEH-FEAT-4 "Files naming the same project are one card, with one link"
   then sees region:KitProjectList
   contract `# kit:project <name>` groups files on the project list and the board; the card links to the project's one page and lists no file
   contract a file without the directive is its own project, as today; check and report still read one file at a time
+  contract my assumption: kit.beh, kit-ui.beh and kit-hosted.beh all carry `# kit:project kit`, so the project list shows one kit card and the one kit page holds the features of all three files; this answers why kit showed three projects (kit.notes.md#2026-10-11-1239), and it is not a new decision
 
 behaviour BEH-FEAT-5 "A project of several files is one page, its features drawn from every file"
   in FEAT-PROJECT
@@ -649,7 +653,9 @@ behaviour BEH-KIND-1 "Every card shows its layer, ui, ux or technical, and the b
   contract the type is the existing `layer` line: ux unless a `layer` line or the file's `# kit:layer` says otherwise, so every behaviour has exactly one
   contract ui is how it looks, ux is how it works for the person using it, technical is the logic under both: the three named in kit#284
   contract board and project-page cards show the layer; the board filters by it from chips beside the project filter, kept in the url
+  contract my assumption: a feature shows as tags the layers of the behaviours beneath it, on its card and on its own page, so the layers read as tags on features as well as on cards (kit.notes.md#2026-10-16-0724: "are ui/ux/logic implementation even treated as tags")
   contract two chips is either layer, not both; a layer the corpus has no word for filters nothing out
+  contract my assumption: each card's layer is a visible word, ui, ux or technical, as written; the technical chip and badge also say "logic implementation" in a tooltip naming it the logic under both, because the 10-16 notes call it that (kit.notes.md#2026-10-16-0714, #2026-10-16-0724: "I am not seeing them anywhere")
 
 behaviour BEH-KIND-2 "A project's features filter by layer too"
   in FEAT-PROJECT
@@ -662,6 +668,7 @@ behaviour BEH-KIND-2 "A project's features filter by layer too"
   contract the same three chips as the board (BEH-KIND-1), at the top of the Features tab, kept in the url as `?layer=`
   contract a feature card counts only the behaviours of the chosen layers beneath it, and a feature with none is hidden
   contract opening a feature keeps the filter, so its page lists the same layers
+  contract my assumption: with no `?layer=` all three layers show, so the Features tab reads as it did until a chip is pressed
 
 behaviour BEH-NOTE-11 "Folded notes archive themselves, and a button shows them"
   in FEAT-NOTES
@@ -1120,6 +1127,7 @@ behaviour BEH-EPIC-1 "An epic is defined top down, then tagged onto whichever fe
   contract "it doesn't come in top level and navigate down level by level. An epic might get tagged onto a ux spec which is multiple layers deep because its parents are not specifically important to the epic"
   contract an item keeps its project and parent feature and gains the epic beside them; the project's own navigation is unchanged ("no need to complicate the projects view")
   contract built with BEH-EPIC-2: a feature at any depth takes `in EPIC-…`, its parents stay as they were, and a behaviour reaches the epic through its feature (kit#388)
+  contract my assumption: the 16:44Z note also asks for the epic tag on specs (behaviours) directly; as built a behaviour is refused that tag and reaches the epic through its feature, the open question in BEH-EPIC-2
 
 behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project, and a feature names it as one of its parents"
   in FEAT-EPICS
@@ -1135,6 +1143,7 @@ behaviour BEH-EPIC-2 "An epic is its own kind of block, its parent is a project,
   contract my assumption: an epic's one `in` line names its parent project, as the 17:25Z note says ("an epics parent is a project"); it takes no feature or behaviour lines of its own
   contract an epic's tags sit apart from the feature's parents, so the project's navigation never changes
   contract my assumption: the 16:44Z note asks for an epic tag on behaviours too ("a new tag on features or specs for epic"); as built, a behaviour's `in EPIC-…` is refused with the fix in the message: tag its feature instead. Open for him to decide: whether a behaviour takes the tag directly
+  contract my assumption: the 17:25Z note says features can have epics among their parents ("they can be other features projects or epics"); as built the epic is a tag beside the parents, not a parent in the navigation, and BEH-EPIC-1 keeps the project's navigation unchanged. Open for him to decide: whether an epic is a parent of a feature in the navigation, or only a tag
 
 behaviour BEH-EPIC-3 "Epic tags are coloured apart from project and feature tags"
   in FEAT-EPICS
@@ -1223,6 +1232,7 @@ behaviour BEH-EPIC-8 "Each epic has its own page, as behaviours and features do"
   contract "Epics page shows an epic page just like behaviours and features"
   contract my assumption: an epic card's title on the epic board opens it, and so does an epic tag on a feature page
   contract the page shows the epic's title, id and project, its behaviours built out of total as its card counts them, and each feature tagged into it, linked
+  contract my assumption: an epic id with no epic block shows a page that names the missing epic, not an empty page
 
 # His two epics (kit.notes.md 2026-10-19 17:21Z).
 epic EPIC-KIT-USERS "Kit supports users other than James"
@@ -1781,6 +1791,20 @@ behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried a
   contract known cost: a pull request whose tests really fail is tested once more at each restart, and each release is a restart. A built ticket has no other way out of a block, as a reply wakes only new, ready and planned tickets
   contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
   contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
+
+behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
+  contract measured 2026-11-20: the train on kit was built at 06:52Z and merged at 07:40Z, 48 minutes for a test capped at 30, so its test sat queued for at least 18. Production has one runner pod, and the pool handed out the oldest queued run whatever its stage, so a test run could wait behind another project's build, which has no time limit of its own (up to 110 minutes), while every built pull request riding on it waited too
+  contract my assumption: when a runner asks, it gets the oldest queued test run or merge (resolve) run whose project is free. Only when there is none does it get the oldest of the rest. One live run per project still holds. A test run is capped at 30 minutes, so a build waits at most that long per test
+  contract my assumption: this is the half of his "reserve a slot for merge/triage" that holds however many runners there are. With one runner, a build already running is not stopped. Triage is not moved up, because nothing waits on it to merge
+  contract built (RunnerPool.GoesFirst, RunnerPool.Take): two passes over the queue, stage "test" or "resolve" first
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
@@ -3044,7 +3068,7 @@ behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explain
   contract built: a "What can Kit do?" button in the chat's header, or a message that is just "help" or "/help", puts Kit's own help line in the thread. It asks no model and spends no reply, and the agent is not told of it
   contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
   contract his list (kit-ui.notes.md#2026-11-03-2340): "Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change."
-  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and offers to leave the note, rather than claiming it did it
+  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and leaves a note for the coding agent to make the change, as the owner's note says, rather than claiming it did it
 
 behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
   in FEAT-CHAT
@@ -3168,7 +3192,7 @@ behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished
   contract my assumption: the limit rises to 4096, which a chat answer should rarely reach; a reply the model stops for length gets Kit's line "That reply was cut short. Ask me to go on." under it, so a cut is never silent
   contract built: AnthropicTriageChat.MaxTokens is 4096; when the Messages API answers stop_reason max_tokens the server's answer carries truncated: true (absent otherwise), and the Chat page puts Kit's line under that reply. It sends nothing to the model and the agent is not told of it
 
-behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends"
+behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends and Shift+Enter adds a new line"
   in FEAT-CHAT
   layer ux
   source defined kit-ui.notes.md#2026-11-04-1100

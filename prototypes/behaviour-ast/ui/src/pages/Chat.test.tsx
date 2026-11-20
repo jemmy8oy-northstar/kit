@@ -401,6 +401,35 @@ describe('BEH-CHAT-7: help, with no model call', () => {
       { from: 'user', text: '[Now talking about alpha] [In view now: A-ASK "title of A-ASK", asking: Which colour?] hello' },
     ])
   })
+
+  it('the help line lists what Kit can do and what it cannot', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'What can Kit do?' }))
+    const line = screen.getByText(/this chat changes no code/).textContent ?? ''
+    expect(line).toContain('Kit can: approve, deny (with what is true instead) or answer the top item')
+    expect(line).toContain('undo the last thing done to an item')
+    expect(line).toContain('show an item again')
+    expect(line).toContain('save a note for the coding agent')
+    expect(line).toContain('put a technical question to the coding agent')
+    expect(line).toContain('read whole spec cards')
+    expect(line).toContain('Kit cannot reorder, pause, schedule or change the priority of items, or edit the spec')
+    expect(line).toContain('it leaves a note and the coding agent makes the change')
+  })
+
+  it('asked for a change Kit cannot make, it leaves a note for the coding agent and does not post an answer', async () => {
+    mockApi(undefined, () => ({
+      ok: true,
+      status: 200,
+      body: { reply: 'I have left that with the coding agent.', remaining: 8, action: { kind: 'note', text: 'Move BEH-A-1 to the top of the schedule.' } },
+    }))
+    await open()
+    await say('put BEH-A-1 first', 'I have left that with the coding agent.')
+    await waitFor(() => expect(posts.at(-1)).toEqual([expect.stringMatching(/\/notes$/), { text: 'Move BEH-A-1 to the top of the schedule.', from: 'chat' }]))
+    await screen.findByText(/^Saved as a note on /)
+    // Only the chat turn and the note: nothing was approved, denied, answered or reordered.
+    expect(posts.map(([p]) => p.replace(/^.*\/api\/projects\/[^/]+/, '')).sort()).toEqual(['/chat', '/notes'].sort())
+  })
 })
 
 describe('BEH-CHAT-6: the chat agent acts on the item itself, and he can undo it', () => {
