@@ -395,7 +395,7 @@ behaviour BEH-WORKER-3 "The scheduled job pings one backend, which starts the wo
   when job:Pings backend
   then starts worker:Named
   review unreviewed
-  contract my assumption: one backend receives every job's ping, not one endpoint per stage; the owner has not decided this, so this is the default
+  contract my assumption: one stateless backend receives every job's ping, not one endpoint per stage; the owner chose this (his reply on pipeline-workers-and-merge-agent: it works well for now and can change later), and scaling the backend is not built now
   contract my assumption: a ping names the worker to start and carries no work of its own
 
 behaviour BEH-MERGE-1 "The merge agent merges open pull requests into dev"
