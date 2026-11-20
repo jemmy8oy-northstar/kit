@@ -3810,6 +3810,24 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_18_a_repo_refused_a_train_once_is_asked_again_at_the_next_look()
+    {
+        // The refusal is about the pull requests of that look (one had its own Actions run), not the repo for ever.
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        train.Private = false;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+
+        train.Private = true;
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(2, train.Built.Count);
+        Assert.Contains("kit/train/dev", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_18_with_only_the_merge_job_on_a_train_gets_its_lead_projects_next_free_slot()
     {
         // Production's shape (claude-code-bot#145, 2026-11-20): builds start as runs end, not from a job.
