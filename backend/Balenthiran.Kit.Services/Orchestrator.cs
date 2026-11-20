@@ -9,11 +9,30 @@ public enum PipelineStage
     /// <summary>A stronger model checks a flagged stage's bundle (BEH-ORCH-2).</summary>
     Review,
 
+    /// <summary>
+    /// BEH-ORCH-11: adds to a triaged ticket's bundle what a planner needs. Only entered with
+    /// <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, by the context job; otherwise a triaged item goes straight to Spec.
+    /// </summary>
+    Context,
+
     /// <summary>Formalises the cards and plans the tests.</summary>
     Spec,
 
     /// <summary>Tests first, then code, until they pass.</summary>
     Build,
+
+    /// <summary>
+    /// BEH-ORCH-11, slice 7: a job. Owning it (<c>KIT_PIPELINE_JOB_MERGE=on</c>) moves the merge of a built item's pull
+    /// request from <c>MergeReadyAsync</c> to <c>MergeTickAsync</c>. Slice 7b: also the stage of a work item for exactly as
+    /// long as its conflict-resolution run is in flight (it is a built ticket meanwhile), and Build, Done again after.
+    /// </summary>
+    Merge,
+
+    /// <summary>
+    /// BEH-ORCH-12: the stage of a work item for exactly as long as Kit's own test run of its pull request's head commit is in
+    /// flight (a built ticket meanwhile), and Build, Done again after a pass. Never a queued stage a job takes.
+    /// </summary>
+    Test,
 }
 
 /// <summary>Where a work item is within its current stage.</summary>
@@ -97,14 +116,39 @@ public static class Orchestrator
             ? item with { Status = WorkItemStatus.Running }
             : throw new InvalidOperationException($"only a queued item can start, not one that is {item.Status}");
 
-    /// <summary>The model <paramref name="stage"/> runs on.</summary>
-    public static string ModelFor(PipelineStage stage, StageModelSettings models) => stage switch
+    /// <summary>The model <paramref name="stage"/> runs on; a review of a low-level <paramref name="flag"/> runs on the cheaper review model (BEH-ORCH-2).</summary>
+    public static string ModelFor(PipelineStage stage, StageModelSettings models, string? flag = null) => stage switch
     {
         PipelineStage.Triage => models.Triage,
-        PipelineStage.Review => models.Review,
+        PipelineStage.Review => FlagLevels.Of(flag) == FlagLevel.Low ? models.ReviewLow ?? StageModels.DefaultReviewLow : models.Review,
+        PipelineStage.Context => models.Context ?? StageModels.DefaultContext,
         PipelineStage.Spec => models.Spec,
         PipelineStage.Build => models.Build,
+        PipelineStage.Merge => models.Resolve ?? models.Build,
+        PipelineStage.Test => models.Test ?? models.Triage,
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
+    };
+
+    /// <summary>
+    /// BEH-ORCH-17: a test run's time limit. kit's whole suite took 378 seconds on 2026-11-19 with a warm cache, so half an
+    /// hour leaves room for a cold restore and the agent's own turns, and a hung run frees its project in 40 minutes, not 150.
+    /// </summary>
+    public const int TestSeconds = 1800;
+
+    /// <summary>The time limit of <paramref name="stage"/>'s run (BEH-ORCH-17); null keeps the runner's own (6600 seconds).</summary>
+    public static int? SecondsFor(PipelineStage stage) => stage == PipelineStage.Test ? TestSeconds : null;
+
+    /// <summary>The turn limit of <paramref name="stage"/>'s run (BEH-ORCH-5).</summary>
+    public static int TurnsFor(PipelineStage stage, StageTurnSettings turns) => stage switch
+    {
+        PipelineStage.Triage => turns.Triage,
+        PipelineStage.Review => turns.Review,
+        PipelineStage.Context => turns.Context,
+        PipelineStage.Spec => turns.Spec,
+        PipelineStage.Build => turns.Build,
+        PipelineStage.Merge => turns.Resolve ?? turns.Build,
+        PipelineStage.Test => turns.Test ?? turns.Build,
+        _ => throw new InvalidOperationException($"no turn limit is set for stage {stage}"),
     };
 
     private static WorkItem Stop(WorkItem item, string because) =>
@@ -114,6 +158,7 @@ public static class Orchestrator
     private static WorkItem Next(WorkItem item, PipelineStage finished) => finished switch
     {
         PipelineStage.Triage => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
+        PipelineStage.Context => item with { Stage = PipelineStage.Spec, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Spec => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Queued, ReviewedStage = null },
         PipelineStage.Build => item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done, ReviewedStage = null },
         _ => throw new InvalidOperationException($"nothing follows {finished}"),

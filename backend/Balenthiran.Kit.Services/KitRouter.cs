@@ -175,6 +175,27 @@ public sealed partial class KitRouter(
             return Process();
         }
 
+        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; open, as the agent reads it signed out (kit#795).
+        if (pathname == "/api/settings/idle")
+        {
+            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
+                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
+                : [IdleDirective.Default];
+            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
+        }
+
+        // BEH-GATE-H1 (kit#795): his words, "none of kit should be accessible to anyone that's not
+        // signed in". Every read below needs a session, before anything is looked up, so a stranger
+        // learns nothing, not even which projects exist.
+        if (SignedOut(cookie))
+        {
+            return Json(401, new ApiError
+            {
+                Error = "not-signed-in",
+                Reason = "Kit is served only to a signed-in session (or to loopback on a Kit with no password)",
+            });
+        }
+
         // BEH-USERS-4: the signed-in user's own memory; the id comes from the session, never the request.
         if (pathname == "/api/me/memory")
         {
@@ -187,6 +208,24 @@ public sealed partial class KitRouter(
             return RunsList(cookie);
         }
 
+        // BEH-ORCH-9: the pipeline's work items, for the operator only, as runs are.
+        if (pathname == "/api/pipeline")
+        {
+            return PipelineList(cookie);
+        }
+
+        // BEH-VIS-1, BEH-VIS-2: the run page's data (running agents, finished items with stage costs), for the operator only.
+        if (pathname == "/api/runs/visibility")
+        {
+            return RunVisibilityView(cookie);
+        }
+
+        // BEH-ORCH-16: a project's tickets and their comment threads, for the operator only, as the pipeline is.
+        if (TicketsRoute.Match(pathname) is { Success: true } tickets)
+        {
+            return TicketList(cookie, tickets.Groups[1].Value);
+        }
+
         if (pathname == "/api/projects")
         {
             // BEH-USERS-8: a user's list holds their own projects, and every project this Kit
@@ -197,13 +236,15 @@ public sealed partial class KitRouter(
                 : UsersProjects(UserOf(cookie), corpora.Corpora().Select(viewer.Summary).ToList());
         }
 
-        // BEH-SETTINGS-5: how busy the agent is when nothing is asked of it; a read like the rest (BEH-GATE-H1).
-        if (pathname == "/api/settings/idle")
+        // BEH-SETTINGS-7: when he last asked the agent to wake; a read like the rest.
+        if (pathname == "/api/settings/wake")
         {
-            var order = corpora.Corpora().Contains(IdleDirective.App, StringComparer.Ordinal)
-                ? IdleDirective.ReadOrder(corpora.ReadText(IdleDirective.App))
-                : [IdleDirective.Default];
-            return Json(200, new IdleSetting { Idle = order.Count > 0 ? order[0] : "idle", Order = order });
+            return Json(200, new WakeSetting
+            {
+                Requested = corpora.Corpora().Contains(WakeDirective.App, StringComparer.Ordinal)
+                    ? WakeDirective.Read(corpora.ReadText(WakeDirective.App))
+                    : null,
+            });
         }
 
         // BEH-FLAGS-1/2: Kit's features switched on and off for him and for testers; a read like the rest.
@@ -212,26 +253,15 @@ public sealed partial class KitRouter(
             return Json(200, FeaturesFor(cookie));
         }
 
-        // BEH-ACTIVITY-1: recent commits across every project; a read like the rest (BEH-GATE-H1).
+        // BEH-ACTIVITY-1: recent commits across every project.
         if (pathname == "/api/activity")
         {
             return Json(200, IsOtherUser(cookie) ? new ActivityFeed { Entries = [], NoHistory = [] } : activity.Recent());
         }
 
-        // BEH-NOTIFY-1: the agent's messages, the one read that is NOT served to anyone (BEH-GATE-H1
-        // covers projects, which live in a public repo; the feed comes from a private one). Gated as
-        // a write is: his session when locked, loopback when not. A user's feed is empty (BEH-USERS-8).
+        // BEH-NOTIFY-1: the agent's messages. A user's feed is empty (BEH-USERS-8).
         if (pathname is "/api/notifications" or "/api/push" or "/api/triage")
         {
-            if (lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host))
-            {
-                return Json(401, new ApiError
-                {
-                    Error = "not-signed-in",
-                    Reason = "the agent's notifications are served only to a signed-in session (or to loopback on a Kit with no password), because they come from a private repository",
-                });
-            }
-
             // BEH-NOTIFY-3: whether this Kit can push to his phone, behind the same gate as the feed it announces.
             if (pathname == "/api/push")
             {
@@ -245,6 +275,13 @@ public sealed partial class KitRouter(
             }
 
             return Json(200, IsOtherUser(cookie) ? new NotificationFeed { Entries = [] } : notifications.Recent());
+        }
+
+        // BEH-USERS-8 (kit#795): every project this Kit serves is the operator's, so another user is
+        // refused each per-project read before it is looked up, and learns nothing of which exist.
+        if (IsProjectRead(pathname) && IsOtherUser(cookie))
+        {
+            return Json(403, new ApiError { Error = "not-yours", Reason = "this project is not in your GitHub" });
         }
 
         // BEH-WELCOME-1: the test health of a repo in the signed-in user's own GitHub.
@@ -297,7 +334,7 @@ public sealed partial class KitRouter(
         }
 
         // BEH-COMMIT-5: this project's edits that have not reached the base, and the pull request
-        // they wait in. A read like the rest, so it is served to anyone (BEH-GATE-H1).
+        // they wait in. A read like the rest, so it is gated as the project is (BEH-GATE-H1).
         var pm = PendingRoute.Match(pathname);
         if (pm.Success)
         {
@@ -355,6 +392,16 @@ public sealed partial class KitRouter(
 
         return Json(404, new ApiError { Error = "no-such-route", Reason = $"nothing is served at {pathname}" });
     }
+
+    /// <summary>
+    /// The caller is no one in particular: no session on a locked Kit, or not loopback on one with
+    /// no password. The same test the agent's feed and every write use.
+    /// </summary>
+    private bool SignedOut(string? cookie) => lockRequired ? UserOf(cookie) is null : !OriginPolicy.IsLoopback(host);
+
+    /// <summary>A per-project GET, whatever app it names, even one that does not decode.</summary>
+    private static bool IsProjectRead(string pathname) =>
+        new[] { OneProject, NotesRoute, PendingRoute, ScheduleRoute, HistoryRoute }.Any(route => route.IsMatch(pathname));
 
     /// <summary>
     /// The edits branch's commits for <paramref name="app"/> only, newest first, with the pull
@@ -469,6 +516,12 @@ public sealed partial class KitRouter(
             return StartRun(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, runs.Groups[1].Value, body);
         }
 
+        // BEH-ORCH-16 slice 3: his reply on a ticket, behind the same gate; it writes no corpus.
+        if (TicketCommentRoute.Match(pathname) is { Success: true } reply)
+        {
+            return TicketReply(lockRequired ? UserOf(cookie)! : ISessionStore.Operator, reply.Groups[1].Value, reply.Groups[2].Value, body);
+        }
+
         // Below the lock like every edit: proposing the edits to `dev` is a write in its own right.
         if (pathname == "/api/commit")
         {
@@ -485,6 +538,14 @@ public sealed partial class KitRouter(
             lock (writeGate)
             {
                 return SetIdle(body);
+            }
+        }
+
+        if (pathname == "/api/settings/wake")
+        {
+            lock (writeGate)
+            {
+                return SetWake();
             }
         }
 
@@ -1160,6 +1221,29 @@ public sealed partial class KitRouter(
         return Json(200, GitOutcome(corpora.FullPath(app), $"set the agent's idle work to {(chosen.Count == 0 ? "none" : string.Join(", ", chosen))}", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
     }
 
+    /// <summary>
+    /// BEH-SETTINGS-7: record that he asked the agent to wake — the <c># kit:wake</c> line in Kit's own
+    /// primary file set to now, committed like any edit. Operator-only, by the gate every write sits behind.
+    /// </summary>
+    private KitResponse SetWake()
+    {
+        var app = WakeDirective.App;
+        if (!corpora.Corpora().Contains(app, StringComparer.Ordinal))
+        {
+            return Json(404, new ApiError { Error = "no-such-project", Reason = $"the setting lives in the corpus named '{app}', which this Kit does not serve" });
+        }
+
+        var at = (clock ?? TimeProvider.System).GetUtcNow();
+        var result = writer.SetWake(corpora.ReadText(app), at);
+        if (!result.Ok)
+        {
+            return Json(409, new ApiError { Error = result.Error!, Reason = result.Reason! });
+        }
+
+        corpora.WriteText(app, result.Text!);
+        return Json(200, GitOutcome(corpora.FullPath(app), "asked the agent to wake", app, new WriteOutcome { App = app, File = corpora.RelativePath(app), Note = NotCommitted }));
+    }
+
     /// <summary>Kit's own features (the files of project <c>kit</c>), in file order, each id once.</summary>
     private List<(string Id, string Title)> KitFeatures()
     {
@@ -1311,6 +1395,11 @@ public sealed partial class KitRouter(
         }
 
         corpora.WriteScheduleText(app, Schedule.Render(app, ids));
+        if (action == Schedule.Add)
+        {
+            pipeline?.ScheduleChanged(app);
+        }
+
         return Json(200, GitOutcome(corpora.FullSchedulePath(app), Schedule.Summary(action, id), app, new WriteOutcome
         {
             App = app,

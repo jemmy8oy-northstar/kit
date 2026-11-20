@@ -280,6 +280,17 @@ describe('BEH-CHAT-2: the chat opens on the top item, with no click to start', (
   })
 })
 
+describe('BEH-NOTE-15: the chat does not show a note\'s origin tag', () => {
+  it('CONTROL: an ordinary chat turn shows no "from" tag, even with a note that carries one in the project', async () => {
+    mockApi()
+    await open()
+    notesNow = [{ at: '2026-11-03 13:49Z', kind: 'note', behaviour: 'A-ASK', resolves: null, text: 'Blue.', from: 'chat' }]
+    await say('hello', 'reply 1')
+
+    expect(screen.queryByText(/from chat/)).not.toBeInTheDocument()
+  })
+})
+
 describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', () => {
   it('sends the item in hand with each turn, and the messages carry no post-as-answer buttons', async () => {
     mockApi()
@@ -312,6 +323,9 @@ describe('BEH-CHAT-3: an item is answered or marked off from inside the chat', (
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }))
     const kit = await kitLine(/^Approved “.*”\. Reply to answer the next item, or we can define new spec or discuss alpha\.$/)
     expect(kit.closest('li')!.getAttribute('data-from')).toBe('kit')
+    // The next item comes into the thread one effect after Kit's line; skipping before it lands can put Kit's
+    // second line ahead of it (flaked 1 in 2 under load, 2026-11-07).
+    await waitFor(() => expect(order()).toEqual(['item', 'kit', 'item']))
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip to next item' }))
     await kitLine(/^Skipped for now: “.*”\. That was the last item waiting on you\. We can define new spec or discuss alpha\.$/)
@@ -386,6 +400,35 @@ describe('BEH-CHAT-7: help, with no model call', () => {
     expect(chats()[0][1].messages).toEqual([
       { from: 'user', text: '[Now talking about alpha] [In view now: A-ASK "title of A-ASK", asking: Which colour?] hello' },
     ])
+  })
+
+  it('the help line lists what Kit can do and what it cannot', async () => {
+    mockApi()
+    await open()
+    fireEvent.click(screen.getByRole('button', { name: 'What can Kit do?' }))
+    const line = screen.getByText(/this chat changes no code/).textContent ?? ''
+    expect(line).toContain('Kit can: approve, deny (with what is true instead) or answer the top item')
+    expect(line).toContain('undo the last thing done to an item')
+    expect(line).toContain('show an item again')
+    expect(line).toContain('save a note for the coding agent')
+    expect(line).toContain('put a technical question to the coding agent')
+    expect(line).toContain('read whole spec cards')
+    expect(line).toContain('Kit cannot reorder, pause, schedule or change the priority of items, or edit the spec')
+    expect(line).toContain('it leaves a note and the coding agent makes the change')
+  })
+
+  it('asked for a change Kit cannot make, it leaves a note for the coding agent and does not post an answer', async () => {
+    mockApi(undefined, () => ({
+      ok: true,
+      status: 200,
+      body: { reply: 'I have left that with the coding agent.', remaining: 8, action: { kind: 'note', text: 'Move BEH-A-1 to the top of the schedule.' } },
+    }))
+    await open()
+    await say('put BEH-A-1 first', 'I have left that with the coding agent.')
+    await waitFor(() => expect(posts.at(-1)).toEqual([expect.stringMatching(/\/notes$/), { text: 'Move BEH-A-1 to the top of the schedule.', from: 'chat' }]))
+    await screen.findByText(/^Saved as a note on /)
+    // Only the chat turn and the note: nothing was approved, denied, answered or reordered.
+    expect(posts.map(([p]) => p.replace(/^.*\/api\/projects\/[^/]+/, '')).sort()).toEqual(['/chat', '/notes'].sort())
   })
 })
 

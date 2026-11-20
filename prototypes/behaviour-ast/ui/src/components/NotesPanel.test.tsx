@@ -74,7 +74,7 @@ describe('NotesPanel (kit#118)', () => {
     server()
     render(<NotesPanel app="demo" />)
     const box = await screen.findByLabelText('Leave a note')
-    expect(box).toHaveAccessibleDescription(/^Public: .*anyone can read/)
+    expect(box).toHaveAccessibleDescription(/^Saved to this project's GitHub repository\. If that repository is public, anyone can read it/)
   })
 
   it('will not send an empty note', async () => {
@@ -269,6 +269,33 @@ describe('NotesPanel order, cap and folded notes', () => {
     expect(within(archived).queryByText('kinds please')).not.toBeInTheDocument()
   })
 
+  it('an archived note can still be dismissed, and the notes file no longer lists it (BEH-NOTE-11)', async () => {
+    const file = [note('2026-10-16 07:13Z', null, 'tabs please'), note('2026-10-16 07:24Z', null, 'newest first')]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          file.splice((JSON.parse(String(init.body)) as { index: number }).index, 1)
+          return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'demo', behaviour: null, file: 'behaviours/demo.notes.md', committed: true, pushed: true, commit: 'abc1234', branch: 'kit/hosted', note: 'x' }) }
+        }
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ app: 'demo', file: 'behaviours/demo.notes.md', notes: [...file] }) }
+      }),
+    )
+    const citations = citationsOf('demo', [
+      { app: 'demo-ui', behaviours: [{ id: 'BEH-FEAT-7', title: 'Notes are a tab', source: { ref: 'demo.notes.md#2026-10-16-0713' } }] },
+    ])
+    render(
+      <MemoryRouter>
+        <NotesPanel app="demo" citations={citations} />
+      </MemoryRouter>,
+    )
+    const folded = await screen.findByRole('region', { name: 'Archived' })
+    fireEvent.click(within(folded).getByRole('button', { name: 'Show archived (1)' }))
+    fireEvent.click(within(folded).getByRole('button', { name: 'Dismiss' }))
+    await waitFor(() => expect(file.map((n) => n.text)).toEqual(['newest first']))
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Archived' })).not.toBeInTheDocument())
+  })
+
   it('CONTROL: with no citations there is no folded list, and every note is open', async () => {
     server([note('2026-10-16 07:13Z', null, 'tabs please')])
     render(<NotesPanel app="demo" />)
@@ -385,5 +412,13 @@ describe('BEH-NOTE-15: a note says where it came from', () => {
     expect(screen.getByText('from note button')).toBeInTheDocument()
     expect(screen.getByText('from agent')).toBeInTheDocument()
     expect(screen.getAllByText(/^from (chat|note button|agent)$/, { selector: 'span' })).toHaveLength(3)
+  })
+
+  it('a note whose origin is not one of the three is shown untagged, not as "from …"', async () => {
+    server([note('2026-10-09 08:00Z', null, 'from somewhere else', { from: 'email' as unknown as Note['from'] })])
+    render(<NotesPanel app="demo" />)
+
+    expect(await screen.findByText('from somewhere else')).toBeInTheDocument()
+    expect(screen.queryByText(/^from /, { selector: 'span' })).not.toBeInTheDocument()
   })
 })

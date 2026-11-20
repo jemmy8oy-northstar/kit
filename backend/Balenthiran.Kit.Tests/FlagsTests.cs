@@ -213,11 +213,12 @@ public class FlagsTests
     }
 
     [Fact]
-    public void BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_a_tester()
+    public void BEH_FLAGS_2_a_caller_with_no_session_on_a_locked_kit_is_refused()
     {
         var (_, router) = Rig(true);
 
-        Assert.Equal("testers", Served(router).Group);
+        // BEH-GATE-H1 (kit#795): nothing of Kit is read signed out, its switches included.
+        Assert.Equal(401, router.Route("GET", "/api/settings/features").Status);
         Assert.Equal("operator", Served(router, SignIn(router, null, Operator)).Group);
     }
 

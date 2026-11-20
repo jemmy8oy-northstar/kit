@@ -11,4 +11,7 @@ public sealed class AgentRunList : IAgentRunList
 
     [JsonPropertyOrder(2)]
     public required IReadOnlyList<IAgentRun> Runs { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public IReadOnlyList<IRunClaim> Claims { get; init; } = [];
 }

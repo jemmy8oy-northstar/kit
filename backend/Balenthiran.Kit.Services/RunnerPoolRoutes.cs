@@ -41,12 +41,58 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             return Error(401, "not-a-runner", "the runner pool header is missing or wrong");
         }
 
+        FailLost();
         if (await pool.ClaimAsync(claimWait, cancellationToken) is not { } claim)
         {
             return new KitResponse { Status = 204, ContentType = "application/json", CacheControl = "no-store" };
         }
 
         return new KitResponse { Status = 200, ContentType = "application/json", CacheControl = "no-store", Body = claim };
+    }
+
+    /// <summary>
+    /// BEH-ORCH-14: fails each run whose runner is lost (<see cref="RunnerPool.Lost"/>) as if it had reported failing,
+    /// so its project is free for the next run. Done on every claim, because a runner asking for work is when a
+    /// freed project can be used. A report that comes after all is then refused as already over. A run the store
+    /// would not fail goes back to the pool, so the next claim tries it again; one failure never stops the rest.
+    /// BEH-ORCH-17: the first claim also fails the runs a restart left queued (<see cref="RunnerPool.Forgotten"/>).
+    /// </summary>
+    private void FailLost()
+    {
+        IReadOnlyList<string> forgotten = [];
+        try
+        {
+            forgotten = pool.Forgotten();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: looking for the runs a restart forgot threw {e.GetType().Name}");
+        }
+
+        foreach (var id in forgotten.Concat(pool.Lost()))
+        {
+            try
+            {
+                store.SetStatus(id, AgentRunStatus.Failed, (clock ?? TimeProvider.System).GetUtcNow(), RunnerPool.LostFailure);
+            }
+            catch (Exception e)
+            {
+                // The type only, as StartRun logs it.
+                Console.Error.WriteLine($"kit: failing a lost run threw {e.GetType().Name}");
+                pool.StillLost(id);
+                continue;
+            }
+
+            pool.Signal();
+            try
+            {
+                pipeline?.RunEnded(id, false, failure: RunnerPool.LostFailure);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: ending a lost run's work item threw {e.GetType().Name}");
+            }
+        }
     }
 
     /// <summary>
@@ -119,7 +165,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
 
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow(), failure);
         pool.Signal();
-        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
+        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles, failure);
         return new KitResponse
         {
             Status = 200,
@@ -168,7 +214,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
         {
             if (await github.MintForRepoAsync(repo[(repo.IndexOf('/') + 1)..],cancellationToken) is not { } minted)
             {
-                return Error(403, "repo-not-installed", $"the GitHub App installation does not reach {repo}");
+                return Error(403, "repo-not-installed", $"GitHub would not mint a token for {repo}: either the App installation does not reach it, or the App lacks Contents and Pull requests write permission");
             }
 
             return new KitResponse

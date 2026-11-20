@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
+import { addUser, changePassword, connectGitHub, fetchIdle, fetchProjects, fetchWake, requestWake, setConflictMode, setDepth, setFeatureSwitch, setIdleOrder, setPromote, signOut } from '../api/client'
 import type { ConflictMode, DepthMode, IdleItem, SessionState, SwitchGroup } from '../api/types'
 import { isIdea, isTrial, projectOf } from '../board'
 import { FEATURE_PAGES, useFlags } from '../components/flags'
@@ -444,6 +444,42 @@ function IdleSettingSection() {
 }
 
 /**
+ * BEH-SETTINGS-7: ask the agent to wake at its next look. Stored as the `# kit:wake <time>` line in
+ * Kit's own corpus, so a press is a commit he can see. His own pause still wins.
+ */
+function WakeSettingSection() {
+  const { resource, reload } = useReloadableResource(fetchWake, [])
+  const [busy, setBusy] = useState(false)
+  const [outcome, setOutcome] = useState<Outcome>(null)
+
+  function wake() {
+    setBusy(true)
+    setOutcome(null)
+    requestWake()
+      .then(() => {
+        setOutcome({ ok: true, text: 'Asked. The agent will wake at its next look.' })
+        reload()
+      })
+      .catch((err: unknown) => setOutcome({ ok: false, text: err instanceof Error ? err.message : String(err) }))
+      .finally(() => setBusy(false))
+  }
+
+  return (
+    <section aria-labelledby="wake-agent">
+      <h2 id="wake-agent">Wake the agent</h2>
+      <p>The agent wakes at its next look, within about 5 minutes, unless you have paused it.</p>
+      <ResourceView resource={resource}>
+        {({ requested }) => (
+          <p className="muted">{requested ? `Last asked: ${new Date(requested).toLocaleString()}` : 'Never asked'}</p>
+        )}
+      </ResourceView>
+      <button type="button" disabled={busy} onClick={wake}>Wake the agent</button>
+      <Say outcome={outcome} />
+    </section>
+  )
+}
+
+/**
  * BEH-FLAGS-1: each of Kit's features with two switches, "You" and "Testers". Stored as
  * `# kit:switch` comment lines in Kit's own corpus, so a change is a commit he can see. A new
  * feature starts on for him and off for testers. The switches hide UI per group (BEH-FLAGS-2);
@@ -549,6 +585,7 @@ export default function Settings() {
       {session?.operator && accounts ? <ConflictSetting /> : null}
       {session?.operator && accounts ? <DepthSetting /> : null}
       {session?.operator && accounts ? <IdleSettingSection /> : null}
+      {session?.operator && accounts ? <WakeSettingSection /> : null}
       {session?.operator && accounts ? <FeatureSwitchesSection /> : null}
       <OpeningPageSetting />
       <section aria-labelledby="replay-tour">

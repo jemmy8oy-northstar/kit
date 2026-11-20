@@ -44,6 +44,12 @@ public interface IAgentRun
 
     /// <summary>Why a failed run failed, as its runner reported it: a step and an exit code; null otherwise.</summary>
     string? Failure { get; }
+
+    /// <summary>The work-item slug a pipeline run was for (BEH-ORCH-6); null for a run not started for one item, such as triage.</summary>
+    string? WorkItem { get; }
+
+    /// <summary>The pipeline stage a run was for (triage, spec, build or review; BEH-ORCH-9); null for a run started by hand.</summary>
+    string? Stage { get; }
 }
 
 /// <summary>The body of <c>GET /api/runs</c>: runs newest first and the cap each is held to.</summary>
@@ -54,6 +60,28 @@ public interface IAgentRunList
 
     /// <summary>Newest first.</summary>
     IReadOnlyList<IAgentRun> Runs { get; }
+
+    /// <summary>
+    /// BEH-ORCH-17: the runs a runner has taken from the pool and not yet reported, with when it took each. Kept in
+    /// memory only, so a run taken before Kit last started is not here. Empty without a runner pool.
+    /// </summary>
+    IReadOnlyList<IRunClaim> Claims { get; }
+}
+
+/// <summary>BEH-ORCH-17: a run a runner has taken and not yet reported, and when Kit will count that runner lost.</summary>
+public interface IRunClaim
+{
+    /// <summary>The run's id, as in <see cref="IAgentRun.Id"/>.</summary>
+    string RunId { get; }
+
+    /// <summary>When a runner took the run from the pool: the moment it began to run.</summary>
+    DateTimeOffset ClaimedAt { get; }
+
+    /// <summary>When its runner ends it for running too long: <see cref="ClaimedAt"/> plus its stage's time limit; null when it has none of its own.</summary>
+    DateTimeOffset? GivesUpAt { get; }
+
+    /// <summary>When Kit counts its runner lost if it has still not reported (BEH-ORCH-14): <see cref="ClaimedAt"/> plus the lease, which follows the time limit when there is one.</summary>
+    DateTimeOffset LostAt { get; }
 }
 
 /// <summary>
@@ -70,4 +98,41 @@ public interface IAgentRunStarted
 
     /// <summary>What the launcher said, e.g. that no runner is configured.</summary>
     string Launch { get; }
+}
+
+/// <summary>One work item on <c>GET /api/pipeline</c> (BEH-ORCH-9): where it is, why it stopped, and its flag and review.</summary>
+public interface IPipelineItem
+{
+    string Project { get; }
+
+    string Slug { get; }
+
+    /// <summary>triage, spec, build or review.</summary>
+    string Stage { get; }
+
+    /// <summary>queued, running, stopped or done.</summary>
+    string Status { get; }
+
+    string? StoppedBecause { get; }
+
+    string? PullRequest { get; }
+
+    /// <summary>Kit merged the pull request (BEH-ORCH-10).</summary>
+    bool Merged { get; }
+
+    /// <summary>The bundle's Flag line, without "Flag: "; null when it has none.</summary>
+    string? Flag { get; }
+
+    /// <summary>The review's outcome, agreed, revised or escalated; null when it was not reviewed.</summary>
+    string? Review { get; }
+
+    string? ReviewNote { get; }
+}
+
+/// <summary>The body of <c>GET /api/pipeline</c>: whether the pipeline is on, and its items since Kit last started, oldest first.</summary>
+public interface IPipelineItemList
+{
+    bool On { get; }
+
+    IReadOnlyList<IPipelineItem> Items { get; }
 }

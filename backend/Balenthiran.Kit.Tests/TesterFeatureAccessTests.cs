@@ -56,17 +56,18 @@ public class TesterFeatureAccessTests
     }
 
     [Fact]
-    public void BEH_FLAGS_3_a_tester_reads_an_operator_project_by_url_but_it_is_never_in_their_list()
+    public void BEH_FLAGS_3_a_tester_is_refused_an_operator_project_by_url_and_it_is_never_in_their_list()
     {
-        // BEH-USERS-8 and BEH-GATE-H1: a public project opens by its URL for anyone, so a tester may read
-        // it; it is not theirs, so their list does not hold it.
+        // BEH-USERS-8 (kit#795, 2026-11-14, "Viewable kit specs should be determined by the projects in your
+        // github"): another user opening the operator's project by its URL gets 403 not-yours, whatever repo it
+        // is in, so a public project is no longer read by URL. It is not theirs, so their list does not hold it.
         var router = Router(Linked(), new Installed(new Dictionary<long, IReadOnlyList<UserProject>>()));
         var cookie = SignIn(router, "ann");
         var name = OperatorProject();
 
         var read = router.Route("GET", $"/api/projects/{name}", cookie);
 
-        Assert.Equal(200, read.Status);
+        Assert.Equal(403, read.Status);
         var list = Assert.IsType<ProjectList>(router.Route("GET", "/api/projects", cookie).Body);
         Assert.Empty(list.Projects);
     }

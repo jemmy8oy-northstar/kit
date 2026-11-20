@@ -4,24 +4,25 @@
 # KIT_RUNS_PER_CONTAINER runs it exits 0 and the pod restarts fresh.
 #
 # Environment:
-#   KIT_URL                 required  Kit's base URL, e.g. https://balenthiran.co.uk/kit (no trailing slash)
-#   KIT_RUNNER_POOL_TOKEN   required  proves to Kit that this is one of its pool pods; never given to a run
+#   KIT_URL                 required  Kit's base URL, passed on to each run (kit-run)
+#   KIT_CLAIMER_URL         optional  the claimer sidecar (kit-claimer) in this pod (default: http://127.0.0.1:8787)
 #   KIT_RUNS_PER_CONTAINER  optional  runs to do before exiting (default: 20)
 #   CLAUDE_CODE_OAUTH_TOKEN optional  James's subscription token; passed to each run (see kit-run), whose
 #                                     usage is then sent with the `finished` report
 #
-# No token is ever echoed. The claim answer (which holds the run token) lives only in a 0600 temp file and a
-# subshell's environment, and is removed after each run.
+# This container never holds the pool token (kit#701): a run is the same user in the same container and could
+# read it from /proc/1/environ. The claimer sidecar holds it, claims ONE run when asked, and forwards the
+# finished report under that run's token. No token is ever echoed. The claim answer (which holds the run token)
+# lives only in a 0600 temp file and a subshell's environment, and is removed after each run.
 set -euo pipefail
 
 : "${KIT_URL:?kit-pool: KIT_URL is required}"
-: "${KIT_RUNNER_POOL_TOKEN:?kit-pool: KIT_RUNNER_POOL_TOKEN is required}"
 runs_left="${KIT_RUNS_PER_CONTAINER:-20}"
 case "$runs_left" in
   ''|*[!0-9]*) echo "kit-pool: KIT_RUNS_PER_CONTAINER must be a whole number" >&2; exit 64 ;;
 esac
 
-base="${KIT_URL%/}"
+claimer="${KIT_CLAIMER_URL:-http://127.0.0.1:8787}"
 umask 077
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -33,10 +34,9 @@ clean() {
 }
 
 while [ "$runs_left" -gt 0 ]; do
-  # The pool token goes in a curl config on stdin, so it is never in argv (visible in ps).
-  code="$(printf 'header = "x-kit-runner-pool: %s"\n' "$KIT_RUNNER_POOL_TOKEN" \
-    | curl --silent --show-error --max-time 60 --config - --request POST \
-        --output "$tmp/claim.json" --write-out '%{http_code}' "$base/api/runs/claim" 2>/dev/null)" || code=000
+  # The sidecar holds the pool token; asking it needs none. It answers 409 while the last claim is unreported.
+  code="$(curl --silent --show-error --max-time 70 --request POST \
+        --output "$tmp/claim.json" --write-out '%{http_code}' "$claimer/next" 2>/dev/null)" || code=000
 
   if [ "$code" = 204 ]; then
     continue
@@ -47,10 +47,10 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
 
-  # Six NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
+  # Nine NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
   if ! node -e '
     const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-    for (const k of ["id", "token", "repo", "task", "baseBranch", "model"]) process.stdout.write(String(c[k] ?? "") + "\0");
+    for (const k of ["id", "token", "repo", "task", "baseBranch", "model", "maxTurns", "stage", "maxSeconds"]) process.stdout.write(String(c[k] ?? "") + "\0");
   ' "$tmp/claim.json" > "$tmp/fields"; then
     echo "kit-pool: could not read the claim, retrying in 10s" >&2
     rm -f "$tmp/claim.json" "$tmp/fields"
@@ -58,18 +58,23 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
   rm -f "$tmp/claim.json"
-  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; } < "$tmp/fields" || true
+  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; read -r -d '' run_turns; read -r -d '' run_stage; read -r -d '' run_seconds; } < "$tmp/fields" || true
   rm -f "$tmp/fields"
 
   runs_left=$((runs_left - 1))
   echo "kit-pool: running $run_id on $run_repo"
 
-  # A run must never see the pool credential: it is unset for the child, and the child is a subshell.
+  # A run never sees the pool credential: it is not in this container at all.
   status=0
   (
-    unset KIT_RUNNER_POOL_TOKEN
     export KIT_RUN_ID="$run_id" KIT_RUN_TOKEN="$run_token" KIT_REPO="$run_repo" KIT_TASK="$run_task"
     export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_FAILURE_FILE="$tmp/failure.txt" KIT_BUNDLES_FILE="$tmp/bundles.json"
+    # BEH-ORCH-5: a pipeline stage's turn limit; a run started by hand has none, so the runner's own default applies.
+    if [ -n "$run_turns" ]; then export KIT_MAX_TURNS="$run_turns"; fi
+    # BEH-ORCH-12: the stage, so kit-run can check a test run's verdict itself; a run started by hand has none.
+    if [ -n "$run_stage" ]; then export KIT_STAGE="$run_stage"; fi
+    # BEH-ORCH-17: a stage's own time limit (a test run's is half an hour); none keeps kit-run's default.
+    if [ -n "$run_seconds" ]; then export KIT_RUN_MAX_SECONDS="$run_seconds"; fi
     exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
@@ -84,11 +89,11 @@ while [ "$runs_left" -gt 0 ]; do
   # The usage (only written for a run on the subscription) and the bundles (only a triage pushes any) go with the
   # report. If Kit refuses it, the run is reported again without the usage, then with the status alone: ending the
   # run matters more than counting it, and its bundles matter more than its count. Bodies go by file, not argv.
+  # The sidecar adds the run token and forwards the report to Kit, relaying Kit's status.
   report() {
-    printf 'header = "x-api-key: %s"\n' "$run_token" \
-      | curl --silent --show-error --max-time 30 --config - --request POST \
-          --header 'content-type: application/json' --data-binary "@$1" \
-          --output /dev/null --write-out '%{http_code}' "$base/api/runs/finished" 2>/dev/null || echo 000
+    curl --silent --show-error --max-time 40 --request POST \
+        --header 'content-type: application/json' --data-binary "@$1" \
+        --output /dev/null --write-out '%{http_code}' "$claimer/finished" 2>/dev/null || echo 000
   }
   # A failed run says which step failed (the run writes "<step> exit <code>"); if it wrote nothing, only its status is known.
   failure=""
