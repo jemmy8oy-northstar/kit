@@ -1295,6 +1295,24 @@
       }
     }
   ],
+  "BEH-KEEP-1": [
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx",
+      "title": "with typed text in the note box and credits exhausted, a failed pipeline start leaves the note text in the box"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx",
+      "title": "with typed text in the chat box and credits exhausted, a failed pipeline start leaves the chat text in the box"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/components/NotesPanel.test.tsx",
+      "title": "after a failed start the kept note is not cleared, sent again, or dropped until he submits it again once the pipeline can run"
+    },
+    {
+      "file": "prototypes/behaviour-ast/ui/src/pages/Chat.test.tsx",
+      "title": "after a failed start the kept chat text is not cleared, sent again, or dropped until he sends it again once the pipeline can run"
+    }
+  ],
   "BEH-PR-1": [
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main" },
