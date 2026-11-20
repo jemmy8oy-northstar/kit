@@ -1011,6 +1011,17 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         if (result is { Merged: false, Waiting: true })
         {
+            // BEH-ORCH-10: not stopped, but the Runs page should say what it still waits for, not look idle.
+            var note = result.Reason ?? WaitingNote;
+            lock (gate)
+            {
+                var waiting = items.IndexOf(item);
+                if (waiting >= 0 && items[waiting] == item && item.MergeNote != note)
+                {
+                    Set(waiting, item with { MergeNote = note });
+                }
+            }
+
             return;
         }
 
@@ -1041,7 +1052,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 resolved.Add((item.Project, item.Slug));
                 try
                 {
-                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued }));
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Merge, Status = WorkItemStatus.Queued, MergeNote = null }));
                 }
                 catch (Exception e)
                 {
@@ -1065,7 +1076,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 testing[(item.Project, item.Slug)] = sha;
                 try
                 {
-                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued }));
+                    Set(index, Begin(index, item with { Stage = PipelineStage.Test, Status = WorkItemStatus.Queued, MergeNote = null }));
                 }
                 catch (Exception e)
                 {
@@ -1076,9 +1087,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
 
             Set(index, result is { Merged: true }
-                ? item with { Merged = true }
+                ? item with { Merged = true, MergeNote = null }
                 : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
         }
+    }
+
+    /// <summary>What a look that is still waiting says when GitHub gave no reason (BEH-ORCH-10): checks running, none yet, or mergeability unknown.</summary>
+    private const string WaitingNote = "waiting for its checks to pass, or for GitHub to say whether it can merge";
+
+    /// <summary>
+    /// BEH-ORCH-10: why a built item is not merged yet, for the Runs page: null when it is not built or is merged. With
+    /// neither <c>KIT_PIPELINE_MERGE</c> nor the merge job on, the item is not looked at, so the note says so rather than
+    /// leaving it to look idle.
+    /// </summary>
+    public string? MergeNoteOf(WorkItem item)
+    {
+        if (!IsBuilt(item))
+        {
+            return null;
+        }
+
+        return merge || jobs?.Contains(PipelineStage.Merge) == true
+            ? item.MergeNote
+            : "not merged: KIT_PIPELINE_MERGE is off, so Kit does not look at this pull request";
     }
 
     /// <summary>

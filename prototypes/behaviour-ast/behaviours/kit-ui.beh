@@ -1618,6 +1618,9 @@ behaviour BEH-ORCH-10 "The pipeline merges the pull request of work it built onc
   when opens page:KitRuns
   then sees region:KitMain
   contract his note (kit.notes.md#2026-11-07-1128): "Pipeline can raise and complete PRs for completed work"
+  contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:02Z): "Merge agent still doesn't seem to be working"
+  contract my assumption: he means this card. The card is built, so the merge step is not doing what it says on his project. The builder finds the cause first, from GET /api/pipeline (merged, and the plain stop reason on each open item) and from whether KIT_PIPELINE_MERGE is on for kit, and fixes that cause. The checks above still hold for any merge it makes
+  contract my assumption: the note does not say what he saw. If the cause is that the merge is off, or that Kit's App lacks read access to Actions, the fix is to make that cause visible where he looks (the Runs page), not to switch the merge on
   contract my assumption: raising is built (BEH-ORCH-3's build slice opens the pull request). Completing means merging it into the branch the run started from, which is dev for kit, never main
   contract my assumption: Kit merges only when every Actions run at the pull request's head commit has succeeded and GitHub says it is mergeable, and it merges that exact commit, so a push after the check is not merged unseen. A failed check, or a conflict, stops the item with the reason and leaves the pull request open for a person
   contract my assumption: what was measured on 2026-11-07 11:45Z: 5 pipeline pull requests (kit#753, #754, #756, #767, #768) were open and none merged, so every run it had paid for was still waiting on him
@@ -2344,6 +2347,27 @@ behaviour BEH-BOARD-21 "A denied card can still be found on the board, under Den
   contract nothing is deleted. A denial stays in the file as its review line with his reason, but the board has had no column for it, so the card vanished. The one he meant is BEH-USERS-2, now re-proposed with his correction
   contract my assumption: a Denied column after Done holds every denied card, newest denial first, with his reason on the card, and each card opens to its page as any card does
   contract my assumption: when the agent revises a denied card and re-proposes it, the card leaves Denied for Proposed
+
+# An agents page: the agents Kit knows, and for the one picked, its recent runs and its queue.
+# Moved here from kit.beh's FEAT-SERVER as BEH-UI-5 (kit.beh is the command-line layer). Its id
+# becomes BEH-AGENTPAGE-1, since BEH-UI-* is kit.beh's and BEH-AGENTS-1 is custom agents.
+feature FEAT-AGENTS "Agents"
+  stage development
+
+behaviour BEH-AGENTPAGE-1 "An agents page shows an agent's recent work and its queue, with unblocked items marked"
+  in FEAT-AGENTS
+  in FEAT-NAV
+  priority 3
+  actor engineer
+  review unreviewed
+  when opens page:KitAgents
+  then sees region:KitMain
+  contract my assumption: an agent is a project. Kit records no agent of its own: each project's runs and queue belong to the one agent that works it, so the list is the projects Kit reads (BEH-LIST-1)
+  contract my assumption: the page reads the same project data the project view reads, and recent runs from the operator's GET /api/runs. It writes nothing, and every request it makes is a GET
+  contract my assumption: the owner picks one agent from a list; until he does, no work or queue is shown. The picked agent's recent runs are newest first, each with its status, stage and cost, and only runs for that agent's project
+  contract my assumption: the queue reads approved and pending cards with no needs-context line as unblocked, in board order (priority, then corpus order), and pending cards with a needs-context line as waiting on him
+  contract my assumption: the navbar link is shown where Runs is, since the runs it reads are the operator's (BEH-USERS-9)
+  contract my assumption: a paused card counts as unblocked here, as the card reads; the board keeps it under Backlog
 
 # His notes of 2026-10-27 21:31Z and 21:33Z: a page that hands him his items one at a
 # time, and a health view of how much of each spec has tests.

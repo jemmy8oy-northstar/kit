@@ -433,7 +433,7 @@ public class GitHubPullRequestOpenerTests
 
         Assert.False(r.Merged);
         Assert.False(r.Waiting);
-        Assert.StartsWith("Kit cannot read the checks of this pull request", r.Reason);
+        Assert.StartsWith("Kit cannot read Actions for this pull request", r.Reason);
         Assert.DoesNotContain(Token, r.Reason);
         Assert.DoesNotContain(gh.Sent, s => s.Method == HttpMethod.Put);
     }

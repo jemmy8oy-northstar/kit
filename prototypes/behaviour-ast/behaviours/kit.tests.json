@@ -1012,6 +1012,12 @@
       }
     }
   ],
+  "BEH-UI-6": [
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "keeps each ticket in the column of its state, and leaves merged tickets off the board (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "orders each column by priority, 1 first and 5 last (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/tickets.test.ts", "title": "within one priority lists a blocked ticket above the unblocked ones, and never above a higher priority (BEH-UI-6)" },
+    { "file": "prototypes/behaviour-ast/ui/src/pages/Board.test.tsx", "title": "shows the open tickets in one column per state, each column by priority with blocked first within a priority (BEH-UI-6)" }
+  ],
   "BEH-WRITE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
@@ -1216,6 +1222,10 @@
         "on": "2026-11-05"
       }
     }
+  ],
+  "BEH-SCHED-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes" }
   ],
   "BEH-WRITE-6": [
     {
