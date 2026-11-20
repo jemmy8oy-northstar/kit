@@ -2,6 +2,14 @@
   "_": "behaviour -> the test(s) that name it. Option C (docs/design/tagging.md): the corpus carries the mapping, so no test file is edited. Keyed on file + title, the same as snip-it.tests.json.",
   "_authored": "2026-09-05, by reading kit.beh against kit.test.js. This is the corpus Kit uses on ITSELF — `node check.js kit --repo .` from the repo root, wired into ci.yml (since kit#119 the C# `kit check kit --repo .`, and the tests named below are C#). Kit is now the only app in the estate whose build fails if one of its own documented behaviours loses the test that names it. Extended the same day with BEH-UI-*, the read API — the first behaviours here with a network surface, and the first two of those are security properties.",
   "_honest": "A mapping entry is a HUMAN'S CLAIM that the named test asserts the behaviour. Nothing here checks the test body. That limit is C's and it is not fixable by parsing; it is stated in docs/design/tagging.md and repeated in check.js's output, because a gate quoted second-hand loses its caveats first.",
+  "BEH-SCOPE-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_SCOPE_1_a_second_tester_never_lists_the_first_testers_projects" },
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_FLAGS_3_a_tester_list_holds_their_own_repos_and_none_of_the_operators" }
+  ],
+  "BEH-SCOPE-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/TesterFeatureAccessTests.cs", "title": "BEH_SCOPE_2_a_repo_with_a_corpus_is_listed_for_the_user_it_is_connected_to_and_no_other" },
+    { "file": "backend/Balenthiran.Kit.Tests/UserProjectsTests.cs", "title": "A_project_is_a_repo_with_a_beh_file_on_its_default_branch" }
+  ],
   "BEH-GATE-1": [
     {
       "file": "backend/Balenthiran.Kit.Tests/EngineBehaviourTests.cs",
