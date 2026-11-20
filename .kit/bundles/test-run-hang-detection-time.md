@@ -18,3 +18,13 @@ Test plan:
 - BEH-ORCH-17: RunnerPool.LeaseFor(TestSeconds) is TestSeconds plus RunnerPool.LeaseMargin (10 minutes), and LeaseFor(null) is still the 150-minute lease.
 - BEH-ORCH-17: a test run claimed at T has MaxSeconds = TestSeconds, GivesUpAt = T + TestSeconds and LostAt = T + TestSeconds + 10 minutes; not counted lost one second before LostAt, counted lost at it. Replaces the hard-coded 1800 / 30 min / 40 min asserts in PipelineTests.cs (around lines 333-349) with values derived from the constants.
 - BEH-ORCH-17: Runs page "gives up at HH:MM" for a test run shows claimedAt plus the claim's givesUpAt, so it follows the new limit and not a hard-coded 30 minutes (existing Runs.test.tsx "says when a run with its own time limit gives up").
+
+Built:
+- BEH_ORCH_17_A_test_run_limit_is_three_times_the_slower_recorded_time_once_a_cold_run_is_recorded (PipelineTests.cs)
+- BEH_ORCH_17_Only_a_test_run_has_a_time_limit_of_its_own (PipelineTests.cs; replaces the Assert.Null(Build) line)
+- BEH_ORCH_17_A_test_runs_lease_is_its_limit_plus_ten_minutes_and_a_run_with_no_limit_keeps_150 (PipelineTests.cs)
+- BEH_ORCH_17_A_test_run_gives_up_at_its_limit_and_is_counted_lost_ten_minutes_after_that_not_at_150 (PipelineTests.cs; replaces the hard-coded 1800 / 30 / 40 min test)
+- BEH-ORCH-17 "shows the give-up time the claim carries, not one counted from thirty minutes" (Runs.test.tsx)
+- Whole suite: .NET 2025 ran, 2022 passed, 3 failed (ReportConformanceTests x2, ClaimerSidecarTests x1); the same 3 fail on the base commit in this sandbox (no ICU, no kill binary), so the suite did not fully pass here. UI: 571 ran, all passed; lint and build clean.
+- Not done: no cold run was timed on the runner, so TestColdSeconds stays null and the limit stays 1800 s.
+- Changed beyond the tests: RunnerPool.Lost now counts a run lost at exactly its lost-at time (>= not >), as the card and the test plan say.

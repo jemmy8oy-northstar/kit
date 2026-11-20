@@ -129,11 +129,21 @@ public static class Orchestrator
         _ => throw new InvalidOperationException($"no model is set for stage {stage}"),
     };
 
+    /// <summary>BEH-ORCH-17: kit's whole suite on a warm package cache, 2026-11-19 (build 225 s, .NET tests 31 s, UI unit tests 74 s).</summary>
+    public const int TestWarmSeconds = 378;
+
     /// <summary>
-    /// BEH-ORCH-17: a test run's time limit. kit's whole suite took 378 seconds on 2026-11-19 with a warm cache, so half an
-    /// hour leaves room for a cold restore and the agent's own turns, and a hung run frees its project in 40 minutes, not 150.
+    /// BEH-ORCH-17: the same suite on a cold run timed on the runner image, once it is recorded on the card; null until then.
     /// </summary>
-    public const int TestSeconds = 1800;
+    public static readonly int? TestColdSeconds = null;
+
+    /// <summary>
+    /// BEH-ORCH-17: a test run's time limit: three times the slower recorded time, rounded up to the minute, or 1800 seconds
+    /// until a cold run is recorded. A hung run then frees its project at that limit plus <see cref="RunnerPool.LeaseMargin"/>.
+    /// </summary>
+    public static readonly int TestSeconds = TestColdSeconds is { } cold
+        ? (3 * Math.Max(TestWarmSeconds, cold) + 59) / 60 * 60
+        : 1800;
 
     /// <summary>The time limit of <paramref name="stage"/>'s run (BEH-ORCH-17); null keeps the runner's own (6600 seconds).</summary>
     public static int? SecondsFor(PipelineStage stage) => stage == PipelineStage.Test ? TestSeconds : null;

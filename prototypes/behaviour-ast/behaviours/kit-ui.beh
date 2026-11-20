@@ -1738,6 +1738,7 @@ behaviour BEH-ORCH-17 "Runs shows what each stage is working on now, how long it
   contract his note (prototypes/behaviour-ast/behaviours/kit.notes.md#2026-11-19 19:29Z): "Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm"
   contract my assumption: his question is answered by the measured 378 seconds above, warm. A cold run, with the package cache empty, is not measured; the builder times one on the runner and records the figure on this card before any limit changes
   contract my assumption: slice 3. The test limit comes down from 30 minutes only to about three times the slower of the measured warm and cold times, rounded up to the minute, and the 10-minute lease margin stays, so a hung test run is counted lost that many minutes plus 10 after it starts. Until a cold run is timed it stays at 30 minutes
+  contract built: slice 3's mechanism. Orchestrator.TestWarmSeconds is 378 and Orchestrator.TestColdSeconds is null, so Orchestrator.TestSeconds is 1800. Once a cold figure is written there, the limit is three times the slower figure rounded up to the minute (warm alone would give 1140). A run is counted lost at its lost-at time, not after it (RunnerPool.Lost). No cold run has been timed on the runner yet, so the limit is still 30 minutes
 
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
