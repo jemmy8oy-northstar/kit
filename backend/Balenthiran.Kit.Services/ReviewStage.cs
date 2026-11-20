@@ -34,7 +34,8 @@ public static class ReviewStage
             .Append(bundle.Flag).Append("\". Your job is to check it, not to build anything.\n\n");
         sb.Append("Steps:\n");
         sb.Append("1. Read the bundle below and ONLY the files it lists under Files. Do NOT search the repo beyond them: reading is cheaper than writing.\n");
-        sb.Append("2. Decide one outcome: agreed (the bundle stands), revised (correct Cards, Files or Context in place), or escalated (it needs a decision from a person; say what decision in the note).\n");
+        sb.Append("2. Decide one outcome: agreed (the bundle stands), revised (correct Cards, Files or Context in place), or escalated (it needs a decision from a person; say what decision in the note). If you escalate, end the note with \"")
+            .Append(TriageStage.SilencePrefix).Append("<what you would do if he says nothing>\": that default is what triage acts on if he stays silent (BEH-TICKET-3).\n");
         sb.Append("3. Keep the Flag line and add one line straight after it: \"Review: agreed|revised|escalated — <one-line note>\" (lower-case outcome, then a space, an em dash and a space, then the note).\n");
         sb.Append("4. Edit ").Append(path).Append(" on branch ").Append(TriageStage.Branch(bundle.Slug))
             .Append(". Change nothing but that bundle.\n");

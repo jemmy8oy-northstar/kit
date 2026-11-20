@@ -94,7 +94,7 @@ feature FEAT-SERVER "Local server"
 feature FEAT-WRITER "Writer"
   stage ui
 feature FEAT-COST "Cost"
-  stage ui
+  stage logic
 
 behaviour BEH-GATE-1 "A behaviour with no test naming it fails the build"
   in FEAT-GATE
@@ -369,7 +369,6 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
 
-
 behaviour BEH-COST-1 "Kit records what each Claude Code session it runs costs, so weekly spend can be set against the subscription"
   in FEAT-COST
   actor engineer
@@ -384,6 +383,72 @@ behaviour BEH-COST-1 "Kit records what each Claude Code session it runs costs, s
   contract my assumption: weeks run Monday to Sunday, in UTC, and a session counts in the week it started
   contract my assumption: the record is written to the database on Kit's server, outside the project's repo, so no user cost data enters a corpus
   contract my assumption: Kit stores the cost Claude Code reports, not an estimate; the subscription price is not stored by Kit
+  contract my assumption: FEAT-COST sits at logic, not ui, while BEH-COST-1 is pending; BEH-STAGE-11 refuses ui for a feature with nothing built, and the built tests are not yet bound to this card
+
+behaviour BEH-TICKET-1 "A ticket is not a spec: tickets appear on the board, and each spec is part of the feature it changes"
+  source defined kit.notes.md#2026-11-15-1520
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: a ticket represents one change to the spec and carries its status and its open questions; the spec itself lives on the feature branch of that change, not on the board
+
+behaviour BEH-TICKET-2 "A loose item (a note, a chat message, a comment, an approval or a rejection) goes to triage, which turns it into a spec change and a ticket in the new state"
+  source defined kit.notes.md#2026-11-15-1520
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: triage may create spec, update existing tickets, ask questions, and remove spec that no longer fits the new behaviour
+  contract my assumption: triage makes every change on a new feature branch, and a card it removes is marked as to be deleted, with the reason written beside it
+  contract my question: approving or rejecting a card does not reach triage today, because an approval only writes the card's review and starts no run. Are these to reach triage as a note? Default until you answer: no; a note or a comment on the card is how he reaches triage
+
+behaviour BEH-TICKET-3 "A ticket with a question for him is blocked, and triage discusses it with him until no question is left, then moves it to ready"
+  source defined kit.notes.md#2026-11-15-1520
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: blocked is a tag on the ticket, not a separate ticket
+  contract my assumption: the discussion stays on that ticket, and the ticket moves to ready once no question is open
+  contract my assumption: if he stays silent on a blocked ticket, triage acts on the default written on that ticket
+  contract my assumption: silent means he has left no comment on the ticket; the default is the text after "Silence:" in the escalated review's note, which the review stage now writes; triage acts on it at the next triage run of that project (a note of his or a reply on another ticket starts one), and its bundle clears the block
+  contract my question: when triage's answer to his reply leaves no question open, nothing of it is posted on the ticket, only his reply is (as BEH-ORCH-16 slice 3 says). Should triage's answer be posted as a comment? Default until you answer: no
+
+behaviour BEH-TICKET-4 "A ready ticket goes next to technical design and then to implementation, and either stage can block the ticket with a question the same way"
+  source defined kit.notes.md#2026-11-15-1520
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: technical design and implementation use the same blocked tag and ready state as triage
+# ── sign-in before use (triage note of 2026-11-07) ──────────────────────────
+
+behaviour BEH-AUTH-1 "A new user must sign in with git before any project page opens"
+  priority 5
+  actor engineer
+  given user:New
+  when runs command:KitUi
+  then reports access:SignInRequired
+  review unreviewed
+  contract my assumption: looking around counts as use, so only the landing page and the sign-in page are open before git sign-in
+  contract my assumption: per the owner's reply of 2026-11-19 (ticket sign-in-with-git-before-use), a new user's first sign-in is the username and password he made (BEH-USERS-1), and then the user must connect their GitHub before any project page opens; this card does not replace the password-first onboarding
+  contract my assumption: this gate applies only until the user has connected GitHub; after that every sign-in is "Sign in with GitHub" (BEH-USERS-10)
+
+# ── input kept when the pipeline cannot run (triage note of 2026-11-07) ─────
+
+behaviour BEH-KEEP-1 "Chat and note input is kept when credits run out and the pipeline cannot start"
+  priority 5
+  actor engineer
+  given input:Typed
+  when runs command:KitUi
+  then reports input:Kept
+  review unreviewed
+  contract my assumption: "chart" in the note means chat; the typed text stays on the device until the pipeline runs, and is never dropped
 
 # ── tester scope: proposed and contributor projects (triage notes of 2026-11-07) ──
 
