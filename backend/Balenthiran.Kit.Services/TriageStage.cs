@@ -39,6 +39,17 @@ public static class TriageStage
 
     private const int MaxTicketCards = 4;
 
+    /// <summary>BEH-TICKET-3: the text that starts the default a blocked ticket's question carries, for triage to act on if he stays silent.</summary>
+    public const string SilencePrefix = "Silence: ";
+
+    /// <summary>BEH-TICKET-3: the default written on a blocked ticket's question (the words after <see cref="SilencePrefix"/>), or null when it has none.</summary>
+    public static string? DefaultOf(string? blockedBecause)
+    {
+        var at = blockedBecause?.IndexOf(SilencePrefix, StringComparison.Ordinal) ?? -1;
+        var text = at < 0 ? "" : blockedBecause![(at + SilencePrefix.Length)..].Trim();
+        return text.Length == 0 ? null : text;
+    }
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -55,15 +66,17 @@ public static class TriageStage
         IReadOnlyList<(string Ref, string Text)> notes,
         IReadOnlyList<(string Id, string Title)> cards,
         IReadOnlyList<PipelineTicket>? tickets = null,
-        string? specPath = null)
+        string? specPath = null,
+        IReadOnlyList<PipelineTicket>? silent = null)
     {
         var ticketSection = TicketSection(tickets ?? []);
+        var silentSection = SilentSection(silent ?? []);
         var spec = specPath ?? "the project's spec file";
         var sb = new StringBuilder();
         sb.Append("You are the triage stage for project \"").Append(project).Append("\". Your job is to turn notes into a spec change and collect context, not to write tests or code.\n\n");
         sb.Append("Steps:\n");
         sb.Append("1. Read the new notes below and the existing cards. Open a file only when a note needs it; read as little as you can.\n");
-        sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note.\n");
+        sb.Append("2. For each note decide which existing cards it touches, or that a new card is needed. Do not edit any note. A ticket listed under \"Blocked, no reply from him\" has no answer from him: act on the default written on it, and report its bundle under that ticket's slug.\n");
         sb.Append("3. Group notes in the same domain into ONE work item. Give each work item a slug: lower-case words joined by hyphens, at most ")
             .Append(ContextBundle.MaxSlug).Append(" characters.\n");
         sb.Append("4. For each work item, on branch ").Append(Branch("<work-item-slug>"))
@@ -98,7 +111,7 @@ public static class TriageStage
             var part = $"\n### {reference}\n" + (shown.Length < text.Length
                 ? $"{shown}\n[truncated: {text.Length - shown.Length} more characters, read {reference} for the rest]\n"
                 : $"{shown}\n");
-            if (sb.Length + 40 + used + part.Length + ticketSection.Length > KitRouter.MaxTask - Reserve)
+            if (sb.Length + 40 + used + part.Length + ticketSection.Length + silentSection.Length > KitRouter.MaxTask - Reserve)
             {
                 break;
             }
@@ -127,6 +140,7 @@ public static class TriageStage
         }
 
         sb.Append(ticketSection);
+        sb.Append(silentSection);
         sb.Append("\n## Existing cards (").Append(cards.Count).Append(")\n");
         var listed = 0;
         foreach (var (id, title) in cards)
@@ -190,6 +204,39 @@ public static class TriageStage
         if (listed < open.Count)
         {
             sb.Append('[').Append(open.Count - listed).Append(" more open tickets not listed: a note about one of them may open a duplicate]\n");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// BEH-TICKET-3: the blocked tickets he has not answered, each with the default written on its question, as
+    /// "- slug [state] title: default" lines under a heading triage is told to act on. Empty when there are none.
+    /// </summary>
+    public static string SilentSection(IReadOnlyList<PipelineTicket> silent)
+    {
+        if (silent.Count == 0)
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder("\n## Blocked, no reply from him (act on the default written on each)\n");
+        var listed = 0;
+        foreach (var t in silent.Take(MaxTickets))
+        {
+            var line = $"- {t.Slug} [{t.State.ToString().ToLowerInvariant()}] {Short(t.Title, MaxTicketTitle)}: {DefaultOf(t.BlockedBecause)}\n";
+            if (sb.Length + line.Length > MaxTicketChars - 80)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
+        }
+
+        if (listed < silent.Count)
+        {
+            sb.Append('[').Append(silent.Count - listed).Append(" more blocked tickets not listed]\n");
         }
 
         return sb.ToString();

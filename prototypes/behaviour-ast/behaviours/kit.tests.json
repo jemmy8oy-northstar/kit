@@ -1286,5 +1286,29 @@
         "on": "2026-11-05"
       }
     }
+  ],
+  "BEH-TICKET-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_a_ticket_on_the_board_shows_its_status_and_open_questions_and_no_spec_text" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_the_spec_of_a_change_is_read_from_that_changes_feature_branch" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_1_two_changes_give_two_tickets_each_on_its_own_feature_branch" }
+  ],
+  "BEH-TICKET-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_a_note_reaches_triage_and_makes_a_ticket_in_the_new_state" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_a_comment_on_a_card_reaches_triage_and_makes_a_ticket_in_the_new_state" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_a_chat_message_he_has_Kit_note_reaches_triage_as_a_note_and_makes_a_ticket_in_the_new_state" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_triage_makes_its_spec_change_on_a_feature_branch_and_never_on_the_default_branch" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_2_a_card_triage_removes_is_marked_to_be_deleted_with_its_reason_and_not_deleted_outright" }
+  ],
+  "BEH-TICKET-3": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_3_a_ticket_with_an_open_question_for_him_is_blocked_and_stays_the_same_ticket" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_3_blocked_combines_with_new_and_setting_and_clearing_the_tag_leaves_the_state_new" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_3_blocked_combines_with_ready_and_setting_and_clearing_the_tag_leaves_the_state_ready" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_3_his_reply_is_recorded_on_the_ticket_and_the_ticket_moves_to_ready_once_no_question_is_open" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_3_if_he_stays_silent_on_a_blocked_ticket_triage_acts_on_the_default_written_on_it" }
+  ],
+  "BEH-TICKET-4": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_a_ready_ticket_goes_to_technical_design_then_to_implementation_in_that_order" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_technical_design_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_TICKET_4_implementation_can_block_its_ticket_with_a_question_and_clear_it_when_no_question_is_open" }
   ]
 }
