@@ -711,7 +711,8 @@ behaviour BEH-BOARD-12 "Backlog is worked top priority first, and new work comes
   contract "order by (score, most recent)": within one priority, the most recently added card is first; added is the first commit holding the behaviour, read from git like BEH-BOARD-4, and one no commit holds yet is the newest
   contract equal scores still take each project in turn (BEH-BOARD-10); recency orders each project's own cards
   contract my assumption: a behaviour the agent writes from a new note comes in at priority 4, and the agent raises it only for a stated reason (something he is waiting on, or something broken)
-  contract my assumption: the agent picks its next work from the top of Backlog, not from the newest note
+  contract my assumption: the agent picks its next work from the top of the Queue, not from the newest note
+  contract my assumption: since his 2026-10-22 22:37Z note, the ordering above is of the Queue (BEH-BOARD-18); Backlog holds only paused cards and is not worked, so its region is no longer where work is ranked
   contract "when the dev bells an item kit might choose to change priority of it": ringing the bell is how he lifts an old card (BEH-BELL-1/2)
 
 behaviour BEH-BOARD-13 "He can drag a Backlog card to reorder it"
@@ -747,6 +748,7 @@ behaviour BEH-BOARD-16 "A card can be paused: it stays on the Backlog, and the a
   contract the agent's wake sweep never lists a paused card as work, so it can sleep over one
   contract ringing a paused card's bell asks the agent whether it should resume, and the agent answers as for any bell (BEH-BELL-2)
   contract my assumption: the paused line is a corpus language change (claude-code-bot#58), which his request for it approves
+  contract my assumption: a card the agent parks to think more is not paused and is not put on the Backlog by this card; that half of Backlog is open (BEH-BOARD-18)
   contract built: the `paused` line (bare, one per behaviour, a second is refused like a second `priority`), served as `paused` on the behaviour, the board's Paused heading and badge, and Pause and Resume on the behaviour page, which add or remove the line and commit it like any edit (POST /api/projects/<app>/behaviours/<id>/paused with { paused: true|false })
   contract built on the agent's side (claude-code-bot tools/kit-backlog.js, 2026-10-22): the wake sweep leaves a paused card out of its work list, counts his Pause and Resume as verdicts it must act on, and lists a rung bell first whether or not its card is paused, so the resume question is answered as any bell is (BEH-BELL-2)
   contract my assumption: a paused card stays in Backlog even if a schedule lists it, because paused is how he says "do not action", and Pause is offered only on a card still to be built
@@ -821,6 +823,7 @@ behaviour BEH-BOARD-18 "The board's pending columns are Backlog, Queue, Blocked 
   contract my assumption: the "ai needs to put more thought into it" half of Backlog has no line yet; until one exists the agent writes that as a review request or a needs-context line, and Backlog holds only what he paused
   contract my assumption: paused outranks needs-context, so a paused card is Backlog even with a needs-context line, because he has said not to build it
   contract my assumption: a card on a schedule but not its next waits in the Queue, ranked like any other, not in schedule order; In progress still reads the schedule's next (BEH-BOARD-3), and nothing is scheduled today
+  contract my assumption: approving a paused card (BEH-BOARD-25) moves it to the Queue, not In progress; it waits there ranked like any other card and does not run until the agent picks it from the top of the Queue
   contract built on the agent's side (claude-code-bot tools/kit-backlog.js): the wake sweep reads the Queue as its work list and counts Blocked as his
 
 behaviour BEH-BOARD-22 "A Done card whose code is on the project's dev but not yet live says so"
@@ -892,6 +895,9 @@ behaviour BEH-BOARD-15 "Coming back from a card lands on that card's column, not
   contract opening a card writes its column and its id into the board's url, replacing the entry, so Back returns to them and the filter beside them survives
   contract my assumption: if the card has left that column (he approved it out of Proposed), he lands on the column, not on the card's new place, because he was working through that column
   contract a card past the "Show more" cap is drawn when he comes back to it, so he never has to page down to find his place
+  contract decided 2026-11-15 from the router: the card link is a react-router Link to the behaviour page, a reroute inside the app, not a full load; but the board's data is read again on mount, so its state is lost on return, and the column and card in the url are what carry his place
+  contract the column and scroll position survive the return: the card is brought to the centre of the screen, or, when it has left its column, the column is brought to its start, and the focus lands on the card
+  contract my assumption: the Back link returns him to the column he opened the card from even when the card has moved, and the column's own scroll is not kept beyond the card's place
 
 behaviour BEH-BOARD-11 "The agent's open questions show on the board"
   in FEAT-BOARD
