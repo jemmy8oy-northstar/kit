@@ -2882,6 +2882,44 @@ public class PipelineTests
         Assert.Empty(Jobs(new KitSettings("d", "r", null, "dist") with { PipelineJobPlan = true }));
     }
 
+    // ---- BEH-SCHED-1 (kit.beh): each pipeline stage runs on its own schedule ----------------------------
+    // A stage's wake is what starts it: a note for triage, its own job tick for build (BEH-ORCH-11). The
+    // conflict in kit.beh BEH-SCHED-1 (a slow build on the same project against one live run per project,
+    // BEH-ORCH-3) is not tested here: it is raised for review, and the reading built keeps one run per project.
+
+    [Fact]
+    public void BEH_SCHED_1_a_build_that_has_not_woken_does_not_run_while_triage_runs_on_its_own_wake()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Triage's wake is a note left in Kit: triage runs, and its bundle makes the spec stage the next run.
+        var spec = Triaged(rig);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "list-sorting").Status);
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        // The build's wake has not fired, so the specced item waits as a planned ticket and no build runs.
+        Assert.Null(rig.Claim());
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Queued), (ItemOf(rig, "list-sorting").Stage, ItemOf(rig, "list-sorting").Status));
+
+        // Only its own wake starts the build.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_SCHED_1_an_idle_build_does_not_hold_back_triage_when_triage_wakes()
+    {
+        using var rig = new Rig(buildJob: true);
+
+        // Build's wake fires with nothing waiting for it: it makes no model call.
+        rig.Pipeline!.JobTick(PipelineStage.Build);
+        Assert.Null(rig.Claim());
+
+        // Triage's wake, a note, runs triage at once, without another tick.
+        rig.Note("the list should sort by date");
+        Assert.Contains("You are the triage stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
     // ---- BEH-ORCH-11, slice 5: the build job -------------------------------------------------------------
 
     // Tickets in the store, as a restart finds them, for a pipeline with the build job on and two projects.
