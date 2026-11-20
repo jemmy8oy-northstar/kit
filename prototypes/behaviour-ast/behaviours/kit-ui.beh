@@ -1761,6 +1761,22 @@ behaviour BEH-ORCH-18 "The merge job merges a private repo's built tickets as a 
   contract my assumption: slice 1 guards, from a blind review. A passed train is merged only if every rider is still a built ticket, because a train missing one was not the tested tree. A base that cannot be read keeps the train waiting, not rebuilt, so no test run is paid for twice. A train whose lead is no longer in its test run is dropped. While a train is out, every project on its repo holds its single merges. Known limits: the base is checked once before the riders are merged, not between them, and a rider that will not merge leaves the ones before it merged, a prefix of the train that was tested only as part of the whole
   contract my assumption: Runs → Now shows a train's test run as stage test with its work item "train: <slug>, <slug>, …", so he can see what is riding on it
 
+behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried again before its ticket is blocked"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-19 23:57Z, with a screenshot of Blocked): "Almost every run is the bundle was unchanged or build failed. Please get this working for me overnight."
+  contract measured 2026-11-20: a ticket was blocked by the first run of its stage that failed, was lost or left its bundle unchanged, and only a reply from him unblocked it. Several were blocked within four minutes of each other on 2026-11-16 and had stayed blocked since
+  contract my assumption: a context, spec, build or review run that fails, is lost, reports no bundle or leaves the bundle unchanged is queued at the same stage again, up to 2 more times. After the third the ticket is blocked, and the block says where the last run stopped and how many ran: "the build run failed (claude exit 1), 3 runs in a row"
+  contract my assumption: a lost test run says nothing about the tests, so its ticket goes back to built and the merge job tests it again, rather than being blocked as "tests failed"
+  contract my assumption: when Kit starts, a ticket blocked by a run (the stage run failed, changed nothing or reported no bundle, or the tests failed) gets one more go, with a comment saying so. A ticket blocked for a person to decide stays blocked until he replies
+  contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
+  contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714

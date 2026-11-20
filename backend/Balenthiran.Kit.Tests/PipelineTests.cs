@@ -33,7 +33,7 @@ public class PipelineTests
         private readonly string root;
         private readonly bool owned;
 
-        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false, IPullRequestMerger? merger = null)
+        public Rig(string corpus = Corpus, bool on = true, IReadOnlySet<string>? projects = null, bool canOpenPulls = true, StageTurnSettings? turns = null, bool scheduled = false, string? schedule = null, ITriagedNoteStore? sorted = null, string? root = null, bool merge = false, TimeProvider? clock = null, ITicketStore? tickets = null, bool contextJob = false, bool planJob = false, bool buildJob = false, bool mergeJob = false, IPullRequestMerger? merger = null, int runRetries = 0)
         {
             owned = root is null;
             Tickets = tickets ?? new MemoryTicketStore();
@@ -50,7 +50,7 @@ public class PipelineTests
             Pool = new RunnerPool(Store, clock);
             var corpora = new CorpusDirectory(root, root);
             var viewer = new ProjectViewer(corpora, new CorpusParser(), new BehaviourResolver(), new TestGenerator(), new ProjectReporter());
-            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: merger ?? Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob)) : null;
+            Pipeline = on ? new Pipeline(corpora, Pool, Store, Models, clock: clock, projects: projects, pulls: canOpenPulls ? Pulls : null, turns: turns, scheduled: scheduled, sorted: Sorted, merger: merger ?? Merges, merge: merge, tickets: Tickets, jobs: Jobs(contextJob, planJob, buildJob, mergeJob), runRetries: runRetries) : null;
             // One fixed minute: every note shares its date, as notes left in the same minute do, so a ref alone cannot tell them apart.
             Router = new KitRouter(corpora, viewer, new UiBundle(Path.Combine(root, "no-bundle")), null, clock: new Clock(), runStore: Store, runLauncher: Pool, runnerPool: Pool, pipeline: Pipeline);
             Routes = new RunnerPoolRoutes(Pool, Store, PoolToken, TimeSpan.Zero, clock: clock, pipeline: Pipeline);
@@ -361,16 +361,20 @@ public class PipelineTests
     }
 
     [Fact]
-    public void BEH_ORCH_17_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_the_lease()
+    public void BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease()
     {
         // BEH-ORCH-17: his 2026-11-19 20:28Z screenshot of Runs → Now: runs "waiting for a runner · 306h" and "running since
-        // before Kit last started", left going for ever by earlier restarts.
+        // before Kit last started", left going for ever by earlier restarts. BEH-ORCH-19: his 23:43Z screenshot still had
+        // them, because the lease was counted from the restart and Kit restarts at every release.
         var clock = new Ticking();
         var store = new MemoryAgentRunStore();
         var queued = store.Create("operator", "kit", "m", "h1", clock.GetUtcNow(), null, "triage");
-        var running = store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "list-sorting", "build");
-        Assert.True(store.StartIfQueued(running.Id));
+        var old = store.Create("operator", "kit", "m", "h2", clock.GetUtcNow(), "list-sorting", "build");
+        Assert.True(store.StartIfQueued(old.Id));
         clock.Advance(TimeSpan.FromHours(3));
+        var recent = store.Create("operator", "kit", "m", "h4", clock.GetUtcNow(), "other", "build");
+        Assert.True(store.StartIfQueued(recent.Id));
+        clock.Advance(TimeSpan.FromMinutes(10));
 
         // Kit starts again: a new pool over the same store.
         var pool = new RunnerPool(store, clock);
@@ -379,17 +383,19 @@ public class PipelineTests
         Assert.Equal(204, routes.ClaimAsync(PoolToken).GetAwaiter().GetResult().Status);
 
         Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == queued.Id).Status, store.List().Single(r => r.Id == queued.Id).Failure));
-        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        // Three hours in, it is past its lease: it goes at once rather than getting a fresh one.
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == old.Id).Status, store.List().Single(r => r.Id == old.Id).Failure));
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == recent.Id).Status);
         Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
         Assert.Empty(pool.Claimed());
 
-        // Its runner may still report until the lease, counted from the restart, runs out.
+        // One made ten minutes before the restart may still report until the lease, counted from the restart, runs out.
         clock.Advance(RunnerPool.Lease - TimeSpan.FromMinutes(1));
         routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
-        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == running.Id).Status);
+        Assert.Equal(AgentRunStatus.Running, store.List().Single(r => r.Id == recent.Id).Status);
         clock.Advance(TimeSpan.FromMinutes(2));
         routes.ClaimAsync(PoolToken).GetAwaiter().GetResult();
-        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == running.Id).Status, store.List().Single(r => r.Id == running.Id).Failure));
+        Assert.Equal((AgentRunStatus.Failed, RunnerPool.LostFailure), (store.List().Single(r => r.Id == recent.Id).Status, store.List().Single(r => r.Id == recent.Id).Failure));
         Assert.Equal(AgentRunStatus.Queued, store.List().Single(r => r.Id == fresh.Id).Status);
     }
 
@@ -858,6 +864,85 @@ public class PipelineTests
         Assert.Equal((PipelineStage.Build, WorkItemStatus.Stopped, why), (item.Stage, item.Status, item.StoppedBecause));
         Assert.Empty(rig.Pulls.Asked);
     }
+
+    [Fact]
+    public void BEH_ORCH_19_a_build_run_that_fails_is_run_again_twice_and_then_blocked_saying_where_it_stopped()
+    {
+        // His 2026-11-19 23:57Z screenshot of Blocked: "almost every run is the bundle was unchanged or build failed", each
+        // stopped for good by its first failure.
+        using var rig = new Rig(runRetries: 2);
+        var build = Specced(rig);
+
+        for (var run = 1; run <= 2; run++)
+        {
+            Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed", failure = "claude exit 1" })).Status);
+            var queued = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+            Assert.Equal((PipelineStage.Build, WorkItemStatus.Running), (queued.Stage, queued.Status));
+            var again = Assert.IsType<PoolClaim>(rig.Claim());
+            Assert.NotEqual(build.Id, again.Id);
+            Assert.Contains("You are the build stage", again.Task);
+            build = again;
+        }
+
+        Assert.Equal(200, rig.Routes.Finished(build.Token, Json(new { status = "failed", failure = "claude exit 1" })).Status);
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((WorkItemStatus.Stopped, "the build run failed (claude exit 1), 3 runs in a row"), (item.Status, item.StoppedBecause));
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_a_build_run_that_changed_nothing_is_run_again_and_a_good_one_then_opens_the_pull_request()
+    {
+        using var rig = new Rig(runRetries: 2);
+        var build = Specced(rig);
+
+        rig.FinishWith(build, new { slug = "list-sorting", text = Specced("list-sorting") });
+        rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = Built("list-sorting") });
+
+        Assert.Single(rig.Pulls.Asked);
+        Assert.Equal(WorkItemStatus.Done, Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting").Status);
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_with_no_retries_a_lost_build_run_blocks_at_once_and_says_it_was_lost()
+    {
+        using var rig = new Rig();
+        var build = Specced(rig);
+
+        rig.Pipeline!.RunEnded(build.Id, false, failure: RunnerPool.LostFailure);
+
+        Assert.Equal("the build run failed (lost)", Assert.Single(rig.Pipeline.Items(), i => i.Slug == "list-sorting").StoppedBecause);
+    }
+
+    [Fact]
+    public void BEH_ORCH_19_after_a_restart_a_ticket_a_run_blocked_is_tried_again_and_one_waiting_on_a_person_is_not()
+    {
+        var store = new MemoryTicketStore();
+        store.Save(Seeded("list-sorting") with { BlockedBecause = "the spec run failed" });
+        store.Save(Seeded("other", priority: 4) with { BlockedBecause = "Decision for a person: which sort order" });
+        using var rig = new Rig(tickets: store);
+
+        rig.Pipeline!.Resume();
+
+        var spec = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("You are the spec stage", spec.Task);
+        Assert.Contains("list-sorting", spec.Task);
+        Assert.Null(store.Read("demo").Single(t => t.Slug == "list-sorting").BlockedBecause);
+        Assert.Equal("Trying again after a restart: the block was a run's, not a decision (the spec run failed)", store.Comments("demo", "list-sorting").Last().Body);
+        Assert.Equal((WorkItemStatus.Stopped, "Decision for a person: which sort order"), (rig.Pipeline.Items().Single(i => i.Slug == "other").Status, rig.Pipeline.Items().Single(i => i.Slug == "other").StoppedBecause));
+    }
+
+    [Theory]
+    [InlineData("the build run failed", true)]
+    [InlineData("the spec run left the bundle unchanged", true)]
+    [InlineData("the review run reported no bundle for its work item", true)]
+    [InlineData("the project's tests failed at abc1234", true)]
+    [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
+    [InlineData("the spec run wrote no test plan", false)]
+    [InlineData("its pull request was not merged: conflict", false)]
+    [InlineData("Decision for a person: which sort order", false)]
+    public void BEH_ORCH_19_only_a_block_a_run_made_is_retryable(string because, bool retryable) =>
+        Assert.Equal(retryable, Pipeline.Retryable(because));
 
     [Fact]
     public void A_build_that_flags_itself_is_reviewed_and_an_agreed_review_opens_the_pull_request()
@@ -1934,15 +2019,15 @@ public class PipelineTests
     public void BEH_ORCH_16_after_a_restart_a_blocked_ticket_stays_stopped_and_no_job_takes_it()
     {
         using var rig = new Rig();
-        var spec = Triaged(rig);
-        rig.Finish(spec, status: "failed");
+        // Not a run's own failure, which BEH-ORCH-19 tries again after a restart.
+        rig.FinishWith(Triaged(rig), new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
 
         using var restarted = rig.Restart(tickets: rig.Tickets);
         restarted.Pipeline!.Resume();
 
         Assert.Null(restarted.Claim());
         var item = Assert.Single(restarted.Pipeline.Items(), i => i.Slug == "list-sorting");
-        Assert.Equal((WorkItemStatus.Stopped, "the spec run failed"), (item.Status, item.StoppedBecause));
+        Assert.Equal((WorkItemStatus.Stopped, "the spec run wrote no test plan"), (item.Status, item.StoppedBecause));
         Assert.Single(restarted.Tickets.Comments("demo", "list-sorting"));
     }
 
@@ -2015,7 +2100,7 @@ public class PipelineTests
     public async Task BEH_ORCH_11_after_a_restart_stopped_and_merged_tickets_are_not_resumed()
     {
         using var stopped = new Rig();
-        stopped.Finish(Triaged(stopped), status: "failed");
+        stopped.FinishWith(Triaged(stopped), new { slug = "list-sorting", text = BundleText("list-sorting").Replace("sort by date", "sort by date, newest first") });
         using var afterStop = stopped.Restart(tickets: stopped.Tickets);
         afterStop.Pipeline!.Resume();
         Assert.Null(afterStop.Claim());
@@ -3436,6 +3521,26 @@ public class PipelineTests
 
         Assert.Equal([PullOf(1)], rig.Merges.Asked);
         Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again()
+    {
+        // kit#768's test run was lost at the 2026-11-19 20:17Z restart, which blocked it as "tests failed".
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+
+        // As RunnerPoolRoutes.FailLost does it: the run is failed as lost, then its item is told.
+        rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+        rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Done, null), (item.Stage, item.Status, item.StoppedBecause));
+        Assert.Null(rig.Tickets.Read("demo").Single().BlockedBecause);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.NotEqual(lost.Id, Assert.IsType<PoolClaim>(rig.Claim()).Id);
     }
 
     [Fact]

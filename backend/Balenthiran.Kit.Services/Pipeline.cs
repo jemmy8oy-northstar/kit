@@ -23,7 +23,8 @@ namespace Balenthiran.Kit.Services;
 /// <param name="sorted">Where the notes a triage sorted are kept (BEH-ORCH-8), so a restart does not triage them again; null keeps them in memory.</param>
 /// <param name="tickets">Where the tickets are kept (BEH-ORCH-11), so a restart does not lose them; null keeps them in memory.</param>
 /// <param name="jobs">The stages a job owns (BEH-ORCH-11, slices 3 to 5: <see cref="PipelineStage.Context"/> with <c>KIT_PIPELINE_JOB_CONTEXT=on</c>, <see cref="PipelineStage.Spec"/> with <c>KIT_PIPELINE_JOB_PLAN=on</c>, <see cref="PipelineStage.Build"/> with <c>KIT_PIPELINE_JOB_BUILD=on</c>). An item queued at one of them waits for <see cref="JobTick"/> instead of <see cref="StartReady"/> starting it. Null or empty is none: each job's run spends the owner's subscription, so each is off by default.</param>
-public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null)
+/// <param name="runRetries">BEH-ORCH-19: how many more times a context, spec, build or review run that failed, was lost or changed nothing is tried at the same stage before its ticket is blocked. 0 blocks at once.</param>
+public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRunStore runs, StageModelSettings models, string owner = ISessionStore.Operator, TimeProvider? clock = null, IReadOnlySet<string>? projects = null, IPullRequestOpener? pulls = null, StageTurnSettings? turns = null, bool scheduled = false, ITriagedNoteStore? sorted = null, IPullRequestMerger? merger = null, bool merge = false, ITicketStore? tickets = null, IReadOnlySet<PipelineStage>? jobs = null, int runRetries = 0)
 {
     private readonly object gate = new();
 
@@ -115,6 +116,21 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private readonly Dictionary<string, (int Failures, ITimer? Pending, int Generation)> retries = new(StringComparer.Ordinal);
 
     private int retryGeneration;
+
+    /// <summary>BEH-ORCH-19: the retries Kit itself gives a run that failed, was lost or changed nothing, so three runs in all.</summary>
+    public const int RunRetries = 2;
+
+    // BEH-ORCH-19: per ticket, the runs of its current stage that failed, were lost or changed nothing. In memory only: a
+    // restart forgets them, and Resume gives a ticket blocked that way one more go.
+    private readonly Dictionary<(string App, string Slug), int> tries = [];
+
+    // BEH-ORCH-19: a block a run made, not a decision: the run failed or was lost, changed nothing, or reported no bundle; or
+    // a test run failed. Such a ticket is tried again rather than waiting for a reply.
+    private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
+        new(@"^(the (context|spec|build|review) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at )");
+
+    /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
+    public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
 
     private int count;
 
@@ -248,8 +264,15 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     continue;
                 }
 
+                // BEH-ORCH-19: unless a run made the block (it failed, was lost or changed nothing): that ticket gets one more go,
+                // and says so. It comes back unblocked, so the job of its state takes it.
+                var again = Retryable(ticket.BlockedBecause);
+                if (again)
+                {
+                    item = item with { PullRequest = ticket.PullRequest };
+                }
                 // BEH-ORCH-16: a blocked ticket comes back still stopped, so no job takes it and he still sees why.
-                if (ticket.BlockedBecause is not null)
+                else if (ticket.BlockedBecause is not null)
                 {
                     item = item with { Status = WorkItemStatus.Stopped, StoppedBecause = ticket.BlockedBecause, PullRequest = ticket.PullRequest };
                 }
@@ -261,7 +284,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     scheduledSlugs.Add((ticket.Project, ticket.Slug));
                 }
 
-                items.Add(item);
+                if (!again)
+                {
+                    items.Add(item);
+                    continue;
+                }
+
+                // Written at once, so the board shows the ticket unblocked, with a comment saying why.
+                Add(item);
+                try
+                {
+                    ticketStore.Comment(new TicketComment(ticket.Project, ticket.Slug, KitAuthor, $"Trying again after a restart: the block was a run's, not a decision ({ticket.BlockedBecause})", (clock ?? TimeProvider.System).GetUtcNow()));
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine($"kit: commenting on the ticket {ticket.Project} {ticket.Slug} threw {e.GetType().Name}");
+                }
             }
         }
     }
@@ -490,7 +528,9 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// <paramref name="reported"/> are the bundles a triage run says it pushed: each becomes a work item queued for
     /// the stage after triage (review when it is flagged), or a stopped one saying why it could not be used.
     /// </summary>
-    public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null)
+    /// <paramref name="failure"/> is where a failed run stopped, as its runner reported it ("claude exit 1"), or
+    /// <see cref="RunnerPool.LostFailure"/>; a block names it (BEH-ORCH-19).
+    public void RunEnded(string runId, bool succeeded, IReadOnlyList<ReportedBundle>? reported = null, string? failure = null)
     {
         (int Index, WorkItem Item, ContextBundle Bundle, string RepoAt)? built = null;
         lock (gate)
@@ -538,6 +578,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     tested[key] = sha;
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
                 }
+                else if (failure == RunnerPool.LostFailure)
+                {
+                    // BEH-ORCH-19: a lost test run says nothing about the tests, so the ticket is built again and the next look tests it.
+                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                }
                 else
                 {
                     Set(run.Index, Stop(item, $"the project's tests failed at {(sha is null ? "its head commit" : sha.Length > 7 ? sha[..7] : sha)}"));
@@ -545,7 +590,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             }
             else if (item.Stage != PipelineStage.Triage)
             {
-                Set(run.Index, Ended(item, run.Given!, succeeded, reported));
+                Set(run.Index, Ended(item, run.Given!, succeeded, reported, failure));
 
                 // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
                 if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
@@ -1024,18 +1069,18 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     /// A spec or review run of <paramref name="item"/> ended: it must report its own bundle back, changed, and that
     /// bundle moves the item on. Bundles it reports for other work items are not its business.
     /// </summary>
-    private WorkItem Ended(WorkItem item, ContextBundle given, bool succeeded, IReadOnlyList<ReportedBundle>? reported)
+    private WorkItem Ended(WorkItem item, ContextBundle given, bool succeeded, IReadOnlyList<ReportedBundle>? reported, string? failure = null)
     {
         var stage = item.Stage.ToString().ToLowerInvariant();
         if (!succeeded)
         {
-            return Stop(item, $"the {stage} run failed");
+            return TryAgain(item, $"the {stage} run failed", failure);
         }
 
         var own = reported?.FirstOrDefault(b => b.Slug == item.Slug);
         if (own is null)
         {
-            return Stop(item, $"the {stage} run reported no bundle for its work item");
+            return TryAgain(item, $"the {stage} run reported no bundle for its work item");
         }
 
         var parsed = own.Text is null ? null : ContextBundle.Parse(own.Text);
@@ -1057,7 +1102,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         // A branch the run checked out and left alone is reported as it was: a stage that changed nothing did nothing.
         if (bundle.Render() == given.Render())
         {
-            return Stop(item, $"the {stage} run left the bundle unchanged");
+            return TryAgain(item, $"the {stage} run left the bundle unchanged");
         }
 
         // A spec that only flagged itself would reach build after its review with nothing planned.
@@ -1075,7 +1120,29 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
 
         bundles[(item.Project, item.Slug)] = bundle;
+        tries.Remove((item.Project, item.Slug));
         return AfterTriage(item, Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null)));
+    }
+
+    /// <summary>
+    /// BEH-ORCH-19: a run of <paramref name="item"/> failed, was lost or changed nothing. With tries left it is queued at
+    /// the same stage again (a job's next look, or StartReady, takes it); without, it is stopped saying why, where the
+    /// last run stopped and how many runs were tried.
+    /// </summary>
+    private WorkItem TryAgain(WorkItem item, string because, string? failure = null)
+    {
+        var key = (item.Project, item.Slug);
+        var tried = tries.GetValueOrDefault(key) + 1;
+        if (tried <= runRetries)
+        {
+            tries[key] = tried;
+            Console.Error.WriteLine($"kit: pipeline retries {item.Project} {item.Slug} ({tried} of {runRetries}): {because}{(failure is null ? "" : $" ({failure})")}");
+            return item with { Status = WorkItemStatus.Queued };
+        }
+
+        tries.Remove(key);
+        var why = failure is null ? because : $"{because} ({failure})";
+        return Stop(item, tried > 1 ? $"{why}, {tried} runs in a row" : why);
     }
 
     /// <summary>
