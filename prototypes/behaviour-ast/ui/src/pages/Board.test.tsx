@@ -419,6 +419,43 @@ describe('Board', () => {
     expect(titles).toEqual(['board-review', 'board-proposed', 'board-backlog', 'board-queue', 'board-blocked', 'board-in-progress', 'board-done', 'board-denied'])
   })
 
+  it('puts a card that waits on him in Blocked, not In progress, even with a needs-context line and nothing else (BEH-BOARD-18)', async () => {
+    details.alpha.push(beh('A-WAITS-ON-HIM', { pending: true, needsContext: 'which database' }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Blocked').findByText('A-WAITS-ON-HIM')
+
+      // Blocked sits before In progress, and what waits on him is not started, so In progress holds only the schedule's next.
+      expect(column('Blocked').getByText('A-WAITS-ON-HIM')).toBeInTheDocument()
+      expect(column('In progress').queryByText('A-WAITS-ON-HIM')).not.toBeInTheDocument()
+      expect(column('In progress').getAllByRole('listitem').map((li) => li.querySelector('.id')!.textContent)).toEqual(['A-NEXT'])
+      const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-labelledby'))
+      expect(regions.indexOf('board-blocked')).toBeLessThan(regions.indexOf('board-in-progress'))
+    } finally {
+      details.alpha.splice(-1)
+    }
+  })
+
+  it('an approved card that was paused lands in the Queue, not In progress or Backlog (BEH-BOARD-18, BEH-BOARD-25)', async () => {
+    // Approving a paused card removes its paused line (BEH-BOARD-25): it is now plain pending work.
+    details.alpha.push(beh('A-RESUMED', { pending: true, priority: 2 }))
+    try {
+      mockApi()
+      renderBoard()
+      await loaded()
+      await column('Queue').findByText('A-RESUMED')
+
+      expect(column('Queue').getByText('A-RESUMED')).toBeInTheDocument()
+      expect(column('In progress').queryByText('A-RESUMED')).not.toBeInTheDocument()
+      expect(column('Backlog').queryByText('A-RESUMED')).not.toBeInTheDocument()
+      expect(column('Queue').getByText('A-RESUMED').closest('li')!.textContent).not.toMatch(/paused/)
+    } finally {
+      details.alpha.splice(-1)
+    }
+  })
+
   it('a schedule that cannot be read says so, and its pending behaviours stay on the board in the queue', async () => {
     vi.stubGlobal(
       'fetch',
@@ -551,6 +588,34 @@ describe('Board', () => {
       const link = column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' })
       await vi.waitFor(() => expect(document.activeElement).toBe(link))
       expect(scrolled).toEqual([link.closest('li')])
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+    }
+  })
+
+  it('centres the card it comes back to on screen, and brings the column to its start when the card has moved (BEH-BOARD-15)', async () => {
+    const calls: { el: Element; opts: ScrollIntoViewOptions }[] = []
+    Element.prototype.scrollIntoView = vi.fn(function (this: Element, opts?: ScrollIntoViewOptions) {
+      calls.push({ el: this, opts: opts ?? {} })
+    })
+    try {
+      mockApi()
+      const first = renderBoard('/board?project=alpha&col=proposed&card=alpha/A-PROPOSED')
+      await loaded()
+      await vi.waitFor(() => expect(calls).toHaveLength(1))
+      // Still in its column: the card is centred vertically, and the column starts at the left edge.
+      expect(calls[0].el).toBe(column('Proposed').getByRole('link', { name: 'title of A-PROPOSED' }).closest('li'))
+      expect(calls[0].opts).toMatchObject({ block: 'center', inline: 'start' })
+      first.unmount()
+
+      // Moved out of Proposed (A-BACKLOG is not there): the column is what comes into view, not the card.
+      calls.length = 0
+      renderBoard('/board?project=alpha&col=proposed&card=alpha/A-BACKLOG')
+      await loaded()
+      await vi.waitFor(() => expect(calls).toHaveLength(1))
+      expect(calls[0].el).toBe(document.querySelector('section[data-col="proposed"]'))
+      expect(calls[0].opts).toMatchObject({ inline: 'start' })
+      expect(calls[0].opts.block).not.toBe('center')
     } finally {
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
     }
