@@ -70,6 +70,7 @@ public sealed partial class KitRouter
                 StoppedBecause = i.StoppedBecause,
                 PullRequest = i.PullRequest,
                 Merged = i.Merged,
+                MergeNote = pipeline!.MergeNoteOf(i),
                 Flag = bundle?.Flag,
                 Review = bundle?.Review?.Outcome.ToString().ToLowerInvariant(),
                 ReviewNote = bundle?.Review?.Note,

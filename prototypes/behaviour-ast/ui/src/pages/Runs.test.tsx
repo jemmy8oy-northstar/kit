@@ -166,6 +166,25 @@ describe('Runs', () => {
     expect(items.find((li) => li.textContent?.includes('open-one'))).not.toHaveTextContent('Merged')
   })
 
+  it('BEH-ORCH-10 shows why a built pull request is not merged yet, under its link', async () => {
+    mockBoth(
+      { capUsd: 5, runs: [run] },
+      {
+        on: true,
+        items: [
+          { project: 'kit', slug: 'off-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/1', mergeNote: 'not merged: KIT_PIPELINE_MERGE is off, so Kit does not look at this pull request' },
+          { project: 'kit', slug: 'waiting-one', stage: 'build', status: 'done', pullRequest: 'https://github.com/o/r/pull/2', mergeNote: 'waiting for its checks to pass, or for GitHub to say whether it can merge' },
+        ],
+      },
+    )
+    renderRuns()
+
+    const items = within(await screen.findByRole('list', { name: 'Pipeline work items' })).getAllByRole('listitem')
+    expect(items.find((li) => li.textContent?.includes('off-one'))).toHaveTextContent('not merged: KIT_PIPELINE_MERGE is off')
+    expect(items.find((li) => li.textContent?.includes('waiting-one'))).toHaveTextContent('waiting for its checks to pass')
+    expect(items.find((li) => li.textContent?.includes('waiting-one'))).not.toHaveTextContent('Merged')
+  })
+
   it('BEH-ORCH-9 shows no pipeline section when the pipeline is off', async () => {
     mockBoth({ capUsd: 5, runs: [run] }, { on: false, items: [] })
     renderRuns()

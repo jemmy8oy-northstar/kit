@@ -1407,6 +1407,59 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_10_with_merging_off_the_built_item_says_why_it_is_not_merged()
+    {
+        using var rig = await BuiltRig(merge: false);
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Equal(("build", "done"), (item.Stage, item.Status));
+        Assert.Contains("KIT_PIPELINE_MERGE is off", item.MergeNote);
+        Assert.Null(item.StoppedBecause);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_a_built_item_still_waiting_says_what_it_waits_for_and_is_not_stopped()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.False(item.Merged);
+        Assert.Null(item.StoppedBecause);
+        Assert.Equal("waiting for its checks to pass, or for GitHub to say whether it can merge", item.MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_the_reason_a_look_is_waiting_is_the_one_shown()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true, Reason = "brought up to date with dev" };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.Equal("brought up to date with dev", Assert.Single(Listed(rig), i => i.Slug == "list-sorting").MergeNote);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_10_once_merged_the_waiting_note_is_gone()
+    {
+        using var rig = await BuiltRig();
+        rig.Merges.Answer = new PullRequestMerge { Waiting = true };
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+
+        var item = Assert.Single(Listed(rig), i => i.Slug == "list-sorting");
+        Assert.True(item.Merged);
+        Assert.Null(item.MergeNote);
+    }
+
+    private static IReadOnlyList<IPipelineItem> Listed(Rig rig) =>
+        Assert.IsType<PipelineItemList>(rig.Router.Route("GET", "/api/pipeline").Body).Items;
+
+    [Fact]
     public void BEH_ORCH_10_KIT_PIPELINE_MERGE_is_off_unless_it_says_on_and_a_typo_throws()
     {
         Assert.False(KitSettings.ParsePipelineMerge(null));
