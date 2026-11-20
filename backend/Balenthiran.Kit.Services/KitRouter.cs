@@ -214,6 +214,12 @@ public sealed partial class KitRouter(
             return PipelineList(cookie);
         }
 
+        // BEH-VIS-1, BEH-VIS-2: the run page's data (running agents, finished items with stage costs), for the operator only.
+        if (pathname == "/api/runs/visibility")
+        {
+            return RunVisibilityView(cookie);
+        }
+
         // BEH-ORCH-16: a project's tickets and their comment threads, for the operator only, as the pipeline is.
         if (TicketsRoute.Match(pathname) is { Success: true } tickets)
         {

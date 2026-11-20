@@ -30,7 +30,10 @@ public sealed partial class KitRouter
 
     public static readonly Regex ModelName = new(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.Compiled);
 
-    /// <summary><c>GET /api/runs</c>: every run newest first, with tokens and cost. Operator only: 401 with no session, 403 for another user.</summary>
+    /// <summary>
+    /// <c>GET /api/runs</c>: every run newest first, with tokens and cost, and when a runner took each run still going
+    /// (BEH-ORCH-17). Operator only: 401 with no session, 403 for another user.
+    /// </summary>
     private KitResponse RunsList(string? cookie)
     {
         if (RunsRefusal(cookie) is { } refused)
@@ -38,7 +41,10 @@ public sealed partial class KitRouter
             return refused;
         }
 
-        return Json(200, new AgentRunList { CapUsd = agentRunCap, Runs = agentRuns.List() });
+        var claims = (runnerPool?.Claimed() ?? [])
+            .Select(c => (IRunClaim)new RunClaim { RunId = c.RunId, ClaimedAt = c.ClaimedAt, GivesUpAt = c.GivesUpAt, LostAt = c.LostAt })
+            .ToList();
+        return Json(200, new AgentRunList { CapUsd = agentRunCap, Runs = agentRuns.List(), Claims = claims });
     }
 
     /// <summary>
@@ -70,6 +76,24 @@ public sealed partial class KitRouter
             };
         }).ToList();
         return Json(200, new PipelineItemList { On = pipeline is not null, Items = items });
+    }
+
+    /// <summary>
+    /// <c>GET /api/runs/visibility</c> (BEH-VIS-1, BEH-VIS-2): the agents running now with their stage and any flagged review,
+    /// and the finished work items with each stage's cost and the reviews they requested. Operator only, as runs are. No
+    /// session cost record exists yet (BEH-COST-1), so every stage cost is null: unknown, never zero.
+    /// </summary>
+    private KitResponse RunVisibilityView(string? cookie)
+    {
+        if (RunsRefusal(cookie) is { } refused)
+        {
+            return refused;
+        }
+
+        return Json(200, RunVisibilityBuilder.Build(
+            agentRuns.List(),
+            (project, slug) => pipeline?.Bundle(project, slug)?.Flag,
+            NoStageCostRecord.Instance));
     }
 
     /// <summary>
