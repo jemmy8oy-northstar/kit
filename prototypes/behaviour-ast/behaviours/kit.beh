@@ -384,8 +384,8 @@ behaviour BEH-ORCH-17 "A card waiting on a blocker is untagged once that blocker
   given card:Blocked
   when runs command:KitPipeline
   then reports card:Untagged
-  contract my assumption: a Blocked card carries its needs-context line (BEH-BOARD-17); each pipeline wake reads the blocker it names and compares it with the last wake
-  contract my assumption: when the blocker has changed (his answer, a reply, a merged step), the monitor removes the blocked tag so the card returns to the agent's work list, and it says so on the card
+  contract my assumption: blocked is a ticket tag (BEH-ORCH-16), not a needs-context line; each pipeline wake reads the questions the blocked ticket has asked and compares them with the last wake
+  contract my assumption: when his reply to the ticket's question has been posted since the tag was set, the monitor removes the blocked tag so the ticket returns to the agent's work list, and it says so on the card; this replaces the clear a triage run makes today
   contract my assumption: the check is deterministic, reading the corpus and git only, with no model call; an unchanged blocker leaves the card Blocked and costs nothing
   contract my assumption: untagging never deletes his question and never approves or denies anything; it only moves the card back to the agent's side
 
