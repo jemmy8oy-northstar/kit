@@ -178,6 +178,64 @@ public sealed class VerifyLinksTests : IDisposable
     }
 
     [Fact]
+    public void The_hash_of_the_same_unchanged_source_is_the_same_every_time()
+    {
+        Write("src/a.cs", "class A {}\n");
+        var first = LinkHasher.Hash(_root, ["src/a.cs"]);
+
+        Assert.Equal(first, LinkHasher.Hash(_root, ["src/a.cs"]));
+        Assert.Equal(first, LinkHasher.Hash(_root, ["src/a.cs"]));
+    }
+
+    [Fact]
+    public void Changing_one_byte_of_a_touched_source_file_flags_the_link()
+    {
+        Recorded();
+        Write("src/a.cs", "class B {}\n"); // A -> B: one byte
+
+        var (code, output) = Run("check");
+
+        Assert.Equal(1, code);
+        Assert.Contains("POSSIBLY BROKEN: the code it exercises has changed", output);
+    }
+
+    [Fact]
+    public void Changing_a_source_file_the_coverage_run_does_not_touch_leaves_the_link_verified()
+    {
+        Write("src/c.cs", "class C {}\n");
+        Recorded();
+        Write("src/c.cs", "class C { int changed; }\n");
+
+        var (code, output) = Run("check");
+
+        Assert.Equal(0, code);
+        Assert.Contains("verified", output);
+        Assert.DoesNotContain("POSSIBLY BROKEN", output);
+        Assert.DoesNotContain("src/c.cs", File.ReadAllText(MapPath));
+    }
+
+    [Fact]
+    public void After_a_re_check_and_re_record_the_link_reads_verified_again_with_its_hash_date_and_files()
+    {
+        Recorded();
+        var before = (string?)JsonNode.Parse(File.ReadAllText(MapPath))!["BEH-X-1"]![0]!["verified"]!["hash"];
+        Write("src/b.cs", "class B { int changed; }\n");
+        Assert.Equal(1, Run("check").Code);
+
+        var (recordCode, _) = Run("record", (_, _) => Report(("src/a.cs", 3), ("src/b.cs", 1)));
+        var (checkCode, checkOutput) = Run("check");
+
+        Assert.Equal(0, recordCode);
+        Assert.Equal(0, checkCode);
+        Assert.DoesNotContain("POSSIBLY BROKEN", checkOutput);
+        var verified = JsonNode.Parse(File.ReadAllText(MapPath))!["BEH-X-1"]![0]!["verified"]!.AsObject();
+        Assert.NotEqual(before, (string?)verified["hash"]);
+        Assert.Equal(LinkHasher.Hash(_root, ["src/a.cs", "src/b.cs", "tests/XTests.cs"]), (string?)verified["hash"]);
+        Assert.Equal(["src/a.cs", "src/b.cs", "tests/XTests.cs"], verified["files"]!.AsArray().Select(f => (string?)f));
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", (string?)verified["on"]);
+    }
+
+    [Fact]
     public void Check_reports_a_link_with_no_hash_as_unrecorded_without_failing()
     {
         Write("behaviours/app.tests.json", "{ \"BEH-X-1\": { \"file\": \"tests/XTests.cs\", \"title\": \"X_works\" } }");

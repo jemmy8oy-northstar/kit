@@ -10,13 +10,18 @@ namespace Balenthiran.Kit.Services;
 /// </summary>
 public static class TestStage
 {
-    /// <summary>The task for a test run of <paramref name="bundle"/>'s branch at commit <paramref name="sha"/> in <paramref name="project"/>, whose pull request goes into <paramref name="baseBranch"/>.</summary>
-    public static string BuildTask(string project, ContextBundle bundle, string baseBranch, string sha)
+    /// <summary>The task for a test run of <paramref name="bundle"/>'s branch at commit <paramref name="sha"/> in <paramref name="project"/>, whose pull request goes into <paramref name="baseBranch"/>. A merge train (BEH-ORCH-18) names its own <paramref name="train"/> branch and the pull requests riding it.</summary>
+    public static string BuildTask(string project, ContextBundle bundle, string baseBranch, string sha, (string Branch, IReadOnlyList<string> Riders)? train = null)
     {
-        var branch = TriageStage.Branch(bundle.Slug);
+        var branch = train?.Branch ?? TriageStage.Branch(bundle.Slug);
         var sb = new StringBuilder();
         sb.Append("You are the test stage for project \"").Append(project).Append("\". The pull request from branch ").Append(branch)
             .Append(" into ").Append(baseBranch).Append(" has no CI to check it, so you run the project's tests at its head commit ").Append(sha).Append(".\n\n");
+        if (train is { } t)
+        {
+            sb.Append("This branch is a merge train: ").Append(baseBranch).Append(" with these pull requests merged onto it, tested together once: ").AppendJoin(", ", t.Riders).Append(".\n\n");
+        }
+
         sb.Append("Steps:\n");
         sb.Append("1. Fetch branch ").Append(branch).Append(" from origin and check out exactly commit ").Append(sha).Append(" (a detached checkout). Test that commit and nothing else.\n");
         sb.Append("2. Install what the project needs and run its whole test suite, every test project and every test step it has, not a subset.\n");

@@ -1286,5 +1286,13 @@
         "on": "2026-11-05"
       }
     }
+  ],
+  "BEH-PR-1": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_1_work_that_is_not_finished_raises_no_pull_request" }
+  ],
+  "BEH-PR-2": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged" }
   ]
 }

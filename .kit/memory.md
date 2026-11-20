@@ -1,0 +1,5 @@
+# Kit repo memory
+
+- **Pipeline PRs (BEH-PR-1/2, bundle pipeline-raises-pull-requests):** raising a pull request after a build is already shipped as BEH-ORCH-3 (`Pipeline.OpenPullRequestAsync`), and merge-off is BEH-ORCH-10 with `KIT_PIPELINE_MERGE` off by default. BEH-PR-2's "merge only with a corpus line" conflicts with BEH-ORCH-10's "merge on green checks when the switch is on". Raised as a review request on BEH-PR-2 in kit.beh; the built reading is BEH-ORCH-10 as shipped. Owner's answer on "complete means merge" is still open.
+- **Running the C# suite here:** the SDK is at `/tmp/dotnet`, and it needs `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` because libicu is missing. That setting makes `ReportConformanceTests.Globalization_is_ICU_so_locale_order_is_reachable` fail. `ClaimerSidecarTests` needs a `kill` binary, which is absent here. Both are environmental.
+- **Stage-0 gate:** `dotnet run --project backend/Balenthiran.Kit.Cli --no-build -- check kit --repo . --dir prototypes/behaviour-ast/behaviours`. `--configuration Release` has no build output here, so leave it out.
