@@ -1,6 +1,7 @@
 # A new user connects GitHub before project pages open
 Work-item: sign-in-with-git-before-use
 Flag: BEH-AUTH-1's title says "sign in with git" and its given is user:New, but the owner's reply and the card's own contract make the gate connecting GitHub after the password sign-in, until it is connected; the title and given may need the owner's wording (level: low)
+Review: agreed — the contracts of BEH-AUTH-1 already state the owner's reply (password first, GitHub connected before project pages open) and match BEH-USERS-1/10; the title and given user:New stay as the owner worded them, and the test plan follows the contracts, so the bundle stands
 Cards:
 - BEH-AUTH-1
 Notes:
