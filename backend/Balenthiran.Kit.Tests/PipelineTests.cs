@@ -935,7 +935,9 @@ public class PipelineTests
     [Theory]
     [InlineData("the build run failed", true)]
     [InlineData("the spec run left the bundle unchanged", true)]
-    [InlineData("the review run reported no bundle for its work item", true)]
+    [InlineData("the context run reported no bundle for its work item", true)]
+    [InlineData("the test run was lost, 3 runs in a row", true)]
+    [InlineData("the review run failed", false)]
     [InlineData("the project's tests failed at abc1234", true)]
     [InlineData("the build run failed (claude exit 1), 3 runs in a row", true)]
     [InlineData("the spec run wrote no test plan", false)]
@@ -3544,6 +3546,27 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_19_a_test_run_lost_three_times_in_a_row_blocks_the_ticket_rather_than_testing_for_ever()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = NeedsTest(HeadA);
+
+        for (var run = 1; run <= Pipeline.RunRetries + 1; run++)
+        {
+            await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+            var lost = Assert.IsType<PoolClaim>(rig.Claim());
+            rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+            rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+        }
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal((WorkItemStatus.Stopped, "the test run was lost, 3 runs in a row"), (item.Status, item.StoppedBecause));
+        Assert.Equal((TicketState.Built, item.StoppedBecause), (rig.Tickets.Read("demo").Single().State, rig.Tickets.Read("demo").Single().BlockedBecause));
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
     public async Task BEH_ORCH_12_a_head_that_moved_after_a_pass_is_tested_again_at_the_new_commit()
     {
         using var rig = ResolveRig(null, BuiltSeed("a", 1));
@@ -3805,6 +3828,24 @@ public class PipelineTests
         var alone = Assert.IsType<PoolClaim>(rig.Claim());
         Assert.Contains(HeadA, alone.Task);
         Assert.DoesNotContain("kit/train/", alone.Task);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way()
+    {
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"));
+        using var _ = rig;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        var lost = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Store.SetStatus(lost.Id, AgentRunStatus.Failed, DateTimeOffset.UtcNow, RunnerPool.LostFailure);
+        rig.Pipeline.RunEnded(lost.Id, false, failure: RunnerPool.LostFailure);
+
+        Assert.All(new[] { ItemOf(rig, "a"), ItemOf(rig, "b") }, i => Assert.Equal((PipelineStage.Build, WorkItemStatus.Done), (i.Stage, i.Status)));
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal(2, train.Built.Count);
+        Assert.Contains("kit/train/", Assert.IsType<PoolClaim>(rig.Claim()).Task);
     }
 
     [Fact]

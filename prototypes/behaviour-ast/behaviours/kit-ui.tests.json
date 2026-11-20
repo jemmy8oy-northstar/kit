@@ -967,6 +967,8 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_after_a_restart_a_ticket_a_run_blocked_is_tried_again_and_one_waiting_on_a_person_is_not" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_only_a_block_a_run_made_is_retryable" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_lost_test_run_leaves_the_ticket_built_and_the_next_merge_look_tests_it_again" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_test_run_lost_three_times_in_a_row_blocks_the_ticket_rather_than_testing_for_ever" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease" }
   ],
   "BEH-ORCH-14": [

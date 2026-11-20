@@ -125,9 +125,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private readonly Dictionary<(string App, string Slug), int> tries = [];
 
     // BEH-ORCH-19: a block a run made, not a decision: the run failed or was lost, changed nothing, or reported no bundle; or
-    // a test run failed. Such a ticket is tried again rather than waiting for a reply.
+    // a test run failed or was lost. Resume tries such a ticket again rather than waiting for a reply. Not a review run's: a
+    // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
+    // tested once more per restart; a built ticket has no other way out of a block (a reply wakes only new, ready, planned).
     private static readonly System.Text.RegularExpressions.Regex RetryableBlock =
-        new(@"^(the (context|spec|build|review) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at )");
+        new(@"^(the (context|spec|build) run (failed|left the bundle unchanged|reported no bundle for its work item)|the project's tests failed at |the test run was lost)");
 
     /// <summary>BEH-ORCH-19: whether <paramref name="because"/> is a block a run made rather than one that needs a person.</summary>
     public static bool Retryable(string? because) => because is not null && RetryableBlock.IsMatch(because);
@@ -568,7 +570,11 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                     else
                     {
                         trains.Remove(entry.Key);
-                        offTrain.UnionWith(ridden.Riders.Select(r => r.Key));
+                        // BEH-ORCH-19: a lost run said nothing about the riders, so they may ride the next train.
+                        if (failure != RunnerPool.LostFailure)
+                        {
+                            offTrain.UnionWith(ridden.Riders.Select(r => r.Key));
+                        }
                     }
 
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
@@ -576,12 +582,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 else if (succeeded && sha is not null)
                 {
                     tested[key] = sha;
+                    tries.Remove(key);
                     Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
                 }
                 else if (failure == RunnerPool.LostFailure)
                 {
-                    // BEH-ORCH-19: a lost test run says nothing about the tests, so the ticket is built again and the next look tests it.
-                    Set(run.Index, item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done });
+                    // BEH-ORCH-19: a lost test run says nothing about the tests, so the ticket is built again and the next look
+                    // tests it, up to RunRetries times in a row; a runner lost every time must not cost a test run for ever.
+                    var lost = tries.GetValueOrDefault(key) + 1;
+                    tries[key] = lost;
+                    Set(run.Index, lost <= RunRetries
+                        ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
+                        : Stop(item with { Stage = PipelineStage.Build }, $"the test run was lost, {lost} runs in a row"));
+                    if (lost > RunRetries)
+                    {
+                        tries.Remove(key);
+                    }
                 }
                 else
                 {
