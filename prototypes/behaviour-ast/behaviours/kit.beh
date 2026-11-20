@@ -366,25 +366,3 @@ behaviour BEH-WRITE-6 "A hostile page gets no CORS header, so it cannot write th
   contract access-control-allow-origin: * was defensible while the server could
   contract not write; with a write route it means any page the developer has open
   contract can edit their working tree
-
-behaviour BEH-PROJ-1 "A project's pipeline runs only while its own switch is on, and every switch starts off"
-  in FEAT-PROJECTS
-  source defined kit.notes.md#2026-11-15-1247
-  review unreviewed
-  priority 2
-  actor engineer
-  when opens page:KitProject
-  then sees region:KitMain
-  contract my assumption: the pipeline is switched on and off for each project on that project's own page, and a switch set off stops the pipeline for that project only
-  contract my assumption: kit's switch is the only one on at first; every other project starts off until he turns it on
-
-behaviour BEH-PROJ-2 "Each project has its own views, as a GitHub repo does; the board and the settings are global, shared by all projects"
-  in FEAT-PROJECTS
-  source defined kit.notes.md#2026-11-15-1247
-  review unreviewed
-  priority 2
-  actor engineer
-  when opens page:KitProjects
-  then sees region:KitMain
-  contract my assumption: a project's notes, specs and pipeline show one project at a time, and the global board and global settings sit outside any project and show all of them
-  contract my assumption: a project's notes and specs are read from its own repo, so one project's cards never appear in another project's view

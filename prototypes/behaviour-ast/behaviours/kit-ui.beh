@@ -106,6 +106,28 @@ behaviour BEH-LIST-1 "Every corpus Kit can read is listed as a project"
   contract a corpus that will not parse is listed AS an error, not as zero behaviours
   contract my assumption: a corpus is listed when its repo's default branch has a .kit/ directory holding a .beh file, or, until BEH-USERS-12 lands, a .beh file anywhere; this is the detection rule of BEH-USERS-2, and this card changes only in that it now also finds .kit/
 
+behaviour BEH-PROJ-1 "A project's pipeline runs only while its own switch is on, and every switch starts off"
+  in FEAT-PROJECTS
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProject
+  then sees region:KitMain
+  contract my assumption: the pipeline is switched on and off for each project on that project's own page, and a switch set off stops the pipeline for that project only
+  contract my assumption: kit's switch is the only one on at first; every other project starts off until he turns it on
+
+behaviour BEH-PROJ-2 "Each project has its own views, as a GitHub repo does; the board and the settings are global, shared by all projects"
+  in FEAT-PROJECTS
+  source defined kit.notes.md#2026-11-15-1247
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract my assumption: a project's notes, specs and pipeline show one project at a time, and the global board and global settings sit outside any project and show all of them
+  contract my assumption: a project's notes and specs are read from its own repo, so one project's cards never appear in another project's view
+
 # ═══ Scheduled vs backlog (kit#118) ══════════════════════════════════════════
 # "maybe there is a point where things are scheduled vs backlogged and the
 # schedule is ordered … and the backlog is just an idea to happen at some point
