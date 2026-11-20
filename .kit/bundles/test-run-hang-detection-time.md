@@ -1,6 +1,7 @@
 # Shorten the time to call a test run hung
 Work-item: test-run-hang-detection-time
 Flag: he asked for a shorter time but gave no number, so the limit is set from a measured cold run, not guessed (level: high)
+Review: agreed — matches BEH-ORCH-17 slice 3: the limit waits on a cold run timed on the runner (3x the slower of warm 378s and cold, rounded up to the minute), stays 1800s until then, lease margin and other stages unchanged
 Cards:
 - BEH-ORCH-17
 Notes:
