@@ -6,8 +6,8 @@ function ticket(over: Partial<Ticket> = {}): Ticket {
   return { slug: 'a', title: 'A', state: 'ready', priority: 3, cards: [], pullRequest: null, blockedBecause: null, comments: [], ...over }
 }
 
-describe('the ticket board’s state columns (BEH-UI-5)', () => {
-  it('keeps each ticket in the column of its state, and leaves merged tickets off the board (BEH-UI-5)', () => {
+describe('the ticket board’s state columns (BEH-UI-6)', () => {
+  it('keeps each ticket in the column of its state, and leaves merged tickets off the board (BEH-UI-6)', () => {
     const cols = ticketColumns([
       ticket({ slug: 'n', state: 'new' }),
       ticket({ slug: 'r', state: 'ready' }),
@@ -20,7 +20,7 @@ describe('the ticket board’s state columns (BEH-UI-5)', () => {
     expect(cols.find((c) => c.state === 'ready')!.tickets.map((t) => t.slug)).toEqual(['r', 'r2'])
   })
 
-  it('orders each column by priority, 1 first and 5 last (BEH-UI-5)', () => {
+  it('orders each column by priority, 1 first and 5 last (BEH-UI-6)', () => {
     const [ready] = ticketColumns([
       ticket({ slug: 'p5', priority: 5 }),
       ticket({ slug: 'p1', priority: 1 }),
@@ -29,7 +29,7 @@ describe('the ticket board’s state columns (BEH-UI-5)', () => {
     expect(ready.tickets.map((t) => t.slug)).toEqual(['p1', 'p3', 'p5'])
   })
 
-  it('within one priority lists a blocked ticket above the unblocked ones, and never above a higher priority (BEH-UI-5)', () => {
+  it('within one priority lists a blocked ticket above the unblocked ones, and never above a higher priority (BEH-UI-6)', () => {
     const [ready] = ticketColumns([
       ticket({ slug: 'p2', priority: 2 }),
       ticket({ slug: 'blk2', priority: 2, blockedBecause: 'which?' }),

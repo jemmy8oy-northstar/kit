@@ -156,6 +156,31 @@ public class RunnerScriptTests
         }
     }
 
+    [Theory]
+    [InlineData(1800)]
+    [InlineData(null)]
+    public void BEH_ORCH_17_The_pool_gives_a_run_the_claims_time_limit_and_none_when_the_claim_has_none(int? maxSeconds)
+    {
+        using var rig = new Rig();
+        // The claim body is what the server itself writes for this PoolClaim, not typed by hand.
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", 15, "test", maxSeconds);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        Assert.Equal(("15", "test"), (seen["KIT_MAX_TURNS"], seen["KIT_STAGE"]));
+        if (maxSeconds is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_RUN_MAX_SECONDS"), "a run with no limit must keep kit-run's own, not be given an empty one");
+        }
+        else
+        {
+            Assert.Equal(maxSeconds.ToString(), seen["KIT_RUN_MAX_SECONDS"]);
+        }
+    }
+
     [Fact]
     public void A_subscription_run_is_reported_finished_with_its_usage_and_never_sees_the_pool_token()
     {
@@ -514,6 +539,50 @@ public class RunnerScriptTests
     private const string UsageJson = "{\"input_tokens\":1,\"output_tokens\":2,\"cache_creation_input_tokens\":3,\"cache_read_input_tokens\":4}";
     private const string BundlesJson = "[{\"slug\":\"a\",\"text\":\"hi\"},{\"slug\":\"b\",\"text\":null}]";
 
+    // ── BEH-COST-1: the cost a run reports ───────────────────────────────────────────────────
+
+    [Fact]
+    public void BEH_COST_1_the_run_writes_the_dollar_cost_its_own_result_reports_and_not_what_is_under_home()
+    {
+        using var rig = new Rig();
+        // The result's total_cost_usd is the cost; a session record under HOME claims a different one, and is not read.
+        rig.EntrypointStubs("{\"type\":\"result\",\"result\":\"done\",\"total_cost_usd\":0.42,\"usage\":" + UsageJson + "}", claudeExit: 0);
+        var projects = Path.Combine(rig.Home, ".claude", "projects", "p");
+        Directory.CreateDirectory(projects);
+        File.WriteAllText(Path.Combine(projects, "s.jsonl"), "{\"costUSD\":9.99}\n");
+        var cost = Path.Combine(rig.Rec, "cost.json");
+
+        var r = rig.Entrypoint(new() { ["KIT_COST_FILE"] = cost });
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal("0.42", File.ReadAllText(cost));
+    }
+
+    [Fact]
+    public void BEH_COST_1_a_result_with_no_reported_cost_writes_no_cost_file()
+    {
+        using var rig = new Rig();
+        rig.EntrypointStubs(Plain, claudeExit: 0);
+        var cost = Path.Combine(rig.Rec, "cost.json");
+
+        var r = rig.Entrypoint(new() { ["KIT_COST_FILE"] = cost });
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.False(File.Exists(cost));
+    }
+
+    [Fact]
+    public void BEH_COST_1_the_pool_reports_the_run_cost_with_its_usage_and_bundles()
+    {
+        using var rig = new Rig();
+        rig.PoolStubs([200], writesUsage: true, writesCost: "0.42");
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        Assert.Equal(["{\"status\":\"finished\",\"usage\":" + UsageJson + ",\"costUsd\":0.42}"], rig.Finished());
+    }
+
     [Fact]
     public void A_run_with_usage_and_bundles_sends_one_report_carrying_both()
     {
@@ -866,7 +935,7 @@ public class RunnerScriptTests
         /// <paramref name="answers"/> is what Kit says to the 1st, 2nd, ... finished report (the last repeats).
         /// The body is read from the <c>@file</c> given to <c>--data-binary</c>, as curl would send it.
         /// </summary>
-        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null, string? claimJson = null)
+        public void PoolStubs(int[] answers, bool writesUsage, string? bundlesJson = null, int runExit = 0, string? writesFailure = null, string? claimJson = null, string? writesCost = null)
         {
             Executable(System.IO.Path.Combine(Bin, "kit-run"),
                 "#!/bin/sh",
@@ -874,6 +943,7 @@ public class RunnerScriptTests
                 writesUsage
                     ? "printf '%s' '{\"input_tokens\":1,\"output_tokens\":2,\"cache_creation_input_tokens\":3,\"cache_read_input_tokens\":4}' > \"$KIT_USAGE_FILE\""
                     : "true",
+                writesCost is null ? "true" : "printf '%s' '" + writesCost + "' > \"$KIT_COST_FILE\"",
                 bundlesJson is null ? "true" : "printf '%s' '" + bundlesJson + "' > \"$KIT_BUNDLES_FILE\"",
                 writesFailure is null ? "true" : "printf '%s\\n' '" + writesFailure + "' > \"$KIT_FAILURE_FILE\"",
                 "exit " + runExit);

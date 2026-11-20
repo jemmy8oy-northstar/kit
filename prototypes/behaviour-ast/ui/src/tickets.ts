@@ -29,14 +29,14 @@ export function openTickets(tickets: Ticket[]): Ticket[] {
 /** The pipeline's states, in the order a ticket moves through them (BEH-ORCH-16); a state not listed goes after them. */
 export const TICKET_STATES = ['new', 'ready', 'planned', 'built', 'stopped']
 
-/** One state column of the ticket board (BEH-UI-5): the open tickets in that state. */
+/** One state column of the ticket board (BEH-UI-6): the open tickets in that state. */
 export interface TicketColumn {
   state: string
   tickets: Ticket[]
 }
 
 /**
- * BEH-UI-5 (his 2026-11-18 note: each ticket keeps its state column): the open tickets grouped by state, columns in
+ * BEH-UI-6 (his 2026-11-18 note: each ticket keeps its state column): the open tickets grouped by state, columns in
  * {@link TICKET_STATES} order, and merged tickets off the board. Within a column a ticket sorts by priority, 1 first,
  * and within one priority a blocked ticket sits above the unblocked ones. A blocked ticket does not rise above a
  * higher priority. Equal keys keep the order the server sent, which is oldest first.
