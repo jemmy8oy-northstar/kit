@@ -28,6 +28,26 @@ public sealed class MemoryTicketStore : ITicketStore
         }
     }
 
+    private readonly List<TicketComment> comments = [];
+
+    /// <inheritdoc />
+    public void Comment(TicketComment comment)
+    {
+        lock (gate)
+        {
+            comments.Add(comment);
+        }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<TicketComment> Comments(string project, string slug)
+    {
+        lock (gate)
+        {
+            return comments.Where(c => c.Project == project && c.Slug == slug).OrderBy(c => c.At).ToList();
+        }
+    }
+
     /// <inheritdoc />
     public IReadOnlyList<PipelineTicket> Open()
     {

@@ -156,6 +156,31 @@ public class RunnerScriptTests
         }
     }
 
+    [Theory]
+    [InlineData(1800)]
+    [InlineData(null)]
+    public void BEH_ORCH_17_The_pool_gives_a_run_the_claims_time_limit_and_none_when_the_claim_has_none(int? maxSeconds)
+    {
+        using var rig = new Rig();
+        // The claim body is what the server itself writes for this PoolClaim, not typed by hand.
+        var claim = new PoolClaim("r1", "tok", "o/r", "t", "", "sonnet", 15, "test", maxSeconds);
+        rig.PoolStubs([200], writesUsage: false, claimJson: JsonSerializer.Serialize(claim, new EngineJsonSerialiser().Options));
+
+        var r = rig.Pool();
+
+        Assert.True(r.Status == 0, r.Stderr);
+        var seen = rig.KitRunEnv();
+        Assert.Equal(("15", "test"), (seen["KIT_MAX_TURNS"], seen["KIT_STAGE"]));
+        if (maxSeconds is null)
+        {
+            Assert.False(seen.ContainsKey("KIT_RUN_MAX_SECONDS"), "a run with no limit must keep kit-run's own, not be given an empty one");
+        }
+        else
+        {
+            Assert.Equal(maxSeconds.ToString(), seen["KIT_RUN_MAX_SECONDS"]);
+        }
+    }
+
     [Fact]
     public void A_subscription_run_is_reported_finished_with_its_usage_and_never_sees_the_pool_token()
     {

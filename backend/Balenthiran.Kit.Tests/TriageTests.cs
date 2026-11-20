@@ -383,6 +383,15 @@ public class TriageTests
     }
 
     [Fact]
+    public void The_chat_instructions_say_what_kit_cannot_do_and_leave_such_a_request_as_a_note()
+    {
+        // BEH-CHAT-7 (his 23:40Z note): the cannot list, and that such a request is left for the coding agent, never claimed done.
+        Assert.Contains("What Kit cannot do: reorder, pause, schedule or change the priority of items, or edit the spec.", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("call save_note with their words, so the coding agent makes the change", TriageContext.ChatInstructions, StringComparison.Ordinal);
+        Assert.Contains("never say it is done", TriageContext.ChatInstructions, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Showing_and_noting_read_as_actions_and_a_note_with_no_words_is_dropped()
     {
         Assert.Equal(new TriageAction("show"), AnthropicTriageChat.Parse("""{"content":[{"type":"tool_use","id":"t","name":"show_item","input":{}}]}""").Action);
