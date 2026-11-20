@@ -1,5 +1,6 @@
 # Pipeline stages as scheduled workers, and the merge agent
 Work-item: pipeline-workers-and-merge-agent
+Flag: BEH-WORKER-1 and BEH-WORKER-3 wake workers from a scheduled Kubernetes job and a backend, while kit-ui.beh (his answer kit#672, 2026-11-05, "I feel like the pool makes more sense"; kit#686, "run pods do not have control plane access") puts runs on a fixed pool of runner pods with no Kubernetes rights for Kit; whether pipeline stages may use a schedule and a backend is his decision, so no card is built until he answers (level: high)
 Flag: The three cited 2026-11-18 notes are not in kit.notes.md on this branch or main, so the six cards cannot be checked against their source (level: low)
 Cards:
 - BEH-WORKER-1
