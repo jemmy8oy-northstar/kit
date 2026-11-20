@@ -86,7 +86,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
             pool.Signal();
             try
             {
-                pipeline?.RunEnded(id, false);
+                pipeline?.RunEnded(id, false, failure: RunnerPool.LostFailure);
             }
             catch (Exception e)
             {
@@ -165,7 +165,7 @@ public sealed class RunnerPoolRoutes(RunnerPool pool, IAgentRunStore store, stri
 
         store.SetStatus(run.Id, s.GetString()!, (clock ?? TimeProvider.System).GetUtcNow(), failure);
         pool.Signal();
-        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles);
+        pipeline?.RunEnded(run.Id, s.GetString() == AgentRunStatus.Finished, bundles, failure);
         return new KitResponse
         {
             Status = 200,
