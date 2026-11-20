@@ -47,10 +47,10 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
 
-  # Eight NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
+  # Nine NUL-terminated fields on stdout, read back below; the JSON goes in by file, not argv.
   if ! node -e '
     const c = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-    for (const k of ["id", "token", "repo", "task", "baseBranch", "model", "maxTurns", "stage"]) process.stdout.write(String(c[k] ?? "") + "\0");
+    for (const k of ["id", "token", "repo", "task", "baseBranch", "model", "maxTurns", "stage", "maxSeconds"]) process.stdout.write(String(c[k] ?? "") + "\0");
   ' "$tmp/claim.json" > "$tmp/fields"; then
     echo "kit-pool: could not read the claim, retrying in 10s" >&2
     rm -f "$tmp/claim.json" "$tmp/fields"
@@ -58,7 +58,7 @@ while [ "$runs_left" -gt 0 ]; do
     continue
   fi
   rm -f "$tmp/claim.json"
-  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; read -r -d '' run_turns; read -r -d '' run_stage; } < "$tmp/fields" || true
+  { read -r -d '' run_id; read -r -d '' run_token; read -r -d '' run_repo; read -r -d '' run_task; read -r -d '' run_base; read -r -d '' run_model; read -r -d '' run_turns; read -r -d '' run_stage; read -r -d '' run_seconds; } < "$tmp/fields" || true
   rm -f "$tmp/fields"
 
   runs_left=$((runs_left - 1))
@@ -68,11 +68,13 @@ while [ "$runs_left" -gt 0 ]; do
   status=0
   (
     export KIT_RUN_ID="$run_id" KIT_RUN_TOKEN="$run_token" KIT_REPO="$run_repo" KIT_TASK="$run_task"
-    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_FAILURE_FILE="$tmp/failure.txt" KIT_BUNDLES_FILE="$tmp/bundles.json"
+    export KIT_BASE_BRANCH="$run_base" KIT_MODEL="$run_model" KIT_USAGE_FILE="$tmp/usage.json" KIT_FAILURE_FILE="$tmp/failure.txt" KIT_BUNDLES_FILE="$tmp/bundles.json" KIT_COST_FILE="$tmp/cost.json"
     # BEH-ORCH-5: a pipeline stage's turn limit; a run started by hand has none, so the runner's own default applies.
     if [ -n "$run_turns" ]; then export KIT_MAX_TURNS="$run_turns"; fi
     # BEH-ORCH-12: the stage, so kit-run can check a test run's verdict itself; a run started by hand has none.
     if [ -n "$run_stage" ]; then export KIT_STAGE="$run_stage"; fi
+    # BEH-ORCH-17: a stage's own time limit (a test run's is half an hour); none keeps kit-run's default.
+    if [ -n "$run_seconds" ]; then export KIT_RUN_MAX_SECONDS="$run_seconds"; fi
     exec "${KIT_RUN_BIN:-/usr/local/bin/kit-run}"
   ) || status=$?
 
@@ -99,16 +101,18 @@ while [ "$runs_left" -gt 0 ]; do
     failure="$(head -c 100 "$tmp/failure.txt" 2>/dev/null | head -n 1)" || failure=""
     [ -n "$failure" ] || failure="run exit $status"
   fi
-  # Writes body.1 (everything), body.2 (no usage) and body.3 (status only), skipping one the same as the one before.
+  # Writes body.1 (everything), body.2 (no usage, but the reported cost) and body.3 (status only), skipping one the same as the one before.
+  # BEH-COST-1: the run's reported dollar cost (cost.json) goes with the usage and is kept in body.2, as counting it matters.
   node -e '
     const fs = require("fs");
     const [dir, status, failure] = process.argv.slice(1);
     const read = f => { try { return JSON.parse(fs.readFileSync(dir + "/" + f, "utf8")); } catch { return undefined; } };
     const usage = read("usage.json"), bundles = read("bundles.json");
-    const bodies = [{ status, usage, bundles, failure: failure || undefined }, { status, bundles, failure: failure || undefined }, { status }].map(b => JSON.stringify(b));
+    const cost = read("cost.json"), costUsd = typeof cost === "number" ? cost : undefined;
+    const bodies = [{ status, usage, costUsd, bundles, failure: failure || undefined }, { status, costUsd, bundles, failure: failure || undefined }, { status }].map(b => JSON.stringify(b));
     bodies.forEach((b, i) => { if (i === 0 || b !== bodies[i - 1]) fs.writeFileSync(dir + "/body." + (i + 1), b); });
   ' "$tmp" "$outcome" "$failure" || printf '{"status":"%s"}' "$outcome" > "$tmp/body.3"
-  rm -f "$tmp/usage.json" "$tmp/bundles.json" "$tmp/failure.txt"
+  rm -f "$tmp/usage.json" "$tmp/bundles.json" "$tmp/failure.txt" "$tmp/cost.json"
   code=000
   for n in 1 2 3; do
     [ -f "$tmp/body.$n" ] || continue
