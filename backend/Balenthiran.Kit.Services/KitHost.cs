@@ -32,7 +32,7 @@ public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSeria
     }
 
     /// <inheritdoc />
-    public IHostAnswer Answer(string method, string target, string? origin, string? cookie)
+    public IHostAnswer Answer(string method, string target, string? origin, string? cookie, string? bearer = null)
     {
         // `new URL` throws on a target such as `//x:99999/`; in ui.js that once crashed
         // the process. Here, as there now, it is the client's error.
@@ -57,7 +57,7 @@ public sealed class KitHost(IKitRouter router, IUrlParser urls, IEngineJsonSeria
 
         if (method != "POST")
         {
-            return Deliver(router.Route(method, pathname, cookie: cookie), origin);
+            return Deliver(router.Route(method, pathname, cookie: cookie, bearer: bearer), origin);
         }
 
         // Refused as cross-origin BEFORE the body is read — not as bad JSON or too large.

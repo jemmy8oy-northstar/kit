@@ -86,7 +86,8 @@ public static class KitServer
                 await feedRefresh.EnsureFreshAsync(ProjectPoller.Wait, ctx.RequestAborted);
             }
 
-            var a = host.Answer(ctx.Request.Method, target, origin, cookie);
+            // BEH-ORCH-6: handed to the router, which reads it for a GET only; a POST's Received never gets it.
+            var a = host.Answer(ctx.Request.Method, target, origin, cookie, Header(ctx.Request.Headers.Authorization));
             if (a.Post is not null)
             {
                 a = host.Received(a.Post, await ReadBody(ctx.Request.Body), origin, cookie);
