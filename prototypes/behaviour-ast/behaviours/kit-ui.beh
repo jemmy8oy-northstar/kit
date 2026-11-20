@@ -3657,3 +3657,24 @@ behaviour BEH-PREVIEW-1 "A user can start a preprod copy of their app from Kit a
   then sees region:KitMain
   contract "From kit I am able to spin up a preprod version of my app and use the app and play around and evaluate the success of the agents. If I find any gaps I can discuss with the realtime spec agent"
   contract my assumption: it waits on deploying users' apps at all (BEH-USERS-6 databases, and where their apps run), which he set below AI support on 2026-10-31; until then a user deploys their own, and Kit links to it
+
+# ── the pipeline run page (moved from kit.beh, 2026-11-20: a screen, which kit.beh may not hold) ──
+# Internal to the owner for now: the run page is not shown to testers.
+
+behaviour BEH-VIS-1 "The run page shows each running agent, its stage, and any review it flagged and by which agent"
+  priority 5
+  actor engineer
+  given run:Running
+  when runs command:KitUi
+  then reports run:Stages
+  review unreviewed
+  contract my assumption: the page is for the owner only, and is not shown on any tester's pages
+
+behaviour BEH-VIS-2 "A historic run shows what each stage cost, and which reviews it requested"
+  priority 5
+  actor engineer
+  given run:Finished
+  when runs command:KitUi
+  then reports run:Costs
+  review unreviewed
+  contract my assumption: the costs come from the per-session record of BEH-COST-1 when it exists, and a stage with no recorded cost shows as unknown, never as zero
