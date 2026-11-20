@@ -1644,6 +1644,8 @@ behaviour BEH-ORCH-12 "Kit runs a private project's test suite itself, so mergin
   contract my assumption: a failed test stops the ticket rather than retrying, because a flaky suite should be seen, not hidden by a second run
   contract his comment (claude-code-bot#145, 2026-11-19 21:07Z): "In the screenshot I sent above I don't see the merge runners at all"
   contract my assumption: finishing a ticket goes before starting one. When a merge look needs a test or resolve run but the project is busy, it keeps the project. Until the next look, the context, plan and build jobs start nothing on it, so the merge job gets the next free slot. Before this, the build job took a freed project at once, while the merge look was still asking GitHub, so with tickets planned no test ever started. Triage is not held back, because his notes can change a bundle. The hold lasts one look, so a merge job that no longer needs a run frees the project within one interval (2 minutes)
+  contract his comment (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
+  contract my assumption: the hold covers every way a run starts, not only the jobs. Production runs the merge job alone, so a planned ticket's build starts the moment the run before it ends. The hold was read only by the jobs, so overnight seven pull requests were built and none was tested. A look that no longer holds the project starts what waited behind it at once
 
 behaviour BEH-ORCH-13 "A stronger model reviews the pipeline on a timer the user chooses: neglected tickets, a sample of finished work, and the architecture"
   in FEAT-AGENT-PIPELINE
