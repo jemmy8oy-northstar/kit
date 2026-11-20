@@ -699,6 +699,13 @@
   "BEH-NARR-3": [
     { "file": "backend/Balenthiran.Kit.Tests/UserMemoryTests.cs", "title": "BEH_NARR_3_the_shared_process_steers_the_agent_toward_the_goal" }
   ],
+  "BEH-ARCH-4": [
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: generating the diagram twice for the same repo gives byte-identical output, and a repo whose files are read in a different order gives the same output too" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: a repo that declares a database, an external API and a Helm chart shows each one as a part, taken from the repo’s own files" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: a repo with none of the three shows no diagram and draws no invented part" },
+    { "file": "prototypes/behaviour-ast/ui/src/stackDiagram.test.ts", "title": "BEH-ARCH-4: the diagram is produced by code and makes no model call, so it works with the model unavailable" },
+    { "file": "prototypes/behaviour-ast/ui/src/components/StackDiagram.test.tsx", "title": "BEH-ARCH-4: a repo with none of the three shows the page without error and draws no invented part" }
+  ],
   "BEH-ARCH-1": [
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_decision_is_its_own_block_with_a_part_and_repeating_considered_and_because" },
     { "file": "backend/Balenthiran.Kit.Tests/DecisionTests.cs", "title": "A_malformed_decision_is_refused_naming_the_line" },
