@@ -1782,6 +1782,20 @@ behaviour BEH-ORCH-19 "A run that failed, was lost or changed nothing is tried a
   contract my assumption: when Kit starts, a run that has been going since more than a lease before the start is counted lost at once, instead of getting a fresh lease from each restart. Each release restarts Kit, so runs days old stayed "running since before Kit last started" on Runs → Now
   contract built (Pipeline.TryAgain, Pipeline.Retryable, RunnerPool.Forgotten): retries are counted in memory per ticket and reset when a run moves it on
 
+behaviour BEH-ORCH-20 "A runner takes a test or merge run before any other"
+  in FEAT-AGENT-PIPELINE
+  source defined claude-code-bot#145
+  review unreviewed
+  priority 1
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract his ask (claude-code-bot#145, 2026-11-20 01:20Z): "I still don't see things getting merged"
+  contract measured 2026-11-20: the train on kit was built at 06:52Z and nothing had merged by 07:30Z. Production has one runner pod, and the pool handed out the oldest queued run whatever its stage, so a test run could wait behind another project's build, which has no time limit of its own (up to 110 minutes), while every built pull request riding on it waited too
+  contract my assumption: when a runner asks, it gets the oldest queued test run or merge (resolve) run whose project is free. Only when there is none does it get the oldest of the rest. One live run per project still holds. A test run is capped at 30 minutes, so a build waits at most that long per test
+  contract my assumption: this is the half of his "reserve a slot for merge/triage" that holds however many runners there are. With one runner, a build already running is not stopped. Triage is not moved up, because nothing waits on it to merge
+  contract built (RunnerPool.GoesFirst, RunnerPool.Take): two passes over the queue, stage "test" or "resolve" first
+
 behaviour BEH-SETTINGS-7 "He can wake the agent from Settings at its next look"
   in FEAT-SETTINGS
   source defined kit#714

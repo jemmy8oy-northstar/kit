@@ -148,37 +148,48 @@ public sealed class RunnerPool(IAgentRunStore store, TimeProvider? clock = null)
                 }
             }
 
-            for (var i = 0; i < queue.Count; i++)
-            {
-                var item = queue[i];
-                var run = Find(item.RunId);
-                if (run is null || run.Status != AgentRunStatus.Queued)
-                {
-                    queue.RemoveAt(i--);
-                    continue;
-                }
-
-                if (handedOut.ContainsKey(run.Project))
-                {
-                    continue;
-                }
-
-                queue.RemoveAt(i--);
-                if (!store.StartIfQueued(run.Id))
-                {
-                    continue;
-                }
-
-                handedOut[run.Project] = run.Id;
-                repoByRun[run.Id] = item.Repo;
-                handedOutAt[run.Id] = Now;
-                limitOf[run.Id] = item.MaxSeconds;
-                return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage, item.MaxSeconds);
-            }
-
-            return null;
+            // BEH-ORCH-20: a test or merge run goes first, oldest first, then everything else. With one runner, a test queued
+            // behind another project's build waited up to two hours, and every built pull request waited with it.
+            return Take(true) ?? Take(false);
         }
     }
+
+    // The oldest queued run whose project is free, test and merge runs only when firstOnly. Called under gate.
+    private PoolClaim? Take(bool firstOnly)
+    {
+        for (var i = 0; i < queue.Count; i++)
+        {
+            var item = queue[i];
+            var run = Find(item.RunId);
+            if (run is null || run.Status != AgentRunStatus.Queued)
+            {
+                queue.RemoveAt(i--);
+                continue;
+            }
+
+            if (handedOut.ContainsKey(run.Project) || (firstOnly && !GoesFirst(run.Stage)))
+            {
+                continue;
+            }
+
+            queue.RemoveAt(i--);
+            if (!store.StartIfQueued(run.Id))
+            {
+                continue;
+            }
+
+            handedOut[run.Project] = run.Id;
+            repoByRun[run.Id] = item.Repo;
+            handedOutAt[run.Id] = Now;
+            limitOf[run.Id] = item.MaxSeconds;
+            return new PoolClaim(run.Id, item.Token, item.Repo, item.Task, item.BaseBranch, run.Model, item.MaxTurns, run.Stage, item.MaxSeconds);
+        }
+
+        return null;
+    }
+
+    /// <summary>BEH-ORCH-20: the stages a runner takes before any other: a test run, and a merge run resolving a conflict.</summary>
+    public static bool GoesFirst(string? stage) => stage is "test" or "resolve";
 
     /// <summary>The repo of a run this pool handed out that is not over, else null (never handed out, over, or forgotten at a restart).</summary>
     public string? RepoOf(string runId)
