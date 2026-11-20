@@ -1,6 +1,6 @@
 # Setting to assign the developer to all PRs, and whether they appear in the inbox
 Work-item: pr-assignment-setting
-Flag: scope (per developer or per project) and placement (kit.beh has no FEAT-SETTINGS) are still unanswered; the 2026-11-20 reply asks "failed? rerun?" with no spec change stated, so no card was edited for it (level: high)
+Flag: scope (per developer or per project) is still unanswered; placement is off: FEAT-SETTINGS is declared in kit-ui.beh (line 2379) not kit.beh, where BEH-ASSIGN-1 sits; notes anchor 2026-11-18 18:27Z is not in kit.notes.md; the 2026-11-20 reply states no spec change, so no card was edited for it (level: high)
 Review: escalated — owner must decide whether to auto-assign the developer to every PR (per developer or per project, default off) since it changes the inbox; also BEH-ASSIGN-1 sits in kit.beh, the command-line-only layer, where FEAT-SETTINGS is not declared, so it likely belongs in the screen-layer file
 Cards:
 - BEH-ASSIGN-1
@@ -19,6 +19,6 @@ Blocked: no tests written and no code changed. The bundle's premise does not mat
 
 Test plan:
 - BEH-ASSIGN-1: with the setting never set, the developer is not assigned to a PR they are not already on, and the inbox is unchanged (default off)
-- BEH-ASSIGN-1: turning the setting on assigns the signed-in developer to every open PR, and those PRs appear in their inbox
+- BEH-ASSIGN-1: turning the setting on assigns the signed-in developer to every open PR, and those PRs appear in their inbox (blocked until he answers whether PRs go into the Inbox at all: the Inbox lists Kit's cards, not PRs, so this cannot pass as written)
 - BEH-ASSIGN-1: turning the setting on does not change an inbox that was already showing; it changes only after the developer turns it on
 - BEH-ASSIGN-1: the setting on one developer does not assign or show PRs for another developer (per developer reading; blocked until he answers the scope question, so do not build the per-project case)
