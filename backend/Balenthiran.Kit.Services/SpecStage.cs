@@ -4,8 +4,8 @@ namespace Balenthiran.Kit.Services;
 
 /// <summary>
 /// kit-ui.beh <c>BEH-ORCH-3</c>: the task text of the spec stage, a short run on a cheap model that starts from a
-/// triage's <see cref="ContextBundle"/>, writes the cards it names into the project's spec as unreviewed
-/// suggestions, adds a test plan to the bundle, pushes the work item's branch and ends. It writes no tests or code:
+/// triage's <see cref="ContextBundle"/>, reads the cards the triage wrote (BEH-ORCH-16), plans their tests in the bundle,
+/// pushes the work item's branch and ends. It writes no tests or code:
 /// that is the build stage. Pure: nothing here starts a run.
 /// </summary>
 public static class SpecStage
@@ -37,8 +37,11 @@ public static class SpecStage
             sb.Append("2. Read the bundle below and the files it lists under Files. Search beyond them only when the bundle is wrong.\n");
         }
 
-        sb.Append("3. Edit the spec at ").Append(specPath).Append(". For each existing card id under Cards, add or correct its contract lines so they say what the notes ask. For each \"new: <one line>\", add a behaviour card shaped like the cards around it, with a new id in the same area and the line \"review unreviewed\". Start every contract line you write with \"contract my assumption:\". Change no card the bundle does not name, and delete nothing.\n");
-        sb.Append("4. In ").Append(path).Append(", replace each \"new: <one line>\" under Cards with the id you gave it. At the end of Context add a line \"")
+        // BEH-ORCH-16 slice 2: the triage already wrote the cards; this stage plans their tests. A bundle written before
+        // that may still say "new:", so the old instruction stays for it.
+        sb.Append("3. Read the cards under Cards in the spec at ").Append(specPath).Append(": they are already written. Do not change them; if one is wrong for its notes, say so in a Flag line (step 6). Only when a Cards line still says \"new: <one line>\", add that card shaped like the cards around it, with a new id in the same area, the line \"review unreviewed\" and contract lines starting \"contract my assumption:\", and replace the line in ")
+            .Append(path).Append(" with its id.\n");
+        sb.Append("4. In ").Append(path).Append(", at the end of Context add a line \"")
             .Append(TestPlanHeading).Append("\" and under it one \"- \" line per test: the card id, then what the test checks.\n");
         sb.Append("5. Write no tests and no code.\n");
         sb.Append("6. If you are unsure of the spec and the bundle has no Flag line, add one line \"Flag: <one-line reason>\" straight after the Work-item line, so a stronger model reviews it. ").Append(FlagLevels.Guidance).Append('\n');

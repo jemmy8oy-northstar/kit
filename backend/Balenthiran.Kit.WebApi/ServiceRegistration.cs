@@ -14,7 +14,7 @@ public static class ServiceRegistration
     public static IServiceCollection AddKitServices(this IServiceCollection services, KitSettings settings)
     {
         services.AddSingleton(settings);
-        var disk = new CorpusDirectory(settings.Dir, settings.RepoRoot);
+        var disk = new CorpusDirectory(settings.Dir, settings.CorpusRoot);
         if (settings.Projects.Count == 0)
         {
             services.AddSingleton<ICorpusDirectory>(disk);
@@ -111,7 +111,8 @@ public static class ServiceRegistration
                 merger: sp.GetService<IPullRequestMerger>(),
                 merge: settings.PipelineMerge,
                 tickets: sp.GetRequiredService<ITicketStore>(),
-                jobs: settings.PipelineJobs.ToHashSet()));
+                jobs: settings.PipelineJobs.ToHashSet(),
+                runRetries: Pipeline.RunRetries));
             services.AddHostedService(sp => new PipelineResume(sp.GetRequiredService<Pipeline>()));
 
             // BEH-ORCH-11: only a job whose switch is on (KIT_PIPELINE_JOB_CONTEXT, KIT_PIPELINE_JOB_PLAN, KIT_PIPELINE_JOB_BUILD, KIT_PIPELINE_JOB_MERGE) exists to take a waiting ticket to its run (or, for merge, its pull request to a merge).
