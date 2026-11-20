@@ -3648,6 +3648,66 @@ public class PipelineTests
     }
 
     [Fact]
+    public async Task BEH_ORCH_12_with_only_the_merge_job_on_a_run_that_ends_leaves_the_project_for_the_test_the_merge_job_wants()
+    {
+        // His 2026-11-20 01:20Z comment on claude-code-bot#145: "I still don't see things getting merged". Production runs
+        // the merge job alone, so a planned ticket's build starts the moment the run before it ends, never from a job tick,
+        // and the reservation above was read by the build job only: seven pull requests were built overnight, none tested.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.DoesNotContain(rig.Store.List(), r => r.Stage == "test");
+
+        // The build ends: the next planned ticket waits, and the merge job's next look starts the test.
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+
+        // When the test ends, the waiting build goes.
+        EndRun(rig, test, true);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_12_a_reservation_the_merge_job_no_longer_needs_starts_what_waited_behind_it()
+    {
+        // The merge job wanted the project, then found nothing to test (the pull request was merged elsewhere): the build
+        // that waited must not wait for some other run's end that may never come.
+        var store = new MemoryTicketStore();
+        foreach (var ticket in new[] { BuiltSeed("a", 1), PlannedSeed("p1", 1), PlannedSeed("p2", 2) })
+        {
+            store.Save(ticket);
+        }
+
+        using var rig = new Rig(mergeJob: true, tickets: store);
+        rig.Pipeline!.Resume();
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        rig.Merges.Answer = NeedsTest(HeadA);
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.True(ItemOf(rig, "a").Merged);
+        Assert.Equal(WorkItemStatus.Running, ItemOf(rig, "p2").Status);
+    }
+
+    [Fact]
     public async Task BEH_ORCH_12_no_other_ticket_of_the_project_merges_while_its_test_run_is_in_flight()
     {
         // b (priority 1) is the top item and needs a test; a waits behind it. Another project is not held.
@@ -3747,6 +3807,27 @@ public class PipelineTests
         await rig.Pipeline.MergeTickAsync(CancellationToken.None);
         Assert.Single(train.Built);
         Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_ORCH_18_with_only_the_merge_job_on_a_train_gets_its_lead_projects_next_free_slot()
+    {
+        // Production's shape (claude-code-bot#145, 2026-11-20): builds start as runs end, not from a job.
+        var (rig, train) = TrainRig(BuiltSeed("a", 1, "demo", "BEH-B"), BuiltSeed("b", 2, "demo", "BEH-A"), PlannedSeed("p1", 1), PlannedSeed("p2", 2));
+        using var _ = rig;
+        var build = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("build", build.Stage);
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        Assert.Null(rig.Claim());
+
+        EndRun(rig, build, true);
+        Assert.Equal(WorkItemStatus.Queued, ItemOf(rig, "p2").Status);
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        var test = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("test", test.Stage);
+        Assert.Contains("kit/train/dev", test.Task);
     }
 
     [Fact]
