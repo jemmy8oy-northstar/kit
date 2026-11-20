@@ -13,6 +13,12 @@ Context:
 New cards in kit.beh only. They have no tests yet, so kit check kit fails BEH-GATE-1 until a builder maps them.
 The process never merges an agent's own work unless the corpus says so, so BEH-PR-2 keeps merge behind that line. Existing BEH-ORCH cards in kit-ui.beh may cover part of this and were not read.
 Next step toward the goal: the owner says whether complete means merge; a builder then raises a PR for one finished card.
+Built:
+- BEH_PR_1_finished_work_raises_exactly_one_pull_request_and_the_pull_request_names_the_card_it_builds (PipelineTests.cs)
+- BEH_PR_1_the_pull_request_targets_the_integration_branch_the_run_started_from_and_never_main (PipelineTests.cs)
+- BEH_PR_1_work_that_is_not_finished_raises_no_pull_request (PipelineTests.cs)
+- BEH_PR_2_a_raised_pull_request_with_merging_off_is_left_open_and_nothing_is_merged (PipelineTests.cs)
+Suite: the whole C# suite ran 2018 tests, 2015 passed and 3 FAILED (ReportConformanceTests x2, ClaimerSidecarTests x1: no `kill` binary here and an ICU check; the same 3 fail with these test changes stashed). Not a clean pass.
 Test plan:
 - BEH-PR-1: finished work raises exactly one pull request, and the pull request names the card it builds.
 - BEH-PR-1: the pull request targets the project's integration branch and never the default branch (main).
