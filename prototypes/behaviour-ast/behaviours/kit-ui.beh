@@ -3044,7 +3044,7 @@ behaviour BEH-CHAT-7 "The chat knows what Kit is and what it can do, and explain
   contract built: a "What can Kit do?" button in the chat's header, or a message that is just "help" or "/help", puts Kit's own help line in the thread. It asks no model and spends no reply, and the agent is not told of it
   contract my assumption: the help line is short and fixed text, not a model's answer, so it is free and always the same
   contract his list (kit-ui.notes.md#2026-11-03-2340): "Kit can: approve, deny (with what is true instead) or answer an item in hand; undo the last thing done to an item; show an item again; save a note for the coding agent; put a technical question to the coding agent; and read whole spec cards. Kit cannot itself reorder, pause, schedule or change the priority of items, or edit the spec. When the owner asks for any of those, Kit leaves a note and the coding agent makes the change."
-  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and offers to leave the note, rather than claiming it did it
+  contract my assumption: the agent's instructions and the help line both carry this list, can and cannot; asked for something on the cannot list, the agent says so and leaves a note for the coding agent to make the change, as the owner's note says, rather than claiming it did it
 
 behaviour BEH-CHAT-8 "The chat agent reads the project's whole spec when a title is not enough"
   in FEAT-CHAT
@@ -3168,7 +3168,7 @@ behaviour BEH-CHAT-16 "A reply is never cut off silently: a long one is finished
   contract my assumption: the limit rises to 4096, which a chat answer should rarely reach; a reply the model stops for length gets Kit's line "That reply was cut short. Ask me to go on." under it, so a cut is never silent
   contract built: AnthropicTriageChat.MaxTokens is 4096; when the Messages API answers stop_reason max_tokens the server's answer carries truncated: true (absent otherwise), and the Chat page puts Kit's line under that reply. It sends nothing to the model and the agent is not told of it
 
-behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends"
+behaviour BEH-CHAT-17 "On a phone, Enter adds a new line and the send button sends; on a desktop, Enter sends and Shift+Enter adds a new line"
   in FEAT-CHAT
   layer ux
   source defined kit-ui.notes.md#2026-11-04-1100
