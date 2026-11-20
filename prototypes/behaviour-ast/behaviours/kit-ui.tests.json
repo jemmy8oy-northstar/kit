@@ -971,6 +971,10 @@
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_a_train_whose_test_run_was_lost_is_built_again_rather_than_sending_its_riders_the_single_way" },
     { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_19_After_a_restart_a_forgotten_queued_run_fails_at_once_and_a_forgotten_running_one_at_its_own_lease" }
   ],
+  "BEH-ORCH-20": [
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_or_merge_run_is_claimed_before_an_older_build_on_another_project" },
+    { "file": "backend/Balenthiran.Kit.Tests/PipelineTests.cs", "title": "BEH_ORCH_20_A_test_run_whose_project_is_busy_does_not_hold_up_a_build_on_a_free_one" }
+  ],
   "BEH-ORCH-14": [
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_outlives_the_limit_fails_the_run_at_the_time_step_and_its_children_end_with_it" },
     { "file": "backend/Balenthiran.Kit.Tests/RunnerScriptTests.cs", "title": "BEH_ORCH_14_An_agent_that_ignores_the_stop_signal_is_killed_and_still_fails_at_the_time_step" },
