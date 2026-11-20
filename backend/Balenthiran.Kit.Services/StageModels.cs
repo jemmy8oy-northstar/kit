@@ -15,7 +15,7 @@ public static class StageModels
     /// <summary>The stronger model that reviews a flagged stage from its bundle.</summary>
     public const string DefaultReview = "claude-opus-5-5";
 
-    /// <summary>The cheaper model that reviews a flag marked "(level: low)".</summary>
+    /// <summary>The cheaper model that reviews a flag marked "(level: low)" or "(level: medium)" (BEH-ROUTE-3).</summary>
     public const string DefaultReviewLow = "claude-sonnet-5-5";
 
     /// <summary>The spec and build stages do the work on a cheap model; only a review uses a stronger one (BEH-ORCH-3).</summary>

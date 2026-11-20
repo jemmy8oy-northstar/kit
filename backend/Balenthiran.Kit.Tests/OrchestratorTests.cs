@@ -286,4 +286,34 @@ public class OrchestratorTests
             Assert.Throws<InvalidOperationException>(() => KitSettings.ParseStageModelBuild(bad));
         }
     }
+
+    // ---- BEH-ROUTE-3: a review goes to the model its flag's level asks for ---------------------------
+
+    private const string Opus = "claude-opus-5-5";
+    private const string Sonnet = "claude-sonnet-5-5";
+
+    // The defaults, as a deployment with no KIT_STAGE_MODEL_* setting gets them.
+    private static readonly StageModelSettings DefaultModels = new("claude-haiku-5-5", Opus, "claude-haiku-5-5", "claude-haiku-5-5");
+
+    [Fact]
+    public void BEH_ROUTE_3_a_flag_at_level_low_reports_model_by_level_on_sonnet_and_never_opus()
+    {
+        var model = Orchestrator.ModelFor(PipelineStage.Review, DefaultModels, "unsure (level: low)");
+
+        Assert.Equal(Sonnet, model);
+        Assert.NotEqual(Opus, model);
+    }
+
+    [Fact]
+    public void BEH_ROUTE_3_a_flag_at_level_high_reports_opus()
+    {
+        Assert.Equal(Opus, Orchestrator.ModelFor(PipelineStage.Review, DefaultModels, "unsure (level: high)"));
+    }
+
+    [Fact]
+    public void BEH_ROUTE_3_a_flag_at_level_medium_reports_sonnet()
+    {
+        // The assumed default (bundle pipeline-routing-by-cost): the owner has not said what medium should do.
+        Assert.Equal(Sonnet, Orchestrator.ModelFor(PipelineStage.Review, DefaultModels, "unsure (level: medium)"));
+    }
 }
