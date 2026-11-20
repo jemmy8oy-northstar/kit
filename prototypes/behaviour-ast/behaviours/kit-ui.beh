@@ -2787,6 +2787,26 @@ behaviour BEH-FLAGS-2 "A feature switched off for a group is gone from that grou
   contract my assumption: the table maps only features that own a page or navigation entry; every other feature has a switch with no visible effect yet, and Settings says so beside it
   contract my assumption: Settings, Principles and the Projects list have no row, so a tester always keeps the way to sign out and the shell the other switches live in (Principles belongs to FEAT-NAV, which is the shell; Settings to FEAT-SETTINGS, which is where the switches are set)
 
+behaviour BEH-FLAGS-3 "Testers can open the projects, boards, inbox and settings pages, and they work for them"
+  in FEAT-FLAGS
+  layer ux
+  source defined kit.notes.md#2026-11-02-1741
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitProjects
+  then sees region:KitMain
+  contract rests on BEH-FLAGS-1, BEH-USERS-2 and BEH-USERS-8 (written here, as depends-on takes only ADR ids)
+  contract my assumption: BEH-FLAGS-1 already turns these four features on for testers, so this card is the other half of the 17:41Z note: the pages must work for a tester, not only show
+  contract my assumption: a tester's Projects page lists only the repos of their own GitHub (BEH-USERS-2), and their boards and Inbox show only items in those projects; nothing of the operator's is listed or counted for them
+  contract my assumption: "work" means a tester may also act on their own items (approve, deny, answer, pause, lower priority) on the Board and in the Inbox; every other write stays operator-only, and a write to a project the tester does not own is refused (BEH-USERS-8)
+  contract my assumption (tester-feature-access merge): the item's test plan asks that a tester can read an operator project in a public repo by its URL; BEH-USERS-8 as revised on 2026-11-14 (kit#795) refuses it with 403 not-yours whatever repo it is in, so the built reading is the 403, and the test asserting it is TesterFeatureAccessTests.BEH_FLAGS_3_a_tester_is_refused_an_operator_project_by_url_and_it_is_never_in_their_list. Deny it and say which reading is true, and it is rebuilt to that
+  contract my assumption: a tester's Settings shows their account and their GitHub (BEH-SETTINGS-1) and nothing else; the operator's sections (promotion, idle, depth, conflicts, features) stay operator-only
+  contract my assumption: no tester action starts an agent run; the agent that works for testers is BEH-USERS-9, not yet built, so a tester's cards cost nothing until it is approved
+  contract my assumption: a feature switched off for testers still shows "Not available" on its page (BEH-FLAGS-2), so turning a page off stays one switch
+  contract built (tester-feature-access): a tester's Projects list, Board and Inbox hold none of the operator's projects, the Settings session and features responses carry no operator section, every project write and every operator-only write is refused to them, and no tester action starts or lists an agent run
+  contract not built (tester-feature-access): a tester's own GitHub project does not open as a board, and their approve, deny, answer, pause and priority on their own items are refused like every write; the Board and Inbox show a tester nothing yet, because they load only the operator's projects. Both need a write path to a user's repo, which Kit does not have
+
 feature FEAT-NARRATIVE "The agent keeps each project heading somewhere"
   stage development
 
