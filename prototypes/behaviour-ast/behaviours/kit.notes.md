@@ -988,3 +988,9 @@ Merge agent still doesn’t seem to be working
 <!-- from: note-button -->
 
 Maybe we can reduce the time to determine that a test run hung, how long does a test run actually take atm
+
+## 2026-11-21 13:30Z
+
+<!-- from: note-button -->
+
+Kit bundle is malformed kit needs a way to resolve this
