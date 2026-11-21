@@ -994,3 +994,9 @@ Maybe we can reduce the time to determine that a test run hung, how long does a 
 <!-- from: note-button -->
 
 Kit bundle is malformed kit needs a way to resolve this
+
+## 2026-11-21 13:31Z
+
+<!-- from: note-button -->
+
+Ticket tests are failing or merge conflicts kit needs a strategy to resolve this
