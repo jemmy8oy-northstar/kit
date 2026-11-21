@@ -537,3 +537,13 @@ behaviour BEH-PR-2 "The pipeline completes a pull request only when the corpus s
   review unreviewed
   contract my assumption: complete means merge, so a pull request is merged only where the corpus allows it, and otherwise is left open for the owner
   contract my question (review request, conflicts with BEH-ORCH-10 in kit-ui.beh): BEH-ORCH-10 merges a built pull request once its Actions checks are green whenever KIT_PIPELINE_MERGE=on, with no corpus line, and this card says it never merges on green checks alone without one. Both cannot hold. Built reading: BEH-ORCH-10 as shipped, unchanged, so nothing merges unless the switch is turned on; no test for this card's merge-without-corpus-line reading is written. Deny it and say which reading is true, and it is rebuilt to that. Default if silent: the built reading stays
+
+behaviour BEH-TICKET-5 "A malformed bundle is named and can be resolved, not left stuck"
+  source defined kit.notes.md#2026-11-21-1330Z
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: a bundle that fails its shape check is shown on the board with the line that is wrong, and no builder starts on it
+  contract my assumption: triage rewrites a malformed bundle to the required shape, keeping its cards and notes, and records the fix beside the ticket

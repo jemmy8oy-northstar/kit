@@ -1138,7 +1138,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
 
         if (parsed.Bundle is not { } bundle)
         {
-            return Stop(item, $"its bundle is malformed: {parsed.Error}");
+            return Stop(item, $"{TriageStage.MalformedPrefix}{parsed.Error}");
         }
 
         if (bundle.Slug != item.Slug)
@@ -1366,6 +1366,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     private bool Took(string app, ReportedBundle reported)
     {
         var triage = new WorkItem(app, reported.Slug, PipelineStage.Triage, WorkItemStatus.Running);
+        // BEH-TICKET-5: the item this report replaces, so a bundle that now parses can say what it was.
+        var before = items.Find(i => i.Project == app && i.Slug == reported.Slug);
         var parsed = reported.Text is null ? null : ContextBundle.Parse(reported.Text);
         ContextBundle? usable = null;
         WorkItem item;
@@ -1375,7 +1377,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         }
         else if (parsed.Bundle is not { } bundle)
         {
-            item = Stop(triage, $"its bundle is malformed: {parsed.Error}");
+            item = Stop(triage, $"{TriageStage.MalformedPrefix}{parsed.Error}");
         }
         else if (bundle.Slug != reported.Slug)
         {
@@ -1400,7 +1402,22 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             usable = bundle;
         }
 
-        return Record(app, reported.Slug, item, usable);
+        var recorded = Record(app, reported.Slug, item, usable);
+
+        // BEH-TICKET-5: a bundle triage rewrote from malformed is recorded beside its ticket, with what it was.
+        if (usable is not null && before?.StoppedBecause is { } was && was.StartsWith(TriageStage.MalformedPrefix, StringComparison.Ordinal))
+        {
+            try
+            {
+                ticketStore.Comment(new TicketComment(app, reported.Slug, KitAuthor, $"Fixed: triage rewrote the malformed bundle to its shape. It was: {was}", (clock ?? TimeProvider.System).GetUtcNow()));
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"kit: commenting on the ticket {app} {reported.Slug} threw {e.GetType().Name}");
+            }
+        }
+
+        return recorded;
     }
 
     /// <summary>Puts <paramref name="item"/> in the list, replacing an earlier item of the same slug unless that is running. True when <paramref name="usable"/> is not null.</summary>
@@ -1534,7 +1551,7 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             // update. Listed first (priority 0), so the list's cap can never drop the ticket the reply names.
             var replied = replies.Select(r => r.Slug).ToHashSet(StringComparer.Ordinal);
             var tickets = OpenTickets(item.Project).Select(t => replied.Contains(t.Slug) ? t with { BlockedBecause = null, Priority = 0 } : t).ToList();
-            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project));
+            task = TriageStage.BuildTask(item.Project, notes.Select(n => (n.Ref, TriageStage.OnCard(n.Card, n.Text))).ToList(), Cards(corpus), tickets, corpora.RelativePath(item.Project), Silent(item.Project), Malformed(item.Project));
         }
         catch (InvalidOperationException e)
         {
@@ -1639,6 +1656,26 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         catch (Exception e)
         {
             Console.Error.WriteLine($"kit: reading {app}'s ticket replies threw {e.GetType().Name}");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// BEH-TICKET-5: <paramref name="app"/>'s open tickets whose bundle failed its shape check, so triage rewrites each one.
+    /// A store that cannot be read gives none.
+    /// </summary>
+    private IReadOnlyList<PipelineTicket> Malformed(string app)
+    {
+        try
+        {
+            return ticketStore.Read(app)
+                .Where(TriageStage.IsMalformed)
+                .Where(t => t.State is TicketState.New or TicketState.Ready or TicketState.Planned)
+                .ToList();
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: reading {app}'s malformed tickets for triage threw {e.GetType().Name}");
             return [];
         }
     }
