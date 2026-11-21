@@ -537,3 +537,17 @@ behaviour BEH-PR-2 "The pipeline completes a pull request only when the corpus s
   review unreviewed
   contract my assumption: complete means merge, so a pull request is merged only where the corpus allows it, and otherwise is left open for the owner
   contract my question (review request, conflicts with BEH-ORCH-10 in kit-ui.beh): BEH-ORCH-10 merges a built pull request once its Actions checks are green whenever KIT_PIPELINE_MERGE=on, with no corpus line, and this card says it never merges on green checks alone without one. Both cannot hold. Built reading: BEH-ORCH-10 as shipped, unchanged, so nothing merges unless the switch is turned on; no test for this card's merge-without-corpus-line reading is written. Deny it and say which reading is true, and it is rebuilt to that. Default if silent: the built reading stays
+
+# ── ticket tests failing or merge conflicts (triage note of 2026-11-21) ──
+
+behaviour BEH-TICKET-6 "A ticket whose tests fail or whose branch conflicts is not dropped: the pipeline tries to fix it, and asks him only when it cannot"
+  source defined kit.notes.md#2026-11-21-1331
+  review unreviewed
+  priority 2
+  actor engineer
+  when opens page:KitBoard
+  then sees region:KitMain
+  contract my assumption: a ticket whose tests fail in technical design or implementation goes back to implementation, with the failing test names recorded on the ticket, and is not moved on until its tests pass
+  contract my assumption: a ticket whose branch conflicts with its integration branch is brought up to date by the pipeline, and the conflict is resolved on the ticket's own branch, never on the integration branch
+  contract my assumption: after two attempts at either fix that still fail, the pipeline blocks the ticket with the blocked tag and a question for him, and writes the default it will act on if he stays silent
+  contract my question: when both sides of a conflict edit the same card in kit.beh, should the pipeline keep the side with the newer note, or block the ticket? Default until you answer: block with a question, and never pick a side silently
