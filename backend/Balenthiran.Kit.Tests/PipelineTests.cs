@@ -4430,4 +4430,81 @@ public class PipelineTests
 
         Assert.Null(Ticket(rig).BlockedBecause);
     }
+
+    // A bundle whose Cards item has no "- " (line 4), so ContextBundle.Parse refuses it.
+    private static string MalformedCards(string slug) =>
+        $"# Sort the list\nWork-item: {slug}\nCards:\nBEH-A\nNotes:\n- demo.notes.md#x\nFiles:\n- src/List.cs\nContext:\nsort by date\n";
+
+    // A triage stopped on a malformed bundle, then a later triage that rewrote it to the shape with the same Cards and Notes.
+    private static void RewriteMalformedBundle(Rig rig)
+    {
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+        rig.Note("and sort by name too");
+        rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = BundleText("list-sorting") });
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_bundle_that_fails_its_shape_check_is_listed_on_the_board_with_the_line_that_is_wrong_and_no_build_starts()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        var ticket = Assert.Single(rig.Tickets.Read("demo"), t => t.Slug == "list-sorting");
+        Assert.Equal("its bundle is malformed: line 4 is not a \"- item\" in Cards", ticket.BlockedBecause);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_a_well_formed_bundle_is_not_listed_as_malformed_and_its_build_run_starts_as_before()
+    {
+        using var rig = new Rig();
+        var spec = Triaged(rig);
+        Assert.Null(Ticket(rig).BlockedBecause);
+
+        rig.FinishWith(spec, new { slug = "list-sorting", text = Specced("list-sorting") });
+
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.Contains("You are the build stage for project \"demo\"", Assert.IsType<PoolClaim>(rig.Claim()).Task);
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_triage_rewrites_a_malformed_bundle_so_that_it_parses_keeps_its_cards_and_notes_and_puts_each_item_on_its_own_line()
+    {
+        using var rig = new Rig();
+        rig.Note("the list should sort by date");
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = MalformedCards("list-sorting") });
+
+        rig.Note("and sort by name too");
+        var triage = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("## Malformed bundles (rewrite each)", triage.Task);
+        Assert.Contains("- list-sorting [new] ", triage.Task);
+        Assert.Contains("its bundle is malformed: line 4 is not a \"- item\" in Cards", triage.Task);
+        Assert.Contains("Keep its Cards and Notes items unchanged", triage.Task);
+        Assert.Contains("every list item on its own \"- \" line", triage.Task);
+
+        rig.FinishWith(triage, new { slug = "list-sorting", text = BundleText("list-sorting") });
+
+        var item = Assert.Single(rig.Pipeline!.Items(), i => i.Slug == "list-sorting");
+        Assert.Equal((PipelineStage.Spec, WorkItemStatus.Running), (item.Stage, item.Status));
+        var bundle = rig.Pipeline.Bundle("demo", "list-sorting")!;
+        Assert.Equal(["BEH-A"], bundle.Cards);
+        Assert.Equal(["demo.notes.md#x"], bundle.Notes);
+        Assert.Contains("Cards:\n- BEH-A\nNotes:\n- demo.notes.md#x\n", bundle.Render());
+    }
+
+    [Fact]
+    public void BEH_TICKET_5_after_triage_rewrites_a_malformed_bundle_the_fix_is_recorded_beside_the_ticket()
+    {
+        using var rig = new Rig();
+
+        RewriteMalformedBundle(rig);
+
+        var fix = Assert.Single(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.StartsWith("Fixed: triage rewrote the malformed bundle", StringComparison.Ordinal));
+        Assert.Equal("kit", fix.Author);
+        Assert.Contains("It was: its bundle is malformed: line 4 is not a \"- item\" in Cards", fix.Body);
+        Assert.Null(Ticket(rig).BlockedBecause);
+    }
 }

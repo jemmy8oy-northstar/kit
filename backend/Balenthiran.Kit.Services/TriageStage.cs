@@ -50,6 +50,15 @@ public static class TriageStage
         return text.Length == 0 ? null : text;
     }
 
+    /// <summary>
+    /// BEH-TICKET-5: what the reason for stopping an item on a bundle that fails its shape check begins with, before the parser's line-named reason.
+    /// </summary>
+    public const string MalformedPrefix = "its bundle is malformed: ";
+
+    /// <summary>BEH-TICKET-5: whether a ticket stopped because its bundle failed its shape check, so triage must rewrite it.</summary>
+    public static bool IsMalformed(PipelineTicket ticket) =>
+        ticket.StoppedBecause?.StartsWith(MalformedPrefix, StringComparison.Ordinal) == true;
+
     /// <summary>Where a work item's branch lives.</summary>
     public static string Branch(string slug) => $"kit/work/{slug}";
 
@@ -74,9 +83,12 @@ public static class TriageStage
         IReadOnlyList<(string Id, string Title)> cards,
         IReadOnlyList<PipelineTicket>? tickets = null,
         string? specPath = null,
-        IReadOnlyList<PipelineTicket>? silent = null)
+        IReadOnlyList<PipelineTicket>? silent = null,
+        IReadOnlyList<PipelineTicket>? malformed = null)
     {
-        var ticketSection = TicketSection(tickets ?? []);
+        // BEH-TICKET-5: a ticket whose bundle is malformed is listed under its own heading, not among the open tickets.
+        var ticketSection = TicketSection((tickets ?? []).Where(t => !IsMalformed(t)).ToList());
+        var malformedSection = MalformedSection(malformed ?? []);
         var silentSection = SilentSection(silent ?? []);
         var spec = specPath ?? "the project's spec file";
         var sb = new StringBuilder();
@@ -118,7 +130,7 @@ public static class TriageStage
             var part = $"\n### {reference}\n" + (shown.Length < text.Length
                 ? $"{shown}\n[truncated: {text.Length - shown.Length} more characters, read {reference} for the rest]\n"
                 : $"{shown}\n");
-            if (sb.Length + 40 + used + part.Length + ticketSection.Length + silentSection.Length > KitRouter.MaxTask - Reserve)
+            if (sb.Length + 40 + used + part.Length + ticketSection.Length + malformedSection.Length + silentSection.Length > KitRouter.MaxTask - Reserve)
             {
                 break;
             }
@@ -147,6 +159,7 @@ public static class TriageStage
         }
 
         sb.Append(ticketSection);
+        sb.Append(malformedSection);
         sb.Append(silentSection);
         sb.Append("\n## Existing cards (").Append(cards.Count).Append(")\n");
         var listed = 0;
@@ -244,6 +257,43 @@ public static class TriageStage
         if (listed < silent.Count)
         {
             sb.Append('[').Append(silent.Count - listed).Append(" more blocked tickets not listed]\n");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// BEH-TICKET-5: the tickets whose bundle failed its shape check, as "- slug [state] title: reason" lines under a heading
+    /// triage is told to act on: rewrite that bundle, keep its cards and notes, and report it under the ticket's slug. Empty
+    /// when there is none.
+    /// </summary>
+    public static string MalformedSection(IReadOnlyList<PipelineTicket> malformed)
+    {
+        if (malformed.Count == 0)
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder("\n## Malformed bundles (rewrite each)\n");
+        sb.Append("Each bundle below failed its shape check, so no builder can start on it. For each one, on its branch ")
+            .Append(Branch("<slug>")).Append(", open ").Append(BundlePath("<slug>"))
+            .Append(" and rewrite it to the shape above: sections Title, Work-item, Cards, Notes, Files, Context in that order, every list item on its own \"- \" line. Keep its Cards and Notes items unchanged and change nothing else. Do not edit the spec for it. Commit and push, and report the bundle under that ticket's slug.\n");
+        var listed = 0;
+        foreach (var t in malformed)
+        {
+            var line = $"- {t.Slug} [{t.State.ToString().ToLowerInvariant()}] {Short(t.Title, MaxTicketTitle)}: {Short(t.StoppedBecause ?? "", 200)}\n";
+            if (sb.Length + line.Length > MaxTicketChars - 80)
+            {
+                break;
+            }
+
+            sb.Append(line);
+            listed++;
+        }
+
+        if (listed < malformed.Count)
+        {
+            sb.Append('[').Append(malformed.Count - listed).Append(" more malformed bundles not listed]\n");
         }
 
         return sb.ToString();
