@@ -4430,4 +4430,151 @@ public class PipelineTests
 
         Assert.Null(Ticket(rig).BlockedBecause);
     }
+
+    // ---- BEH-TICKET-6: a ticket whose tests fail or whose branch conflicts is fixed, and asked about only when it cannot be ----
+
+    // What a build run leaves when its suite failed: what it built, and each failing test under the Built list.
+    private static string BuiltFailing(string slug, params string[] tests) =>
+        Specced(slug) + "Built:\n" + string.Concat(tests.Select(t => $"- failing: {t}\n")) + "- the suite ran 12 tests and did not pass\n";
+
+    // Checks that the merge step reads as failed (BEH-TICKET-6): the pull request stays open and nothing merges.
+    private static readonly PullRequestMerge ChecksFailing = new() { ChecksFailed = true, Reason = "unit tests did not succeed (failure)" };
+
+    [Fact]
+    public void BEH_TICKET_6_a_build_run_whose_tests_fail_sends_the_ticket_back_to_implementation_and_records_the_failing_test_names()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = BuiltFailing("list-sorting", "BEH_A_sorts_by_date") });
+
+        // Back at implementation: a fresh build run is started on the same branch, and nothing is built or opened yet.
+        var item = ItemOf(rig, "list-sorting");
+        Assert.Equal((PipelineStage.Build, WorkItemStatus.Running, (string?)null), (item.Stage, item.Status, item.PullRequest));
+        Assert.Equal(TicketState.Planned, Ticket(rig).State);
+        Assert.Empty(rig.Pulls.Asked);
+        Assert.Contains(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.Contains("BEH_A_sorts_by_date"));
+        Assert.IsType<PoolClaim>(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_a_retry_whose_tests_then_pass_moves_the_ticket_on_as_before_with_no_question_and_no_block()
+    {
+        using var rig = new Rig();
+        rig.FinishWith(Specced(rig), new { slug = "list-sorting", text = BuiltFailing("list-sorting", "BEH_A_sorts_by_date") });
+        rig.FinishWith(rig.Claim()!, new { slug = "list-sorting", text = Built("list-sorting") });
+        await Task.Yield();
+
+        Assert.Equal((TicketState.Built, "https://github.com/someone/demo/pull/7", (string?)null), (Ticket(rig).State, Ticket(rig).PullRequest, Ticket(rig).BlockedBecause));
+        Assert.Single(rig.Pulls.Asked);
+        Assert.DoesNotContain(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.Contains("Silence:") || c.Body.StartsWith("Blocked:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_failing_actions_checks_read_by_the_merge_step_send_the_ticket_back_to_implementation_and_leave_the_pull_request_open()
+    {
+        using var rig = await BuiltRig(merge: true);
+        rig.Merges.Answer = ChecksFailing;
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = BuiltItem(rig);
+        Assert.Equal((PipelineStage.Build, "https://github.com/someone/demo/pull/7", false), (item.Stage, item.PullRequest, item.Merged));
+        Assert.NotEqual(WorkItemStatus.Stopped, item.Status);
+        Assert.Single(rig.Pulls.Asked);
+        Assert.Contains(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.Contains("unit tests did not succeed"));
+
+        // Its pull request is not asked to merge again until the fix is built.
+        await rig.Pipeline.MergeReadyAsync(CancellationToken.None);
+        Assert.Single(rig.Merges.Asked);
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_a_branch_behind_dev_is_brought_up_to_date_by_the_merge_job_and_a_conflict_is_resolved_on_its_own_branch()
+    {
+        using var rig = MergeRig(mergeJob: true, merge: true, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        Assert.Equal([true], rig.Merges.UpdateFirst);
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Equal("dev", claim.BaseBranch);
+        Assert.Contains("Check out branch kit/work/a from origin", claim.Task);
+        Assert.Contains("Never commit or push to dev or main.", claim.Task);
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_checks_that_still_fail_after_two_attempts_to_fix_them_block_the_ticket_with_a_question_and_nothing_merges()
+    {
+        using var rig = await BuiltRig(merge: true);
+        rig.Merges.Answer = ChecksFailing;
+
+        for (var attempt = 1; attempt <= 2; attempt++)
+        {
+            await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+            // Each fix changes what the build lists, so the run is not one that changed nothing.
+            rig.FinishWith(Assert.IsType<PoolClaim>(rig.Claim()), new { slug = "list-sorting", text = Built("list-sorting") + $"- fix {attempt}\n" });
+            await Task.Yield();
+        }
+
+        // The third failure, after both attempts: a question for him, with the default it acts on if he stays silent.
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        var item = BuiltItem(rig);
+        Assert.Equal(WorkItemStatus.Stopped, item.Status);
+        Assert.Contains("Silence:", item.StoppedBecause);
+        Assert.Equal((false, 3), (item.Merged, rig.Merges.Asked.Count));
+        Assert.Equal(item.StoppedBecause, Ticket(rig).BlockedBecause);
+        Assert.Single(rig.Pulls.Asked);
+        Assert.Null(rig.Claim());
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_a_ticket_whose_tests_pass_and_whose_branch_does_not_conflict_is_not_retried_and_gets_no_question()
+    {
+        using var rig = await BuiltRig(merge: true);
+        rig.Merges.Answer = new PullRequestMerge { Merged = true };
+
+        await rig.Pipeline!.MergeReadyAsync(CancellationToken.None);
+
+        Assert.True(BuiltItem(rig).Merged);
+        Assert.Single(rig.Merges.Asked);
+        Assert.Null(rig.Claim());
+        Assert.Null(Ticket(rig).BlockedBecause);
+        Assert.DoesNotContain(rig.Tickets.Comments("demo", "list-sorting"), c => c.Body.Contains("Silence:") || c.Body.StartsWith("Blocked:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_when_both_sides_edit_the_same_card_in_kit_beh_the_ticket_is_blocked_with_a_question_and_neither_side_is_picked()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+
+        var claim = Assert.IsType<PoolClaim>(rig.Claim());
+        Assert.Contains("the same card in kit.beh", claim.Task);
+        EndRun(rig, claim, false);
+
+        var item = ItemOf(rig, "a");
+        Assert.Equal(WorkItemStatus.Stopped, item.Status);
+        Assert.Contains(rig.Tickets.Comments("demo", "a"), c => c.Body.StartsWith("Question for him:", StringComparison.Ordinal) && c.Body.Contains("Silence:"));
+        Assert.Null(rig.Claim());
+
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+        Assert.Equal([PullOf(1)], rig.Merges.Asked);
+        Assert.False(ItemOf(rig, "a").Merged);
+    }
+
+    [Fact]
+    public async Task BEH_TICKET_6_a_conflict_gets_two_resolve_runs_before_its_ticket_is_blocked()
+    {
+        using var rig = ResolveRig(null, BuiltSeed("a", 1));
+        rig.Merges.Answer = Conflicting;
+        await rig.Pipeline!.MergeTickAsync(CancellationToken.None);
+        EndRun(rig, Assert.IsType<PoolClaim>(rig.Claim()), true);
+
+        // The first run did not clear it: the card's second attempt is a run, not a block.
+        await rig.Pipeline.MergeTickAsync(CancellationToken.None);
+
+        Assert.IsType<PoolClaim>(rig.Claim());
+    }
 }

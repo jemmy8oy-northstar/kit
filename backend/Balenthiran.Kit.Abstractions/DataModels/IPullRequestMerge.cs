@@ -19,6 +19,12 @@ public interface IPullRequestMerge
     bool Conflict { get; }
 
     /// <summary>
+    /// Refused because an Actions run at the pull request's head commit did not succeed (BEH-TICKET-6): the ticket goes back
+    /// to implementation to fix it rather than stopping. Every other refusal leaves this false; <see cref="Reason"/> names the check.
+    /// </summary>
+    bool ChecksFailed { get; }
+
+    /// <summary>
     /// Not merged because no Kit test run has passed at <see cref="HeadSha"/> yet (BEH-ORCH-12): a private repo's pull request
     /// has no Actions run to wait for, so Kit runs the suite itself. Neither waiting nor refused; every other answer leaves this false.
     /// </summary>

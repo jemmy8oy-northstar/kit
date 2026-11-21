@@ -21,3 +21,13 @@ Test plan:
 - BEH-TICKET-6: when both sides edit the same card in kit.beh, the ticket is blocked with a question and neither side is picked silently
 - BEH-TICKET-6: a ticket whose tests pass and whose branch does not conflict is not retried and gets no question
 - BEH-TICKET-6: the attempt count asserted is the card's two; BEH-ORCH-11 slice 7b built one resolve run per ticket, so the test must fail until the owner answers the attempt-count question or the card is changed
+Built:
+- BEH_TICKET_6_a_build_run_whose_tests_fail_sends_the_ticket_back_to_implementation_and_records_the_failing_test_names
+- BEH_TICKET_6_a_retry_whose_tests_then_pass_moves_the_ticket_on_as_before_with_no_question_and_no_block
+- BEH_TICKET_6_failing_actions_checks_read_by_the_merge_step_send_the_ticket_back_to_implementation_and_leave_the_pull_request_open
+- BEH_TICKET_6_a_branch_behind_dev_is_brought_up_to_date_by_the_merge_job_and_a_conflict_is_resolved_on_its_own_branch
+- BEH_TICKET_6_checks_that_still_fail_after_two_attempts_to_fix_them_block_the_ticket_with_a_question_and_nothing_merges
+- BEH_TICKET_6_a_ticket_whose_tests_pass_and_whose_branch_does_not_conflict_is_not_retried_and_gets_no_question
+- BEH_TICKET_6_when_both_sides_edit_the_same_card_in_kit_beh_the_ticket_is_blocked_with_a_question_and_neither_side_is_picked
+- BEH_TICKET_6_a_conflict_gets_two_resolve_runs_before_its_ticket_is_blocked (FAILS by design until the attempt-count question is answered: one resolve run is built, BEH-ORCH-11 slice 7b)
+- the whole suite ran 2147 tests (dotnet test Balenthiran.Kit.slnx): 2146 passed and 1 failed, the test above; it did not pass.

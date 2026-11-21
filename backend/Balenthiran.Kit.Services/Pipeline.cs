@@ -121,6 +121,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
     // restart forgets them, and Resume gives a ticket blocked that way one more go.
     private readonly Dictionary<(string App, string Slug), int> tries = [];
 
+    // BEH-TICKET-6: per ticket, the fixes tried so far for failing checks or failing tests, so FixAttempts come before a block.
+    // In memory only, as tries is.
+    private readonly Dictionary<(string App, string Slug), int> fixes = [];
+
+    /// <summary>BEH-TICKET-6: how many fixes are tried for a ticket's failing checks or failing tests before it is blocked with a question.</summary>
+    public const int FixAttempts = 2;
+
     // BEH-ORCH-19: a block a run made, not a decision: the run failed or was lost, changed nothing, or reported no bundle; or
     // a test run failed or was lost. Resume tries such a ticket again rather than waiting for a reply. Not a review run's: a
     // ticket comes back at the state it reached, so its review would not be what ran again. A genuinely red pull request is
@@ -548,6 +555,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 Set(run.Index, succeeded
                     ? item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Done }
                     : Stop(item, "the conflict-resolution run failed"));
+
+                // BEH-TICKET-6: a run that could not resolve it may be looking at both sides editing one card in kit.beh. Kit
+                // never picks a side, so the ticket is blocked with a question for him, and nothing is merged.
+                if (!succeeded)
+                {
+                    TicketNote(item, "Question for him: the conflict-resolution run failed, and Kit cannot tell from the run why. If both sides of the conflict edit the same card in kit.beh, Kit picks neither side: which reading is true? Silence: leave it blocked and unmerged");
+                }
             }
             else if (item.Stage == PipelineStage.Test)
             {
@@ -606,7 +620,8 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 Set(run.Index, Ended(item, run.Given!, succeeded, reported, failure));
 
                 // Built, whether straight from its build run or after a review of it: its branch becomes a pull request.
-                if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done } done)
+                // BEH-TICKET-6: a fix built on a ticket whose pull request is open is pushed to that same branch, so no second one is opened.
+                if (items[run.Index] is { Stage: PipelineStage.Build, Status: WorkItemStatus.Done, PullRequest: null } done)
                 {
                     built = (run.Index, done, bundles[(done.Project, done.Slug)], run.RepoAt);
                 }
@@ -1086,6 +1101,20 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
                 return;
             }
 
+            // BEH-TICKET-6: a failed Actions check goes back to implementation from the stop BEH-ORCH-10 gives it. The pull
+            // request stays open, nothing merges, and the next build of the ticket is looked at again once its checks run.
+            if (result is { Merged: false, ChecksFailed: true })
+            {
+                Set(index, Fix(item, $"its checks failed: {result.Reason}"));
+                StartReady();
+                return;
+            }
+
+            if (result is { Merged: true })
+            {
+                fixes.Remove((item.Project, item.Slug));
+            }
+
             Set(index, result is { Merged: true }
                 ? item with { Merged = true, MergeNote = null }
                 : Stop(item, $"its pull request was not merged: {reason ?? result?.Reason ?? "GitHub gave no reason"}"));
@@ -1166,6 +1195,13 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
             return Stop(item, $"the {stage} run left no list of what was built");
         }
 
+        // BEH-TICKET-6: a build whose suite failed lists each failing test as "- failing: <name>". Nothing is built: the names
+        // go on the ticket and the item goes back to implementation, from the bundle it had before.
+        if (item.Stage == PipelineStage.Build && FailingTests(bundle) is { Count: > 0 } failing)
+        {
+            return Fix(item, $"its build's tests failed: {string.Join(", ", failing)}");
+        }
+
         bundles[(item.Project, item.Slug)] = bundle;
         tries.Remove((item.Project, item.Slug));
         return AfterTriage(item, Orchestrator.Advance(item, new StageResult(item.Stage, true, bundle, null)));
@@ -1190,6 +1226,52 @@ public sealed class Pipeline(ICorpusDirectory corpora, RunnerPool pool, IAgentRu
         tries.Remove(key);
         var why = failure is null ? because : $"{because} ({failure})";
         return Stop(item, tried > 1 ? $"{why}, {tried} runs in a row" : why);
+    }
+
+    /// <summary>
+    /// BEH-TICKET-6: a fix is tried for what was found wrong with <paramref name="item"/> (a failed Actions check, or failing
+    /// tests), at most <see cref="FixAttempts"/> times, and what was found is written on the ticket. The item goes back to
+    /// implementation: queued at Build on its own branch, its pull request, if any, kept. After the last attempt has failed
+    /// too it is stopped with the question he is asked and the default Kit acts on if he stays silent. Called with the gate held.
+    /// </summary>
+    private WorkItem Fix(WorkItem item, string found)
+    {
+        var key = (item.Project, item.Slug);
+        TicketNote(item, found);
+        var attempt = fixes.GetValueOrDefault(key) + 1;
+        if (attempt > FixAttempts)
+        {
+            fixes.Remove(key);
+            return Stop(item with { Stage = PipelineStage.Build }, $"{found}, still after {FixAttempts} attempts to fix it. Silence: leave it blocked and unmerged");
+        }
+
+        fixes[key] = attempt;
+        return item with { Stage = PipelineStage.Build, Status = WorkItemStatus.Queued, StoppedBecause = null, MergeNote = null };
+    }
+
+    /// <summary>The line prefix a build run lists a failing test under, in its Built list (BEH-TICKET-6).</summary>
+    private const string FailingPrefix = "- failing:";
+
+    /// <summary>BEH-TICKET-6: the test names a build's bundle lists as failing: each "- failing: name" line, in order.</summary>
+    private static List<string> FailingTests(ContextBundle bundle) =>
+        bundle.Context.Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.StartsWith(FailingPrefix, StringComparison.Ordinal))
+            .Select(l => l[FailingPrefix.Length..].Trim())
+            .Where(n => n.Length > 0)
+            .ToList();
+
+    /// <summary>BEH-TICKET-6: adds <paramref name="text"/> to <paramref name="item"/>'s ticket thread. A store that cannot be written costs the note, not the run. Called with the gate held.</summary>
+    private void TicketNote(WorkItem item, string text)
+    {
+        try
+        {
+            ticketStore.Comment(new TicketComment(item.Project, item.Slug, KitAuthor, text, (clock ?? TimeProvider.System).GetUtcNow()));
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"kit: commenting on the ticket {item.Project} {item.Slug} threw {e.GetType().Name}");
+        }
     }
 
     /// <summary>

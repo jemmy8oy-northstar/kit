@@ -22,9 +22,10 @@ public static class ResolveStage
         sb.Append("2. Merge origin/").Append(baseBranch).Append(" into it (a merge, not a rebase). Git will stop at the conflicts.\n");
         sb.Append("3. Resolve each conflict keeping the intent of both sides: what the branch added and what ").Append(baseBranch)
             .Append(" changed must both still work. Read the bundle below to see what the branch is for. Change nothing the conflicts do not need.\n");
+        sb.Append("   If both sides of a conflict edit the same card in kit.beh, do not pick a side: push nothing and say the run failed.\n");
         sb.Append("4. Run the project's whole test suite and make it pass.\n");
         sb.Append("5. Commit the merge and push it to ").Append(branch).Append(" on origin as a plain push, then STOP.\n\n");
-        sb.Append("Do not open a pull request, do not touch any other branch, and never force-push. If you cannot resolve a conflict so that the tests pass, push nothing and say the run failed.\n\n");
+        sb.Append("Do not open a pull request, do not touch any other branch, and never force-push. Never commit or push to ").Append(baseBranch).Append(" or main. If you cannot resolve a conflict so that the tests pass, push nothing and say the run failed.\n\n");
         var path = TriageStage.BundlePath(bundle.Slug);
         var rendered = bundle.Render();
         if (sb.Length + path.Length + rendered.Length + 40 <= KitRouter.MaxTask)

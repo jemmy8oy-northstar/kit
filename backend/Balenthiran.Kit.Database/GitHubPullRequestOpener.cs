@@ -302,7 +302,7 @@ public sealed partial class GitHubPullRequestOpener(
             if (conclusion is not ("success" or "skipped" or "neutral"))
             {
                 var name = run.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() : "a check";
-                return Refuse($"{name} did not succeed ({conclusion ?? "no conclusion"})");
+                return new PullRequestMerge { ChecksFailed = true, Reason = $"{name} did not succeed ({conclusion ?? "no conclusion"})" };
             }
         }
 
