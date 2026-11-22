@@ -2,7 +2,7 @@
 
 Every build-channel video goes through this file. It lives in kit, not snip-it, because its sources are his Kit notes and kit is private.
 
-Loop: **CREATE → REVIEW → (owner watches) → RETURN → CREATE…**
+Loop: **IDEAS → (owner picks) → CREATE → REVIEW → (owner watches) → RETURN → IDEAS…**
 The Owner's feedback log at the bottom is part of the loop. Read it at the start of CREATE and REVIEW. RETURN is not done until it has been updated.
 
 ## 0. Defaults (change only via RETURN)
@@ -19,13 +19,23 @@ The Owner's feedback log at the bottom is part of the loop. Read it at the start
   - Load fonts explicitly (`@remotion/google-fonts` / `loadFont`). A fallback system font fails the video automatically.
 - **Safe zone (Shorts):** keep text inside roughly x 60–960 and y 220–1500. Nothing important goes in the bottom ~420 px or the right ~120 px, where the app UI sits.
 - **Palette:** dark neutral background, one accent colour, high contrast (≥ 7:1 for text). No gradients-as-decoration.
+- **Look:** two styles, and the second is the one to try next (his 2026-11-22 claude-code-bot#147 and snip-it#73).
+  - **Clicky-style draw-on (try in every new draft):** hand-drawn marks such as circles, arrows, underlines and a pointer are drawn live over the *real* artefact, the way heyclicky.com sketches on a screen while it talks. Draw rough.js paths on with Remotion `evolvePath`. It is a layer over the story, not a replacement for it.
+  - **Dark kinetic type (Short #2, kept as a candidate):** he liked it, but it "does look quite vibe coded and similar to other solutions". Use it as the fallback, or as the base under the draw-on layer, and never as the whole look.
+
+## 0a. IDEAS: checklist (before any build)
+
+- [ ] Offer a list of ideas and let him pick. Don't build a video he hasn't chosen (2026-11-22: "Don't need to build the video yet but I can pick out some content ideas which I like").
+- [ ] For each idea give a ≤ 7-word hook, the true story with its sources, the beats, what the draw-on layer marks, and the effort.
+- [ ] Record which idea he picked, and quote him, at the top of that video's storyboard.
 
 ## 1. CREATE: checklist
 
 Before writing anything:
 - [ ] Re-read the **Owner's feedback log**, every entry. Write the 3 most relevant lessons at the top of the storyboard file.
 - [ ] Confirm the creative session is on the model §0 names for today's date (never Sonnet or Haiku). Record the model in the storyboard header.
-- [ ] Pick a true story from Kit's real history: a real note, the real spec it became, real tests, the real live URL. Nothing staged that didn't happen.
+- [ ] Build the idea he picked in IDEAS. It must be a true story from Kit's real history: a real note, the real spec it became, real tests, the real live URL. Nothing staged that didn't happen. Tell it as a story, in the order it happened (his note → spec → review → tests → live). He liked that in Short #2.
+- [ ] Plan the draw-on layer (§0 Look): what gets circled, arrowed or underlined, and on which beat.
 
 Script:
 - [ ] **Hook in 0–1.5 s** names the viewer's problem or a surprise in ≤ 7 words. It must not be a stat about speed.
@@ -57,6 +67,8 @@ Run it as a blind-ish pass. A fresh Opus agent gets only the MP4 frames, this ch
 - [ ] **Dead air:** no stretch over 1.5 s without change. Extract frames at 0.5 s intervals and look.
 - [ ] **Truth:** every claim (live URL, test counts, timings) matches a real artefact, and you can point to it.
 - [ ] **Benchmark:** put 3 frames next to an exemplar (Research notes §1). Would it sit in that company's feed without embarrassment? If not, name the gap and fix it before handing over.
+- [ ] **Generic-look test** (a standing weakness: "really poorly made" on 11-06, "quite vibe coded" on 11-22): could these frames come from any AI-made explainer? Name one thing in them that only this channel does. If it's only dark kinetic type, it fails; add or strengthen the draw-on layer.
+- [ ] **Picked idea:** is this the idea he chose in IDEAS? If not, stop and offer it as an idea instead.
 - [ ] Hand over privately: MP4 plus a contact sheet image embedded on the Kit card or issue. **Nothing is posted publicly.** Publishing is the owner's decision.
 
 ## 3. RETURN: checklist (after the owner's feedback)
@@ -84,6 +96,22 @@ Rules derived:
 
 Rules derived:
 - **process:** Shorts are the format (Defaults, Format). Long-form waits until he asks for it.
+
+### 2026-11-22, claude-code-bot#147, Short #2 draft 2 ("One sentence. No code. Shipped.", his malformed-bundle note → kit#888 → kit#890, 34.6 s, dark kinetic type, no audio)
+> "The video looks really good. Let's keep that style around! I like the narrative too. Could you draft some more content ideas. Don't need to build the video yet but I can pick out some content ideas which I like.
+>
+> Let's keep this style around as a candidate. It does look quite vibe coded and similar to other solutions. Hopefully clippy style will be an improvement on that"
+
+Same day, snip-it#73, about heyclicky.com's live draw-on-screen look (his 11-20 "just thought it would be good for video visuals"):
+> "Don't forget to include this in new drafts"
+
+I read "clippy style" as the Clicky look, given his snip-it#73 note four minutes earlier. If he meant Microsoft's Clippy (an on-screen character), only the §0 Look wording changes.
+
+Rules derived:
+- **taste:** keep the dark kinetic type as a candidate style, not the default. It reads as generic ("vibe coded"). Every new draft tries the Clicky-style draw-on layer (§0 Look). REVIEW gets the generic-look test, because this is the second taste complaint about looking cheap or generic.
+- **message:** a true story told in order, from his note to live, works. Keep that arc (CREATE).
+- **process:** ideas come before builds, and he picks (§0a IDEAS, plus a REVIEW item). This is the second process entry in a row (after "Shorts"), so REVIEW checks it.
+- The old default the draw-on layer supersedes: dark kinetic type as the whole look (§0 Palette and Type system still apply).
 
 ---
 
