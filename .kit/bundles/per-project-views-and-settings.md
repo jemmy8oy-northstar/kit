@@ -1,6 +1,6 @@
 # Per-project views: inbox, runs and settings scoped to one project, global notifications and settings kept above
 Work-item: per-project-views-and-settings
-Flag: the spec edit goes to kit-ui.beh, not kit.beh, because BEH-SPACE-1 lives there and kit.beh is the command-line layer (level: low)
+Flag: the spec edit goes to kit-ui.beh, not kit.beh, because BEH-SPACE-1 lives there and kit.beh is the command-line layer; the change re-scopes how Kit shows his work (level: high)
 Cards:
 - BEH-SPACE-1
 - BEH-SPACE-5
